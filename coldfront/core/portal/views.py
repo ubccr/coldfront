@@ -16,6 +16,21 @@ from coldfront.core.portal.utils import (generate_allocations_chart_data,
 from coldfront.core.project.models import Project
 from coldfront.core.publication.models import Publication
 from coldfront.core.research_output.models import ResearchOutput
+from coldfront.core.utils.common import import_from_settings
+
+
+PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING = import_from_settings(
+    'PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING',
+    30
+)
+ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING = import_from_settings(
+    'ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING',
+    30
+)
+ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING = import_from_settings(
+    'ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING',
+    60
+)
 
 
 def home(request):
@@ -24,7 +39,18 @@ def home(request):
     if request.user.is_authenticated:
         template_name = 'portal/authorized_home.html'
         project_list = Project.objects.filter(
-            (Q(pi=request.user) & Q(status__name__in=['New', 'Active', ])) |
+            (
+                Q(pi=request.user) &
+                Q(
+                    status__name__in=[
+                        'New',
+                        'Active',
+                        'Waiting For Admin Approval',
+                        'Review Pending',
+                        'Expired'
+                    ]
+                )
+            ) |
             (Q(status__name__in=['New', 'Active', ]) &
              Q(projectuser__user=request.user) &
              Q(projectuser__status__name__in=['Active', ]))
@@ -32,14 +58,19 @@ def home(request):
 
         allocation_list = Allocation.objects.filter(
             Q(status__name__in=['Active', 'New', 'Renewal Requested', ]) &
-            Q(project__status__name__in=['Active', 'New']) &
+            Q(project__status__name__in=['Active', 'New', 'Review Pending', 'Expired']) &
             Q(project__projectuser__user=request.user) &
             Q(project__projectuser__status__name__in=['Active', ]) &
             Q(allocationuser__user=request.user) &
-            Q(allocationuser__status__name__in=['Active', ])
+            Q(allocationuser__status__name__in=['Active', 'Pending - Remove'])
         ).distinct().order_by('-created')[:5]
+
+        context['user'] = request.user
         context['project_list'] = project_list
         context['allocation_list'] = allocation_list
+        context['PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING'] = PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING
+        context['ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING'] = ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING
+        context['ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING'] = ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING
         try:
             context['ondemand_url'] = settings.ONDEMAND_URL
         except AttributeError:

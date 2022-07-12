@@ -23,3 +23,11 @@ class Command(BaseCommand):
         schedule('coldfront.core.allocation.tasks.send_expiry_emails',
                  schedule_type=Schedule.DAILY,
                  next_run=date)
+
+        schedule('coldfront.core.projects.tasks.update_statuses',
+                 schedule_type=Schedule.DAILY,
+                 next_run=date)
+
+        schedule('coldfront.core.projects.tasks.send_expiry_emails',
+                 schedule_type=Schedule.DAILY,
+                 next_run=date)

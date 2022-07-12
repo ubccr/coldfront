@@ -1,0 +1,6 @@
+Hello,
+
+A new project request has been submitted. You can view it here: {{ url }}
+
+Thanks,
+{{ signature }}

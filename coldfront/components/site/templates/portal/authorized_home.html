@@ -1,0 +1,169 @@
+{% extends "common/base.html" %}
+{% load common_tags %}
+
+
+{% block content %}
+<div class="row">
+
+  <div class="col-lg-6 mt-2">
+    <h2><a href="{% url 'project-list' %}">Projects &raquo;</a></h2>
+    <hr>
+    <p>
+      If you are a faculty/staff member you can submit a <a href="{% url 'project-create' %}">project request</a>. Graduate students must have a PI to submit a project request.
+      Once submitted you can add any additional users to your project and request a resource allocation. If you are an undergraduate student you do not have access
+      to submitting a project request. You can, however, search for your <a href="{% url 'project-list' %}">PI's username</a> and request access to a project
+      they already have.
+    </p>
+    
+
+    {% if project_list %}
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Project</th>
+            <th scope="col">PI</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for project in project_list %}
+            <tr>
+              <td>
+                <a href="{% url 'project-detail' project.pk %}"><i class="fa fa-folder fa-lg" aria-hidden="true"></i> {{ project.title|truncatechars:50 }}</a>
+              </td>
+              <td>{{ project.pi.first_name }} {{ project.pi.last_name }} ({{ project.pi.username }})</td>
+              {% if project.status.name == 'Active' %}
+                {% if project.can_be_reviewed %}
+                  <td class="text-warning">{{ project.status.name }}
+                    {% if user.username in project.list_of_manager_usernames %}
+                      <a href="{% url 'project-review' project.pk %}">
+                        <span class="badge badge-warning">
+                          <i class="fas fa-redo-alt" aria-hidden="true"></i>
+                          Expires in {{ project.expires_in }} day{{ project.expires_in|pluralize }} - click to renew
+                        </span>
+                      </a>
+                    {% endif %}
+                  </td>
+                {% elif project.needs_review %}
+                  <td class="text-warning">{{ project.status.name }}
+                    {% if user.username in project.list_of_manager_usernames %}
+                      <a href="{% url 'project-review' project.pk %}">
+                        <span class="badge badge-warning">
+                          <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                          Needs Review - click to review
+                        </span>
+                      </a>
+                    {% endif %}
+                  </td>
+                {% else %}
+                  <td class="text-success">{{ project.status.name}}</td>
+                {% endif %}
+              {% elif project.status.name in 'Archived, Denied, Expired' %}
+                <td class="text-danger">
+                  {{ project.status.name }}
+                  {% if user.username in project.list_of_manager_usernames %}
+                    {% if project.status.name == 'Expired' and project.can_be_reviewed %}
+                      <a href="{% url 'project-review' project.pk %}">
+                        <span class="badge badge-warning">
+                          <i class="fas fa-redo-alt" aria-hidden="true"></i>
+                          {{ project.expires_in|add:PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING }} days left to renew
+                        </span>
+                      </a>
+                    {% endif %}
+                  {% endif %}
+                </td>
+              {% else %}
+                <td class="text-info">{{ project.status.name }}</td>
+              {% endif %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="alert alert-info" role="alert"><i class="fa fa-info-circle" aria-hidden="true"></i> There are no projects to display.</div>
+      {% if user.userprofile.is_pi or user.is_superuser %}
+        <a class="btn btn-primary btn-block" href="{% url 'project-create' %}" role="button">Add a project</a>
+        <hr>
+      {% endif %}
+    {% endif %}
+  </div>
+
+  <div class="col-lg-6 mt-2">
+    <h2><a href="{% url 'allocation-list' %}">Allocations &raquo;</a></h2>
+    <hr>
+    <p>
+      Resource allocations are required if you want to gain access to IU's resources. You must have a project to request an allocation.
+      Be sure to review the <a href="{% url 'resource-list' %}">list of available resources</a>. Users must be added to an allocation in
+      order to gain access to its resource. A project can have multiple allocations.
+    </p>
+
+    {% if allocation_list %}
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Project</th>
+            <th scope="col">Resource</th>
+            <th scope="col">Status</th>
+
+          </tr>
+        </thead>
+        <tbody>
+          {% for allocation in allocation_list %}
+          <tr>
+            <td>{{allocation.project.title}}</td>
+            <td>{{allocation.get_parent_resource}}
+              {% if allocation.get_parent_resource.get_ondemand_status == 'Yes' and ondemand_url %}
+              <a href = "{{ondemand_url}}"> {% load static %}  <img src="/static/core/portal/imgs/ondemand.png" alt="ondemand cta" width="25" height="25"></a>
+            {% endif %} 
+            </td>
+            {%  if allocation.status.name == "Expired" and allocation.expires_in > ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING|change_sign %}
+              <td>
+                <a href="{% url 'allocation-detail' allocation.id %}" class="btn btn-danger btn-block">
+                  <span class="badge badge-light">{{ allocation.expires_in|add:ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING }}</span>  days left to renew
+                </a>
+              </td>
+            {%  elif allocation.status.name == "Renewal Requested" %}
+            <td><a href="{% url 'allocation-detail' allocation.id %}" class="btn btn-info btn-block">Renewal
+                Requested</a></td>
+            {%  elif allocation.expires_in >= 0 and  allocation.expires_in <= 7 %}
+            <td><a href="{% url 'allocation-detail' allocation.id %}" class="btn btn-danger btn-block">Expires in <span
+                  class="badge badge-light">{{allocation.expires_in}}</span> day{{allocation.expires_in|pluralize }}</a>
+            </td>
+            {% elif allocation.expires_in > 7 and allocation.expires_in <= ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING %}
+            <td><a href="{% url 'allocation-detail' allocation.id %}" class="btn btn-warning btn-block">Expires in <span
+                  class="badge badge-light">{{allocation.expires_in}}</span> day{{allocation.expires_in|pluralize }}</a>
+            </td>
+            {% elif allocation.status.name == "Pending" %}
+            <td><a href="{% url 'allocation-detail' allocation.id %}"
+                class="btn btn-info btn-block">{{allocation.status}}</a></td>
+            {% elif allocation.status.name == "Active" %}
+            <td><a href="{% url 'allocation-detail' allocation.id %}"
+                class="btn btn-success btn-block">{{allocation.status}}</a></td>
+            {% else %}
+            <td><a href="{% url 'allocation-detail' allocation.id %}"
+                class="btn btn-info btn-block">{{allocation.status}}</a></td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="alert alert-info" role="alert">
+        <i class="fa fa-info-circle" aria-hidden="true"></i> There are no allocations to display.
+      </div>
+    {% endif %}
+  </div>
+</div>
+<div class="row">
+  {% include "portal/extra_app_templates.html" %}
+</div>
+{% endblock %}
+
+
+{% block javascript %}
+{{ block.super }}
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-home").addClass("active");
+</script>
+{% endblock %}

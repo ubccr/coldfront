@@ -1,0 +1,606 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load common_tags %}
+{% load static %}
+
+
+{% block title %}
+Request New Allocation
+{% endblock %}
+
+
+{% block content %}
+<h2>Request New Allocation <br><small>Project: {{ project.title }}</small></h2>
+<hr>
+
+<p class="text-justify">The following {% settings_value 'CENTER_NAME' %}
+  resources are available to request for this project. If you need access to
+  more than one of these, please submit a separate allocation request for each
+  resource. For each request you must fill out all required the fields and  
+  provide the justification for how you intend to use the resource to further 
+  the research goals of your project.</p>
+
+<form method="post" class="bootstrap">
+  {% crispy form %}
+
+  <div id="eula-div" style="display: none;">
+    <textarea style="display:none;min-width:100%" id="eula"  rows="15"></textarea>
+    <br>
+    <p class="font-weight-bold">By clicking submit you agree to the Terms and Conditions.</p>
+  </div>
+</form>
+
+<!-- Medium modal -->
+<div id="id_resource_description_modal" class="modal fade bd-example-modal-md" tabindex="-1" role="dialog" aria-labelledby="id_resource_description_label" aria-hidden="true">
+  <div class="modal-dialog modal-md">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="id_resource_description_label">Resource Description</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p id="id_resource_description"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Large modal -->
+<div id="Modal" class="modal fade bd-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Add New Account Name</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div id="error_div"></div>
+        *No spaces in account name
+        <form id="allocation_account_form">
+          {{AllocationAccountForm |crispy}}
+          <button id="myFormSubmit" class="btn btn-primary" type="submit">Submit</button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+    <button type="button" class="btn btn-primary">Send message</button>
+  </div>
+</div>
+
+<script>
+  var resource_descriptions = {{ resource_descriptions | safe }};
+  var resources_with_accounts = {{ resources_with_accounts | safe }};
+  var resources_with_eula = {{ resources_with_eula | safe }};
+
+  var resource_special_attributes = {{ resource_special_attributes | safe }}
+  var resource_form = {{ resource_form | safe }}
+  var request_user_username = {{ request_user_username | safe }}
+
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-project-menu").addClass("active");
+
+  $(document).ready(function () {
+    moveRadioSelectErrors();
+
+    $('#id_data_manager').change(function () {
+      checkDataManager();
+    })
+
+    $('#div_id_resource').after(
+      '<p id="id_slurm_account_name_warning" class="alert alert-block alert-danger">\
+      Your project must have a Slurm account name in order to use this resource. You cannot submit until it has one.\
+      </p>'
+    )
+    $('#id_slurm_account_name_warning').hide();
+
+    var resource_label = $('label[for="id_resource"]');
+    resource_label.html(
+      'Resource<span class="asteriskField">*</span>\
+      <a\
+      href="#"\
+      data-toggle="modal"\
+      data-target="#id_resource_description_modal"\
+      >\
+        <i class="fas fa-info-circle" aria-hidden="true"></i>\
+      </a>'
+    )
+
+    // By default we will have the use_indefinitely div placed just after the end_date label on the form.
+    $('#div_id_end_date label').after( function () {
+      var label = $('label[for="id_use_indefinitely"]');
+      label.html('This storage space will be used indefinitely.');
+
+      // Clone the use_indefinitely div so we can delete the old one so there are no duplicates.
+      var use_indefinitely_clone = $('#div_id_use_indefinitely').clone()
+      $('#div_id_use_indefinitely').remove()
+      return use_indefinitely_clone
+    });
+    $('#id_use_indefinitely').change(function (e) {
+      if (e.target.checked) {
+        $('#id_end_date').prop('disabled', true);
+        $('#div_id_end_date button').prop('disabled', true);
+        $('#id_end_date').val('')
+      } else {
+        $('#id_end_date').prop('disabled', false);
+        $('#div_id_end_date button').prop('disabled', false);
+      }
+    });
+
+    if ($('#id_use_indefinitely').is(':checked')) {
+      $('#id_end_date').prop('disabled', true);
+      $('#id_end_date').val('')
+    }
+
+    // Add button for date picker on date fields.
+    var date = new Date();
+    var currentYear = date.getFullYear();
+    $(".datepicker")
+      .wrap('<div class="input-group">')
+      .datepicker({
+        changeMonth: true,
+        changeYear: true,
+        yearRange: currentYear + ':' + (currentYear + 5),
+        showOn: "button",
+        buttonText: "Select Date"
+      })
+      .next("button")
+      .addClass("btn btn-secondary")
+
+    // Set up additional text on forms.
+    $('#div_id_justification').after(
+      '<p id="additional_info_1">In order to gain access to the Carbonate Deep Learning Partition, you must first have \
+      an account on Carbonate. To create an account, go to \
+      <a href="https://access.iu.edu/Accounts/Create" target = "_blank">Create Additional Accounts.</a></p>'
+    );
+
+    $('#div_id_justification').after(
+      '<p id="additional_info_2">In order to gain access to the Carbonate GPU Partition, you must first have \
+      an account on Carbonate. To create an account, go to \
+      <a href="https://access.iu.edu/Accounts/Create" target = "_blank">Create Additional Accounts.</a></p>'
+    );
+
+    $('#div_id_justification').after(
+      '<p id="additional_info_3">A priority increase will prioritize your jobs ahead of the general workload. If you are \
+      affiliated with a Grand Challenge, you will receive this boost indefinitely. Otherwise, we \
+      can assist you in receiving a short-term priority boost up to your required deadline.</p>'
+    );
+
+    $('#div_id_store_ephi').append(
+      '<p id="id_ephi_info">If you use the Slate-Project file system for storing electronic protected health \
+      information (ePHI), please note that <strong>you and/or the Principal Investigator (PI) \
+      are responsible for the privacy and security of data and for compliance with applicable \
+      federal and state laws/regulations and institutional policies.</strong> \
+      IU\'s HIPPA policies include the appropriate Institutional Review Board (IRB) approvals and \
+      a Data Management Plan. Be advised that, while we provide technical and physical controls \
+      against the unauthorized release of data in accordance with HIPAA, responsibility for \
+      administrative controls (including granting access and terminating access, providing \
+      training, creating user polices, etc.) rests with you and/or the PI. \
+      We strongly recommend that you review <a href="https://kb.iu.edu/d/ayzb" target="_blank">At \
+      IU, how do I get help securely processing, storing, and sharing HIPAA-regulated data?</a> \
+      for guidance on securely processing, storing, and sharing ePHI or HIPAA data. If you have \
+      further questions, please contact us.</p>'
+    )
+
+    if ($('input[type=radio][name=store_ephi]:checked').val() === 'Yes') {
+      $('#id_ephi_info').show();
+    } else {
+      $('#id_ephi_info').hide();
+    }
+    $('input[type=radio][name=store_ephi]').change(function (e) {
+      if (e.target.value === "Yes") {
+        $('#id_ephi_info').show();
+      } else {
+        $('#id_ephi_info').hide();
+      }
+    })
+
+    $('#id_storage_space').change(function (e) {
+      var resource_text = $("#id_resource option:selected").text();
+      var resource_name = resource_text.slice(0, resource_text.indexOf('(') - 1)
+      if (resource_name === 'Slate-Project') {
+        if (e.target.value > 15) {
+          $('#div_id_account_number').show()
+        } else {
+          $('#div_id_account_number').hide()
+        }
+      }
+    })
+
+    // Set up grand challenge checkbox and options for the priority boost form.
+    // Save the value since it will be deleted when we change checkbox the label.
+    var is_grand_challenge = $('#id_is_grand_challenge').is(':checked');
+    $('label[for="id_is_grand_challenge"]').html('My project is part of an IU Grand Challenge program.');
+    $('label[for="id_grand_challenge_program"]').html(
+      '<strong>Select your Grand Challenge program*</strong>'
+    )
+    $('#div_id_grand_challenge_program label').before(
+      '<p id="id_grand_challenge_info">Grand Challenge projects on Big Red 3 are eligible to receive an indefinite priority boost, no end date is required.</p>'
+    )
+    $('#id_is_grand_challenge').prop('checked', is_grand_challenge)
+
+    if ($('input[type=radio][name=system]:checked').val() === 'BigRed3') {
+      $('#div_id_is_grand_challenge').show();
+      if (is_grand_challenge) {
+        $('#div_id_grand_challenge_program').show();
+        $('#div_id_end_date').hide();
+        $('#id_end_date').val('')
+        $('#id_is_grand_challenge').prop('checked', true)
+      } else {
+        $('#div_id_grand_challenge_program').hide();
+      }
+    }
+    else {
+      $('#div_id_is_grand_challenge').hide();
+      $('#div_id_grand_challenge_program').hide();
+    }
+
+    $('input[type=radio][name=system]').change(function (e) {
+      if (e.target.value === 'BigRed3') {
+        if ($('#id_is_grand_challenge').is(':checked')) {
+          $('#div_id_grand_challenge_program').show();
+          $('#div_id_end_date').hide();
+          $('#id_end_date').val('')
+        }
+        $('#div_id_is_grand_challenge').show();
+      } else {
+        $('#div_id_is_grand_challenge').hide();
+        $('#div_id_grand_challenge_program').hide();
+        $('#div_id_end_date').show();
+      }
+    })
+    
+    $('#id_is_grand_challenge').change(function (e) {
+      if (e.target.checked) {
+        $('#div_id_grand_challenge_program').show();
+        $('#div_id_end_date').hide();
+        $('#id_end_date').val('')
+      } else {
+        $('#div_id_grand_challenge_program').hide();
+        $('#div_id_end_date').show();
+      }
+    })
+
+    // Set up license term handler function.
+    $('#div_id_total_cost').hide();
+    $('#id_license_term').change(function (e) {
+      handleLicenseTermSelection($('#id_license_term option:selected').val());
+    })
+
+    label = $('label[for="id_license_term"]')
+    label.html('<strong>License Term*</strong>')
+    label = $('label[for="id_total_cost"]')
+    label.html('<strong>Total Cost*</strong>')
+
+    $(
+      '<br>\
+       <div class="custom-control custom-checkbox">\
+       <input id="selectAll" class="custom-control-input" type="checkbox">\
+       <label class="custom-control-label" for="selectAll">\
+       <strong>Select All Users</strong>\
+       </label>\
+       </div>'
+    ).insertAfter($("#div_id_users > label"))
+    $("#id_resource").trigger('change');
+
+    $("#selectAll").click(function () {
+      $("input[name^='users']").prop('checked', $(this).prop('checked'));
+    });
+    
+    $("input[name^='users']").click(function (ele) {
+      var id = $(this).attr('id');
+      if (id != "selectAll") {
+        $("#selectAll").prop('checked', false);
+      }
+    });
+  });
+
+  function moveRadioSelectErrors() {
+    // Remove error indentation.
+    radioErrors = $('div[class^="w-100"]')
+    radioErrors.removeClass('custom-control')
+  }
+
+  function enableUserSelection() {
+    $('#selectAll').prop('disabled', false);
+    $('input[name="users"]').prop('disabled', false);
+  }
+
+  function disableUserSelection() {
+    $('#selectAll').prop('disabled', true);
+    $('#selectAll').prop('checked', false);
+    $('input[name="users"]').prop('checked', false);
+    $('input[name="users"]').prop('disabled', true);
+  }
+
+  function checkDataManager() {
+    var username = $('#id_data_manager').val();
+    if (request_user_username['username'] == username) {
+      enableUserSelection();
+    } else {
+      disableUserSelection();
+    }
+  }
+
+  function checkDate(end_month, end_day) {
+    let [month, date, year] = new Date().toLocaleDateString("en-US").split("/");
+    var licenseEndDate = new Date(year, end_month, end_day);
+    var currentDate = new Date(year, month - 1, date);
+    var thresholdDate = new Date(year, 4, 1);
+
+    if (currentDate > licenseEndDate) {
+      licenseEndDate.setFullYear(licenseEndDate.getFullYear() + 1);
+      thresholdDate.setFullYear(thresholdDate.getFullYear() + 1);
+    }
+
+    return currentDate > thresholdDate;
+  }
+
+  function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie != '') {
+      var cookies = document.cookie.split(';');
+      for (var i = 0; i < cookies.length; i++) {
+        var cookie = jQuery.trim(cookies[i]);
+        // Does this cookie string begin with the name we want?
+        if (cookie.substring(0, name.length + 1) == (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+  $('#modal_link').on("click", function () {
+    $('#Modal').modal('show');
+  });
+  $(function () {
+    $('#myFormSubmit').click(function (e) {
+      e.preventDefault();
+      $(function () {
+
+        var new_account_name = $('#allocation_account_form').serializeArray()[0].value.trim();
+        $('#id_allocation_account').prepend('<option value="' + new_account_name + '">' + new_account_name + '</option>');
+        $('#id_allocation_account option[value=' + new_account_name + ']').prop('selected', true);
+        $.ajax({
+          headers: { 'X-CSRFToken': getCookie('csrftoken') },
+          type: "POST",
+          url: "/allocation/add-allocation-account/",
+          data: {
+            name: new_account_name,
+          }, // data sent with the post request
+          success: function (json) {
+            console.log(json);
+            $('#allocation_account_form')[0].reset();
+            $('#Modal').modal('toggle');
+            $('#error_div').html('<div></div>');
+          },
+          error: function (xhr, errmsg, err) {
+            $('#error_div').html('<div class="alert alert-danger" role="alert">' + jQuery.parseJSON(xhr.responseText)["name"] + '</div>');
+            console.log(xhr);
+            console.log(errmsg);
+            console.log(err);
+          }
+        });
+      });
+    });
+  });
+
+  function handleLicenseTermSelection(optionSelected) {
+    var prorated_cost = parseInt($('#id_prorated_cost').val());
+    if (optionSelected === "current") {
+        $('#id_total_cost').val(prorated_cost);
+        $('#div_id_cost').hide();
+        $('#div_id_total_cost').hide()
+      } else if (optionSelected === "current_and_next_year") {
+        $('#id_total_cost').val(prorated_cost + parseInt($('#id_cost').val()));
+        $('#div_id_cost').show();
+        $('#div_id_total_cost').show();
+      }
+  }
+
+  $("#id_resource").change(function () {
+    var resource_id = $("#id_resource option:selected").val();
+    var resource_text = $("#id_resource option:selected").text();
+    var resource_name = resource_text.slice(0, resource_text.indexOf('(') - 1)
+
+    var description = $('#id_resource_description');
+    description.html(resource_descriptions[resource_id])
+
+    if (resource_name === 'Slate-Project') {
+      checkDataManager();
+    } else {
+      enableUserSelection();
+    }
+
+    if (resource_name === 'Carbonate DL') {
+      $('#additional_info_1').show();
+    } else {
+      $('#additional_info_1').hide();
+    }
+
+
+    if (resource_name === 'Carbonate GPU') {
+      $('#additional_info_2').show();
+    } else {
+      $('#additional_info_2').hide();
+    }
+
+    if (resource_name === 'Priority Boost') {
+      $('#additional_info_3').show();
+      if ($('input[type=radio][name=system]:checked').val() === 'BigRed3') {
+        if ($('#id_is_grand_challenge').is(':checked')) {
+          $('#div_id_grand_challenge_program').show();
+          $('#div_id_end_date').hide();
+          $('#id_end_date').val('')
+        }
+        $('#div_id_is_grand_challenge').show();
+      }
+
+    } else {
+      $('#additional_info_3').hide();
+      $('#div_id_is_grand_challenge').hide();
+      $('#div_id_grand_challenge_program').hide();
+    }
+
+    if (resource_name === 'RStudio Connect') {
+      $('#id_rstudio_connect_info').show();
+      if (checkDate(5, 10)) {
+        $('#div_id_license_term').show();
+      } else {
+        $('#div_id_license_term').hide();
+      }
+    } else {
+      $('#id_rstudio_connect_info').hide();
+      $('#div_id_license_term').hide();
+      $('#div_id_total_cost').hide();
+    }
+
+    $('#id_slurm_account_name_warning').hide();
+    $('#submit-id-submit').prop('disabled', false)
+    for (let i = 0; i < resource_special_attributes.length; i++) {
+      const attribute = resource_special_attributes[i];
+      const keys = Object.keys(attribute);
+      const attribute_key = keys[0];
+      const check_key = keys[1];
+      const attribute_value = attribute[attribute_key];
+      const check_value = attribute[check_key];
+
+      if (attribute_key === 'slurm_cluster') {
+        if (check_value[resource_id] === 'No') {
+          $('#id_slurm_account_name_warning').show();
+          $('#submit-id-submit').prop('disabled', true);
+        }
+      }
+    }
+
+    for (let i = 0; i < resource_form.length; i++) {
+      const field_set = resource_form[i];
+      const keys = Object.keys(field_set)
+      const field_key = keys[0]
+      const field = field_set[field_key];
+      const label = field_set[keys[1]];
+      const type = field_set[keys[2]];
+      id = 'id_' + [field_key];
+      if (type === 'radio') {
+        if (label[resource_id]) {
+          var html_label = $('label[for="' + id + '_0"][class=""]')
+          html_label.html(label[resource_id]);
+            // Do not reset the value if the user has already entered one (relevent if the form errors
+            // after submission because not all the required values were given).
+          if ($('input[type=radio][name=' + field_key + ']:checked').val() === undefined) {
+              $('input[type=radio][name=' + field_key + ']').val([field[resource_id]]);
+          }
+            $('#div_' + id).show();
+        } else {
+          $('#div_' + id).hide();
+        }
+        continue
+      } else if (type === 'checkbox') {
+        if (label[resource_id]) {
+          var html_label = $('label[for="' + id + '"]')
+          html_label.html(label[resource_id]);
+          if ($('input[type=checkbox][name=' + field_key + ']:checked').val() === undefined){
+              $('input[type=checkbox][name=' + field_key + ']').val([field[resource_id]]);
+          }
+          $('#div_' + id).show();
+        } else {
+          $('#div_' + id).hide();
+        }
+        continue
+      } else if (type === 'int') {
+        if (label[resource_id]) {
+          var html_label = $('label[for="' + id + '"]');
+          html_label.html(label[resource_id])
+
+          if (field_key === 'cost') {
+            $('#' + id).val(field[resource_id]);
+            $('#id_total_cost').val(field[resource_id]);
+            $('#div_' + id).show();
+          } else if (field_key === 'prorated_cost') {
+            // If a resource has a prorated cost then we need to hide the actual cost.
+            $('#' + id).val(field[resource_id]);
+            $('#id_total_cost').val(field[resource_id]);
+            $('#div_' + id).show();
+            $('#div_id_cost').hide();
+            if (resource_name === 'RStudio Connect') {
+              handleLicenseTermSelection($('#id_license_term option:selected').val());
+            }
+          } else {
+            if ($('#' + id).val() === '') {
+              $('#' + id).val(field[resource_id]) 
+            }
+            $('#div_' + id).show();
+          }
+        } else {
+          $('#div_' + id).hide();
+        }
+        continue
+      }
+
+      if (label[resource_id]) {
+        var html_label = $('label[for="' + id + '"]');
+        html_label.html(label[resource_id]);
+        if ($('#' + id).val().length < 1) {
+          $('#' + id).val(field[resource_id]);
+        }
+        $('#div_' + id).show();
+        if (field_key === 'end_date'){
+          if (resource_name === 'Geode-Projects') {
+            $('#div_id_use_indefinitely').show()
+            if ($('input[type=checkbox][name=use_indefinitely]:checked').val()) {
+              $('#id_end_date').prop('disabled', true);
+              $('#div_id_end_date button').prop('disabled', true);
+            }
+          } else {
+            $('#div_id_use_indefinitely').hide();
+            $('#id_end_date').prop('disabled', false);
+            $('#div_id_end_date button').prop('disabled', false);
+          }
+
+          if (resource_name === 'Priority Boost') {
+            if ($('input[type=radio][name=system]:checked').val() === 'BigRed3') {
+              if ($('#id_is_grand_challenge').is(':checked')) {
+                $('#div_id_end_date').hide();
+              }
+            }
+          }
+        }
+      } else {
+        $('#div_' + id).hide();
+      }
+    }
+
+    if (resource_name === 'Slate-Project') {
+        if ($('#id_storage_space').val() <= 15) {
+          $('#div_id_account_number').hide();
+        }
+    }
+
+    if (resource_name === 'Geode-Projects') {
+      
+    }
+
+    if (resources_with_accounts.includes(parseInt(resource_id))) {
+      $('#div_id_allocation_account').show();
+    } else {
+      $('#div_id_allocation_account').hide();
+    }
+
+    if (resources_with_eula[resource_id]) {
+      $('#eula').text(resources_with_eula[resource_id])
+      $('#eula-div').show();
+      $('#eula').show();
+    } else {
+      $('#eula').hide();
+      $('#eula-div').hide();
+    }
+  });
+</script>
+{% endblock %}

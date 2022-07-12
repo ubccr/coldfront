@@ -1,0 +1,77 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Allocation Invoice List
+{% endblock %}
+
+
+{% block content %}
+<h2 class="d-inline">Allocations that require payment</h2>
+<button type="button" class="btn btn-success float-right" data-toggle="modal" data-target="#id_export_csv">
+  Export to CSV
+</button>
+
+<div class="modal fade" id="id_export_csv" tabindex="-1" role="dialog" aria-labelledby="id_export_csv_label" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="id_export_csv_label">Export to CSV</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="id_export_form" action="{% url 'invoice-export' %}" method="post">
+          {% csrf_token %}
+          {{ allocation_invoice_export_form|crispy }}
+          <div class="float-right form-inline">
+            <button id="id_export_button" type="submit" class="btn btn-success float-right"><i class="fas fa-download" aria-hidden="true"></i> Export</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if allocation_list %}
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th scope="col">ID</th>
+          <th scope="col">Resource</th>
+          <th scope="col">Status</th>
+          <th scope="col">PI</th>
+          <th scope="col">Created</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for allocation in allocation_list %}
+          <tr>
+            <td><a target="_blank" href="{% url 'allocation-invoice-detail' allocation.pk %}">{{allocation.pk}}</td>
+            <td>{{allocation.get_resources_as_string}}</td>
+            <td>{{allocation.status}}</td>
+            <td>{{allocation.project.pi.username }}</td>
+            <td>{{allocation.created|date:"M d, Y"}}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="alert alert-info">
+    No allocations requiring payment!
+  </div>
+{% endif %}
+
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-invoice").addClass("active");
+  $("#navbar-allocation-invoice-list").addClass("active");
+
+  $(".datepicker").datepicker();
+</script>
+{% endblock %}

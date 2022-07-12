@@ -17,7 +17,8 @@ from coldfront.core.grant.models import (Grant, GrantFundingAgency,
                                          GrantStatusChoice)
 from coldfront.core.project.models import (Project, ProjectStatusChoice,
                                            ProjectUser, ProjectUserRoleChoice,
-                                           ProjectUserStatusChoice)
+                                           ProjectUserStatusChoice,
+                                           ProjectTypeChoice)
 from coldfront.core.publication.models import Publication, PublicationSource
 from coldfront.core.resource.models import (Resource, ResourceAttribute,
                                             ResourceAttributeType,
@@ -197,7 +198,10 @@ class Command(BaseCommand):
             field_of_science=FieldOfScience.objects.get(
                 description='Chemistry'),
             status=ProjectStatusChoice.objects.get(name='Active'),
-            force_review=True
+            force_review=True,
+            end_date = datetime.date.today() + datetime.timedelta(days=365),
+            max_managers=2,
+            type=ProjectTypeChoice.objects.get(name='Research')
         )
 
         univ_hpc = Resource.objects.get(name='University HPC')
@@ -414,7 +418,10 @@ class Command(BaseCommand):
             title='Measuring critical behavior of quantum Hall transitions',
             description='This purpose of this project is to measure the critical behavior of quantum Hall transitions.',
             field_of_science=FieldOfScience.objects.get(description='Physics'),
-            status=ProjectStatusChoice.objects.get(name='Active')
+            status=ProjectStatusChoice.objects.get(name='Active'),
+            end_date=datetime.date.today() + datetime.timedelta(days=365),
+            max_managers=2,
+            type=ProjectTypeChoice.objects.get(name='Research')
         )
 
         project_user_obj, _ = ProjectUser.objects.get_or_create(

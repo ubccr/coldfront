@@ -1,0 +1,655 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+{% load common_tags %}
+
+
+{% block title %}
+Allocation Detail
+{% endblock %}
+
+
+{% block content %}
+{% if allocation.project.status.name == 'Archived' %}
+  <div class="alert alert-warning" role="alert">
+    This is a allocation from an archived project! You cannot make any changes.
+  </div>
+{% endif %}
+
+<div class="mb-3">
+  <h2>Allocation Detail</h2>
+  <hr>
+</div>
+
+{% if form.non_field_errors %}
+  <div class="alert alert-danger" role="alert">
+    {{ form.non_field_errors }}
+  </div>
+{% endif %}
+
+<div class="card mb-3">
+  <div class="card-header">
+    {% if allocation.is_changeable and is_allowed_to_update_project %}
+      <div class="row">
+        <div class="col">
+          <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>
+        </div>
+        <div class="col">
+          <a class="btn btn-primary" href="{% url 'allocation-change' allocation.pk %}" role="button" style="float: right;">
+            Request Change
+          </a>
+        </div>
+      </div>
+    {% else %}
+      <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>   
+    {% endif %}
+  </div>
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      <div class="table-responsive">
+        <table class="table table-bordered table-sm">
+          <tr>
+            <th scope="row" class="text-nowrap">Project:</th>
+            <td><a href="{% url 'project-detail' allocation.project.pk %}">{{ allocation.project }}</a></td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">Resource{{ allocation.resources.all|pluralize }} in allocation:</th>
+            <td>{{ allocation.get_resources_as_string }}</td>
+          </tr>
+          {% if allocation.get_resources_as_string == "Carbonate DL" %}
+            <tr>
+              <th scope="row" class="text-nowrap">Leverage Multiple GPUs:</th>
+              <td>{{ allocation.leverage_multiple_gpus }}</td>
+            </tr>
+            <tr>
+              <th scope="row" class="text-nowrap">Training or Inference:</th>
+              <td>{{ allocation.training_or_inference }}</td>
+            </tr>
+            <tr>
+              <th scope="row" class="text-nowrap">For Coursework:</th>
+              <td>{{ allocation.for_coursework }}</td>
+            </tr>
+          {% endif %}
+          {% if allocation.get_resources_as_string == "Carbonate GPU" %}
+            <tr>
+              <th scope="row" class="text-nowrap">Leverage Multiple GPUs:</th>
+              <td>{{ allocation.leverage_multiple_gpus }}</td>
+            </tr>
+            <tr>
+              <th scope="row" class="text-nowrap">Deep Learning Workflow:</th>
+              <td>{{ allocation.dl_workflow }}</td>
+            </tr>
+            <tr>
+              <th scope="row" class="text-nowrap">Applications To Be Used:</th>
+              <td>{{ allocation.applications_list }}</td>
+            </tr>
+            <tr>
+              <th scope="row" class="text-nowrap">For Coursework:</th>
+              <td>{{ allocation.for_coursework }}</td>
+            </tr>
+          {% endif %}
+          {% if allocation.get_resources_as_string == "Priority Boost" %}
+            <tr>
+              <th scope="row" class="text-nowrap">System:</th>
+              <td>{{ allocation.system }}</td>
+            </tr>
+            {% if allocation.is_grand_challenge %}
+              <tr>
+                <th scope="row" class="text-nowrap">Grand Challenge Program:</th>
+                {% if allocation.grand_challenge_program == "healthinitiative" %}
+                  <td>Precision Health Initiative</td>
+                {% endif %}
+                {% if allocation.grand_challenge_program == "envchange" %}
+                  <td>Prepared for Environmental Change</td>
+                {% endif %}
+                {% if allocation.grand_challenge_program == "addiction" %}
+                  <td>Responding to the Addiction Crisis</td>
+                {% endif %}
+              </tr>
+            {% endif %}
+          {% endif %}
+          {% if allocation.get_resources_as_string == "Carbonate Precision Health Initiative (PHI) Nodes" %}
+            <tr>
+              <th scope="row" class="text-nowrap">Is Associated With PHI:</th>
+              <td>{{ allocation.phi_association }}</td>
+            </tr>
+          {% endif %}
+          {% if allocation.get_resources_as_string == "cBioPortal" %}
+             <tr>
+              <th scope="row" class="text-nowrap">Is Associated With PHI:</th>
+              <td>{{ allocation.phi_association }}</td>
+            </tr>
+            <tr>
+              <th scope="row" class="text-nowrap">Authorized Access Level:</th>
+              <td>{{ allocation.access_level }}</td>
+            </tr>
+            <tr>
+              <th scope="row" class="text-nowrap">Confirmed For Research Purposes Only:</th>
+              <td>{{ allocation.confirm_understanding }}</td>
+            </tr>
+          {% endif %}
+          {% if allocation.get_resources_as_string == "Geode-Projects" %}
+            <tr>
+              <th scope="row" class="text-nowrap">Primary Contact:</th>
+              <td>{{ allocation.primary_contact }}</td>
+            </tr>
+            <tr>
+              <th scope="row" class="text-nowrap">Secondary Contact:</th>
+              <td>{{ allocation.secondary_contact }}</td>
+            </tr>
+            <tr>
+              <th scope="row" class="text-nowrap">Department Full Name:</th>
+              <td>{{ allocation.department_full_name }}</td>
+            </tr>
+            <tr>
+              <th scope="row" class="text-nowrap">Department Short Name:</th>
+              <td>{{ allocation.department_short_name }}</td>
+            </tr>
+            <tr>
+              <th scope="row" class="text-nowrap">Fiscal Officer Username:</th>
+              <td>{{ allocation.fiscal_officer }}</td>
+            </tr>
+              <th scope="row" class="text-nowrap">IT Pro(s)'s Username:</th>
+              <td>{{ allocation.it_pros }}</td>
+            </tr>
+            <tr>
+              <th scope="row" class="text-nowrap">IP Addresses of Devices:</th>
+              <td>{{ allocation.devices_ip_addresses }}</td>
+            </tr>
+            <tr>
+              <th scope="row" class="text-nowrap">Data Management Plan:</th>
+              <td>{{ allocation.data_management_plan }}</td>
+            </tr>
+            <tr>
+              <th scope="row" class="text-nowrap">Use Indefinitely:</th>
+              <td>{{ allocation.use_indefinitely }}</td>
+            </tr>
+          {% endif %}
+          {% if allocation.get_resources_as_string == "RStudio Connect"%}
+            <tr>
+              <th scope="row" class="text-nowrap">Project Directory Name:</th>
+              <td>{{ allocation.project_directory_name }}</td>
+            </tr>
+          {% endif %}
+          {% if allocation.get_resources_as_string == "Slate-Project" %}
+            <tr>
+              <th scope="row" class="text-nowrap">Data Manager:</th>
+              <td>{{ allocation.data_manager }}</td>
+            </tr>
+          {% endif %}
+          <tr>
+            <th scope="row" class="text-nowrap">Justification:</th>
+            <td>{{ allocation.justification }}</td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">Status:</th>
+            <td>
+              {% if user_has_permissions %}
+                {{ form.status }}
+              {% else %}
+                {{ allocation.status }}
+              {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">Start Date:</th>
+            <td>
+              {% if user_has_permissions %}
+                {{ form.start_date }}
+              {% else %}
+                {{ allocation.start_date }}
+              {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">End Date:</th>
+            <td>
+              {% if user_has_permissions %}
+                {{ form.end_date }}
+              {% else %}
+                {{ allocation.end_date }}
+              {% endif %}
+              {% if allocation.get_parent_resource.requires_payment %}
+                {% if allocation.is_locked and allocation.status.name == 'Active' and allocation.expires_in <= ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING and allocation.expires_in >= 0 %}
+                  <span class="badge badge-warning"><i class="far fa-clock" aria-hidden="true"></i>
+                    Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} <br> Not renewable
+                  </span>
+                {% elif is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Active' and allocation.expires_in <= ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING and allocation.expires_in >= 0 %}
+                  {% if project.can_be_reviewed and project.status.name != 'Expired' %}
+                    <span class="badge badge-warning">
+                      Expires in {{ allocation.expires_in }} day{{ allocation.expires_in|pluralize }} <br> Cannot renew until <br> project is reviewed
+                    </span>
+                  {% elif project.status.name ==  'Review Pending' %}
+                    <span class="badge badge-warning">
+                      Expires in {{ allocation.expires_in }} day{{ allocation.expires_in|pluralize }} <br> Cannot renew during <br> project review
+                    </span>
+                  {% elif project.status.name in 'Expired, Denied' %}
+                    <span class="badge badge-warning">
+                      Expires in {{ allocation.expires_in }} day{{ allocation.expires_in|pluralize }}
+                    </span>
+                  {% else %}
+                    <a href="{% url 'allocation-renew' allocation.pk %}">
+                      <span class="badge badge-warning"><i class="fas fa-redo-alt" aria-hidden="true"></i>
+                      Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} <br> Click to renew
+                      </span>
+                    </a>
+                  {% endif %}
+                {% elif is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Expired' and allocation.expires_in >= ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING|change_sign %}
+                  {% if project.can_be_reviewed and project.status.name != 'Expired' %}
+                    <span class="badge badge-warning">
+                      {{ allocation.expires_in|add:ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING }} days left to renew <br> Cannot renew until <br> project is reviewed
+                    </span>
+                  {% elif project.status.name ==  'Review Pending' %}
+                    <span class="badge badge-warning">
+                      {{ allocation.expires_in|add:ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING }} days left to renew <br> Cannot renew during <br> project review
+                    </span>
+                  {% elif project.status.name not in 'Expired, Denied' %}             
+                    <a href="{% url 'allocation-renew' allocation.pk %}">
+                        <span class="badge badge-warning"><i class="fas fa-redo-alt" aria-hidden="true"></i>
+                          {{ allocation.expires_in|add:ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING }} days left to renew
+                        </span>
+                      </a>
+                  {% endif %}
+                {% endif %}
+              {% else %}
+                {% if allocation.is_locked and allocation.status.name == 'Active' and allocation.expires_in <= ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING and allocation.expires_in >= 0 %}
+                  <span class="badge badge-warning">
+                    Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} <br> Not renewable
+                  </span>
+                {% elif is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Active' and allocation.expires_in <= ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING and allocation.expires_in >= 0 %}
+                  {% if project.can_be_reviewed and project.status.name != 'Expired' %}
+                    <span class="badge badge-warning">
+                      Expires in {{ allocation.expires_in }} day{{ allocation.expires_in|pluralize }} <br> Renew in project review
+                    </span>
+                  {% elif project.status.name ==  'Review Pending' %}
+                    <span class="badge badge-warning">
+                      Expires in {{ allocation.expires_in }} day{{ allocation.expires_in|pluralize }} <br> Cannot renew during <br> project review
+                    </span>
+                  {% elif project.status.name in 'Expired, Denied' %}
+                    <span class="badge badge-warning">
+                      Expires in {{ allocation.expires_in }} day{{ allocation.expires_in|pluralize }}
+                    </span>
+                  {% else %}
+                    <a href="{% url 'allocation-renew' allocation.pk %}">
+                      <span class="badge badge-warning"><i class="fas fa-redo-alt" aria-hidden="true"></i>
+                      Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} <br> Click to renew
+                      </span>
+                    </a>
+                  {% endif %}
+                {% elif is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Expired' and allocation.expires_in >= ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING|change_sign %}
+                  {% if project.can_be_reviewed and project.status.name != 'Expired' %}
+                    <span class="badge badge-warning">
+                      {{ allocation.expires_in|add:ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING }} days left to renew <br> Renew in project review
+                    </span>
+                  {% elif project.status.name == 'Review Pending' %}
+                    <span class="badge badge-warning">
+                      {{ allocation.expires_in|add:ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING }} days left to renew <br> Cannot renew during <br> project review
+                    </span>
+                  {% elif project.status.name not in 'Expired, Denied' %}
+                    <a href="{% url 'allocation-renew' allocation.pk %}">
+                      <span class="badge badge-warning"><i class="fas fa-redo-alt" aria-hidden="true"></i>
+                        {{ allocation.expires_in|add:ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING }} days left to renew
+                      </span>
+                    </a>
+                  {% endif %}
+                {% endif %}
+              {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">Description:</th>
+            <td>
+              {% if user_has_permissions %}
+                {{ form.description }}
+              {% else %}
+                {{ allocation.description }}
+              {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">Created:</th>
+            <td>{{ allocation.created|date:"M. d, Y" }}</td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">Last Modified:</th>
+            <td>{{ allocation.modified|date:"M. d, Y" }}</td>
+          </tr>
+          <tr>
+            {% if user_has_permissions %}
+              <th scope="row" class="text-nowrap">Lock/Unlock Allocation:</th>
+              <td>
+                {{ form.is_locked }}
+              </td>
+            {% else %}
+              {% if allocation.is_locked %}
+                <th scope="row" class="text-nowrap">Locked</th>
+                <td><i class="fas fa-lock" aria-hidden="true"></i></td>
+              {% else %}
+                <th scope="row" class="text-nowrap">Unlocked</th>
+                <td><i class="fas fa-lock-open" aria-hidden="true"></i></td>
+              {% endif %}
+            {% endif %}
+          </tr>
+          {% if user_has_permissions %}
+            <tr>
+              <th scope="row" class="text-nowrap">Allow Change Requests:</th>
+              <td>
+                {{ form.is_changeable }}
+              </td>
+            </tr>
+          {% endif %}
+        </table>
+      </div>
+      {% if user_has_permissions %}
+        <div class="float-right">
+          {% if allocation.status.name in 'New, Renewal Requested, Paid' %}
+            {% if allocation.project.status.name != 'Active' %}
+              Project must be approved first.
+            {% else %}
+              <a href="{% url 'allocation-activate-request' allocation.pk %}" class="btn btn-success mr-1 confirm-activate">Approve</a>
+              <a href="{% url 'allocation-deny-request' allocation.pk %}" class="btn btn-danger mr-1 confirm-deny">Deny</a>
+            {% endif %}
+          {% endif %}
+          <button type="submit" class="btn btn-primary"><i class="fas fa-sync" aria-hidden="true"></i> Update</button>
+        </div>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+{% if attributes or attributes_with_usage or user_has_permissions %}
+  <div class="card mb-3">
+    <div class="card-header">
+      <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Allocation Attributes</h3>
+      <div class="float-right">
+        {% if user_has_permissions %}
+          <a class="btn btn-success" href="{% url 'allocation-attribute-add' allocation.pk %}" role="button">
+            <i class="fas fa-plus" aria-hidden="true"></i> Add Allocation Attribute
+          </a>
+          <a class="btn btn-danger" href="{% url 'allocation-attribute-delete' allocation.pk %}" role="button">
+            <i class="fas fa-minus" aria-hidden="true"></i> Delete Allocation Attributes
+          </a>
+        {% endif %}
+      </div>
+    </div>
+    <div class="card-body">
+      {% if attributes %}
+        <div class="table-responsive">
+          <table class="table table-bordered table-sm">
+            <thead>
+              <tr>
+                <th scope="col">Attribute</th>
+                <th scope="col">Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for attribute in attributes %}
+                {% if attribute.allocation_attribute_type.is_private %}
+                  <tr style="background-color:#eee">
+                    <td><i class="fas fa-lock" aria-hidden="true"></i> {{attribute}}</td>
+                    <td>{{attribute.value}}</td>
+                  </tr>
+                {% else %}
+                  <tr>
+                    <td>{{attribute}}</td>
+                    <td>{{attribute.value}}</td>
+                  </tr>
+                {% endif %}
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endif %}
+
+      {% if attributes_with_usage %}
+        <hr>
+        {% for attribute in attributes_with_usage %}
+          <div class="card mb-3 mr-1">
+            <div class="card-body">
+              <h4 class="card-title">{{attribute}}</h4>
+              <div id="gauge-{{forloop.counter0}}"></div>
+            </div>
+          </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+  </div>
+{% endif %}
+
+<!-- Start Allocation Change Requests -->
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Allocation Change Requests</h3> <span class="badge badge-secondary">{{allocation_changes.count}}</span>
+  </div>
+
+  <div class="card-body">
+    {% if allocation_changes %}
+      <div class="table-responsive">
+        <table id="allocation_change_table" class="table table-bordered table-sm">
+          <thead>
+            <tr>
+              <th scope="col">Date Requested</th>
+              <th scope="col">Status</th>
+              <th scope="col">Notes</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for change_request in allocation_changes %}
+                <tr>
+                  <td>{{ change_request.created|date:"M. d, Y" }}</td>
+                  {% if change_request.status.name == 'Approved' %}
+                    <td class="text-success">{{ change_request.status.name }}</td>
+                  {% elif change_request.status.name == 'Denied' %}
+                    <td class="text-danger">{{ change_request.status.name }}</td>
+                  {% else %}
+                    <td class="text-info">{{ change_request.status.name }}</td>
+                  {% endif %}
+                  </td>
+                  {% if change_request.notes %}
+                    <td>{{change_request.notes}}</td>
+                  {% else %}
+                    <td></td>
+                  {% endif %}
+                  <td><a href="{% url 'allocation-change-detail' change_request.pk %}"><i class="far fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
+                </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="alert alert-info" role="alert">
+        <i class="fas fa-info-circle" aria-hidden="true"></i>
+         There are no allocation changes to display.
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Start Allocation Invoices -->
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Allocation Invoices</h3>
+    <span class="badge badge-secondary">{{ allocation_invoices.count }}</span>
+  </div>
+  <div class="card-body">
+    {% if allocation_invoices %}
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th scope="col">ID</th>
+            <th scope="col">Status</th>
+            <th scope="col">Created</th>
+            <th scope="col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for invoice in allocation_invoices %}
+            <tr>
+              <td>{{ invoice.pk }}</td>
+              <td>{{ invoice.status }}</td>
+              <td>{{ invoice.created|date:"M d, Y" }}</td>
+              <td><a class="btn btn-primary" href="{% url 'allocation-all-invoices-detail' invoice.pk %}" role="button">Details</a></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+      There are no allocation invoices to display.
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Start Allocation Users -->
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Users in Allocation</h3>
+    <span class="badge badge-secondary">{{allocation_users.count}}</span>
+    <div class="float-right">
+      {% if allocation.project.status.name != 'Archived' and is_allowed_to_update_project and allocation.status.name in 'Active,New,Renewal Requested, Paid, Payment Pending, Payment Requested' %}
+        <a class="btn btn-success" href="{% url 'allocation-add-users' allocation.pk %}" role="button">
+          <i class="fas fa-user-plus" aria-hidden="true"></i> Add Users
+        </a>
+        <a class="btn btn-danger" href="{% url 'allocation-remove-users' allocation.pk %}" role="button">
+          <i class="fas fa-user-times" aria-hidden="true"></i> Remove Users
+        </a>
+      {% endif %}
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th scope="col">Username</th>
+            <th scope="col">Name</th>
+            <th scope="col">Email</th>
+            <th scope="col">Status</th>
+            <th scope="col">Last Modified</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in allocation_users %}
+            <tr>
+              <td>{{ user.user.username }}</td>
+              <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
+              <td>{{ user.user.email }}</td>
+              {% if user.status.name == 'Active' %}
+                <td class="text-success">{{ user.status.name }}</td>
+              {% elif user.status.name in 'Denied, Error, Expired' %}
+                <td class="text-danger">{{ user.status.name }}</td>
+              {% else %}
+                <td class="text-info">{{ user.status.name }}</td>
+              {% endif %}
+              <td>{{ user.modified|date:"M. d, Y" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Start Admin Messages -->
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Notifications</h3>
+    <span class="badge badge-secondary">{{notes.count}}</span>
+    <div class="float-right">
+      {% if user_has_permissions %}
+        <a class="btn btn-success" href="{% url 'allocation-note-add' allocation.pk %}" role="button">
+          <i class="fas fa-plus" aria-hidden="true"></i> Add Notification
+        </a>
+      {% endif %}
+    </div>
+  </div>
+  <div class="card-body">
+    {% if notes %}
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th scope="col">Note</th>
+              <th scope="col">Administrator</th>
+              <th scope="col">Last Modified</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for note in notes %}
+              {% if not note.is_private or user_has_permissions %}
+                <tr>
+                  <td>{{ note.note }}</td>
+                  {% if note.is_private %}
+                    <td>{{ note.author.first_name }} {{ note.author.last_name }} (Private)</td>
+                  {% else %}
+                    <td>{{ note.author.first_name }} {{ note.author.last_name }}</td>
+                  {% endif %}
+                  <td>{{ note.modified }}</td>
+                </tr>
+              {% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="alert alert-info" role="alert">
+        <i class="fa fa-info-circle" aria-hidden="true"></i> There are no notes from system administrators.
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-project-menu").addClass("active");
+
+  $(document).ready(function () {
+    var guage_data = {{ guage_data | safe }};
+    drawGauges(guage_data);
+  });
+
+  $('#allocation_change_table').DataTable({
+    lengthMenu: [5, 10, 20, 50, 100],
+    "pageLength": 5,
+    "ordering": false,
+    'aoColumnDefs': [{
+      'bSortable': false,
+      'aTargets': ['nosort']
+    }]
+  });
+
+  function drawGauges(guage_data) {
+    var arrayLength = guage_data.length;
+    for (var i = 0; i < arrayLength; i++) {
+      c3.generate({
+        bindto: '#gauge-' + i,
+        data: guage_data[i],
+        legend: {
+          item: {
+            onclick: function (id) { }
+          }
+        }
+      });
+    }
+  }
+  $(".datepicker").datepicker({ dateFormat: 'yy-mm-dd' });
+
+  $(document).on('click', '.confirm-activate', function(){
+    var attributes_num = {{ attributes | length }};
+    if (attributes_num == 0) {
+      return confirm('Are you sure you want to activate this allocation request without setting any allocation attributes?');
+    }
+  });
+  $(document).on('click', '.confirm-deny', function(){
+    var notes_num = {{ notes | length }};
+    if (notes_num == 0) {
+      return confirm('Are you sure you want to deny this allocation request without setting a notification?');
+    }
+  });
+</script>
+{% endblock %}

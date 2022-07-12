@@ -16,6 +16,9 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationUser,
                                               AllocationUserNote,
                                               AllocationUserStatusChoice,
+                                              AllocationUserRequestStatusChoice,
+                                              AllocationUserRequest,
+                                              AllocationInvoice,
                                               AttributeType)
 
 
@@ -55,10 +58,101 @@ class AllocationUserNoteInline(admin.TabularInline):
 class AllocationAdmin(SimpleHistoryAdmin):
     readonly_fields_change = (
         'project', 'justification', 'created', 'modified',)
-    fields_change = ('project', 'resources', 'quantity', 'justification',
-                     'status', 'start_date', 'end_date', 'description', 'created', 'modified', 'is_locked', 'is_changeable')
-    list_display = ('pk', 'project_title', 'project_pi', 'resource', 'quantity',
-                    'justification', 'start_date', 'end_date', 'status', 'created', 'modified', )
+    fields_change = (
+        'project',
+        'resources',
+        'quantity',
+        'justification',
+        'leverage_multiple_gpus',
+        'dl_workflow',
+        'applications_list',
+        'training_or_inference',
+        'for_coursework',
+        'system',
+        'phi_association',
+        'access_level',
+        'confirm_understanding',
+        'is_grand_challenge',
+        'grand_challenge_program',
+        'use_indefinitely',
+        'primary_contact',
+        'secondary_contact',
+        'department_full_name',
+        'department_short_name',
+        'fiscal_officer',
+        'account_number',
+        'sub_account_number',
+        'it_pros',
+        'devices_ip_addresses',
+        'data_management_plan',
+        'data_manager',
+        'project_directory_name',
+        'total_cost',
+        'campus_affiliation',
+        'email',
+        'faculty_email',
+        'first_name',
+        'last_name',
+        'store_ephi',
+        'url',
+        'storage_space_unit',
+        'storage_space',
+        'status',
+        'start_date',
+        'end_date',
+        'description',
+        'created',
+        'modified',
+        'is_locked',
+        'is_changeable'
+    )
+    list_display = (
+        'pk',
+        'project_title',
+        'project_pi',
+        'resource',
+        'quantity',
+        'justification',
+        'leverage_multiple_gpus',
+        'dl_workflow',
+        'applications_list',
+        'training_or_inference',
+        'for_coursework',
+        'system',
+        'phi_association',
+        'access_level',
+        'confirm_understanding',
+        'is_grand_challenge',
+        'grand_challenge_program',
+        'use_indefinitely',
+        'primary_contact',
+        'secondary_contact',
+        'department_full_name',
+        'department_short_name',
+        'fiscal_officer',
+        'account_number',
+        'sub_account_number',
+        'it_pros',
+        'devices_ip_addresses',
+        'data_management_plan',
+        'data_manager',
+        'project_directory_name',
+        'total_cost',
+        'campus_affiliation',
+        'email',
+        'faculty_email',
+        'first_name',
+        'last_name',
+        'store_ephi',
+        'url',
+        'storage_space_unit',
+        'storage_space',
+        'start_date',
+        'end_date',
+        'status',
+        'created',
+        'modified'
+    )
     inlines = [AllocationUserInline,
                AllocationAttributeInline,
                AllocationAdminNoteInline,
@@ -348,6 +442,80 @@ class AllocationAccountAdmin(SimpleHistoryAdmin):
     list_display = ('name', 'user', )
 
 
+@admin.register(AllocationUserRequestStatusChoice)
+class AllocationUserRequestStatusChoiceAdmin(admin.ModelAdmin):
+    list_display = ('name', )
+
+
+@admin.register(AllocationUserRequest)
+class AllocationUserRequestAdmin(SimpleHistoryAdmin):
+    list_display = (
+        'pk',
+        'project',
+        'allocation_id',
+        'resource',
+        'requestor',
+        'allocation_user_status',
+        'user',
+        'review_status',
+        'created',
+        'modified'
+    )
+
+    readonly_fields_change = (
+        'requestor_user',
+        'allocation_user',
+        'allocation_user_status',
+        'created',
+        'modified'
+    )
+
+    list_filter = (
+        'status',
+        'allocation_user_status',
+        'allocation_user__allocation__resources'
+    )
+
+    raw_id_fields = (
+        'requestor_user',
+        'allocation_user'
+    )
+
+    def project(self, obj):
+        return textwrap.shorten(obj.allocation_user.allocation.project.title, width=50)
+
+    def allocation_id(self, obj):
+        return obj.allocation_user.allocation.pk
+
+    def resource(self, obj):
+        return obj.allocation_user.allocation.resources.first().name
+
+    def review_status(self, obj):
+        return obj.status.name
+
+    def requestor(self, obj):
+        return '{} {} ({})'.format(
+            obj.requestor_user.first_name,
+            obj.requestor_user.last_name,
+            obj.requestor_user.username
+        )
+
+    def user(self, obj):
+        return '{} {} ({})'.format(
+            obj.allocation_user.user.first_name,
+            obj.allocation_user.user.last_name,
+            obj.allocation_user.user.username
+        )
+
+    def get_readonly_fields(self, request, obj):
+        # If a new object is being created then make the fields in the readonly_fields_change
+        # list editable.
+        if obj is None:
+            return super().get_readonly_fields(request, obj)
+        else:
+            return self.readonly_fields_change
+
+
 @admin.register(AllocationChangeStatusChoice)
 class AllocationChangeStatusChoiceAdmin(admin.ModelAdmin):
     list_display = ('name', )
@@ -362,3 +530,13 @@ class AllocationChangeRequestAdmin(admin.ModelAdmin):
 class AllocationChangeStatusChoiceAdmin(admin.ModelAdmin):
     list_display = ('pk', 'allocation_change_request', 'allocation_attribute', 'new_value', )
 
+
+@admin.register(AllocationInvoice)
+class AllocationInvoice(SimpleHistoryAdmin):
+    list_display = ('allocation_pk', 'resource', 'status', 'created', )
+
+    def allocation_pk(self, obj):
+        return obj.allocation.pk
+
+    def resource(self, obj):
+        return obj.allocation.get_parent_resource.name

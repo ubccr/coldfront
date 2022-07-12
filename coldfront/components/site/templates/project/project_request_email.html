@@ -1,0 +1,60 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Email User
+{% endblock %}
+
+
+{% block content %}
+<h2>Email</h2>
+<hr>
+
+<div class="card mb-3">
+  <div class="card-header">
+    <h3><i class="fas fa-list" aria-hidden="true"></i> Project Request Information</h3>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table">
+        <tr>
+          <th scope="row" class="text-nowrap">Project:</th>
+          <td><a href="{% url 'project-detail' project.pk %}">{{ project }}</a></td>
+        </tr>
+        <tr>
+          <th scope="row" class="text-nowrap">PI:</th>
+          <td>{{project.pi.first_name}} {{project.pi.last_name}} ({{project.pi.username}})</td>
+        </tr>
+        <tr>
+          <th scope="row" class="text-nowrap">Description</th>
+          <td>{{ project.description}}</td>
+        </tr>
+        <tr>
+          <th scope="row" class="text-nowrap">Date Request Submitted:</th>
+          <td>{{ project.created|date:"M-d-Y" }}</td>
+        </tr>
+        <tr>
+          <th scope="row" class="text-nowrap">Project Type:</th>
+          <td>{{ project.type.name }}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+<form method="post">
+    {% csrf_token %}
+    {{form|crispy}}
+    <input class="btn btn-primary" type="submit" value="Email" />
+    <a class="btn btn-secondary" href="{% url 'project-review-list' %}" role="button">Cancel</a>
+</form>
+
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-admin").addClass("active");
+  $("#navbar-project-reviews").addClass("active");
+</script>
+{% endblock %}

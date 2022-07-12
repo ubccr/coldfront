@@ -1,3 +1,4 @@
+import os
 import environ
 from split_settings.tools import optional, include
 from coldfront.config.env import ENV, PROJECT_ROOT
@@ -9,6 +10,7 @@ coldfront_configs = [
     'auth.py',
     'logging.py',
     'core.py',
+    'plugins/cas_login.py',
 ]
 
 if ENV.bool('EMAIL_ENABLED', default=False):
@@ -24,6 +26,8 @@ plugin_configs = {
     'PLUGIN_AUTH_OIDC': 'plugins/openid.py',
     'PLUGIN_AUTH_LDAP': 'plugins/ldap.py',
     'PLUGIN_LDAP_USER_SEARCH': 'plugins/ldap_user_search.py',
+    'PLUGIN_LDAP_USER_INFO': 'plugins/ldap_user_info.py',
+    'PLUGIN_CAS': 'plugins/cas_login.py',
 }
 
 # This allows plugins to be enabled via environment variables. Can alternatively
