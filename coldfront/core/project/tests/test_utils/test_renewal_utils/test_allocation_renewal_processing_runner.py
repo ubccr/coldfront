@@ -1,6 +1,5 @@
 from coldfront.api.statistics.utils import create_user_project_allocation
 from coldfront.core.allocation.models import Allocation
-from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AllocationAttributeUsage
 from coldfront.core.allocation.models import AllocationPeriod
@@ -17,12 +16,13 @@ from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
-from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.tests.test_utils.test_renewal_utils.utils import TestRunnerMixinBase
 from coldfront.core.project.utils_.new_project_utils import SavioProjectProcessingRunner
 from coldfront.core.project.utils_.renewal_utils import AllocationRenewalProcessingRunner
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.project.utils_.renewal_utils import get_next_allowance_year_period
+from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.user.models import UserProfile
@@ -774,6 +774,8 @@ class TestFutureRequestsUpdateMixin(object):
             name=project_name,
             title=project_name,
             status=ProjectStatusChoice.objects.get(name='Active'))
+        computing_allowance = ComputingAllowanceInterface(
+            ).allowance_from_project(self.different_project)
 
         allocation_period = get_next_allowance_year_period()
         approved_status = AllocationRenewalRequestStatusChoice.objects.get(
@@ -782,6 +784,7 @@ class TestFutureRequestsUpdateMixin(object):
         return AllocationRenewalRequest.objects.create(
             requester=request.requester,
             pi=request.pi,
+            computing_allowance=computing_allowance,
             allocation_period=allocation_period,
             status=approved_status,
             pre_project=request.pre_project,
@@ -810,10 +813,16 @@ class TestFutureRequestsUpdateMixin(object):
         conditions for being updated are not updated."""
         request = self.request_obj
 
+        computing_allowance_interface = ComputingAllowanceInterface()
+        allowance_name = BRCAllowances.FCA
+        project_name_prefix = computing_allowance_interface.code_from_name(
+            allowance_name)
+
         future_requests = []
         for i in range(4):
             future_requests.append(
-                self.create_different_project_and_request(f'fc_different_{i}'))
+                self.create_different_project_and_request(
+                    f'{project_name_prefix}different_{i}'))
 
         # The first request has a 'Complete' or 'Denied' status.
         future_requests[0].status = \
@@ -824,9 +833,12 @@ class TestFutureRequestsUpdateMixin(object):
         future_requests[1].allocation_period = \
             get_current_allowance_year_period()
         future_requests[1].save()
-        # The third request has a different allocation type.
+        # The third request has a different allowance type.
+        other_project_name_prefix = \
+            computing_allowance_interface.code_from_name(BRCAllowances.ICA)
         future_requests[2].pre_project.name = (
-            f'ic_{future_requests[2].pre_project.name}')
+            f'{other_project_name_prefix}'
+            f'{future_requests[2].pre_project.name}')
         future_requests[2].pre_project.save()
         # The fourth request has a different PI.
         future_requests[3].pi = future_requests[3].requester
@@ -908,7 +920,7 @@ class TestFutureRequestsUpdateMixin(object):
         current_date = display_time_zone_current_date()
         self.assertGreater(
             future_request.allocation_period.start_date, current_date)
-        # The future request has the same allocation type as this one.
+        # The future request has the same allowance type as this one.
         self.assertEqual(
             future_request.pre_project.name[3:], request.pre_project.name[3:])
         # The future request has the same PI as this one.

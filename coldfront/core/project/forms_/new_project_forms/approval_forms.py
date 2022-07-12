@@ -27,10 +27,11 @@ class SavioProjectReviewSetupForm(forms.Form):
             'Update the name of the project, in case it needed to be '
             'changed. It must begin with the correct prefix.'),
         label='Final Name',
-        max_length=len('fc_') + 12,
+        # TODO: Project prefix names are assumed to have 3 characters.
+        max_length=3 + 12,
         required=True,
         validators=[
-            MinLengthValidator(len('fc_') + 4),
+            MinLengthValidator(3 + 4),
             RegexValidator(
                 r'^[0-9a-z_]+$',
                 message=(

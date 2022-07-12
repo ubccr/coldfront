@@ -194,8 +194,10 @@ class TestSavioProjectRequestDetailView(TestBase):
         """Test that a POST request for a new project request (Condo)
         with a null AllocationPeriod is both approved and processed."""
         computing_allowance = Resource.objects.get(name=BRCAllowances.CO)
+        project_name_prefix = self.interface.code_from_name(
+            computing_allowance.name)
 
-        self.project.name = f'co_{self.project.name[3:]}'
+        self.project.name = f'{project_name_prefix}{self.project.name[3:]}'
         self.project.save()
         self.new_project_request.allocation_type = \
             self.interface.name_short_from_name(computing_allowance.name)
@@ -266,8 +268,10 @@ class TestSavioProjectRequestDetailView(TestBase):
         """Test that a POST request for a new project request (Recharge)
         with a null AllocationPeriod is both approved and processed."""
         computing_allowance = Resource.objects.get(name=BRCAllowances.RECHARGE)
+        project_name_prefix = self.interface.code_from_name(
+            computing_allowance.name)
 
-        self.project.name = f'ac_{self.project.name[3:]}'
+        self.project.name = f'{project_name_prefix}{self.project.name[3:]}'
         self.project.save()
         self.new_project_request.allocation_type = \
             self.interface.name_short_from_name(computing_allowance.name)

@@ -585,6 +585,8 @@ class AllocationRenewalRunnerBase(object):
     def __init__(self, request_obj, *args, **kwargs):
         self.request_obj = request_obj
         self.current_display_tz_date = display_time_zone_current_date()
+        self.computing_allowance_interface = ComputingAllowanceInterface()
+        self.computing_allowance = self.request_obj.computing_allowance
 
     def run(self):
         raise NotImplementedError('This method is not implemented.')
@@ -1094,7 +1096,7 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
 
     def update_pre_projects_of_future_period_requests(self):
         """Update the pre_project fields of any 'Under Review',
-        same-allocation-type AllocationRenewalRequests under future
+        same-allowance-type AllocationRenewalRequests under future
         AllocationPeriods and under this request's PI to this request's
         post_project.
 
@@ -1108,20 +1110,17 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
             - When R2 is processed, the PI must be demoted on Project B,
               not Project A, before being promoted on Project C.
 
-        Warning: This only applies to pooling-eligible allocation types.
+        Warning: This only applies to pooling-eligible allowance types.
         """
         request_pk = self.request_obj.pk
         pi = self.request_obj.pi
         post_project = self.request_obj.post_project
 
-        # TODO: Set this dynamically when supporting other types.
-        allocation_type = 'fc_'
-
         future_period_requests = AllocationRenewalRequest.objects.filter(
             ~Q(pk=request_pk) &
             ~Q(status__name__in=['Complete', 'Denied']) &
+            Q(computing_allowance=self.computing_allowance) &
             Q(allocation_period__start_date__gt=self.current_display_tz_date) &
-            Q(pre_project__name__startswith=allocation_type) &
             Q(pi=pi) &
             ~Q(pre_project=post_project))
         if future_period_requests.exists():
@@ -1129,7 +1128,8 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
                 f'Updated AllocationRenewalRequest {{0}}\'s pre_project from '
                 f'{{1}} to {post_project.pk} since AllocationRenewalRequest '
                 f'{request_pk} updated PI {pi.username}\'s active '
-                f'{allocation_type} Project to {post_project.name}.')
+                f'"{self.computing_allowance.name}" Project to '
+                f'{post_project.name}.')
             for future_period_request in future_period_requests:
                 tmp_pre_project = future_period_request.pre_project
                 future_period_request.pre_project = post_project

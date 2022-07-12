@@ -6,7 +6,6 @@ from unittest.mock import patch
 import re
 import random
 
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.core.management.base import CommandError
@@ -1147,11 +1146,16 @@ class TestStartAllocationPeriod(TestBase):
                 self.assertNotIn(message, output)
             self.assertFalse(error)
 
+        project_name_prefix = \
+            self.computing_allowance_interface.code_from_name(
+                BRCAllowances.FCA)
+
         allocation_period = self.current_allowance_year
         active_status = ProjectStatusChoice.objects.get(name='Active')
         resource = Resource.objects.get(name='Savio Compute')
 
-        fc_existing = Project.objects.get(name='fc_existing')
+        fc_existing = Project.objects.get(
+            name=f'{project_name_prefix}existing')
         accounting_allocation_objects = get_accounting_allocation_objects(
             fc_existing)
         allocation = accounting_allocation_objects.allocation
@@ -1162,7 +1166,8 @@ class TestStartAllocationPeriod(TestBase):
             allocation.end_date < allocation_period.start_date)
         # The Project's name must begin with a prefix matching those associated
         # with the AllocationPeriod.
-        self.assertTrue(fc_existing.name.startswith('fc_'))
+
+        self.assertTrue(fc_existing.name.startswith(project_name_prefix))
         # The Project's status must be 'Active'.
         self.assertEqual(fc_existing.status, active_status)
         # The Project's Allocation must be for the 'Savio Compute' Resource.
