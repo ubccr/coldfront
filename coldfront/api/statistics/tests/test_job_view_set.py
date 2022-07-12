@@ -547,7 +547,7 @@ class TestJobSerializer(TestJobBase):
     def test_no_active_compute_allocation(self):
         """Test that requests wherein the account has no active compute
         allocation fail."""
-        message = 'Account test_project has no active compute allocation.'
+        message = 'Account fc_project has no active compute allocation.'
         # The allocation is expired.
         self.allocation.status = AllocationStatusChoice.objects.get(
             name='Expired')
@@ -569,7 +569,7 @@ class TestJobSerializer(TestJobBase):
         of the account's compute allocation fail."""
         message = (
             f'User user0 is not an active member of the compute allocation '
-            f'for account test_project.')
+            f'for account fc_project.')
         # The allocation user has been removed from the allocation.
         self.allocation_user.status = AllocationUserStatusChoice.objects.get(
             name='Removed')
