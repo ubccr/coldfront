@@ -2,7 +2,8 @@ from django.db import transaction
 from flags.state import flag_enabled
 
 from coldfront.api.statistics.utils import get_accounting_allocation_objects
-from coldfront.core.allocation.models import Allocation
+from coldfront.core.allocation.models import Allocation, \
+    ClusterAccessRequestStatusChoice, ClusterAccessRequest
 from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.models import AllocationUserAttribute
@@ -15,7 +16,8 @@ from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserStatusChoice
-from coldfront.core.utils.common import import_from_settings
+from coldfront.core.utils.common import import_from_settings, \
+    utc_now_offset_aware
 from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import project_detail_url
 from coldfront.core.utils.mail import send_email_template
@@ -374,14 +376,29 @@ class ProjectClusterAccessRequestRunner(object):
             - AllocationAttributeType.DoesNotExist
             - AllocationAttributeType.MultipleObjectsReturned
         """
-        type_name = 'Cluster Account Status'
-        value = 'Pending - Add'
-        self.allocation_user_attribute_obj = \
-            set_allocation_user_attribute_value(
-                self.allocation_user_obj, type_name, value)
+        # type_name = 'Cluster Account Status'
+        # value = 'Pending - Add'
+        # self.allocation_user_attribute_obj = \
+        #     set_allocation_user_attribute_value(
+        #         self.allocation_user_obj, type_name, value)
+
+        pending_status = ClusterAccessRequestStatusChoice.objects.get(name='Pending')
+
+        request = ClusterAccessRequest.objects.create(
+            allocation_user=self.allocation_user_obj,
+            status=pending_status,
+            request_time=utc_now_offset_aware(),
+        )
+        # TODO: Add billing activity and host user
+
+        # message = (
+        #     f'Created or updated a "Cluster Account Status" to be pending for '
+        #     f'User {self.user_obj.pk} and Project {self.project_obj.pk}.')
+
         message = (
-            f'Created or updated a "Cluster Account Status" to be pending for '
-            f'User {self.user_obj.pk} and Project {self.project_obj.pk}.')
+            f'Created a cluster access request for user '
+            f'{self.user_obj.username} and Project {self.project_obj.name}.'
+        )
         self.logger.info(message)
 
     def send_notification_email_to_cluster_admins(self):
