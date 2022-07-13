@@ -584,7 +584,11 @@ Project Detail
             {% for message in project.projectusermessage_set.all %}
             <tr>
               <td>{{ message.message }}</td>
-              <td>{{ message.author.first_name }} {{ message.author.last_name }}</td>
+              {% if message.is_private %}
+                <td>{{ message.author.first_name }} {{ message.author.last_name }} (Private)</td>
+              {% else %}
+                <td>{{ message.author.first_name }} {{ message.author.last_name }}</td>
+              {% endif %}
               <td>{{ message.modified }}</td>
             </tr>
             {% endfor %}
