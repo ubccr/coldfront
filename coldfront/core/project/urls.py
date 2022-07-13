@@ -36,4 +36,6 @@ urlpatterns = [
      path('project-review-info/<int:pk>/', project_views.ProjectReviewInfoView.as_view(),
           name='project-review-info'),
      path('denied/', project_views.ProjectDeniedListView.as_view(), name='project-denied-list'),
+     path('<int:pk>/projectnote/add',
+         project_views.ProjectNoteCreateView.as_view(), name='project-note-add')
 ]

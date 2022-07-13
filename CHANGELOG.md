@@ -1,5 +1,23 @@
 # ColdFront Changelog
 
+## [1.1.3] - 2022-07-07
+
+- Fix erronous allocation change request error message [#428](https://github.com/ubccr/coldfront/issues/428)
+- Upgrade bootstrap and move to static assets [#405](https://github.com/ubccr/coldfront/issues/405) 
+- Allow changes on allocations in the test dataset
+- Add new ColdFront logos and branding [#431](https://github.com/ubccr/coldfront/pull/431)
+
+## [1.1.2] - 2022-07-06
+
+- Fix "Select all" toggle for allocations [#396](https://github.com/ubccr/coldfront/issues/396) 
+- Fixed allocation expiration task bug [#401](https://github.com/ubccr/coldfront/pull/401)
+- Fix new user sorting [#395](https://github.com/ubccr/coldfront/issues/395) 
+- Fix allocation approved status [#379](https://github.com/ubccr/coldfront/issues/379) 
+- Add notes on project detail page [#194](https://github.com/ubccr/coldfront/issues/194) 
+- Add partial match for attribute search  [#421](https://github.com/ubccr/coldfront/pull/421)
+- Fix miscellaneous config issues [#414](https://github.com/ubccr/coldfront/issues/414) 
+- Upgrade to Django 3.2.14
+
 ## [1.1.1] - 2022-04-26
 
 - Fix grant export to only download those found under search [#222](https://github.com/ubccr/coldfront/issues/222) 
@@ -89,4 +107,6 @@
 [1.0.4]: https://github.com/ubccr/coldfront/releases/tag/v1.0.4
 [1.1.0]: https://github.com/ubccr/coldfront/releases/tag/v1.1.0
 [1.1.1]: https://github.com/ubccr/coldfront/releases/tag/v1.1.1
-[Unreleased]: https://github.com/ubccr/coldfront/compare/v1.1.1...HEAD
+[1.1.2]: https://github.com/ubccr/coldfront/releases/tag/v1.1.2
+[1.1.3]: https://github.com/ubccr/coldfront/releases/tag/v1.1.3
+[Unreleased]: https://github.com/ubccr/coldfront/compare/v1.1.3...HEAD

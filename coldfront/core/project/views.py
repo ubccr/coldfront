@@ -4,6 +4,7 @@ import logging
 
 from django.conf import settings
 from django.contrib import messages
+from django import forms
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -43,7 +44,8 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectReviewStatusChoice,
                                            ProjectStatusChoice, ProjectUser,
                                            ProjectUserRoleChoice,
-                                           ProjectUserStatusChoice)
+                                           ProjectUserStatusChoice,
+                                           ProjectUserMessage)
 from coldfront.core.publication.models import Publication
 from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.user.forms import UserSearchForm
@@ -1480,8 +1482,12 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                         project_user_obj.save()
 
             if remove_users_count:
-                messages.success(
-                    request, 'Removed {} users from project.'.format(remove_users_count))
+              if remove_users_count == 1:
+                  messages.success(
+                      request, 'Removed {} user from project.'.format(remove_users_count))
+              else:
+                  messages.success(
+                      request, 'Removed {} users from project.'.format(remove_users_count))
 
             for resource_name, users in resources_requiring_user_request.items():
                 messages.warning(
@@ -2421,3 +2427,45 @@ class ProjectRequestAccessEmailView(LoginRequiredMixin, View):
             return HttpResponseForbidden(reverse('project-list'))
 
         return HttpResponseRedirect(reverse('project-list'))
+
+
+class ProjectNoteCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    model = ProjectUserMessage
+    fields = '__all__'
+    template_name = 'project/project_note_create.html'
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+
+        if self.request.user.is_superuser:
+            return True
+        else:
+            messages.error(
+                self.request, 'You do not have permission to add allocation notes.')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        pk = self.kwargs.get('pk')
+        project_obj = get_object_or_404(Project, pk=pk)
+        context['project'] = project_obj
+        return context
+
+    def get_initial(self):
+        initial = super().get_initial()
+        pk = self.kwargs.get('pk')
+        project_obj = get_object_or_404(Project, pk=pk)
+        author = self.request.user
+        initial['project'] = project_obj
+        initial['author'] = author
+        return initial
+
+    def get_form(self, form_class=None):
+        """Return an instance of the form to be used in this view."""
+        form = super().get_form(form_class)
+        form.fields['project'].widget = forms.HiddenInput()
+        form.fields['author'].widget = forms.HiddenInput()
+        form.order_fields([ 'project', 'author', 'message', 'is_private' ])
+        return form
+
+    def get_success_url(self):
+        return reverse('project-detail', kwargs={'pk': self.kwargs.get('pk')})

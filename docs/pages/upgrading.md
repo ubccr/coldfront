@@ -3,6 +3,39 @@
 This document describes upgrading ColdFront. New releases of ColdFront may
 introduce breaking changes so please refer to this document before upgrading.
 
+## v1.1.3
+
+This release changes some css/javascript assets to be hosted statically instead
+of using a CDN. We also made some minor modifications to the default template.
+This will require running collectstatic. Before upgrading, be sure to backup
+your database and verify your custom template changes as they may need
+updating. 
+
+To upgrade via pip, following these steps:
+
+```
+$ source /path/to/your/venv/bin/activate
+$ pip install --upgrade coldfront
+$ coldfront migrate
+$ coldfront collectstatic
+```
+
+## v1.1.2
+
+This release includes a new notes field on projects which will require database
+migrations. See [PR #403](https://github.com/ubccr/coldfront/pull/403) for
+details. Before upgrading, be sure to backup your database and any custom
+changes. 
+
+To upgrade via pip, following these steps:
+
+```
+$ source /path/to/your/venv/bin/activate
+$ pip install --upgrade coldfront
+$ coldfront migrate
+$ coldfront collectstatic
+```
+
 ## v1.1.0
 
 This release includes a new allocation change workflow along with a major
