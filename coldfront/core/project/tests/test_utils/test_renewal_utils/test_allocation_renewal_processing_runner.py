@@ -991,6 +991,7 @@ class TestUnpooledToUnpooled(TestFutureRequestsUpdateMixin, TestRunnerMixin,
             status=AllocationRenewalRequestStatusChoice.objects.get(
                 name='Approved'),
             pi=self.pi0,
+            computing_allowance=self.computing_allowance,
             pre_project=self.unpooled_project0,
             post_project=self.unpooled_project0)
 
@@ -1013,6 +1014,7 @@ class TestUnpooledToPooled(TestFutureRequestsUpdateMixin, TestRunnerMixin,
             status=AllocationRenewalRequestStatusChoice.objects.get(
                 name='Approved'),
             pi=self.pi0,
+            computing_allowance=self.computing_allowance,
             pre_project=self.unpooled_project0,
             post_project=self.pooled_project1)
 
@@ -1035,6 +1037,7 @@ class TestPooledToPooledSame(TestFutureRequestsUpdateMixin, TestRunnerMixin,
             status=AllocationRenewalRequestStatusChoice.objects.get(
                 name='Approved'),
             pi=self.pi0,
+            computing_allowance=self.computing_allowance,
             pre_project=self.pooled_project0,
             post_project=self.pooled_project0)
 
@@ -1058,6 +1061,7 @@ class TestPooledToPooledDifferent(TestFutureRequestsUpdateMixin,
             status=AllocationRenewalRequestStatusChoice.objects.get(
                 name='Approved'),
             pi=self.pi0,
+            computing_allowance=self.computing_allowance,
             pre_project=self.pooled_project0,
             post_project=self.pooled_project1)
 
@@ -1080,6 +1084,7 @@ class TestPooledToUnpooledOld(TestFutureRequestsUpdateMixin,
             status=AllocationRenewalRequestStatusChoice.objects.get(
                 name='Approved'),
             pi=self.pi0,
+            computing_allowance=self.computing_allowance,
             pre_project=self.pooled_project0,
             post_project=self.unpooled_project0)
 
@@ -1104,6 +1109,7 @@ class TestPooledToUnpooledNew(TestFutureRequestsUpdateMixin,
             status=AllocationRenewalRequestStatusChoice.objects.get(
                 name='Approved'),
             pi=self.pi0,
+            computing_allowance=self.computing_allowance,
             pre_project=self.pooled_project0,
             post_project=new_project_request.project,
             new_project_request=new_project_request)

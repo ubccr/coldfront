@@ -164,6 +164,9 @@ class TestRunnerMixinBase(object):
         # This should be set by the subclasses.
         self.request_obj = None
 
+        # TODO: Set this dynamically when supporting other types.
+        self.computing_allowance = Resource.objects.get(name=BRCAllowances.FCA)
+
     def assert_allocation_service_units_value(self, allocation, expected):
         """Assert that the given Allocation has an AllocationAttribute
         with type 'Service Units' and the given expected value."""
@@ -182,14 +185,16 @@ class TestRunnerMixinBase(object):
         actual = self.request_obj.get_pooling_preference_case()
         self.assertEqual(expected, actual)
 
-    def create_request(self, status, pi=None, pre_project=None,
-                       post_project=None, new_project_request=None):
+    def create_request(self, status, pi=None, computing_allowance=None,
+                       pre_project=None, post_project=None,
+                       new_project_request=None):
         """Create and return an AllocationRenewalRequest with the given
         parameters."""
-        assert pi and pre_project and post_project
+        assert pi and computing_allowance and pre_project and post_project
         kwargs = {
             'requester': self.requester,
             'pi': pi,
+            'computing_allowance': computing_allowance,
             'allocation_period': self.allocation_period,
             'status': status,
             'pre_project': pre_project,
