@@ -1,5 +1,6 @@
 from coldfront.api.resource.serializers import ResourceSerializer
-from coldfront.core.allocation.models import Allocation
+from coldfront.core.allocation.models import Allocation, \
+    ClusterAccessRequestStatusChoice, ClusterAccessRequest
 from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AllocationAttributeUsage
@@ -118,3 +119,36 @@ class HistoricalAllocationUserAttributeSerializer(serializers.ModelSerializer):
             'history_change_reason', 'history_type',
             'allocation_attribute_type', 'allocation', 'allocation_user',
             'history_user',)
+
+
+class ClusterAccessRequestSerializer(serializers.ModelSerializer):
+    """A serializer for the ClusterAccessRequest model."""
+    status = serializers.SlugRelatedField(
+        slug_field='name',
+        queryset=ClusterAccessRequestStatusChoice.objects.all())
+
+    host_user = serializers.SlugRelatedField(
+        slug_field='username',
+        queryset=User.objects.all(),
+        allowed_null=True,
+        required=False,
+        read_only=True
+    )
+
+    billing_activity = serializers.CharField(source='billing_activity.full_id',
+                                             allow_null=True,
+                                             required=False,
+                                             read_only=True)
+
+    allocation_user = AllocationUserSerializer(required=True,
+                                               allow_null=False,
+                                               read_only=True)
+
+    class Meta:
+        model = ClusterAccessRequest
+        fields = (
+            'id', 'allocation_user', 'status', 'completion_time', 'host_user', 'billing_activity')
+        extra_kwargs = {
+            'id': {'read_only': True},
+            'completion_time': {'required': False, 'allow_null': True},
+        }

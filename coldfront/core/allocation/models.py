@@ -17,6 +17,7 @@ from django.utils.module_loading import import_string
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
+from coldfront.core.billing.models import BillingActivity
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.resource.models import Resource
@@ -669,3 +670,25 @@ class SecureDirRemoveUserRequest(TimeStampedModel):
     completion_time = models.DateTimeField(null=True)
     status = models.ForeignKey(
         SecureDirRemoveUserRequestStatusChoice, on_delete=models.CASCADE)
+
+
+class ClusterAccessRequestStatusChoice(TimeStampedModel):
+    name = models.CharField(max_length=64)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name', ]
+
+
+class ClusterAccessRequest(TimeStampedModel):
+    allocation_user = models.ForeignKey(AllocationUser, on_delete=models.CASCADE)
+    status = models.ForeignKey(ClusterAccessRequestStatusChoice, on_delete=models.CASCADE)
+
+    request_time = models.DateTimeField(
+        null=True, blank=True, default=timezone.now)
+    completion_time = models.DateTimeField(null=True, blank=True)
+
+    host_user = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
+    billing_activity = models.ForeignKey(BillingActivity, null=True, blank=True, on_delete=models.CASCADE)

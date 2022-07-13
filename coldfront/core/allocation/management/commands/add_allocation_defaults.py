@@ -5,7 +5,8 @@ from coldfront.core.allocation.models import (AttributeType,
                                               AllocationAttributeType,
                                               AllocationRenewalRequestStatusChoice,
                                               AllocationStatusChoice,
-                                              AllocationUserStatusChoice)
+                                              AllocationUserStatusChoice,
+                                              ClusterAccessRequestStatusChoice)
 
 from flags.state import flag_enabled
 
@@ -88,4 +89,13 @@ class Command(BaseCommand):
         ]
         for choice in choices:
             AllocationAdditionRequestStatusChoice.objects.get_or_create(
+                name=choice)
+
+        choices = [
+            'Denied',
+            'Active',
+            'Pending - Add'
+        ]
+        for choice in choices:
+            ClusterAccessRequestStatusChoice.objects.get_or_create(
                 name=choice)
