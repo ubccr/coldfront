@@ -152,6 +152,7 @@ class TestUnpooledToUnpooled(TestRunnerMixin, TestCase):
         self.request_obj = self.create_request(
             AllocationRenewalRequestStatusChoice.objects.get(
                 name='Under Review'),
+            computing_allowance=self.computing_allowance,
             pi=self.pi0,
             pre_project=self.unpooled_project0,
             post_project=self.unpooled_project0)
@@ -173,6 +174,7 @@ class TestUnpooledToPooled(TestRunnerMixin, TestCase):
         self.request_obj = self.create_request(
             AllocationRenewalRequestStatusChoice.objects.get(
                 name='Under Review'),
+            computing_allowance=self.computing_allowance,
             pi=self.pi0,
             pre_project=self.unpooled_project0,
             post_project=self.pooled_project1)
@@ -194,6 +196,7 @@ class TestPooledToPooledSame(TestRunnerMixin, TestCase):
         self.request_obj = self.create_request(
             AllocationRenewalRequestStatusChoice.objects.get(
                 name='Under Review'),
+            computing_allowance=self.computing_allowance,
             pi=self.pi0,
             pre_project=self.pooled_project0,
             post_project=self.pooled_project0)
@@ -215,6 +218,7 @@ class TestPooledToPooledDifferent(TestRunnerMixin, TestCase):
         self.request_obj = self.create_request(
             AllocationRenewalRequestStatusChoice.objects.get(
                 name='Under Review'),
+            computing_allowance=self.computing_allowance,
             pi=self.pi0,
             pre_project=self.pooled_project0,
             post_project=self.pooled_project1)
@@ -236,6 +240,7 @@ class TestPooledToUnpooledOld(TestRunnerMixin, TestCase):
         self.request_obj = self.create_request(
             AllocationRenewalRequestStatusChoice.objects.get(
                 name='Under Review'),
+            computing_allowance=self.computing_allowance,
             pi=self.pi0,
             pre_project=self.pooled_project0,
             post_project=self.unpooled_project0)
@@ -259,6 +264,7 @@ class TestPooledToUnpooledNew(TestRunnerMixin, TestCase):
         self.request_obj = self.create_request(
             AllocationRenewalRequestStatusChoice.objects.get(
                 name='Under Review'),
+            computing_allowance=self.computing_allowance,
             pi=self.pi0,
             pre_project=self.pooled_project0,
             post_project=new_project_request.project,
