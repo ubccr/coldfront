@@ -930,9 +930,11 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                         self.logger.error(message)
                         self.logger.exception(e)
 
-                    # If the Project is a Vector project, automatically add the
-                    # User to the designated Savio project for Vector users.
-                    if project_obj.name.startswith('vector_'):
+                    # On BRC only, if the Project is a Vector project,
+                    # automatically add the User to the designated Savio
+                    # project for Vector users.
+                    if (flag_enabled('BRC_ONLY') and
+                            project_obj.name.startswith('vector_')):
                         try:
                             add_vector_user_to_designated_savio_project(
                                 user_obj)

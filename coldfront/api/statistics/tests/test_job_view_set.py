@@ -20,6 +20,7 @@ from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
+from coldfront.core.resource.utils import get_primary_compute_resource
 from coldfront.core.statistics.models import Job
 from coldfront.core.user.models import ExpiringToken
 from coldfront.core.user.models import UserProfile
@@ -553,12 +554,11 @@ class TestJobSerializer(TestJobBase):
             name='Expired')
         self.allocation.save()
         self.assert_error_message(self.data, message)
-        # The allocation is active, but does not have Savio Compute as a
-        # resource.
+        # The allocation is active, but is not to the primary compute resource.
         self.allocation.status = AllocationStatusChoice.objects.get(
             name='Active')
-        self.allocation.resources.all().delete()
-        self.allocation.save()
+        resource = get_primary_compute_resource()
+        self.allocation.resources.remove(resource)
         self.assert_error_message(self.data, message)
         # The allocation does not exist.
         self.allocation.delete()

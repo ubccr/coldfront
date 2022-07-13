@@ -29,6 +29,7 @@ from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils import ProjectClusterAccessRequestRunner
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils import get_primary_compute_resource
 from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.user.models import UserProfile
@@ -220,7 +221,7 @@ class TestRunnerMixinBase(object):
         new_allocation_status = AllocationStatusChoice.objects.get(name='New')
         allocation = Allocation.objects.create(
             project=new_project, status=new_allocation_status)
-        resource = Resource.objects.get(name='Savio Compute')
+        resource = get_primary_compute_resource()
         allocation.resources.add(resource)
         allocation.save()
 

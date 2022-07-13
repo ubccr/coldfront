@@ -1,10 +1,9 @@
 from coldfront.api.statistics.tests.test_job_base import TestJobBase
-from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationAttributeUsage
 from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.models import AllocationUserAttributeUsage
 from coldfront.core.allocation.models import AllocationUserStatusChoice
-from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils import get_primary_compute_resource
 from decimal import ConversionSyntax
 from decimal import Decimal
 from django.conf import settings
@@ -96,12 +95,11 @@ class TestCanSubmitJobView(TestJobBase):
             name='Expired')
         self.allocation.save()
         self.assert_result('1.00', '0', 'fc_project', 200, False, message)
-        # The allocation is active, but does not have Savio Compute as a
-        # resource.
+        # The allocation is active, but is not to the primary compute resource.
         self.allocation.status = AllocationStatusChoice.objects.get(
             name='Active')
-        self.allocation.resources.all().delete()
-        self.allocation.save()
+        resource = get_primary_compute_resource()
+        self.allocation.resources.remove(resource)
         self.assert_result('1.00', '0', 'fc_project', 200, False, message)
         # The allocation does not exist.
         self.allocation.delete()

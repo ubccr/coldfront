@@ -27,6 +27,7 @@ from coldfront.core.allocation.models import (AllocationAttributeType,
 from coldfront.core.allocation.signals import allocation_activate_user
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils import get_primary_compute_resource_name
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import utc_now_offset_aware
@@ -159,7 +160,7 @@ def get_project_compute_resource_name(project_obj):
         elif project_obj.name.startswith('vector_'):
             resource_name = 'Vector Compute'
         else:
-            resource_name = 'Savio Compute'
+            resource_name = get_primary_compute_resource_name()
         return resource_name
     if flag_enabled('LRC_ONLY'):
         computing_allowance_interface = ComputingAllowanceInterface()
@@ -167,7 +168,7 @@ def get_project_compute_resource_name(project_obj):
             computing_allowance_interface.code_from_name(allowance.name)
             for allowance in computing_allowance_interface.allowances()])
         if project_obj.name.startswith(project_name_prefixes):
-            resource_name = 'LAWRENCIUM Compute'
+            resource_name = get_primary_compute_resource_name()
         else:
             # TODO: Verify this behavior.
             resource_name = f'{project_obj.name.upper()} Compute'

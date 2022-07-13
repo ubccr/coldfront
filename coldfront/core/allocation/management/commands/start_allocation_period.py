@@ -8,6 +8,7 @@ from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils import deactivate_project_and_allocation
 from coldfront.core.project.utils_.new_project_utils import SavioProjectProcessingRunner
 from coldfront.core.project.utils_.renewal_utils import AllocationRenewalProcessingRunner
+from coldfront.core.resource.utils import get_primary_compute_resource
 from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import add_argparse_dry_run_argument
@@ -153,13 +154,14 @@ class Command(BaseCommand):
         project_name_prefix = \
             self.computing_allowance_interface.code_from_name(
                 computing_allowance.name)
+        resource = get_primary_compute_resource()
         expired_project_pks = set(
             Allocation.objects.filter(
                 (Q(end_date__isnull=True) |
                  Q(end_date__lt=allocation_period.start_date)) &
                 Q(project__name__startswith=project_name_prefix) &
                 Q(project__status__name='Active') &
-                Q(resources__name='Savio Compute')
+                Q(resources=resource)
             ).values_list('project__pk', flat=True))
         return Project.objects.filter(pk__in=expired_project_pks)
 

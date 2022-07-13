@@ -36,6 +36,7 @@ from coldfront.core.project.utils_.renewal_utils import get_current_allowance_ye
 from coldfront.core.project.utils_.renewal_utils import get_previous_allowance_year_period
 from coldfront.core.project.utils_.renewal_utils import get_next_allowance_year_period
 from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils import get_primary_compute_resource
 from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import display_time_zone_current_date
@@ -734,7 +735,7 @@ class TestStartAllocationPeriod(TestBase):
         new_allocation_status = AllocationStatusChoice.objects.get(name='New')
         allocation = Allocation.objects.create(
             project=new_project, status=new_allocation_status)
-        resource = Resource.objects.get(name='Savio Compute')
+        resource = get_primary_compute_resource()
         allocation.resources.add(resource)
         allocation.save()
 
@@ -1152,7 +1153,7 @@ class TestStartAllocationPeriod(TestBase):
 
         allocation_period = self.current_allowance_year
         active_status = ProjectStatusChoice.objects.get(name='Active')
-        resource = Resource.objects.get(name='Savio Compute')
+        resource = get_primary_compute_resource()
 
         fc_existing = Project.objects.get(
             name=f'{project_name_prefix}existing')
@@ -1170,7 +1171,7 @@ class TestStartAllocationPeriod(TestBase):
         self.assertTrue(fc_existing.name.startswith(project_name_prefix))
         # The Project's status must be 'Active'.
         self.assertEqual(fc_existing.status, active_status)
-        # The Project's Allocation must be for the 'Savio Compute' Resource.
+        # The Project's Allocation must be for the primary compute Resource.
         self.assertIn(resource, allocation.resources.all())
 
         # A Project meeting all conditions should be deactivated.
@@ -1208,7 +1209,7 @@ class TestStartAllocationPeriod(TestBase):
 
         assert_message_in_command_output(True)
 
-        # Allocation not to 'Savio Compute' Resource
+        # Allocation not to primary compute Resource
         allocation.resources.remove(resource)
         assert_message_in_command_output(False)
         allocation.resources.add(resource)

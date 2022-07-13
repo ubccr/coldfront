@@ -24,6 +24,7 @@ from coldfront.core.project.utils_.renewal_utils import send_new_allocation_rene
 from coldfront.core.project.utils_.renewal_utils import send_new_allocation_renewal_request_pi_notification_email
 from coldfront.core.project.utils_.renewal_utils import send_new_allocation_renewal_request_pooling_notification_email
 from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils import get_primary_compute_resource
 from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
 from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
 from coldfront.core.resource.utils_.allowance_utils.constants import LRCAllowances
@@ -393,7 +394,7 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
         return form_data[step_number]
 
     def __handle_create_new_project(self, form_data):
-        """Create a new project and an allocation to the Savio Compute
+        """Create a new project and an allocation to the primary compute
         resource. This method should only be invoked if a new Project"""
         step_number = self.step_numbers_by_form_name['new_project_details']
         data = form_data[step_number]
@@ -411,10 +412,10 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
                 f'Project {data["name"]} unexpectedly already exists.')
             raise e
 
-        # Create an allocation to the "Savio Compute" resource.
+        # Create an allocation to the primary compute resource.
         status = AllocationStatusChoice.objects.get(name='New')
         allocation = Allocation.objects.create(project=project, status=status)
-        resource = Resource.objects.get(name='Savio Compute')
+        resource = get_primary_compute_resource()
         allocation.resources.add(resource)
         allocation.save()
 
