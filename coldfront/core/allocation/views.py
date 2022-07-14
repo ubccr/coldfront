@@ -681,6 +681,13 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 value=allocation_account
             )
 
+        allocation_attribute = AllocationAttribute.objects.create(
+                        allocation=allocation_obj,
+                        allocation_attribute_type = AllocationAttributeType.objects.get(pk=1),
+                        value=quantity
+                                                    ).save()
+        allocation_obj.set_usage("Storage Quota (TB)", 0)
+
         for linked_resource in resource_obj.linked_resources.all():
             allocation_obj.resources.add(linked_resource)
 
