@@ -28,13 +28,15 @@ from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import utc_now_offset_aware
-from datetime import date
 from datetime import timedelta
 from decimal import Decimal
 from django.conf import settings
 from django.core import mail
 from django.test import override_settings
 from django.test import TestCase
+
+
+TEST_PRIMARY_CLUSTER_NAME = 'Savio'
 
 
 class TestRunnerMixin(TestRunnerMixinBase):
@@ -979,6 +981,7 @@ class TestPIDemotionMixin(object):
         self.assertEqual(user_role, pi_project_user.role)
 
 
+@override_settings(PRIMARY_CLUSTER_NAME=TEST_PRIMARY_CLUSTER_NAME)
 class TestUnpooledToUnpooled(TestFutureRequestsUpdateMixin, TestRunnerMixin,
                              TestCase):
     """A class for testing the AllocationRenewalProcessingRunner in the
@@ -1002,6 +1005,7 @@ class TestUnpooledToUnpooled(TestFutureRequestsUpdateMixin, TestRunnerMixin,
             AllocationRenewalRequest.UNPOOLED_TO_UNPOOLED)
 
 
+@override_settings(PRIMARY_CLUSTER_NAME=TEST_PRIMARY_CLUSTER_NAME)
 class TestUnpooledToPooled(TestFutureRequestsUpdateMixin, TestRunnerMixin,
                            TestCase):
     """A class for testing the AllocationRenewalProcessingRunner in the
@@ -1025,6 +1029,7 @@ class TestUnpooledToPooled(TestFutureRequestsUpdateMixin, TestRunnerMixin,
             AllocationRenewalRequest.UNPOOLED_TO_POOLED)
 
 
+@override_settings(PRIMARY_CLUSTER_NAME=TEST_PRIMARY_CLUSTER_NAME)
 class TestPooledToPooledSame(TestFutureRequestsUpdateMixin, TestRunnerMixin,
                              TestCase):
     """A class for testing the AllocationRenewalProcessingRunner in the
@@ -1048,6 +1053,7 @@ class TestPooledToPooledSame(TestFutureRequestsUpdateMixin, TestRunnerMixin,
             AllocationRenewalRequest.POOLED_TO_POOLED_SAME)
 
 
+@override_settings(PRIMARY_CLUSTER_NAME=TEST_PRIMARY_CLUSTER_NAME)
 class TestPooledToPooledDifferent(TestFutureRequestsUpdateMixin,
                                   TestPIDemotionMixin, TestRunnerMixin,
                                   TestCase):
@@ -1072,6 +1078,7 @@ class TestPooledToPooledDifferent(TestFutureRequestsUpdateMixin,
             AllocationRenewalRequest.POOLED_TO_POOLED_DIFFERENT)
 
 
+@override_settings(PRIMARY_CLUSTER_NAME=TEST_PRIMARY_CLUSTER_NAME)
 class TestPooledToUnpooledOld(TestFutureRequestsUpdateMixin,
                               TestPIDemotionMixin, TestRunnerMixin, TestCase):
     """A class for testing the AllocationRenewalProcessingRunner in the
@@ -1095,6 +1102,7 @@ class TestPooledToUnpooledOld(TestFutureRequestsUpdateMixin,
             AllocationRenewalRequest.POOLED_TO_UNPOOLED_OLD)
 
 
+@override_settings(PRIMARY_CLUSTER_NAME=TEST_PRIMARY_CLUSTER_NAME)
 class TestPooledToUnpooledNew(TestFutureRequestsUpdateMixin,
                               TestPIDemotionMixin, TestRunnerMixin, TestCase):
     """A class for testing the AllocationRenewalProcessingRunner in the

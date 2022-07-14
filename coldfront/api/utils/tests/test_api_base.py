@@ -22,7 +22,7 @@ FLAGS_COPY = deepcopy(settings.FLAGS)
 FLAGS_COPY.pop('LRC_ONLY')
 
 
-@override_settings(FLAGS=FLAGS_COPY)
+@override_settings(FLAGS=FLAGS_COPY, PRIMARY_CLUSTER_NAME='Savio')
 class TestAPIBase(TestCase):
     """A base class for testing the API."""
 

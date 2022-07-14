@@ -63,7 +63,7 @@ class TestRunnerMixinBase(object):
             'create_staff_group',
         ]
         sys.stdout = open(os.devnull, 'w')
-        with override_settings(FLAGS=FLAGS_COPY):
+        with override_settings(FLAGS=FLAGS_COPY, PRIMARY_CLUSTER_NAME='Savio'):
             for command in commands:
                 call_command(command, stdout=out, stderr=err)
         sys.stdout = sys.__stdout__

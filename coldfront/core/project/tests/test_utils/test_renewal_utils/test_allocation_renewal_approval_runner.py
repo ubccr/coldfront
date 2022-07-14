@@ -13,6 +13,9 @@ from django.test import override_settings
 from django.test import TestCase
 
 
+TEST_PRIMARY_CLUSTER_NAME = 'Savio'
+
+
 class TestRunnerMixin(TestRunnerMixinBase):
     """A mixin for testing AllocationRenewalApprovalRunner."""
 
@@ -142,6 +145,7 @@ class TestRunnerMixin(TestRunnerMixinBase):
         self.assertTrue(pre_time <= approval_time <= post_time)
 
 
+@override_settings(PRIMARY_CLUSTER_NAME=TEST_PRIMARY_CLUSTER_NAME)
 class TestUnpooledToUnpooled(TestRunnerMixin, TestCase):
     """A class for testing the AllocationRenewalApprovalRunner in the
     'unpooled_to_unpooled' case."""
@@ -164,6 +168,7 @@ class TestUnpooledToUnpooled(TestRunnerMixin, TestCase):
             AllocationRenewalRequest.UNPOOLED_TO_UNPOOLED)
 
 
+@override_settings(PRIMARY_CLUSTER_NAME=TEST_PRIMARY_CLUSTER_NAME)
 class TestUnpooledToPooled(TestRunnerMixin, TestCase):
     """A class for testing the AllocationRenewalApprovalRunner in the
     'unpooled_to_pooled' case."""
@@ -186,6 +191,7 @@ class TestUnpooledToPooled(TestRunnerMixin, TestCase):
             AllocationRenewalRequest.UNPOOLED_TO_POOLED)
 
 
+@override_settings(PRIMARY_CLUSTER_NAME=TEST_PRIMARY_CLUSTER_NAME)
 class TestPooledToPooledSame(TestRunnerMixin, TestCase):
     """A class for testing the AllocationRenewalApprovalRunner in the
     'pooled_to_pooled_same' case."""
@@ -208,6 +214,7 @@ class TestPooledToPooledSame(TestRunnerMixin, TestCase):
             AllocationRenewalRequest.POOLED_TO_POOLED_SAME)
 
 
+@override_settings(PRIMARY_CLUSTER_NAME=TEST_PRIMARY_CLUSTER_NAME)
 class TestPooledToPooledDifferent(TestRunnerMixin, TestCase):
     """A class for testing the AllocationRenewalApprovalRunner in the
     'pooled_to_pooled_different' case."""
@@ -230,6 +237,7 @@ class TestPooledToPooledDifferent(TestRunnerMixin, TestCase):
             AllocationRenewalRequest.POOLED_TO_POOLED_DIFFERENT)
 
 
+@override_settings(PRIMARY_CLUSTER_NAME=TEST_PRIMARY_CLUSTER_NAME)
 class TestPooledToUnpooledOld(TestRunnerMixin, TestCase):
     """A class for testing the AllocationRenewalApprovalRunner in the
     'pooled_to_unpooled_old' case."""
@@ -252,6 +260,7 @@ class TestPooledToUnpooledOld(TestRunnerMixin, TestCase):
             AllocationRenewalRequest.POOLED_TO_UNPOOLED_OLD)
 
 
+@override_settings(PRIMARY_CLUSTER_NAME=TEST_PRIMARY_CLUSTER_NAME)
 class TestPooledToUnpooledNew(TestRunnerMixin, TestCase):
     """A class for testing the AllocationRenewalApprovalRunner in the
     'pooled_to_unpooled_new' case."""
