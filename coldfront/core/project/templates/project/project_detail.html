@@ -49,7 +49,7 @@ Project Detail
           {% endif %}
           {% flag_enabled 'SECURE_DIRS_REQUESTABLE' as secure_dirs_requestable %}
           {% if secure_dirs_requestable and can_request_sec_dir %}
-            <a class="btn btn-primary" href="{% url 'secure-dir-request-landing' project.name %}" role="button">
+            <a class="btn btn-primary" href="{% url 'secure-dir-request-landing' project.pk %}" role="button">
               <i class="fas fa-lock" aria-hidden="true"></i>
               Request a Secure Directory
             </a>

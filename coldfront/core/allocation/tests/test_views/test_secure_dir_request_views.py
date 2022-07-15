@@ -129,7 +129,7 @@ class TestSecureDirRequestWizard(TestSecureDirRequestBase):
         return form_data
 
     def test_access(self):
-        url = reverse(self.url, kwargs={'project_name': self.project1.name})
+        url = reverse(self.url, kwargs={'pk': self.project1.pk})
         self.assert_has_access(url, self.admin, True)
         self.assert_has_access(url, self.pi0, True)
         self.assert_has_access(url, self.pi1, True)
@@ -143,7 +143,8 @@ class TestSecureDirRequestWizard(TestSecureDirRequestBase):
         form_data = self.get_form_data()
 
         self.client.login(username=self.pi0.username, password=self.password)
-        url = reverse(self.url, kwargs={'project_name': self.project1.name})
+        url = reverse(self.url, kwargs={'pk': self.project1.pk})
+
         for i, data in enumerate(form_data):
             response = self.client.post(url, data)
             if i == len(form_data) - 1:
@@ -178,7 +179,7 @@ class TestSecureDirRequestWizard(TestSecureDirRequestBase):
         form_data = self.get_form_data()
 
         self.client.login(username=self.pi1.username, password=self.password)
-        url = reverse(self.url, kwargs={'project_name': self.project1.name})
+        url = reverse(self.url, kwargs={'pk': self.project1.pk})
         for i, data in enumerate(form_data):
             response = self.client.post(url, data)
             if i == len(form_data) - 1:
@@ -352,7 +353,7 @@ class TestSecureDirRequestDetailView(TestSecureDirRequestBase):
 
         self.request0.state['rdm_consultation']['status'] = 'Approved'
         self.request0.state['mou']['status'] = 'Approved'
-        self.request0.state['setup']['status'] = 'Approved'
+        self.request0.state['setup']['status'] = 'Completed'
         self.request0.save()
 
         self.url0 = reverse('secure-dir-request-detail',
@@ -476,7 +477,7 @@ class TestSecureDirRequestUndenyRequestView(TestSecureDirRequestBase):
         self.request0.state['mou']['status'] = 'Denied'
         self.request0.state['mou']['timestamp'] = '1234'
         self.request0.state['mou']['justification'] = 'test reason'
-        self.request0.state['setup']['status'] = 'Approved'
+        self.request0.state['setup']['status'] = 'Completed'
         self.request0.state['setup']['timestamp'] = '1234'
         self.request0.state['setup']['justification'] = 'test reason'
         self.request0.state['other']['timestamp'] = '1234'
@@ -770,7 +771,7 @@ class TestSecureDirRequestReviewSetupView(TestSecureDirRequestBase):
         """Test that a post request updates the request."""
         pre_time = utc_now_offset_aware()
         self.client.login(username=self.admin.username, password=self.password)
-        data = {'status': 'Approved',
+        data = {'status': 'Completed',
                 'directory_name': 'changed_dir',
                 'justification': 'This is a test setup justification.'}
         response = self.client.post(self.url, data)
@@ -779,7 +780,7 @@ class TestSecureDirRequestReviewSetupView(TestSecureDirRequestBase):
         self.assertRedirects(response, self.success_url)
         self.assertEqual(self.request0.directory_name, data['directory_name'])
         self.assertEqual(self.request0.status.name, 'Approved - Processing')
-        self.assertEqual(self.request0.state['setup']['status'], 'Approved')
+        self.assertEqual(self.request0.state['setup']['status'], 'Completed')
 
         timestamp = iso8601.parse_date(self.request0.state['setup']['timestamp'])
         self.assertTrue(pre_time < timestamp < utc_now_offset_aware())

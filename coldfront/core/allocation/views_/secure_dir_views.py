@@ -774,7 +774,6 @@ class SecureDirManageUsersDenyRequestView(LoginRequiredMixin,
                     kwargs={'action': self.action, 'status': 'pending'}))
 
 
-
 class SecureDirRequestLandingView(LoginRequiredMixin,
                                   UserPassesTestMixin,
                                   TemplateView):
@@ -786,7 +785,7 @@ class SecureDirRequestLandingView(LoginRequiredMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['project_name'] = kwargs.get('project_name', None)
+        context['project_pk'] = kwargs.get('pk', None)
         return context
 
     def test_func(self):
@@ -846,7 +845,7 @@ class SecureDirRequestWizard(LoginRequiredMixin,
         # Define a lookup table from form name to step number.
         self.step_numbers_by_form_name = {
             name: i for i, (name, _) in enumerate(self.FORMS)}
-        self.project_name = None
+        self.project = None
 
     def test_func(self):
         if self.request.user.is_superuser:
@@ -865,7 +864,7 @@ class SecureDirRequestWizard(LoginRequiredMixin,
         messages.error(self.request, message)
 
     def dispatch(self, request, *args, **kwargs):
-        self.project_name = kwargs.get('project_name', None)
+        self.project = Project.objects.get(pk=kwargs.get('pk', None))
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, form, **kwargs):
@@ -910,7 +909,7 @@ class SecureDirRequestWizard(LoginRequiredMixin,
 
             data_description = self.__get_data_description(form_data)
             rdm_consultation = self.__get_rdm_consultation(form_data)
-            existing_project = self.__get_existing_project()
+            existing_project = self.project
             directory_name = self.__get_directory_name(form_data)
 
             # Store transformed form data in a request.
@@ -927,6 +926,7 @@ class SecureDirRequestWizard(LoginRequiredMixin,
             # Directory or Secure Directory Request.
             sec_dir_allocations = \
                 get_secure_dir_allocations().filter(project=existing_project)
+
             sec_dir_requests = \
                 SecureDirRequest.objects.\
                     filter(project=existing_project).\
@@ -1000,10 +1000,6 @@ class SecureDirRequestWizard(LoginRequiredMixin,
         data = form_data[step_number]
         return data.get('directory_name', None)
 
-    def __get_existing_project(self):
-        """Return the project the user selected."""
-        return Project.objects.get(name=self.project_name)
-
     def __set_data_from_previous_steps(self, step, dictionary):
         """Update the given dictionary with data from previous steps."""
         rdm_consultation_step = \
@@ -1015,7 +1011,7 @@ class SecureDirRequestWizard(LoginRequiredMixin,
                                    'Yes' if rdm_consultation_form_data
                                    else 'No'})
 
-        dictionary.update({'breadcrumb_project': f'Project: {self.project_name}'})
+        dictionary.update({'breadcrumb_project': f'Project: {self.project.name}'})
 
     def send_admin_notification_email(self, request):
         requester = request.requester
@@ -1334,7 +1330,7 @@ class SecureDirRequestDetailView(LoginRequiredMixin,
 
     def get_setup_status(self):
         """Return one of the following statuses for the 'setup' step of
-        the request: 'N/A', 'Pending', 'Complete'."""
+        the request: 'N/A', 'Pending', 'Completed'."""
         state = self.request_obj.state
         if (state['rdm_consultation']['status'] == 'Denied' or
                 state['mou']['status'] == 'Denied'):
@@ -1344,7 +1340,7 @@ class SecureDirRequestDetailView(LoginRequiredMixin,
     def is_checklist_complete(self):
         status_choice = secure_dir_request_state_status(self.request_obj)
         return (status_choice.name == 'Approved - Processing' and
-                self.request_obj.state['setup']['status'] == 'Approved')
+                self.request_obj.state['setup']['status'] == 'Completed')
 
 
 class SecureDirRequestReviewRDMConsultView(LoginRequiredMixin,
@@ -1384,6 +1380,9 @@ class SecureDirRequestReviewRDMConsultView(LoginRequiredMixin,
         }
         self.request_obj.status = \
             secure_dir_request_state_status(self.request_obj)
+
+        if status == 'Approved':
+            self.request_obj.rdm_consultation = justification if justification else 'Approved'
         self.request_obj.save()
 
         if status == 'Denied':
@@ -1511,6 +1510,7 @@ class SecureDirRequestReviewSetupView(LoginRequiredMixin,
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['dir_name'] = self.request_obj.directory_name
+        kwargs['request_pk'] = self.request_obj.pk
         return kwargs
 
     def form_valid(self, form):
