@@ -107,10 +107,9 @@ def return_alloc_attr_set(allocation_obj, is_su):
 def set_proj_update_permissions(allocation_obj, user):
     if user.is_superuser:
         return True
-    if allocation_obj.project.projectuser_set.filter(user=user).exists():
-        project_user = allocation_obj.project.projectuser_set.get(user=user)
-        if project_user.role.name == 'Manager':
-            return True
+    permissions = user_can_access_allocation(self.request.user, allocation_obj)
+    if "manager" in permissions or "pi" in permissions:
+        return True
     return False
 
 def generate_email_receiver_list(allocation_users):
@@ -177,30 +176,32 @@ def return_allocation_bytes_values(attributes_with_usage, allocation_users):
     return (allocation_quota_bytes, allocation_usage_bytes)
 
 def user_can_access_allocation(user, allocation):
-    """Return whether user can access the desired allocation
+    """Return list of a user's permissions for the desired allocation
     conditions:
     1. user must be a project user
     2. user must be A. an allocation user, B. a project pi, or C. a project manager. 
     """
     if not allocation.project.projectuser_set.filter(
             user=user, status__name__in=['Active', 'New', ]).exists():
-        return False
-        
+        return []
+    
+    permissions = []    
     # is_pi = allocation_obj.project.pi_id == user.id
-    is_manager_or_pi = allocation.project.projectuser_set.filter(
-                    Q(status__name='Active') &
-                    Q(user=user) &
-                    (Q(role_id=1) | Q(project__pi_id=user.id))
-        ).exists()
+    if allocation.project.projectuser_set.filter(
+        Q(status__name='Active') & Q(user=user) & Q(role_id=1)).exists():
+        permissions.append("manager")
 
-    is_allocation_user = allocation.allocationuser_set.filter(
+    if allocation.project.projectuser_set.filter(
+        Q(status__name='Active') & Q(user=user) & Q(project__pi_id=user.id)
+        ).exists():
+            permissions.append("pi")
+
+    if allocation.allocationuser_set.filter(
             user=user, status__name__in=['Active', ]
-                ).exists()
+                ).exists():
+        permissions.append("user")
 
-    if is_allocation_user or is_manager_or_pi: 
-        return True
-    return False
-
+    return permissions
 
 class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     model = Allocation
@@ -218,7 +219,9 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
 
-        return user_can_access_allocation(self.request.user, allocation_obj)
+        if len(user_can_access_allocation(self.request.user, allocation_obj)) > 0:
+            return True
+        return False
 
 
     def get_context_data(self, **kwargs):
@@ -579,10 +582,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         project_obj = get_object_or_404(
             Project, pk=self.kwargs.get('project_pk'))
 
-        if project_obj.pi == self.request.user:
-            return True
-
-        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        permissions = user_can_access_allocation(self.request.user, allocation_obj)
+        if "manager" in permissions or "pi" in permissions:
             return True
 
         messages.error(
@@ -743,11 +744,8 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         allocation_obj = get_object_or_404(
             Allocation, pk=self.kwargs.get('pk'))
 
-        if allocation_obj.project.pi == self.request.user:
-            return True
-
-        if allocation_obj.project.projectuser_set.filter(user=self.request.user,
-                        role__name='Manager', status__name='Active').exists():
+        permissions = user_can_access_allocation(self.request.user, allocation_obj)
+        if "manager" in permissions or "pi" in permissions:
             return True
 
         messages.error(
@@ -865,10 +863,8 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
         allocation_obj = get_object_or_404(
             Allocation, pk=self.kwargs.get('pk'))
 
-        if allocation_obj.project.pi == self.request.user:
-            return True
-
-        if allocation_obj.project.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        permissions = user_can_access_allocation(self.request.user, allocation_obj)
+        if "manager" in permissions or "pi" in permissions:
             return True
 
         messages.error(
@@ -1282,10 +1278,8 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
         allocation_obj = get_object_or_404(
             Allocation, pk=self.kwargs.get('pk'))
 
-        if allocation_obj.project.pi == self.request.user:
-            return True
-
-        if allocation_obj.project.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        permissions = user_can_access_allocation(self.request.user, allocation_obj)
+        if "manager" in permissions or "pi" in permissions:
             return True
 
         messages.error(
@@ -1458,6 +1452,7 @@ class AllocationInvoiceListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
         allocations = Allocation.objects.filter(
             status__name__in=['Active', 'Payment Pending',  ])
         return allocations
+
 class AllocationInvoicePaidView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     model = Allocation
     template_name = 'allocation/allocation_invoice_paid_list.html'
@@ -1835,19 +1830,8 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
         allocation_change_obj = get_object_or_404(
             AllocationChangeRequest, pk=self.kwargs.get('pk'))
 
-        if allocation_change_obj.allocation.project.pi == self.request.user:
-            return True
-
-        if allocation_change_obj.allocation.project.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
-            return True
-
-        user_can_access_project = allocation_change_obj.allocation.project.projectuser_set.filter(
-            user=self.request.user, status__name__in=['Active', 'New', ]).exists()
-
-        user_can_access_allocation = allocation_change_obj.allocation.allocationuser_set.filter(
-            user=self.request.user, status__name__in=['Active', ]).exists()
-
-        if user_can_access_project and user_can_access_allocation:
+        permissions = user_can_access_allocation(self.request.user, allocation_obj)
+        if "manager" in permissions or "pi" in permissions:
             return True
 
         return False
@@ -2229,10 +2213,8 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         allocation_obj = get_object_or_404(
             Allocation, pk=self.kwargs.get('pk'))
 
-        if allocation_obj.project.pi == self.request.user:
-            return True
-
-        if allocation_obj.project.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        permissions = user_can_access_allocation(self.request.user, allocation_obj)
+        if "manager" in permissions or "pi" in permissions:
             return True
 
         messages.error(
