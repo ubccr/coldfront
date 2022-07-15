@@ -176,6 +176,31 @@ def return_allocation_bytes_values(attributes_with_usage, allocation_users):
                     allocation_usage_tb != 0 else user_usage_sum
     return (allocation_quota_bytes, allocation_usage_bytes)
 
+def user_can_access_allocation(user, allocation):
+    """Return whether user can access the desired allocation
+    conditions:
+    1. user must be a project user
+    2. user must be A. an allocation user, B. a project pi, or C. a project manager. 
+    """
+    if not allocation.project.projectuser_set.filter(
+            user=user, status__name__in=['Active', 'New', ]).exists():
+        return False
+        
+    # is_pi = allocation_obj.project.pi_id == user.id
+    is_manager_or_pi = allocation.project.projectuser_set.filter(
+                    Q(status__name='Active') &
+                    Q(user=user) &
+                    (Q(role_id=1) | Q(project__pi_id=user.id))
+        ).exists()
+
+    is_allocation_user = allocation.allocationuser_set.filter(
+            user=user, status__name__in=['Active', ]
+                ).exists()
+
+    if is_allocation_user or is_manager_or_pi: 
+        return True
+    return False
+
 
 class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     model = Allocation
@@ -193,16 +218,8 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
 
-        user_can_access_project = allocation_obj.project.projectuser_set.filter(
-            user=self.request.user, status__name__in=['Active', 'New', ]).exists()
+        return user_can_access_allocation(self.request.user, allocation_obj)
 
-        user_can_access_allocation = allocation_obj.allocationuser_set.filter(
-            user=self.request.user, status__name__in=['Active', ]).exists()
-
-        if user_can_access_project and user_can_access_allocation:
-            return True
-
-        return False
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -416,10 +433,8 @@ class AllocationListView(LoginRequiredMixin, ListView):
         order_by = self.request.GET.get('order_by')
         if order_by:
             direction = self.request.GET.get('direction')
-            if direction == 'asc':
-                direction = ''
-            elif direction == 'des':
-                direction = '-'
+            dir_dict = {'asc':'', 'des':'-'}
+            direction == dir_dict[direction]
             order_by = direction + order_by
         else:
             order_by = 'id'
@@ -435,10 +450,12 @@ class AllocationListView(LoginRequiredMixin, ListView):
             else:
                 allocations = Allocation.objects.prefetch_related('project', 'project__pi', 'status',).filter(
                     Q(project__status__name__in=['New', 'Active', ]) &
-                    Q(project__projectuser__user=self.request.user) &
                     Q(project__projectuser__status__name='Active') &
+                    Q(project__projectuser__user=self.request.user) &
+
+                    (Q(project__projectuser__role_id=1) |
                     Q(allocationuser__user=self.request.user) &
-                    Q(allocationuser__status__name='Active')
+                    Q(allocationuser__status__name='Active'))
                 ).distinct().order_by(order_by)
 
             # Project Title
@@ -512,12 +529,11 @@ class AllocationListView(LoginRequiredMixin, ListView):
             for key, value in data.items():
                 if value:
                     if isinstance(value, QuerySet):
-                        for ele in value:
-                            filter_parameters += '{}={}&'.format(key, ele.pk)
+                        filter_parameters = ''.join([f'{key}={ele.pk}&' for ele in value])
                     elif hasattr(value, 'pk'):
-                        filter_parameters += '{}={}&'.format(key, value.pk)
+                        filter_parameters = '{}={}&'.format(key, value.pk)
                     else:
-                        filter_parameters += '{}={}&'.format(key, value)
+                        filter_parameters = '{}={}&'.format(key, value)
             context['allocation_search_form'] = allocation_search_form
         else:
             filter_parameters = ''
