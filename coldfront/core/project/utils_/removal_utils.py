@@ -221,7 +221,7 @@ class ProjectRemovalRequestProcessingRunner(object):
         message = (
             f'Set AllocationUser {allocation_user.pk} status to '
             f'"{removed_status.name}".')
-        self._success_messages(message)
+        self._success_messages.append(message)
 
         cluster_account_status_type = AllocationAttributeType.objects.get(
             name='Cluster Account Status')
@@ -245,7 +245,7 @@ class ProjectRemovalRequestProcessingRunner(object):
             message = (
                 f'Set AllocationAttribute {cluster_account_status_type.pk} '
                 f'value to "Denied".')
-            self._success_messages(message)
+            self._success_messages.append(message)
 
     def _send_emails(self):
         """Try to send emails. If one send fails, continue with the
