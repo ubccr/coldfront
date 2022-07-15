@@ -133,7 +133,7 @@ Secure Directory Request Detail
                 {% with status=item.1 latest_update_timestamp=item.2 %}
                   {% if status == 'Pending' %}
                     <span class="badge badge-warning">
-                  {% elif status in 'Approved,Complete' %}
+                  {% elif status in 'Approved,Completed' %}
                     <span class="badge badge-success">
                   {% else %}
                     <span class="badge badge-danger">
