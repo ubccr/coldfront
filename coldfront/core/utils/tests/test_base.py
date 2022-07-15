@@ -70,6 +70,7 @@ class TestBase(TestCase):
         # TODO: Implement a long-term solution that enables testing of multiple
         # TODO: types of deployments.
         enable_flag('BRC_ONLY', create_boolean_condition=True)
+        enable_flag('SERVICE_UNITS_PURCHASABLE', create_boolean_condition=True)
 
         out, err = StringIO(), StringIO()
         commands = [
