@@ -526,7 +526,7 @@ class RequestHubView(LoginRequiredMixin,
             status__name__in=['Under Review', 'Approved - Processing']).order_by('modified')
 
         secure_dir_complete = SecureDirRequest.objects.filter(
-            status__name=['Approved - Complete', 'Denied']).order_by('modified')
+            status__name__in=['Approved - Complete', 'Denied']).order_by('modified')
 
         if not self.show_all_requests:
             # limit secure_dir_requests to objects user is a PI of or user has
@@ -550,6 +550,8 @@ class RequestHubView(LoginRequiredMixin,
             pi_cond = Q(pk__in=request_pks)
 
             secure_dir_complete = secure_dir_complete.filter(user_cond | pi_cond)
+
+        print('complete', secure_dir_complete)
 
         secure_dir_request_object.num = self.paginators
         secure_dir_request_object.pending_queryset = \
