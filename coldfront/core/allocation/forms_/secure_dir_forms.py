@@ -2,7 +2,7 @@ from django import forms
 from django.core.validators import MinLengthValidator
 
 from coldfront.core.allocation.utils_.secure_dir_utils import \
-    get_all_secure_dir_paths
+    get_all_secure_dir_paths, sec_dir_name_available
 
 
 class SecureDirManageUsersForm(forms.Form):
@@ -102,12 +102,8 @@ class SecureDirDirectoryNamesForm(forms.Form):
         cleaned_data = super().clean()
         directory_name = cleaned_data.get('directory_name', None)
 
-        # Fetch all existing directory names.
-        paths = get_all_secure_dir_paths()
-        cleaned_dir_names = set([path.strip().split('_')[-1] for path in paths])
-
         # Provided directory name must be unique.
-        if directory_name in cleaned_dir_names:
+        if not sec_dir_name_available(directory_name):
             raise forms.ValidationError(
                 'This directory name is already taken. Please choose another.')
         return cleaned_data
@@ -119,7 +115,7 @@ class SecureDirSetupForm(forms.Form):
         choices=(
             ('', 'Select one.'),
             ('Pending', 'Pending'),
-            ('Approved', 'Approved'),
+            ('Completed', 'Completed'),
             ('Denied', 'Denied'),
         ),
         help_text='If you are unsure, leave the status as "Pending".',
@@ -144,6 +140,7 @@ class SecureDirSetupForm(forms.Form):
         widget=forms.Textarea(attrs={'rows': 3}))
 
     def __init__(self, *args, **kwargs):
+        self.request_pk = kwargs.pop('request_pk', None)
         dir_name = kwargs.pop('dir_name', None)
         super().__init__(*args, **kwargs)
 
@@ -163,12 +160,8 @@ class SecureDirSetupForm(forms.Form):
 
             return cleaned_data
 
-        # Fetch all existing directory names.
-        paths = get_all_secure_dir_paths()
-        cleaned_dir_names = set([path.strip().split('_')[-1] for path in paths])
-
         # Provided directory name must be unique.
-        if directory_name in cleaned_dir_names:
+        if not sec_dir_name_available(directory_name, self.request_pk):
             raise forms.ValidationError(
                 'This directory name is already taken. Please choose another.')
 

@@ -383,3 +383,19 @@ def get_all_secure_dir_paths():
             values_list('value', flat=True))
 
     return paths
+
+
+def sec_dir_name_available(directory_name, request_pk=None):
+    """Returns True if the proposed directory name is available
+    and False otherwise."""
+
+    paths = get_all_secure_dir_paths()
+    cleaned_dir_names = set([path.strip().split('_')[-1] for path in paths])
+
+    pending_request_dirs = \
+        set(SecureDirRequest.objects.exclude(
+            status__name='Denied').exclude(
+            pk=request_pk).values_list('directory_name', flat=True))
+    cleaned_dir_names.update(pending_request_dirs)
+
+    return directory_name not in cleaned_dir_names
