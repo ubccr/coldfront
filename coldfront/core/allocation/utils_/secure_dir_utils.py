@@ -1,6 +1,7 @@
 import os
 import logging
 
+from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 
@@ -349,7 +350,21 @@ def get_default_secure_dir_paths():
 
 
 def pi_eligible_to_request_secure_dir(user):
-    """Returns True if the user is eligible to request a secure directory."""
+    """Returns True if the user is eligible to request a secure directory.
+
+    Parameters:
+    - user (User): the user to check if they are eligible
+
+    Returns:
+        - bool: True if the user is eligible to request a secure directory,
+                False otherwise
+
+    Raises:
+    - TypeError, if 'user' is not a User object
+    """
+
+    if not isinstance(user, User):
+        raise TypeError(f'Invalid User {user}.')
 
     projects_with_existing_requests = \
         set(SecureDirRequest.objects.exclude(
@@ -387,7 +402,16 @@ def get_all_secure_dir_paths():
 
 def sec_dir_name_available(directory_name, request_pk=None):
     """Returns True if the proposed directory name is available
-    and False otherwise."""
+    and False otherwise.
+
+    Parameters:
+    - directory_name (str): the name of the proposed directory
+    - request_pk (int): the primary key of the request obj to exclude
+
+    Returns:
+        - bool: True if the proposed directory name is available, False
+                otherwise
+    """
 
     paths = get_all_secure_dir_paths()
     cleaned_dir_names = set([path.strip().split('_')[-1] for path in paths])
@@ -399,3 +423,30 @@ def sec_dir_name_available(directory_name, request_pk=None):
     cleaned_dir_names.update(pending_request_dirs)
 
     return directory_name not in cleaned_dir_names
+
+
+def set_sec_dir_context(context_dict, request_obj):
+    """
+    Sets the sec_dir_request, groups_path, and scratch_path items in the given
+    context dictionary.
+
+    Parameters:
+    - context_dir (dict): the dictionary in which values are being set
+    - request_obj (SecureDirRequest): the relevant SecureDirRequest object
+
+    Raises:
+    - TypeError, if 'context_dir' is not a dictionary
+    - TypeError, if 'request_obj' is not a SecureDirRequest
+    """
+
+    if not isinstance(context_dict, dict):
+        raise TypeError(f'Passed context_dict {context_dict} is not a dict.')
+    if not isinstance(request_obj, SecureDirRequest):
+        raise TypeError(f'Invalid SecureDirRequest {request_obj}.')
+
+    context_dict['secure_dir_request'] = request_obj
+    groups_path, scratch_path = get_default_secure_dir_paths()
+    context_dict['groups_path'] = \
+        os.path.join(groups_path, request_obj.directory_name)
+    context_dict['scratch_path'] = \
+        os.path.join(scratch_path, request_obj.directory_name)
