@@ -1,4 +1,5 @@
 import logging
+import os
 from urllib.parse import urljoin
 
 from django.conf import settings
@@ -22,7 +23,7 @@ from coldfront.core.allocation.forms_.secure_dir_forms import (
     SecureDirManageUsersRequestUpdateStatusForm,
     SecureDirManageUsersRequestCompletionForm, SecureDirDataDescriptionForm,
     SecureDirRDMConsultationForm, SecureDirDirectoryNamesForm,
-    SecureDirSetupForm)
+    SecureDirSetupForm, SecureDirRDMConsultationReviewForm)
 from coldfront.core.allocation.models import (Allocation,
                                               SecureDirAddUserRequest,
                                               SecureDirRemoveUserRequest,
@@ -35,7 +36,7 @@ from coldfront.core.allocation.utils_.secure_dir_utils import \
     get_secure_dir_manage_user_request_objects, secure_dir_request_state_status, \
     SecureDirRequestDenialRunner, SecureDirRequestApprovalRunner, \
     get_secure_dir_allocations, get_default_secure_dir_paths, \
-    pi_eligible_to_request_secure_dir
+    pi_eligible_to_request_secure_dir, set_sec_dir_context
 from coldfront.core.project.forms import ReviewStatusForm, ReviewDenyForm
 from coldfront.core.project.models import ProjectUser, Project
 from coldfront.core.user.utils import access_agreement_signed
@@ -1243,6 +1244,8 @@ class SecureDirRequestDetailView(LoginRequiredMixin,
         context['is_allowed_to_manage_request'] = \
             self.request.user.is_superuser
 
+        set_sec_dir_context(context, self.request_obj)
+
         return context
 
     def get_checklist(self):
@@ -1347,9 +1350,9 @@ class SecureDirRequestReviewRDMConsultView(LoginRequiredMixin,
                                            UserPassesTestMixin,
                                            SecureDirRequestMixin,
                                            FormView):
-    form_class = ReviewStatusForm
+    form_class = SecureDirRDMConsultationReviewForm
     template_name = (
-        'secure_dir/secure_dir_request/secure_dir_mou.html')
+        'secure_dir/secure_dir_request/secure_dir_consult_rdm.html')
     login_url = '/'
 
     def test_func(self):
@@ -1372,6 +1375,7 @@ class SecureDirRequestReviewRDMConsultView(LoginRequiredMixin,
         form_data = form.cleaned_data
         status = form_data['status']
         justification = form_data['justification']
+        rdm_update = form_data['rdm_update']
         timestamp = utc_now_offset_aware().isoformat()
         self.request_obj.state['rdm_consultation'] = {
             'status': status,
@@ -1382,7 +1386,8 @@ class SecureDirRequestReviewRDMConsultView(LoginRequiredMixin,
             secure_dir_request_state_status(self.request_obj)
 
         if status == 'Approved':
-            self.request_obj.rdm_consultation = justification if justification else 'Approved'
+            self.request_obj.rdm_consultation = \
+                rdm_update if rdm_update else 'Approved'
         self.request_obj.save()
 
         if status == 'Denied':
@@ -1398,7 +1403,7 @@ class SecureDirRequestReviewRDMConsultView(LoginRequiredMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['secure_dir_request'] = self.request_obj
+        set_sec_dir_context(context, self.request_obj)
         return context
 
     def get_initial(self):
@@ -1466,7 +1471,7 @@ class SecureDirRequestReviewMOUView(LoginRequiredMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['secure_dir_request'] = self.request_obj
+        set_sec_dir_context(context, self.request_obj)
         return context
 
     def get_initial(self):
@@ -1543,7 +1548,7 @@ class SecureDirRequestReviewSetupView(LoginRequiredMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['secure_dir_request'] = self.request_obj
+        set_sec_dir_context(context, self.request_obj)
         return context
 
     def get_initial(self):
@@ -1608,7 +1613,7 @@ class SecureDirRequestReviewDenyView(LoginRequiredMixin, UserPassesTestMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['secure_dir_request'] = self.request_obj
+        set_sec_dir_context(context, self.request_obj)
         return context
 
     def get_initial(self):
