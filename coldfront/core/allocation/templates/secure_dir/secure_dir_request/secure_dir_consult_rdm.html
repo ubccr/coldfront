@@ -20,6 +20,13 @@ Secure Directory Request - Review Research Data Management Consultation
     If {{ requester.first_name }} {{ requester.last_name }} has not consulted with an RDM consultant,
     please contact them at {{ requester.email }} to arrange a consultation.
   </p>
+
+  {% if not secure_dir_request.rdm_consultation %}
+    <p>
+      If {{ requester.first_name }} {{ requester.last_name }} did not initially consult with an RDM consultant,
+      you may provide an optional update below .
+    </p>
+  {% endif %}
 {% endwith %}
 
 {% include 'secure_dir/secure_dir_request/secure_dir_request_card.html' with secure_dir_request=secure_dir_request %}

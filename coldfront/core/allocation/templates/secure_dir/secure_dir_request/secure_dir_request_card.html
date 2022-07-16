@@ -37,23 +37,32 @@
       {{ secure_dir_request.project.name }}
     </p>
     <p class="card-text text-justify">
-      <strong>Description: </strong>
+      <strong>Data Description: </strong>
       {{ secure_dir_request.data_description }}
     </p>
 
     <p class="card-text text-justify">
-      <strong>RDM Consultantation: </strong>
+      <strong>RDM Consultation: </strong>
       {% if secure_dir_request.rdm_consultation %}
-      {{ secure_dir_request.requester.first_name }} {{ secure_dir_request.requester.last_name }}
-        consulted with the following RDM consultants: {{ secure_dir_request.rdm_consultation }}.
+        {{ secure_dir_request.rdm_consultation }}
       {% else %}
         Requester has not consulted with RDM.
       {% endif %}
     </p>
 
     <p class="card-text text-justify">
-      <strong>Directory Name: </strong>
+      <strong>Proposed Directory Name: </strong>
       {{ secure_dir_request.directory_name }}
+    </p>
+
+    <p class="card-text text-justify">
+      <strong>Proposed Groups Path: </strong>
+      {{ groups_path }}
+    </p>
+
+    <p class="card-text text-justify">
+      <strong>Proposed Scratch Path: </strong>
+      {{ scratch_path }}
     </p>
   </div>
 </div>
