@@ -166,3 +166,36 @@ class SecureDirSetupForm(forms.Form):
                 'This directory name is already taken. Please choose another.')
 
         return cleaned_data
+
+
+class SecureDirRDMConsultationReviewForm(forms.Form):
+
+    status = forms.ChoiceField(
+        choices=(
+            ('', 'Select one.'),
+            ('Pending', 'Pending'),
+            ('Approved', 'Approved'),
+            ('Denied', 'Denied'),
+        ),
+        help_text='If you are unsure, leave the status as "Pending".',
+        label='Status',
+        required=True)
+
+    rdm_update = forms.CharField(
+        help_text=(
+            'If the requester did not initially consult with RDM, '
+            'you may optionally provide an update.'),
+        label='Optional RDM Update',
+        validators=[MinLengthValidator(5)],
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 2}))
+
+    justification = forms.CharField(
+        help_text=(
+            'Provide reasoning for your decision. This field is only required '
+            'for denials, since it will be included in the notification '
+            'email.'),
+        label='Justification',
+        validators=[MinLengthValidator(10)],
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 3}))
