@@ -107,7 +107,7 @@ def return_alloc_attr_set(allocation_obj, is_su):
 def set_proj_update_permissions(allocation_obj, user):
     if user.is_superuser:
         return True
-    permissions = user_can_access_allocation(self.request.user, allocation_obj)
+    permissions = user_can_access_allocation(user, allocation_obj)
     if "manager" in permissions or "pi" in permissions:
         return True
     return False
