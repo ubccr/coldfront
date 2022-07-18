@@ -1129,18 +1129,10 @@ class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     def get_success_url(self):
         return reverse('project-review-list')
 
-
-<<<<<<< HEAD
 class ProjectNoteCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = ProjectUserMessage
     fields = '__all__'
     template_name = 'project/project_note_create.html'
-=======
-class ProjectAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
-    model = ProjectAttribute
-    form_class = ProjectAttributeAddForm
-    template_name = 'project/project_attribute_create.html'
->>>>>>> Project attributes.
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -1149,7 +1141,6 @@ class ProjectAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Create
             return True
         else:
             messages.error(
-<<<<<<< HEAD
                 self.request, 'You do not have permission to add allocation notes.')
 
     def get_context_data(self, **kwargs):
@@ -1166,7 +1157,32 @@ class ProjectAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Create
         author = self.request.user
         initial['project'] = project_obj
         initial['author'] = author
-=======
+        return initial
+
+    def get_form(self, form_class=None):
+        """Return an instance of the form to be used in this view."""
+        form = super().get_form(form_class)
+        form.fields['project'].widget = forms.HiddenInput()
+        form.fields['author'].widget = forms.HiddenInput()
+        form.order_fields([ 'project', 'author', 'message', 'is_private' ])
+        return form
+
+    def get_success_url(self):
+        return reverse('project-detail', kwargs={'pk': self.kwargs.get('pk')})
+
+
+class ProjectAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    model = ProjectAttribute
+    form_class = ProjectAttributeAddForm
+    template_name = 'project/project_attribute_create.html'
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+
+        if self.request.user.is_superuser:
+            return True
+        else:
+            messages.error(
                 self.request, 'You do not have permission to add project attributes.')
 
     def get_initial(self):
@@ -1204,26 +1220,17 @@ class ProjectAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Templa
         else:
             messages.error(
                 self.request, 'You do not have permission to add project attributes.')
-    
+
     def get_initial(self):
         initial = super().get_initial()
         pk = self.kwargs.get('pk')
         initial['project'] = get_object_or_404(Project, pk=pk)
->>>>>>> Project attributes.
         return initial
 
     def get_form(self, form_class=None):
         """Return an instance of the form to be used in this view."""
         form = super().get_form(form_class)
         form.fields['project'].widget = forms.HiddenInput()
-<<<<<<< HEAD
-        form.fields['author'].widget = forms.HiddenInput()
-        form.order_fields([ 'project', 'author', 'message', 'is_private' ])
-        return form
-
-    def get_success_url(self):
-        return reverse('project-detail', kwargs={'pk': self.kwargs.get('pk')})
-=======
         return form
 
     def get_avail_attrs(self, pk: int) -> list:
@@ -1290,6 +1297,5 @@ class ProjectAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Templa
         else:
             for error in formset.errors:
                 messages.error(request, error)
-        
+
         return reverse('project-detail', kwargs={'pk': pk})
->>>>>>> Project attributes.
