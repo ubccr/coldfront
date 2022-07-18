@@ -164,6 +164,11 @@ class Command(BaseCommand):
             periods.extend(
                 [
                     {
+                        "name": "Allowance Year 2021 - 2022",
+                        "start_date": "2021-10-01",
+                        "end_date": "2022-9-30"
+                    },
+                    {
                         "name": "Allowance Year 2022 - 2023",
                         "start_date": "2022-10-01",
                         "end_date": "2023-09-30"
