@@ -47,7 +47,8 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationUser,
                                               AllocationUserAttribute,
                                               AllocationUserNote,
-                                              AllocationUserStatusChoice)
+                                              AllocationUserStatusChoice,
+                                              ClusterAccessRequest)
 from coldfront.core.allocation.signals import (allocation_activate_user,
                                                allocation_remove_user)
 from coldfront.core.allocation.utils import (generate_guauge_data_from_usage,
@@ -56,7 +57,9 @@ from coldfront.core.allocation.utils import (generate_guauge_data_from_usage,
 from coldfront.core.billing.models import BillingActivity
 from coldfront.core.project.models import (Project, ProjectUser,
                                            ProjectUserStatusChoice)
-from coldfront.core.project.utils import ProjectClusterAccessRequestRunner
+from coldfront.core.project.utils import ProjectClusterAccessRequestRunner, \
+    ProjectClusterAccessRequestUpdateRunner, \
+    ProjectClusterAccessRequestDenialRunner
 from coldfront.core.resource.models import Resource
 from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.utils.common import get_domain_url, import_from_settings
@@ -1795,36 +1798,41 @@ class AllocationClusterAccountRequestListView(LoginRequiredMixin,
             order_by = direction + order_by
         else:
             order_by = '-modified'
-        cluster_account_status = AllocationAttributeType.objects.get(
-            name='Cluster Account Status')
+        # cluster_account_status = AllocationAttributeType.objects.get(
+        #     name='Cluster Account Status')
 
         cluster_search_form = ClusterRequestSearchForm(self.request.GET)
 
         if self.completed:
-            cluster_account_list = AllocationUserAttribute.objects.filter(
-                allocation_attribute_type=cluster_account_status,
-                value__in=['Denied', 'Active'])
+            # cluster_account_list = AllocationUserAttribute.objects.filter(
+            #     allocation_attribute_type=cluster_account_status,
+            #     value__in=['Denied', 'Active'])
+            cluster_access_request_list = ClusterAccessRequest.objects.filter(
+                status__name__in=['Denied', 'Active'])
+            print('list', cluster_access_request_list)
         else:
-            cluster_account_list = AllocationUserAttribute.objects.filter(
-                allocation_attribute_type=cluster_account_status,
-                value__in=['Pending - Add', 'Processing'])
+            # cluster_account_list = AllocationUserAttribute.objects.filter(
+            #     allocation_attribute_type=cluster_account_status,
+            #     value__in=['Pending - Add', 'Processing'])
+            cluster_access_request_list = ClusterAccessRequest.objects.filter(
+                status__name__in=['Pending - Add', 'Processing'])
 
         if cluster_search_form.is_valid():
             data = cluster_search_form.cleaned_data
 
             if data.get('username'):
-                cluster_account_list = cluster_account_list.filter(allocation_user__user__username__icontains=data.get('username'))
+                cluster_access_request_list = cluster_access_request_list.filter(allocation_user__user__username__icontains=data.get('username'))
 
             if data.get('email'):
-                cluster_account_list = cluster_account_list.filter(allocation_user__user__email__icontains=data.get('email'))
+                cluster_access_request_list = cluster_access_request_list.filter(allocation_user__user__email__icontains=data.get('email'))
 
             if data.get('project_name'):
-                cluster_account_list = cluster_account_list.filter(allocation_user__allocation__project__name__icontains=data.get('project_name'))
+                cluster_access_request_list = cluster_access_request_list.filter(allocation_user__allocation__project__name__icontains=data.get('project_name'))
 
             if data.get('request_status'):
-                cluster_account_list = cluster_account_list.filter(value__icontains=data.get('request_status'))
+                cluster_access_request_list = cluster_access_request_list.filter(status__name__icontains=data.get('request_status'))
 
-        return cluster_account_list.order_by(order_by)
+        return cluster_access_request_list.order_by(order_by)
 
     def test_func(self):
         """UserPassesTestMixin tests."""
@@ -1873,20 +1881,20 @@ class AllocationClusterAccountRequestListView(LoginRequiredMixin,
 
         context['request_filter'] = (
             'completed' if self.completed else 'pending')
-        cluster_account_list = self.get_queryset()
+        cluster_access_request_list = self.get_queryset()
 
-        paginator = Paginator(cluster_account_list, self.paginate_by)
+        paginator = Paginator(cluster_access_request_list, self.paginate_by)
 
         page = self.request.GET.get('page')
 
         try:
-            cluster_accounts = paginator.page(page)
+            cluster_access_requests = paginator.page(page)
         except PageNotAnInteger:
-            cluster_accounts = paginator.page(1)
+            cluster_access_requests = paginator.page(1)
         except EmptyPage:
-            cluster_accounts = paginator.page(paginator.num_pages)
+            cluster_access_requests = paginator.page(paginator.num_pages)
 
-        context['cluster_account_list'] = cluster_accounts
+        context['cluster_access_request_list'] = cluster_access_requests
 
         context['actions_visible'] = not self.completed
 
@@ -1910,10 +1918,10 @@ class AllocationClusterAccountUpdateStatusView(LoginRequiredMixin,
         messages.error(self.request, message)
 
     def dispatch(self, request, *args, **kwargs):
-        self.allocation_user_attribute_obj = get_object_or_404(
-            AllocationUserAttribute, pk=self.kwargs.get('pk'))
-        self.user_obj = self.allocation_user_attribute_obj.allocation_user.user
-        status = self.allocation_user_attribute_obj.value
+        self.request_obj = get_object_or_404(
+            ClusterAccessRequest, pk=self.kwargs.get('pk'))
+        self.user_obj = self.request_obj.allocation_user.user
+        status = self.request_obj.status.name
         if status != 'Pending - Add':
             message = f'Cluster access has unexpected status {status}.'
             messages.error(request, message)
@@ -1925,35 +1933,35 @@ class AllocationClusterAccountUpdateStatusView(LoginRequiredMixin,
         form_data = form.cleaned_data
         status = form_data.get('status')
 
-        allocation_obj = self.allocation_user_attribute_obj.allocation
-        project_obj = allocation_obj.project
+        runner = \
+            ProjectClusterAccessRequestUpdateRunner(self.request_obj)
+        runner.update_request(status)
 
-        self.allocation_user_attribute_obj.value = status
-        self.allocation_user_attribute_obj.save()
+        allocation = self.request_obj.allocation_user.allocation
+        project = allocation.project
 
         message = (
             f'Cluster access request from User {self.user_obj.email} under '
-            f'Project {project_obj.name} and Allocation {allocation_obj.pk} '
+            f'Project {project.name} and Allocation {allocation.pk} '
             f'has been updated to have status "{status}".')
         messages.success(self.request, message)
 
         log_message = (
             f'Superuser {self.request.user.pk} changed the value of "Cluster '
-            f'Account Status" AllocationUserAttribute '
-            f'{self.allocation_user_attribute_obj.pk} from "Pending - Add" to '
-            f'"{status}".')
+            f'Account Status" AllocationUserAttribute {self.request_obj.pk} '
+            f'from "Pending - Add" to "{status}".')
         logger.info(log_message)
 
         return super().form_valid(form)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['cluster_account'] = self.allocation_user_attribute_obj
+        context['cluster_access_request'] = self.request_obj
         return context
 
     def get_initial(self):
         initial = {
-            'status': self.allocation_user_attribute_obj.value,
+            'status': self.request_obj.status.name,
         }
         return initial
 
@@ -1980,10 +1988,11 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
         messages.error(self.request, message)
 
     def dispatch(self, request, *args, **kwargs):
-        self.allocation_user_attribute_obj = get_object_or_404(
-            AllocationUserAttribute, pk=self.kwargs.get('pk'))
-        self.user_obj = self.allocation_user_attribute_obj.allocation_user.user
-        status = self.allocation_user_attribute_obj.value
+        self.request_obj = get_object_or_404(
+            ClusterAccessRequest, pk=self.kwargs.get('pk'))
+        print('dispath pk', self.request_obj.pk)
+        self.user_obj = self.request_obj.allocation_user.user
+        status = self.request_obj.status.name
         if status != 'Processing':
             message = f'Cluster access has unexpected status {status}.'
             messages.error(request, message)
@@ -1996,69 +2005,77 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
         username = form_data.get('username')
         cluster_uid = form_data.get('cluster_uid')
 
-        self.user_obj.username = username
-        self.user_obj.userprofile.cluster_uid = cluster_uid
-        self.user_obj.userprofile.save()
-        self.user_obj.save()
+        runner = \
+            ProjectClusterAccessRequestUpdateRunner(self.request_obj)
+        print('i am here')
+        runner.complete_request(username, cluster_uid, utc_now_offset_aware())
+        print('after running')
+        # self.user_obj.username = username
+        # self.user_obj.userprofile.cluster_uid = cluster_uid
+        # self.user_obj.userprofile.save()
+        # self.user_obj.save()
+        #
+        # allocation_obj = self.allocation_user_attribute_obj.allocation
+        # project_obj = allocation_obj.project
+        #
+        # # For Savio projects, set the user's service units to that of
+        # # the allocation. Attempt this before setting the status to
+        # # 'Active' so that failures block completion.
+        # if not project_obj.name.startswith(('abc', 'vector_')):
+        #     self.__set_user_service_units()
+        #
+        # self.allocation_user_attribute_obj.value = 'Active'
+        # self.allocation_user_attribute_obj.save()
 
-        allocation_obj = self.allocation_user_attribute_obj.allocation
-        project_obj = allocation_obj.project
-
-        # For Savio projects, set the user's service units to that of
-        # the allocation. Attempt this before setting the status to
-        # 'Active' so that failures block completion.
-        if not project_obj.name.startswith(('abc', 'vector_')):
-            self.__set_user_service_units()
-
-        self.allocation_user_attribute_obj.value = 'Active'
-        self.allocation_user_attribute_obj.save()
+        allocation = self.request_obj.allocation_user.allocation
+        project = allocation.project
 
         message = (
             f'Cluster access request from User {self.user_obj.email} under '
-            f'Project {project_obj.name} and Allocation {allocation_obj.pk} '
-            f'has been ACTIVATED.')
+            f'Project {project.name} and Allocation {allocation.pk} has been '
+            f'ACTIVATED.')
         messages.success(self.request, message)
 
         log_message = (
             f'Superuser {self.request.user.pk} changed the value of "Cluster '
             f'Account Status" AllocationUserAttribute '
-            f'{self.allocation_user_attribute_obj.pk} from "Processing" to '
+            f'{self.request_obj.pk} from "Processing" to '
             f'"Active".')
         logger.info(log_message)
 
-        if EMAIL_ENABLED:
-            subject = 'Cluster Access Activated'
-            template = 'email/cluster_access_activated.txt'
-
-            CENTER_USER_GUIDE = import_from_settings('CENTER_USER_GUIDE')
-            CENTER_LOGIN_GUIDE = import_from_settings('CENTER_LOGIN_GUIDE')
-            CENTER_HELP_EMAIL = import_from_settings('CENTER_HELP_EMAIL')
-
-            template_context = {
-                'PROGRAM_NAME_SHORT': settings.PROGRAM_NAME_SHORT,
-                'user': self.user_obj,
-                'project_name': project_obj.name,
-                'center_user_guide': CENTER_USER_GUIDE,
-                'center_login_guide': CENTER_LOGIN_GUIDE,
-                'center_help_email': CENTER_HELP_EMAIL,
-                'signature': EMAIL_SIGNATURE,
-            }
-
-            cc_list = project_obj.managers_and_pis_emails()
-
-            send_email_template(
-                subject,
-                template,
-                template_context,
-                EMAIL_SENDER,
-                [self.user_obj.email],
-                cc=cc_list)
+        # if EMAIL_ENABLED:
+        #     subject = 'Cluster Access Activated'
+        #     template = 'email/cluster_access_activated.txt'
+        #
+        #     CENTER_USER_GUIDE = import_from_settings('CENTER_USER_GUIDE')
+        #     CENTER_LOGIN_GUIDE = import_from_settings('CENTER_LOGIN_GUIDE')
+        #     CENTER_HELP_EMAIL = import_from_settings('CENTER_HELP_EMAIL')
+        #
+        #     template_context = {
+        #         'PROGRAM_NAME_SHORT': settings.PROGRAM_NAME_SHORT,
+        #         'user': self.user_obj,
+        #         'project_name': project_obj.name,
+        #         'center_user_guide': CENTER_USER_GUIDE,
+        #         'center_login_guide': CENTER_LOGIN_GUIDE,
+        #         'center_help_email': CENTER_HELP_EMAIL,
+        #         'signature': EMAIL_SIGNATURE,
+        #     }
+        #
+        #     cc_list = project_obj.managers_and_pis_emails()
+        #
+        #     send_email_template(
+        #         subject,
+        #         template,
+        #         template_context,
+        #         EMAIL_SENDER,
+        #         [self.user_obj.email],
+        #         cc=cc_list)
 
         return super().form_valid(form)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['cluster_account'] = self.allocation_user_attribute_obj
+        context['cluster_access_request'] = self.request_obj
         return context
 
     def get_form(self, form_class=None):
@@ -2086,27 +2103,27 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
     def get_success_url(self):
         return reverse('allocation-cluster-account-request-list')
 
-    def __set_user_service_units(self):
-        """Set the AllocationUser's 'Service Units' attribute value to
-        that of the Allocation."""
-        allocation_obj = self.allocation_user_attribute_obj.allocation
-        allocation_user_obj = \
-            self.allocation_user_attribute_obj.allocation_user
-        allocation_attribute_type = AllocationAttributeType.objects.get(
-            name='Service Units')
-        allocation_service_units = allocation_obj.allocationattribute_set.get(
-            allocation_attribute_type=allocation_attribute_type)
-        set_allocation_user_attribute_value(
-            allocation_user_obj, 'Service Units',
-            allocation_service_units.value)
-        # Create a ProjectUserTransaction to store the change in service units.
-        project_user = ProjectUser.objects.get(
-            user=self.user_obj,
-            project=self.allocation_user_attribute_obj.allocation.project)
-        ProjectUserTransaction.objects.create(
-            project_user=project_user,
-            date_time=utc_now_offset_aware(),
-            allocation=Decimal(allocation_service_units.value))
+    # def __set_user_service_units(self):
+    #     """Set the AllocationUser's 'Service Units' attribute value to
+    #     that of the Allocation."""
+    #     allocation_obj = self.allocation_user_attribute_obj.allocation
+    #     allocation_user_obj = \
+    #         self.allocation_user_attribute_obj.allocation_user
+    #     allocation_attribute_type = AllocationAttributeType.objects.get(
+    #         name='Service Units')
+    #     allocation_service_units = allocation_obj.allocationattribute_set.get(
+    #         allocation_attribute_type=allocation_attribute_type)
+    #     set_allocation_user_attribute_value(
+    #         allocation_user_obj, 'Service Units',
+    #         allocation_service_units.value)
+    #     # Create a ProjectUserTransaction to store the change in service units.
+    #     project_user = ProjectUser.objects.get(
+    #         user=self.user_obj,
+    #         project=self.allocation_user_attribute_obj.allocation.project)
+    #     ProjectUserTransaction.objects.create(
+    #         project_user=project_user,
+    #         date_time=utc_now_offset_aware(),
+    #         allocation=Decimal(allocation_service_units.value))
 
 
 class AllocationClusterAccountDenyRequestView(LoginRequiredMixin,
@@ -2123,10 +2140,10 @@ class AllocationClusterAccountDenyRequestView(LoginRequiredMixin,
         messages.error(self.request, message)
 
     def dispatch(self, request, *args, **kwargs):
-        self.allocation_user_attribute_obj = get_object_or_404(
-            AllocationUserAttribute, pk=self.kwargs.get('pk'))
-        self.user_obj = self.allocation_user_attribute_obj.allocation_user.user
-        status = self.allocation_user_attribute_obj.value
+        self.request_obj = get_object_or_404(
+            ClusterAccessRequest, pk=self.kwargs.get('pk'))
+        self.user_obj = self.request_obj.allocation_user.user
+        status = self.request_obj.status.name
         if status not in ('Pending - Add', 'Processing'):
             message = f'Cluster access has unexpected status {status}.'
             messages.error(request, message)
@@ -2135,42 +2152,46 @@ class AllocationClusterAccountDenyRequestView(LoginRequiredMixin,
         return super().dispatch(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
-        self.allocation_user_attribute_obj.value = 'Denied'
-        self.allocation_user_attribute_obj.save()
+        runner = ProjectClusterAccessRequestDenialRunner(self.request_obj)
+        runner.deny_request()
 
-        allocation_obj = self.allocation_user_attribute_obj.allocation
-        project_obj = allocation_obj.project
+        # self.allocation_user_attribute_obj.value = 'Denied'
+        # self.allocation_user_attribute_obj.save()
+        #
+        # allocation_obj = self.allocation_user_attribute_obj.allocation
+        # project_obj = allocation_obj.project
         message = (
             f'Cluster access request from User {self.user_obj.email} under '
-            f'Project {project_obj.name} and Allocation {allocation_obj.pk} '
+            f'Project {self.request_obj.allocation_user.allocation.project.name} '
+            f'and Allocation {self.request_obj.allocation_user.allocation.pk} '
             f'has been DENIED.')
         messages.success(request, message)
-
-        if EMAIL_ENABLED:
-            domain_url = get_domain_url(self.request)
-            view_name = 'allocation-detail'
-            view = reverse(view_name, kwargs={'pk': allocation_obj.pk})
-
-            subject = 'Cluster Access Denied'
-            template = 'email/cluster_access_denied.txt'
-            template_context = {
-                'user': self.user_obj,
-                'center_name': EMAIL_CENTER_NAME,
-                'project': project_obj.name,
-                'allocation': allocation_obj.pk,
-                'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL,
-                'signature': EMAIL_SIGNATURE,
-            }
-
-            cc_list = project_obj.managers_and_pis_emails()
-
-            send_email_template(
-                subject,
-                template,
-                template_context,
-                EMAIL_SENDER,
-                [self.user_obj.email],
-                cc=cc_list)
+        #
+        # if EMAIL_ENABLED:
+        #     domain_url = get_domain_url(self.request)
+        #     view_name = 'allocation-detail'
+        #     view = reverse(view_name, kwargs={'pk': allocation_obj.pk})
+        #
+        #     subject = 'Cluster Access Denied'
+        #     template = 'email/cluster_access_denied.txt'
+        #     template_context = {
+        #         'user': self.user_obj,
+        #         'center_name': EMAIL_CENTER_NAME,
+        #         'project': project_obj.name,
+        #         'allocation': allocation_obj.pk,
+        #         'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL,
+        #         'signature': EMAIL_SIGNATURE,
+        #     }
+        #
+        #     cc_list = project_obj.managers_and_pis_emails()
+        #
+        #     send_email_template(
+        #         subject,
+        #         template,
+        #         template_context,
+        #         EMAIL_SENDER,
+        #         [self.user_obj.email],
+        #         cc=cc_list)
 
         return HttpResponseRedirect(
             reverse('allocation-cluster-account-request-list'))
