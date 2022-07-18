@@ -37,14 +37,15 @@ class TestAllocationClusterAccountActivateRequestView(TestBase):
             'allocation-cluster-account-activate-request',
             kwargs={'pk': pk})
 
-    def test_request_user_logged(self):
-        """Test that a message is written to the log noting which user
-        made the request to update the status."""
+    def test_updates_value_and_log(self):
+        """Test that updating the status results in the correct value
+        being set."""
         url = self.view_url(self.request_obj.pk)
         data = {
             'username': self.user.username,
             'cluster_uid': '12345',
         }
+
         with self.assertLogs('coldfront.core.allocation.views', 'INFO') as cm:
             response = self.client.post(url, data)
         self.assertRedirects(
@@ -58,16 +59,6 @@ class TestAllocationClusterAccountActivateRequestView(TestBase):
             f'{self.request_obj.pk} from "Processing" to '
             f'"Active".')
         self.assertIn(expected_log_message, cm.output[0])
-
-    def test_updates_value(self):
-        """Test that updating the status results in the correct value
-        being set."""
-        url = self.view_url(self.request_obj.pk)
-        data = {
-            'username': self.user.username,
-            'cluster_uid': '12345',
-        }
-        self.client.post(url, data)
 
         self.request_obj.refresh_from_db()
         self.assertEqual(self.request_obj.status.name, 'Active')
