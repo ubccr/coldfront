@@ -1809,7 +1809,6 @@ class AllocationClusterAccountRequestListView(LoginRequiredMixin,
             #     value__in=['Denied', 'Active'])
             cluster_access_request_list = ClusterAccessRequest.objects.filter(
                 status__name__in=['Denied', 'Active'])
-            print('list', cluster_access_request_list)
         else:
             # cluster_account_list = AllocationUserAttribute.objects.filter(
             #     allocation_attribute_type=cluster_account_status,
@@ -1990,7 +1989,6 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
     def dispatch(self, request, *args, **kwargs):
         self.request_obj = get_object_or_404(
             ClusterAccessRequest, pk=self.kwargs.get('pk'))
-        print('dispath pk', self.request_obj.pk)
         self.user_obj = self.request_obj.allocation_user.user
         status = self.request_obj.status.name
         if status != 'Processing':
@@ -2007,9 +2005,8 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
 
         runner = \
             ProjectClusterAccessRequestUpdateRunner(self.request_obj)
-        print('i am here')
         runner.complete_request(username, cluster_uid, utc_now_offset_aware())
-        print('after running')
+
         # self.user_obj.username = username
         # self.user_obj.userprofile.cluster_uid = cluster_uid
         # self.user_obj.userprofile.save()
