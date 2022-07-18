@@ -551,8 +551,6 @@ class RequestHubView(LoginRequiredMixin,
 
             secure_dir_complete = secure_dir_complete.filter(user_cond | pi_cond)
 
-        print('complete', secure_dir_complete)
-
         secure_dir_request_object.num = self.paginators
         secure_dir_request_object.pending_queryset = \
             self.create_paginator(secure_dir_pending)
