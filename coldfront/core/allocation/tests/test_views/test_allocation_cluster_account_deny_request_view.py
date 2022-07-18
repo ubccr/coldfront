@@ -1,5 +1,6 @@
 from coldfront.core.allocation.models import ClusterAccessRequest, \
-    AllocationUser, ClusterAccessRequestStatusChoice
+    AllocationUser, ClusterAccessRequestStatusChoice, AllocationUserAttribute, \
+    Allocation
 from coldfront.core.user.tests.utils import \
     grant_user_cluster_access_under_test_project
 from coldfront.core.utils.common import utc_now_offset_aware
@@ -7,8 +8,8 @@ from coldfront.core.utils.tests.test_base import TestBase
 from django.urls import reverse
 
 
-class TestAllocationClusterAccountUpdateStatusView(TestBase):
-    """A class for testing AllocationClusterAccountUpdateStatusView."""
+class TestAllocationClusterAccountDenyRequestView(TestBase):
+    """A class for testing AllocationClusterAccountDenyRequestView."""
 
     def setUp(self):
         """Set up test data."""
@@ -34,7 +35,7 @@ class TestAllocationClusterAccountUpdateStatusView(TestBase):
         """Return the URL to the view for the ClusterAccessRequest
         with the given primary key."""
         return reverse(
-            'allocation-cluster-account-update-status',
+            'allocation-cluster-account-deny-request',
             kwargs={'pk': pk})
 
     def test_logs_request_user(self):
@@ -43,7 +44,7 @@ class TestAllocationClusterAccountUpdateStatusView(TestBase):
         data = {
             'status': 'Processing',
         }
-        with self.assertLogs('coldfront.core.allocation.views', 'INFO') as cm:
+        with self.assertLogs('coldfront.core.project.utils', 'INFO') as cm:
             response = self.client.post(url, data)
         self.assertRedirects(
             response, reverse('allocation-cluster-account-request-list'))
@@ -51,22 +52,33 @@ class TestAllocationClusterAccountUpdateStatusView(TestBase):
         # Assert that an info message was logged.
         self.assertEqual(len(cm.output), 1)
         expected_log_message = (
-            f'Superuser {self.user.pk} changed the value of "Cluster Account '
-            f'Status" AllocationUserAttribute {self.request_obj.pk} from '
-            f'"Pending - Add" to "{data["status"]}".')
+            f'Cluster access request from User {self.user_obj.email} under '
+            f'Project '
+            f'{self.request_obj.allocation_user.allocation.project.name} '
+            f'and Allocation {self.request_obj.allocation_user.allocation.pk} '
+            f'has been DENIED.')
         self.assertIn(expected_log_message, cm.output[0])
 
-    def test_updates_value(self):
-        """Test that updating the status results in the correct value
+    def test_denies_request(self):
+        """Test that denying the request results in the correct values
         being set."""
-        for status in ('Pending - Add', 'Processing'):
-            url = self.view_url(self.request_obj.pk)
-            data = {
-                'status': status,
-            }
-            self.client.post(url, data)
+        pre_time = utc_now_offset_aware()
+        url = self.view_url(self.request_obj.pk)
+        self.client.get(url)
 
-            self.request_obj.refresh_from_db()
-            self.assertEqual(self.request_obj.status.name, status)
+        self.request_obj.refresh_from_db()
+        self.assertEqual(self.request_obj.status.name, 'Denied')
+        self.assertTrue(pre_time <
+                        self.request_obj.completion_time <
+                        utc_now_offset_aware())
+
+        # Test that the Cluster Account Status Alloc User Attr is
+        # created and denied.
+        cluster_access = AllocationUserAttribute.objects.filter(
+            allocation_attribute_type__name='Cluster Account Status',
+            allocation=Allocation.objects.get(project__name='test_project'),
+            allocation_user=AllocationUser.objects.get(user=self.user),
+            value='Denied')
+        self.assertTrue(cluster_access.exists())
 
     # TODO

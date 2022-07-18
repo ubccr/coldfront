@@ -1,15 +1,15 @@
 from coldfront.core.allocation.models import AllocationUser, \
     ClusterAccessRequest, ClusterAccessRequestStatusChoice, \
     AllocationUserAttribute, Allocation
-from coldfront.core.user.tests.utils import grant_user_cluster_access_under_test_project
+from coldfront.core.user.tests.utils import \
+    grant_user_cluster_access_under_test_project
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
 from django.urls import reverse
 
 
 class TestAllocationClusterAccountActivateRequestView(TestBase):
-    """A class for testing AllocationClusterAccountActivateRequestView.
-    """
+    """A class for testing AllocationClusterAccountActivateRequestView."""
 
     def setUp(self):
         """Set up test data."""
@@ -26,7 +26,8 @@ class TestAllocationClusterAccountActivateRequestView(TestBase):
         # Create ClusterAccessRequest
         self.request_obj = ClusterAccessRequest.objects.create(
             allocation_user=AllocationUser.objects.get(user=self.user),
-            status=ClusterAccessRequestStatusChoice.objects.get(name='Processing'),
+            status=ClusterAccessRequestStatusChoice.objects.get(
+                name='Processing'),
             request_time=utc_now_offset_aware())
 
     @staticmethod
@@ -40,6 +41,7 @@ class TestAllocationClusterAccountActivateRequestView(TestBase):
     def test_updates_value_and_log(self):
         """Test that updating the status results in the correct value
         being set."""
+        pre_time = utc_now_offset_aware()
         url = self.view_url(self.request_obj.pk)
         data = {
             'username': self.user.username,
@@ -62,6 +64,12 @@ class TestAllocationClusterAccountActivateRequestView(TestBase):
 
         self.request_obj.refresh_from_db()
         self.assertEqual(self.request_obj.status.name, 'Active')
+        self.assertTrue(pre_time <
+                        self.request_obj.completion_time <
+                        utc_now_offset_aware())
+
+        # Test that the Cluster Account Status Alloc User Attr is
+        # created and active.
         cluster_access = AllocationUserAttribute.objects.filter(
             allocation_attribute_type__name='Cluster Account Status',
             allocation=Allocation.objects.get(project__name='test_project'),
