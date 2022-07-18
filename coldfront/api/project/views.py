@@ -5,6 +5,7 @@ from django.db import transaction
 from django.http import Http404
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
+from rest_framework.exceptions import APIException
 from rest_framework.response import Response
 from rest_framework import mixins, status, viewsets
 
@@ -25,6 +26,9 @@ authorization_parameter = openapi.Parameter(
         'The authorization token for the requester. The token should be '
         'preceded by "Token " (no quotes).'),
     type=openapi.TYPE_STRING)
+
+
+logger = logging.getLogger(__name__)
 
 
 class ProjectViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin,
@@ -53,11 +57,15 @@ class ProjectUserRemovalRequestViewSet(mixins.ListModelMixin,
     def get_queryset(self):
         return ProjectUserRemovalRequest.objects.order_by('id')
 
-    @transaction.atomic
     def perform_update(self, serializer):
-        instance = serializer.save()
-        runner = ProjectRemovalRequestProcessingRunner(instance)
-        runner.run()
+        try:
+            with transaction.atomic():
+                instance = serializer.save()
+                runner = ProjectRemovalRequestProcessingRunner(instance)
+                runner.run()
+        except Exception as e:
+            logger.exception(e)
+            raise APIException('Internal server error.')
 
     @swagger_auto_schema(
         manual_parameters=[authorization_parameter],

@@ -58,8 +58,8 @@ class ProjectUserRemovalRequestSerializer(serializers.ModelSerializer):
     def validate(self, data):
         """If the status is being changed to 'Complete', ensure that a
         completion_time is given."""
-        status_name = data['status']
-        if (status_name == 'Complete' and
+        if ('status' in data and
+                data['status'] == 'Complete' and
                 not isinstance(data.get('completion_time', None), datetime)):
             message = 'No completion time is given.'
             raise serializers.ValidationError(message)
