@@ -94,7 +94,8 @@ class Command(BaseCommand):
         choices = [
             'Denied',
             'Active',
-            'Pending - Add'
+            'Pending - Add',
+            'Processing'
         ]
         for choice in choices:
             ClusterAccessRequestStatusChoice.objects.get_or_create(
