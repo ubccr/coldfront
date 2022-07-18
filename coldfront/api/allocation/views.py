@@ -28,7 +28,9 @@ from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.allocation.models import HistoricalAllocationAttribute
 from coldfront.core.allocation.models import HistoricalAllocationUserAttribute
 from coldfront.api.permissions import IsAdminUserOrReadOnly, IsSuperuserOrStaff
-
+from coldfront.core.project.utils import \
+    ProjectClusterAccessRequestUpdateRunner, \
+    ProjectClusterAccessRequestDenialRunner
 
 authorization_parameter = openapi.Parameter(
     'Authorization',
@@ -174,21 +176,30 @@ class ClusterAccessRequestViewSet(mixins.ListModelMixin,
         try:
             status_name = serializer.validated_data.get('status', None).name
             completion_time = serializer.validated_data.get('completion_time', None)
-            runner = \
-                ProjectRemovalRequestUpdateRunner(instance)
+            cluster_uid = serializer.validated_data.get('cluster_uid', None)
+            username = serializer.validated_data.get('username', None)
 
             if status_name == 'Complete':
-                runner.update_request(status_name)
-                runner.complete_request(completion_time=completion_time)
-                runner.send_emails()
-            elif status_name in ['Pending', 'Processing']:
+                runner = \
+                    ProjectClusterAccessRequestUpdateRunner(instance)
+                runner.complete_request(completion_time=completion_time,
+                                        cluster_uid=cluster_uid,
+                                        username=username)
+            elif status_name == 'Denied':
+                runner = \
+                    ProjectClusterAccessRequestDenialRunner(instance)
+                runner.deny_request()
+            else:
+                # Status == Pending - Add
+                runner = \
+                    ProjectClusterAccessRequestUpdateRunner(instance)
                 runner.update_request(status_name)
 
-            success_messages, error_messages = runner.get_messages()
+            # success_messages, error_messages = runner.get_messages()
 
-            if error_messages:
-                raise Exception(f'Failed to update the status of the removal '
-                                f'request {kwargs["pk"]}.')
+            # if error_messages:
+            #     raise Exception(f'Failed to update the status of the removal '
+            #                     f'request {kwargs["pk"]}.')
 
             return Response(serializer.data,
                             status=rest_framework.status.HTTP_200_OK)
