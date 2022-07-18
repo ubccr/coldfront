@@ -28,7 +28,7 @@ from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.allocation.models import HistoricalAllocationAttribute
 from coldfront.core.allocation.models import HistoricalAllocationUserAttribute
 from coldfront.api.permissions import IsAdminUserOrReadOnly, IsSuperuserOrStaff
-from coldfront.core.project.utils import \
+from coldfront.core.allocation.utils_.cluster_access_utils import \
     ProjectClusterAccessRequestUpdateRunner, \
     ProjectClusterAccessRequestDenialRunner
 

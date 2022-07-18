@@ -57,11 +57,10 @@ from coldfront.core.allocation.utils import (generate_guauge_data_from_usage,
 from coldfront.core.billing.models import BillingActivity
 from coldfront.core.project.models import (Project, ProjectUser,
                                            ProjectUserStatusChoice)
-from coldfront.core.project.utils import ProjectClusterAccessRequestRunner, \
-    ProjectClusterAccessRequestUpdateRunner, \
+from coldfront.core.project.utils import ProjectClusterAccessRequestRunner
+from coldfront.core.allocation.utils_.cluster_access_utils import ProjectClusterAccessRequestUpdateRunner, \
     ProjectClusterAccessRequestDenialRunner
 from coldfront.core.resource.models import Resource
-from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.mail import send_email_template
@@ -2032,13 +2031,6 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
             f'Project {project.name} and Allocation {allocation.pk} has been '
             f'ACTIVATED.')
         messages.success(self.request, message)
-
-        log_message = (
-            f'Superuser {self.request.user.pk} changed the value of "Cluster '
-            f'Account Status" AllocationUserAttribute '
-            f'{self.request_obj.pk} from "Processing" to '
-            f'"Active".')
-        logger.info(log_message)
 
         # if EMAIL_ENABLED:
         #     subject = 'Cluster Access Activated'
