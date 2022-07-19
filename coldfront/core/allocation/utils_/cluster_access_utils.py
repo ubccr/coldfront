@@ -94,11 +94,15 @@ class ProjectClusterAccessRequestUpdateRunner(object):
         """Sets cluster uid for user."""
         self.user.userprofile.cluster_uid = cluster_uid
         self.user.userprofile.save()
+        self.request.cluster_uid = cluster_uid
+        self.request.save()
 
     def set_username(self, username):
         """Sets the user's new username."""
         self.user.username = username
         self.user.save()
+        self.request.username = username
+        self.request.save()
 
     def set_completion_time(self, completion_time):
         """Sets the completion time of request."""
