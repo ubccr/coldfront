@@ -101,6 +101,8 @@ class TestProjectClusterAccessRequestUpdateRunner(TestClusterAccessRunnersBase):
                             self.alloc_obj.allocation_attribute.value)
 
         self.assertIsNone(self.user0.userprofile.cluster_uid)
+        self.assertIsNone(self.request_obj.cluster_uid)
+        self.assertIsNone(self.request_obj.username)
 
         pre_time = utc_now_offset_aware()
         self.assertIsNone(self.request_obj.completion_time)
@@ -123,9 +125,11 @@ class TestProjectClusterAccessRequestUpdateRunner(TestClusterAccessRunnersBase):
 
         # set_username
         self.assertEqual(self.user0.username, new_username)
+        self.assertEqual(self.request_obj.username, new_username)
 
         # set_cluster_uid
         self.assertEqual(self.user0.userprofile.cluster_uid, 111)
+        self.assertEqual(self.request_obj.cluster_uid, 111)
 
         # set_completion_time
         self.assertTrue(pre_time <
