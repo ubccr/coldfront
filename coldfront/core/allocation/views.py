@@ -239,7 +239,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         allocation_quota_bytes, allocation_usage_bytes = return_allocation_bytes_values(attributes_with_usage, allocation_users)
         context['allocation_quota_bytes'] = allocation_quota_bytes
         context['allocation_usage_bytes'] = allocation_usage_bytes
-
+        context['allocation_users'] = allocation_users
         context['guage_data'] = guage_data
         context['attributes_with_usage'] = attributes_with_usage
         context['attributes'] = attributes
