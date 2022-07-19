@@ -179,12 +179,13 @@ class ClusterAccessRequestViewSet(mixins.ListModelMixin,
             cluster_uid = serializer.validated_data.get('cluster_uid', None)
             username = serializer.validated_data.get('username', None)
 
-            if status_name == 'Complete':
+            if status_name == 'Active':
                 runner = \
                     ProjectClusterAccessRequestUpdateRunner(instance)
                 runner.complete_request(completion_time=completion_time,
                                         cluster_uid=cluster_uid,
                                         username=username)
+
             elif status_name == 'Denied':
                 runner = \
                     ProjectClusterAccessRequestDenialRunner(instance)
