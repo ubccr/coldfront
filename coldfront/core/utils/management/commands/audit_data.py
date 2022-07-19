@@ -113,14 +113,10 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.ERROR('Allocation {} for project {}'
                     ' has a start date of {} that is different than its allocation period\'s.' \
                         .format(id, project, start_date)))
-                    if start_date == None or end_date == None or start_date.day != 1 or end_date.day != 31:
-                        print(project_status, start_date, end_date)
                 if project_status == 'Active' and end_date != FCA_PCA_ALLOCATION_PERIOD.end_date:
                     self.stdout.write(self.style.ERROR('Allocation {} for project {}'
                     ' is active and has an end date of {} that is different than its allocation period\'s.' \
                         .format(id, project, end_date)))
-                    if start_date == None or end_date == None or start_date.day != 1 or end_date.day != 31:
-                        print(project_status, start_date, end_date)
                 
             elif project.startswith(ICA_PREFIX):
                 if project_status == 'Inactive' and end_date is not None:
@@ -174,14 +170,16 @@ class Command(BaseCommand):
         Assert that all users with a cluster UID should be associated with at least one Project.
         '''
         users = UserProfile.objects.filter(cluster_uid__isnull=False) \
-            .values('id', 'user__first_name', 'user__last_name', 'user__email')
+            .values('id', 'user__first_name', 'user__last_name', 'user__email', 'access_agreement_signed_date')
         for user in users:
             user_project_count = ProjectUser.objects.filter(user_id=user['id']).count()
             if user_project_count == 0:
                 self.stdout.write(self.style.ERROR('User {} ({} {}, {})'
-                ' has a cluster UID but is not associated with any projects.' \
+                ' has a cluster UID but is not associated with any projects.{}'
                     .format(user['id'], user['user__first_name'],
-                    user['user__last_name'], user['user__email'])))
+                    user['user__last_name'], user['user__email'],
+                    '' if user['access_agreement_signed_date'] \
+                        else ' They have not signed the access agreement.')))
 
     def handle_lrc_user_billing(self):
         '''
