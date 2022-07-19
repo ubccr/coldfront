@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from coldfront.api.resource.serializers import ResourceSerializer
 from coldfront.core.allocation.models import Allocation, \
     ClusterAccessRequestStatusChoice, ClusterAccessRequest
@@ -14,6 +16,8 @@ from coldfront.core.allocation.models import HistoricalAllocationUserAttribute
 from coldfront.core.project.models import Project
 from django.contrib.auth.models import User
 from rest_framework import serializers
+
+from coldfront.core.user.models import UserProfile
 
 
 class AllocationAttributeUsageSerializer(serializers.ModelSerializer):
@@ -138,18 +142,66 @@ class ClusterAccessRequestSerializer(serializers.ModelSerializer):
                                              required=False,
                                              read_only=True)
 
-    allocation_user = AllocationUserSerializer()
+    allocation_user = AllocationUserSerializer(read_only=True,
+                                               allow_null=True,
+                                               required=False)
 
-    cluster_uid = serializers.CharField(required=True)
+    cluster_uid = serializers.CharField(required=False)
+    username = serializers.CharField(required=False)
 
     class Meta:
         model = ClusterAccessRequest
         fields = (
-            'id', 'allocation_user', 'status', 'completion_time', 'host_user', 'billing_activity')
+            'id', 'status', 'completion_time', 'cluster_uid',
+            'username', 'host_user', 'billing_activity', 'allocation_user')
         extra_kwargs = {
             'id': {'read_only': True},
             'completion_time': {'required': False, 'allow_null': True},
             'allocation_user': {'required': True,
                                 'allow_null': False,
-                                'read_only': True}
+                                'read_only': True},
+            'host_user': {'read_only': True}
         }
+
+    def validate(self, data):
+        # If the status is being changed to 'Complete', ensure that a
+        # completion_time, username, and cluster_uid are given.
+        if 'status' in data and data['status'].name == 'Active':
+            messages = []
+            for field in ['completion_time', 'username', 'cluster_uid']:
+                if (field == 'completion_time' and
+                        not isinstance(data.get('completion_time', None), datetime)):
+                    messages.append('No completion_time is given.')
+
+                elif (field == 'username' and
+                      not isinstance(data.get('username', None), str)):
+                    messages.append('No username is given.')
+
+                elif (field == 'cluster_uid' and
+                      not isinstance(data.get('cluster_uid', None), str)):
+                    messages.append('No cluster_uid is given.')
+            if messages:
+                raise serializers.ValidationError(' '.join(messages))
+
+        # Ensure the username given is either unique or belongs to the
+        # requesting user.
+        if 'username' in data:
+            username = data.get('username', None)
+            queryset = User.objects.filter(username=username)
+            if queryset.exists():
+                if queryset.first().pk != self.instance.allocation_user.user.pk:
+                    message = f'A user with username {username} already exists.'
+                    raise serializers.ValidationError(message)
+
+        # Ensure the cluster_uid given is either unique or belongs to the
+        # requesting user.
+        if 'cluster_uid' in data:
+            cluster_uid = data.get('cluster_uid', None)
+            queryset = UserProfile.objects.filter(cluster_uid=cluster_uid)
+            if queryset.exists():
+                if queryset.first().pk != self.instance.allocation_user.user.userprofile.pk:
+                    message = f'A user with cluster_uid ' \
+                              f'{cluster_uid} already exists.'
+                    raise serializers.ValidationError(message)
+
+        return data
