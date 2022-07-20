@@ -267,11 +267,12 @@ class ProjectRemovalRequestProcessingRunner(object):
             'signature': email_signature,
             'support_email': support_email,
         }
-        unique_users_to_email = set(
-            chain(
-                self._project.pis(),
-                self._project.managers(),
-                [self._removed_user]))
+
+        unique_users_to_email = set()
+        for project_user in self._project.managers_and_pis_to_email():
+            unique_users_to_email.add(project_user.user)
+        unique_users_to_email.add(self._removed_user)
+
         num_failures = []
         for user in unique_users_to_email:
             template_context['user_first_name'] = user.first_name
