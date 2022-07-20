@@ -436,6 +436,7 @@ class ProjectRemovalRequestCompleteStatusView(LoginRequiredMixin,
         form_data = form.cleaned_data
         status = form_data.get('status')
 
+        runner = None
         try:
             request_obj = self.project_removal_request_obj
             with transaction.atomic():
@@ -465,6 +466,10 @@ class ProjectRemovalRequestCompleteStatusView(LoginRequiredMixin,
                 f'{self.user_obj.username} under Project '
                 f'{request_obj.project_user.project.name} is complete.')
             messages.success(self.request, message)
+
+            if isinstance(runner, ProjectRemovalRequestProcessingRunner):
+                for message in runner.get_warning_messages():
+                    messages.warning(self.request, message)
 
         return super().form_valid(form)
 

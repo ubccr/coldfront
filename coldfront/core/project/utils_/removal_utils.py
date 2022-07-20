@@ -282,7 +282,7 @@ class ProjectRemovalRequestProcessingRunner(object):
             unique_users_to_email.add(project_user.user)
         unique_users_to_email.add(self._removed_user)
 
-        num_failures = []
+        num_failures = 0
         for user in unique_users_to_email:
             template_context['user_first_name'] = user.first_name
             template_context['user_last_name'] = user.last_name
@@ -299,7 +299,7 @@ class ProjectRemovalRequestProcessingRunner(object):
                     f'Details: \n{e}')
                 logger.exception(message)
                 num_failures += 1
-        return num_failures == 0
+        return num_failures
 
     def _send_emails_safe(self):
         """Send emails.
