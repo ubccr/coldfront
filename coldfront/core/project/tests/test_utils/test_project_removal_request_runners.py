@@ -568,28 +568,35 @@ class TestProjectRemovalRequestProcessingRunner(TestRemovalRequestRunnerBase):
 
         self._module = 'coldfront.core.project.utils_.removal_utils'
 
+        request_runner = ProjectRemovalRequestRunner(
+            self.pi1, self.user1, self.project1)
+        self.request_obj = request_runner.run()
+        self.request_obj.status = \
+            ProjectUserRemovalRequestStatusChoice.objects.get(
+                name='Complete')
+        self.request_obj.completion_time = utc_now_offset_aware()
+        self.request_obj.save()
+
         self.complete_status = \
             ProjectUserRemovalRequestStatusChoice.objects.get(name='Complete')
         self.project_user_obj = ProjectUser.objects.get(
             project=self.project1, user=self.user1)
+        self.project_user_obj.status = ProjectUserStatusChoice.objects.get(
+            name='Pending - Remove')
+        self.project_user_obj.save()
         self.allocation_user_obj = AllocationUser.objects.get(
             allocation__project=self.project_user_obj.project, user=self.user1)
         self.allocation_user_attribute_obj = \
             self.allocation_user_obj.allocationuserattribute_set.get(
                 allocation_attribute_type__name='Cluster Account Status')
-        self.request_obj = ProjectUserRemovalRequest.objects.create(
-            project_user=self.project_user_obj,
-            requester=self.pi1,
-            request_time=utc_now_offset_aware(),
-            status=self.complete_status)
 
         # Disable email notifications for one PI.
         ProjectUser.objects.filter(user=self.pi2).update(
             enable_notifications=False)
 
     def _assert_emails_sent(self):
-        """Assert that emails from the expected sender to the expected
-        recipients, with the expected body."""
+        """Assert that emails are sent from the expected sender to the
+        expected recipients, with the expected body."""
         expected_from = settings.EMAIL_SENDER
         expected_to = {
             user.email for user in [self.user1, self.pi1, self.manager]}
@@ -613,7 +620,7 @@ class TestProjectRemovalRequestProcessingRunner(TestRemovalRequestRunnerBase):
 
     def _assert_post_state(self):
         """Assert that the relevant objects have the expected state,
-        assuming that the run has run successfully."""
+        assuming that the runner has run successfully."""
         self._refresh_objects()
         self.assertEqual(self.project_user_obj.status.name, 'Removed')
         self.assertEqual(self.allocation_user_obj.status.name, 'Removed')
@@ -624,7 +631,7 @@ class TestProjectRemovalRequestProcessingRunner(TestRemovalRequestRunnerBase):
         assuming that the runner has either not run or not run
         successfully."""
         self._refresh_objects()
-        self.assertEqual(self.project_user_obj.status.name, 'Active')
+        self.assertEqual(self.project_user_obj.status.name, 'Pending - Remove')
         self.assertEqual(self.allocation_user_obj.status.name, 'Active')
         self.assertEqual(self.allocation_user_attribute_obj.value, 'Active')
 
@@ -697,6 +704,27 @@ class TestProjectRemovalRequestProcessingRunner(TestRemovalRequestRunnerBase):
         self.request_obj.status = self.complete_status
         self.request_obj.save()
         ProjectRemovalRequestProcessingRunner(self.request_obj)
+
+    def test_email_failure_no_rollback(self):
+        """Test that, when an exception is raised when attempting to
+        send an email, changes made so far are not rolled back because
+        such an exception is caught."""
+        self.assertEqual(len(mail.outbox), 0)
+
+        self._assert_pre_state()
+
+        with patch.object(
+                ProjectRemovalRequestProcessingRunner,
+                '_send_emails',
+                raise_exception):
+            runner = ProjectRemovalRequestProcessingRunner(self.request_obj)
+            with self.assertLogs(self._module, 'INFO') as log_cm:
+                runner.run()
+
+        self._assert_post_state()
+
+        self.assertGreater(len(log_cm.output), 0)
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_exception_inside_transaction_rollback(self):
         """Test that, when an exception is raised inside the

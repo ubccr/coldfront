@@ -340,6 +340,8 @@ class ProjectRemovalRequestListView(LoginRequiredMixin,
         return context
 
 
+# TODO: This could be merged with the complete view into one, along with their
+# TODO: forms.
 class ProjectRemovalRequestUpdateStatusView(LoginRequiredMixin,
                                             UserPassesTestMixin, FormView):
     form_class = ProjectRemovalRequestUpdateStatusForm
