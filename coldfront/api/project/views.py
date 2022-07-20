@@ -1,13 +1,10 @@
 import logging
 
-import rest_framework
 from django.db import transaction
-from django.http import Http404
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.exceptions import APIException
-from rest_framework.response import Response
-from rest_framework import mixins, status, viewsets
+from rest_framework import mixins, viewsets
 
 from coldfront.api.permissions import IsAdminUserOrReadOnly, IsSuperuserOrStaff
 from coldfront.api.project.filters import ProjectUserRemovalRequestFilter
@@ -59,8 +56,9 @@ class ProjectUserRemovalRequestViewSet(mixins.ListModelMixin,
         try:
             with transaction.atomic():
                 instance = serializer.save()
-                runner = ProjectRemovalRequestProcessingRunner(instance)
-                runner.run()
+                if instance.status.name == 'Complete':
+                    runner = ProjectRemovalRequestProcessingRunner(instance)
+                    runner.run()
         except Exception as e:
             message = f'Rolling back failed transaction. Details:\n{e}'
             logger.exception(message)
