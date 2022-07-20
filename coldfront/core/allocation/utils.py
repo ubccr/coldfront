@@ -3,6 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db.models import BooleanField
 from django.db.models import Case
@@ -332,3 +333,25 @@ def get_secure_dir_manage_user_request_objects(self, action):
     setattr(self, 'request_obj', request_obj)
     setattr(self, 'request_status_obj', request_status_obj)
     setattr(self, 'language_dict', language_dict)
+
+
+def has_cluster_access(user):
+    """
+    Returns True if the user has cluster access, False otherwise
+
+    Parameters:
+    - user (User): the user to check
+
+    Raises:
+    - TypeError, if user is not a User object
+
+    Returns:
+    - Bool: True if the user has cluster access and False otherwise
+    """
+    if not isinstance(user, User):
+        raise TypeError(f'Invalid User {user}.')
+
+    return AllocationUserAttribute.objects.filter(
+        allocation_user__user=user,
+        allocation_attribute_type__name='Cluster Account Status',
+        value='Active').exists()
