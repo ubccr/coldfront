@@ -15,8 +15,6 @@ from coldfront.api.project.serializers import ProjectSerializer, \
     ProjectUserRemovalRequestSerializer
 from coldfront.core.project.models import Project, ProjectUserRemovalRequest
 
-from coldfront.core.project.utils_.removal_utils import \
-    ProjectRemovalRequestUpdateRunner
 from coldfront.core.project.utils_.removal_utils import ProjectRemovalRequestProcessingRunner
 
 authorization_parameter = openapi.Parameter(

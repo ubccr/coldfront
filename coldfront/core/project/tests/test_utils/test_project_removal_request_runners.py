@@ -7,7 +7,6 @@ from coldfront.api.statistics.utils import create_user_project_allocation
 from coldfront.core.project.models import *
 from coldfront.core.project.utils_.removal_utils import ProjectRemovalRequestRunner
 from coldfront.core.project.utils_.removal_utils import ProjectRemovalRequestProcessingRunner
-from coldfront.core.project.utils_.removal_utils import ProjectRemovalRequestUpdateRunner
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.user.models import *
 from coldfront.core.allocation.models import *
@@ -699,26 +698,6 @@ class TestProjectRemovalRequestProcessingRunner(TestRemovalRequestRunnerBase):
         self.request_obj.save()
         ProjectRemovalRequestProcessingRunner(self.request_obj)
 
-    def test_success(self):
-        """Test that the runner removes the user from the Project,
-        removes the user from the associated 'CLUSTER_NAME Compute'
-        Allocation, updates the associated 'Cluster Account Status'
-        AllocationUserAttribute, writes to the log, and sends emails."""
-        self.assertEqual(len(mail.outbox), 0)
-
-        self._assert_pre_state()
-
-        runner = ProjectRemovalRequestProcessingRunner(self.request_obj)
-        with self.assertLogs(self._module, 'INFO') as cm:
-            runner.run()
-
-        self._assert_post_state()
-
-        self.assertGreater(len(cm.output), 0)
-        self._assert_emails_sent()
-
-        self.assertFalse(runner.get_warning_messages())
-
     def test_exception_inside_transaction_rollback(self):
         """Test that, when an exception is raised inside the
         transaction, changes made so far are rolled back."""
@@ -763,100 +742,22 @@ class TestProjectRemovalRequestProcessingRunner(TestRemovalRequestRunnerBase):
         self.assertGreater(len(log_cm.output), 0)
         self.assertEqual(len(mail.outbox), 0)
 
+    def test_success(self):
+        """Test that the runner removes the user from the Project,
+        removes the user from the associated 'CLUSTER_NAME Compute'
+        Allocation, updates the associated 'Cluster Account Status'
+        AllocationUserAttribute, writes to the log, and sends emails."""
+        self.assertEqual(len(mail.outbox), 0)
 
-class TestProjectRemovalRequestUpdateRunner(TestRemovalRequestRunnerBase):
-    """Testing class for ProjectRemovalRequestUpdateRunner"""
+        self._assert_pre_state()
 
-    def setUp(self):
-        """Set up test data."""
-        super().setUp()
+        runner = ProjectRemovalRequestProcessingRunner(self.request_obj)
+        with self.assertLogs(self._module, 'INFO') as cm:
+            runner.run()
 
-        status_choices = ProjectUserRemovalRequestStatusChoice.objects.all()
-        for i in range(3):
-            kwargs = {
-                'project_user': ProjectUser.objects.get(user__username=f'user{i+1}',
-                                                        project__name='project1'),
-                'requester': self.pi1,
-                'request_time': utc_now_offset_aware(),
-                'status': status_choices[i],
-            }
-            if i == 2:
-                kwargs['completion_time'] = utc_now_offset_aware()
-            request = ProjectUserRemovalRequest.objects.create(**kwargs)
-            setattr(self, f'{status_choices[i].name.lower()}_request_{i+1}', request)
+        self._assert_post_state()
 
-    def test_update_request(self):
-        """Test that the update_request function works properly."""
-        runner = ProjectRemovalRequestUpdateRunner(self.pending_request_1)
+        self.assertGreater(len(cm.output), 0)
+        self._assert_emails_sent()
 
-        runner.update_request('Pending')
-        self.pending_request_1.refresh_from_db()
-        self.assertEqual(self.pending_request_1.status.name, 'Pending')
-
-        runner.update_request('Processing')
-        self.pending_request_1.refresh_from_db()
-        self.assertEqual(self.pending_request_1.status.name, 'Processing')
-
-        runner.update_request('Complete')
-        self.pending_request_1.refresh_from_db()
-        self.assertEqual(self.pending_request_1.status.name, 'Complete')
-
-    def test_complete_request_time_given(self):
-        """Test that the complete_request function works properly."""
-
-        runner = ProjectRemovalRequestUpdateRunner(self.processing_request_2)
-        runner.update_request('Complete')
-
-        completion_time = utc_now_offset_aware()
-        runner.complete_request(completion_time)
-
-        self.processing_request_2.refresh_from_db()
-        self.assertEqual(self.processing_request_2.completion_time, completion_time)
-
-        proj_user = self.project1.projectuser_set.get(user=self.user2)
-        self.assertEqual(proj_user.status.name, 'Removed')
-
-        allocation_obj = Allocation.objects.get(project=self.project1)
-        allocation_user = \
-            allocation_obj.allocationuser_set.get(user=self.user2)
-        allocation_user_status_choice_removed = \
-            AllocationUserStatusChoice.objects.get(name='Removed')
-
-        allocation_user.refresh_from_db()
-        self.assertEquals(allocation_user.status,
-                          allocation_user_status_choice_removed)
-
-        cluster_account_status = \
-            allocation_user.allocationuserattribute_set.get(
-                allocation_attribute_type=AllocationAttributeType.objects.get(
-                    name='Cluster Account Status'))
-
-        self.assertEquals(cluster_account_status.value, 'Denied')
-
-    def test_emails_sent(self):
-        """Test that send_emails function works properly."""
-
-        runner = ProjectRemovalRequestUpdateRunner(self.processing_request_2)
-        runner.update_request('Complete')
-        completion_time = utc_now_offset_aware()
-        runner.complete_request(completion_time)
-        runner.send_emails()
-
-        email_to_list = [proj_user.user.email for proj_user in
-                         self.project1.projectuser_set.filter(
-                             role__name__in=['Manager', 'Principal Investigator'],
-                             status__name='Active',
-                             enable_notifications=True)] + [self.user2.email]
-        self.assertEqual(len(mail.outbox), len(email_to_list))
-
-        email_body = f'The request to remove {self.user2.first_name} ' \
-                     f'{self.user2.last_name} of Project ' \
-                     f'{self.project1.name} initiated by {self.pi1.first_name}' \
-                     f' {self.pi1.last_name} has been completed. ' \
-                     f'{self.user2.first_name} {self.user2.last_name}' \
-                     f' is no longer a user of Project {self.project1.name}.'
-
-        for email in mail.outbox:
-            self.assertIn(email_body, email.body)
-            self.assertIn(email.to[0], email_to_list)
-            self.assertEqual(settings.EMAIL_SENDER, email.from_email)
+        self.assertFalse(runner.get_warning_messages())

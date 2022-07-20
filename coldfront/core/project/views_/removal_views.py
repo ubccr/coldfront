@@ -18,8 +18,7 @@ from coldfront.core.project.models import (Project,
                                            ProjectUserRemovalRequest,
                                            ProjectUserRemovalRequestStatusChoice)
 from coldfront.core.project.utils_.removal_utils import ProjectRemovalRequestProcessingRunner
-from coldfront.core.project.utils_.removal_utils import \
-    ProjectRemovalRequestRunner, ProjectRemovalRequestUpdateRunner
+from coldfront.core.project.utils_.removal_utils import ProjectRemovalRequestRunner
 from coldfront.core.utils.common import (import_from_settings,
                                          utc_now_offset_aware)
 
@@ -373,15 +372,17 @@ class ProjectRemovalRequestUpdateStatusView(LoginRequiredMixin,
         form_data = form.cleaned_data
         status = form_data.get('status')
 
-        runner = ProjectRemovalRequestUpdateRunner(self.project_removal_request_obj)
-        runner.update_request(status)
+        request_obj = self.project_removal_request_obj
+        request_obj.status = ProjectUserRemovalRequestStatusChoice.objects.get(
+            name=status)
+        request_obj.save()
 
         message = (
             f'Project removal request initiated by '
-            f'{self.project_removal_request_obj.requester.username} for User '
-            f'{self.user_obj.username} under '
-            f'Project {self.project_removal_request_obj.project_user.project.name} '
-            f'has been marked as {status}.')
+            f'{request_obj.requester.username} for User '
+            f'{self.user_obj.username} under Project '
+            f'{request_obj.project_user.project.name} has been marked as '
+            f'{status}.')
         messages.success(self.request, message)
 
         return super().form_valid(form)
