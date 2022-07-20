@@ -64,7 +64,8 @@ class ProjectUserRemovalRequestViewSet(mixins.ListModelMixin,
                 runner = ProjectRemovalRequestProcessingRunner(instance)
                 runner.run()
         except Exception as e:
-            logger.exception(e)
+            message = f'Rolling back failed transaction. Details:\n{e}'
+            logger.exception(message)
             raise APIException('Internal server error.')
 
     @swagger_auto_schema(

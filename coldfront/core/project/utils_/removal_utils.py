@@ -175,7 +175,9 @@ class ProjectRemovalRequestProcessingRunner(object):
 
         Catch all exceptions to prevent rolling back any enclosing
         transaction.
-        """
+
+        Warning: If the enclosing transaction fails, the already-written
+        log messages are not revoked."""
         try:
             for message in self._success_messages:
                 logger.info(message)

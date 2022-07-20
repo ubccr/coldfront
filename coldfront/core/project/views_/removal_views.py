@@ -1,10 +1,8 @@
-from itertools import chain
-
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.db.models import Q
+from django.db import transaction
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
@@ -12,23 +10,18 @@ from django.views.generic import ListView
 from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
 
-from coldfront.core.allocation.models import (Allocation,
-                                              AllocationAttributeType,
-                                              AllocationUserStatusChoice)
-
 from coldfront.core.project.forms_.removal_forms import \
     (ProjectRemovalRequestSearchForm,
      ProjectRemovalRequestUpdateStatusForm,
      ProjectRemovalRequestCompletionForm)
 from coldfront.core.project.models import (Project,
-                                           ProjectUserStatusChoice,
                                            ProjectUserRemovalRequest,
                                            ProjectUserRemovalRequestStatusChoice)
+from coldfront.core.project.utils_.removal_utils import ProjectRemovalRequestProcessingRunner
 from coldfront.core.project.utils_.removal_utils import \
     ProjectRemovalRequestRunner, ProjectRemovalRequestUpdateRunner
 from coldfront.core.utils.common import (import_from_settings,
                                          utc_now_offset_aware)
-from coldfront.core.utils.mail import send_email_template
 
 import logging
 
@@ -431,7 +424,8 @@ class ProjectRemovalRequestCompleteStatusView(LoginRequiredMixin,
         self.user_obj = self.project_removal_request_obj.project_user.user
         status = self.project_removal_request_obj.status.name
         if status != 'Processing':
-            message = f'Project removal request has unexpected status {status}.'
+            message = (
+                f'Project removal request has unexpected status {status}.')
             messages.error(request, message)
             return HttpResponseRedirect(
                 reverse('project-removal-request-list'))
@@ -441,17 +435,30 @@ class ProjectRemovalRequestCompleteStatusView(LoginRequiredMixin,
         form_data = form.cleaned_data
         status = form_data.get('status')
 
-        runner = ProjectRemovalRequestUpdateRunner(self.project_removal_request_obj)
-        runner.update_request(status)
-
-        if status == 'Complete':
-            runner.complete_request(completion_time=utc_now_offset_aware())
-            runner.send_emails()
-
-        success_messages, error_messages = runner.get_messages()
-        for message in error_messages:
+        try:
+            request_obj = self.project_removal_request_obj
+            with transaction.atomic():
+                request_obj.status = \
+                    ProjectUserRemovalRequestStatusChoice.objects.get(
+                        name=status)
+                if status == 'Complete':
+                    request_obj.completion_time = utc_now_offset_aware()
+                    runner = ProjectRemovalRequestProcessingRunner(request_obj)
+                    runner.run()
+                request_obj.save()
+        except Exception as e:
+            message = f'Rolling back failed transaction. Details:\n{e}'
+            logger.exception(message)
+            message = (
+                'Unexpected failure. Please try again, or contact an '
+                'administrator if the problem persists.')
             messages.error(self.request, message)
-        for message in success_messages:
+        else:
+            message = (
+                f'Project removal request initiated by '
+                f'{request_obj.requester.username} for User '
+                f'{self.user_obj.username} under Project '
+                f'{request_obj.project_user.project.name} is complete.')
             messages.success(self.request, message)
 
         return super().form_valid(form)
