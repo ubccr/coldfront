@@ -1384,10 +1384,7 @@ class SecureDirRequestReviewRDMConsultView(LoginRequiredMixin,
         }
         self.request_obj.status = \
             secure_dir_request_state_status(self.request_obj)
-
-        if status == 'Approved':
-            self.request_obj.rdm_consultation = \
-                rdm_update if rdm_update else 'Approved'
+        self.request_obj.rdm_consultation = rdm_update
         self.request_obj.save()
 
         if status == 'Denied':
@@ -1411,6 +1408,8 @@ class SecureDirRequestReviewRDMConsultView(LoginRequiredMixin,
         rdm_consultation = self.request_obj.state['rdm_consultation']
         initial['status'] = rdm_consultation['status']
         initial['justification'] = rdm_consultation['justification']
+        initial['rdm_update'] = self.request_obj.rdm_consultation
+
         return initial
 
     def get_success_url(self):

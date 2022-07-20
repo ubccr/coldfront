@@ -2,7 +2,7 @@ from django import forms
 from django.core.validators import MinLengthValidator
 
 from coldfront.core.allocation.utils_.secure_dir_utils import \
-    get_all_secure_dir_paths, sec_dir_name_available
+    sec_dir_name_available
 
 
 class SecureDirManageUsersForm(forms.Form):
@@ -74,7 +74,7 @@ class SecureDirRDMConsultationForm(forms.Form):
     rdm_consultants = forms.CharField(
         label='List the name(s) of the Research-IT or Information Security '
               'and Policy (ISP) team member(s) with whom you have discussed '
-              'this data/project',
+              'this data/project.',
         validators=[MinLengthValidator(3)],
         required=True,
         widget=forms.Textarea(attrs={'rows': 3}))
@@ -183,8 +183,9 @@ class SecureDirRDMConsultationReviewForm(forms.Form):
 
     rdm_update = forms.CharField(
         help_text=(
-            'If the requester did not initially consult with RDM, '
-            'you may optionally provide an update.'),
+            'You may provide an optional update to the user provdied RDM '
+            'consultation. Note that overwriting the user provided answer '
+            'is permanent.'),
         label='Optional RDM Update',
         validators=[MinLengthValidator(5)],
         required=False,
