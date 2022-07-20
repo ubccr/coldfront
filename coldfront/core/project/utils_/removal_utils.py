@@ -152,13 +152,20 @@ class ProjectRemovalRequestProcessingRunner(object):
 
     def __init__(self, request_obj):
         assert isinstance(request_obj, ProjectUserRemovalRequest)
+        assert (
+            request_obj.status ==
+            ProjectUserRemovalRequestStatusChoice.objects.get(name='Complete'))
         self._request_obj = request_obj
         self._removed_user = self._request_obj.project_user.user
         self._project = self._request_obj.project_user.project
         self._allocation = get_project_compute_allocation(self._project)
-        # A list of messages to display to the user.
+        # Lists of success and warning messages.
         self._success_messages = []
         self._warning_messages = []
+
+    def get_warning_messages(self):
+        """Return warning messages raised during the run."""
+        return self._warning_messages.copy()
 
     def run(self):
         """Apply database changes in a transaction. Log success messages

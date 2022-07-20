@@ -1,15 +1,22 @@
-from coldfront.api.statistics.utils import create_project_allocation, \
-    create_user_project_allocation
+from unittest.mock import patch
+
+from django.core import mail
+
+from coldfront.api.statistics.utils import create_project_allocation
+from coldfront.api.statistics.utils import create_user_project_allocation
 from coldfront.core.project.models import *
-from coldfront.core.project.utils_.removal_utils import \
-    ProjectRemovalRequestRunner, ProjectRemovalRequestUpdateRunner
+from coldfront.core.project.utils_.removal_utils import ProjectRemovalRequestRunner
+from coldfront.core.project.utils_.removal_utils import ProjectRemovalRequestProcessingRunner
+from coldfront.core.project.utils_.removal_utils import ProjectRemovalRequestUpdateRunner
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.user.models import *
 from coldfront.core.allocation.models import *
 from coldfront.core.utils.tests.test_base import TestBase
 
-from django.contrib.auth.models import User
-from django.core import mail
+
+def raise_exception(*args, **kwargs):
+    """Raise an exception."""
+    raise Exception('Test exception.')
 
 
 class TestRemovalRequestRunnerBase(TestBase):
@@ -551,6 +558,210 @@ class TestProjectRemovalRequestRunner(TestRemovalRequestRunnerBase):
                 self.assertIn(email.to[0], email_to_list)
             self.assertNotEqual(email.to, self.pi1.email)
             self.assertEqual(settings.EMAIL_SENDER, email.from_email)
+
+
+class TestProjectRemovalRequestProcessingRunner(TestRemovalRequestRunnerBase):
+    """A class for testing ProjectRemovalRequestProcessingRunner."""
+
+    def setUp(self):
+        """Set up test data."""
+        super().setUp()
+
+        self._module = 'coldfront.core.project.utils_.removal_utils'
+
+        self.complete_status = \
+            ProjectUserRemovalRequestStatusChoice.objects.get(name='Complete')
+        self.project_user_obj = ProjectUser.objects.get(
+            project=self.project1, user=self.user1)
+        self.allocation_user_obj = AllocationUser.objects.get(
+            allocation__project=self.project_user_obj.project, user=self.user1)
+        self.allocation_user_attribute_obj = \
+            self.allocation_user_obj.allocationuserattribute_set.get(
+                allocation_attribute_type__name='Cluster Account Status')
+        self.request_obj = ProjectUserRemovalRequest.objects.create(
+            project_user=self.project_user_obj,
+            requester=self.pi1,
+            request_time=utc_now_offset_aware(),
+            status=self.complete_status)
+
+        # Disable email notifications for one PI.
+        ProjectUser.objects.filter(user=self.pi2).update(
+            enable_notifications=False)
+
+    def _assert_emails_sent(self):
+        """Assert that emails from the expected sender to the expected
+        recipients, with the expected body."""
+        expected_from = settings.EMAIL_SENDER
+        expected_to = {
+            user.email for user in [self.user1, self.pi1, self.manager]}
+        user_name = f'{self.user1.first_name} {self.user1.last_name}'
+        pi_name = f'{self.pi1.first_name} {self.pi1.last_name}'
+        project_name = self.project1.name
+        expected_body = (
+            f'The request to remove {user_name} of Project {project_name} '
+            f'initiated by {pi_name} has been completed. {user_name} is no '
+            f'longer a user of Project {project_name}.')
+
+        for email in mail.outbox:
+            self.assertEqual(email.from_email, expected_from)
+            self.assertEqual(len(email.to), 1)
+            to = email.to[0]
+            self.assertIn(to, expected_to)
+            expected_to.remove(to)
+            self.assertIn(expected_body, email.body)
+
+        self.assertFalse(expected_to)
+
+    def _assert_post_state(self):
+        """Assert that the relevant objects have the expected state,
+        assuming that the run has run successfully."""
+        self._refresh_objects()
+        self.assertEqual(self.project_user_obj.status.name, 'Removed')
+        self.assertEqual(self.allocation_user_obj.status.name, 'Removed')
+        self.assertEqual(self.allocation_user_attribute_obj.value, 'Denied')
+
+    def _assert_pre_state(self):
+        """Assert that the relevant objects have the expected state,
+        assuming that the runner has either not run or not run
+        successfully."""
+        self._refresh_objects()
+        self.assertEqual(self.project_user_obj.status.name, 'Active')
+        self.assertEqual(self.allocation_user_obj.status.name, 'Active')
+        self.assertEqual(self.allocation_user_attribute_obj.value, 'Active')
+
+    def _refresh_objects(self):
+        """Refresh relevant objects from the database."""
+        self.project_user_obj.refresh_from_db()
+        self.allocation_user_obj.refresh_from_db()
+        self.allocation_user_attribute_obj.refresh_from_db()
+
+    def test_allocation_user_attribute_missing_allowed(self):
+        """Test that, when the ProjectUser's has no associated
+        AllocationUserAttribute, the runner proceeds without error."""
+        self.assertEqual(len(mail.outbox), 0)
+
+        self._assert_pre_state()
+
+        self.allocation_user_attribute_obj.delete()
+
+        runner = ProjectRemovalRequestProcessingRunner(self.request_obj)
+        with self.assertLogs(self._module, 'INFO') as cm:
+            runner.run()
+
+        self.project_user_obj.refresh_from_db()
+        self.allocation_user_obj.refresh_from_db()
+        self.assertEqual(self.project_user_obj.status.name, 'Removed')
+        self.assertEqual(self.allocation_user_obj.status.name, 'Removed')
+
+        self.assertGreater(len(cm.output), 0)
+        self._assert_emails_sent()
+
+        self.assertGreater(len(runner.get_warning_messages()), 0)
+
+    def test_allocation_user_missing_allowed(self):
+        """Test that, when the ProjectUser has no associated
+        AllocationUser, the runner proceeds without error."""
+        self.assertEqual(len(mail.outbox), 0)
+
+        self._assert_pre_state()
+
+        self.allocation_user_obj.delete()
+
+        runner = ProjectRemovalRequestProcessingRunner(self.request_obj)
+        with self.assertLogs(self._module, 'INFO') as cm:
+            runner.run()
+
+        self.project_user_obj.refresh_from_db()
+        self.assertEqual(self.project_user_obj.status.name, 'Removed')
+
+        self.assertGreater(len(cm.output), 0)
+        self._assert_emails_sent()
+
+        self.assertGreater(len(runner.get_warning_messages()), 0)
+
+    def test_asserts_input_request(self):
+        """Test that the runner asserts that the request has the
+        expected type and status."""
+        with self.assertRaises(AssertionError):
+            ProjectRemovalRequestProcessingRunner(0)
+
+        invalid_statuses = \
+            ProjectUserRemovalRequestStatusChoice.objects.exclude(
+                pk=self.complete_status.pk)
+        self.assertGreater(invalid_statuses.count(), 0)
+        for status in invalid_statuses:
+            self.request_obj.status = status
+            self.request_obj.save()
+            with self.assertRaises(AssertionError):
+                ProjectRemovalRequestProcessingRunner(self.request_obj)
+
+        self.request_obj.status = self.complete_status
+        self.request_obj.save()
+        ProjectRemovalRequestProcessingRunner(self.request_obj)
+
+    def test_success(self):
+        """Test that the runner removes the user from the Project,
+        removes the user from the associated 'CLUSTER_NAME Compute'
+        Allocation, updates the associated 'Cluster Account Status'
+        AllocationUserAttribute, writes to the log, and sends emails."""
+        self.assertEqual(len(mail.outbox), 0)
+
+        self._assert_pre_state()
+
+        runner = ProjectRemovalRequestProcessingRunner(self.request_obj)
+        with self.assertLogs(self._module, 'INFO') as cm:
+            runner.run()
+
+        self._assert_post_state()
+
+        self.assertGreater(len(cm.output), 0)
+        self._assert_emails_sent()
+
+        self.assertFalse(runner.get_warning_messages())
+
+    def test_exception_inside_transaction_rollback(self):
+        """Test that, when an exception is raised inside the
+        transaction, changes made so far are rolled back."""
+        self.assertEqual(len(mail.outbox), 0)
+
+        self._assert_pre_state()
+
+        with patch.object(
+                ProjectRemovalRequestProcessingRunner,
+                '_remove_user_from_project_compute_allocation',
+                raise_exception):
+            runner = ProjectRemovalRequestProcessingRunner(self.request_obj)
+            # TODO: Assert that logs were not written. Python 3.10 has an
+            # TODO: assertNotLogs method.
+            with self.assertRaises(Exception) as cm:
+                runner.run()
+            self.assertEqual(str(cm.exception), 'Test exception.')
+
+        self._assert_pre_state()
+
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_exception_outside_transaction_no_rollback(self):
+        """Test that, when an exception is raised outside the
+        transaction, changes made so far are not rolled back."""
+        self.assertEqual(len(mail.outbox), 0)
+
+        self._assert_pre_state()
+
+        with patch.object(
+                ProjectRemovalRequestProcessingRunner,
+                '_send_emails_safe',
+                raise_exception):
+            runner = ProjectRemovalRequestProcessingRunner(self.request_obj)
+            with self.assertLogs(self._module, 'INFO') as log_cm:
+                with self.assertRaises(Exception) as exc_cm:
+                    runner.run()
+            self.assertEqual(str(exc_cm.exception), 'Test exception.')
+
+        self._assert_post_state()
+
+        self.assertGreater(len(log_cm.output), 0)
+        self.assertEqual(len(mail.outbox), 0)
 
 
 class TestProjectRemovalRequestUpdateRunner(TestRemovalRequestRunnerBase):

@@ -441,11 +441,15 @@ class ProjectRemovalRequestCompleteStatusView(LoginRequiredMixin,
                 request_obj.status = \
                     ProjectUserRemovalRequestStatusChoice.objects.get(
                         name=status)
+                request_obj.save()
                 if status == 'Complete':
                     request_obj.completion_time = utc_now_offset_aware()
+                    request_obj.save()
+                    # Run the runner as the last step of the transaction, to
+                    # avoid writing to the log and sending emails for failed
+                    # transactions.
                     runner = ProjectRemovalRequestProcessingRunner(request_obj)
                     runner.run()
-                request_obj.save()
         except Exception as e:
             message = f'Rolling back failed transaction. Details:\n{e}'
             logger.exception(message)
