@@ -149,8 +149,10 @@ class ProjectListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
 
         order_by = self.request.GET.get('order_by', 'id')
-        direction = self.request.GET.get('direction', 'des')
+        direction = self.request.GET.get('direction', 'asc')
         if order_by != "name":
+            if direction == 'asc':
+                direction = ''
             if direction == 'des':
                 direction = '-'
             order_by = direction + order_by
@@ -259,7 +261,7 @@ class ProjectArchivedListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
 
         order_by = self.request.GET.get('order_by', 'id')
-        direction = self.request.GET.get('direction', 'des')
+        direction = self.request.GET.get('direction', '')
         if order_by != "name":
             if direction == 'des':
                 direction = '-'
