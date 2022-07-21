@@ -2,6 +2,7 @@
 Base Django settings for ColdFront project.
 """
 import os
+import sys
 import coldfront
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management.utils import get_random_secret_key
@@ -49,11 +50,14 @@ INSTALLED_APPS = [
 ]
 
 # Additional Apps
+# Hack to fix fontawesome. Will be fixed in version 6
+sys.modules['fontawesome_free'] = __import__('fontawesome-free')
 INSTALLED_APPS += [
     'crispy_forms',
     'sslserver',
     'django_q',
     'simple_history',
+    'fontawesome_free',
 ]
 
 # ColdFront Apps

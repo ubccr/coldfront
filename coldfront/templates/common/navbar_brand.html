@@ -1,9 +1,13 @@
 {% load static %}
-<div class="bg-primary" id="brand">
+{% load common_tags %}
+<div class="bg-light" id="brand">
   <div class="container">
     <div class="row">
-      <div class="col">
-        <h1>ColdFront - <small>Resource Allocation System</small></h1>
+      <div class="col-6 col-md-2">
+        <a href="/"><img class="img-responsive banner-logo" src="{% static 'common/images/logo.png' %}" alt="Coldfront"></a>
+      </div>
+      <div class="col-6 col-md-6">
+        <h3 class="banner-name">{% settings_value 'CENTER_NAME' %}</h3>
       </div>
     </div>
   </div> 

@@ -16,9 +16,9 @@
         <li id="navbar-center-summary" class="nav-item">
           <a class="nav-link" href="{% url 'center-summary' %}">Center Summary</a>
         </li>
-        <li id="navbar-help" class="nav-item">
-          <a class="nav-link" href="{% settings_value 'CENTER_HELP_URL' %}">Help</a>
-        </li>
+        {% if settings.CENTER_HELP_URL %}
+          {% include 'common/navbar_help.html' %}
+        {% endif %}
       </ul>
  
       <ul class="navbar-nav ml-auto">

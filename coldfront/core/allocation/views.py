@@ -426,7 +426,7 @@ class AllocationListView(LoginRequiredMixin, ListView):
             if data.get('allocation_attribute_name') and data.get('allocation_attribute_value'):
                 allocations = allocations.filter(
                     Q(allocationattribute__allocation_attribute_type=data.get('allocation_attribute_name')) &
-                    Q(allocationattribute__value=data.get(
+                    Q(allocationattribute__value__contains=data.get(
                         'allocation_attribute_value'))
                 )
 
@@ -904,8 +904,12 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
                     allocation_remove_user.send(sender=self.__class__,
                                                 allocation_user_pk=allocation_user_obj.pk)
 
-            messages.success(
-                request, 'Removed {} users from allocation.'.format(remove_users_count))
+            if remove_users_count == 1:
+                messages.success(
+                    request, 'Removed {} user from allocation.'.format(remove_users_count))
+            else:
+                messages.success(
+                    request, 'Removed {} users from allocation.'.format(remove_users_count))
         else:
             for error in formset.errors:
                 messages.error(request, error)
@@ -1091,7 +1095,7 @@ class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templat
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         allocation_list = Allocation.objects.filter(
-            status__name__in=['New', 'Renewal Requested', 'Paid', ])
+            status__name__in=['New', 'Renewal Requested', 'Paid', 'Approved',])
         context['allocation_list'] = allocation_list
         context['PROJECT_ENABLE_PROJECT_REVIEW'] = PROJECT_ENABLE_PROJECT_REVIEW
         context['ALLOCATION_DEFAULT_ALLOCATION_LENGTH'] = ALLOCATION_DEFAULT_ALLOCATION_LENGTH
@@ -2196,6 +2200,7 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         allocation_attributes_to_change = self.get_allocation_attributes_to_change(
             allocation_obj)
 
+        # TODO: this logic is a mess. Needs to be cleaned up
         if allocation_attributes_to_change: 
             formset = formset_factory(self.formset_class, max_num=len(
                 allocation_attributes_to_change))
@@ -2205,7 +2210,8 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             if form.is_valid() and formset.is_valid():
                 form_data = form.cleaned_data
 
-                if form_data.get('end_date_extension') != 0: change_requested = True
+                if form_data.get('end_date_extension') != 0:
+                    change_requested = True
 
                 for entry in formset:
                     formset_data = entry.cleaned_data
@@ -2299,30 +2305,29 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                     messages.success(
                         request, 'Allocation change request successfully submitted.')
 
-                pi_name = '{} {} ({})'.format(allocation_obj.project.pi.first_name,
-                                            allocation_obj.project.pi.last_name, allocation_obj.project.pi.username)
-                resource_name = allocation_obj.get_parent_resource
-                domain_url = get_domain_url(self.request)
-                url = '{}{}'.format(domain_url, reverse('allocation-change-list'))
+                    pi_name = '{} {} ({})'.format(allocation_obj.project.pi.first_name,
+                                                allocation_obj.project.pi.last_name, allocation_obj.project.pi.username)
+                    resource_name = allocation_obj.get_parent_resource
+                    domain_url = get_domain_url(self.request)
+                    url = '{}{}'.format(domain_url, reverse('allocation-change-list'))
 
-                if EMAIL_ENABLED:
-                    template_context = {
-                        'pi': pi_name,
-                        'resource': resource_name,
-                        'url': url
-                    }
+                    if EMAIL_ENABLED:
+                        template_context = {
+                            'pi': pi_name,
+                            'resource': resource_name,
+                            'url': url
+                        }
 
-                    send_email_template(
-                        'New Allocation Change Request: {} - {}'.format(
-                            pi_name, resource_name),
-                        'email/new_allocation_change_request.txt',
-                        template_context,
-                        EMAIL_SENDER,
-                        [EMAIL_TICKET_SYSTEM_ADDRESS, ]
-                    )
+                        send_email_template(
+                            'New Allocation Change Request: {} - {}'.format(
+                                pi_name, resource_name),
+                            'email/new_allocation_change_request.txt',
+                            template_context,
+                            EMAIL_SENDER,
+                            [EMAIL_TICKET_SYSTEM_ADDRESS, ]
+                        )
 
                     return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
-
                 else:
                     messages.error(request, 'You must request a change.')
                     return HttpResponseRedirect(reverse('allocation-change', kwargs={'pk': pk}))
