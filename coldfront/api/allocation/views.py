@@ -5,6 +5,7 @@ from django.db import transaction
 from django.http import Http404
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
+from rest_framework.exceptions import APIException
 from rest_framework.response import Response
 from rest_framework import mixins, status, viewsets
 
@@ -29,8 +30,10 @@ from coldfront.core.allocation.models import HistoricalAllocationAttribute
 from coldfront.core.allocation.models import HistoricalAllocationUserAttribute
 from coldfront.api.permissions import IsAdminUserOrReadOnly, IsSuperuserOrStaff
 from coldfront.core.allocation.utils_.cluster_access_utils import \
-    ProjectClusterAccessRequestUpdateRunner, \
-    ProjectClusterAccessRequestDenialRunner
+    ProjectClusterAccessRequestDenialRunner, \
+    ProjectClusterAccessRequestCompleteRunner
+
+logger = logging.getLogger(__name__)
 
 authorization_parameter = openapi.Parameter(
     'Authorization',
@@ -150,64 +153,94 @@ class ClusterAccessRequestViewSet(mixins.ListModelMixin,
     def get_queryset(self):
         return ClusterAccessRequest.objects.order_by('id')
 
+    def perform_update(self, serializer):
+        try:
+            with transaction.atomic():
+                # Pop read only fields
+                cluster_uid = serializer.validated_data.pop('cluster_uid', None)
+                username = serializer.validated_data.pop('username', None)
+                serializer.validated_data.pop('allocation_user', None)
+
+                instance = serializer.save()
+
+                if instance.status.name == 'Active':
+                    runner = ProjectClusterAccessRequestCompleteRunner(instance)
+                    runner.run(completion_time=instance.completion_time,
+                               cluster_uid=cluster_uid,
+                               username=username)
+                elif instance.status.name == 'Denied':
+                    runner = ProjectClusterAccessRequestDenialRunner(instance)
+                    runner.run()
+        except Exception as e:
+            message = f'Rolling back failed transaction. Details:\n{e}'
+            logger.exception(message)
+            raise APIException('Internal server error.')
+
     @swagger_auto_schema(
         manual_parameters=[authorization_parameter],
         operation_description=(
-                'Updates one or more fields of the ClusterAccessRequest '
+                'Updates one or more fields of the ProjectUserRemovalRequest '
                 'identified by the given ID.'))
-    @transaction.atomic
     def partial_update(self, request, *args, **kwargs):
         """The method for PATCH (partial update) requests."""
-        logger = logging.getLogger(__name__)
+        return super().partial_update(request, *args, **kwargs)
 
-        partial = kwargs.pop('partial', False)
-
-        try:
-            instance = self.get_object()
-            serializer = self.get_serializer(
-                instance, data=request.data, partial=partial)
-
-        except Http404:
-            serializer = self.get_serializer(
-                data=request.data, partial=partial)
-
-        serializer.is_valid(raise_exception=True)
-
-        try:
-            status_name = serializer.validated_data.get('status', None).name
-            completion_time = serializer.validated_data.get('completion_time', None)
-            cluster_uid = serializer.validated_data.get('cluster_uid', None)
-            username = serializer.validated_data.get('username', None)
-
-            if status_name == 'Active':
-                runner = \
-                    ProjectClusterAccessRequestUpdateRunner(instance)
-                runner.complete_request(completion_time=completion_time,
-                                        cluster_uid=cluster_uid,
-                                        username=username)
-
-            elif status_name == 'Denied':
-                runner = \
-                    ProjectClusterAccessRequestDenialRunner(instance)
-                runner.deny_request()
-            else:
-                # Status == Pending - Add
-                runner = \
-                    ProjectClusterAccessRequestUpdateRunner(instance)
-                runner.update_request(status_name)
-
-            # success_messages, error_messages = runner.get_messages()
-
-            # if error_messages:
-            #     raise Exception(f'Failed to update the status of the removal '
-            #                     f'request {kwargs["pk"]}.')
-
-            return Response(serializer.data,
-                            status=rest_framework.status.HTTP_200_OK)
-
-        except Exception as e:
-            logger.exception(f'Failed to update the status of the removal '
-                             f'request {kwargs["pk"]}.')
-
-        return Response(serializer.errors,
-                        status=rest_framework.status.HTTP_500_INTERNAL_SERVER_ERROR)
+    # @swagger_auto_schema(
+    #     manual_parameters=[authorization_parameter],
+    #     operation_description=(
+    #             'Updates one or more fields of the ClusterAccessRequest '
+    #             'identified by the given ID.'))
+    # @transaction.atomic
+    # def partial_update(self, request, *args, **kwargs):
+    #     """The method for PATCH (partial update) requests."""
+    #
+    #
+    #     partial = kwargs.pop('partial', False)
+    #
+    #     try:
+    #         instance = self.get_object()
+    #         serializer = self.get_serializer(
+    #             instance, data=request.data, partial=partial)
+    #
+    #     except Http404:
+    #         serializer = self.get_serializer(
+    #             data=request.data, partial=partial)
+    #
+    #     serializer.is_valid(raise_exception=True)
+    #
+    #     try:
+    #         status_name = serializer.validated_data.get('status', None).name
+    #
+    #
+    #         if status_name == 'Active':
+    #             runner = \
+    #                 ProjectClusterAccessRequestUpdateRunner(instance)
+    #             runner.complete_request(completion_time=completion_time,
+    #                                     cluster_uid=cluster_uid,
+    #                                     username=username)
+    #
+    #         elif status_name == 'Denied':
+    #             runner = \
+    #                 ProjectClusterAccessRequestDenialRunner(instance)
+    #             runner.deny_request()
+    #         else:
+    #             # Status == Pending - Add
+    #             runner = \
+    #                 ProjectClusterAccessRequestUpdateRunner(instance)
+    #             runner.update_request(status_name)
+    #
+    #         # success_messages, error_messages = runner.get_messages()
+    #
+    #         # if error_messages:
+    #         #     raise Exception(f'Failed to update the status of the removal '
+    #         #                     f'request {kwargs["pk"]}.')
+    #
+    #         return Response(serializer.data,
+    #                         status=rest_framework.status.HTTP_200_OK)
+    #
+    #     except Exception as e:
+    #         logger.exception(f'Failed to update the status of the removal '
+    #                          f'request {kwargs["pk"]}.')
+    #
+    #     return Response(serializer.errors,
+    #                     status=rest_framework.status.HTTP_500_INTERNAL_SERVER_ERROR)

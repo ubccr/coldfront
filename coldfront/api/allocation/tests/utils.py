@@ -7,7 +7,7 @@ def assert_cluster_access_request_serialization(cluster_access_request,
             expected = str(cluster_access_request.pk)
         elif field == 'status':
             expected = cluster_access_request.status.name
-        elif field in ('request_time', 'completion_time'):
+        elif field == 'completion_time':
             field_value = getattr(cluster_access_request, field)
             if field_value is None:
                 expected = str(field_value)
@@ -18,15 +18,11 @@ def assert_cluster_access_request_serialization(cluster_access_request,
                                                  result['allocation_user'],
                                                  ('id', 'allocation', 'user', 'project', 'status'))
             continue
-        elif field == 'host_user':
-            expected = str(cluster_access_request.host_user)
         elif field == 'billing_activity':
             try:
                 expected = str(cluster_access_request.billing_activity.full_id)
             except AttributeError:
                 expected = str(None)
-        else:
-            expected = str(getattr(cluster_access_request, field))
         actual = str(result[field])
 
         assert expected == actual

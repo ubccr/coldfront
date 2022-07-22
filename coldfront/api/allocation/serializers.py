@@ -131,12 +131,6 @@ class ClusterAccessRequestSerializer(serializers.ModelSerializer):
         slug_field='name',
         queryset=ClusterAccessRequestStatusChoice.objects.all())
 
-    host_user = serializers.SlugRelatedField(
-        slug_field='username',
-        queryset=User.objects.all(),
-        required=False
-    )
-
     billing_activity = serializers.CharField(source='billing_activity.full_id',
                                              allow_null=True,
                                              required=False,
@@ -153,14 +147,13 @@ class ClusterAccessRequestSerializer(serializers.ModelSerializer):
         model = ClusterAccessRequest
         fields = (
             'id', 'status', 'completion_time', 'cluster_uid',
-            'username', 'host_user', 'billing_activity', 'allocation_user')
+            'username', 'billing_activity', 'allocation_user')
         extra_kwargs = {
             'id': {'read_only': True},
             'completion_time': {'required': False, 'allow_null': True},
             'allocation_user': {'required': True,
                                 'allow_null': False,
-                                'read_only': True},
-            'host_user': {'read_only': True}
+                                'read_only': True}
         }
 
     def validate(self, data):

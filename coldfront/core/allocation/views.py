@@ -13,7 +13,7 @@ from django.core.exceptions import ValidationError
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.core.validators import validate_email
 from django.core.validators import ValidationError
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.db.models.query import QuerySet
 from django.forms import formset_factory
@@ -48,7 +48,8 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationUserAttribute,
                                               AllocationUserNote,
                                               AllocationUserStatusChoice,
-                                              ClusterAccessRequest)
+                                              ClusterAccessRequest,
+                                              ClusterAccessRequestStatusChoice)
 from coldfront.core.allocation.signals import (allocation_activate_user,
                                                allocation_remove_user)
 from coldfront.core.allocation.utils import (generate_guauge_data_from_usage,
@@ -58,7 +59,8 @@ from coldfront.core.billing.models import BillingActivity
 from coldfront.core.project.models import (Project, ProjectUser,
                                            ProjectUserStatusChoice)
 from coldfront.core.project.utils import ProjectClusterAccessRequestRunner
-from coldfront.core.allocation.utils_.cluster_access_utils import ProjectClusterAccessRequestUpdateRunner, \
+from coldfront.core.allocation.utils_.cluster_access_utils import \
+    ProjectClusterAccessRequestCompleteRunner, \
     ProjectClusterAccessRequestDenialRunner
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import get_domain_url, import_from_settings
@@ -1900,7 +1902,8 @@ class AllocationClusterAccountRequestListView(LoginRequiredMixin,
 
 
 class AllocationClusterAccountUpdateStatusView(LoginRequiredMixin,
-                                               UserPassesTestMixin, FormView):
+                                               UserPassesTestMixin,
+                                               FormView):
     form_class = AllocationClusterAccountUpdateStatusForm
     login_url = '/'
     template_name = (
@@ -1931,9 +1934,9 @@ class AllocationClusterAccountUpdateStatusView(LoginRequiredMixin,
         form_data = form.cleaned_data
         status = form_data.get('status')
 
-        runner = \
-            ProjectClusterAccessRequestUpdateRunner(self.request_obj)
-        runner.update_request(status)
+        self.request_obj.status = \
+            ClusterAccessRequestStatusChoice.objects.get(name=status)
+        self.request_obj.save()
 
         allocation = self.request_obj.allocation_user.allocation
         project = allocation.project
@@ -2002,63 +2005,34 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
         username = form_data.get('username')
         cluster_uid = form_data.get('cluster_uid')
 
-        runner = \
-            ProjectClusterAccessRequestUpdateRunner(self.request_obj)
-        runner.complete_request(username, cluster_uid, utc_now_offset_aware())
+        runner = None
+        try:
+            with transaction.atomic():
+                runner = \
+                    ProjectClusterAccessRequestCompleteRunner(self.request_obj)
+                runner.run(username,
+                           cluster_uid,
+                           utc_now_offset_aware())
+        except Exception as e:
+            message = f'Rolling back failed transaction. Details:\n{e}'
+            logger.exception(message)
+            message = (
+                'Unexpected failure. Please try again, or contact an '
+                'administrator if the problem persists.')
+            messages.error(self.request, message)
+        else:
+            allocation = self.request_obj.allocation_user.allocation
+            project = allocation.project
 
-        # self.user_obj.username = username
-        # self.user_obj.userprofile.cluster_uid = cluster_uid
-        # self.user_obj.userprofile.save()
-        # self.user_obj.save()
-        #
-        # allocation_obj = self.allocation_user_attribute_obj.allocation
-        # project_obj = allocation_obj.project
-        #
-        # # For Savio projects, set the user's service units to that of
-        # # the allocation. Attempt this before setting the status to
-        # # 'Active' so that failures block completion.
-        # if not project_obj.name.startswith(('abc', 'vector_')):
-        #     self.__set_user_service_units()
-        #
-        # self.allocation_user_attribute_obj.value = 'Active'
-        # self.allocation_user_attribute_obj.save()
+            message = (
+                f'Cluster access request from User {self.user_obj.email} '
+                f'under Project {project.name} and Allocation {allocation.pk} '
+                f'has been ACTIVATED.')
+            messages.success(self.request, message)
 
-        allocation = self.request_obj.allocation_user.allocation
-        project = allocation.project
-
-        message = (
-            f'Cluster access request from User {self.user_obj.email} under '
-            f'Project {project.name} and Allocation {allocation.pk} has been '
-            f'ACTIVATED.')
-        messages.success(self.request, message)
-
-        # if EMAIL_ENABLED:
-        #     subject = 'Cluster Access Activated'
-        #     template = 'email/cluster_access_activated.txt'
-        #
-        #     CENTER_USER_GUIDE = import_from_settings('CENTER_USER_GUIDE')
-        #     CENTER_LOGIN_GUIDE = import_from_settings('CENTER_LOGIN_GUIDE')
-        #     CENTER_HELP_EMAIL = import_from_settings('CENTER_HELP_EMAIL')
-        #
-        #     template_context = {
-        #         'PROGRAM_NAME_SHORT': settings.PROGRAM_NAME_SHORT,
-        #         'user': self.user_obj,
-        #         'project_name': project_obj.name,
-        #         'center_user_guide': CENTER_USER_GUIDE,
-        #         'center_login_guide': CENTER_LOGIN_GUIDE,
-        #         'center_help_email': CENTER_HELP_EMAIL,
-        #         'signature': EMAIL_SIGNATURE,
-        #     }
-        #
-        #     cc_list = project_obj.managers_and_pis_emails()
-        #
-        #     send_email_template(
-        #         subject,
-        #         template,
-        #         template_context,
-        #         EMAIL_SENDER,
-        #         [self.user_obj.email],
-        #         cc=cc_list)
+        if isinstance(runner, ProjectClusterAccessRequestCompleteRunner):
+            for message in runner.get_warning_messages():
+                messages.warning(self.request, message)
 
         return super().form_valid(form)
 
@@ -2141,46 +2115,29 @@ class AllocationClusterAccountDenyRequestView(LoginRequiredMixin,
         return super().dispatch(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
-        runner = ProjectClusterAccessRequestDenialRunner(self.request_obj)
-        runner.deny_request()
+        runner = None
+        try:
+            with transaction.atomic():
+                runner = ProjectClusterAccessRequestDenialRunner(self.request_obj)
+                runner.run()
+        except Exception as e:
+            message = f'Rolling back failed transaction. Details:\n{e}'
+            logger.exception(message)
+            message = (
+                'Unexpected failure. Please try again, or contact an '
+                'administrator if the problem persists.')
+            messages.error(self.request, message)
+        else:
+            message = (
+                f'Cluster access request from User {self.user_obj.email} under '
+                f'Project {self.request_obj.allocation_user.allocation.project.name} '
+                f'and Allocation {self.request_obj.allocation_user.allocation.pk} '
+                f'has been DENIED.')
+            messages.success(request, message)
 
-        # self.allocation_user_attribute_obj.value = 'Denied'
-        # self.allocation_user_attribute_obj.save()
-        #
-        # allocation_obj = self.allocation_user_attribute_obj.allocation
-        # project_obj = allocation_obj.project
-        message = (
-            f'Cluster access request from User {self.user_obj.email} under '
-            f'Project {self.request_obj.allocation_user.allocation.project.name} '
-            f'and Allocation {self.request_obj.allocation_user.allocation.pk} '
-            f'has been DENIED.')
-        messages.success(request, message)
-        #
-        # if EMAIL_ENABLED:
-        #     domain_url = get_domain_url(self.request)
-        #     view_name = 'allocation-detail'
-        #     view = reverse(view_name, kwargs={'pk': allocation_obj.pk})
-        #
-        #     subject = 'Cluster Access Denied'
-        #     template = 'email/cluster_access_denied.txt'
-        #     template_context = {
-        #         'user': self.user_obj,
-        #         'center_name': EMAIL_CENTER_NAME,
-        #         'project': project_obj.name,
-        #         'allocation': allocation_obj.pk,
-        #         'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL,
-        #         'signature': EMAIL_SIGNATURE,
-        #     }
-        #
-        #     cc_list = project_obj.managers_and_pis_emails()
-        #
-        #     send_email_template(
-        #         subject,
-        #         template,
-        #         template_context,
-        #         EMAIL_SENDER,
-        #         [self.user_obj.email],
-        #         cc=cc_list)
+        if isinstance(runner, ProjectClusterAccessRequestDenialRunner):
+            for message in runner.get_warning_messages():
+                messages.warning(self.request, message)
 
         return HttpResponseRedirect(
             reverse('allocation-cluster-account-request-list'))

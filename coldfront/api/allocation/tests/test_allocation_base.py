@@ -48,7 +48,6 @@ class TestAllocationBase(TestAPIBase):
             user = User.objects.create(
                 username=f'user{i}', email=f'user{i}@nonexistent.com')
             user_profile = UserProfile.objects.get(user=user)
-            user_profile.cluster_uid = f'{i}'
             user_profile.save()
             setattr(self, f'user{i}', user)
             setattr(self, f'user_profile{i}', user_profile)

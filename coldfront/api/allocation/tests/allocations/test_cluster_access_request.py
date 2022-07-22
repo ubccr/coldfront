@@ -1,10 +1,18 @@
+from unittest.mock import patch
+
+from django.core import mail
+
 from coldfront.api.allocation.tests.test_allocation_base import \
     TestAllocationBase
 from coldfront.api.allocation.tests.utils import \
     assert_cluster_access_request_serialization
+from coldfront.config import settings
 from coldfront.core.allocation.models import ClusterAccessRequestStatusChoice, \
     AllocationUser, ClusterAccessRequest, AllocationUserAttribute, \
     AllocationAttributeType
+from coldfront.core.allocation.utils_.cluster_access_utils import \
+    ProjectClusterAccessRequestCompleteRunner, \
+    ProjectClusterAccessRequestDenialRunner
 from coldfront.core.utils.common import utc_now_offset_aware
 from http import HTTPStatus
 
@@ -12,9 +20,15 @@ from http import HTTPStatus
 by method."""
 
 SERIALIZER_FIELDS = (
-    'id', 'status', 'completion_time', 'cluster_uid',
-    'username', 'host_user', 'billing_activity', 'allocation_user')
+    'id', 'status', 'completion_time',
+    'billing_activity', 'allocation_user')
+
 BASE_URL = '/api/cluster_access_requests/'
+
+
+def raise_exception(*args, **kwargs):
+    """Raise an exception."""
+    raise Exception('Test exception.')
 
 
 class TestClusterAccessRequestsBase(TestAllocationBase):
@@ -45,6 +59,12 @@ class TestClusterAccessRequestsBase(TestAllocationBase):
                 
             request = ClusterAccessRequest.objects.create(**kwargs)
             setattr(self, f'request{i}', request)
+
+        self.allocation_user0 = \
+            AllocationUser.objects.get(user=self.user0,
+                                       allocation__project=self.project0)
+        self.new_username = 'new_username'
+        self.cluster_uid = '1234'
 
         # Run the client as the superuser.
         self.client.credentials(
@@ -129,20 +149,18 @@ class TestRetrieveClusterAccessRequests(TestClusterAccessRequestsBase):
 
     def test_response_format(self):
         """Test that the response is in the expected format."""
-        cluster_access_request = ClusterAccessRequest.objects.first()
-        url = self.pk_url(BASE_URL, cluster_access_request.pk)
+        url = self.pk_url(BASE_URL, self.request0.pk)
         self.assert_retrieve_result_format(url, SERIALIZER_FIELDS)
 
     def test_valid_pk(self):
         """Test that the response for a valid primary key contains the
         correct values."""
-        cluster_access_request = ClusterAccessRequest.objects.first()
-        url = self.pk_url(BASE_URL, cluster_access_request.pk)
+        url = self.pk_url(BASE_URL, self.request0.pk)
         response = self.client.get(url)
         self.assertEqual(response.status_code, HTTPStatus.OK)
         json = response.json()
         assert_cluster_access_request_serialization(
-            cluster_access_request, json, SERIALIZER_FIELDS)
+            self.request0, json, SERIALIZER_FIELDS)
 
     def test_invalid_pk(self):
         """Test that the response for a nonexistent or unassociated
@@ -155,6 +173,87 @@ class TestRetrieveClusterAccessRequests(TestClusterAccessRequestsBase):
 class TestUpdatePatchClusterAccessRequests(TestClusterAccessRequestsBase):
     """A class for testing PATCH /cluster_access_requests/
     {cluster_access_request_id}/."""
+
+    def _get_cluster_account_status_attr(self, allocation_user):
+        cluster_account_status = \
+            AllocationAttributeType.objects.get(name='Cluster Account Status')
+        cluster_access_attribute = \
+            AllocationUserAttribute.objects.filter(
+                allocation_attribute_type=cluster_account_status,
+                allocation=allocation_user.allocation,
+                allocation_user=allocation_user)
+        return cluster_access_attribute
+
+    def _assert_complete_emails_sent(self):
+        email_body = [f'now has access to the project {self.project0.name}.',
+                      f'supercluster username is - {self.new_username}',
+                      f'If this is the first time you are accessing',
+                      f'start with the below Logging In page:']
+
+        self.assertEqual(len(mail.outbox), 1)
+        email = mail.outbox[0]
+
+        self.assertIn('Cluster Access Activated', email.subject)
+        for section in email_body:
+            self.assertIn(section, email.body)
+        self.assertEqual(email.to, [self.user0.email])
+        self.assertEqual(email.cc, [self.pi.email])
+        self.assertEqual(settings.EMAIL_SENDER, email.from_email)
+
+    def _assert_denial_emails_sent(self):
+        email_body = [f'access request under project {self.project0.name}',
+                      f'and allocation '
+                      f'{self.allocation_user0.allocation.pk} '
+                      f'has been denied.']
+
+        self.assertEqual(len(mail.outbox), 1)
+        email = mail.outbox[0]
+
+        self.assertIn('Cluster Access Denied', email.subject)
+        for section in email_body:
+            self.assertIn(section, email.body)
+        self.assertEqual(email.to, [self.user0.email])
+        self.assertEqual(email.cc, [self.pi.email])
+        self.assertEqual(settings.EMAIL_SENDER, email.from_email)
+
+    def _refresh_objects(self):
+        """Refresh relevant objects from db."""
+        self.request0.refresh_from_db()
+        self.user0.refresh_from_db()
+        # self.alloc_obj.allocation.refresh_from_db()
+        # self.alloc_user_obj.allocation_user.refresh_from_db()
+        # self.alloc_user_obj.allocation_user_attribute.refresh_from_db()
+
+    def _assert_pre_state(self):
+        """Assert that the relevant objects have the expected state,
+        assuming that the runner has either not run or not run
+        successfully."""
+        self._refresh_objects()
+        self.assertEqual(self.request0.status.name, 'Pending - Add')
+        self.assertIsNone(self.user0.userprofile.cluster_uid)
+        self.assertEqual(self.user0.username, 'user0')
+        self.assertIsNone(self.request0.completion_time)
+        # self.assertNotEqual(self.alloc_user_obj.allocation_user_attribute.value,
+        #                     self.alloc_obj.allocation_attribute.value)
+        self.assertFalse(self._get_cluster_account_status_attr(self.allocation_user0).exists())
+        self.assertEqual(self.request0.allocation_user.pk, self.allocation_user0.pk)
+
+    def _assert_post_state(self, pre_time, post_time, status, check_username_clusteruid=True):
+        """Assert that the relevant objects have the expected state,
+        assuming that the runner has run successfully."""
+        self._refresh_objects()
+        self.assertEqual(self.request0.status.name, status)
+        self.assertTrue(pre_time < self.request0.completion_time < post_time)
+        # self.assertEqual(self.alloc_user_obj.allocation_user_attribute.value,
+        #                  self.alloc_obj.allocation_attribute.value)
+        self.assertTrue(self._get_cluster_account_status_attr(self.allocation_user0).exists())
+        self.assertEqual(self._get_cluster_account_status_attr(self.allocation_user0).first().value,
+                         status)
+        self.assertEqual(self.request0.allocation_user.pk, self.allocation_user0.pk)
+
+        if check_username_clusteruid:
+            self.assertEqual(self.user0.userprofile.cluster_uid, self.cluster_uid)
+            self.assertEqual(self.user0.username, self.new_username)
 
     def test_authorization_token_required(self):
         """Test that an authorization token is required."""
@@ -176,10 +275,12 @@ class TestUpdatePatchClusterAccessRequests(TestClusterAccessRequestsBase):
     def test_read_only_fields_ignored(self):
         """Test that requests that attempt to update read-only fields do
         not update those fields."""
-        pre_cluster_access_request = ClusterAccessRequest.objects.filter(allocation_user__user=self.user0).first()
-        url = self.pk_url(BASE_URL, pre_cluster_access_request.pk)
+        self._assert_pre_state()
+        pre_time = utc_now_offset_aware()
+
+        url = self.pk_url(BASE_URL, self.request0.pk)
         data = {
-            'id': pre_cluster_access_request.id + 1,
+            'id': self.request0.pk + 1,
             'status': 'Active',
             'completion_time': utc_now_offset_aware(),
             'allocation_user': {'id': 12,
@@ -188,102 +289,101 @@ class TestUpdatePatchClusterAccessRequests(TestClusterAccessRequestsBase):
                                 'project': 'project0',
                                 'status': 'Active'},
             'username': 'new_username',
-            'cluster_uid': '1234',
-            'host_user': 'user2'
+            'cluster_uid': '1234'
         }
         response = self.client.patch(url, data, format='json')
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
         json = response.json()
 
-        post_cluster_access_request = ClusterAccessRequest.objects.get(
-            pk=pre_cluster_access_request.id)
-        assert_cluster_access_request_serialization(
-            post_cluster_access_request, json, SERIALIZER_FIELDS)
+        post_time = utc_now_offset_aware()
+        self._assert_post_state(pre_time, post_time, data.get('status'))
 
-        self.assertEqual(pre_cluster_access_request.id,
-                         post_cluster_access_request.id)
-        self.assertEqual(pre_cluster_access_request.status.name,
-                         'Pending - Add')
-        self.assertEqual(pre_cluster_access_request.allocation_user,
-                         post_cluster_access_request.allocation_user)
-        self.assertEqual(post_cluster_access_request.status.name,
-                         'Active')
-        self.assertIsNone(pre_cluster_access_request.completion_time)
-        self.assertEqual(post_cluster_access_request.completion_time,
-                         data.get('completion_time'))
-        self.assertEqual(pre_cluster_access_request.host_user,
-                         post_cluster_access_request.host_user)
-        self.assertEqual(post_cluster_access_request.cluster_uid,
-                         data.get('cluster_uid'))
-        self.assertEqual(post_cluster_access_request.username,
-                         data.get('username'))
+        assert_cluster_access_request_serialization(
+            self.request0, json, SERIALIZER_FIELDS)
+
+        self.assertEqual(data.get('id') - 1, self.request0.pk)
+        self.assertNotEqual(data.get('allocation_user').get('id'),
+                            self.request0.allocation_user.pk)
+
+        self._assert_complete_emails_sent()
 
     def test_valid_data_complete(self):
         """Test that updating an object with valid PATCH data
         succeeds when the new status is Active."""
-        cluster_access_request = ClusterAccessRequest.objects.first()
-        url = self.pk_url(BASE_URL, cluster_access_request.pk)
-        completion_time = utc_now_offset_aware()
+        self._assert_pre_state()
+        pre_time = utc_now_offset_aware()
+
+        url = self.pk_url(BASE_URL, self.request0.pk)
         data = {
-            'completion_time': completion_time.isoformat(),
+            'completion_time': utc_now_offset_aware(),
             'status': 'Active',
-            'username': 'new_username',
-            'cluster_uid': '1234',
+            'username': self.new_username,
+            'cluster_uid': self.cluster_uid,
         }
         response = self.client.patch(url, data, format='json')
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
         json = response.json()
 
-        cluster_access_request.refresh_from_db()
+        post_time = utc_now_offset_aware()
+        self._assert_post_state(pre_time, post_time, data.get('status'))
+
         assert_cluster_access_request_serialization(
-            cluster_access_request, json, SERIALIZER_FIELDS)
+            self.request0, json, SERIALIZER_FIELDS)
+        
+        self._assert_complete_emails_sent()
 
-        self.assertEqual(
-            cluster_access_request.completion_time, completion_time)
-        self.assertEqual(cluster_access_request.status.name, data['status'])
-        self.assertEqual(cluster_access_request.username, data['username'])
-        self.assertEqual(cluster_access_request.cluster_uid, data['cluster_uid'])
+    def test_valid_data_denied(self):
+        """Test that updating an object with valid PATCH data
+        succeeds when the new status is Active."""
+        self._assert_pre_state()
+        pre_time = utc_now_offset_aware()
 
-        user = cluster_access_request.allocation_user.user
-        self.assertEqual(user.username, data['username'])
-        self.assertEqual(user.userprofile.cluster_uid, data['cluster_uid'])
+        url = self.pk_url(BASE_URL, self.request0.pk)
+        data = {
+            'completion_time': utc_now_offset_aware(),
+            'status': 'Denied',
+        }
+        response = self.client.patch(url, data, format='json')
 
-        cluster_account_status = \
-            AllocationAttributeType.objects.get(name='Cluster Account Status')
-        cluster_access_attribute = \
-            AllocationUserAttribute.objects.filter(
-                allocation_attribute_type=cluster_account_status,
-                allocation=cluster_access_request.allocation_user.allocation,
-                allocation_user=cluster_access_request.allocation_user)
-        self.assertTrue(cluster_access_attribute.exists())
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        json = response.json()
+
+        post_time = utc_now_offset_aware()
+        self._assert_post_state(pre_time, post_time, data.get('status'), False)
+
+        assert_cluster_access_request_serialization(
+            self.request0, json, SERIALIZER_FIELDS)
+
+        self._assert_denial_emails_sent()
 
     def test_valid_data_processing(self):
         """Test that updating an object with valid PATCH data
         succeeds when the new status is Processing."""
-        cluster_access_request = ClusterAccessRequest.objects.first()
-        url = self.pk_url(BASE_URL, cluster_access_request.pk)
+        self._assert_pre_state()
+        url = self.pk_url(BASE_URL, self.request0.pk)
         data = {
             'status': 'Processing',
         }
         response = self.client.patch(url, data)
         self.assertEqual(response.status_code, HTTPStatus.OK)
         json = response.json()
-        cluster_access_request.refresh_from_db()
+        
+        self.request0.refresh_from_db()
         assert_cluster_access_request_serialization(
-            cluster_access_request, json, SERIALIZER_FIELDS)
+            self.request0, json, SERIALIZER_FIELDS)
 
-        self.assertIsNone(cluster_access_request.completion_time)
-        self.assertIsNone(cluster_access_request.username)
-        self.assertIsNone(cluster_access_request.cluster_uid)
-        self.assertEqual(cluster_access_request.status.name, data['status'])
+        self.assertIsNone(self.request0.completion_time)
+        self.assertEqual(self.request0.status.name, data.get('status'))
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_invalid_data(self):
         """Test that updating an object with invalid PATCH data
         fails."""
-        cluster_access_request = ClusterAccessRequest.objects.filter(allocation_user__user=self.user0).first()
-        url = self.pk_url(BASE_URL, cluster_access_request.pk)
+        self._assert_pre_state()
+        
+        url = self.pk_url(BASE_URL, self.request0.pk)
         data = {
             'completion_time': 'Invalid',
             'status': 'Invalid',
@@ -298,10 +398,13 @@ class TestUpdatePatchClusterAccessRequests(TestClusterAccessRequestsBase):
         self.assertEqual(
             json['status'], ['Object with name=Invalid does not exist.'])
 
+        self._assert_pre_state()
+        self.assertEqual(len(mail.outbox), 0)
+
     def test_no_completion_time(self):
         """Test no completion time given when status == Active."""
-        cluster_access_request = ClusterAccessRequest.objects.filter(allocation_user__user=self.user0).first()
-        url = self.pk_url(BASE_URL, cluster_access_request.pk)
+        self._assert_pre_state()
+        url = self.pk_url(BASE_URL, self.request0.pk)
 
         data = {
             'status': 'Active',
@@ -315,11 +418,13 @@ class TestUpdatePatchClusterAccessRequests(TestClusterAccessRequestsBase):
 
         message = 'No completion_time is given.'
         self.assertIn(message, json['non_field_errors'])
+        self._assert_pre_state()
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_no_username_given(self):
         """Test no username given when status == Active."""
-        cluster_access_request = ClusterAccessRequest.objects.filter(allocation_user__user=self.user0).first()
-        url = self.pk_url(BASE_URL, cluster_access_request.pk)
+        self._assert_pre_state()
+        url = self.pk_url(BASE_URL, self.request0.pk)
 
         data = {
             'status': 'Active',
@@ -333,11 +438,13 @@ class TestUpdatePatchClusterAccessRequests(TestClusterAccessRequestsBase):
 
         message = 'No username is given.'
         self.assertIn(message, json['non_field_errors'])
+        self._assert_pre_state()
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_no_cluster_uid_given(self):
         """Test no cluster_uid given when status == Active."""
-        cluster_access_request = ClusterAccessRequest.objects.filter(allocation_user__user=self.user0).first()
-        url = self.pk_url(BASE_URL, cluster_access_request.pk)
+        self._assert_pre_state()
+        url = self.pk_url(BASE_URL, self.request0.pk)
 
         data = {
             'status': 'Active',
@@ -351,11 +458,13 @@ class TestUpdatePatchClusterAccessRequests(TestClusterAccessRequestsBase):
 
         message = 'No cluster_uid is given.'
         self.assertIn(message, json['non_field_errors'])
+        self._assert_pre_state()
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_username_taken(self):
         """Test given username is already taken."""
-        cluster_access_request = ClusterAccessRequest.objects.filter(allocation_user__user=self.user0).first()
-        url = self.pk_url(BASE_URL, cluster_access_request.pk)
+        self._assert_pre_state()
+        url = self.pk_url(BASE_URL, self.request0.pk)
 
         data = {
             'status': 'Active',
@@ -370,14 +479,16 @@ class TestUpdatePatchClusterAccessRequests(TestClusterAccessRequestsBase):
 
         message = 'A user with username user1 already exists.'
         self.assertIn(message, json['non_field_errors'])
+        self._assert_pre_state()
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_cluster_uid_taken(self):
         """Test given cluster_uid is already taken."""
+        self._assert_pre_state()
         self.user1.userprofile.cluster_uid = '1234'
         self.user1.userprofile.save()
 
-        cluster_access_request = ClusterAccessRequest.objects.filter(allocation_user__user=self.user0).first()
-        url = self.pk_url(BASE_URL, cluster_access_request.pk)
+        url = self.pk_url(BASE_URL, self.request0.pk)
 
         data = {
             'status': 'Active',
@@ -392,6 +503,62 @@ class TestUpdatePatchClusterAccessRequests(TestClusterAccessRequestsBase):
 
         message = 'A user with cluster_uid 1234 already exists.'
         self.assertIn(message, json['non_field_errors'])
+        self._assert_pre_state()
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_exception_causes_rollback_complete(self):
+        """Test that, when an exception occurs, changes made so far are
+        rolled back."""
+        self._assert_pre_state()
+
+        url = self.pk_url(BASE_URL, self.request0.pk)
+        data = {
+            'completion_time': utc_now_offset_aware(),
+            'status': 'Active',
+            'username': self.new_username,
+            'cluster_uid': self.cluster_uid
+        }
+        with patch.object(
+                ProjectClusterAccessRequestCompleteRunner, 
+                'run',
+                raise_exception):
+            response = self.client.patch(url, data)
+
+        self.assertEqual(
+            response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
+        json = response.json()
+        self.assertIn('detail', json)
+        self.assertEqual(json['detail'], 'Internal server error.')
+
+        self._assert_pre_state()
+
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_exception_causes_rollback_denial(self):
+        """Test that, when an exception occurs, changes made so far are
+        rolled back."""
+        self._assert_pre_state()
+
+        url = self.pk_url(BASE_URL, self.request0.pk)
+        data = {
+            'completion_time': utc_now_offset_aware(),
+            'status': 'Denied'
+        }
+        with patch.object(
+                ProjectClusterAccessRequestDenialRunner,
+                'run',
+                raise_exception):
+            response = self.client.patch(url, data)
+
+        self.assertEqual(
+            response.status_code, HTTPStatus.INTERNAL_SERVER_ERROR)
+        json = response.json()
+        self.assertIn('detail', json)
+        self.assertEqual(json['detail'], 'Internal server error.')
+
+        self._assert_pre_state()
+
+        self.assertEqual(len(mail.outbox), 0)
 
 
 class TestDestroyClusterAccessRequests(TestClusterAccessRequestsBase):
