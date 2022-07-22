@@ -53,6 +53,7 @@ class ProjectClusterAccessRequestCompleteRunner(object):
     def run(self, username, cluster_uid, completion_time):
         """Performs the necessary operations to complete the request."""
         with transaction.atomic():
+            self._update_request('Active')
             self._give_cluster_access_attribute()
             self._set_username(username)
             self._set_cluster_uid(cluster_uid)
@@ -63,7 +64,6 @@ class ProjectClusterAccessRequestCompleteRunner(object):
             # 'Active' so that failures block completion.
             if not self.project.name.startswith(('abc', 'vector_')):
                 self._set_user_service_units()
-            self._update_request('Active')
 
         message = (
             f'Successfully completed cluster access request {self.request.pk} '
@@ -257,8 +257,8 @@ class ProjectClusterAccessRequestDenialRunner(object):
     def run(self):
         """Denies the request."""
         with transaction.atomic():
-            self._deny_cluster_access_attribute()
             self._set_status()
+            self._deny_cluster_access_attribute()
             self._set_completion_time(utc_now_offset_aware())
 
         self._log_success_messages()
