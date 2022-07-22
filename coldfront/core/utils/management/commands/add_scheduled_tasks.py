@@ -16,13 +16,14 @@ class Command(BaseCommand):
 
         date = timezone.now() + datetime.timedelta(days=1)
         date = date.replace(hour=0, minute=0, second=0, microsecond=0)
-        schedule('coldfront.core.allocation.tasks.update_statuses',
-                 schedule_type=Schedule.DAILY,
-                 next_run=date)
+        # Cammenting out tasks that handle expiration, as we don't use expirations or end_dates.
+        # schedule('coldfront.core.allocation.tasks.update_statuses',
+        #          schedule_type=Schedule.DAILY,
+        #          next_run=date)
 
-        schedule('coldfront.core.allocation.tasks.send_expiry_emails',
-                 schedule_type=Schedule.DAILY,
-                 next_run=date)
+        # schedule('coldfront.core.allocation.tasks.send_expiry_emails',
+        #          schedule_type=Schedule.DAILY,
+        #          next_run=date)
 
         # if plugins are installed, add their tasks
         kwargs = {  "repeats":-1,
