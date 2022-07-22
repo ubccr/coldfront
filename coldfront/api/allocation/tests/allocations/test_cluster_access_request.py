@@ -9,10 +9,10 @@ from coldfront.api.allocation.tests.utils import \
 from coldfront.config import settings
 from coldfront.core.allocation.models import ClusterAccessRequestStatusChoice, \
     AllocationUser, ClusterAccessRequest, AllocationUserAttribute, \
-    AllocationAttributeType
+    AllocationAttributeType, AllocationAttribute
 from coldfront.core.allocation.utils_.cluster_access_utils import \
-    ProjectClusterAccessRequestCompleteRunner, \
-    ProjectClusterAccessRequestDenialRunner
+    ClusterAccessRequestCompleteRunner, \
+    ClusterAccessRequestDenialRunner
 from coldfront.core.utils.common import utc_now_offset_aware
 from http import HTTPStatus
 
@@ -63,6 +63,16 @@ class TestClusterAccessRequestsBase(TestAllocationBase):
         self.allocation_user0 = \
             AllocationUser.objects.get(user=self.user0,
                                        allocation__project=self.project0)
+
+        self.allocation_su_attr = AllocationAttribute.objects.get(
+            allocation_attribute_type__name='Service Units',
+            allocation=self.allocation_user0.allocation)
+
+        self.allocation_user_su_attr = AllocationUserAttribute.objects.get(
+            allocation_attribute_type__name='Service Units',
+            allocation=self.allocation_user0.allocation,
+            allocation_user=self.allocation_user0)
+
         self.new_username = 'new_username'
         self.cluster_uid = '1234'
 
@@ -220,9 +230,8 @@ class TestUpdatePatchClusterAccessRequests(TestClusterAccessRequestsBase):
         """Refresh relevant objects from db."""
         self.request0.refresh_from_db()
         self.user0.refresh_from_db()
-        # self.alloc_obj.allocation.refresh_from_db()
-        # self.alloc_user_obj.allocation_user.refresh_from_db()
-        # self.alloc_user_obj.allocation_user_attribute.refresh_from_db()
+        self.allocation_su_attr.refresh_from_db()
+        self.allocation_user_su_attr.refresh_from_db()
 
     def _assert_pre_state(self):
         """Assert that the relevant objects have the expected state,
@@ -233,19 +242,17 @@ class TestUpdatePatchClusterAccessRequests(TestClusterAccessRequestsBase):
         self.assertIsNone(self.user0.userprofile.cluster_uid)
         self.assertEqual(self.user0.username, 'user0')
         self.assertIsNone(self.request0.completion_time)
-        # self.assertNotEqual(self.alloc_user_obj.allocation_user_attribute.value,
-        #                     self.alloc_obj.allocation_attribute.value)
+        self.assertNotEqual(self.allocation_su_attr.value,
+                            self.allocation_user_su_attr.value)
         self.assertFalse(self._get_cluster_account_status_attr(self.allocation_user0).exists())
         self.assertEqual(self.request0.allocation_user.pk, self.allocation_user0.pk)
 
-    def _assert_post_state(self, pre_time, post_time, status, check_username_clusteruid=True):
+    def _assert_post_state(self, pre_time, post_time, status, check_username_clusteruid=True, check_su=True):
         """Assert that the relevant objects have the expected state,
         assuming that the runner has run successfully."""
         self._refresh_objects()
         self.assertEqual(self.request0.status.name, status)
         self.assertTrue(pre_time < self.request0.completion_time < post_time)
-        # self.assertEqual(self.alloc_user_obj.allocation_user_attribute.value,
-        #                  self.alloc_obj.allocation_attribute.value)
         self.assertTrue(self._get_cluster_account_status_attr(self.allocation_user0).exists())
         self.assertEqual(self._get_cluster_account_status_attr(self.allocation_user0).first().value,
                          status)
@@ -254,6 +261,10 @@ class TestUpdatePatchClusterAccessRequests(TestClusterAccessRequestsBase):
         if check_username_clusteruid:
             self.assertEqual(self.user0.userprofile.cluster_uid, self.cluster_uid)
             self.assertEqual(self.user0.username, self.new_username)
+
+        if check_su:
+            self.assertEqual(self.allocation_su_attr.value,
+                             self.allocation_user_su_attr.value)
 
     def test_authorization_token_required(self):
         """Test that an authorization token is required."""
@@ -336,7 +347,7 @@ class TestUpdatePatchClusterAccessRequests(TestClusterAccessRequestsBase):
 
     def test_valid_data_denied(self):
         """Test that updating an object with valid PATCH data
-        succeeds when the new status is Active."""
+        succeeds when the new status is Denied."""
         self._assert_pre_state()
         pre_time = utc_now_offset_aware()
 
@@ -351,7 +362,7 @@ class TestUpdatePatchClusterAccessRequests(TestClusterAccessRequestsBase):
         json = response.json()
 
         post_time = utc_now_offset_aware()
-        self._assert_post_state(pre_time, post_time, data.get('status'), False)
+        self._assert_post_state(pre_time, post_time, data.get('status'), False, False)
 
         assert_cluster_access_request_serialization(
             self.request0, json, SERIALIZER_FIELDS)
@@ -519,7 +530,7 @@ class TestUpdatePatchClusterAccessRequests(TestClusterAccessRequestsBase):
             'cluster_uid': self.cluster_uid
         }
         with patch.object(
-                ProjectClusterAccessRequestCompleteRunner, 
+                ClusterAccessRequestCompleteRunner, 
                 'run',
                 raise_exception):
             response = self.client.patch(url, data)
@@ -545,7 +556,7 @@ class TestUpdatePatchClusterAccessRequests(TestClusterAccessRequestsBase):
             'status': 'Denied'
         }
         with patch.object(
-                ProjectClusterAccessRequestDenialRunner,
+                ClusterAccessRequestDenialRunner,
                 'run',
                 raise_exception):
             response = self.client.patch(url, data)

@@ -39,8 +39,8 @@ class TestAllocationClusterAccountActivateRequestView(TestBase):
             kwargs={'pk': pk})
 
     def test_updates_value_and_log(self):
-        """Test that updating the status results in the correct value
-        being set."""
+        """Test that activating the request results in the correct
+        log messages."""
         pre_time = utc_now_offset_aware()
         url = self.view_url(self.request_obj.pk)
         data = {
@@ -48,19 +48,13 @@ class TestAllocationClusterAccountActivateRequestView(TestBase):
             'cluster_uid': '12345',
         }
 
-        with self.assertLogs('coldfront.core.allocation.views', 'INFO') as cm:
+        with self.assertLogs('coldfront.core.allocation.utils_.cluster_access_utils', 'INFO') as cm:
             response = self.client.post(url, data)
         self.assertRedirects(
             response, reverse('allocation-cluster-account-request-list'))
 
         # Assert that an info message was logged.
-        self.assertEqual(len(cm.output), 1)
-        expected_log_message = (
-            f'Superuser {self.user.pk} changed the value of "Cluster '
-            f'Account Status" AllocationUserAttribute '
-            f'{self.request_obj.pk} from "Processing" to '
-            f'"Active".')
-        self.assertIn(expected_log_message, cm.output[0])
+        self.assertEqual(len(cm.output), 7)
 
         self.request_obj.refresh_from_db()
         self.assertEqual(self.request_obj.status.name, 'Active')

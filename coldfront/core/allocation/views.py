@@ -60,8 +60,8 @@ from coldfront.core.project.models import (Project, ProjectUser,
                                            ProjectUserStatusChoice)
 from coldfront.core.project.utils import ProjectClusterAccessRequestRunner
 from coldfront.core.allocation.utils_.cluster_access_utils import \
-    ProjectClusterAccessRequestCompleteRunner, \
-    ProjectClusterAccessRequestDenialRunner
+    ClusterAccessRequestCompleteRunner, \
+    ClusterAccessRequestDenialRunner
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.common import utc_now_offset_aware
@@ -2009,7 +2009,7 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
         try:
             with transaction.atomic():
                 runner = \
-                    ProjectClusterAccessRequestCompleteRunner(self.request_obj)
+                    ClusterAccessRequestCompleteRunner(self.request_obj)
                 runner.run(username,
                            cluster_uid,
                            utc_now_offset_aware())
@@ -2030,7 +2030,7 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
                 f'has been ACTIVATED.')
             messages.success(self.request, message)
 
-        if isinstance(runner, ProjectClusterAccessRequestCompleteRunner):
+        if isinstance(runner, ClusterAccessRequestCompleteRunner):
             for message in runner.get_warning_messages():
                 messages.warning(self.request, message)
 
@@ -2118,7 +2118,7 @@ class AllocationClusterAccountDenyRequestView(LoginRequiredMixin,
         runner = None
         try:
             with transaction.atomic():
-                runner = ProjectClusterAccessRequestDenialRunner(self.request_obj)
+                runner = ClusterAccessRequestDenialRunner(self.request_obj)
                 runner.run()
         except Exception as e:
             message = f'Rolling back failed transaction. Details:\n{e}'
@@ -2135,7 +2135,7 @@ class AllocationClusterAccountDenyRequestView(LoginRequiredMixin,
                 f'has been DENIED.')
             messages.success(request, message)
 
-        if isinstance(runner, ProjectClusterAccessRequestDenialRunner):
+        if isinstance(runner, ClusterAccessRequestDenialRunner):
             for message in runner.get_warning_messages():
                 messages.warning(self.request, message)
 

@@ -38,26 +38,17 @@ class TestAllocationClusterAccountDenyRequestView(TestBase):
             'allocation-cluster-account-deny-request',
             kwargs={'pk': pk})
 
-    def test_logs_request_user(self):
+    def test_logs(self):
         """Test that the correct message is written to the log."""
         url = self.view_url(self.request_obj.pk)
-        data = {
-            'status': 'Processing',
-        }
-        with self.assertLogs('coldfront.core.project.utils', 'INFO') as cm:
-            response = self.client.post(url, data)
+
+        with self.assertLogs('coldfront.core.allocation.utils_.cluster_access_utils', 'INFO') as cm:
+            response = self.client.get(url)
         self.assertRedirects(
             response, reverse('allocation-cluster-account-request-list'))
 
         # Assert that an info message was logged.
-        self.assertEqual(len(cm.output), 1)
-        expected_log_message = (
-            f'Cluster access request from User {self.user_obj.email} under '
-            f'Project '
-            f'{self.request_obj.allocation_user.allocation.project.name} '
-            f'and Allocation {self.request_obj.allocation_user.allocation.pk} '
-            f'has been DENIED.')
-        self.assertIn(expected_log_message, cm.output[0])
+        self.assertEqual(len(cm.output), 4)
 
     def test_denies_request(self):
         """Test that denying the request results in the correct values

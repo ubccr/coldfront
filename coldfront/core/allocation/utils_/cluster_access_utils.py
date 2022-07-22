@@ -19,7 +19,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class ProjectClusterAccessRequestCompleteRunner(object):
+class ClusterAccessRequestCompleteRunner(object):
     """An object that performs necessary database checks and updates
     when a ClusterAccessRequest is updated."""
 
@@ -224,7 +224,7 @@ class ProjectClusterAccessRequestCompleteRunner(object):
                 self._warning_messages.append(message)
 
 
-class ProjectClusterAccessRequestDenialRunner(object):
+class ClusterAccessRequestDenialRunner(object):
     """An object that performs necessary database checks and updates
     when a ClusterAccessRequest is denied."""
 
@@ -261,14 +261,14 @@ class ProjectClusterAccessRequestDenialRunner(object):
             self._deny_cluster_access_attribute()
             self._set_completion_time(utc_now_offset_aware())
 
-        self._log_success_messages()
-        self._send_emails_safe()
-
         message = (
             f'Successfully DENIED cluster access request {self.request.pk} '
             f'from User {self.user.email} under Project {self.project.name} '
             f'and Allocation {self.allocation.pk}.')
-        logger.info(message)
+        self._success_messages.append(message)
+
+        self._log_success_messages()
+        self._send_emails_safe()
 
     def _log_success_messages(self):
         """Write success messages to the log.

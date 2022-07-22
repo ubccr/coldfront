@@ -30,8 +30,8 @@ from coldfront.core.allocation.models import HistoricalAllocationAttribute
 from coldfront.core.allocation.models import HistoricalAllocationUserAttribute
 from coldfront.api.permissions import IsAdminUserOrReadOnly, IsSuperuserOrStaff
 from coldfront.core.allocation.utils_.cluster_access_utils import \
-    ProjectClusterAccessRequestDenialRunner, \
-    ProjectClusterAccessRequestCompleteRunner
+    ClusterAccessRequestDenialRunner, \
+    ClusterAccessRequestCompleteRunner
 
 logger = logging.getLogger(__name__)
 
@@ -164,12 +164,12 @@ class ClusterAccessRequestViewSet(mixins.ListModelMixin,
                 instance = serializer.save()
 
                 if instance.status.name == 'Active':
-                    runner = ProjectClusterAccessRequestCompleteRunner(instance)
+                    runner = ClusterAccessRequestCompleteRunner(instance)
                     runner.run(completion_time=instance.completion_time,
                                cluster_uid=cluster_uid,
                                username=username)
                 elif instance.status.name == 'Denied':
-                    runner = ProjectClusterAccessRequestDenialRunner(instance)
+                    runner = ClusterAccessRequestDenialRunner(instance)
                     runner.run()
         except Exception as e:
             message = f'Rolling back failed transaction. Details:\n{e}'
@@ -221,7 +221,7 @@ class ClusterAccessRequestViewSet(mixins.ListModelMixin,
     #
     #         elif status_name == 'Denied':
     #             runner = \
-    #                 ProjectClusterAccessRequestDenialRunner(instance)
+    #                 ClusterAccessRequestDenialRunner(instance)
     #             runner.deny_request()
     #         else:
     #             # Status == Pending - Add

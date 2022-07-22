@@ -11,8 +11,8 @@ from coldfront.core.allocation.models import ClusterAccessRequest, \
     ClusterAccessRequestStatusChoice, AllocationAttributeType, \
     AllocationUserAttribute
 from coldfront.core.allocation.utils_.cluster_access_utils import \
-    ProjectClusterAccessRequestCompleteRunner, \
-    ProjectClusterAccessRequestDenialRunner
+    ClusterAccessRequestCompleteRunner, \
+    ClusterAccessRequestDenialRunner
 from coldfront.core.project.models import ProjectStatusChoice, \
     ProjectUserStatusChoice, ProjectUserRoleChoice, ProjectUser, Project
 from coldfront.core.utils.common import utc_now_offset_aware
@@ -74,13 +74,13 @@ class TestClusterAccessRunnersBase(TestBase):
         self._module = 'coldfront.core.allocation.utils_.cluster_access_utils'
 
 
-class TestProjectClusterAccessRequestCompleteRunner(TestClusterAccessRunnersBase):
-    """A testing class for ProjectClusterAccessRequestCompleteRunner."""
+class TestClusterAccessRequestCompleteRunner(TestClusterAccessRunnersBase):
+    """A testing class for ClusterAccessRequestCompleteRunner."""
 
     def setUp(self):
         """Set up test data."""
         super().setUp()
-        self.runner = ProjectClusterAccessRequestCompleteRunner(self.request_obj)
+        self.runner = ClusterAccessRequestCompleteRunner(self.request_obj)
 
         self.new_username = 'new_username'
         self.cluster_uid = '1234'
@@ -150,10 +150,10 @@ class TestProjectClusterAccessRequestCompleteRunner(TestClusterAccessRunnersBase
                          'Active')
 
     def test_success(self):
-        """Test that the runner removes the user from the Project,
-        removes the user from the associated 'CLUSTER_NAME Compute'
-        Allocation, updates the associated 'Cluster Account Status'
-        AllocationUserAttribute, writes to the log, and sends emails."""
+        """Test that the request status is set to Active, Cluster Account
+        Status AllocationUserAttribute is set to Active, completion time
+        is set, cluster_uid is set, new username is set, user SUs are set to
+        allocation's SUs, emails are sent, and log messages are written."""
         self.assertEqual(len(mail.outbox), 0)
         self._assert_pre_state()
         pre_time = utc_now_offset_aware()
@@ -178,7 +178,7 @@ class TestProjectClusterAccessRequestCompleteRunner(TestClusterAccessRunnersBase
         self._assert_pre_state()
 
         with patch.object(
-                ProjectClusterAccessRequestCompleteRunner,
+                ClusterAccessRequestCompleteRunner,
                 '_update_request',
                 raise_exception):
             with self.assertRaises(Exception) as cm:
@@ -199,7 +199,7 @@ class TestProjectClusterAccessRequestCompleteRunner(TestClusterAccessRunnersBase
         pre_time = utc_now_offset_aware()
 
         with patch.object(
-                ProjectClusterAccessRequestCompleteRunner,
+                ClusterAccessRequestCompleteRunner,
                 '_send_complete_emails',
                 raise_exception):
             with self.assertLogs(self._module, 'INFO') as log_cm:
@@ -221,7 +221,7 @@ class TestProjectClusterAccessRequestCompleteRunner(TestClusterAccessRunnersBase
         pre_time = utc_now_offset_aware()
 
         with patch.object(
-                ProjectClusterAccessRequestCompleteRunner,
+                ClusterAccessRequestCompleteRunner,
                 '_send_emails_safe',
                 raise_exception):
             with self.assertLogs(self._module, 'INFO') as log_cm:
@@ -238,13 +238,13 @@ class TestProjectClusterAccessRequestCompleteRunner(TestClusterAccessRunnersBase
         self.assertEqual(len(mail.outbox), 0)
 
 
-class TestProjectClusterAccessRequestDenialRunner(TestClusterAccessRunnersBase):
-    """A testing class for ProjectClusterAccessRequestDenialRunner."""
+class TestClusterAccessRequestDenialRunner(TestClusterAccessRunnersBase):
+    """A testing class for ClusterAccessRequestDenialRunner."""
 
     def setUp(self):
         """Set up test data."""
         super().setUp()
-        self.runner = ProjectClusterAccessRequestDenialRunner(self.request_obj)
+        self.runner = ClusterAccessRequestDenialRunner(self.request_obj)
 
     def _get_cluster_account_status_attr(self):
         cluster_account_status = \
@@ -291,10 +291,9 @@ class TestProjectClusterAccessRequestDenialRunner(TestClusterAccessRunnersBase):
         self.assertFalse(self._get_cluster_account_status_attr().exists())
 
     def test_success(self):
-        """Test that the runner removes the user from the Project,
-        removes the user from the associated 'CLUSTER_NAME Compute'
-        Allocation, updates the associated 'Cluster Account Status'
-        AllocationUserAttribute, writes to the log, and sends emails."""
+        """Test that the request status is set to Denied, Cluster Account
+        Status AllocationUserAttribute is set to Denied, completion time
+        is set, emails are sent, and log messages are written."""
         self.assertEqual(len(mail.outbox), 0)
         self._assert_pre_state()
         pre_time = utc_now_offset_aware()
@@ -317,7 +316,7 @@ class TestProjectClusterAccessRequestDenialRunner(TestClusterAccessRunnersBase):
         self._assert_pre_state()
 
         with patch.object(
-                ProjectClusterAccessRequestDenialRunner,
+                ClusterAccessRequestDenialRunner,
                 '_set_completion_time',
                 raise_exception):
             with self.assertRaises(Exception) as cm:
@@ -336,7 +335,7 @@ class TestProjectClusterAccessRequestDenialRunner(TestClusterAccessRunnersBase):
         pre_time = utc_now_offset_aware()
 
         with patch.object(
-                ProjectClusterAccessRequestDenialRunner,
+                ClusterAccessRequestDenialRunner,
                 '_send_denial_emails',
                 raise_exception):
             with self.assertLogs(self._module, 'INFO') as log_cm:
@@ -356,7 +355,7 @@ class TestProjectClusterAccessRequestDenialRunner(TestClusterAccessRunnersBase):
         pre_time = utc_now_offset_aware()
 
         with patch.object(
-                ProjectClusterAccessRequestDenialRunner,
+                ClusterAccessRequestDenialRunner,
                 '_send_emails_safe',
                 raise_exception):
             with self.assertLogs(self._module, 'INFO') as log_cm:
