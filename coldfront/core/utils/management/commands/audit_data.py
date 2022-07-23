@@ -140,42 +140,42 @@ class Command(BaseCommand):
 
             if end_date is not None and end_date < start_date:
                 self.stdout.write(self.style.ERROR('Allocation {} '
-                'for project {} has an end date before its start date.' \
-                    .format(allocation['id'], project)))
+                'for {} project {} has an end date before its start date.' \
+                    .format(allocation['id'], project_status.lower(), project)))
 
             if project.startswith(FCA_PCA_PREFIXES):
                 if project_status == 'Inactive' \
                         and start_date != FCA_PCA_ALLOCATION_PERIOD.start_date:
                     self.stdout.write(self.style.ERROR('{} {} '
-                    'for project {} is inactive and has a start date of {} '
+                    'for inactive project {} has a start date of {} '
                     'that is different than its allocation period\'s.' \
                         .format(resource, id, project, start_date)))
                 if project_status == 'Active' \
                         and end_date != FCA_PCA_ALLOCATION_PERIOD.end_date:
                     self.stdout.write(self.style.ERROR('{} {} '
-                    'for project {} is active and has an end date of {} that '
+                    'for active project {} has an end date of {} that '
                     'is different than its allocation period\'s.' \
                         .format(resource, id, project, end_date)))
                 
             elif project.startswith(ICA_PREFIX):
                 if project_status == 'Inactive' and end_date is not None:
                     self.stdout.write(self.style.ERROR('{} {} '
-                    'for project {} has an end date while being an '
+                    'for {} project {} has an end date while being an '
                     'inactive ICA.' \
-                        .format(resource, id, project)))
+                        .format(resource, id, project_status.lower() project)))
                 if project_status == 'Active' \
                         and not any(end_date != ica.end_date \
                             for ica in ICA_ALLOCATION_PERIODS):
                     self.stdout.write(self.style.ERROR('{} {} '
-                    'for project {} is an active ICA that has an end date '
+                    'for {} project {} is an active ICA that has an end date '
                     'that is different from all ICA allocation periods.' \
-                        .format(resource, id, project)))
+                        .format(resource, id, project_status.lower(), project)))
             elif project.startswith(RECHARGE_CONDO_PREFIX):
                 if end_date is not None:
                     self.stdout.write(self.style.ERROR('{} {} '
-                    'for project {} is a Recharge or Condo allocation with '
+                    'for {} project {} is a Recharge or Condo allocation with '
                     'an end date.' \
-                        .format(id, project)))
+                        .format(id, project_status.lower(), project)))
     
     def handle_project_inactive(self):
         '''
