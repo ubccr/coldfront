@@ -18,6 +18,7 @@ from coldfront.core.allocation.utils import get_user_resources
 from coldfront.core.allocation.utils import prorated_allocation_amount
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource, ResourceType
+from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
 from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
 from coldfront.core.resource.utils_.allowance_utils.constants import LRCAllowances
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
@@ -283,8 +284,11 @@ class AllocationPeriodChoiceField(forms.ModelChoiceField):
         super().__init__(*args, **kwargs)
 
     def label_from_instance(self, obj):
-        num_service_units = prorated_allocation_amount(
-            self.allocation_value(), utc_now_offset_aware(), obj)
+        computing_allowance = ComputingAllowance(self.computing_allowance)
+        num_service_units = self.allocation_value()
+        if computing_allowance.are_service_units_prorated():
+            num_service_units = prorated_allocation_amount(
+                num_service_units, utc_now_offset_aware(), obj)
         return (
             f'{obj.name} ({obj.start_date} - {obj.end_date}) '
             f'({num_service_units} SUs)')
