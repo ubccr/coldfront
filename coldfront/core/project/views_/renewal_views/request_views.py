@@ -680,5 +680,7 @@ class AllocationRenewalRequestUnderProjectView(LoginRequiredMixin,
                     pooling_preference = form_class.UNPOOLED_TO_UNPOOLED
                 else:
                     pooling_preference = form_class.POOLED_TO_POOLED_SAME
+                form_class = ProjectRenewalPoolingPreferenceForm
                 dictionary['breadcrumb_pooling_preference'] = \
-                    pooling_preference
+                    form_class.SHORT_DESCRIPTIONS.get(
+                        pooling_preference, 'Unknown')
