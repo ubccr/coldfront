@@ -740,9 +740,9 @@ class SavioProjectSurveyForm(forms.Form):
                 self.fields['scope_and_intent'].label = (
                     'Scope and intent of coursework needing computation')
                 self.fields['computational_aspects'].help_text = (
-                    f'Describe the nature of the coursework for which students '
-                    f'will use {self.primary_cluster_name} (e.g., homework, '
-                    f'problem sets, projects, etc.).')
+                    f'Describe the nature of the coursework for which '
+                    f'students will use {self.primary_cluster_name} (e.g., '
+                    f'homework, problem sets, projects, etc.).')
                 self.fields['computational_aspects'].label = (
                     'Computational aspects of the coursework')
                 self.fields['existing_resources'].label = (
