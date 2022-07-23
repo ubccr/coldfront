@@ -233,19 +233,20 @@ class Command(BaseCommand):
         at least one Project.
         '''
         users = UserProfile.objects.filter(cluster_uid__isnull=False) \
-            .select_related('user', 'user__status') \
-            .order_by('user__username') \
+            .select_related('user') \
+            .order_by('user__is_active', 'user__username') \
             .values('id', 'user__first_name', 'user__last_name',
                     'user__email', 'access_agreement_signed_date',
-                    'user__username')
+                    'user__username', 'user__is_active')
 
         for user in users:
             user_project_exists = ProjectUser.objects \
                 .filter(user_id=user['id']).exists()
             if not user_project_exists:
-                self.stdout.write(self.style.ERROR('User {} ({} {}, {})'
+                self.stdout.write(self.style.ERROR('{} User {} ({} {}, {})'
                 ' has a cluster UID but is not associated with any projects.{}'
-                    .format(user['user__username'], user['user__first_name'],
+                    .format(('Inactive', 'Active')[user['user__is_active']],
+                    user['user__username'], user['user__first_name'],
                     user['user__last_name'], user['user__email'],
                     '' if user['access_agreement_signed_date'] \
                         else ' They have not signed the access agreement.')))
