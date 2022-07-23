@@ -79,7 +79,7 @@ class Command(BaseCommand):
         for option in options:
             if isinstance(options[option], bool) and options[option] and \
                     option not in ('all', 'lrc_all'):
-                self.stdout.write(self.style.WARNING('Running {}...' \
+                self.stdout.write(self.style.SUCCESS('Running {}...' \
                     .format(option)))
                 getattr(self, 'handle_{}'.format(option))()
                 self.stdout.write(self.style.SUCCESS('Audit complete.'))
@@ -109,10 +109,11 @@ class Command(BaseCommand):
         allocations = Allocation.objects.select_related('project',
                             'project__status').prefetch_related('resources') \
             .filter(resources__name__endswith='Compute') \
-            .order_by('project__name', 'project__status__name',
-                   'start_date', 'end_date') \
+            .order_by('resources__name', 'project__name',
+                      'project__status__name', 'start_date', 'end_date') \
             .values('id', 'project__status__name',
-                   'project__name','start_date', 'end_date')
+                   'project__name','start_date', 'end_date',
+                   'resources__name')
 
         FCA_PCA_ALLOCATION_PERIOD = AllocationPeriod.objects.get(
                                         name__startswith='Allowance Year',
@@ -135,6 +136,7 @@ class Command(BaseCommand):
             end_date = allocation['end_date']
             project_status = allocation['project__status__name']
             project = allocation['project__name']
+            resource = allocation['resources__name']
 
             if end_date is not None and end_date < start_date:
                 self.stdout.write(self.style.ERROR('Allocation {} '
@@ -144,33 +146,33 @@ class Command(BaseCommand):
             if project.startswith(FCA_PCA_PREFIXES):
                 if project_status == 'Inactive' \
                         and start_date != FCA_PCA_ALLOCATION_PERIOD.start_date:
-                    self.stdout.write(self.style.ERROR('Allocation {} '
-                    'for project {} has a start date of {} that is different '
-                    'than its allocation period\'s.' \
-                        .format(id, project, start_date)))
+                    self.stdout.write(self.style.ERROR('{} {} '
+                    'for project {} is inactive and has a start date of {} '
+                    'that is different than its allocation period\'s.' \
+                        .format(resource, id, project, start_date)))
                 if project_status == 'Active' \
                         and end_date != FCA_PCA_ALLOCATION_PERIOD.end_date:
-                    self.stdout.write(self.style.ERROR('Allocation {} '
+                    self.stdout.write(self.style.ERROR('{} {} '
                     'for project {} is active and has an end date of {} that '
                     'is different than its allocation period\'s.' \
-                        .format(id, project, end_date)))
+                        .format(resource, id, project, end_date)))
                 
             elif project.startswith(ICA_PREFIX):
                 if project_status == 'Inactive' and end_date is not None:
-                    self.stdout.write(self.style.ERROR('Allocation {} '
+                    self.stdout.write(self.style.ERROR('{} {} '
                     'for project {} has an end date while being an '
                     'inactive ICA.' \
-                        .format(id, project)))
+                        .format(resource, id, project)))
                 if project_status == 'Active' \
                         and not any(end_date != ica.end_date \
                             for ica in ICA_ALLOCATION_PERIODS):
-                    self.stdout.write(self.style.ERROR('Allocation {} '
+                    self.stdout.write(self.style.ERROR('{} {} '
                     'for project {} is an active ICA that has an end date '
                     'that is different from all ICA allocation periods.' \
-                        .format(id, project)))
+                        .format(resource, id, project)))
             elif project.startswith(RECHARGE_CONDO_PREFIX):
                 if end_date is not None:
-                    self.stdout.write(self.style.ERROR('Allocation {} '
+                    self.stdout.write(self.style.ERROR('{} {} '
                     'for project {} is a Recharge or Condo allocation with '
                     'an end date.' \
                         .format(id, project)))
@@ -180,18 +182,28 @@ class Command(BaseCommand):
         Assert that inactive Projects have "Expired" allocations and zero SUs.
         '''
         inactive_projects = Project.objects \
-                                .prefetch_related('allocation_set__status') \
+                                .prefetch_related('allocation_set__status',
+                                    'allocation_set__resources',
+                                    'allocation_set__allocationattribute_set') \
                                 .filter(status__name='Inactive') \
                                 .order_by('name')
         
         for project in inactive_projects:
             for allocation in project.allocation_set \
-                    .select_related('status') \
-                    .prefetch_related('allocationattribute_set'):
+                              .select_related('status') \
+                              .prefetch_related('allocationattribute_set',
+                                                'resources'):
+                resource = allocation.resources.first().name
+                style = (lambda x:
+                        self.style.WARNING('CURRENTLY EXPECTED BEHAVIOR: ') \
+                        + self.style.WARNING(x)) if \
+                        resource.endswith('Directory') \
+                        else self.style.ERROR
                 if allocation.status.name != 'Expired':
-                    self.stdout.write(self.style.ERROR('Project {} ({})'
-                    ' is inactive and has unexpired allocations.' \
-                        .format(project.id, project.name)))
+                    self.stdout.write(style('Project {} ({})'
+                    ' is inactive and has an unexpired {} allocation {}.' \
+                        .format(project.id, project.name,
+                                resource, allocation.id)))
                 try:
                     allocation_attribute = allocation.allocationattribute_set \
                         .get(allocation_attribute_type__name='Service Units')
@@ -221,20 +233,20 @@ class Command(BaseCommand):
         at least one Project.
         '''
         users = UserProfile.objects.filter(cluster_uid__isnull=False) \
-            .select_related('status') \
-            .exclude(status__name='Denied') \
-            .order_by('status__name', 'username') \
+            .select_related('user', 'user__status') \
+            .order_by('user__username') \
             .values('id', 'user__first_name', 'user__last_name',
-                    'user__email', 'access_agreement_signed_date')
+                    'user__email', 'access_agreement_signed_date',
+                    'user__username')
+
         for user in users:
-            user_project_count = ProjectUser.objects \
-                .filter(user_id=user['id']).count()
-            if user_project_count == 0:
-                self.stdout.write(self.style.ERROR('{} User {} ({} {}, {})'
+            user_project_exists = ProjectUser.objects \
+                .filter(user_id=user['id']).exists()
+            if not user_project_exists:
+                self.stdout.write(self.style.ERROR('User {} ({} {}, {})'
                 ' has a cluster UID but is not associated with any projects.{}'
-                    .format(user['status__name'], user['username'],
-                    user['user__first_name'], user['user__last_name'],
-                    user['user__email'],
+                    .format(user['user__username'], user['user__first_name'],
+                    user['user__last_name'], user['user__email'],
                     '' if user['access_agreement_signed_date'] \
                         else ' They have not signed the access agreement.')))
 
@@ -283,8 +295,8 @@ class Command(BaseCommand):
                     'AllocationUser {} ({} {}, {}) has no '
                     '"Billing Activity"-typed AllocationUserAttribute.' \
                     .format(allocation_user.id, allocation_user.user.first_name,
-                     allocation_user.user.last_name,
-                     allocation_user.user.email)))
+                            allocation_user.user.last_name,
+                            allocation_user.user.email)))
 
     def handle_lrc_pis_lbl_employee(self):
         '''
@@ -296,4 +308,5 @@ class Command(BaseCommand):
             if not pi.is_lbl_employee():
                 self.stdout.write(self.style.ERROR('User {} ({} {}, {})'
                 ' is not an LBL employee.'
-                .format(pi.id, pi.user.first_name, pi.user.last_name, pi.user.email)))
+                .format(pi.id, pi.user.first_name,
+                        pi.user.last_name, pi.user.email)))
