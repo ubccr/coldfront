@@ -9,6 +9,7 @@ from coldfront.core.project.models import Project
 from coldfront.core.project.utils_.email_utils import project_email_receiver_list
 from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterfaceError
 from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.utils.common import project_detail_url
@@ -213,8 +214,11 @@ def can_project_purchase_service_units(project):
     additional Service Units for its allowance."""
     assert isinstance(project, Project)
     computing_allowance_interface = ComputingAllowanceInterface()
-    computing_allowance = ComputingAllowance(
-        computing_allowance_interface.allowance_from_project(project))
+    try:
+        computing_allowance = ComputingAllowance(
+            computing_allowance_interface.allowance_from_project(project))
+    except ComputingAllowanceInterfaceError:
+        return False
     return computing_allowance.is_recharge()
 
 

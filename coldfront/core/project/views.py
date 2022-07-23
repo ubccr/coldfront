@@ -59,7 +59,6 @@ from coldfront.core.project.utils_.renewal_utils import is_any_project_pi_renewa
 from coldfront.core.resource.utils import get_primary_compute_resource_name
 from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
-from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterfaceError
 from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch, is_lbl_employee, \
     needs_host
@@ -232,11 +231,16 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['cluster_accounts_requestable'] = cluster_accounts_requestable
         context['cluster_accounts_tooltip'] = cluster_accounts_tooltip
 
+        # Some features are only available to Projects corresponding to the
+        # primary cluster.
+        compute_resource_name = get_project_compute_resource_name(self.object)
+        is_primary_cluster_project = (
+            compute_resource_name == get_primary_compute_resource_name())
+
         # Display the "Renew Allowance" button for eligible allocation types
         # under the primary cluster.
         renew_allowance_visible = False
-        if (get_project_compute_resource_name(self.object) ==
-                get_primary_compute_resource_name()):
+        if is_primary_cluster_project:
             computing_allowance_interface = ComputingAllowanceInterface()
             computing_allowance = ComputingAllowance(
                 computing_allowance_interface.allowance_from_project(
@@ -260,11 +264,11 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         # the project.
         context['purchase_sus_visible'] = (
             flag_enabled('SERVICE_UNITS_PURCHASABLE') and
+            is_primary_cluster_project and
             can_project_purchase_service_units(self.object) and
             context.get('is_allowed_to_update_project', False))
 
-        context['cluster_name'] = get_project_compute_resource_name(
-            self.object).replace(' Compute', '')
+        context['cluster_name'] = compute_resource_name.replace(' Compute', '')
 
         return context
 
