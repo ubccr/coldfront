@@ -165,8 +165,7 @@ class ClusterAccessRequestViewSet(mixins.ListModelMixin,
 
                 if instance.status.name == 'Active':
                     runner = ClusterAccessRequestCompleteRunner(instance)
-                    runner.run(completion_time=instance.completion_time,
-                               cluster_uid=cluster_uid,
+                    runner.run(cluster_uid=cluster_uid,
                                username=username)
                 elif instance.status.name == 'Denied':
                     runner = ClusterAccessRequestDenialRunner(instance)

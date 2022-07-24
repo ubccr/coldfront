@@ -1,34 +1,69 @@
-from coldfront.core.allocation.models import ClusterAccessRequest, \
-    AllocationUser, ClusterAccessRequestStatusChoice, AllocationUserAttribute, \
-    Allocation
-from coldfront.core.user.tests.utils import \
-    grant_user_cluster_access_under_test_project
+from http import HTTPStatus
+from unittest.mock import patch
+
+from django.core import mail
+
+from coldfront.config import settings
+from coldfront.core.allocation.tests.test_utils.test_cluster_access_runners import \
+    TestClusterAccessRunnersBase
+from coldfront.core.allocation.utils_.cluster_access_utils import \
+    ClusterAccessRequestDenialRunner
 from coldfront.core.utils.common import utc_now_offset_aware
-from coldfront.core.utils.tests.test_base import TestBase
 from django.urls import reverse
 
 
-class TestAllocationClusterAccountDenyRequestView(TestBase):
+def raise_exception(*args, **kwargs):
+    """Raise an exception."""
+    raise Exception('Test exception.')
+
+
+class TestAllocationClusterAccountDenyRequestView(TestClusterAccessRunnersBase):
     """A class for testing AllocationClusterAccountDenyRequestView."""
 
     def setUp(self):
         """Set up test data."""
         super().setUp()
-        self.create_test_user()
-        self.sign_user_access_agreement(self.user)
-        self.client.login(username=self.user.username, password=self.password)
-        self.user.is_superuser = True
-        self.user.save()
-        attribute = grant_user_cluster_access_under_test_project(
-            self.user)
-        attribute.delete()
+        # self.create_test_user()
+        self.sign_user_access_agreement(self.user0)
+        self.password = 'password'
+        self.user0.set_password(self.password)
+        self.user0.is_superuser = True
+        self.user0.save()
+        self.client.login(username=self.user0.username, password=self.password)
 
-        # Create ClusterAccessRequest
-        self.request_obj = ClusterAccessRequest.objects.create(
-            allocation_user=AllocationUser.objects.get(user=self.user),
-            status=ClusterAccessRequestStatusChoice.objects.get(
-                name='Pending - Add'),
-            request_time=utc_now_offset_aware())
+    def _assert_emails_sent(self):
+        email_body = [f'access request under project {self.project0.name}',
+                      f'and allocation {self.alloc_obj.allocation.pk} '
+                      f'has been denied.']
+
+        self.assertEqual(len(mail.outbox), 1)
+        email = mail.outbox[0]
+
+        self.assertIn('Cluster Access Denied', email.subject)
+        for section in email_body:
+            self.assertIn(section, email.body)
+        self.assertEqual(email.to, [self.user0.email])
+        self.assertEqual(email.cc, [self.manager.email])
+        self.assertEqual(settings.EMAIL_SENDER, email.from_email)
+
+    def _assert_pre_state(self):
+        """Assert that the relevant objects have the expected state,
+        assuming that the runner has either not run or not run
+        successfully."""
+        self.request_obj.refresh_from_db()
+        self.assertIsNone(self.request_obj.completion_time)
+        self.assertEqual(self.request_obj.status.name, 'Pending - Add')
+        self.assertFalse(self._get_cluster_account_status_attr().exists())
+
+    def _assert_post_state(self, pre_time, post_time):
+        """Assert that the relevant objects have the expected state,
+        assuming that the runner has run successfully."""
+        self.request_obj.refresh_from_db()
+        self.assertTrue(pre_time < self.request_obj.completion_time < post_time)
+        self.assertEqual(self.request_obj.status.name, 'Denied')
+        self.assertTrue(self._get_cluster_account_status_attr().exists())
+        self.assertEqual(self._get_cluster_account_status_attr().first().value,
+                         'Denied')
 
     @staticmethod
     def view_url(pk):
@@ -38,38 +73,66 @@ class TestAllocationClusterAccountDenyRequestView(TestBase):
             'allocation-cluster-account-deny-request',
             kwargs={'pk': pk})
 
-    def test_logs(self):
-        """Test that the correct message is written to the log."""
-        url = self.view_url(self.request_obj.pk)
+    def test_success(self):
+        """Test that the request status is set to Denied, Cluster Account
+        Status AllocationUserAttribute is set to Denied, completion time
+        is set, emails are sent, and log messages are written."""
+        pre_time = utc_now_offset_aware()
+        self.assertEqual(len(mail.outbox), 0)
+        self._assert_pre_state()
 
-        with self.assertLogs('coldfront.core.allocation.utils_.cluster_access_utils', 'INFO') as cm:
-            response = self.client.get(url)
+        url = self.view_url(self.request_obj.pk)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+
         self.assertRedirects(
             response, reverse('allocation-cluster-account-request-list'))
 
-        # Assert that an info message was logged.
-        self.assertEqual(len(cm.output), 4)
+        post_time = utc_now_offset_aware()
+        self._assert_post_state(pre_time, post_time)
 
-    def test_denies_request(self):
-        """Test that denying the request results in the correct values
-        being set."""
-        pre_time = utc_now_offset_aware()
+        self._assert_emails_sent()
+
+    def test_exception_inside_transaction_rollback(self):
+        """Test that, when an exception is raised inside the
+         transaction, changes made so far are rolled back."""
+        self.assertEqual(len(mail.outbox), 0)
+        self._assert_pre_state()
+
         url = self.view_url(self.request_obj.pk)
-        self.client.get(url)
+        with patch.object(
+                ClusterAccessRequestDenialRunner,
+                'run',
+                raise_exception):
+            response = self.client.get(url)
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
 
-        self.request_obj.refresh_from_db()
-        self.assertEqual(self.request_obj.status.name, 'Denied')
-        self.assertTrue(pre_time <
-                        self.request_obj.completion_time <
-                        utc_now_offset_aware())
+        self.assertRedirects(
+            response, reverse('allocation-cluster-account-request-list'))
 
-        # Test that the Cluster Account Status Alloc User Attr is
-        # created and denied.
-        cluster_access = AllocationUserAttribute.objects.filter(
-            allocation_attribute_type__name='Cluster Account Status',
-            allocation=Allocation.objects.get(project__name='test_project'),
-            allocation_user=AllocationUser.objects.get(user=self.user),
-            value='Denied')
-        self.assertTrue(cluster_access.exists())
+        self._assert_pre_state()
+        self.assertEqual(len(mail.outbox), 0)
 
-    # TODO
+    def test_email_failure_no_rollback(self):
+        """Test that, when an exception is raised when attempting to
+        send an email, changes made so far are not rolled back because
+        such an exception is caught."""
+        pre_time = utc_now_offset_aware()
+        self.assertEqual(len(mail.outbox), 0)
+        self._assert_pre_state()
+
+        url = self.view_url(self.request_obj.pk)
+        with patch.object(
+                ClusterAccessRequestDenialRunner,
+                '_send_denial_emails',
+                raise_exception):
+            response = self.client.get(url)
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+
+        self.assertRedirects(
+            response, reverse('allocation-cluster-account-request-list'))
+
+        post_time = utc_now_offset_aware()
+        self._assert_post_state(pre_time, post_time)
+
+        self.assertEqual(len(mail.outbox), 0)

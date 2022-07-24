@@ -63,15 +63,26 @@ class TestClusterAccessRunnersBase(TestBase):
         # Create a compute allocation for each User on the Project.
         self.alloc_user_obj = create_user_project_allocation(
             self.user0, self.project0, allocation / 2)
+        self.alloc_user = self.alloc_user_obj.allocation_user
 
         # Create ClusterAccessRequest
         self.request_obj = ClusterAccessRequest.objects.create(
-            allocation_user=self.alloc_user_obj.allocation_user,
+            allocation_user=self.alloc_user,
             status=ClusterAccessRequestStatusChoice.objects.get(
                 name='Pending - Add'),
             request_time=utc_now_offset_aware())
 
         self._module = 'coldfront.core.allocation.utils_.cluster_access_utils'
+
+    def _get_cluster_account_status_attr(self):
+        cluster_account_status = \
+            AllocationAttributeType.objects.get(name='Cluster Account Status')
+        cluster_access_attribute = \
+            AllocationUserAttribute.objects.filter(
+                allocation_attribute_type=cluster_account_status,
+                allocation=self.alloc_user.allocation,
+                allocation_user=self.alloc_user)
+        return cluster_access_attribute
 
 
 class TestClusterAccessRequestCompleteRunner(TestClusterAccessRunnersBase):
@@ -80,6 +91,11 @@ class TestClusterAccessRequestCompleteRunner(TestClusterAccessRunnersBase):
     def setUp(self):
         """Set up test data."""
         super().setUp()
+        self.request_obj.status = \
+            ClusterAccessRequestStatusChoice.objects.get(name='Active')
+        self.request_obj.completion_time = utc_now_offset_aware()
+        self.request_obj.save()
+        
         self.runner = ClusterAccessRequestCompleteRunner(self.request_obj)
 
         self.new_username = 'new_username'
@@ -87,16 +103,6 @@ class TestClusterAccessRequestCompleteRunner(TestClusterAccessRunnersBase):
 
         self.alloc_user_obj.allocation_user_attribute.value = Decimal('0.00')
         self.alloc_user_obj.allocation_user_attribute.save()
-
-    def _get_cluster_account_status_attr(self):
-        cluster_account_status = \
-            AllocationAttributeType.objects.get(name='Cluster Account Status')
-        cluster_access_attribute = \
-            AllocationUserAttribute.objects.filter(
-                allocation_attribute_type=cluster_account_status,
-                allocation=self.alloc_obj.allocation,
-                allocation_user=self.alloc_user_obj.allocation_user)
-        return cluster_access_attribute
 
     def _assert_emails_sent(self):
         email_body = [f'now has access to the project {self.project0.name}.',
@@ -127,22 +133,20 @@ class TestClusterAccessRequestCompleteRunner(TestClusterAccessRunnersBase):
         assuming that the runner has either not run or not run
         successfully."""
         self._refresh_objects()
-        self.assertEqual(self.request_obj.status.name, 'Pending - Add')
+        # self.assertEqual(self.request_obj.status.name, 'Pending - Add')
         self.assertIsNone(self.user0.userprofile.cluster_uid)
         self.assertEqual(self.user0.username, 'user0')
-        self.assertIsNone(self.request_obj.completion_time)
+        # self.assertIsNone(self.request_obj.completion_time)
         self.assertNotEqual(self.alloc_user_obj.allocation_user_attribute.value,
                             self.alloc_obj.allocation_attribute.value)
         self.assertFalse(self._get_cluster_account_status_attr().exists())
 
-    def _assert_post_state(self, pre_time, post_time):
+    def _assert_post_state(self):
         """Assert that the relevant objects have the expected state,
         assuming that the runner has run successfully."""
         self._refresh_objects()
-        self.assertEqual(self.request_obj.status.name, 'Active')
         self.assertEqual(self.user0.userprofile.cluster_uid, self.cluster_uid)
         self.assertEqual(self.user0.username, self.new_username)
-        self.assertTrue(pre_time < self.request_obj.completion_time < post_time)
         self.assertEqual(self.alloc_user_obj.allocation_user_attribute.value,
                          self.alloc_obj.allocation_attribute.value)
         self.assertTrue(self._get_cluster_account_status_attr().exists())
@@ -156,15 +160,12 @@ class TestClusterAccessRequestCompleteRunner(TestClusterAccessRunnersBase):
         allocation's SUs, emails are sent, and log messages are written."""
         self.assertEqual(len(mail.outbox), 0)
         self._assert_pre_state()
-        pre_time = utc_now_offset_aware()
 
         with self.assertLogs(self._module, 'INFO') as cm:
             self.runner.run(self.new_username,
-                            self.cluster_uid,
-                            utc_now_offset_aware())
+                            self.cluster_uid)
 
-        post_time = utc_now_offset_aware()
-        self._assert_post_state(pre_time, post_time)
+        self._assert_post_state()
 
         self.assertGreater(len(cm.output), 0)
         self._assert_emails_sent()
@@ -179,12 +180,11 @@ class TestClusterAccessRequestCompleteRunner(TestClusterAccessRunnersBase):
 
         with patch.object(
                 ClusterAccessRequestCompleteRunner,
-                '_update_request',
+                '_set_cluster_uid',
                 raise_exception):
             with self.assertRaises(Exception) as cm:
                 self.runner.run(self.new_username,
-                                self.cluster_uid,
-                                utc_now_offset_aware())
+                                self.cluster_uid)
             self.assertEqual(str(cm.exception), 'Test exception.')
 
         self._assert_pre_state()
@@ -196,7 +196,6 @@ class TestClusterAccessRequestCompleteRunner(TestClusterAccessRunnersBase):
         such an exception is caught."""
         self.assertEqual(len(mail.outbox), 0)
         self._assert_pre_state()
-        pre_time = utc_now_offset_aware()
 
         with patch.object(
                 ClusterAccessRequestCompleteRunner,
@@ -204,11 +203,9 @@ class TestClusterAccessRequestCompleteRunner(TestClusterAccessRunnersBase):
                 raise_exception):
             with self.assertLogs(self._module, 'INFO') as log_cm:
                 self.runner.run(self.new_username,
-                                self.cluster_uid,
-                                utc_now_offset_aware())
+                                self.cluster_uid)
 
-        post_time = utc_now_offset_aware()
-        self._assert_post_state(pre_time, post_time)
+        self._assert_post_state()
 
         self.assertGreater(len(log_cm.output), 0)
         self.assertEqual(len(mail.outbox), 0)
@@ -218,7 +215,6 @@ class TestClusterAccessRequestCompleteRunner(TestClusterAccessRunnersBase):
         transaction, changes made so far are not rolled back."""
         self.assertEqual(len(mail.outbox), 0)
         self._assert_pre_state()
-        pre_time = utc_now_offset_aware()
 
         with patch.object(
                 ClusterAccessRequestCompleteRunner,
@@ -227,12 +223,10 @@ class TestClusterAccessRequestCompleteRunner(TestClusterAccessRunnersBase):
             with self.assertLogs(self._module, 'INFO') as log_cm:
                 with self.assertRaises(Exception) as exc_cm:
                     self.runner.run(self.new_username,
-                                    self.cluster_uid,
-                                    utc_now_offset_aware())
+                                    self.cluster_uid)
             self.assertEqual(str(exc_cm.exception), 'Test exception.')
 
-        post_time = utc_now_offset_aware()
-        self._assert_post_state(pre_time, post_time)
+        self._assert_post_state()
 
         self.assertGreater(len(log_cm.output), 0)
         self.assertEqual(len(mail.outbox), 0)
@@ -244,17 +238,12 @@ class TestClusterAccessRequestDenialRunner(TestClusterAccessRunnersBase):
     def setUp(self):
         """Set up test data."""
         super().setUp()
+        self.request_obj.status = \
+            ClusterAccessRequestStatusChoice.objects.get(name='Denied')
+        self.request_obj.completion_time = utc_now_offset_aware()
+        self.request_obj.save()
+        
         self.runner = ClusterAccessRequestDenialRunner(self.request_obj)
-
-    def _get_cluster_account_status_attr(self):
-        cluster_account_status = \
-            AllocationAttributeType.objects.get(name='Cluster Account Status')
-        cluster_access_attribute = \
-            AllocationUserAttribute.objects.filter(
-                allocation_attribute_type=cluster_account_status,
-                allocation=self.alloc_obj.allocation,
-                allocation_user=self.alloc_user_obj.allocation_user)
-        return cluster_access_attribute
 
     def _assert_emails_sent(self):
         email_body = [f'access request under project {self.project0.name}',
@@ -271,24 +260,22 @@ class TestClusterAccessRequestDenialRunner(TestClusterAccessRunnersBase):
         self.assertEqual(email.cc, [self.manager.email])
         self.assertEqual(settings.EMAIL_SENDER, email.from_email)
 
-    def _assert_post_state(self, pre_time, post_time):
-        """Assert that the relevant objects have the expected state,
-        assuming that the runner has run successfully."""
-        self.request_obj.refresh_from_db()
-        self.assertTrue(pre_time < self.request_obj.completion_time < post_time)
-        self.assertEqual(self.request_obj.status.name, 'Denied')
-        self.assertTrue(self._get_cluster_account_status_attr().exists())
-        self.assertEqual(self._get_cluster_account_status_attr().first().value,
-                         'Denied')
-
     def _assert_pre_state(self):
         """Assert that the relevant objects have the expected state,
         assuming that the runner has either not run or not run
         successfully."""
         self.request_obj.refresh_from_db()
-        self.assertIsNone(self.request_obj.completion_time)
-        self.assertEqual(self.request_obj.status.name, 'Pending - Add')
+        # self.assertIsNone(self.request_obj.completion_time)
+        # self.assertEqual(self.request_obj.status.name, 'Pending - Add')
         self.assertFalse(self._get_cluster_account_status_attr().exists())
+
+    def _assert_post_state(self):
+        """Assert that the relevant objects have the expected state,
+        assuming that the runner has run successfully."""
+        self.request_obj.refresh_from_db()
+        self.assertTrue(self._get_cluster_account_status_attr().exists())
+        self.assertEqual(self._get_cluster_account_status_attr().first().value,
+                         'Denied')
 
     def test_success(self):
         """Test that the request status is set to Denied, Cluster Account
@@ -296,13 +283,11 @@ class TestClusterAccessRequestDenialRunner(TestClusterAccessRunnersBase):
         is set, emails are sent, and log messages are written."""
         self.assertEqual(len(mail.outbox), 0)
         self._assert_pre_state()
-        pre_time = utc_now_offset_aware()
 
         with self.assertLogs(self._module, 'INFO') as cm:
             self.runner.run()
 
-        post_time = utc_now_offset_aware()
-        self._assert_post_state(pre_time, post_time)
+        self._assert_post_state()
 
         self.assertGreater(len(cm.output), 0)
         self._assert_emails_sent()
@@ -317,7 +302,7 @@ class TestClusterAccessRequestDenialRunner(TestClusterAccessRunnersBase):
 
         with patch.object(
                 ClusterAccessRequestDenialRunner,
-                '_set_completion_time',
+                '_deny_cluster_access_attribute',
                 raise_exception):
             with self.assertRaises(Exception) as cm:
                 self.runner.run()
@@ -332,7 +317,6 @@ class TestClusterAccessRequestDenialRunner(TestClusterAccessRunnersBase):
         such an exception is caught."""
         self.assertEqual(len(mail.outbox), 0)
         self._assert_pre_state()
-        pre_time = utc_now_offset_aware()
 
         with patch.object(
                 ClusterAccessRequestDenialRunner,
@@ -341,8 +325,7 @@ class TestClusterAccessRequestDenialRunner(TestClusterAccessRunnersBase):
             with self.assertLogs(self._module, 'INFO') as log_cm:
                 self.runner.run()
 
-        post_time = utc_now_offset_aware()
-        self._assert_post_state(pre_time, post_time)
+        self._assert_post_state()
 
         self.assertGreater(len(log_cm.output), 0)
         self.assertEqual(len(mail.outbox), 0)
@@ -352,7 +335,6 @@ class TestClusterAccessRequestDenialRunner(TestClusterAccessRunnersBase):
         transaction, changes made so far are not rolled back."""
         self.assertEqual(len(mail.outbox), 0)
         self._assert_pre_state()
-        pre_time = utc_now_offset_aware()
 
         with patch.object(
                 ClusterAccessRequestDenialRunner,
@@ -363,8 +345,7 @@ class TestClusterAccessRequestDenialRunner(TestClusterAccessRunnersBase):
                     self.runner.run()
             self.assertEqual(str(exc_cm.exception), 'Test exception.')
 
-        post_time = utc_now_offset_aware()
-        self._assert_post_state(pre_time, post_time)
+        self._assert_post_state()
 
         self.assertGreater(len(log_cm.output), 0)
         self.assertEqual(len(mail.outbox), 0)

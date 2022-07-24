@@ -2008,11 +2008,13 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
         runner = None
         try:
             with transaction.atomic():
+                self.request_obj.status = \
+                    ClusterAccessRequestStatusChoice.objects.get(name='Active')
+                self.request_obj.completion_time = utc_now_offset_aware()
+                self.request_obj.save()
                 runner = \
                     ClusterAccessRequestCompleteRunner(self.request_obj)
-                runner.run(username,
-                           cluster_uid,
-                           utc_now_offset_aware())
+                runner.run(username, cluster_uid)
         except Exception as e:
             message = f'Rolling back failed transaction. Details:\n{e}'
             logger.exception(message)
@@ -2066,31 +2068,10 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
     def get_success_url(self):
         return reverse('allocation-cluster-account-request-list')
 
-    # def __set_user_service_units(self):
-    #     """Set the AllocationUser's 'Service Units' attribute value to
-    #     that of the Allocation."""
-    #     allocation_obj = self.allocation_user_attribute_obj.allocation
-    #     allocation_user_obj = \
-    #         self.allocation_user_attribute_obj.allocation_user
-    #     allocation_attribute_type = AllocationAttributeType.objects.get(
-    #         name='Service Units')
-    #     allocation_service_units = allocation_obj.allocationattribute_set.get(
-    #         allocation_attribute_type=allocation_attribute_type)
-    #     set_allocation_user_attribute_value(
-    #         allocation_user_obj, 'Service Units',
-    #         allocation_service_units.value)
-    #     # Create a ProjectUserTransaction to store the change in service units.
-    #     project_user = ProjectUser.objects.get(
-    #         user=self.user_obj,
-    #         project=self.allocation_user_attribute_obj.allocation.project)
-    #     ProjectUserTransaction.objects.create(
-    #         project_user=project_user,
-    #         date_time=utc_now_offset_aware(),
-    #         allocation=Decimal(allocation_service_units.value))
-
 
 class AllocationClusterAccountDenyRequestView(LoginRequiredMixin,
-                                              UserPassesTestMixin, View):
+                                              UserPassesTestMixin,
+                                              View):
     login_url = '/'
 
     def test_func(self):
@@ -2118,6 +2099,11 @@ class AllocationClusterAccountDenyRequestView(LoginRequiredMixin,
         runner = None
         try:
             with transaction.atomic():
+                self.request_obj.status = \
+                    ClusterAccessRequestStatusChoice.objects.get(name='Denied')
+                self.request_obj.completion_time = utc_now_offset_aware()
+                self.request_obj.save()
+
                 runner = ClusterAccessRequestDenialRunner(self.request_obj)
                 runner.run()
         except Exception as e:

@@ -50,14 +50,12 @@ class ClusterAccessRequestCompleteRunner(object):
         """Return warning messages raised during the run."""
         return self._warning_messages.copy()
 
-    def run(self, username, cluster_uid, completion_time):
+    def run(self, username, cluster_uid):
         """Performs the necessary operations to complete the request."""
         with transaction.atomic():
-            self._update_request('Active')
             self._give_cluster_access_attribute()
             self._set_username(username)
             self._set_cluster_uid(cluster_uid)
-            self._set_completion_time(completion_time)
 
             # For Savio projects, set the user's service units to that of
             # the allocation. Attempt this before setting the status to
@@ -88,17 +86,6 @@ class ClusterAccessRequestCompleteRunner(object):
                 logger.info(message)
         except Exception:
             pass
-
-    def _update_request(self, status_name):
-        """Updates the ClusterAccessRequest with the given status name."""
-        status = ClusterAccessRequestStatusChoice.objects.get(name=status_name)
-        self.request.status = status
-        self.request.save()
-
-        message = (
-            f'Updated cluster access request {self.request.pk} to '
-            f'"{status_name}".')
-        self._success_messages.append(message)
 
     def _give_cluster_access_attribute(self):
         """Activates cluster access attribute for user."""
@@ -131,14 +118,6 @@ class ClusterAccessRequestCompleteRunner(object):
         self.user.save()
 
         message = (f'Set username for user {self.user.pk}.')
-        self._success_messages.append(message)
-
-    def _set_completion_time(self, completion_time):
-        """Sets the completion time of request."""
-        self.request.completion_time = completion_time
-        self.request.save()
-
-        message = (f'Set completion time of request {self.request.pk}.')
         self._success_messages.append(message)
 
     def _set_user_service_units(self):
@@ -257,9 +236,7 @@ class ClusterAccessRequestDenialRunner(object):
     def run(self):
         """Denies the request."""
         with transaction.atomic():
-            self._set_status()
             self._deny_cluster_access_attribute()
-            self._set_completion_time(utc_now_offset_aware())
 
         message = (
             f'Successfully DENIED cluster access request {self.request.pk} '
@@ -283,23 +260,6 @@ class ClusterAccessRequestDenialRunner(object):
                 logger.info(message)
         except Exception:
             pass
-
-    def _set_status(self):
-        """Updates the ClusterAccessRequest with the status name Denied."""
-        status = ClusterAccessRequestStatusChoice.objects.get(name='Denied')
-        self.request.status = status
-        self.request.save()
-
-        message = (f'Set status of request {self.request.pk} to Denied.')
-        self._success_messages.append(message)
-
-    def _set_completion_time(self, completion_time):
-        """Sets the completion time of request."""
-        self.request.completion_time = completion_time
-        self.request.save()
-
-        message = (f'Set completion time of request {self.request.pk}.')
-        self._success_messages.append(message)
 
     def _deny_cluster_access_attribute(self):
         """Activates cluster access attribute for user."""
