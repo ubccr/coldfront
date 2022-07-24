@@ -440,8 +440,9 @@ ansible-playbook bootstrap/ansible/playbook.yml
 
 Some configuration may need to be updated without a server restart (e.g., links
 to external resources). Such configuration is managed by `django-constance` and
-stored in Redis. To update these, navigate to `/admin/constance/config/`, and
-set the correct values for the current deployment.
+stored in Redis. To update these, navigate to the URL path
+`/admin/constance/config/`, and set the correct values for the current
+deployment.
 
 
 ## License
