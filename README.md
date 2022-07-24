@@ -69,8 +69,8 @@ application should be served.
     ```
     # Clear the Django database to avoid conflicts.
     python manage.py sqlflush | python manage.py dbshell
-    # Load from the dump file.
-    sh bootstrap/development/load_database_backup.sh /absolute/path/to/dump.file
+    # Load from the dump file (use the -k option if the command errors because database is being accessed).
+    sh bootstrap/development/load_database_backup.sh [-k] DB_NAME /absolute/path/to/dump.file
     # Set user passwords.
     python manage.py set_passwords --password <password>
     ```
