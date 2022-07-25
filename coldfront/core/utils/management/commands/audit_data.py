@@ -82,7 +82,7 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.SUCCESS('Running {}...' \
                     .format(option)))
                 getattr(self, 'handle_{}'.format(option))()
-                self.stdout.write(self.style.SUCCESS('Audit complete.'))
+                self.stdout.write(self.style.SUCCESS('Audit complete.') + '\n\n')
 
     def handle_allocation_date(self):
         '''
