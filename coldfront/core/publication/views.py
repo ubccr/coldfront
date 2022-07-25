@@ -86,6 +86,7 @@ class PublicationSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
             context['publication_search_form'] = PublicationSearchForm(initial=psf_initial)
             context['search_immediately'] = True
         else:
+            context['orcid_config_msg'] = OrcidAPI.ORC_CONFIG_MSG
             context['publication_search_form'] = PublicationSearchForm()
             context['search_immediately'] = False
         

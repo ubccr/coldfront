@@ -13,14 +13,28 @@ Add Publication to Project
 <hr>
 
 <div class="col">
+ 
   <div class="mb-3">
+   
     <a class="btn btn-info" href="{% url 'add-publication-manually' project.pk %}" role="button">
       <i class="far fa-edit" aria-hidden="true"></i> Enter Publication Manually
     </a>
+     {% if orcid_vars == True %}
     <a class="btn btn-info" href="{% url 'publication-user-orcid-import' project.pk %}" role="button">
-      <i class="far fa-user" aria-hidden="true"></i> Import Grants from User ORCIDs
+      <i class="far fa-user" aria-hidden="true"></i> Import Publications from User ORCIDs
     </a>
+    {% else %}
+    <div style="display:inline-block" title="{{orcid_config_msg}}" class="mb-3">
+      <a class="btn btn-info disabled" href="{% url 'publication-user-orcid-import' project.pk %}" role="button">
+        <i class="far fa-user" aria-hidden="true"></i> Import Publication from User ORCIDs
+      </a>
+    </div>
+    {% endif %}
   </div>
+  
+  
+  
+
   <form id="post-form">
     {% csrf_token %}
     {{ publication_search_form|crispy }}
