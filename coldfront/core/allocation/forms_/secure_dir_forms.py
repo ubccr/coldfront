@@ -183,7 +183,7 @@ class SecureDirRDMConsultationReviewForm(forms.Form):
 
     rdm_update = forms.CharField(
         help_text=(
-            'You may provide an optional update to the user provdied RDM '
+            'You may provide an optional update to the user provided RDM '
             'consultation. Note that overwriting the user provided answer '
             'is permanent.'),
         label='Optional RDM Update',
