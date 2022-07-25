@@ -40,7 +40,8 @@ def home(request):
         template_name = 'portal/authorized_home.html'
         project_list = Project.objects.filter(
             (
-                Q(pi=request.user) &
+                (Q(pi=request.user) |
+                 Q(requestor=request.user)) &
                 Q(
                     status__name__in=[
                         'New',
@@ -51,7 +52,14 @@ def home(request):
                     ]
                 )
             ) |
-            (Q(status__name__in=['New', 'Active', ]) &
+            (Q(
+                status__name__in=[
+                    'New',
+                    'Active',
+                    'Waiting For Admin Approval',
+                    'Review Pending'
+                    ]
+             ) &
              Q(projectuser__user=request.user) &
              Q(projectuser__status__name__in=['Active', ]))
         ).distinct().order_by('-created')[:5]
