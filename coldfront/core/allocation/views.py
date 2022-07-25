@@ -26,6 +26,7 @@ from django.views import View
 from django.views.generic import DetailView, ListView, TemplateView
 from django.views.generic.edit import CreateView, FormView, UpdateView
 
+from coldfront.core.utils.fasrc import get_resource_rate
 from coldfront.core.allocation.forms import (AllocationAddUserForm,
                                              AllocationAttributeDeleteForm,
                                              AllocationChangeForm,
@@ -266,9 +267,8 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context['allocation_changes'] = allocation_changes
 
         # set price
-        tier = allocation_obj.get_resources_as_string.split("/")[1]
-        price_dict = {"tier0":4.16, "tier1":20.80, "tier2": 100/12, "tier3":.41}
-        context['price'] = price_dict[tier]
+        rate = get_resource_rate(allocation_obj.get_resources_as_string)
+        context['price'] = rate
 
         # Can the user update the project?
         context['is_allowed_to_update_project'] = set_proj_update_permissions(
@@ -1533,9 +1533,8 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
         context['attributes'] = attributes
 
         # set price
-        tier = allocation_obj.get_resources_as_string.split("/")[1]
-        price_dict = {"tier0":4.16, "tier1":20.80, "tier2": 100/12, "tier3":.41}
-        context['price'] = price_dict[tier]
+        rate = get_resource_rate(allocation_obj.get_resources_as_string)
+        context['price'] = rate
 
         # Can the user update the project?
         context['is_allowed_to_update_project'] = set_proj_update_permissions(
