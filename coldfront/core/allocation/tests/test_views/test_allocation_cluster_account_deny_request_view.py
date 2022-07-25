@@ -82,7 +82,7 @@ class TestAllocationClusterAccountDenyRequestView(TestClusterAccessRunnersBase):
         self._assert_pre_state()
 
         url = self.view_url(self.request_obj.pk)
-        response = self.client.get(url)
+        response = self.client.post(url, {})
         self.assertEqual(response.status_code, HTTPStatus.FOUND)
 
         self.assertRedirects(
@@ -104,7 +104,7 @@ class TestAllocationClusterAccountDenyRequestView(TestClusterAccessRunnersBase):
                 ClusterAccessRequestDenialRunner,
                 'run',
                 raise_exception):
-            response = self.client.get(url)
+            response = self.client.post(url, {})
         self.assertEqual(response.status_code, HTTPStatus.FOUND)
 
         self.assertRedirects(
@@ -126,7 +126,7 @@ class TestAllocationClusterAccountDenyRequestView(TestClusterAccessRunnersBase):
                 ClusterAccessRequestDenialRunner,
                 '_send_denial_emails',
                 raise_exception):
-            response = self.client.get(url)
+            response = self.client.post(url, {})
         self.assertEqual(response.status_code, HTTPStatus.FOUND)
 
         self.assertRedirects(

@@ -115,7 +115,7 @@
           {% endif %}
           <div class="modal fade" id="denial{{ request.pk }}Modal" tabindex="-1" role="dialog" aria-labelledby="denial{{ request.pk }}ModalLabel" aria-hidden="true">
             <div class="modal-dialog" role="document">
-              <form action="{% url 'allocation-cluster-account-deny-request' request.pk %}" method="get" id="denial{{ request.pk }}Form">
+              <form action="{% url 'allocation-cluster-account-deny-request' request.pk %}" method="post" id="denial{{ request.pk }}Form">
                 {% csrf_token %}
                 <div class="modal-content">
                   <div class="modal-header">
