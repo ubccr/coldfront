@@ -910,11 +910,6 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         allocation_account = form_data.get('allocation_account', None)
         license_term = form_data.get('license_term', None)
 
-        if resource_obj.resourceattribute_set.filter(resource_attribute_type__name='slurm_cluster').exists():
-            if project_obj.slurm_account_name == '':
-                form.add_error(None, 'Project must have a Slurm account name for this resource.')
-                return self.form_invalid(form)
-
         total_cost = None
         cost = resource_obj.get_attribute('cost')
         prorated_cost_label = resource_obj.get_attribute('prorated_cost_label')

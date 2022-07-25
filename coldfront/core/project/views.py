@@ -677,7 +677,7 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
 class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Project
     template_name_suffix = '_create_form'
-    fields = ['title', 'description', 'pi_username', 'slurm_account_name', 'field_of_science', 'type', ]
+    fields = ['title', 'description', 'pi_username', 'field_of_science', 'type', ]
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -695,15 +695,18 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         if self.request.user.userprofile.is_pi:  # and max_projects - project_count > 0:
             return True
 
-    def form_valid(self, form):
-        slurm_account_name = form.instance.slurm_account_name
-        if slurm_account_name is not None and len(slurm_account_name) > 0:
-            projects = Project.objects.filter(slurm_account_name=slurm_account_name)
-            if len(projects) > 0:
-                form.add_error(None, 'Please fix the errors below')
-                form.add_error('slurm_account_name', 'This slurm account name already exists')
-                return self.form_invalid(form)
+    def generate_slurm_account_name(self, project_obj):
+        num = str(project_obj.pk)
+        string = '00000'
+        string = string[:-len(num)] + num
+        project_type = project_obj.type.name
+        letter = 'R'
+        if project_type == 'Class':
+            letter = 'C'
 
+        return letter + string
+
+    def form_valid(self, form):
         project_obj = form.save(commit=False)
         if not form.instance.pi_username:
             user_profile = UserProfile.objects.get(user=self.request.user)
@@ -767,6 +770,9 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         form.instance.max_managers = PROJECT_DEFAULT_MAX_MANAGERS
         project_obj.save()
         self.object = project_obj
+
+        project_obj.slurm_account_name = self.generate_slurm_account_name(project_obj)
+        project_obj.save()
 
         project_user_obj = ProjectUser.objects.create(
             user=self.request.user,
@@ -876,23 +882,8 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
     def form_valid(self, form):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         form_data = form.cleaned_data
-        slurm_account_name = form_data.get('slurm_account_name')
-        if slurm_account_name is not None and len(slurm_account_name) > 0:
-            projects = Project.objects.filter(slurm_account_name=slurm_account_name)
-            if len(projects) > 0:
-                if len(projects) > 1:
-                    form.add_error(None, 'Please fix the errors below')
-                    form.add_error('slurm_account_name', 'This slurm account name already exists')
-                    return self.form_invalid(form)
-
-                if projects[0].pk != project_obj.pk:
-                    form.add_error(None, 'Please fix the errors below')
-                    form.add_error('slurm_account_name', 'This slurm account name already exists')
-                    return self.form_invalid(form)
-
         project_obj.title = form_data.get('title')
         project_obj.description = form_data.get('description')
-        project_obj.slurm_account_name = form_data.get('slurm_account_name')
         project_obj.field_of_science = form_data.get('field_of_science')
         project_obj.save()
 
