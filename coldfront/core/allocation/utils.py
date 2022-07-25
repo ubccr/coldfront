@@ -3,6 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db.models import BooleanField
 from django.db.models import Case
@@ -23,7 +24,9 @@ from coldfront.core.allocation.models import (AllocationAttributeType,
                                               SecureDirAddUserRequest,
                                               SecureDirAddUserRequestStatusChoice,
                                               SecureDirRemoveUserRequest,
-                                              SecureDirRemoveUserRequestStatusChoice)
+                                              SecureDirRemoveUserRequestStatusChoice,
+                                              SecureDirRequest,
+                                              SecureDirRequestStatusChoice)
 from coldfront.core.allocation.signals import allocation_activate_user
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
@@ -232,103 +235,23 @@ def review_cluster_access_requests_url():
     return urljoin(domain, view)
 
 
-def create_secure_dirs(project, subdirectory_name, scratch_or_groups):
+def has_cluster_access(user):
     """
-    Creates one secure directory allocation: either a group directory or a
-    scratch directory, depending on scratch_or_groups. Additionally creates
-    an AllocationAttribute for the new allocation that corresponds to the
-    directory path on the cluster.
+    Returns True if the user has cluster access, False otherwise
 
     Parameters:
-        - project (Project): a Project object to create a secure directory
-                            allocation for
-        - subdirectory_name (str): the name of the subdirectory on the cluster
-        - scratch_or_groups (str): one of either 'scratch' or 'groups'
+    - user (User): the user to check
 
+    Raises:
+    - TypeError, if user is not a User object
 
     Returns:
-        - allocation
-
-    Raises:
-        - TypeError, if subdirectory_name has an invalid type
-        - ValueError, if scratch_or_groups does not have a valid value
-        - ValidationError, if the Allocations already exist
+    - Bool: True if the user has cluster access and False otherwise
     """
+    if not isinstance(user, User):
+        raise TypeError(f'Invalid User {user}.')
 
-    if not isinstance(project, Project):
-        raise TypeError(f'Invalid Project {project}.')
-    if not isinstance(subdirectory_name, str):
-        raise TypeError(f'Invalid subdirectory_name {subdirectory_name}.')
-    if scratch_or_groups not in ['scratch', 'groups']:
-        raise ValueError(f'Invalid scratch_or_groups arg {scratch_or_groups}.')
-
-    if scratch_or_groups == 'scratch':
-        p2p3_directory = Resource.objects.get(name='Scratch P2/P3 Directory')
-    else:
-        p2p3_directory = Resource.objects.get(name='Groups P2/P3 Directory')
-
-    query = Allocation.objects.filter(project=project,
-                                      resources__in=[p2p3_directory])
-
-    if query.exists():
-        raise ValidationError('Allocation already exist')
-
-    allocation = Allocation.objects.create(
-        project=project,
-        status=AllocationStatusChoice.objects.get(name='Active'),
-        start_date=utc_now_offset_aware())
-
-    p2p3_path = p2p3_directory.resourceattribute_set.get(
-        resource_attribute_type__name='path')
-
-    allocation.resources.add(p2p3_directory)
-
-    allocation_attribute_type = AllocationAttributeType.objects.get(
-        name='Cluster Directory Access')
-
-    p2p3_subdirectory = AllocationAttribute.objects.create(
-        allocation_attribute_type=allocation_attribute_type,
-        allocation=allocation,
-        value=os.path.join(p2p3_path.value, subdirectory_name))
-
-    return allocation
-
-
-def get_secure_dir_manage_user_request_objects(self, action):
-    """
-    Sets attributes pertaining to a secure directory based on the
-    action being performed.
-
-    Parameters:
-        - self (object): object to set attributes for
-        - action (str): the action being performed, either 'add' or 'remove'
-
-    Raises:
-        - TypeError, if the 'self' object is not an object
-        - ValueError, if action is not one of 'add' or 'remove'
-    """
-
-    action = action.lower()
-    if not isinstance(self, object):
-        raise TypeError(f'Invalid self {self}.')
-    if action not in ['add', 'remove']:
-        raise ValueError(f'Invalid action {action}.')
-
-    add_bool = action == 'add'
-
-    request_obj = SecureDirAddUserRequest \
-        if add_bool else SecureDirRemoveUserRequest
-    request_status_obj = SecureDirAddUserRequestStatusChoice \
-        if add_bool else SecureDirRemoveUserRequestStatusChoice
-
-    language_dict = {
-        'preposition': 'to' if add_bool else 'from',
-        'noun': 'addition' if add_bool else 'removal',
-        'verb': 'add' if add_bool else 'remove'
-    }
-
-    setattr(self, 'action', action.lower())
-    setattr(self, 'add_bool', add_bool)
-    setattr(self, 'request_obj', request_obj)
-    setattr(self, 'request_status_obj', request_status_obj)
-    setattr(self, 'language_dict', language_dict)
+    return AllocationUserAttribute.objects.filter(
+        allocation_user__user=user,
+        allocation_attribute_type__name='Cluster Account Status',
+        value='Active').exists()

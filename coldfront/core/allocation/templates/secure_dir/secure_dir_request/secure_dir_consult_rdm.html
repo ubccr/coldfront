@@ -1,0 +1,51 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Secure Directory Request - Review Research Data Management Consultation
+{% endblock %}
+
+
+{% block content %}
+<h1>Confirm Research Data Management Consultation</h1>
+<hr>
+
+{% with requester=secure_dir_request.requester %}
+  <p>
+    Please confirm that the requester, {{ requester.first_name }} {{ requester.last_name }}
+    ({{ requester.username }}), has consulted with a Research Data Management Consultant.
+
+    If {{ requester.first_name }} {{ requester.last_name }} has not consulted with an RDM consultant,
+    please contact them at {{ requester.email }} to arrange a consultation.
+  </p>
+
+  <p>
+    You may provide an optional update to the user provided RDM consultation below.
+    Note that overwriting the user provided answer is permanent.
+  </p>
+{% endwith %}
+
+{% include 'secure_dir/secure_dir_request/secure_dir_request_card.html' with secure_dir_request=secure_dir_request %}
+
+<div class="card mb-3">
+  <div class="card-header">
+    <h4>
+      <i class="fas fa-check-circle" aria-hidden="true"></i>
+      Review
+    </h4>
+  </div>
+  <div class="card-body">
+    <form action="" method="post">
+      {% csrf_token %}
+      {{ form|crispy }}
+      <input class="btn btn-primary" type="submit" value="Submit" />
+      <a href="{% url 'secure-dir-request-detail' secure_dir_request.pk %}" class="btn btn-secondary">
+        Cancel
+      </a>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
