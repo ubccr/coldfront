@@ -4,8 +4,7 @@ from unittest.mock import patch
 from django.core import mail
 
 from coldfront.config import settings
-from coldfront.core.allocation.models import ClusterAccessRequestStatusChoice, \
-    ClusterAccessRequest
+from coldfront.core.allocation.models import ClusterAccessRequestStatusChoice
 from coldfront.core.allocation.tests.test_utils.test_cluster_access_runners import \
     TestClusterAccessRunnersBase
 from coldfront.core.allocation.utils_.cluster_access_utils import \
@@ -128,9 +127,9 @@ class TestAllocationClusterAccountActivateRequestView(TestClusterAccessRunnersBa
         self.assertEqual(len(mail.outbox), 0)
 
     def test_success(self):
-        """Test that the request status is set to Denied, Cluster Account
-        Status AllocationUserAttribute is set to Denied, completion time
-        is set, emails are sent, and log messages are written."""
+        """Test that the request status is set to Active, Cluster Account
+        Status AllocationUserAttribute is set to Active, completion time
+        is set, emails are sent."""
         pre_time = utc_now_offset_aware()
         self.assertEqual(len(mail.outbox), 0)
         self._assert_pre_state()
