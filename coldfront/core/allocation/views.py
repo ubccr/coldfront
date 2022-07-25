@@ -2095,7 +2095,7 @@ class AllocationClusterAccountDenyRequestView(LoginRequiredMixin,
                 reverse('allocation-cluster-account-request-list'))
         return super().dispatch(request, *args, **kwargs)
 
-    def get(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         runner = None
         try:
             with transaction.atomic():
