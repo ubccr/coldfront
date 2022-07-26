@@ -13,19 +13,6 @@ Project Renewal Request Detail
 {% block content %}
 <h1>
   Renewal Request: {{ renewal_request.pi.first_name }} {{ renewal_request.pi.last_name }}
-  {% with status=renewal_request.status.name %}
-    {% if status == 'Under Review' %}
-      <span class="badge badge-warning" style="float: right;">{{ status }}</span>
-    {% elif status == 'Approved' %}
-      <span class="badge badge-warning" style="float: right;">
-        {{ status }} - Scheduled
-      </span>
-    {% elif status == 'Complete' %}
-      <span class="badge badge-success" style="float: right;">{{ status }}</span>
-    {% else %}
-      <span class="badge badge-danger" style="float: right;">{{ status }}</span>
-    {% endif %}
-  {% endwith %}
 </h1>
 <hr>
 
