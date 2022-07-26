@@ -1812,8 +1812,8 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
                             project_user_obj)
                         runner_result = request_runner.run()
                         if not runner_result.success:
-                            messages.error(
-                                self.request, runner_result.error_message)
+                            self.logger.error(runner_result.error_message)
+                            messages.error(self.request, error_message)
                         # If the Project is a Vector project, automatically add
                         # the User to the designated Savio project for Vector
                         # users.

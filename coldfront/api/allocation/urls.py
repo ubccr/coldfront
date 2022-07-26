@@ -1,4 +1,5 @@
-from coldfront.api.allocation.views import AllocationAttributeViewSet
+from coldfront.api.allocation.views import AllocationAttributeViewSet, \
+    ClusterAccessRequestViewSet
 from coldfront.api.allocation.views import AllocationViewSet
 from coldfront.api.allocation.views import AllocationUserAttributeViewSet
 from coldfront.api.allocation.views import AllocationUserViewSet
@@ -33,6 +34,10 @@ allocation_user_attributes_router = NestedSimpleRouter(
     allocation_users_router, r'attributes', lookup='attribute')
 allocation_user_attributes_router.register(
     r'history', HistoricalAllocationUserAttributeViewSet, basename='history')
+
+router.register(r'cluster_access_requests',
+                ClusterAccessRequestViewSet,
+                basename='cluster_access_requests')
 
 urlpatterns = router.urls
 

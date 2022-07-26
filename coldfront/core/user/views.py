@@ -24,6 +24,7 @@ from django.views.generic import CreateView, ListView, TemplateView
 from django.views.generic.edit import FormView
 
 from coldfront.core.allocation.models import AllocationUserAttribute
+from coldfront.core.allocation.utils import has_cluster_access
 from coldfront.core.project.models import Project, ProjectUser
 from coldfront.core.user.models import IdentityLinkingRequest, IdentityLinkingRequestStatusChoice
 from coldfront.core.user.models import UserProfile as UserProfileModel
@@ -35,7 +36,7 @@ from coldfront.core.user.forms import UserProfileUpdateForm
 from coldfront.core.user.forms import UserRegistrationForm
 from coldfront.core.user.forms import UserSearchForm, UserSearchListForm
 from coldfront.core.user.models import EmailAddress
-from coldfront.core.user.utils import CombinedUserSearch
+from coldfront.core.user.utils import CombinedUserSearch, is_lbl_employee
 from coldfront.core.user.utils import ExpiringTokenGenerator
 from coldfront.core.user.utils import send_account_activation_email
 from coldfront.core.user.utils import send_account_already_active_email
@@ -93,10 +94,7 @@ class UserProfile(TemplateView):
         context['other_emails'] = EmailAddress.objects.filter(
             user=viewed_user, is_primary=False).order_by('email')
 
-        context['has_cluster_access'] = AllocationUserAttribute.objects.filter(
-            allocation_user__user=viewed_user,
-            allocation_attribute_type__name='Cluster Account Status',
-            value='Active').exists()
+        context['has_cluster_access'] = has_cluster_access(viewed_user)
 
         if viewed_user == self.request.user:
             self.update_context_with_identity_linking_request_data(context)
@@ -117,6 +115,8 @@ class UserProfile(TemplateView):
                 if billing_activity:
                     billing_id = billing_activity.full_id()
             context['monthly_user_account_fee_billing_id'] = billing_id
+
+        context['is_lbl_employee'] = is_lbl_employee(viewed_user)
 
         return context
 
@@ -876,11 +876,7 @@ class IdentityLinkingRequestView(UserPassesTestMixin, View):
         user = self.request.user
         redirection = HttpResponseRedirect(reverse('user-profile'))
 
-        has_cluster_access = AllocationUserAttribute.objects.filter(
-            allocation_user__user=user,
-            allocation_attribute_type__name='Cluster Account Status',
-            value='Active').exists()
-        if not has_cluster_access:
+        if not has_cluster_access(user):
             message = (
                 'You do not have active cluster access. Please gain access to '
                 'the cluster before attempting to request a linking email.')

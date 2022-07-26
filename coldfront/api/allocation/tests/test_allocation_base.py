@@ -1,3 +1,5 @@
+from django.core.management import call_command
+
 from coldfront.api.statistics.utils import create_project_allocation
 from coldfront.api.statistics.utils import create_user_project_allocation
 from coldfront.api.utils.tests.test_api_base import TestAPIBase
@@ -6,7 +8,7 @@ from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
-from coldfront.core.user.models import UserProfile
+from coldfront.core.user.models import UserProfile, ExpiringToken
 from decimal import Decimal
 from django.contrib.auth.models import User
 
@@ -21,6 +23,19 @@ class TestAllocationBase(TestAPIBase):
         """Set up test data."""
         super().setUp()
 
+        # Create default choices.
+        call_command('add_default_user_choices')
+        call_command('add_allocation_defaults')
+
+        # Create a superuser.
+        self.superuser = User.objects.create_superuser(
+            email='superuser@nonexistent.com',
+            username='superuser',
+            password=self.password)
+
+        # Fetch the staff user.
+        self.staff_user = User.objects.get(username='staff')
+
         # Create a PI.
         self.pi = User.objects.create(
             username='pi0', email='pi0@nonexistent.com')
@@ -29,11 +44,10 @@ class TestAllocationBase(TestAPIBase):
         user_profile.save()
 
         # Create two Users.
-        for i in range(2):
+        for i in range(4):
             user = User.objects.create(
                 username=f'user{i}', email=f'user{i}@nonexistent.com')
             user_profile = UserProfile.objects.get(user=user)
-            user_profile.cluster_uid = f'{i}'
             user_profile.save()
             setattr(self, f'user{i}', user)
             setattr(self, f'user_profile{i}', user_profile)
@@ -49,7 +63,7 @@ class TestAllocationBase(TestAPIBase):
             project = Project.objects.create(
                 name=f'project{i}', status=project_status)
             setattr(self, f'project{i}', project)
-            for j in range(2):
+            for j in range(4):
                 ProjectUser.objects.create(
                     user=getattr(self, f'user{j}'), project=project,
                     role=user_role, status=project_user_status)
@@ -62,6 +76,11 @@ class TestAllocationBase(TestAPIBase):
             create_project_allocation(project, allocation)
 
             # Create a compute allocation for each User on the Project.
-            for j in range(2):
+            for j in range(4):
                 create_user_project_allocation(
                     getattr(self, f'user{j}'), project, allocation / 2)
+
+        # Create an ExpiringToken for each User.
+        for user in User.objects.all():
+            token, _ = ExpiringToken.objects.get_or_create(user=user)
+            setattr(self, f'{user.username}_token', token)
