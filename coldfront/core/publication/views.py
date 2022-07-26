@@ -38,9 +38,8 @@ from doi2bib import crossref
 from coldfront.core.user.forms import UserSelectForm
 from coldfront.core.user.views import UserSelectResults
 # import orcid #NEW REQUIREMENT: orcid (pip install orcid)
-from coldfront.orcid_vars import OrcidAPI
-
-from coldfront.dict_methods import get_value_or_default
+from coldfront.plugins.orcid.orcid_vars import OrcidAPI
+from coldfront.plugins.orcid.dict_methods import *
 
 MANUAL_SOURCE = 'manual'
 
@@ -74,7 +73,7 @@ class PublicationSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
-
+        context['orcid_vars'] = OrcidAPI.orcid_configured()
         if UserSelectResults.SELECTED_KEY in self.request.session:
             selected_ids = self.request.session.pop(UserSelectResults.SELECTED_KEY)
             selected_user_profiles = UserProfile.objects.filter(user_id__in=selected_ids)

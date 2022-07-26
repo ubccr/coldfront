@@ -28,8 +28,8 @@ from coldfront.core.grant.models import (Grant, GrantFundingAgency,
                                          GrantStatusChoice)
 from coldfront.core.project.models import Project, ProjectUser
 
-from coldfront.orcid_vars import OrcidAPI
-from coldfront.dict_methods import *
+from coldfront.plugins.orcid.orcid_vars import OrcidAPI
+from coldfront.plugins.orcid.dict_methods import *
 
 class GrantCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     form_class = GrantForm

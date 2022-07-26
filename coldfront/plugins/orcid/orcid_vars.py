@@ -1,5 +1,5 @@
 import orcid #NEW REQUIREMENT: orcid (pip install orcid)
-from django.conf import settings
+from coldfront.core.utils.common import import_from_settings
 from orcid.orcid import PublicAPI
 
 class OrcidAPI:
@@ -15,17 +15,17 @@ class OrcidAPI:
 
     try:
         # Constants for orc_api (ORCID API)
-        INST_KEY = settings.ORCID_INST_KEY
-        INST_SECRET = settings.ORCID_INST_SECRET
+        ORCID_CLIENT_ID = import_from_settings('ORCID_CLIENT_ID')
+        ORCID_CLIENT_SECRET = import_from_settings('ORCID_CLIENT_SECRET')
 
         # Default ColdFront webpage. Should match one of Redirect URIs
         # in ORCID dev tools.
-        ORC_REDIRECT = settings.ORCID_REDIRECT
+        ORC_REDIRECT = import_from_settings('ORCID_REDIRECT')
 
         # Sets up orcid research info importing
         # Set sandbox to false on production
         # Requires institution key and institution secret
-        orc_api = orcid.PublicAPI(INST_KEY, INST_SECRET, sandbox=settings.ORCID_USE_SANDBOX)
+        orc_api = orcid.PublicAPI(ORCID_CLIENT_ID, ORCID_CLIENT_SECRET, sandbox=import_from_settings('ORCID_SANDBOX'))
     except AttributeError:
         pass
 
@@ -35,12 +35,16 @@ class OrcidAPI:
         '''
 
         try:
-            settings.ORCID_INST_KEY
-            settings.ORCID_INST_SECRET
-            settings.ORCID_REDIRECT
-            settings.ORCID_USE_SANDBOX
+            # Constants for orc_api (ORCID API)
+            ORCID_CLIENT_ID = import_from_settings('ORCID_CLIENT_ID')
+            ORCID_CLIENT_SECRET = import_from_settings('ORCID_CLIENT_SECRET')
 
-            PublicAPI(settings.ORCID_INST_KEY, settings.ORCID_INST_SECRET, settings.ORCID_USE_SANDBOX).get_search_token_from_orcid()
+            # Default ColdFront webpage. Should match one of Redirect URIs
+            # in ORCID dev tools.
+            ORCID_REDIRECT = import_from_settings('ORCID_REDIRECT')
+            ORCID_SANDBOX=import_from_settings('ORCID_SANDBOX')
+
+            PublicAPI(ORCID_CLIENT_ID, ORCID_CLIENT_SECRET, ORCID_SANDBOX).get_search_token_from_orcid()
 
             return True
         except:

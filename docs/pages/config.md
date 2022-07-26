@@ -252,6 +252,26 @@ exist in your backend LDAP to show up in the ColdFront user search.
 | LDAP_USER_SEARCH_CONNECT_TIMEOUT  | Time in seconds to wait before timing out. Default 2.5  |
 | LDAP_USER_SEARCH_USE_SSL  | Whether to use ssl when connecting to LDAP server. Default True |
 
+#### ORCID
+
+This plugin allows you to pull grant and research information from the ORCID API.
+Now users can either manually enter this information or connect their ORCID account
+through Coldfront and autocomplete this information from their ORCID record.
+
+!!! warning "Required"
+    ORCID requires `orcid`.
+    ```
+    $ pip install orcid
+    ```
+
+| Name            | Description                              |
+| :---------------|:-----------------------------------------|
+| PLUGIN_ORCID    | Enable ORCID integration. Default False  |
+| ORCID_CLIENT_ID | API credential ID - Developer Tool       |
+| ORCID_CLIENT_SECRET  | API credentail secret - Developer Tool |
+| ORCID_REDIRECT  | Redirect URL when authorizing ORCID integration |
+| ORCID_SANDBOX   | ORCID testing server. Default False      |
+
 ## Advanced Configuration
 
 ColdFront uses the [Django
