@@ -166,7 +166,7 @@ class Command(BaseCommand):
                     {
                         "name": "Allowance Year 2021 - 2022",
                         "start_date": "2021-10-01",
-                        "end_date": "2022-9-30"
+                        "end_date": "2022-09-30"
                     },
                     {
                         "name": "Allowance Year 2022 - 2023",
