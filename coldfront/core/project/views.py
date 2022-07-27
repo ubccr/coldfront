@@ -6,6 +6,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+from django.db import transaction
 from django.db.models import Case, CharField, Q, Value, When
 from django.forms import formset_factory
 from django.http import HttpResponse, HttpResponseRedirect
@@ -854,6 +855,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             if '__select_all__' in allocation_form_data:
                 allocation_form_data.remove('__select_all__')
 
+            runner_factory = NewProjectUserRunnerFactory()
             unsigned_users = []
             added_users = []
             for form in formset:
@@ -920,7 +922,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                                                       allocation_user_pk=allocation_user_obj.pk)
 
                     try:
-                        new_project_user_runner = NewProjectUserRunner(
+                        new_project_user_runner = runner_factory.get_runner(
                             project_user_obj, NewProjectUserSource.ADDED)
                         new_project_user_runner.run()
                     except Exception as e:
@@ -1624,43 +1626,146 @@ class ProjectJoinListView(ProjectListView, UserPassesTestMixin):
 
 class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
                                     TemplateView):
+    form_class = ProjectReviewUserJoinForm
     template_name = 'project/project_review_join_requests.html'
 
-    logger = logging.getLogger(__name__)
+    project_obj = None
+    redirect = None
+    users_to_review = []
 
     def test_func(self):
-        if self.request.user.is_superuser:
-            return True
-
-        if self.request.user.has_perm('project.can_view_all_projects'):
-            return True
-
-        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-
-        if project_obj.projectuser_set.filter(
-                user=self.request.user,
-                role__name__in=['Manager', 'Principal Investigator'],
-                status__name='Active').exists():
-            return True
+        return (
+            self._is_superuser_or_project_owner() or
+            self.request.user.has_perm('project.can_view_all_projects'))
 
     def dispatch(self, request, *args, **kwargs):
-        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.status.name not in ['Active', 'New', ]:
+        self.project_obj = get_object_or_404(
+            Project.objects.prefetch_related('projectuser_set'),
+            pk=self.kwargs.get('pk'))
+        self.redirect = HttpResponseRedirect(
+            reverse('project-detail', kwargs={'pk': self.project_obj.pk}))
+        if self.project_obj.status.name not in ['Active', 'New', ]:
             message = 'You cannot review join requests to an archived project.'
             messages.error(request, message)
-            return HttpResponseRedirect(
-                reverse('project-detail', kwargs={'pk': project_obj.pk}))
-        else:
-            return super().dispatch(request, *args, **kwargs)
+            return self.redirect
+        self.users_to_review = self._get_users_to_review()
+        return super().dispatch(request, *args, **kwargs)
 
-    @staticmethod
-    def get_users_to_review(project_obj):
+    def get(self, request, *args, **kwargs):
+        context = {}
+
+        users_to_review = self.users_to_review
+        if users_to_review:
+            formset = formset_factory(
+                self.form_class, max_num=len(users_to_review))
+            formset = formset(initial=users_to_review, prefix='userform')
+            context['formset'] = formset
+
+        context['project'] = self.project_obj
+
+        context['can_add_users'] = self._is_superuser_or_project_owner()
+
+        if flag_enabled('LRC_ONLY'):
+            context['host_dict'] = self._get_host_dict()
+
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        # Some users who have GET privileges do not have POST privileges.
+        if not self._is_superuser_or_project_owner():
+            message = 'You do not have permission to access this page.'
+            messages.error(request, message)
+            return self.redirect
+
+        users_to_review = self.users_to_review
+        formset = formset_factory(
+            self.form_class, max_num=len(users_to_review))
+        formset = formset(
+            request.POST, initial=users_to_review, prefix='userform')
+
+        if not formset.is_valid():
+            for error in formset.errors:
+                messages.error(request, error)
+            return self.redirect
+
+        decision = request.POST.get('decision', None)
+        if decision == 'approve':
+            status_name = 'Active'
+            message_verb = 'Approved'
+        elif decision == 'deny':
+            status_name = 'Denied'
+            message_verb = 'Denied'
+        else:
+            message = f'Unexpected review decision: {decision}.'
+            messages.error(request, message)
+            return self.redirect
+
+        project_user_status_choice = ProjectUserStatusChoice.objects.get(
+            name=status_name)
+
+        num_reviews = 0
+        failed_usernames = []
+        for form in formset:
+            user_form_data = form.cleaned_data
+            if not user_form_data['selected']:
+                continue
+            username = user_form_data.get('username')
+            user_obj = User.objects.get(username=username)
+            project_user_obj = self.project_obj.projectuser_set.get(
+                user=user_obj)
+            try:
+                self._process_project_user_request(
+                    project_user_obj, project_user_status_choice)
+            except Exception as e:
+                logger.exception(e)
+                failed_usernames.append(username)
+            else:
+                num_reviews += 1
+
+        num_failures = len(failed_usernames)
+        num_successes = num_reviews - num_failures
+
+        message = (
+            f'{message_verb} {num_successes}/{num_reviews} user requests to '
+            f'join the project. {settings.PROGRAM_NAME_SHORT} staff have been '
+            f'notified to set up cluster access for each approved request.')
+        if num_failures > 0:
+            messages.warning(request, message)
+            failed_usernames_str = ', '.join(failed_usernames)
+            message = f'Failed to process requests by: {failed_usernames_str}.'
+            messages.error(request, message)
+        else:
+            messages.success(request, message)
+
+        return self.redirect
+
+    def _get_host_dict(self):
+        """Return a mapping from username to the associated host user,
+        which may be None, for each user to review."""
+        host_dict = {}
+        for user in self.users_to_review:
+            username = user.get('username')
+            join_requests = ProjectUserJoinRequest.objects.filter(
+                project_user__project=self.project_obj,
+                project_user__user__username=username,
+                host_user__isnull=False)
+            if join_requests.exists():
+                host_user = join_requests.latest('modified').host_user
+            else:
+                host_user = None
+            host_dict[username] = host_user
+        return host_dict
+
+    def _get_users_to_review(self):
+        """Return a list of dictionaries representing Users who have
+        made requests to join the Project."""
         users_to_review = []
-        queryset = project_obj.projectuser_set.filter(
+        queryset = self.project_obj.projectuser_set.filter(
             status__name='Pending - Add').order_by('user__username')
         for ele in queryset:
             try:
-                reason = ele.projectuserjoinrequest_set.latest('created').reason
+                reason = ele.projectuserjoinrequest_set.latest(
+                    'created').reason
             except ProjectUserJoinRequest.DoesNotExist:
                 reason = ProjectUserJoinRequest.DEFAULT_REASON
 
@@ -1675,133 +1780,40 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
             users_to_review.append(user)
         return users_to_review
 
-    def get(self, request, *args, **kwargs):
-        pk = self.kwargs.get('pk')
-        project_obj = get_object_or_404(Project, pk=pk)
-
-        users_to_review = self.get_users_to_review(project_obj)
-        context = {}
-
-        if users_to_review:
-            formset = formset_factory(
-                ProjectReviewUserJoinForm, max_num=len(users_to_review))
-            formset = formset(initial=users_to_review, prefix='userform')
-            context['formset'] = formset
-
-        context['project'] = get_object_or_404(Project, pk=pk)
-
-        context['can_add_users'] = False
-        if self.request.user.is_superuser:
-            context['can_add_users'] = True
-
-        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-
-        if project_obj.projectuser_set.filter(
-                user=self.request.user,
+    def _is_superuser_or_project_owner(self):
+        """Return whether the requesting user is a superuser or an
+        'Active' Project PI or manager."""
+        user = self.request.user
+        if user.is_superuser:
+            return True
+        if self.project_obj.projectuser_set.filter(
+                user=user,
                 role__name__in=['Manager', 'Principal Investigator'],
                 status__name='Active').exists():
-            context['can_add_users'] = True
+            return True
+        return False
 
-        if flag_enabled('LRC_ONLY'):
-            host_dict = {}
-            for user in users_to_review:
-                username = user.get('username')
-                host_dict[username] = \
-                    ProjectUserJoinRequest.objects.filter(
-                        project_user__project=project_obj,
-                        project_user__user__username=username).latest('modified').host_user
-            context['host_dict'] = host_dict
-
-        return render(request, self.template_name, context)
-
-    def post(self, request, *args, **kwargs):
-        pk = self.kwargs.get('pk')
-        project_obj = get_object_or_404(Project, pk=pk)
-
-        allowed_to_approve_users = False
-        if project_obj.projectuser_set.filter(
-                user=self.request.user,
-                role__name__in=['Manager', 'Principal Investigator'],
-                status__name='Active').exists():
-            allowed_to_approve_users = True
-
-        if self.request.user.is_superuser:
-            allowed_to_approve_users = True
-
-        if not allowed_to_approve_users:
-            message = 'You do not have permission to view the this page.'
-            messages.error(request, message)
-
-            return HttpResponseRedirect(
-                reverse('project-review-join-requests', kwargs={'pk': pk}))
-
-        users_to_review = self.get_users_to_review(project_obj)
-
-        formset = formset_factory(
-            ProjectReviewUserJoinForm, max_num=len(users_to_review))
-        formset = formset(
-            request.POST, initial=users_to_review, prefix='userform')
-
-        reviewed_users_count = 0
-
-        decision = request.POST.get('decision', None)
-        if decision not in ('approve', 'deny'):
-            return HttpResponse('', status=400)
-
-        if formset.is_valid():
-            if decision == 'approve':
-                status_name = 'Active'
-                message_verb = 'Approved'
+    @staticmethod
+    def _process_project_user_request(project_user_obj,
+                                      project_user_status_choice):
+        """Given a ProjectUser, set its status to the given one, and run
+        any additional processing."""
+        with transaction.atomic():
+            project_user_obj.status = project_user_status_choice
+            project_user_obj.save()
+            if project_user_status_choice.name == 'Active':
+                runner_factory = NewProjectUserRunnerFactory()
+                runner = runner_factory.get_runner(
+                    project_user_obj, NewProjectUserSource.JOINED)
+                runner.run()
             else:
-                status_name = 'Denied'
-                message_verb = 'Denied'
-
-            project_user_status_choice = \
-                ProjectUserStatusChoice.objects.get(name=status_name)
-
-            for form in formset:
-                user_form_data = form.cleaned_data
-                if user_form_data['selected']:
-                    reviewed_users_count += 1
-                    user_obj = User.objects.get(
-                        username=user_form_data.get('username'))
-                    project_user_obj = project_obj.projectuser_set.get(
-                        user=user_obj)
-                    project_user_obj.status = project_user_status_choice
-                    project_user_obj.save()
-
-                    if status_name == 'Active':
-                        try:
-                            runner_factory = NewProjectUserRunnerFactory()
-                            runner = runner_factory.get_runner(
-                                project_user_obj, NewProjectUserSource.JOINED)
-                            runner.run()
-                        except Exception as e:
-                            # TODO
-                            pass
-                    else:
-                        # Email the user about the denial.
-                        try:
-                            send_project_join_request_denial_email(
-                                project_obj, project_user_obj)
-                        except Exception as e:
-                            message = (
-                                'Failed to send notification email. Details:')
-                            self.logger.error(message)
-                            self.logger.exception(e)
-
-            message = (
-                f'{message_verb} {reviewed_users_count} user requests to join '
-                f'the project. {settings.PROGRAM_NAME_SHORT} staff have been '
-                f'notified to set up cluster access for each approved '
-                f'request.')
-            messages.success(request, message)
-        else:
-            for error in formset.errors:
-                messages.error(request, error)
-
-        return HttpResponseRedirect(
-            reverse('project-detail', kwargs={'pk': pk}))
+                try:
+                    send_project_join_request_denial_email(
+                        project_user_obj.project, project_user_obj)
+                except Exception as e:
+                    message = (
+                        f'Failed to send notification email. Details:\n{e}')
+                    logger.exception(message)
 
 
 class ProjectJoinRequestListView(LoginRequiredMixin, UserPassesTestMixin,
