@@ -77,10 +77,12 @@ class PublicationSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
         if UserSelectResults.SELECTED_KEY in self.request.session:
             selected_ids = self.request.session.pop(UserSelectResults.SELECTED_KEY)
             selected_user_profiles = UserProfile.objects.filter(user_id__in=selected_ids)
-            selected_orcids = list(selected_user_profiles.values_list('orcid_id', flat=True))
+            orcid_ids = []
+            for profile in selected_user_profiles:
+                orcid_ids.append(f'{profile.orcid_id} ({profile.user.username})')
             
             psf_initial = {
-                'search_id': '\n'.join(filter(lambda elem: elem is not None, selected_orcids)),
+                'search_id': '\n'.join(filter(lambda elem: elem is not None, orcid_ids)),
             }
             context['publication_search_form'] = PublicationSearchForm(initial=psf_initial)
             context['search_immediately'] = True

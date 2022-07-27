@@ -22,7 +22,7 @@ from coldfront.core.grant.forms import (
     GrantDeleteForm,
     GrantForm,
     OrcidImportGrantQueryForm,
-    OrcidImportGrantResultForm
+    OrcidImportGrantResultForm,
     )
 from coldfront.core.grant.models import (Grant, GrantFundingAgency,
                                          GrantStatusChoice)
@@ -124,16 +124,24 @@ class GrantOrcidImportView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         if UserSelectResults.SELECTED_KEY in self.request.session:
             selected_ids = self.request.session.pop(UserSelectResults.SELECTED_KEY)
             selected_user_profiles = UserProfile.objects.filter(user_id__in=selected_ids)
-            selected_orcids = list(selected_user_profiles.values_list('orcid_id', flat=True))
+            orcid_ids = []
+            
+            for profile in selected_user_profiles:
+                orcid_ids.append(f'{profile.orcid_id} ({profile.user.username})')
             
             goqf_initial = {
-                'search_id': '\n'.join(filter(lambda elem: elem is not None, selected_orcids)),
+                'search_id': '\n'.join(filter(lambda elem: elem is not None, orcid_ids)),
             }
             context['grant_orcid_query_form'] = OrcidImportGrantQueryForm(initial=goqf_initial)
             context['search_immediately'] = True
         else:
-            context['grant_orcid_query_form'] = OrcidImportGrantQueryForm()
-            context['search_immediately'] = False
+            user_profile = UserProfile.objects.filter(user_id__exact = self.request.user.id)
+            orcid_ids = {
+               'search_id' : f'{user_profile[0].orcid_id} ({user_profile[0].user.username})'
+            }
+            
+            context['grant_orcid_query_form'] = OrcidImportGrantQueryForm(initial=orcid_ids)
+            context['search_immediately'] = True
         
         context['grant_orcid_import_form'] = OrcidImportGrantResultForm()
         context['project'] = Project.objects.get(
