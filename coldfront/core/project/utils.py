@@ -9,6 +9,7 @@ from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.allocation.utils import get_or_create_active_allocation_user
 from coldfront.core.allocation.utils import get_project_compute_allocation
+from coldfront.core.allocation.utils import get_project_compute_resource_name
 from coldfront.core.allocation.utils import review_cluster_access_requests_url
 from coldfront.core.allocation.utils import set_allocation_user_attribute_value
 from coldfront.core.allocation.utils_.accounting_utils import set_service_units
@@ -17,6 +18,7 @@ from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.resource.utils import get_compute_resource_names
+from coldfront.core.resource.utils import get_primary_compute_resource_name
 from coldfront.core.utils.common import import_from_settings, \
     utc_now_offset_aware
 from coldfront.core.utils.common import display_time_zone_current_date
@@ -485,3 +487,10 @@ def deactivate_project_and_allocation(project, change_reason=None):
         project.save()
         allocation.save()
         set_service_units(accounting_allocation_objects, **set_su_kwargs)
+
+
+def is_primary_cluster_project(project):
+    """Return the Project is associated with the primary cluster."""
+    project_compute_resource_name = get_project_compute_resource_name(project)
+    primary_cluster_resource_name = get_primary_compute_resource_name()
+    return project_compute_resource_name == primary_cluster_resource_name

@@ -47,21 +47,18 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            SavioProjectAllocationRequest,
                                            VectorProjectAllocationRequest)
 from coldfront.core.project.utils import (annotate_queryset_with_cluster_name,
-                                          ProjectClusterAccessRequestRunner,
-                                          send_added_to_project_notification_email,
+                                          is_primary_cluster_project,
                                           send_project_join_notification_email,
-                                          send_project_join_request_approval_email,
                                           send_project_join_request_denial_email)
 from coldfront.core.project.utils_.addition_utils import can_project_purchase_service_units
-from coldfront.core.project.utils_.new_project_utils import add_vector_user_to_designated_savio_project
+from coldfront.core.project.utils_.new_project_user_utils import NewProjectUserRunnerFactory
+from coldfront.core.project.utils_.new_project_user_utils import NewProjectUserSource
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.project.utils_.renewal_utils import is_any_project_pi_renewable
-from coldfront.core.resource.utils import get_primary_compute_resource_name
 from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.user.forms import UserSearchForm
-from coldfront.core.user.utils import CombinedUserSearch, is_lbl_employee, \
-    needs_host
+from coldfront.core.user.utils import CombinedUserSearch, needs_host
 from coldfront.core.utils.common import (get_domain_url, import_from_settings)
 from coldfront.core.utils.mail import send_email, send_email_template
 
@@ -233,14 +230,12 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
         # Some features are only available to Projects corresponding to the
         # primary cluster.
-        compute_resource_name = get_project_compute_resource_name(self.object)
-        is_primary_cluster_project = (
-            compute_resource_name == get_primary_compute_resource_name())
+        _is_primary_cluster_project = is_primary_cluster_project(self.object)
 
         # Display the "Renew Allowance" button for eligible allocation types
         # under the primary cluster.
         renew_allowance_visible = False
-        if is_primary_cluster_project:
+        if _is_primary_cluster_project:
             computing_allowance_interface = ComputingAllowanceInterface()
             computing_allowance = ComputingAllowance(
                 computing_allowance_interface.allowance_from_project(
@@ -260,15 +255,16 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             flag_enabled('ALLOCATION_RENEWAL_FOR_NEXT_PERIOD_REQUESTABLE'))
 
         # Display the "Purchase Service Units" button when the functionality is
-        # enabled, for eligible allocation types, for those allowed to update
-        # the project.
+        # enabled, for eligible allocation types under the primary cluster, for
+        # those allowed to update the project.
         context['purchase_sus_visible'] = (
             flag_enabled('SERVICE_UNITS_PURCHASABLE') and
-            is_primary_cluster_project and
+            _is_primary_cluster_project and
             can_project_purchase_service_units(self.object) and
             context.get('is_allowed_to_update_project', False))
 
-        context['cluster_name'] = compute_resource_name.replace(' Compute', '')
+        context['cluster_name'] = get_project_compute_resource_name(
+            self.object).replace(' Compute', '')
 
         return context
 
@@ -923,40 +919,13 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                         allocation_activate_user.send(sender=self.__class__,
                                                       allocation_user_pk=allocation_user_obj.pk)
 
-                    # Request cluster access for the user.
-                    request_runner = ProjectClusterAccessRequestRunner(
-                        project_user_obj)
-                    runner_result = request_runner.run()
-                    if runner_result.success:
-                        cluster_access_requests_count += 1
-                    else:
-                        messages.error(
-                            self.request, runner_result.error_message)
-
-                    # Notify the user that he/she has been added.
                     try:
-                        send_added_to_project_notification_email(
-                            project_obj, project_user_obj)
+                        new_project_user_runner = NewProjectUserRunner(
+                            project_user_obj, NewProjectUserSource.ADDED)
+                        new_project_user_runner.run()
                     except Exception as e:
-                        message = 'Failed to send notification email. Details:'
-                        self.logger.error(message)
-                        self.logger.exception(e)
-
-                    # On BRC only, if the Project is a Vector project,
-                    # automatically add the User to the designated Savio
-                    # project for Vector users.
-                    if (flag_enabled('BRC_ONLY') and
-                            project_obj.name.startswith('vector_')):
-                        try:
-                            add_vector_user_to_designated_savio_project(
-                                user_obj)
-                        except Exception as e:
-                            message = (
-                                f'Encountered unexpected exception when '
-                                f'automatically providing User {user_obj.pk} '
-                                f'with access to Savio. Details:')
-                            self.logger.error(message)
-                            self.logger.exception(e)
+                        # TODO
+                        pass
 
             # checking if there were any users with unsigned user access agreements in the form
             if unsigned_users:
@@ -1783,17 +1752,12 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
             if decision == 'approve':
                 status_name = 'Active'
                 message_verb = 'Approved'
-                email_function = send_project_join_request_approval_email
             else:
                 status_name = 'Denied'
                 message_verb = 'Denied'
-                email_function = send_project_join_request_denial_email
 
             project_user_status_choice = \
                 ProjectUserStatusChoice.objects.get(name=status_name)
-
-            error_message = (
-                'Unexpected server error. Please contact an administrator.')
 
             for form in formset:
                 user_form_data = form.cleaned_data
@@ -1807,58 +1771,24 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
                     project_user_obj.save()
 
                     if status_name == 'Active':
-                        # Request cluster access.
-                        request_runner = ProjectClusterAccessRequestRunner(
-                            project_user_obj)
-                        runner_result = request_runner.run()
-                        if not runner_result.success:
-                            self.logger.error(runner_result.error_message)
-                            messages.error(self.request, error_message)
-                        # If the Project is a Vector project, automatically add
-                        # the User to the designated Savio project for Vector
-                        # users.
-                        if project_obj.name.startswith('vector_'):
-                            try:
-                                add_vector_user_to_designated_savio_project(
-                                    user_obj)
-                            except Exception as e:
-                                message = (
-                                    f'Encountered unexpected exception when '
-                                    f'automatically providing User '
-                                    f'{user_obj.pk} with access to Savio. '
-                                    f'Details:')
-                                self.logger.error(message)
-                                self.logger.exception(e)
-
-                        # Set the host user if one is provided.
-                        if flag_enabled('LRC_ONLY'):
-                            host_user = \
-                                ProjectUserJoinRequest.objects.filter(
-                                    project_user__project=project_obj,
-                                    project_user=project_user_obj).latest('modified').host_user
-
-                            user_profile = user_obj.userprofile
-
-                            if host_user:
-                                if is_lbl_employee(user_obj) or not needs_host(user_obj):
-                                    message = (
-                                        f'User {user_obj.username} requested '
-                                        f'a host user but already has '
-                                        f'{user_profile.host_user.username} as '
-                                        f'their host user.')
-                                    self.logger.error(message)
-                                else:
-                                    user_profile.host_user = host_user
-                                    user_profile.save()
-
-                    # Send an email to the user.
-                    try:
-                        email_function(project_obj, project_user_obj)
-                    except Exception as e:
-                        message = (
-                            'Failed to send notification email. Details:')
-                        self.logger.error(message)
-                        self.logger.exception(e)
+                        try:
+                            runner_factory = NewProjectUserRunnerFactory()
+                            runner = runner_factory.get_runner(
+                                project_user_obj, NewProjectUserSource.JOINED)
+                            runner.run()
+                        except Exception as e:
+                            # TODO
+                            pass
+                    else:
+                        # Email the user about the denial.
+                        try:
+                            send_project_join_request_denial_email(
+                                project_obj, project_user_obj)
+                        except Exception as e:
+                            message = (
+                                'Failed to send notification email. Details:')
+                            self.logger.error(message)
+                            self.logger.exception(e)
 
             message = (
                 f'{message_verb} {reviewed_users_count} user requests to join '
