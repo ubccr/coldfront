@@ -24,7 +24,7 @@ from django.views.generic import DetailView, ListView, TemplateView
 from django.views.generic.edit import CreateView, FormView, UpdateView
 
 from coldfront.core.allocation.forms import (AllocationAccountForm,
-                                             AllocationAddUserForm,
+                                             AllocationAddUserForm, AllocationAttributeCreateForm,
                                              AllocationAttributeDeleteForm,
                                              AllocationChangeForm,
                                              AllocationChangeNoteForm,
@@ -921,8 +921,9 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
 class AllocationAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = AllocationAttribute
+    form_class = AllocationAttributeCreateForm
     # fields = ['allocation_attribute_type', 'value', 'is_private', ]
-    fields = '__all__'
+    # fields = '__all__'
     template_name = 'allocation/allocation_allocationattribute_create.html'
 
     def test_func(self):
@@ -2507,3 +2508,16 @@ class AllocationChangeDeleteAttributeView(LoginRequiredMixin, UserPassesTestMixi
         messages.success(
             request, 'Allocation attribute change request successfully deleted.')
         return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': allocation_change_pk}))
+
+# class AllocationAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView): 
+#     form_class = AllocationAttributeCreateForm
+#     model = AllocationAttribute
+#     template_name = 'allocation/allocation_allocationattribute_create.html'
+
+#     def test_func(self):
+#         """ UserPassesTestMixin Tests"""
+#         if self.request.user.is_superuser:
+#             return True
+#         else:
+#             messages.error(
+#                 self.request, 'You do not have permission to delete allocation attributes.')

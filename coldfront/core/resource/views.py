@@ -11,7 +11,7 @@ from django.urls import reverse
 from django.views.generic import TemplateView, ListView
 from django.views.generic.edit import CreateView
 
-from coldfront.core.resource.forms import ResourceSearchForm, ResourceAttributeDeleteForm
+from coldfront.core.resource.forms import ResourceAttributeCreateForm, ResourceSearchForm, ResourceAttributeDeleteForm
 from coldfront.core.resource.models import Resource, ResourceAttribute
 
 
@@ -61,7 +61,8 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
 class ResourceAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = ResourceAttribute
-    fields = '__all__'
+    form_class = ResourceAttributeCreateForm
+    # fields = '__all__'
     template_name = 'resource_resourceattribute_create.html'
 
     def test_func(self):
