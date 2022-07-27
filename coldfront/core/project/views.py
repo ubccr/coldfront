@@ -700,9 +700,9 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         string = '00000'
         string = string[:-len(num)] + num
         project_type = project_obj.type.name
-        letter = 'R'
+        letter = 'r'
         if project_type == 'Class':
-            letter = 'C'
+            letter = 'c'
 
         return letter + string
 
