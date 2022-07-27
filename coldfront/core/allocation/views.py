@@ -98,17 +98,14 @@ def set_proj_update_permissions(allocation_obj, user):
     return False
 
 def return_user_permissions(user, allocation):
-    """Return list of a user's permissions for the allocation.
-    1. user must be a current project user
-    2. user must be A. an allocation user, B. a project pi, or C. a project manager.
+    """Return tuple of a project user's permissions for the allocation.
+    Available permissions are "manager", "pi", and "user".
     """
-
     if not allocation.project.projectuser_set.filter(
             user=user, status__name__in=['Active', 'New', ]).exists():
         return tuple()
 
     permissions = list()
-    # is_pi = allocation_obj.project.pi_id == user.id
     if allocation.project.projectuser_set.filter(
         Q(status__name='Active') & Q(user=user) & Q(role_id=1)).exists():
         permissions.append("manager")
