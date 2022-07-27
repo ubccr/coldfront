@@ -18,6 +18,7 @@ LRC only:
 '''
 
 import datetime
+from flags.state import flag_enabled
 
 from django.core.management.base import BaseCommand
 from django.db.models import Q
@@ -49,8 +50,6 @@ class Command(BaseCommand):
             help='Check that users with a cluster UID should be associated '
             'with at least one Project')
 
-        parser.add_argument('--lrc-all', action='store_true',
-            help='Run all LRC-only checks')
         parser.add_argument('--lrc-user-billing', action='store_true',
             help='Check that LRC users have a billing_activity')
         parser.add_argument('--lrc-recharge-allocation-billing', 
@@ -71,7 +70,9 @@ class Command(BaseCommand):
             options['project_inactive'] = True
             options['project_pi'] = True
             options['user_project'] = True
-        if options['lrc_all']:
+            # TODO: Uncomment when Lawrencium features are ready.
+            # options['lrc_all'] = flag_enabled('LRC_ONLY')
+        if options.get('lrc_all', False):
             options['lrc_user_billing'] = True
             options['lrc_recharge_allocation_billing'] = True
             options['lrc_recharge_allocation_user_billing'] = True
@@ -238,20 +239,17 @@ class Command(BaseCommand):
             .select_related('user') \
             .order_by('user__is_active', 'user__username') \
             .values('id', 'user__first_name', 'user__last_name',
-                    'user__email', 'access_agreement_signed_date',
-                    'user__username', 'user__is_active')
+                    'user__email', 'user__username', 'user__is_active')
 
         for user in users:
             user_project_exists = ProjectUser.objects \
                 .filter(user_id=user['id']).exists()
             if not user_project_exists:
                 self.stdout.write(self.style.ERROR('{} User {} ({} {}, {})'
-                ' has a cluster UID but is not associated with any projects.{}'
+                ' has a cluster UID but is not associated with any projects.'
                     .format(('Inactive', 'Active')[user['user__is_active']],
                     user['user__username'], user['user__first_name'],
-                    user['user__last_name'], user['user__email'],
-                    '' if user['access_agreement_signed_date'] \
-                        else ' They have not signed the access agreement.')))
+                    user['user__last_name'], user['user__email'])))
 
     def handle_lrc_user_billing(self):
         '''
