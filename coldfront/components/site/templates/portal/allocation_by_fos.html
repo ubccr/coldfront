@@ -1,0 +1,24 @@
+{% load common_tags %}
+<div class="table-responsive">
+  <table id="fos-table" class="table table-bordered">
+    <thead>
+      <tr>
+        <th scope="col">Field of Science</th>
+        <th scope="col">Active Allocation Count</th>
+        <th scope="col">User Count</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for key, val in allocations_by_fos.items %}
+        <tr>
+          <td>{{key}}</td>
+          <td>{{val}}</td>
+          <td>{{active_users_by_fos|get_value_from_dict:key}}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<strong>Total Active Users: {{total_allocations_users}}</strong>
+<br>
+<strong>Total Principal Investigators: {{active_pi_count}}</strong>

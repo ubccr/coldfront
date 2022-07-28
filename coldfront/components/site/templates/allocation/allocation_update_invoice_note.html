@@ -1,0 +1,22 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Update Allocation Invoice Note
+{% endblock %}
+
+
+{% block content %}
+<h2>Update invoice note for allocation to {{allocation.get_resources_as_string}} for PI
+  {{allocation.project.pi.username}}</h2>
+<hr>
+
+<form method="post">
+  {% csrf_token %}
+  {{ form|crispy }}
+  <input class="btn btn-success" type="submit" value="Update">
+  <a class="btn btn-secondary" href="{% url 'allocation-invoice-detail' object.allocation.pk %}" role="button">Cancel</a>
+</form>
+{% endblock %}

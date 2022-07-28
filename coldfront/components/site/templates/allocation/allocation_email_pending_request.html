@@ -1,0 +1,62 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Allocation Review New Requests
+{% endblock %}
+
+
+{% block content %}
+<h2>Email</h2>
+<hr>
+
+<div class="card mb-3">
+  <div class="card-header">
+    <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table ">
+        <tr>
+          <th scope="row" class="text-nowrap">Project:</th>
+          <td><a href="{% url 'project-detail' allocation.project.pk %}">{{ allocation.project }}</a></td>
+        </tr>
+        <tr>
+          <th scope="row" class="text-nowrap">PI:</th>
+          <td>{{ allocation.project }}{{allocation.project.pi.first_name}} {{allocation.project.pi.last_name}}
+            ({{allocation.project.pi.username}}</td>
+        </tr>
+        <tr>
+          <th scope="row" class="text-nowrap">Resource:</th>
+          <td>{{ allocation.resources.first }}</td>
+        </tr>
+        <tr>
+          <th scope="row" class="text-nowrap">Justification:</th>
+          <td>{{ allocation.justification }}</td>
+        </tr>
+        <tr>
+          <th scope="row" class="text-nowrap">Date Requested:</th>
+          <td>{{ allocation.created }}</td>
+        </tr>
+        <tr>
+          <th scope="row" class="text-nowrap">Grants Last Updated:</th>
+          <td>{{allocation.project.latest_grant.created|date:"M-d-Y"|default:"No grants"}}</td>
+        </tr>
+        <tr>
+          <th scope="row" class="text-nowrap">Publications Last Updated:</th>
+          <td>{{allocation.project.latest_publication.created|date:"M-d-Y"|default:"No publications"}}</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  {{form|crispy}}
+  <input class="btn btn-primary" type="submit" value="Email" />
+  <a class="btn btn-secondary" href="{% url 'allocation-review-pending-requests' %}" role="button">Cancel</a>
+</form>
+{% endblock %}

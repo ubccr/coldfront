@@ -1,0 +1,106 @@
+{% extends "common/base.html" %}
+{% load static %}
+
+
+{% block title %}
+User Projects and Managers{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif %}
+{% endblock %}
+
+
+{% block content %}
+<h2>User Projects and Managers{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif %}</h2>
+
+{% with object_list as user_project_associations %}
+  {% if not user_project_associations %}
+    <p class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i> {{ user_pronounish }} {{user_verbform_be}} not part of any projects.</p>
+  {% else %}
+    {% for association in user_project_associations %}
+      {% with association.project as project %}
+        <div class="card mb-3">
+          <!-- Start Project Heading -->
+          <div class="card-header">
+            <h3 class="d-inline">{{ project.title }}</h3>
+            {% if user == viewed_user or perms.project.can_view_all_projects %}
+              <a href="{% url 'project-detail' project.pk %}" role="button"><i class="far fa-folder-open" aria-hidden="true"></i><span class="sr-only">Details</span></a>
+            {% endif %}
+          </div>
+          <div class="card-body">
+            {# support non-default roles #}
+            {% if not association.is_project_manager and not association.role.name == 'User' %}
+              <p class="card-text text-justify">User role in project: {{ association.role }}</p>
+            {% endif %}
+            {# a few Pending statuses may be displayed here #}
+            <p class="card-text text-justify">User status in project:
+              {% if association.status.name == 'Active' %}
+                <span class="text-success">{{ association.status.name }}</span>
+              {% else %}
+                {{ association.status.name }}
+              {% endif %}
+            </p>
+            <p class="card-text text-justify"><strong>Description: </strong>{{ project.description }}</p>
+            <p class="card-text text-justify"><strong>Field of Science: </strong>{{ project.field_of_science }}</p>
+            <p class="card-text text-justify"><strong>Project Status: </strong>{{ project.status }} </p>
+            <p class="card-text"><strong>Principal Investigator: </strong>{{ project.pi.first_name }} {{ project.pi.last_name }} ({{ project.pi.username }})
+              <a href="mailto:{{ project.pi.email }} "><i class="far fa-envelope" aria-hidden="true"></i><span class="sr-only">Email</span></a>
+              {% if association.is_project_pi %}
+                <span class="text-success">({{ user_pronounish | lower }} <em>{{user_verbform_be}}</em> the project PI)</span>
+              {% endif %}
+            </p>
+            <!-- End Project Heading -->
+            {# card within a card #}
+            <!-- Start Project Managers -->
+            <div class="card mb-3">
+              <div class="card-header">
+                <h4 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Additional Managers</a></h4> <span class="badge badge-secondary">{{ project.project_managers | length }}</span>
+                {% if association.is_project_manager and not association.is_project_pi %}
+                  <div class="float-right">
+                    <p class="card-text text-success"><strong>{{ user_pronounish }} {{user_verbform_be}} a manager of this project.</strong></p>
+                  </div>
+                {% endif %}
+              </div>
+              <div class="card-body">
+                {% if project.project_managers %}
+                  <div class="table-responsive">
+                    <table class="table table-hover">
+                      <thead>
+                        <tr>
+                          <th scope="col">Username</th>
+                          <th scope="col">Name</th>
+                          <th scope="col">Email</th>
+                          <th scope="col">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for user in project.project_managers %}
+                          <tr>
+                            <td>{{ user.user.username }}</td>
+                            <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
+                            <td>
+                              {{ user.user.email }}
+                              <a href="mailto:{{ user.user.email }} "><i class="far fa-envelope"></i></a>
+                            </td>
+                            {% if user.status.name == 'Active' %}
+                              <td class="text-success">{{ user.status.name }}</td>
+                            {% else %}
+                              <td class="text-info">{{ user.status.name }}</td>
+                            {% endif %}
+                          </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                {% else %}
+                  <div class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i> There are no additional project managers.</div>
+                {% endif %}
+              </div>
+            </div>
+            <!-- Start Project Managers -->
+          </div>
+        </div>
+      {% endwith %}
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<a class="btn btn-primary" href="{% url 'user-profile' viewed_user %}" role="button"><i class="fas fa-arrow-left" aria-hidden="true"></i> Back to user profile</a>
+{% endblock %}

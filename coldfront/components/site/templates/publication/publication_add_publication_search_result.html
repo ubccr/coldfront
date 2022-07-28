@@ -1,0 +1,65 @@
+{% load crispy_forms_tags %}
+
+{% if formset %}
+  <div class="card border-light">
+    <div class="card-body">
+      <form action="{% url 'add-publication' project_pk %}" method="post">
+        {% csrf_token %}
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th>
+                  <input type="checkbox" class="check" id="selectAll">
+                </th>
+                <th scope="col">#</th>
+                <th scope="col">Publication</th>
+                <th scope="col">Unique ID</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for form in formset %}
+                <tr>
+                  <td>{{ form.selected }}</td>
+                  <td>{{ forloop.counter }}</td>
+                  <td>
+                    <strong>Title: </strong>{{ form.title.value }} <br>
+                    <strong>Author: </strong>{{ form.author.value }} <br> 
+                    <strong>Year: </strong>{{ form.year.value }} <br>
+                    <strong>Journal: </strong>{{ form.journal.value }}
+                  </td>
+                  <td class="text-nowrap">{{ form.unique_id.value }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {{ formset.management_form }}
+        <div>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-user-minus" aria-hidden="true"></i> Add Selected Publications to Project</button>
+          <a class="btn btn-secondary" href="{% url 'project-detail' project_pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a>
+          <input id="search_ids" type="hidden" name="search_ids" value="{{search_ids}}">
+          <input id="pubs" type="hidden" name="pubs" value="{{pubs}}">
+        </div>
+      </form>
+    </div>
+  </div>
+{% else %}
+  <a class="btn btn-secondary mb-3" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a>
+  <div class="alert alert-info">
+    No users to remove!
+  </div>
+{% endif %}
+
+<script>
+  $("#selectAll").click(function() {
+    $("input[name^='pubform-']").prop('checked', $(this).prop('checked'));
+  });
+
+  $("input[name^='pubform-']").click(function(ele) {
+    var id = $(this).attr('id');
+    if (id != "selectAll") {
+      $("#selectAll").prop('checked', false);
+    }
+  });
+</script>
