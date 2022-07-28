@@ -246,7 +246,7 @@ class ProjectClusterAccessRequestRunner(object):
         success = False
         try:
             self.validate_project_user()
-            self.validate_project_has_active_allocation()
+            self.validate_project_has_allocation()
             self.create_or_update_allocation_user()
             self.validate_no_existing_cluster_access()
             self.request_cluster_access()
@@ -298,8 +298,9 @@ class ProjectClusterAccessRequestRunner(object):
         message = f'Validated ProjectUser {self.project_user_obj.pk}.'
         self.logger.info(message)
 
-    def validate_project_has_active_allocation(self):
-        """Retrieve the compute Allocation for the Project.
+    def validate_project_has_allocation(self):
+        """Retrieve the Project's Allocation to the appropriate
+        '{CLUSTER_NAME} Compute' Resource. Set it as an attribute.
 
         Parameters: None
         Returns: None
@@ -307,19 +308,12 @@ class ProjectClusterAccessRequestRunner(object):
             - AllocationStatusChoice.DoesNotExist
             - Allocation.MultipleObjectsReturned
             - AllocationStatusChoice.MultipleObjectsReturned
-            - ProjectClusterAccessRequestRunnerError
         """
         try:
             self.allocation_obj = get_project_compute_allocation(
                 self.project_obj)
         except Allocation.DoesNotExist:
             message = f'Project {self.project_obj} has no compute Allocation.'
-            self.logger.error(message)
-            raise ProjectClusterAccessRequestRunnerError(message)
-
-        status = AllocationStatusChoice.objects.get(name='Active')
-        if self.allocation_obj.status != status:
-            message = f'Allocation {self.allocation_obj.pk} is not active.'
             self.logger.error(message)
             raise ProjectClusterAccessRequestRunnerError(message)
 
