@@ -5,6 +5,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+from django.db import transaction
 from django.db.models import Case, CharField, Q, Value, When
 from django.forms import formset_factory
 from django.http import HttpResponse, HttpResponseRedirect
@@ -37,8 +38,7 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectStatusChoice, ProjectUser,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice,
-                                           ProjectUserRemovalRequest,
-                                           ProjectUserRemovalRequestStatusChoice)
+                                           ProjectUserRemovalRequest)
 from coldfront.core.project.utils import (annotate_queryset_with_cluster_name,
                                           is_primary_cluster_project)
 from coldfront.core.project.utils_.addition_utils import can_project_purchase_service_units
@@ -49,6 +49,7 @@ from coldfront.core.project.utils_.renewal_utils import is_any_project_pi_renewa
 from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.user.forms import UserSearchForm
+from coldfront.core.user.utils import access_agreement_signed
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.utils.common import (get_domain_url, import_from_settings)
 from coldfront.core.utils.mail import send_email, send_email_template
@@ -820,13 +821,12 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
         matches = context.get('matches')
         for match in matches:
+            user = User.objects.get(username=match['username'])
+            user_access_agreement_status = (
+                'Signed' if access_agreement_signed(user) else 'Unsigned')
             match.update(
                 {'role': ProjectUserRoleChoice.objects.get(name='User'),
-                 'user_access_agreement':
-                     'Signed' if User.objects.get(username=match['username']).
-                                     userprofile.access_agreement_signed_date
-                                 is not None else 'Unsigned'
-                 })
+                 'user_access_agreement': user_access_agreement_status})
 
         formset = formset_factory(ProjectAddUserForm, max_num=len(matches))
         formset = formset(request.POST, initial=matches, prefix='userform')
@@ -835,7 +835,6 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             request.user, project_obj.pk, request.POST, prefix='allocationform')
 
         added_users_count = 0
-        cluster_access_requests_count = 0
         if formset.is_valid() and allocation_form.is_valid():
             project_user_active_status_choice = ProjectUserStatusChoice.objects.get(
                 name='Active')
@@ -844,109 +843,25 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             allocation_form_data = allocation_form.cleaned_data['allocation']
             if '__select_all__' in allocation_form_data:
                 allocation_form_data.remove('__select_all__')
-
-            runner_factory = NewProjectUserRunnerFactory()
-            unsigned_users = []
-            added_users = []
             for form in formset:
                 user_form_data = form.cleaned_data
-                # checking for users with pending/processing project removal requests.
-                username = user_form_data.get('username')
-                pending_status = ProjectUserRemovalRequestStatusChoice.objects.get(name='Pending')
-                processing_status = ProjectUserRemovalRequestStatusChoice.objects.get(name='Processing')
-
-                if ProjectUserRemovalRequest.objects.\
-                        filter(project_user__user__username=username,
-                               project_user__project=project_obj,
-                               status__in=[pending_status, processing_status]).exists():
-
-                    message = (
-                        f'A pending request to remove User {username} from '
-                        f'Project {project_obj.name} has been made. Please '
-                        f'wait until it is completed before adding the user '
-                        f'again.')
-                    messages.error(request, message)
-                    continue
-
-                # recording users with unsigned user access agreements
-                if user_form_data['user_access_agreement'] == 'Unsigned':
-                    unsigned_users.append(user_form_data['username'])
-                    continue
-
                 if user_form_data['selected']:
-                    added_users_count += 1
-                    added_users.append(user_form_data['username'])
+                    if not self._validate_user_addable(
+                            request, project_obj, user_form_data):
+                        continue
+                    success = self._process_user(
+                        project_obj, user_form_data, allocation_form_data,
+                        project_user_active_status_choice,
+                        allocation_user_active_status_choice)
+                    if success:
+                        added_users_count += 1
 
-                    # Will create local copy of user if not already present in local database
-                    user_obj, _ = User.objects.get_or_create(
-                        username=user_form_data.get('username'))
-                    user_obj.first_name = user_form_data.get('first_name')
-                    user_obj.last_name = user_form_data.get('last_name')
-                    user_obj.email = user_form_data.get('email')
-                    user_obj.save()
-
-                    role_choice = user_form_data.get('role')
-                    # Is the user already in the project?
-                    if project_obj.projectuser_set.filter(user=user_obj).exists():
-                        project_user_obj = project_obj.projectuser_set.get(
-                            user=user_obj)
-                        project_user_obj.role = role_choice
-                        project_user_obj.status = project_user_active_status_choice
-                        project_user_obj.save()
-                    else:
-                        project_user_obj = ProjectUser.objects.create(
-                            user=user_obj, project=project_obj, role=role_choice, status=project_user_active_status_choice)
-
-                    for allocation in Allocation.objects.filter(pk__in=allocation_form_data):
-                        if allocation.allocationuser_set.filter(user=user_obj).exists():
-                            allocation_user_obj = allocation.allocationuser_set.get(
-                                user=user_obj)
-                            allocation_user_obj.status = allocation_user_active_status_choice
-                            allocation_user_obj.save()
-                        else:
-                            allocation_user_obj = AllocationUser.objects.create(
-                                allocation=allocation,
-                                user=user_obj,
-                                status=allocation_user_active_status_choice)
-                        allocation_activate_user.send(sender=self.__class__,
-                                                      allocation_user_pk=allocation_user_obj.pk)
-
-                    try:
-                        new_project_user_runner = runner_factory.get_runner(
-                            project_user_obj, NewProjectUserSource.ADDED)
-                        new_project_user_runner.run()
-                    except Exception as e:
-                        # TODO
-                        pass
-
-            # checking if there were any users with unsigned user access agreements in the form
-            if unsigned_users:
-                unsigned_users_string = ", ".join(unsigned_users)
-
-                # changing grammar for one vs multiple users
-                if len(unsigned_users) == 1:
-                    message = f'User [{unsigned_users_string}] does not have ' \
-                              f'a signed User Access Agreement and was ' \
-                              f'therefore not added to the project.'
-                else:
-                    message = f'Users [{unsigned_users_string}] do not have ' \
-                              f'a signed User Access Agreement and were ' \
-                              f'therefore not added to the project.'
-                messages.error(request, message)
-
-            if added_users_count != 0:
-                added_users_string = ", ".join(added_users)
-                messages.success(
-                    request, 'Added [{}] to project.'.format(added_users_string))
-
-                message = (
-                    f'Requested cluster access under project for '
-                    f'{cluster_access_requests_count} users.')
-                messages.success(request, message)
-
-            else:
-                messages.info(request, 'No users selected to add.')
-
+            messages.success(
+                request, 'Added {} users to project.'.format(added_users_count))
+            messages.success(
+                request,
+                (f'Requested cluster access under project for '
+                 f'{added_users_count} users.'))
         else:
             if not formset.is_valid():
                 for error in formset.errors:
@@ -957,6 +872,124 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                     messages.error(request, error)
 
         return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': pk}))
+
+    def _process_user(self, project_obj, user_form_data, allocation_form_data,
+                      project_user_status_choice,
+                      allocation_user_status_choice):
+        """Given a Project and form data with user and allocation
+        fields, perform processing. In particular:
+            1. Update or create a User.
+            2. Update or create a ProjectUser, setting the status choice
+               to the given one.
+            3. Update or create AllocationUsers, setting the status
+               choice to the given one.
+            4. Run additional processing.
+        Return whether processing succeeded."""
+        try:
+            with transaction.atomic():
+                user_obj = self._update_or_create_user(user_form_data)
+
+                role_choice = user_form_data.get('role')
+                project_user_obj = self._update_or_create_project_user(
+                    project_obj, user_obj, role_choice,
+                    project_user_status_choice)
+
+                self._update_or_create_allocation_users(
+                    allocation_form_data, user_obj,
+                    allocation_user_status_choice)
+
+                runner_factory = NewProjectUserRunnerFactory()
+                new_project_user_runner = runner_factory.get_runner(
+                    project_user_obj, NewProjectUserSource.ADDED)
+                new_project_user_runner.run()
+        except Exception as e:
+            # TODO
+            return False
+        return True
+
+    def _update_or_create_allocation_users(self, allocation_form_data,
+                                           user_obj, status_choice):
+        """Given form data with allocation fields, a User, and an
+        AllocationUserStatusChoice, update existing or create new
+        AllocationUsers, setting the status."""
+        for allocation in Allocation.objects.filter(
+                pk__in=allocation_form_data):
+            if allocation.allocationuser_set.filter(user=user_obj).exists():
+                allocation_user_obj = allocation.allocationuser_set.get(
+                    user=user_obj)
+                allocation_user_obj.status = status_choice
+                allocation_user_obj.save()
+            else:
+                allocation_user_obj = AllocationUser.objects.create(
+                    allocation=allocation,
+                    user=user_obj,
+                    status=status_choice)
+            allocation_activate_user.send(
+                sender=self.__class__,
+                allocation_user_pk=allocation_user_obj.pk)
+
+    @staticmethod
+    def _update_or_create_project_user(project_obj, user_obj, role_choice,
+                                       status_choice):
+        """Given a Project, User, ProjectUserRoleChoice, and
+        ProjectUserStatusChoice, update an existing ProjectUser or
+        create a new one, setting the role and status. Return the
+        ProjectUser."""
+        # Is the user already in the project?
+        if project_obj.projectuser_set.filter(user=user_obj).exists():
+            project_user_obj = project_obj.projectuser_set.get(
+                user=user_obj)
+            project_user_obj.role = role_choice
+            project_user_obj.status = status_choice
+            project_user_obj.save()
+        else:
+            project_user_obj = ProjectUser.objects.create(
+                user=user_obj, project=project_obj, role=role_choice,
+                status=status_choice)
+        return project_user_obj
+
+    @staticmethod
+    def _update_or_create_user(user_form_data):
+        """Given form data with user fields, update an existing User or
+        create a new one, setting the relevant fields. Return the
+        User."""
+        # Will create local copy of user if not already present in local
+        # database
+        user_obj, _ = User.objects.get_or_create(
+            username=user_form_data.get('username'))
+        user_obj.first_name = user_form_data.get('first_name')
+        user_obj.last_name = user_form_data.get('last_name')
+        user_obj.email = user_form_data.get('email')
+        user_obj.save()
+        return user_obj
+
+    @staticmethod
+    def _validate_user_addable(request, project_obj, user_form_data):
+        """Given a Project and form data with user fields, return
+        whether the user is eligible to be added to the Project. If not,
+        add messages to the given request."""
+        # A User being removed from the Project cannot be added.
+        username = user_form_data.get('username')
+        if ProjectUserRemovalRequest.objects.filter(
+                project_user__user__username=username,
+                project_user__project=project_obj,
+                status__name__in=['Pending', 'Processing']).exists():
+            message = (
+                f'A pending request to remove User {username} from Project '
+                f'{project_obj.name} has been made. Please wait until it is '
+                f'completed before adding the user again.')
+            messages.error(request, message)
+            return False
+
+        # A user who has not signed the access agreement cannot be added.
+        if user_form_data['user_access_agreement'] == 'Unsigned':
+            message = (
+                f'User {username} has not signed the User Access Agreement. '
+                f'Please ensure that the User has done so first.')
+            messages.error(request, message)
+            return False
+
+        return True
 
 
 class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
