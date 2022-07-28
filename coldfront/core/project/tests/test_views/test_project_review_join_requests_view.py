@@ -170,7 +170,8 @@ class TestProjectReviewJoinRequestsView(TestBase):
         with override_settings(FLAGS=flags_copy):
 
             # Make a join request with a host user specified
-            self.create_join_request(self.user, self.project0, host_user=self.pi)
+            self.create_join_request(
+                self.user, self.project0, host_user=self.pi)
 
             data = {
                 'decision': ['approve'],

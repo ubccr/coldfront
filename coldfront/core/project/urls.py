@@ -6,6 +6,8 @@ from flags.urls import flagged_paths
 import coldfront.core.project.views as project_views
 import coldfront.core.project.views_.addition_views.approval_views as addition_approval_views
 import coldfront.core.project.views_.addition_views.request_views as addition_request_views
+import coldfront.core.project.views_.join_views.request_views as join_request_views
+import coldfront.core.project.views_.join_views.approval_views as join_approval_views
 import coldfront.core.project.views_.new_project_views.approval_views as new_project_approval_views
 import coldfront.core.project.views_.new_project_views.request_views as new_project_request_views
 import coldfront.core.project.views_.removal_views as removal_views
@@ -20,20 +22,33 @@ urlpatterns = [
     path('project-user-update-email-notification/', project_views.project_update_email_notification, name='project-user-update-email-notification'),
     path('archived/', project_views.ProjectArchivedListView.as_view(), name='project-archived-list'),
     path('create/', project_views.ProjectCreateView.as_view(), name='project-create'),
-    path('join/', project_views.ProjectJoinListView.as_view(), name='project-join-list'),
     path('<int:pk>/update/', project_views.ProjectUpdateView.as_view(), name='project-update'),
     path('<int:pk>/add-users-search/', project_views.ProjectAddUsersSearchView.as_view(), name='project-add-users-search'),
     path('<int:pk>/add-users-search-results/', project_views.ProjectAddUsersSearchResultsView.as_view(), name='project-add-users-search-results'),
     path('<int:pk>/add-users/', project_views.ProjectAddUsersView.as_view(), name='project-add-users'),
     path('<int:pk>/user-detail/<int:project_user_pk>', project_views.ProjectUserDetail.as_view(), name='project-user-detail'),
     path('<int:pk>/review/', project_views.ProjectReviewView.as_view(), name='project-review'),
-    path('<int:pk>/join/', project_views.ProjectJoinView.as_view(), name='project-join'),
-    path('<int:pk>/review-join-requests/', project_views.ProjectReviewJoinRequestsView.as_view(), name='project-review-join-requests'),
     path('project-review-list', project_views.ProjectReviewListView.as_view(),name='project-review-list'),
     path('project-review-complete/<int:project_review_pk>/', project_views.ProjectReviewCompleteView.as_view(),
          name='project-review-complete'),
     path('project-review/<int:pk>/email', project_views.ProjectReivewEmailView.as_view(), name='project-review-email'),
-    path('join-list/', project_views.ProjectJoinRequestListView.as_view(), name='project-join-request-list'),
+]
+
+
+# Join Requests
+urlpatterns += [
+    path('join/',
+         join_request_views.ProjectJoinListView.as_view(),
+         name='project-join-list'),
+    path('<int:pk>/join/',
+         join_request_views.ProjectJoinView.as_view(),
+         name='project-join'),
+    path('<int:pk>/review-join-requests/',
+         join_approval_views.ProjectReviewJoinRequestsView.as_view(),
+         name='project-review-join-requests'),
+    path('join-list/',
+         join_approval_views.ProjectJoinRequestListView.as_view(),
+         name='project-join-request-list'),
 ]
 
 
