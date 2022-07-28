@@ -855,6 +855,13 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                         allocation_user_active_status_choice)
                     if success:
                         added_users_count += 1
+                    else:
+                        username = user_form_data['username']
+                        message = (
+                            f'Failed to add User {username}. Please try '
+                            f'again, or contact an administrator if the '
+                            f'problem persists.')
+                        messages.error(request, message)
 
             messages.success(
                 request, 'Added {} users to project.'.format(added_users_count))
@@ -911,22 +918,27 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                                            user_obj, status_choice):
         """Given form data with allocation fields, a User, and an
         AllocationUserStatusChoice, update existing or create new
-        AllocationUsers, setting the status."""
-        for allocation in Allocation.objects.filter(
-                pk__in=allocation_form_data):
-            if allocation.allocationuser_set.filter(user=user_obj).exists():
-                allocation_user_obj = allocation.allocationuser_set.get(
-                    user=user_obj)
-                allocation_user_obj.status = status_choice
-                allocation_user_obj.save()
-            else:
-                allocation_user_obj = AllocationUser.objects.create(
-                    allocation=allocation,
-                    user=user_obj,
-                    status=status_choice)
-            allocation_activate_user.send(
-                sender=self.__class__,
-                allocation_user_pk=allocation_user_obj.pk)
+        AllocationUsers, setting the status.
+
+        For BRC/LRC, this step is not necessary, as Allocations are
+        handled separately.
+        """
+        # for allocation in Allocation.objects.filter(
+        #         pk__in=allocation_form_data):
+        #     if allocation.allocationuser_set.filter(user=user_obj).exists():
+        #         allocation_user_obj = allocation.allocationuser_set.get(
+        #             user=user_obj)
+        #         allocation_user_obj.status = status_choice
+        #         allocation_user_obj.save()
+        #     else:
+        #         allocation_user_obj = AllocationUser.objects.create(
+        #             allocation=allocation,
+        #             user=user_obj,
+        #             status=status_choice)
+        #     allocation_activate_user.send(
+        #         sender=self.__class__,
+        #         allocation_user_pk=allocation_user_obj.pk)
+        pass
 
     @staticmethod
     def _update_or_create_project_user(project_obj, user_obj, role_choice,
