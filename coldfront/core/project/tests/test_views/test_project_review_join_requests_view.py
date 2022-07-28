@@ -2,17 +2,16 @@ from copy import deepcopy
 from http import HTTPStatus
 
 from django.contrib.auth.models import User
-
-from coldfront.core.project.models import Project, ProjectUser, \
-    ProjectUserRoleChoice, ProjectUserStatusChoice, ProjectUserJoinRequest
-from coldfront.core.project.models import ProjectStatusChoice
-from coldfront.core.user.models import UserProfile
-from coldfront.core.utils.tests.test_base import TestBase
-
-from django.contrib.auth.models import User
 from django.conf import settings
 from django.test import override_settings
 from django.urls import reverse
+
+from flags.state import disable_flag
+
+from coldfront.api.statistics.utils import create_project_allocation
+from coldfront.core.project.models import ProjectUser, ProjectUserJoinRequest
+from coldfront.core.user.models import UserProfile
+from coldfront.core.utils.tests.test_base import TestBase
 
 
 class TestProjectReviewJoinRequestsView(TestBase):
@@ -33,12 +32,16 @@ class TestProjectReviewJoinRequestsView(TestBase):
         user_profile.is_pi = True
         user_profile.save()
 
-        self.project0 = self.create_active_project_with_pi('project0', self.pi)
-        self.project1 = self.create_active_project_with_pi('project1', self.pi)
+        self.project0 = self.create_active_project_with_pi(
+            'fc_project0', self.pi)
+        create_project_allocation(self.project0, settings.ALLOCATION_MIN)
+        self.project1 = self.create_active_project_with_pi(
+            'fc_project1', self.pi)
+        create_project_allocation(self.project1, settings.ALLOCATION_MIN)
 
     def create_join_request(self, user, project, host_user=None):
-        """Creates a join request for a certain project. Returns the response"""
-
+        """Create a join request for a certain project. Return the
+        response."""
         url = reverse('project-join', kwargs={'pk': project.pk})
         data = {
             'reason': 'This is a test reason for joining the project '
@@ -53,11 +56,16 @@ class TestProjectReviewJoinRequestsView(TestBase):
     def test_host_user_submitted_lrc(self):
         """Tests that the host user column is displayed by
         ProjectReviewJoinRequestsView when LRC_ONLY is True."""
+        self.project0.name = 'pc_project0'
+        self.project0.save()
+        self.project1.name = 'pc_project1'
+        self.project1.save()
 
         # Setting LRC_ONLY to True and BRC_ONLY to False
         flags_copy = deepcopy(settings.FLAGS)
         flags_copy['LRC_ONLY'] = [{'condition': 'boolean', 'value': True}]
         flags_copy['BRC_ONLY'] = [{'condition': 'boolean', 'value': False}]
+        disable_flag('BRC_ONLY')
         with override_settings(FLAGS=flags_copy):
 
             # Make a join request with a host user specified and test
@@ -87,11 +95,16 @@ class TestProjectReviewJoinRequestsView(TestBase):
     def test_no_host_user_submitted_lrc(self):
         """Tests that the host user column is displayed by
         ProjectReviewJoinRequestsView when LRC_ONLY is True."""
+        self.project0.name = 'pc_project0'
+        self.project0.save()
+        self.project1.name = 'pc_project1'
+        self.project1.save()
 
         # Setting LRC_ONLY to True and BRC_ONLY to False
         flags_copy = deepcopy(settings.FLAGS)
         flags_copy['LRC_ONLY'] = [{'condition': 'boolean', 'value': True}]
         flags_copy['BRC_ONLY'] = [{'condition': 'boolean', 'value': False}]
+        disable_flag('BRC_ONLY')
         with override_settings(FLAGS=flags_copy):
 
             # Make a join request without a host user specified and test
@@ -144,11 +157,16 @@ class TestProjectReviewJoinRequestsView(TestBase):
     def test_host_user_set(self):
         """Test that ProjectReviewJoinRequestsView correctly sets the host
         user in a user's UserProfile."""
+        self.project0.name = 'pc_project0'
+        self.project0.save()
+        self.project1.name = 'pc_project1'
+        self.project1.save()
 
         # Setting LRC_ONLY to True and BRC_ONLY to False
         flags_copy = deepcopy(settings.FLAGS)
         flags_copy['LRC_ONLY'] = [{'condition': 'boolean', 'value': True}]
         flags_copy['BRC_ONLY'] = [{'condition': 'boolean', 'value': False}]
+        disable_flag('BRC_ONLY')
         with override_settings(FLAGS=flags_copy):
 
             # Make a join request with a host user specified
