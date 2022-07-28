@@ -187,24 +187,6 @@ class ProjectUpdateForm(forms.Form):
         ],
         widget=forms.Textarea
     )
-
-    slurm_account_name = forms.CharField(
-        max_length=15,
-        required=False,
-        validators=[
-            MinLengthValidator(
-                3,
-                'The slurm account name must be at least 3 characters',
-            ),
-            IsAlpha(
-                'The slurm account name must not contain numbers of special characters'
-            ),
-        ],
-        help_text='''
-This is only required if you need a resource that uses Slurm. The name must be at least three
-characters long and cannot contain numbers or special characters. Once set it cannot be changed.
-        '''
-    )
     field_of_science = forms.ModelChoiceField(queryset=FieldOfScience.objects.all())
 
     def __init__(self, project_pk, *args, **kwargs):
@@ -213,7 +195,4 @@ characters long and cannot contain numbers or special characters. Once set it ca
 
         self.fields['title'].initial = project_obj.title
         self.fields['description'].initial = project_obj.description
-        self.fields['slurm_account_name'].initial = project_obj.slurm_account_name
-        if not project_obj.slurm_account_name == '':
-            self.fields['slurm_account_name'].disabled = True
         self.fields['field_of_science'].initial = project_obj.field_of_science
