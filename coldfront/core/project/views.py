@@ -732,15 +732,13 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
 
         matches = context.get('matches')
         for match in matches:
-
+            user = User.objects.get(username=match['username'])
+            user_access_agreement_status = (
+                'Signed' if access_agreement_signed(user) else 'Unsigned')
             # add data for access agreements
             match.update(
                 {'role': ProjectUserRoleChoice.objects.get(name='User'),
-                 'user_access_agreement':
-                     'Signed' if User.objects.get(username=match['username']).
-                                       userprofile.access_agreement_signed_date
-                                 is not None else 'Unsigned'
-                 })
+                 'user_access_agreement': user_access_agreement_status})
 
         if matches:
             formset = formset_factory(ProjectAddUserForm, max_num=len(matches))
@@ -750,7 +748,8 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
             match_users = User.objects.filter(username__in=[form._username for form in formset])
             for form in formset:
                 # disable user matches with unsigned signed user agreement
-                if not match_users.get(username=form._username).userprofile.access_agreement_signed_date is not None:
+                if not access_agreement_signed(
+                        match_users.get(username=form._username)):
                     form.fields.pop('selected')
 
             context['formset'] = formset
