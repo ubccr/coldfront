@@ -11,12 +11,11 @@
     cwd: "{{ lookup('env', 'PWD') }} "
     provisioning_tasks: true
     common_tasks: true
-  
+
   vars_files:
     - "../../main.yml"
 
   tasks:
-
     # Provisioning tasks that can be skipped always after the first time.
     - name: Run Provisioning Tasks
       block:
@@ -30,7 +29,9 @@
           ansible.posix.selinux:
             policy: targeted
             state: disabled
-            
+
+        # Install yum packages.
+
         - name: Install curl
           yum:
             name: curl
@@ -50,7 +51,7 @@
               - git-core
               - gcc-c++
             state: present
-          
+
         - name: Install required Python packages
           yum:
             name:
@@ -82,7 +83,6 @@
             insertafter: '^# requirepass foobared'
             line: 'requirepass {{ redis_passwd }}'
 
-
         - name: Install Supervisor
           yum:
             name:
@@ -110,7 +110,7 @@
             section: 'program:django_q'
             option: 'numprocs'
             value: '1'
-            
+
         - name: Install Postgresql packages
           yum:
             name:
@@ -178,16 +178,20 @@
             group: apache
 
         - name: Create a log file for Django portal logs
-          file:
-            path: "{{ log_path }}/{{ portal_log_file }}"
+          copy:
+            content: ""
+            force: no
+            dest: "{{ log_path }}/{{ portal_log_file }}"
             state: touch
             mode: 0660
             owner: "{{ djangooperator }}"
             group: apache
 
         - name: Create a log file for Django API logs
-          file:
-            path: "{{ log_path }}/{{ api_log_file }}"
+          copy:
+            content: ""
+            force: no
+            dest: "{{ log_path }}/{{ api_log_file }}"
             state: touch
             mode: 0660
             owner: "{{ djangooperator }}"
@@ -204,8 +208,13 @@
             group: apache
 
         - name: Initialize Python virtual environment
-          command: python3.6 -m venv {{ git_prefix }}/venv
+          shell: >
+              test -f {{ git_prefix }}/venv/bin/activate
+              || (python3.6 -m venv {{ git_prefix }}/venv
+              && echo created)
+          register: venv_register
           become_user: "{{ djangooperator }}"
+          changed_when: venv_register.stdout == "created"
 
         # Install Django application dependencies, so that psycopg2, which is
         # required to create the PostgreSQL database and user, is installed.
@@ -277,29 +286,88 @@
             dest: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}/config/{{ deployment }}_settings.py"
 
         - name: Create the deployment-specific password reset email subject text file from a template
-          template: src={{ git_prefix }}/{{ reponame }}/bootstrap/ansible/password_reset_subject_template.tmpl
-                    dest={{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}/core/user/templates/user/passwords/password_reset_subject.txt
+          template:
+            src: "{{ git_prefix }}/{{ reponame }}/bootstrap/ansible/password_reset_subject_template.tmpl"
+            dest: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}/core/user/templates/user/passwords/password_reset_subject.txt"
 
-        # Run Django management commands - initial_setup.
-
-        - name: Run Django management command - initial_setup
-          django_manage:
-            command: initial_setup
-            app_path: "{{ git_prefix }}/{{ reponame }}"
-            settings: "config.settings"
-            pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
-            virtualenv: "{{ git_prefix }}/venv"
-          become_user: "{{ djangooperator }}"
 
       when: provisioning_tasks == true
-    
-    
+      tags: provisioning_tasks
+
+    # Production only provisioning tasks.
+    - name: Run Production provisioning Tasks
+      block:
+        ## BRC-only
+        - name: BRC-only Production Tasks
+          block:
+            - name: Handle firewall configuration
+              service:
+                name: firewalld
+                state: started
+                enabled: yes
+
+            - name: Create firewalld zone for BRC HPC infrastructure
+              ansible.posix.firewalld:
+                zone: brc_hpc
+                state: present
+                permanent: yes
+
+            - name: Add BRC HPC IP addresses to zone
+              ansible.posix.firewalld:
+                zone: brc_hpc
+                source: 10.0.0.0/8
+                permanent: yes
+                state: enabled
+
+            - name: Permit http traffic in BRC HPC zone
+              ansible.posix.firewalld:
+                zone: brc_hpc
+                service: http
+                permanent: yes
+                state: enabled
+
+            - name: Permit ssh access in BRC HPC zone
+              ansible.posix.firewalld:
+                zone: brc_hpc
+                service: ssh
+                permanent: yes
+                state: enabled
+          when: flag_brc_enabled
+
+        ## LRC-only
+        - name: LRC-only Production Tasks
+          block:
+            - name: Update syslog config to send logs to LBL central server
+              blockinfile:
+                state: present
+                destfile: /etc/rsyslog.conf
+                insertbefore: "# ### begin forwarding rule ###"
+                block: |
+                  # Send copyof logs to LBL's central syslog server
+                  *.* @syslog.lbl.gov
+
+            # TODO: Firewall tasks
+
+          when: flag_lrc_enabled
+
+      when: provisioning_tasks == true and deployment == "prod"
+      tags: provisioning
+
+    # Development only provisioning tasks.
+    - name: Run Development Provisioning Tasks
+      block:
+        # Don't do anything as there aren't any development-specific tasks yet.
+        - meta: noop
+      when: provisioning_tasks == true and deployment == "dev"
+      tags: provisioning
+
     # Non-provisioning tasks common to development and production.
     # Meant to be re-run frequently.
     - name: Run Common Tasks
       block:
 
         # Restart Services.
+
         - name: Restart and enable Redis service
           service:
             name: redis
@@ -318,7 +386,24 @@
             state: restarted
             enabled: yes
 
+        ## LRC-only
+        - name: Restart rsyslog
+          service:
+            name: rsyslog
+            state: restarted
+            enabled: yes
+          when: flag_lrc_enabled
+
         # Run Django management commands.
+
+        - name: Run Django management command - initial_setup
+          django_manage:
+            command: initial_setup
+            app_path: "{{ git_prefix }}/{{ reponame }}"
+            settings: "config.settings"
+            pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+            virtualenv: "{{ git_prefix }}/venv"
+          become_user: "{{ djangooperator }}"
 
         - name: Run Django management command - migrate
           django_manage:
@@ -401,24 +486,7 @@
           supervisorctl:
             name: 'django_q'
             state: started
-
-      when: common_tasks == true or provisioning_tasks == true
-
-    # Production only tasks.
-    - name: Run Production Tasks
-      block:
-        # - stuff from old playbook...
-        # - firewall config...
-        # - sending logs config...
-        - name: Production Placeholder task
-          debug:
-            msg: Development Placeholder task
-      when: deployment == "prod"
-    
-    # Development only tasks.
-    - name: Run Development Tasks
-      block:
-        - name: Development Placeholder task
-          debug:
-            msg: Production Placeholder task
-      when: deployment == "dev"
+      when: provisioning_tasks == true or common_tasks == true
+      tags:
+        - provisioning
+        - common
