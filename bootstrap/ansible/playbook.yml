@@ -1,284 +1,424 @@
----
-- hosts:
+- name: MyBRC/LRC User Portal VM Playbook
+  gather_facts: false
+  hosts:
     - all
     - "{{ domain }}"
-  become : true
+  become: true
   become_user: root
   become_method: sudo
 
   vars:
-   cwd: "{{ lookup('env','PWD') }}"
-
+    cwd: "{{ lookup('env', 'PWD') }} "
+    provisioning_tasks: true
+    common_tasks: true
+  
   vars_files:
-    - "{{ cwd }}/main.yml"
+    - "../../main.yml"
 
   tasks:
-    - name: Install redis
-      yum:
-        name:
-          - redis
-        state: present
 
-    - name: Set redis password
-      lineinfile:
-        path: /etc/redis.conf
-        regexp: '^requirepass '
-        insertafter: '^# requirepass foobared'
-        line: 'requirepass {{ redis_passwd }}'
+    # Provisioning tasks that can be skipped always after the first time.
+    - name: Run Provisioning Tasks
+      block:
+        - name: Stop and disable NetworkManager service
+          service:
+            name: NetworkManager
+            state: stopped
+            enabled: no
 
-    - name: Restart and enable Redis service
-      service:
-        name: redis
-        state: restarted
-        enabled: yes
+        - name: Disable SELinux
+          ansible.posix.selinux:
+            policy: targeted
+            state: disabled
+            
+        - name: Install curl
+          yum:
+            name: curl
+            state: present
 
-    - name: Install Supervisor
-      yum:
-        name:
-          - supervisor
-        state: present
+        - name: Install required OS packages
+          yum:
+            name:
+              - texinfo
+              - ntp
+              - zlib-devel
+              - libcurl-devel
+              - Cython
+              - bzip2-devel
+              - openssl
+              - openssl-devel
+              - git-core
+              - gcc-c++
+            state: present
+          
+        - name: Install required Python packages
+          yum:
+            name:
+              - python3
+              - python3-devel
+              - python3-pip
+            state: present
 
-    # ini_file is included in community.general.
-    - name: Set django_q command in supervisord.conf
-      ini_file:
-        path: /etc/supervisord.conf
-        section: 'program:django_q'
-        option: 'command'
-        value: '{{ git_prefix }}/venv/bin/python3 {{ git_prefix }}/{{ reponame }}/manage.py qcluster'
+        - name: Install required web packages
+          yum:
+            name:
+              - httpd
+              - httpd-devel
+              - module-init-tools
+              - ModemManager
+              - mod_ssl
+            state: present
 
-    - name: Set django_q stopasgroup in supervisord.conf
-      ini_file:
-        path: /etc/supervisord.conf
-        section: 'program:django_q'
-        option: 'stopasgroup'
-        value: 'true'
+        - name: Install redis
+          yum:
+            name:
+              - redis
+            state: present
 
-    - name: Set django_q numprocs in supervisord.conf
-      ini_file:
-        path: /etc/supervisord.conf
-        section: 'program:django_q'
-        option: 'numprocs'
-        value: '1'
+        - name: Set redis password
+          lineinfile:
+            path: /etc/redis.conf
+            regexp: '^requirepass '
+            insertafter: '^# requirepass foobared'
+            line: 'requirepass {{ redis_passwd }}'
 
-    - name: Restart and enable Supervisor
-      service:
-        name: supervisord
-        state: restarted
-        enabled: yes
 
-    - name: Install Postgresql packages
-      yum:
-        name:
-          - 'https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/postgresql96-9.6.24-1PGDG.rhel7.x86_64.rpm'
-          - 'https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/postgresql96-libs-9.6.24-1PGDG.rhel7.x86_64.rpm'
-          - 'https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/postgresql96-devel-9.6.24-1PGDG.rhel7.x86_64.rpm'
-          - 'https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/postgresql96-test-9.6.24-1PGDG.rhel7.x86_64.rpm'
-          - 'https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/postgresql96-server-9.6.24-1PGDG.rhel7.x86_64.rpm'
-        state: present
+        - name: Install Supervisor
+          yum:
+            name:
+              - supervisor
+            state: present
 
-    - name: Create a folder for keeping Django app logs
-      file:
-       path: '{{ log_path }}'
-       state: directory
-       mode: 0775
-       owner: '{{ djangooperator }}'
-       group: 'apache'
+        # ini_file is included in community.general.
+        - name: Set django_q command in supervisord.conf
+          ini_file:
+            path: /etc/supervisord.conf
+            section: 'program:django_q'
+            option: 'command'
+            value: '{{ git_prefix }}/venv/bin/python3 {{ git_prefix }}/{{ reponame }}/manage.py qcluster'
 
-    - name: Create portal Django app log files
-      file:
-       path: '{{ log_path }}/{{ portal_log_file }}'
-       state: touch
-       mode: 0660
-       owner: '{{ djangooperator }}'
-       group: 'apache'
+        - name: Set django_q stopasgroup in supervisord.conf
+          ini_file:
+            path: /etc/supervisord.conf
+            section: 'program:django_q'
+            option: 'stopasgroup'
+            value: 'true'
 
-    - name: Create API Django app log files
-      file:
-       path: '{{ log_path }}/{{ api_log_file }}'
-       state: touch
-       mode: 0660
-       owner: '{{ djangooperator }}'
-       group: 'apache'
+        - name: Set django_q numprocs in supervisord.conf
+          ini_file:
+            path: /etc/supervisord.conf
+            section: 'program:django_q'
+            option: 'numprocs'
+            value: '1'
+            
+        - name: Install Postgresql packages
+          yum:
+            name:
+              - 'https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/postgresql96-9.6.24-1PGDG.rhel7.x86_64.rpm'
+              - 'https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/postgresql96-libs-9.6.24-1PGDG.rhel7.x86_64.rpm'
+              - 'https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/postgresql96-devel-9.6.24-1PGDG.rhel7.x86_64.rpm'
+              - 'https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/postgresql96-test-9.6.24-1PGDG.rhel7.x86_64.rpm'
+              - 'https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/postgresql96-server-9.6.24-1PGDG.rhel7.x86_64.rpm'
+            state: present
 
-    - name: Install Django application dependencies
-      pip:
-        requirements: '{{ git_prefix }}/{{ reponame }}/requirements.txt'
-        executable: '{{ git_prefix }}/venv/bin/pip3'
-      become_user: "{{ djangooperator }}"
+        # Configure PostgreSQL.
 
-    - name: Check if PostgreSQL database is initialized
-      stat:
-        path: /var/lib/pgsql/9.6/data/PG_VERSION
-      register: pgdata_dir_version
+        - name: Check if PostgreSQL is initialized
+          stat:
+            path: /var/lib/pgsql/9.6/data/PG_VERSION
+          register: pgdata_dir_version
 
-    - name: Initialize Postgres if not already initialized
-      command: /usr/pgsql-9.6/bin/postgresql96-setup initdb
-      when: not pgdata_dir_version.stat.exists
+        - name: Initialize PostgreSQL if not already initialized
+          command: /usr/pgsql-9.6/bin/postgresql96-setup initdb
+          when: not pgdata_dir_version.stat.exists
 
-    - name: enabling postgresql services
-      service:
-        name: postgresql-9.6
-        state: started
-        enabled: yes
+        - name: Start and enable PostgreSQL service
+          service:
+            name: postgresql-9.6
+            state: started
+            enabled: yes
 
-    - name: Update pg_hba.conf to change host auth from ident to md5 (1/2)
-      postgresql_pg_hba:
-        dest: /var/lib/pgsql/9.6/data/pg_hba.conf
-        backup: yes
-        method: md5
-        contype: host
-        source: ::1
+        - name: Update pg_hba.conf to change host auth from ident to md5 (1/2)
+          postgresql_pg_hba:
+            dest: /var/lib/pgsql/9.6/data/pg_hba.conf
+            backup: yes
+            method: md5
+            contype: host
+            source: ::1
 
-    - name: Update pg_hba.conf to change host auth from ident to md5 (2/2)
-      postgresql_pg_hba:
-        dest: /var/lib/pgsql/9.6/data/pg_hba.conf
-        backup: yes
-        method: md5
-        contype: host
-        source: 127.0.0.1/32
+        - name: Update pg_hba.conf to change host auth from ident to md5 (2/2)
+          postgresql_pg_hba:
+            dest: /var/lib/pgsql/9.6/data/pg_hba.conf
+            backup: yes
+            method: md5
+            contype: host
+            source: 127.0.0.1/32
 
-    - name: Update pg_hba.conf to set authentication for all to md5
-      postgresql_pg_hba:
-        dest: /var/lib/pgsql/9.6/data/pg_hba.conf
-        backup: yes
-        method: md5
-        contype: host
-        source: '0.0.0.0/0'
+        - name: Update pg_hba.conf to set authentication for all to md5
+          postgresql_pg_hba:
+            dest: /var/lib/pgsql/9.6/data/pg_hba.conf
+            backup: yes
+            method: md5
+            contype: host
+            source: "0.0.0.0/0"
 
-    - name: Restart PostgreSQL
-      service: name=postgresql-9.6 state=restarted
+        - name: Restart PostgreSQL service
+          service:
+            name: postgresql-9.6
+            state: restarted
 
-    - name: Create New DB in postgres
-      postgresql_db:
-        name: '{{ db_name }}'
-      become_user: postgres
-      vars:
-        ansible_python_interpreter: '{{ git_prefix}}/venv/bin/python3'
+        # Create Django application log files.
 
-    - name: Create admin user and grant permissions
-      postgresql_user:
-        db: '{{ db_name }}'
-        priv: ALL
-        name: '{{ db_admin_user }}'
-        password: '{{ db_admin_passwd }}'
-        role_attr_flags: CREATEDB
-      become_user: postgres
-      vars:
-        ansible_python_interpreter: '{{ git_prefix}}/venv/bin/python3'
+        - name: Create a parent directory for storing Django application logs
+          file:
+            path: "{{ log_path }}"
+            state: directory
+            mode: 0775
+            owner: "{{ djangooperator }}"
+            group: apache
 
-    - name: Copy the ColdFront local_settings.py file from the sample
-      ansible.builtin.copy:
-        src: '{{ git_prefix }}/{{ reponame }}/coldfront/config/local_settings.py.sample'
-        dest: '{{ git_prefix }}/{{ reponame }}/coldfront/config/local_settings.py'
+        - name: Create a log file for Django portal logs
+          file:
+            path: "{{ log_path }}/{{ portal_log_file }}"
+            state: touch
+            mode: 0660
+            owner: "{{ djangooperator }}"
+            group: apache
 
-    - name: Copy the ColdFront local_strings.py file from the sample
-      ansible.builtin.copy:
-        src: '{{ git_prefix }}/{{ reponame }}/coldfront/config/local_strings.py.sample'
-        dest: '{{ git_prefix }}/{{ reponame }}/coldfront/config/local_strings.py'
+        - name: Create a log file for Django API logs
+          file:
+            path: "{{ log_path }}/{{ api_log_file }}"
+            state: touch
+            mode: 0660
+            owner: "{{ djangooperator }}"
+            group: apache
 
-    - name: Create the deployment-specific _settings.py file from a template
-      template: src={{ git_prefix }}/{{ reponame }}/bootstrap/ansible/settings_template.tmpl
-                dest={{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}/config/{{ deployment }}_settings.py
-      become_user: "{{ djangooperator }}"
+        # Prepare the Python virtual environment for the Django application.
 
-    - name: Create the deployment-specific password reset email subject text file from a template
-      template: src={{ git_prefix }}/{{ reponame }}/bootstrap/ansible/password_reset_subject_template.tmpl
-                dest={{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}/core/user/templates/user/passwords/password_reset_subject.txt
-      become_user: "{{ djangooperator }}"
+        - name: Create Python virtual environment directory
+          file:
+            path: "{{ git_prefix }}/venv"
+            state: directory
+            mode: 0755
+            owner: "{{ djangooperator }}"
+            group: apache
 
-    - name: Run Django management command - initial_setup
-      django_manage:
-        command: initial_setup
-        app_path: "{{ git_prefix }}/{{ reponame }}"
-        settings: "config.settings"
-        pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
-        virtualenv: "{{ git_prefix }}/venv"
-      become_user: "{{ djangooperator }}"
+        - name: Initialize Python virtual environment
+          command: python3.6 -m venv {{ git_prefix }}/venv
+          become_user: "{{ djangooperator }}"
 
-    - name: Run Django management command - migrate
-      django_manage:
-        command: migrate
-        app_path: "{{ git_prefix }}/{{ reponame }}"
-        settings: "config.settings"
-        pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
-        virtualenv: "{{ git_prefix }}/venv"
-      become_user: "{{ djangooperator }}"
+        # Install Django application dependencies, so that psycopg2, which is
+        # required to create the PostgreSQL database and user, is installed.
 
-    - name: Run Django management command - add_accounting_defaults
-      django_manage:
-        command: add_accounting_defaults
-        app_path: "{{ git_prefix }}/{{ reponame }}"
-        settings: "config.settings"
-        pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
-        virtualenv: "{{ git_prefix }}/venv"
-      become_user: "{{ djangooperator }}"
+        - name: Install Django application dependencies
+          pip:
+            requirements: "{{ git_prefix }}/{{ reponame }}/requirements.txt"
+            executable: "{{ git_prefix }}/venv/bin/pip3"
+          become_user: "{{ djangooperator }}"
 
-    - name: Run Django management command - add_directory_defaults
-      django_manage:
-        command: add_directory_defaults
-        app_path: "{{ git_prefix }}/{{ reponame }}"
-        settings: "config.settings"
-        pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
-        virtualenv: "{{ git_prefix }}/venv"
-      become_user: "{{ djangooperator }}"
+        # Create a PostgreSQL database and a user for the Django application.
 
-    - name: Run Django management command - create_allocation_periods
-      django_manage:
-        command: create_allocation_periods
-        app_path: "{{ git_prefix }}/{{ reponame }}"
-        settings: "config.settings"
-        pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
-        virtualenv: "{{ git_prefix }}/venv"
-      become_user: "{{ djangooperator }}"
+        - name: Create a new PostgreSQL database
+          postgresql_db:
+            name: "{{ db_name }}"
+          become_user: postgres
+          vars:
+            ansible_python_interpreter: "{{ git_prefix }}/venv/bin/python3"
 
-    - name: Run Django management command - create_staff_group
-      django_manage:
-        command: create_staff_group
-        app_path: "{{ git_prefix }}/{{ reponame }}"
-        settings: "config.settings"
-        pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
-        virtualenv: "{{ git_prefix }}/venv"
-      become_user: "{{ djangooperator }}"
+        - name: Create a PostgreSQL admin user and grant permissions
+          postgresql_user:
+            name: "{{ db_admin_user }}"
+            db: "{{ db_name }}"
+            priv: ALL
+            password: "{{ db_admin_passwd }}"
+            role_attr_flags: CREATEDB
+          become_user: postgres
+          vars:
+            ansible_python_interpreter: "{{ git_prefix }}/venv/bin/python3"
 
-    - name: Run Django management command - collectstatic
-      django_manage:
-        command: collectstatic --noinput
-        app_path: "{{ git_prefix }}/{{ reponame }}"
-        settings: "config.settings"
-        pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
-        virtualenv: "{{ git_prefix }}/venv"
-      become_user: "{{ djangooperator }}"
+        # Configure Apache.
 
-    - name: Grant read for Apache on djangooperator's $HOME
-      file:
-        path: '{{ git_prefix }}'
-        state: directory
-        mode: 0755
-        group: apache
+        - name: Check if the mod_wsgi module from Python 3.6 is installed to Apache
+          stat:
+            path: /etc/httpd/conf.modules.d/02-wsgi.conf
+          register: mod_wsgi_installed
 
-    - name: Grant read permissions to Apache on git root
-      file:
-        path: '{{ git_prefix }}/{{ reponame }}'
-        state: directory
-        recurse: yes
-        mode: 0755
-        group: apache
+        - name: Install the mod_wsgi module from Python 3.6 to Apache
+          shell: "{{ git_prefix }}/venv/bin/mod_wsgi-express install-module --modules-directory /etc/httpd/modules > /etc/httpd/conf.modules.d/02-wsgi.conf"
+          when: not mod_wsgi_installed.stat.exists
 
-    - name: Create a wsgi conf file from a template without SSL
-      template: src={{ git_prefix }}/{{ reponame }}/bootstrap/ansible/wsgi_conf.tmpl
-                dest=/etc/httpd/conf.d/{{ wsgi_conf_file_name }}
-      when: not ssl_enabled
+        - name: Create a WSGI configuration file from a template if SSL is disabled
+          template:
+            src: "{{ git_prefix }}/{{ reponame }}/bootstrap/ansible/wsgi_conf.tmpl"
+            dest: /etc/httpd/conf.d/{{ wsgi_conf_file_name }}
+          when: not ssl_enabled
 
-    - name: Create a wsgi conf file from a template with SSL
-      template: src={{ git_prefix }}/{{ reponame }}/bootstrap/ansible/wsgi_conf_ssl.tmpl
-                dest=/etc/httpd/conf.d/{{ wsgi_conf_file_name }}
-      when: ssl_enabled
+        - name: Create a WSGI configuration file from a template if SSL is enabled
+          template:
+            src: "{{ git_prefix }}/{{ reponame }}/bootstrap/ansible/wsgi_conf_ssl.tmpl"
+            dest: /etc/httpd/conf.d/{{ wsgi_conf_file_name }}
+          when: ssl_enabled
 
-    - name: Restart Apache
-      service: name=httpd state=restarted enabled=yes
+        # Configure the Django application.
 
-    # supervisorctl is included in community.general.
-    - name: Ensure that a Supervisor worker is running a django_q cluster
-      supervisorctl:
-        name: 'django_q'
-        state: started
+        - name: Copy the ColdFront local_settings.py file from the sample
+          ansible.builtin.copy:
+            src: "{{ git_prefix }}/{{ reponame }}/coldfront/config/local_settings.py.sample"
+            dest: "{{ git_prefix }}/{{ reponame }}/coldfront/config/local_settings.py"
+
+        - name: Copy the ColdFront local_strings.py file from the sample
+          ansible.builtin.copy:
+            src: "{{ git_prefix }}/{{ reponame }}/coldfront/config/local_strings.py.sample"
+            dest: "{{ git_prefix }}/{{ reponame }}/coldfront/config/local_strings.py"
+
+        - name: Create the deployment-specific _settings.py file from a template
+          template:
+            src: "{{ git_prefix }}/{{ reponame }}/bootstrap/ansible/settings_template.tmpl"
+            dest: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}/config/{{ deployment }}_settings.py"
+
+        - name: Create the deployment-specific password reset email subject text file from a template
+          template: src={{ git_prefix }}/{{ reponame }}/bootstrap/ansible/password_reset_subject_template.tmpl
+                    dest={{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}/core/user/templates/user/passwords/password_reset_subject.txt
+
+        # Run Django management commands - initial_setup.
+
+        - name: Run Django management command - initial_setup
+          django_manage:
+            command: initial_setup
+            app_path: "{{ git_prefix }}/{{ reponame }}"
+            settings: "config.settings"
+            pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+            virtualenv: "{{ git_prefix }}/venv"
+          become_user: "{{ djangooperator }}"
+
+      when: provisioning_tasks == true
+    
+    
+    # Non-provisioning tasks common to development and production.
+    # Meant to be re-run frequently.
+    - name: Run Common Tasks
+      block:
+
+        # Restart Services.
+        - name: Restart and enable Redis service
+          service:
+            name: redis
+            state: restarted
+            enabled: yes
+
+        - name: Restart and enable Supervisor service
+          service:
+            name: supervisord
+            state: restarted
+            enabled: yes
+
+        - name: Restart and enable PostgreSQL service
+          service:
+            name: postgresql-9.6
+            state: restarted
+            enabled: yes
+
+        # Run Django management commands.
+
+        - name: Run Django management command - migrate
+          django_manage:
+            command: migrate
+            app_path: "{{ git_prefix }}/{{ reponame }}"
+            settings: "config.settings"
+            pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+            virtualenv: "{{ git_prefix }}/venv"
+          become_user: "{{ djangooperator }}"
+
+        - name: Run Django management command - add_accounting_defaults
+          django_manage:
+            command: add_accounting_defaults
+            app_path: "{{ git_prefix }}/{{ reponame }}"
+            settings: "config.settings"
+            pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+            virtualenv: "{{ git_prefix }}/venv"
+          become_user: "{{ djangooperator }}"
+
+        - name: Run Django management command - add_directory_defaults
+          django_manage:
+            command: add_directory_defaults
+            app_path: "{{ git_prefix }}/{{ reponame }}"
+            settings: "config.settings"
+            pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+            virtualenv: "{{ git_prefix }}/venv"
+          become_user: "{{ djangooperator }}"
+
+        - name: Run Django management command - create_allocation_periods
+          django_manage:
+            command: create_allocation_periods
+            app_path: "{{ git_prefix }}/{{ reponame }}"
+            settings: "config.settings"
+            pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+            virtualenv: "{{ git_prefix }}/venv"
+          become_user: "{{ djangooperator }}"
+
+        - name: Run Django management command - create_staff_group
+          django_manage:
+            command: create_staff_group
+            app_path: "{{ git_prefix }}/{{ reponame }}"
+            settings: "config.settings"
+            pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+            virtualenv: "{{ git_prefix }}/venv"
+          become_user: "{{ djangooperator }}"
+
+        - name: Run Django management command - collectstatic
+          django_manage:
+            command: collectstatic --noinput
+            app_path: "{{ git_prefix }}/{{ reponame }}"
+            settings: "config.settings"
+            pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+            virtualenv: "{{ git_prefix }}/venv"
+          become_user: "{{ djangooperator }}"
+
+        # Grant Apache read access to Django application files.
+
+        - name: Grant Apache read access to the application's parent directory
+          file:
+            path: "{{ git_prefix }}"
+            state: directory
+            mode: 0755
+            group: apache
+
+        - name: Grant Apache recursive read access to the application directory
+          file:
+            path: "{{ git_prefix }}/{{ reponame }}"
+            state: directory
+            recurse: yes
+            mode: 0755
+            group: apache
+
+        - name: Restart httpd service
+          service:
+            name: httpd
+            state: restarted
+
+        # supervisorctl is included in community.general.
+        - name: Ensure that a Supervisor worker is running a django_q cluster
+          supervisorctl:
+            name: 'django_q'
+            state: started
+
+      when: common_tasks == true or provisioning_tasks == true
+
+    # Production only tasks.
+    - name: Run Production Tasks
+      block:
+        # - stuff from old playbook...
+        # - firewall config...
+        # - sending logs config...
+        - name: Production Placeholder task
+          debug:
+            msg: Development Placeholder task
+      when: deployment == "prod"
+    
+    # Development only tasks.
+    - name: Run Development Tasks
+      block:
+        - name: Development Placeholder task
+          debug:
+            msg: Production Placeholder task
+      when: deployment == "dev"

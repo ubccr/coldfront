@@ -131,3 +131,6 @@ sentry_dsn: ""
 # A list of email addresses to CC when certain requests are processed.
 # TODO: Set this address to yours.
 # request_approval_cc_list: ['wfeinstein@lbl.gov']
+
+provisioning_tasks: true
+common_tasks: true
