@@ -182,7 +182,7 @@
             content: ""
             force: no
             dest: "{{ log_path }}/{{ portal_log_file }}"
-            state: touch
+            state: file
             mode: 0660
             owner: "{{ djangooperator }}"
             group: apache
@@ -192,7 +192,7 @@
             content: ""
             force: no
             dest: "{{ log_path }}/{{ api_log_file }}"
-            state: touch
+            state: file
             mode: 0660
             owner: "{{ djangooperator }}"
             group: apache
@@ -271,12 +271,12 @@
         # Configure the Django application.
 
         - name: Copy the ColdFront local_settings.py file from the sample
-          ansible.builtin.copy:
+          copy:
             src: "{{ git_prefix }}/{{ reponame }}/coldfront/config/local_settings.py.sample"
             dest: "{{ git_prefix }}/{{ reponame }}/coldfront/config/local_settings.py"
 
         - name: Copy the ColdFront local_strings.py file from the sample
-          ansible.builtin.copy:
+          copy:
             src: "{{ git_prefix }}/{{ reponame }}/coldfront/config/local_strings.py.sample"
             dest: "{{ git_prefix }}/{{ reponame }}/coldfront/config/local_strings.py"
 
