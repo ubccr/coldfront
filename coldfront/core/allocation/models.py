@@ -100,21 +100,6 @@ class Allocation(TimeStampedModel):
         super().save(*args, **kwargs)
 
 
-    def determine_size_fmt(num):
-        unit = "B"
-        for u in ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB"]:
-            if abs(num) < 1024.0:
-                return round(num, 3), unit
-            num /= 1024.0
-            unit = u
-
-    def convert_size_fmt(num, target_unit, source_unit="B"):
-        units = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB"]
-        convert_units = units[units.index(source_unit) :: units.index(target_unit)+1]
-        for u in convert_units:
-            num/=1024.0
-        return round(num, 3)
-
     @property
     def expires_in(self):
         return (self.end_date - datetime.date.today()).days
@@ -152,9 +137,9 @@ class Allocation(TimeStampedModel):
                 # string = '{} : {}/{} ({} %) <br>'.format(
                 string = '{}: {}/{} ({} %) <br>'.format(
                     attribute.allocation_attribute_type.name,
-                    # quota,
-                    attribute.allocationattributeusage.value,
                     # usage,
+                    round(attribute.allocationattributeusage.value, 2),
+                    # quota,
                     attribute.value,
                     percent
                 )

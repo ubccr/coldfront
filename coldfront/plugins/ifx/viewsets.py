@@ -13,3 +13,4 @@ class ColdfrontBillingRecordViewSet(BillingRecordViewSet):
     '''
     permission_classes = [FiineBillingRecordViewSetPermissions]
     authentication_classes = [TokenAuthentication]
+    pagination_class = None

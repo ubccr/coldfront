@@ -14,7 +14,10 @@ from ifxbilling.models import Account, BillingRecord, ProductUsage
 
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.project.models import Project
-from coldfront.core.allocation.models import Allocation, AllocationUser, AllocationAttribute, AllocationUserStatusChoice
+from coldfront.core.allocation.models import (Allocation,
+                                            AllocationUser,
+                                            AllocationAttribute,
+                                            AllocationUserStatusChoice)
 
 datestr = datetime.today().strftime("%Y%m%d")
 logger = logging.getLogger(__name__)
@@ -175,6 +178,11 @@ class ColdFrontDB:
     @record_process
     def produce_lab_dict(self, vol):
         """Create dict of labs to collect and the volumes/tiers associated with them.
+        Parameters
+        ----------
+        vol : string
+            If not None, collect only allocations on the specified volume
+
         Returns
         -------
         labs_resources: dict
@@ -196,8 +204,12 @@ class ColdFrontDB:
         return labs_resources
 
 
-    def check_server_collection(self, lr, homepath="./coldfront/plugins/sftocf/data/"):
+    def check_volume_collection(self, lr, homepath="./coldfront/plugins/sftocf/data/"):
         '''
+        for each lab-resource combination in parameter lr, check existence of corresponding
+        file in data path. If a file for that lab-resource combination that is <2 days old
+        exists, mark it as collected. If not, slate lab-resource combination for collection.
+
         Parameters
         ----------
         lr : dict
@@ -240,7 +252,7 @@ class ColdFrontDB:
         # 1. produce dict of all labs to be collected and the volumes on which their data is located
         lr = self.produce_lab_dict(volume)
         # 2. produce list of files that have been collected and list of lab/volume/filename tuples to collect
-        filepaths, to_collect = self.check_server_collection(lr)
+        filepaths, to_collect = self.check_volume_collection(lr)
         # 3. produce set of all volumes to be queried
         vol_set = {i[1] for i in to_collect}
         servers_vols = [(k, vol) for k, v in svp.items() for vol in vol_set if vol in v.keys()]
@@ -270,12 +282,12 @@ class ColdFrontDB:
             project = Project.objects.get(title=content["project"])
             # find project allocation
             try:
-                allocation = Allocation.objects.get(project_id=project.id, resources__name=resource)
+                allocation = Allocation.objects.get(project=project, resources__name=resource)
             except Allocation.MultipleObjectsReturned:
                 logger.debug(f"Too many allocations for project id {project.id}; choosing one with 'Allocation Information' in justification.")
                 # try:
                 allocation = Allocation.objects.get(
-                    project_id=project.id,
+                    project=project,
                     resources__name=resource,
                     justification__icontains='Allocation Information',
                     justification__endswith=project.title)
@@ -308,7 +320,7 @@ class ColdFrontDB:
         logger.debug(f"entering for user:{user.username}")
         try:
             allocationuser = AllocationUser.objects.get(
-                allocation_id=str(allocation.id), user_id=str(user.id)
+                allocation=allocation, user=user
             )
         except AllocationUser.DoesNotExist:
             logger.info("creating allocation user:")
@@ -319,7 +331,7 @@ class ColdFrontDB:
                 user=user
             )
             allocationuser = AllocationUser.objects.get(
-                allocation_id=str(allocation.id), user_id=str(user.id)
+                allocation=allocation, user=user
             )
 
         allocationuser.usage_bytes = userdict["size_sum"]
