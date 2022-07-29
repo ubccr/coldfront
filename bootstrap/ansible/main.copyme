@@ -132,6 +132,6 @@ sentry_dsn: ""
 # TODO: Set this address to yours.
 # request_approval_cc_list: ['wfeinstein@lbl.gov']
 
+# Types of Ansible tasks to run by default.
 provisioning_tasks: true
 common_tasks: true
-
