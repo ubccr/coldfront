@@ -182,7 +182,6 @@
             content: ""
             force: no
             dest: "{{ log_path }}/{{ portal_log_file }}"
-            state: file
             mode: 0660
             owner: "{{ djangooperator }}"
             group: apache
@@ -192,7 +191,6 @@
             content: ""
             force: no
             dest: "{{ log_path }}/{{ api_log_file }}"
-            state: file
             mode: 0660
             owner: "{{ djangooperator }}"
             group: apache
@@ -358,7 +356,8 @@
       block:
         # Don't do anything as there aren't any development-specific tasks yet.
         - meta: noop
-      when: provisioning_tasks == true and deployment == "dev"
+      # Uncomment when tasks are added.
+      # when: provisioning_tasks == true and deployment == "dev"
       tags: provisioning
 
     # Non-provisioning tasks common to development and production.
