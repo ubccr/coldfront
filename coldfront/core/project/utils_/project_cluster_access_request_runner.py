@@ -30,12 +30,13 @@ class ProjectClusterAccessRequestRunner(object):
         assert (
             project_user_obj.status ==
             ProjectUserStatusChoice.objects.get(name='Active'))
-        self.project_user_obj = project_user_obj
-        self.project_obj = self.project_user_obj.project
-        self.user_obj = self.project_user_obj.user
-        self.allocation_obj = get_project_compute_allocation(self.project_obj)
-        self.allocation_user_obj = None
-        self.allocation_user_attribute_obj = None
+        self._project_user_obj = project_user_obj
+        self._project_obj = self._project_user_obj.project
+        self._user_obj = self._project_user_obj.user
+        self._allocation_obj = get_project_compute_allocation(
+            self._project_obj)
+        self._allocation_user_obj = None
+        self._allocation_user_attribute_obj = None
         self._allocation_attribute_type = AllocationAttributeType.objects.get(
             name='Cluster Account Status')
 
@@ -60,25 +61,25 @@ class ProjectClusterAccessRequestRunner(object):
     def _create_cluster_access_request(self):
         """Create a ClusterAccessRequest with status 'Pending - Add'."""
         request = ClusterAccessRequest.objects.create(
-            allocation_user=self.allocation_user_obj,
+            allocation_user=self._allocation_user_obj,
             status=ClusterAccessRequestStatusChoice.objects.get(
                 name='Pending - Add'),
             request_time=utc_now_offset_aware(),
-            host_user=self.user_obj.userprofile.host_user,
-            billing_activity=self.user_obj.userprofile.billing_activity)
+            host_user=self._user_obj.userprofile.host_user,
+            billing_activity=self._user_obj.userprofile.billing_activity)
         message = (
             f'Created a ClusterAccessRequest {request.pk} for user '
-            f'{self.user_obj.pk} and Project {self.project_obj.pk}.')
+            f'{self._user_obj.pk} and Project {self._project_obj.pk}.')
         self._success_messages.append(message)
 
     def _create_or_update_allocation_user(self):
         """Create an AllocationUser between the Allocation and User if
         one does not exist. Set its status to 'Active'."""
-        self.allocation_user_obj = get_or_create_active_allocation_user(
-            self.allocation_obj, self.user_obj)
+        self._allocation_user_obj = get_or_create_active_allocation_user(
+            self._allocation_obj, self._user_obj)
         message = (
-            f'Created or updated AllocationUser {self.allocation_user_obj.pk} '
-            f'and set it to active.')
+            f'Created or updated AllocationUser '
+            f'{self._allocation_user_obj.pk} and set it to active.')
         self._success_messages.append(message)
 
     def _create_pending_allocation_user_attribute(self):
@@ -87,13 +88,13 @@ class ProjectClusterAccessRequestRunner(object):
         'Pending - Add'."""
         type_name = self._allocation_attribute_type.name
         value = 'Pending - Add'
-        self.allocation_user_attribute_obj = \
+        self._allocation_user_attribute_obj = \
             set_allocation_user_attribute_value(
-                self.allocation_user_obj, type_name, value)
+                self._allocation_user_obj, type_name, value)
         message = (
             f'Created or updated a AllocationUserAttribute of type '
-            f'"{type_name}" to have value {value} for User {self.user_obj.pk} '
-            f'and Project {self.project_obj.pk}.')
+            f'"{type_name}" to have value {value} for User '
+            f'{self._user_obj.pk} and Project {self._project_obj.pk}.')
         self._success_messages.append(message)
 
     def _log_success_messages(self):
@@ -119,7 +120,7 @@ class ProjectClusterAccessRequestRunner(object):
         """Email cluster administrators, notifying them of the new
         request."""
         email_method = send_new_cluster_access_request_notification_email
-        email_args = (self.project_obj, self.project_user_obj)
+        email_args = (self._project_obj, self._project_user_obj)
         self._email_strategy.process_email(email_method, *email_args)
 
     def _send_emails_safe(self):
@@ -140,10 +141,10 @@ class ProjectClusterAccessRequestRunner(object):
         """Assert that the User does not already have pending or active
         access to the Project on the cluster."""
         has_pending_or_active_status = \
-            self.allocation_user_obj.allocationuserattribute_set.filter(
+            self._allocation_user_obj.allocationuserattribute_set.filter(
                 allocation_attribute_type=self._allocation_attribute_type,
                 value__in=['Pending - Add', 'Processing', 'Active']).exists()
         message = (
-            f'User {self.user_obj.username} already has pending or active '
-            f'access to the cluster under Project {self.project_obj.name}.')
+            f'User {self._user_obj.username} already has pending or active '
+            f'access to the cluster under Project {self._project_obj.name}.')
         assert not has_pending_or_active_status, message
