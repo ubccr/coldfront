@@ -246,10 +246,10 @@ class Allocation(TimeStampedModel):
         found for this allocation with the specified name.
 
         If expand is True (the default), we will return the result of the
-        expanded_value() method for each attribute, which will expand 
-        attributes/parameters in the attribute value for attributes with a base 
-        type of 'Attribute Expanded Text'.  If the attribute is not of that 
-        type, or expand is false, returns the value attribute/data member (i.e. 
+        expanded_value() method for each attribute, which will expand
+        attributes/parameters in the attribute value for attributes with a base
+        type of 'Attribute Expanded Text'.  If the attribute is not of that
+        type, or expand is false, returns the value attribute/data member (i.e.
         the raw, unexpanded value).
 
         Extra_allocations is a list of Allocations which, if expand is True,
@@ -376,19 +376,18 @@ class AllocationAttribute(TimeStampedModel):
         atype_name = self.allocation_attribute_type.attribute_type.name
         return attribute_expansion.convert_type(
             value=raw_value, type_name=atype_name)
-                
-    
+
+
     def expanded_value(self, extra_allocations=[], typed=True):
         """Returns the value of the attribute, after attribute expansion.
 
-        For attributes with attribute type of  'Attribute Expanded Text' we
+        For attributes with attribute type of 'Attribute Expanded Text' we
         look for an attribute with same name suffixed with '_attriblist' (this
         should be either an AllocationAttribute of the Allocation associated
-        with this attribute  or a ResourceAttribute of a Resource of the 
-        Allocation associated with this AllocationAttribute).  
-        If the attriblist attribute is found, we use
-        it to generate a dictionary to use to expand the attribute value,
-        and the expanded value is returned.  
+        with this attribute or a ResourceAttribute of a Resource of the
+        Allocation associated with this AllocationAttribute).
+        If the attriblist attribute is found, we use it to generate a dictionary
+        to use to expand the attribute value and the expanded value is returned.
         If extra_allocations is given, it should be a list of Allocations and
         the attriblist can reference attributes for allocations in the
         extra_allocations list (as well as in the Allocation associated with
@@ -434,7 +433,7 @@ class AllocationAttribute(TimeStampedModel):
             allocations = allocs)
         return expanded
 
-            
+
 
 class AllocationAttributeUsage(TimeStampedModel):
     """ AllocationAttributeUsage. """

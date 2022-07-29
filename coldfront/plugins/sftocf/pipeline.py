@@ -2,7 +2,6 @@ import os
 import re
 import json
 import time
-import timeit
 import logging
 import requests
 from pathlib import Path
@@ -11,12 +10,10 @@ from datetime import datetime, timedelta
 from django.utils import timezone
 from ifxuser.models import IfxUser, Organization
 from django.contrib.auth import get_user_model
-from dateutil.relativedelta import relativedelta
 from ifxbilling.models import Account, BillingRecord, ProductUsage
 
 from coldfront.core.utils.common import import_from_settings
-from coldfront.core.project.models import Project, ProjectUser
-from coldfront.core.resource.models import Resource
+from coldfront.core.project.models import Project
 from coldfront.core.allocation.models import Allocation, AllocationUser, AllocationAttribute, AllocationUserStatusChoice
 
 datestr = datetime.today().strftime("%Y%m%d")
@@ -71,7 +68,6 @@ class StarFishServer:
     def get_volume_names(self):
         """ Generate a list of the volumes available on the server.
         """
-        vols_paths = {}
         stor_url = self.api_url + "storage/"
         response = return_get_json(stor_url, self.headers)
         volnames = [i["name"] for i in response["items"]]
@@ -166,8 +162,7 @@ class StarFishQuery:
             if response["is_done"] == True:
                 result = self.return_query_result()
                 return result
-            else:
-                time.sleep(sec)
+            time.sleep(sec)
 
     def return_query_result(self):
         query_result_url = self.api_url + "async/query_result/" + self.query_id
@@ -186,16 +181,15 @@ class ColdFrontDB:
             Structured as follows:
             "lab_name": [("volume", "tier"),("volume", "tier")]
         """
-        pr_objs = Allocation.objects.only("id", "project_id")
+        pr_objs = Allocation.objects.only("id", "project")
         pr_dict = {}
-        for o in pr_objs:
-            proj = Project.objects.get(id=o.project_id)
-            o_name = proj.title
-            resource_list = o.get_resources_as_string.split(', ')
-            if o_name not in pr_dict:
-                pr_dict[o_name] = resource_list
+        for alloc in pr_objs:
+            proj_name = alloc.project.title
+            resource_list = alloc.get_resources_as_string.split(', ')
+            if proj_name not in pr_dict:
+                pr_dict[proj_name] = resource_list
             else:
-                pr_dict[o_name].extend(resource_list)
+                pr_dict[proj_name].extend(resource_list)
         lr = pr_dict if not vol else {p:[i for i in r if vol in i] for p, r in pr_dict.items()}
         labs_resources = {p:[tuple(rs.split("/")) for rs in r] for p, r in lr.items()}
         logger.debug(f"labs_resources:\n{labs_resources}")
@@ -297,7 +291,7 @@ class ColdFrontDB:
             logger.debug(f"{project.title}\n usernames: {usernames}\n user_models: {[u.username for u in user_models]}")
 
             for user in user_models:
-                userdict = [d for d in content['contents'] if d["username"] == user.username][0]
+                userdict = next(d for d in content['contents'] if d["username"] == user.username)
                 model = user_models.get(username=userdict["username"])
                 try:
                     self.update_usage(model, userdict, allocation)
@@ -352,13 +346,12 @@ def clean_data_dir(homepath):
 def write_update_file_line(filepath, patterns):
     with open(filepath, 'a+') as f:
         f.seek(0)
-        lines = f.readlines()
         for pattern in patterns:
             if not any(pattern == line.rstrip('\r\n') for line in f):
                 f.write(pattern + '\n')
 
 def split_num_string(x):
-    n = re.search("\d*\.?\d+", x).group()
+    n = re.search(r"\d*\.?\d+", x).group()
     s = x.replace(n, "")
     return n, s
 
@@ -371,9 +364,9 @@ def save_json(file, contents):
         json.dump(contents, fp, sort_keys=True, indent=4)
 
 def read_json(filepath):
-    logger.debug("read_json for {}".format(filepath))
-    with open(filepath, "r") as myfile:
-        data = json.loads(myfile.read())
+    logger.debug(f"read_json for {filepath}")
+    with open(filepath, "r") as json_file:
+        data = json.loads(json_file.read())
     return data
 
 def locate_or_create_dirpath(dpath):
