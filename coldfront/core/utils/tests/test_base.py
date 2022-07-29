@@ -1,6 +1,7 @@
 from copy import deepcopy
 from http import HTTPStatus
 from io import StringIO
+import contextlib
 import os
 import sys
 
@@ -12,7 +13,9 @@ from django.test import Client
 from django.test import override_settings
 from django.test import TestCase
 
+from flags.state import disable_flag
 from flags.state import enable_flag
+from flags.state import flag_enabled
 
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectStatusChoice
@@ -140,3 +143,42 @@ class TestBase(TestCase):
         user_profile = user.userprofile
         user_profile.access_agreement_signed_date = utc_now_offset_aware()
         user_profile.save()
+
+
+@contextlib.contextmanager
+def enable_deployment(deployment_name):
+    """Enable the deployment with the given name and disable the other
+    within a context manager. Revert to the previous states when
+    done."""
+    assert deployment_name in ('BRC', 'LRC')
+    if deployment_name == 'BRC':
+        flag_to_enable = 'BRC_ONLY'
+        flag_to_disable = 'LRC_ONLY'
+    else:
+        flag_to_enable = 'LRC_ONLY'
+        flag_to_disable = 'BRC_ONLY'
+
+    pre_states = {
+        flag_name: flag_enabled(flag_name) or False
+        for flag_name in ('BRC_ONLY', 'LRC_ONLY')}
+
+    flags_copy = deepcopy(settings.FLAGS)
+    flags_copy[flag_to_enable] = {'condition': 'boolean', 'value': True}
+    flags_copy[flag_to_disable] = {'condition': 'boolean', 'value': False}
+
+    with override_settings(FLAGS=flags_copy) as cm:
+        try:
+            enable_flag(flag_to_enable)
+            disable_flag(flag_to_disable)
+            assert flag_enabled(flag_to_enable)
+            assert not flag_enabled(flag_to_disable)
+            yield [cm]
+        finally:
+            for flag_name, pre_state in pre_states.items():
+                if pre_state:
+                    enable_flag(flag_name)
+                else:
+                    disable_flag(flag_name)
+
+    for flag_name in pre_states:
+        assert flag_enabled(flag_name) == pre_states[flag_name]
