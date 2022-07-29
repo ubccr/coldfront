@@ -14,8 +14,8 @@ from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.models import VectorProjectAllocationRequest
 from coldfront.core.project.signals import new_project_request_denied
-from coldfront.core.project.utils import ProjectClusterAccessRequestRunner
 from coldfront.core.project.utils import send_added_to_project_notification_email
+rom coldfront.core.project.utils_.project_cluster_access_request_runner import ProjectClusterAccessRequestRunner
 from coldfront.core.resource.models import Resource
 from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface

@@ -58,7 +58,7 @@ from coldfront.core.allocation.utils import (generate_guauge_data_from_usage,
 from coldfront.core.billing.models import BillingActivity
 from coldfront.core.project.models import (Project, ProjectUser,
                                            ProjectUserStatusChoice)
-from coldfront.core.project.utils import ProjectClusterAccessRequestRunner
+from coldfront.core.project.utils_.project_cluster_access_request_runner import ProjectClusterAccessRequestRunner
 from coldfront.core.allocation.utils_.cluster_access_utils import \
     ClusterAccessRequestCompleteRunner, \
     ClusterAccessRequestDenialRunner

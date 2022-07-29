@@ -27,6 +27,7 @@ from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.utils import send_project_join_request_denial_email
 from coldfront.core.project.utils_.new_project_user_utils import NewProjectUserRunnerFactory
 from coldfront.core.project.utils_.new_project_user_utils import NewProjectUserSource
+from coldfront.core.utils.email.email_strategy import EnqueueEmailStrategy
 
 
 logger = logging.getLogger(__name__)
@@ -114,6 +115,7 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
         num_reviews = 0
         failed_usernames = []
         for form in formset:
+            num_reviews += 1
             user_form_data = form.cleaned_data
             if not user_form_data['selected']:
                 continue
@@ -127,8 +129,6 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
             except Exception as e:
                 logger.exception(e)
                 failed_usernames.append(username)
-            else:
-                num_reviews += 1
 
         num_failures = len(failed_usernames)
         num_successes = num_reviews - num_failures
@@ -206,22 +206,21 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
                                       project_user_status_choice):
         """Given a ProjectUser, set its status to the given one, and run
         any additional processing."""
+        email_strategy = EnqueueEmailStrategy()
         with transaction.atomic():
             project_user_obj.status = project_user_status_choice
             project_user_obj.save()
             if project_user_status_choice.name == 'Active':
                 runner_factory = NewProjectUserRunnerFactory()
                 runner = runner_factory.get_runner(
-                    project_user_obj, NewProjectUserSource.JOINED)
+                    project_user_obj, NewProjectUserSource.JOINED,
+                    email_strategy=email_strategy)
                 runner.run()
             else:
-                try:
-                    send_project_join_request_denial_email(
-                        project_user_obj.project, project_user_obj)
-                except Exception as e:
-                    message = (
-                        f'Failed to send notification email. Details:\n{e}')
-                    logger.exception(message)
+                email_method = send_project_join_request_denial_email
+                email_args = (project_user_obj.project, project_user_obj)
+                email_strategy.process_email(email_method, *email_args)
+        email_strategy.send_queued_emails()
 
 
 class ProjectJoinRequestListView(LoginRequiredMixin, UserPassesTestMixin,

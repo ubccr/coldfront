@@ -1,5 +1,6 @@
 from abc import ABC
 from abc import abstractmethod
+from collections import deque
 from enum import Enum
 import logging
 
@@ -11,14 +12,16 @@ from flags.state import flag_enabled
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserJoinRequest
 from coldfront.core.project.models import ProjectUserStatusChoice
-from coldfront.core.project.utils import ProjectClusterAccessRequestRunner
 from coldfront.core.project.utils import send_added_to_project_notification_email
 from coldfront.core.project.utils import send_project_join_request_approval_email
 from coldfront.core.project.utils_.new_project_utils import add_vector_user_to_designated_savio_project
+from coldfront.core.project.utils_.project_cluster_access_request_runner import ProjectClusterAccessRequestRunner
 from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.user.utils import eligible_host_project_users
 from coldfront.core.user.utils import needs_host
+from coldfront.core.utils.email.email_strategy import EmailStrategy
+from coldfront.core.utils.email.email_strategy import SendEmailStrategy
 
 
 logger = logging.getLogger(__name__)
@@ -39,7 +42,7 @@ class NewProjectUserRunner(ABC):
     newly-associated with a Project."""
 
     @abstractmethod
-    def __init__(self, project_user_obj, source):
+    def __init__(self, project_user_obj, source, email_strategy=None):
         """Validate inputs."""
         assert isinstance(project_user_obj, ProjectUser)
         assert (
@@ -51,20 +54,26 @@ class NewProjectUserRunner(ABC):
         self._project_obj = self._project_user_obj.project
         self._user_obj = self._project_user_obj.user
 
-    def run(self, send_emails=True):
+        if email_strategy is not None:
+            assert isinstance(email_strategy, EmailStrategy)
+            self._email_strategy = email_strategy
+        else:
+            self._email_strategy = SendEmailStrategy()
+
+    def run(self):
         """Request cluster access, run extra processing steps as needed,
         and send notification emails."""
         with transaction.atomic():
             self._request_cluster_access()
             self._run_extra_steps()
-        if send_emails:
-            self._send_emails_safe()
+        self._send_emails_safe()
 
     def _request_cluster_access(self):
         """Request that the User be granted access to the cluster under
         the Project."""
         project_cluster_access_request_runner = \
-            ProjectClusterAccessRequestRunner(self._project_user_obj)
+            ProjectClusterAccessRequestRunner(
+                self._project_user_obj, email_strategy=self._email_strategy)
         project_cluster_access_request_runner.run()
 
     def _run_extra_steps(self):
@@ -73,19 +82,18 @@ class NewProjectUserRunner(ABC):
 
     def _send_emails(self):
         """Send the appropriate email to the new user."""
-        args = (self._project_obj, self._project_user_obj)
         if self._source == NewProjectUserSource.ADDED:
-            send_added_to_project_notification_email(*args)
+            email_method = send_added_to_project_notification_email
         else:
-            send_project_join_request_approval_email(*args)
+            email_method = send_project_join_request_approval_email
+        email_args = (self._project_obj, self._project_user_obj)
+        self._email_strategy.process_email(email_method, *email_args)
 
     def _send_emails_safe(self):
         """Send emails.
 
         Catch all exceptions to prevent rolling back any enclosing
         transaction.
-
-        If send failures occur, store a warning message.
         """
         try:
             self._send_emails()

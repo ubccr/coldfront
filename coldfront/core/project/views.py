@@ -52,6 +52,7 @@ from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import access_agreement_signed
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.utils.common import (get_domain_url, import_from_settings)
+from coldfront.core.utils.email.email_strategy import EnqueueEmailStrategy
 from coldfront.core.utils.mail import send_email, send_email_template
 
 from flags.state import flag_enabled
@@ -892,6 +893,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             4. Run additional processing.
         Return whether processing succeeded."""
         try:
+            email_strategy = EnqueueEmailStrategy()
             with transaction.atomic():
                 user_obj = self._update_or_create_user(user_form_data)
 
@@ -906,8 +908,10 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
                 runner_factory = NewProjectUserRunnerFactory()
                 new_project_user_runner = runner_factory.get_runner(
-                    project_user_obj, NewProjectUserSource.ADDED)
+                    project_user_obj, NewProjectUserSource.ADDED,
+                    email_strategy=email_strategy)
                 new_project_user_runner.run()
+            email_strategy.send_queued_emails()
         except Exception as e:
             # TODO
             return False
