@@ -1,4 +1,5 @@
 from abc import ABC
+from abc import abstractmethod
 from enum import Enum
 import logging
 
@@ -37,6 +38,7 @@ class NewProjectUserRunner(ABC):
     """An abstract class that performs processing when a User is
     newly-associated with a Project."""
 
+    @abstractmethod
     def __init__(self, project_user_obj, source):
         """Validate inputs."""
         assert isinstance(project_user_obj, ProjectUser)
@@ -99,6 +101,9 @@ class BRCNewProjectUserRunner(NewProjectUserRunner):
     newly-associated with a Project, including additional BRC-specific
     handling."""
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
     def _run_extra_steps(self):
         """Run extra processing steps.
             1. For Vector projects, add the user to a designated project
@@ -117,6 +122,9 @@ class LRCNewProjectUserRunner(NewProjectUserRunner):
     """A concrete class that performs processing when a User is
     newly-associated with a Project, including additional LRC-specific
     handling."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     def _run_extra_steps(self):
         """Run extra processing steps.
