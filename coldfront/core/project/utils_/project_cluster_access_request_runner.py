@@ -53,10 +53,22 @@ class ProjectClusterAccessRequestRunner(object):
         """Perform checks and updates."""
         with transaction.atomic():
             self._create_or_update_allocation_user()
-            self._validate_no_existing_cluster_access()
+            self._assert_no_existing_cluster_access()
             self._request_cluster_access()
         self._log_success_messages()
         self._send_emails_safe()
+
+    def _assert_no_existing_cluster_access(self):
+        """Assert that the User does not already have pending or active
+        access to the Project on the cluster."""
+        has_pending_or_active_status = \
+            self._allocation_user_obj.allocationuserattribute_set.filter(
+                allocation_attribute_type=self._allocation_attribute_type,
+                value__in=['Pending - Add', 'Processing', 'Active']).exists()
+        message = (
+            f'User {self._user_obj.username} already has pending or active '
+            f'access to the cluster under Project {self._project_obj.name}.')
+        assert not has_pending_or_active_status, message
 
     def _create_cluster_access_request(self):
         """Create a ClusterAccessRequest with status 'Pending - Add'."""
@@ -136,15 +148,3 @@ class ProjectClusterAccessRequestRunner(object):
                 f'Encountered unexpected exception when sending notification '
                 f'emails. Details: \n{e}')
             logger.exception(message)
-
-    def _validate_no_existing_cluster_access(self):
-        """Assert that the User does not already have pending or active
-        access to the Project on the cluster."""
-        has_pending_or_active_status = \
-            self._allocation_user_obj.allocationuserattribute_set.filter(
-                allocation_attribute_type=self._allocation_attribute_type,
-                value__in=['Pending - Add', 'Processing', 'Active']).exists()
-        message = (
-            f'User {self._user_obj.username} already has pending or active '
-            f'access to the cluster under Project {self._project_obj.name}.')
-        assert not has_pending_or_active_status, message
