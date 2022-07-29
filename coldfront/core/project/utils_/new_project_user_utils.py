@@ -1,6 +1,5 @@
 from abc import ABC
 from abc import abstractmethod
-from collections import deque
 from enum import Enum
 import logging
 

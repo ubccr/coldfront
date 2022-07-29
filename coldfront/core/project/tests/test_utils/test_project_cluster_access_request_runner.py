@@ -29,13 +29,13 @@ class TestProjectClusterAccessRequestRunner(TestBase):
         self.create_test_user()
         self.sign_user_access_agreement(self.user)
 
-        # Create a Project with a computing allowance.
+        # Create a Project with a computing allowance, along with an 'Active'
+        # ProjectUser.
         self.project = self.create_active_project_with_pi(
             'fc_project', self.user)
         accounting_allocation_objects = create_project_allocation(
             self.project, Decimal('0.00'))
         self.allocation = accounting_allocation_objects.allocation
-
         self.project_user = self.project.projectuser_set.get(user=self.user)
 
     def _assert_post_state(self):
