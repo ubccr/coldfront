@@ -1,7 +1,6 @@
 from copy import deepcopy
 from http import HTTPStatus
 from io import StringIO
-import contextlib
 import os
 import sys
 
@@ -12,6 +11,7 @@ from django.core.management import call_command
 from django.test import Client
 from django.test import override_settings
 from django.test import TestCase
+from django.test.utils import TestContextDecorator
 
 from flags.state import disable_flag
 from flags.state import enable_flag
@@ -145,40 +145,56 @@ class TestBase(TestCase):
         user_profile.save()
 
 
-@contextlib.contextmanager
-def enable_deployment(deployment_name):
-    """Enable the deployment with the given name and disable the other
-    within a context manager. Revert to the previous states when
-    done."""
-    assert deployment_name in ('BRC', 'LRC')
-    if deployment_name == 'BRC':
-        flag_to_enable = 'BRC_ONLY'
-        flag_to_disable = 'LRC_ONLY'
-    else:
-        flag_to_enable = 'LRC_ONLY'
-        flag_to_disable = 'BRC_ONLY'
+class enable_deployment(TestContextDecorator):
+    """A class that enables the deployment with the given name and
+    disables the other, and then reverts to the previous states when
+    done. It may be used as a context manager or as a decorator.
 
-    pre_states = {
-        flag_name: flag_enabled(flag_name) or False
-        for flag_name in ('BRC_ONLY', 'LRC_ONLY')}
+    Modeled after django.test.utils.override_settings.
+    """
 
-    flags_copy = deepcopy(settings.FLAGS)
-    flags_copy[flag_to_enable] = {'condition': 'boolean', 'value': True}
-    flags_copy[flag_to_disable] = {'condition': 'boolean', 'value': False}
+    def __init__(self, deployment_name):
+        assert deployment_name in ('BRC', 'LRC')
+        self._deployment_name = deployment_name
+        super().__init__()
 
-    with override_settings(FLAGS=flags_copy) as cm:
-        try:
-            enable_flag(flag_to_enable)
-            disable_flag(flag_to_disable)
-            assert flag_enabled(flag_to_enable)
-            assert not flag_enabled(flag_to_disable)
-            yield [cm]
-        finally:
-            for flag_name, pre_state in pre_states.items():
-                if pre_state:
-                    enable_flag(flag_name)
-                else:
-                    disable_flag(flag_name)
+        if self._deployment_name == 'BRC':
+            self._flag_to_enable = 'BRC_ONLY'
+            self._flag_to_disable = 'LRC_ONLY'
+        else:
+            self._flag_to_enable = 'LRC_ONLY'
+            self._flag_to_disable = 'BRC_ONLY'
 
-    for flag_name in pre_states:
-        assert flag_enabled(flag_name) == pre_states[flag_name]
+        self._pre_states = {
+            flag_name: flag_enabled(flag_name) or False
+            for flag_name in ('BRC_ONLY', 'LRC_ONLY')}
+
+        self._override_settings_cm = None
+
+    def enable(self):
+        flags_copy = deepcopy(settings.FLAGS)
+        flags_copy[self._flag_to_enable] = {
+            'condition': 'boolean', 'value': True}
+        flags_copy[self._flag_to_disable] = {
+            'condition': 'boolean', 'value': False}
+
+        self._override_settings_cm = override_settings(FLAGS=flags_copy)
+        self._override_settings_cm.__enter__()
+
+        enable_flag(self._flag_to_enable)
+        disable_flag(self._flag_to_disable)
+        assert flag_enabled(self._flag_to_enable)
+        assert not flag_enabled(self._flag_to_disable)
+
+    def disable(self):
+        for flag_name, pre_state in self._pre_states.items():
+            if pre_state:
+                enable_flag(flag_name)
+            else:
+                disable_flag(flag_name)
+
+        if self._override_settings_cm is not None:
+            self._override_settings_cm.__exit__(None, None, None)
+
+        for flag_name in self._pre_states:
+            assert flag_enabled(flag_name) == self._pre_states[flag_name]
