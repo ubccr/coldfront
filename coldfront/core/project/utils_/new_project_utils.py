@@ -33,6 +33,7 @@ from collections import namedtuple
 from decimal import Decimal
 
 from django.conf import settings
+from django.db import transaction
 from django.db.models import Q
 from django.urls import reverse
 
@@ -50,6 +51,8 @@ def add_vector_user_to_designated_savio_project(user_obj):
 
     This is intended for use after the user's request has been approved
     and the user has been successfully added to a Vector project."""
+    # TODO: Eventually, this method should be incorporated into
+    # TODO: new_project_user_utils and use the latter's methods.
     project_name = settings.SAVIO_PROJECT_FOR_VECTOR_USERS
     project_obj = Project.objects.get(name=project_name)
 
@@ -61,16 +64,22 @@ def add_vector_user_to_designated_savio_project(user_obj):
         'status': active_status,
         'enable_notifications': False,
     }
-    project_user_obj, created = ProjectUser.objects.get_or_create(
-        project=project_obj, user=user_obj, defaults=defaults)
-    if created:
-        message = (
-            f'Created ProjectUser {project_user_obj.pk} between Project '
-            f'{project_obj.pk} and User {user_obj.pk}.')
-        logger.info(message)
-    else:
-        project_user_obj.status = active_status
-        project_user_obj.save()
+
+    with transaction.atomic():
+        project_user_obj, created = ProjectUser.objects.get_or_create(
+            project=project_obj, user=user_obj, defaults=defaults)
+        if created:
+            message = (
+                f'Created ProjectUser {project_user_obj.pk} between Project '
+                f'{project_obj.pk} and User {user_obj.pk}.')
+            logger.info(message)
+        else:
+            project_user_obj.status = active_status
+            project_user_obj.save()
+
+        # Request cluster access for the user.
+        request_runner = ProjectClusterAccessRequestRunner(project_user_obj)
+        request_runner.run()
 
     # Send a notification email to the user if the user was not already a
     # member of the project.
@@ -82,10 +91,6 @@ def add_vector_user_to_designated_savio_project(user_obj):
             message = 'Failed to send notification email. Details:'
             logger.error(message)
             logger.exception(e)
-
-    # Request cluster access for the user.
-    request_runner = ProjectClusterAccessRequestRunner(project_user_obj)
-    request_runner.run()
 
 
 def non_denied_new_project_request_statuses():

@@ -59,6 +59,13 @@ class NewProjectUserRunner(ABC):
         else:
             self._email_strategy = SendEmailStrategy()
 
+        self._success_messages = []
+        self._warning_messages = []
+
+    def get_warning_messages(self):
+        """Return warning messages raised during the run."""
+        return self._warning_messages.copy()
+
     def run(self):
         """Request cluster access, run extra processing steps as needed,
         and send notification emails."""
@@ -114,10 +121,19 @@ class BRCNewProjectUserRunner(NewProjectUserRunner):
     def _run_extra_steps(self):
         """Run extra processing steps.
             1. For Vector projects, add the user to a designated project
-            on the primary cluster.
+               on the primary cluster. Allow this step to fail without
+               rolling back the transaction.
         """
         if self._is_vector_project():
-            add_vector_user_to_designated_savio_project(self._user_obj)
+            try:
+                add_vector_user_to_designated_savio_project(self._user_obj)
+            except Exception as e:
+                message = (
+                    f'Failed to automatically add User '
+                    f'{self._user_obj.username} to the designated Savio '
+                    f'project for Vector users.')
+                self._warning_messages.append(message)
+                logger.exception(message + f' Details:\n{e}')
 
     def _is_vector_project(self):
         """Return whether the Project is associated with the Vector
