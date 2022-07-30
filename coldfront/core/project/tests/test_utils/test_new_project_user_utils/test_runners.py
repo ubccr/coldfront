@@ -107,8 +107,9 @@ class TestCommonRunnerMixin(object):
         immediately)."""
         self.assertEqual(len(mail.outbox), 0)
 
-        runner = self._runner_factory.get_runner(
-            self.project_user, NewProjectUserSource.ADDED)
+        with enable_deployment(self._deployment_name):
+            runner = self._runner_factory.get_runner(
+                self.project_user, NewProjectUserSource.ADDED)
         runner.run()
 
         self.assertEqual(len(mail.outbox), 2)
@@ -128,9 +129,10 @@ class TestCommonRunnerMixin(object):
         self.assertEqual(len(mail.outbox), 0)
 
         email_strategy = EnqueueEmailStrategy()
-        runner = self._runner_factory.get_runner(
-            self.project_user, NewProjectUserSource.JOINED,
-            email_strategy=email_strategy)
+        with enable_deployment(self._deployment_name):
+            runner = self._runner_factory.get_runner(
+                self.project_user, NewProjectUserSource.JOINED,
+                email_strategy=email_strategy)
         runner.run()
 
         self.assertEqual(len(mail.outbox), 0)
@@ -158,13 +160,15 @@ class TestCommonRunnerMixin(object):
 
         args = (self.project_user, NewProjectUserSource.ADDED)
         email_strategy = EnqueueEmailStrategy()
-        _class = self._runner_factory.get_runner(*args).__class__
-        with patch.object(_class, '_run_extra_steps', raise_exception):
-            runner = self._runner_factory.get_runner(
-                *args, email_strategy=email_strategy)
-            with self.assertRaises(Exception) as cm:
-                runner.run()
-            self.assertEqual(str(cm.exception), 'Test exception.')
+
+        with enable_deployment(self._deployment_name):
+            _class = self._runner_factory.get_runner(*args).__class__
+            with patch.object(_class, '_run_extra_steps', raise_exception):
+                runner = self._runner_factory.get_runner(
+                    *args, email_strategy=email_strategy)
+                with self.assertRaises(Exception) as cm:
+                    runner.run()
+                self.assertEqual(str(cm.exception), 'Test exception.')
 
         self._assert_pre_state()
 
@@ -178,7 +182,8 @@ class TestCommonRunnerMixin(object):
             email_method, send_new_cluster_access_request_notification_email)
 
         with patch.object(_class, '_run_extra_steps', raise_exception):
-            runner = self._runner_factory.get_runner(*args)
+            with enable_deployment(self._deployment_name):
+                runner = self._runner_factory.get_runner(*args)
             with self.assertRaises(Exception) as cm:
                 runner.run()
             self.assertEqual(str(cm.exception), 'Test exception.')
@@ -195,17 +200,24 @@ class TestCommonRunnerMixin(object):
         """Test that the runner performs expected processing."""
         self._assert_pre_state()
 
-        runner = self._runner_factory.get_runner(
-            self.project_user, NewProjectUserSource.ADDED)
+        with enable_deployment(self._deployment_name):
+            runner = self._runner_factory.get_runner(
+                self.project_user, NewProjectUserSource.ADDED)
         runner.run()
 
         self._assert_post_state()
 
 
-@enable_deployment('BRC')
 class TestBRCNewProjectUserRunner(TestCommonRunnerMixin, TestRunnerBase):
     """A class for testing BRCNewProjectUserRunner."""
 
+    @enable_deployment('BRC')
+    def setUp(self):
+        """Set up test data."""
+        super().setUp()
+        self._deployment_name = 'BRC'
+
+    @enable_deployment('BRC')
     def test_add_vector_user_to_designated_savio_project_failure(self):
         """Test that, if adding a Vector user to the designated Savio
         project on Savio fails, the already-made changes are not rolled
@@ -254,6 +266,7 @@ class TestBRCNewProjectUserRunner(TestCommonRunnerMixin, TestRunnerBase):
 
         self.assertEqual(len(mail.outbox), 2)
 
+    @enable_deployment('BRC')
     def test_add_vector_user_to_designated_savio_project_success(self):
         """Test that, for a Vector project, the user is also added to
         the designated project on Savio."""
@@ -305,6 +318,7 @@ class TestLRCNewProjectUserRunner(TestCommonRunnerMixin, TestRunnerBase):
     def setUp(self):
         """Set up test data."""
         super().setUp()
+        self._deployment_name = 'LRC'
         # Create another PI.
         self.pi = User.objects.create(username='pi0', email='pi0@lbl.gov')
         user_profile = UserProfile.objects.get(user=self.pi)
@@ -317,6 +331,7 @@ class TestLRCNewProjectUserRunner(TestCommonRunnerMixin, TestRunnerBase):
                 name='Principal Investigator'),
             status=ProjectUserStatusChoice.objects.get(name='Active'))
 
+    @enable_deployment('LRC')
     def test_set_host_user_failure(self):
         """Test that, if a host user could cannot be determined, the
         runner raises an exception and rolls back changes made so
@@ -351,6 +366,7 @@ class TestLRCNewProjectUserRunner(TestCommonRunnerMixin, TestRunnerBase):
         queue = email_strategy.get_queue()
         self.assertEqual(len(queue), 1)
 
+    @enable_deployment('LRC')
     def test_set_host_user_from_add_success(self):
         """Test that the runner sets the host user when the user was
         added to the Project."""
@@ -368,6 +384,7 @@ class TestLRCNewProjectUserRunner(TestCommonRunnerMixin, TestRunnerBase):
 
         self._assert_post_state()
 
+    @enable_deployment('LRC')
     def test_set_host_user_from_join_success(self):
         """Test that the runner sets the host user when the user joined
         the Project."""
