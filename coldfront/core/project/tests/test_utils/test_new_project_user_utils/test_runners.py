@@ -8,12 +8,16 @@ from django.core import mail
 from coldfront.api.statistics.utils import create_project_allocation
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import ClusterAccessRequest
+from coldfront.core.project.models import ProjectUser
+from coldfront.core.project.models import ProjectUserRoleChoice
+from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.utils import send_new_cluster_access_request_notification_email
 from coldfront.core.project.utils_.new_project_user_utils import BRCNewProjectUserRunner
 from coldfront.core.project.utils_.new_project_user_utils import LRCNewProjectUserRunner
 from coldfront.core.project.utils_.new_project_user_utils import NewProjectUserRunner
 from coldfront.core.project.utils_.new_project_user_utils import NewProjectUserRunnerFactory
 from coldfront.core.project.utils_.new_project_user_utils import NewProjectUserSource
+from coldfront.core.project.models import ProjectUserJoinRequest
 from coldfront.core.resource.models import Resource
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.email.email_strategy import EnqueueEmailStrategy
@@ -202,21 +206,6 @@ class TestCommonRunnerMixin(object):
 class TestBRCNewProjectUserRunner(TestCommonRunnerMixin, TestRunnerBase):
     """A class for testing BRCNewProjectUserRunner."""
 
-    def setUp(self):
-        """Set up test data."""
-        super().setUp()
-
-    def _assert_post_state(self):
-        """Assert that the relevant objects have the expected state,
-        assuming that the runner has run successfully."""
-        super()._assert_post_state()
-
-    def _assert_pre_state(self):
-        """Assert that the relevant objects have the expected state,
-        assuming that the runner has either not run or not run
-        successfully."""
-        super()._assert_pre_state()
-
     def test_add_vector_user_to_designated_savio_project_failure(self):
         """Test that, if adding a Vector user to the designated Savio
         project on Savio fails, the already-made changes are not rolled
@@ -309,8 +298,92 @@ class TestBRCNewProjectUserRunner(TestCommonRunnerMixin, TestRunnerBase):
         self.assertEqual(len(mail.outbox), 4)
 
 
-@enable_deployment('LRC')
 class TestLRCNewProjectUserRunner(TestCommonRunnerMixin, TestRunnerBase):
     """A class for testing LRCNewProjectUserRunner."""
 
-    pass
+    @enable_deployment('LRC')
+    def setUp(self):
+        """Set up test data."""
+        super().setUp()
+        # Create another PI.
+        self.pi = User.objects.create(username='pi0', email='pi0@lbl.gov')
+        user_profile = UserProfile.objects.get(user=self.pi)
+        user_profile.is_pi = True
+        user_profile.save()
+        ProjectUser.objects.create(
+            project=self.project,
+            user=self.pi,
+            role=ProjectUserRoleChoice.objects.get(
+                name='Principal Investigator'),
+            status=ProjectUserStatusChoice.objects.get(name='Active'))
+
+    def test_set_host_user_failure(self):
+        """Test that, if a host user could cannot be determined, the
+        runner raises an exception and rolls back changes made so
+        far."""
+        # For adds (and joins missing a request), the runner attempts to
+        # select an eligible host from the PIs of the Project. Alter the
+        # would-be host so that it is no longer eligible.
+        self.pi.email = 'pi0@email.com'
+        self.pi.save()
+
+        self.assertEqual(len(mail.outbox), 0)
+
+        self._assert_pre_state()
+
+        user_profile = self.user.userprofile
+        self.assertIsNone(user_profile.host_user)
+
+        email_strategy = EnqueueEmailStrategy()
+        runner = self._runner_factory.get_runner(
+            self.project_user, NewProjectUserSource.ADDED,
+            email_strategy=email_strategy)
+        with self.assertRaises(Exception) as cm:
+            runner.run()
+        self.assertIn('Failed to determine a host', str(cm.exception))
+
+        user_profile.refresh_from_db()
+        self.assertIsNone(user_profile.host_user)
+
+        self._assert_pre_state()
+
+        self.assertEqual(len(mail.outbox), 0)
+        queue = email_strategy.get_queue()
+        self.assertEqual(len(queue), 1)
+
+    def test_set_host_user_from_add_success(self):
+        """Test that the runner sets the host user when the user was
+        added to the Project."""
+        self._assert_pre_state()
+
+        user_profile = self.user.userprofile
+        self.assertIsNone(user_profile.host_user)
+
+        runner = self._runner_factory.get_runner(
+            self.project_user, NewProjectUserSource.ADDED)
+        runner.run()
+
+        user_profile.refresh_from_db()
+        self.assertEqual(user_profile.host_user, self.pi)
+
+        self._assert_post_state()
+
+    def test_set_host_user_from_join_success(self):
+        """Test that the runner sets the host user when the user joined
+        the Project."""
+        self._assert_pre_state()
+
+        user_profile = self.user.userprofile
+        self.assertIsNone(user_profile.host_user)
+
+        ProjectUserJoinRequest.objects.create(
+            project_user=self.project_user, host_user=self.pi)
+
+        runner = self._runner_factory.get_runner(
+            self.project_user, NewProjectUserSource.JOINED)
+        runner.run()
+
+        user_profile.refresh_from_db()
+        self.assertEqual(user_profile.host_user, self.pi)
+
+        self._assert_post_state()

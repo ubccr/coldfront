@@ -151,6 +151,9 @@ class enable_deployment(TestContextDecorator):
     done. It may be used as a context manager or as a decorator.
 
     Modeled after django.test.utils.override_settings.
+
+    WARNING: Decorating a class does not produce the expected results,
+    but decorating the setUp method of a TestCase does.
     """
 
     def __init__(self, deployment_name):
