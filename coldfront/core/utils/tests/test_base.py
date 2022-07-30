@@ -152,8 +152,7 @@ class enable_deployment(TestContextDecorator):
 
     Modeled after django.test.utils.override_settings.
 
-    WARNING: Decorating a class does not produce the expected results,
-    but decorating the setUp method of a TestCase does.
+    WARNING: Decorating a class does not produce the expected results.
     """
 
     def __init__(self, deployment_name):
