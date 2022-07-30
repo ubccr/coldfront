@@ -850,7 +850,8 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                             request, project_obj, user_form_data):
                         continue
                     success = self._process_user(
-                        project_obj, user_form_data, allocation_form_data,
+                        request, project_obj, user_form_data,
+                        allocation_form_data,
                         project_user_active_status_choice,
                         allocation_user_active_status_choice)
                     if success:
@@ -880,8 +881,8 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
         return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': pk}))
 
-    def _process_user(self, project_obj, user_form_data, allocation_form_data,
-                      project_user_status_choice,
+    def _process_user(self, request, project_obj, user_form_data,
+                      allocation_form_data, project_user_status_choice,
                       allocation_user_status_choice):
         """Given a Project and form data with user and allocation
         fields, perform processing. In particular:
@@ -891,7 +892,14 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             3. Update or create AllocationUsers, setting the status
                choice to the given one.
             4. Run additional processing.
-        Return whether processing succeeded."""
+
+        Return whether processing succeeded.
+
+        Only send emails if processing succeeded. Prevent email-sending
+        from raising an exception.
+
+        Include warning messages in the response.
+        """
         try:
             email_strategy = EnqueueEmailStrategy()
             with transaction.atomic():
@@ -911,10 +919,19 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                     project_user_obj, NewProjectUserSource.ADDED,
                     email_strategy=email_strategy)
                 new_project_user_runner.run()
-            email_strategy.send_queued_emails()
         except Exception as e:
-            # TODO
             return False
+
+        if new_project_user_runner is not None:
+            for message in new_project_user_runner.get_warning_messages():
+                messages.warning(request, message)
+
+        try:
+            if isinstance(email_strategy, EnqueueEmailStrategy):
+                email_strategy.send_queued_emails()
+        except Exception as e:
+            pass
+
         return True
 
     def _update_or_create_allocation_users(self, allocation_form_data,
