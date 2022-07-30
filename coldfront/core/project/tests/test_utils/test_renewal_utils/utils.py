@@ -156,9 +156,8 @@ class TestRunnerMixinBase(object):
                 project=project, user=self.requester)
             request_runner = ProjectClusterAccessRequestRunner(
                 project_user_obj)
-            runner_result = request_runner.run()
+            request_runner.run()
 
-            self.assertTrue(runner_result.success)
         # Clear the mail outbox.
         mail.outbox = []
 

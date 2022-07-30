@@ -1768,15 +1768,18 @@ class AllocationRequestClusterAccountView(LoginRequiredMixin,
             return redirect
 
         request_runner = ProjectClusterAccessRequestRunner(project_user_obj)
-        runner_result = request_runner.run()
-        if runner_result.success:
+        try:
+            request_runner.run()
+        except Exception as e:
+            message = (
+                'Unexpected failure. Please try again, or contact an '
+                'administrator if the problem persists.')
+            messages.error(self.request, message)
+        else:
             message = (
                 f'Created a cluster access request for User {user_obj.pk} '
                 f'under Project {project_obj.pk}.')
             messages.success(self.request, message)
-        else:
-            messages.error(self.request, runner_result.error_message)
-
         return redirect
 
 
