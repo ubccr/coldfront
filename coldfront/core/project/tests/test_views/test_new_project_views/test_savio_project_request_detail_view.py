@@ -1,8 +1,10 @@
 from coldfront.api.statistics.utils import create_project_allocation
-from coldfront.core.project.models import SavioProjectAllocationRequest
-from coldfront.core.project.tests.utils import create_fca_project_and_request
+from coldfront.core.project.tests.utils import create_project_and_request
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.project.utils_.renewal_utils import get_next_allowance_year_period
+from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import format_date_month_name_day_year
 from coldfront.core.utils.common import utc_now_offset_aware
@@ -25,11 +27,12 @@ class TestSavioProjectRequestDetailView(TestBase):
         self.client.login(username=self.user.username, password=self.password)
 
         # Create a Project and a corresponding new project request.
+        computing_allowance = self.get_fca_computing_allowance()
         allocation_period = get_current_allowance_year_period()
         self.project, self.new_project_request = \
-            create_fca_project_and_request(
-                'fc_project', 'New', allocation_period, self.user, self.user,
-                'Approved - Processing')
+            create_project_and_request(
+                'fc_project', 'New', computing_allowance, allocation_period,
+                self.user, self.user, 'Approved - Processing')
         # Create a 'CLUSTER_NAME Compute' Allocation for the Project.
         self.existing_service_units = Decimal('0.00')
         accounting_allocation_objects = create_project_allocation(
@@ -38,17 +41,19 @@ class TestSavioProjectRequestDetailView(TestBase):
         self.service_units_attribute = \
             accounting_allocation_objects.allocation_attribute
 
+        self.interface = ComputingAllowanceInterface()
+
     @staticmethod
     def detail_view_url(pk):
         """Return the URL for the detail view for the
         SavioProjectAllocationRequest with the given primary key."""
-        return reverse('savio-project-request-detail', kwargs={'pk': pk})
+        return reverse('new-project-request-detail', kwargs={'pk': pk})
 
     @staticmethod
     def list_view_url():
         """Return the URL for the list view for pending
         SavioProjectAllocationRequests."""
-        return reverse('savio-project-pending-request-list')
+        return reverse('new-project-pending-request-list')
 
     def test_post_approves_and_processes_request_for_started_period(self):
         """Test that a POST request for a new project request under an
@@ -188,10 +193,15 @@ class TestSavioProjectRequestDetailView(TestBase):
     def test_post_approves_and_processes_request_for_null_period_condo(self):
         """Test that a POST request for a new project request (Condo)
         with a null AllocationPeriod is both approved and processed."""
-        self.project.name = f'co_{self.project.name[3:]}'
+        computing_allowance = Resource.objects.get(name=BRCAllowances.CO)
+        project_name_prefix = self.interface.code_from_name(
+            computing_allowance.name)
+
+        self.project.name = f'{project_name_prefix}{self.project.name[3:]}'
         self.project.save()
         self.new_project_request.allocation_type = \
-            SavioProjectAllocationRequest.CO
+            self.interface.name_short_from_name(computing_allowance.name)
+        self.new_project_request.computing_allowance = computing_allowance
         self.new_project_request.save()
 
         self.assertEqual(len(mail.outbox), 0)
@@ -257,10 +267,15 @@ class TestSavioProjectRequestDetailView(TestBase):
     def test_post_approves_and_processes_request_for_null_period_recharge(self):
         """Test that a POST request for a new project request (Recharge)
         with a null AllocationPeriod is both approved and processed."""
-        self.project.name = f'ac_{self.project.name[3:]}'
+        computing_allowance = Resource.objects.get(name=BRCAllowances.RECHARGE)
+        project_name_prefix = self.interface.code_from_name(
+            computing_allowance.name)
+
+        self.project.name = f'{project_name_prefix}{self.project.name[3:]}'
         self.project.save()
         self.new_project_request.allocation_type = \
-            SavioProjectAllocationRequest.RECHARGE
+            self.interface.name_short_from_name(computing_allowance.name)
+        self.new_project_request.computing_allowance = computing_allowance
         self.new_project_request.extra_fields = {'num_service_units': 100000}
         self.new_project_request.save()
 

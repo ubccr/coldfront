@@ -1,4 +1,13 @@
-{% extends "common/base.html" %} {% load common_tags %} {% load crispy_forms_tags %} {% load static %} {% block title %} Project List {% endblock %} {% block content %}
+{% extends "common/base.html" %}
+{% load common_tags %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}
+  Project List
+{% endblock %}
+
+{% block content %}
 
 <div class="card mb-3 bg-light">
   <div class="card-body">
@@ -127,7 +136,7 @@
           {% endfor %}
         </td>
         <td style="text-align: justify; text-justify: inter-word;">{{ project.title }}</td>
-        <td>{{ project.cluster_name }}</td>
+        <td>{{ project.cluster_name|upper }}</td>
 <!--        <td>{{ project.field_of_science.description }}</td>-->
         <td>{{ project.status.name }}</td>
       </tr>

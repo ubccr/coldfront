@@ -157,8 +157,8 @@ class TestAddServiceUnitsToProject(TestSUBase):
         self.assertEqual(allocation.resources.all().count(), 1)
         self.assertEqual(allocation.resources.first().name, 'Vector Compute')
 
-        # command should throw a CommandError because the allocation is not
-        # part of Savio Compute
+        # The command should throw a CommandError because the allocation is not
+        # to the primary compute Resource.
         with self.assertRaises(CommandError):
             output, error = \
                 self.call_command('add_service_units_to_project',

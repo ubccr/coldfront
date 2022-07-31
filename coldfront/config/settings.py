@@ -41,6 +41,14 @@ INSTALLED_APPS += [
     'phonenumber_field'
 ]
 
+# Fork-specific Additional Apps
+INSTALLED_APPS += [
+    # Note: constance must be included before project apps.
+    'constance',
+    'flags',
+    'formtools',
+]
+
 # ColdFront Apps
 INSTALLED_APPS += [
     'coldfront.core.user',
@@ -55,12 +63,6 @@ INSTALLED_APPS += [
     # 'coldfront.core.research_output',
     'coldfront.core.statistics',
     'coldfront.core.billing',
-]
-
-# Savio-specific Additional Apps
-INSTALLED_APPS += [
-    'flags',
-    'formtools',
 ]
 
 # ------------------------------------------------------------------------------
@@ -134,9 +136,11 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'django_settings_export.settings_export',
                 'coldfront.core.utils.context_processors.allocation_navbar_visibility',
+                'coldfront.core.utils.context_processors.constance_config',
                 'coldfront.core.utils.context_processors.current_allowance_year_allocation_period',
                 'coldfront.core.utils.context_processors.display_time_zone',
                 'coldfront.core.utils.context_processors.portal_and_program_names',
+                'coldfront.core.utils.context_processors.primary_cluster_name',
             ],
         },
     },
@@ -202,12 +206,6 @@ DECIMAL_MAX_PLACES = 2
 # The minimum and maximum valid numbers of service units for allocations.
 ALLOCATION_MIN = Decimal('0.00')
 ALLOCATION_MAX = Decimal('100000000.00')
-
-# The default amount of service units to allocate to Savio projects.
-CO_DEFAULT_ALLOCATION = ALLOCATION_MAX
-FCA_DEFAULT_ALLOCATION = Decimal('300000.00')
-ICA_DEFAULT_ALLOCATION = Decimal('200000.00')
-PCA_DEFAULT_ALLOCATION = Decimal('300000.00')
 
 # Whether or not to allow all jobs, bypassing all checks.
 ALLOW_ALL_JOBS = False

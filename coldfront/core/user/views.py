@@ -6,6 +6,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.contrib.auth.views import PasswordChangeView
+from django.core.exceptions import ImproperlyConfigured
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import IntegrityError
 from django.db.models import BooleanField, Prefetch
@@ -641,7 +642,16 @@ def user_access_agreement(request):
             messages.error(request, message)
     else:
         form = UserAccessAgreementForm()
-    return render(request, 'user/user_access_agreement.html', {'form': form})
+
+    if flag_enabled('BRC_ONLY'):
+        template_name = 'user/deployments/brc/user_access_agreement.html'
+    elif flag_enabled('LRC_ONLY'):
+        template_name = 'user/deployments/lrc/user_access_agreement.html'
+    else:
+        raise ImproperlyConfigured(
+            'One of the following flags must be enabled: BRC_ONLY, LRC_ONLY.')
+
+    return render(request, template_name, context={'form': form})
 
 
 class EmailAddressAddView(LoginRequiredMixin, FormView):

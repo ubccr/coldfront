@@ -1,4 +1,5 @@
 {% extends "common/base.html" %}
+{% load common_tags %}
 {% load crispy_forms_tags %}
 {% load feature_flags %}
 {% load static %}
@@ -21,32 +22,40 @@ Renew PI Allowance
 {% if next_period_requestable %}
   <div class="alert alert-info" role="alert">
     <i class="fas fa-info-circle" aria-hidden="true"></i>
-    The allowance year for FCAs is ending soon, on
+    The allowance year for {{ yearly_allowance_names }} is ending soon, on
     {{ CURRENT_ALLOWANCE_YEAR_ALLOCATION_PERIOD.end_date|date:"M. d, Y" }}.
-    Between now and then, you may request to renew a PI's allocation and/or
-    update pooling preferences for the remainder of the current allocation
-    year, and/or for the next allocation year.
+    Between now and then, you may request to renew a PI's allowance and/or
+    update pooling preferences for the remainder of the current allowance year,
+    and/or for the next allowance year.
   </div>
 {% endif %}
 
-<p style="color: red;">
-  <b>
-    Note: Currently, only renewals of Faculty Compute Allowances (FCAs) are
-    supported in this form. Renewals for Instructional Compute Allowances
-    (ICAs) and Partner Compute Allowances (PCAs) are coming soon.
-  </b>
-</p>
 <p>
-  Some compute allowances last for a particular allocation period. When they
+  Some computing allowances last for a particular allocation period. When they
   reach their end dates, they must be renewed. Each allowance is tied to a
   particular PI, and administrators must review that that PI is still eligible.
-  The following allocation types require renewal:
+  The following allowances may be renewed using this form:
 </p>
 <ul>
-  <li>Faculty Compute Allowance (FCA): June 1st to May 31st</li>
-  <li>Instructional Compute Allowance (ICA): Semester Start to End Dates*</li>
-  <li>Partner Compute Allowance (PCA): June 1st to May 31st</li>
+  {% for allowance in allowances %}
+    {% if allowance|get_value_from_dict:'name' in renewal_supported_allowance_names %}
+      <li>{{ allowance|get_value_from_dict:'name_long' }}</li>
+    {% endif %}
+  {% endfor %}
 </ul>
+{% if renewal_not_supported_allowance_names %}
+<p>
+  The following allowances may be renewed, but are not currently supported in
+  this form. Please submit a ticket for assistance.
+  <ul>
+  {% for allowance in allowances %}
+    {% if allowance|get_value_from_dict:'name' in renewal_not_supported_allowance_names %}
+      <li>{{ allowance|get_value_from_dict:'name_long' }}</li>
+    {% endif %}
+  {% endfor %}
+  </ul>
+</p>
+{% endif %}
 <p>
   This form is intended for Principal Investigators (PIs) or Managers of
   projects. They may renew a particular PI's allowance for the current
@@ -57,38 +66,11 @@ Renew PI Allowance
   If you are filling out the form on behalf of another PI, that PI will be
   notified by email that a request is being made by you.
 </p>
-<p>
-  * The PI will be contacted to provide a signed Memorandum of Understanding
-  as part of the approval process.
-</p>
 <a class="btn btn-primary" href="{% url 'renew-pi-allocation' %}">
   Continue
 </a>
 <a class="btn btn-secondary" href="{% url 'project-list' %}">
   Back
 </a>
-
-<hr>
-
-<h1>Pending Requests</h1>
-
-<div class="row">
-  <div class="col-lg-12 mt-2">
-    <p>
-      You may view your
-      <a href="{% url 'pi-allocation-renewal-pending-request-list' %}">
-        pending
-      </a>
-      renewal requests.
-    </p>
-    <p>
-      You may also view your
-      <a href="{% url 'pi-allocation-renewal-completed-request-list' %}">
-        completed
-      </a>
-      renewal requests.
-    </p>
-  </div>
-</div>
 
 {% endblock %}

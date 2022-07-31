@@ -1,5 +1,7 @@
 from coldfront.core.allocation.utils import get_project_compute_allocation
 from coldfront.core.project.models import Project
+from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from datetime import datetime
 from django.core.management.base import BaseCommand
 from django.utils import timezone
@@ -29,7 +31,17 @@ class Command(BaseCommand):
         except ValueError:
             print(f"Date time {date_time} is invalid. Exiting.")
             return
-        prefixes = ('fc_', 'pc_', 'ic_')
+
+        prefixes = []
+        computing_allowance_interface = ComputingAllowanceInterface()
+        for allowance in computing_allowance_interface.allowances():
+            wrapper = ComputingAllowance(allowance)
+            if wrapper.is_periodic():
+                prefixes.append(
+                    computing_allowance_interface.code_from_name(
+                        allowance.name))
+        prefixes = tuple(prefixes)
+
         for project in Project.objects.all():
             if project.name.startswith(prefixes):
                 self.set_allocation_end_date(project, parsed_date_time)

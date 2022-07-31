@@ -1,3 +1,5 @@
+from flags.state import flag_enabled
+
 from django import forms
 from django.conf import settings
 from django.contrib.auth.forms import AuthenticationForm
@@ -204,10 +206,6 @@ class UserAccessAgreementForm(forms.Form):
 
     acknowledgement = forms.BooleanField(
         initial=False,
-        help_text=(
-            'I have read the UC Berkeley Policies and Procedures and '
-            'understand my responsibilities in the use of BRC computing '
-            'resources managed by the BRC Program.'),
         label='Acknowledge & Sign',
         required=True)
 
@@ -215,11 +213,30 @@ class UserAccessAgreementForm(forms.Form):
         model = UserProfile
         fields = ('pop_quiz_answer', 'acknowledgement', )
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not flag_enabled('BRC_ONLY'):
+            self.fields.pop('pop_quiz_answer')
+        self.set_acknowledgement_help_text()
+
     def clean_pop_quiz_answer(self):
         pop_quiz_answer = int(self.cleaned_data['pop_quiz_answer'])
         if pop_quiz_answer != 24:
             raise forms.ValidationError('Incorrect answer.')
         return pop_quiz_answer
+
+    def set_acknowledgement_help_text(self):
+        field = self.fields['acknowledgement']
+        program_name_short = settings.PROGRAM_NAME_SHORT
+        template = (
+            f'I have read the {{0}} Policies and Procedures and understand my '
+            f'responsibilities in the use of {program_name_short} computing '
+            f'resources managed by the {{1}}.')
+        if flag_enabled('BRC_ONLY'):
+            field.help_text = template.format(
+                'UC Berkeley', f'{program_name_short} Program')
+        if flag_enabled('LRC_ONLY'):
+            field.help_text = template.format('LBNL', 'LBNL IT Division')
 
 
 class EmailAddressAddForm(forms.Form):

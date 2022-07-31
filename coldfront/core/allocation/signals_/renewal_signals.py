@@ -36,10 +36,10 @@ def reschedule_allocation_renewal_scheduled_task(sender, instance, created,
         }
         schedule(func, *args, **kwargs)
 
-    message = (
-        f'Scheduled a task for starting AllocationPeriod {instance.pk} to run '
-        f'at {next_run}.')
-    logger.info(message)
+        message = (
+            f'Scheduled a task for starting AllocationPeriod {instance.pk} to '
+            f'run at {next_run}.')
+        logger.info(message)
 
 
 @django.dispatch.receiver(post_delete, sender=AllocationPeriod)

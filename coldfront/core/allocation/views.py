@@ -63,6 +63,7 @@ from coldfront.core.allocation.utils_.cluster_access_utils import \
     ClusterAccessRequestCompleteRunner, \
     ClusterAccessRequestDenialRunner
 from coldfront.core.resource.models import Resource
+from coldfront.core.user.utils import access_agreement_signed
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.mail import send_email_template
@@ -115,6 +116,14 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
+
+        is_pi = allocation_obj.project.projectuser_set.filter(
+            user=self.request.user,
+            role__name='Principal Investigator',
+            status__name='Active').exists()
+
+        if is_pi:
+            return True
 
         user_can_access_project = allocation_obj.project.projectuser_set.filter(
             user=self.request.user, status__name__in=['Active', 'New', ]).exists()
@@ -477,8 +486,7 @@ class AllocationListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
                     Q(project__status__name='Active') &
                     Q(project__projectuser__user=self.request.user) &
                     Q(project__projectuser__status__name='Active') &
-                    Q(allocationuser__user=self.request.user) &
-                    Q(allocationuser__status__name='Active')
+                    Q(project__projectuser__role__name='Principal Investigator')
                 ).distinct().order_by(order_by)
 
             # Project Title
@@ -585,6 +593,9 @@ class AllocationListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
             allocation_list = paginator.page(1)
         except EmptyPage:
             allocation_list = paginator.page(paginator.num_pages)
+
+        context['user_agreement_signed'] = \
+            access_agreement_signed(self.request.user)
 
         return context
 

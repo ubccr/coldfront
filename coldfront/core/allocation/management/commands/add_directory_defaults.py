@@ -3,7 +3,8 @@ from coldfront.core.resource.models import ResourceAttribute
 from coldfront.core.resource.models import ResourceAttributeType
 from coldfront.core.resource.models import ResourceType
 from coldfront.core.allocation.models import AllocationAttributeType, \
-    SecureDirAddUserRequestStatusChoice, SecureDirRemoveUserRequestStatusChoice
+    SecureDirAddUserRequestStatusChoice, SecureDirRemoveUserRequestStatusChoice, \
+    SecureDirRequestStatusChoice
 
 from django.core.management.base import BaseCommand
 
@@ -104,3 +105,12 @@ class Command(BaseCommand):
                 name=status)
             SecureDirRemoveUserRequestStatusChoice.objects.get_or_create(
                 name=status)
+
+        choices = [
+            'Approved - Complete',
+            'Approved - Processing',
+            'Denied',
+            'Under Review',
+        ]
+        for choice in choices:
+            SecureDirRequestStatusChoice.objects.get_or_create(name=choice)

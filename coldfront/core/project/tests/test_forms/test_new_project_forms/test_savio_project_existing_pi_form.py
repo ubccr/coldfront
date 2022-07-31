@@ -7,9 +7,11 @@ from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
-from coldfront.core.project.tests.utils import create_fca_project_and_request
+from coldfront.core.project.tests.utils import create_project_and_request
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.project.utils_.renewal_utils import get_next_allowance_year_period
+from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
 
@@ -23,16 +25,19 @@ class TestSavioProjectExistingPIForm(TestBase):
         self.create_test_user()
         self.sign_user_access_agreement(self.user)
         self.client.login(username=self.user.username, password=self.password)
+        self.fca_computing_allowance = Resource.objects.get(
+            name=BRCAllowances.FCA)
 
     def test_eligibility_based_on_requests_in_specific_allocation_period(self):
         """Test that PI eligibility for a particular AllocationPeriod is
         only based on existing requests under the same period."""
+        computing_allowance = self.get_fca_computing_allowance()
         allocation_period = get_current_allowance_year_period()
 
         # Create a new project request.
-        new_project, new_project_request = create_fca_project_and_request(
-            'fc_new_project', 'Denied', allocation_period, self.user,
-            self.user, 'Under Review')
+        new_project, new_project_request = create_project_and_request(
+            'fc_new_project', 'Denied', computing_allowance, allocation_period,
+            self.user, self.user, 'Under Review')
 
         # Create a Project for the user to renew.
         project_name = 'fc_project'
@@ -71,7 +76,7 @@ class TestSavioProjectExistingPIForm(TestBase):
             get_next_allowance_year_period()
         self.assertIsNotNone(next_allowance_year_allocation_period)
         kwargs = {
-            'allocation_type': 'FCA',
+            'computing_allowance': self.fca_computing_allowance,
             'allocation_period': next_allowance_year_allocation_period,
         }
 
@@ -98,6 +103,8 @@ class TestSavioProjectExistingPIForm(TestBase):
     def test_pis_with_inactive_fc_projects_disabled(self):
         """Test that PIs of Projects with the 'Inactive' status are
         disabled in the 'PI' field."""
+        allocation_period = get_current_allowance_year_period()
+
         inactive_name = 'fc_inactive_project'
         inactive_status = ProjectStatusChoice.objects.get(name='Inactive')
         inactive_project = Project.objects.create(
@@ -115,7 +122,11 @@ class TestSavioProjectExistingPIForm(TestBase):
         }
         ProjectUser.objects.create(**kwargs)
 
-        form = SavioProjectExistingPIForm(allocation_type='FCA')
+        kwargs = {
+            'computing_allowance': self.fca_computing_allowance,
+            'allocation_period': allocation_period,
+        }
+        form = SavioProjectExistingPIForm(**kwargs)
         pi_field_disabled_choices = form.fields['PI'].widget.disabled_choices
         self.assertIn(self.user.pk, pi_field_disabled_choices)
 
@@ -123,15 +134,16 @@ class TestSavioProjectExistingPIForm(TestBase):
         """Test that PIs with non-'Denied'
         SavioProjectAllocationRequests are disabled in the 'PI'
         field."""
+        computing_allowance = self.get_fca_computing_allowance()
         allocation_period = get_current_allowance_year_period()
         # Create a new project request.
-        new_project, new_project_request = create_fca_project_and_request(
-            'fc_new_project', 'Denied', allocation_period, self.user,
-            self.user, 'Under Review')
+        new_project, new_project_request = create_project_and_request(
+            'fc_new_project', 'Denied', computing_allowance, allocation_period,
+            self.user, self.user, 'Under Review')
 
         # For every status except 'Denied', the PI should be disabled.
         kwargs = {
-            'allocation_type': 'FCA',
+            'computing_allowance': self.fca_computing_allowance,
             'allocation_period': allocation_period,
         }
         status_choices = ProjectAllocationRequestStatusChoice.objects.all()
@@ -185,7 +197,7 @@ class TestSavioProjectExistingPIForm(TestBase):
 
         # For every status except 'Denied', the PI should be disabled.
         kwargs = {
-            'allocation_type': 'FCA',
+            'computing_allowance': self.fca_computing_allowance,
             'allocation_period': allocation_period,
         }
         status_choices = AllocationRenewalRequestStatusChoice.objects.all()
@@ -202,5 +214,7 @@ class TestSavioProjectExistingPIForm(TestBase):
             else:
                 self.assertNotIn(self.user.pk, pi_field_disabled_choices)
 
-    # TODO: Test LRC-only functionality. PIs are only shown/allowed if
-    #  they have an lbl.gov email
+    # TODO: Test LRC-only functionality.
+    # TODO: PIs are only shown/allowed if they have an lbl.gov email.
+    # TODO: PIs are limited for LRC - PCA.
+

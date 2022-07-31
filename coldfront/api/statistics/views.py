@@ -4,7 +4,6 @@ import pytz
 from collections import OrderedDict
 from datetime import date
 from datetime import datetime
-from datetime import MAXYEAR
 from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 
@@ -33,6 +32,8 @@ from coldfront.core.allocation.models import AllocationUserAttributeUsage
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
+from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.statistics.models import Job
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import display_time_zone_date_to_utc_datetime
@@ -492,8 +493,12 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
 
         # The Job's corresponding Allocation may have an end date. (Compare
         # against the maximum date if not.)
-        allocation_types_with_end_dates = ('fc_', 'ic_', 'pc_')
-        if account_name.startswith(allocation_types_with_end_dates):
+        computing_allowance_interface = ComputingAllowanceInterface()
+        periodic_project_name_prefixes = tuple([
+            computing_allowance_interface.code_from_name(allowance.name)
+            for allowance in computing_allowance_interface.allowances()
+            if ComputingAllowance(allowance).is_periodic()])
+        if account_name.startswith(periodic_project_name_prefixes):
             allocation_end_date = allocation.end_date
             if not isinstance(allocation_end_date, date):
                 logger.error(
@@ -738,15 +743,14 @@ def can_submit_job(request, job_cost, user_id, account_id):
     user_account_usage = (
         allocation_objects.allocation_user_attribute_usage.value)
 
-    # If the account has allocation type Condo, allow the job, regardless of
+    # If the account has infinite service units, allow the job, regardless of
     # cost.
-    # if account.allowance_has_condo:
-    #     return affirmative
-    if account.name.startswith('co_'):
+    computing_allowance = ComputingAllowance(
+        ComputingAllowanceInterface().allowance_from_project(account))
+    if computing_allowance.has_infinite_service_units():
         return affirmative
 
-    # Return whether or not both usages would not exceed their respective
-    # allocations.
+    # Return whether both usages would not exceed their respective allocations.
     if job_cost + account_usage > account_allocation:
         message = (
             f'Adding job_cost {job_cost} to account balance {account_usage} '

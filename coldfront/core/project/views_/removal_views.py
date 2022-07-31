@@ -1,10 +1,8 @@
-from itertools import chain
-
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.db.models import Q
+from django.db import transaction
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
@@ -12,22 +10,17 @@ from django.views.generic import ListView
 from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
 
-from coldfront.core.allocation.models import (Allocation,
-                                              AllocationAttributeType,
-                                              AllocationUserStatusChoice)
-
 from coldfront.core.project.forms_.removal_forms import \
     (ProjectRemovalRequestSearchForm,
      ProjectRemovalRequestUpdateStatusForm,
      ProjectRemovalRequestCompletionForm)
 from coldfront.core.project.models import (Project,
-                                           ProjectUserStatusChoice,
                                            ProjectUserRemovalRequest,
                                            ProjectUserRemovalRequestStatusChoice)
+from coldfront.core.project.utils_.removal_utils import ProjectRemovalRequestProcessingRunner
 from coldfront.core.project.utils_.removal_utils import ProjectRemovalRequestRunner
 from coldfront.core.utils.common import (import_from_settings,
                                          utc_now_offset_aware)
-from coldfront.core.utils.mail import send_email_template
 
 import logging
 
@@ -347,6 +340,8 @@ class ProjectRemovalRequestListView(LoginRequiredMixin,
         return context
 
 
+# TODO: This could be merged with the complete view into one, along with their
+# TODO: forms.
 class ProjectRemovalRequestUpdateStatusView(LoginRequiredMixin,
                                             UserPassesTestMixin, FormView):
     form_class = ProjectRemovalRequestUpdateStatusForm
@@ -379,18 +374,17 @@ class ProjectRemovalRequestUpdateStatusView(LoginRequiredMixin,
         form_data = form.cleaned_data
         status = form_data.get('status')
 
-        project_removal_status_choice, _ = \
-            ProjectUserRemovalRequestStatusChoice.objects.get_or_create(
-                name=status)
-        self.project_removal_request_obj.status = project_removal_status_choice
-        self.project_removal_request_obj.save()
+        request_obj = self.project_removal_request_obj
+        request_obj.status = ProjectUserRemovalRequestStatusChoice.objects.get(
+            name=status)
+        request_obj.save()
 
         message = (
             f'Project removal request initiated by '
-            f'{self.project_removal_request_obj.requester.username} for User '
-            f'{self.user_obj.username} under '
-            f'Project {self.project_removal_request_obj.project_user.project.name} '
-            f'has been marked as {status}.')
+            f'{request_obj.requester.username} for User '
+            f'{self.user_obj.username} under Project '
+            f'{request_obj.project_user.project.name} has been marked as '
+            f'{status}.')
         messages.success(self.request, message)
 
         return super().form_valid(form)
@@ -433,7 +427,8 @@ class ProjectRemovalRequestCompleteStatusView(LoginRequiredMixin,
         self.user_obj = self.project_removal_request_obj.project_user.user
         status = self.project_removal_request_obj.status.name
         if status != 'Processing':
-            message = f'Project removal request has unexpected status {status}.'
+            message = (
+                f'Project removal request has unexpected status {status}.')
             messages.error(request, message)
             return HttpResponseRedirect(
                 reverse('project-removal-request-list'))
@@ -443,87 +438,40 @@ class ProjectRemovalRequestCompleteStatusView(LoginRequiredMixin,
         form_data = form.cleaned_data
         status = form_data.get('status')
 
-        project_removal_status_choice, _ = \
-            ProjectUserRemovalRequestStatusChoice.objects.get_or_create(
-                name=status)
+        runner = None
+        try:
+            request_obj = self.project_removal_request_obj
+            with transaction.atomic():
+                request_obj.status = \
+                    ProjectUserRemovalRequestStatusChoice.objects.get(
+                        name=status)
+                request_obj.save()
+                if status == 'Complete':
+                    request_obj.completion_time = utc_now_offset_aware()
+                    request_obj.save()
+                    # Run the runner as the last step of the transaction, to
+                    # avoid writing to the log and sending emails for failed
+                    # transactions.
+                    runner = ProjectRemovalRequestProcessingRunner(request_obj)
+                    runner.run()
+        except Exception as e:
+            message = f'Rolling back failed transaction. Details:\n{e}'
+            logger.exception(message)
+            message = (
+                'Unexpected failure. Please try again, or contact an '
+                'administrator if the problem persists.')
+            messages.error(self.request, message)
+        else:
+            message = (
+                f'Project removal request initiated by '
+                f'{request_obj.requester.username} for User '
+                f'{self.user_obj.username} under Project '
+                f'{request_obj.project_user.project.name} is complete.')
+            messages.success(self.request, message)
 
-        project_obj = self.project_removal_request_obj.project_user.project
-        removed_user = self.project_removal_request_obj.project_user
-        requester = self.project_removal_request_obj.requester
-
-        self.project_removal_request_obj.status = project_removal_status_choice
-        if status == 'Complete':
-            self.project_removal_request_obj.completion_time = utc_now_offset_aware()
-
-        self.project_removal_request_obj.save()
-
-        if status == 'Complete':
-            project_user_status_removed, _ = \
-                ProjectUserStatusChoice.objects.get_or_create(
-                    name='Removed')
-            removed_user.status = project_user_status_removed
-            removed_user.save()
-
-            try:
-                allocation_obj = Allocation.objects.get(project=project_obj)
-                allocation_user = \
-                    allocation_obj.allocationuser_set.get(user=removed_user.user)
-                allocation_user_status_choice_removed = \
-                    AllocationUserStatusChoice.objects.get(name='Removed')
-                allocation_user.status = allocation_user_status_choice_removed
-                allocation_user.save()
-
-                cluster_account_status = \
-                    allocation_user.allocationuserattribute_set.get(
-                        allocation_attribute_type=AllocationAttributeType.objects.get(
-                            name='Cluster Account Status'))
-                cluster_account_status.value = 'Denied'
-                cluster_account_status.save()
-
-            except Exception as e:
-                message = f'Unexpected error setting AllocationAttributeType' \
-                          f'Cluster Account Status to "Denied" and ' \
-                          f'AllocationUserStatusChoice to "Removed" ' \
-                          f'for user {removed_user.user.username}.'
-                messages.error(self.request, message)
-
-        message = (
-            f'Project removal request initiated by '
-            f'{self.project_removal_request_obj.requester.username} for User '
-            f'{self.user_obj.username} under '
-            f'Project {self.project_removal_request_obj.project_user.project.name} '
-            f'has been marked as {status}.')
-        messages.success(self.request, message)
-
-        if EMAIL_ENABLED and status == 'Complete':
-            pi_condition = Q(
-                role__name='Principal Investigator', status__name='Active',
-                enable_notifications=True)
-            manager_condition = Q(role__name='Manager', status__name='Active')
-            manager_pi_queryset = project_obj.projectuser_set.filter(
-                pi_condition | manager_condition)
-
-            for proj_user in list(chain(manager_pi_queryset, [removed_user])):
-                curr_user = proj_user.user
-                template_context = {
-                    'user_first_name': curr_user.first_name,
-                    'user_last_name': curr_user.last_name,
-                    'removed_user_first_name': removed_user.user.first_name,
-                    'removed_user_last_name': removed_user.user.last_name,
-                    'requester_first_name': requester.first_name,
-                    'requester_last_name': requester.last_name,
-                    'project_name': project_obj.name,
-                    'signature': EMAIL_SIGNATURE,
-                    'support_email': SUPPORT_EMAIL,
-                }
-
-                send_email_template(
-                    'Project Removal Request Completed',
-                    'email/project_removal/project_removal_complete.txt',
-                    template_context,
-                    EMAIL_SENDER,
-                    [curr_user.email]
-                )
+            if isinstance(runner, ProjectRemovalRequestProcessingRunner):
+                for message in runner.get_warning_messages():
+                    messages.warning(self.request, message)
 
         return super().form_valid(form)
 

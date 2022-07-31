@@ -3,17 +3,12 @@ import os
 from django.contrib.auth.models import User
 from django.core.management import call_command
 
-from coldfront.api.allocation.tests.test_allocation_base import \
-    TestAllocationBase
 from coldfront.core.allocation.models import AllocationAttributeType, \
     Allocation, AllocationStatusChoice, AllocationAttribute, \
-    AllocationUserStatusChoice, SecureDirAddUserRequest, \
-    SecureDirAddUserRequestStatusChoice, SecureDirRemoveUserRequest, \
-    SecureDirRemoveUserRequestStatusChoice
-from coldfront.core.allocation.utils import create_secure_dirs, \
-    get_secure_dir_manage_user_request_objects
-from coldfront.core.project.models import ProjectUser, ProjectUserRoleChoice, \
-    ProjectUserStatusChoice
+    SecureDirAddUserRequest, SecureDirAddUserRequestStatusChoice, \
+    SecureDirRemoveUserRequest, SecureDirRemoveUserRequestStatusChoice
+from coldfront.core.allocation.utils_.secure_dir_utils import \
+    create_secure_dirs, get_secure_dir_manage_user_request_objects
 from coldfront.core.resource.models import Resource
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.tests.test_base import TestBase
@@ -35,15 +30,10 @@ class TestCreateSecureDir(TestBase):
 
         self.project1 = self.create_active_project_with_pi('project1', self.pi)
 
-        self.groups_subdirectory_name = 'project1/test_groups'
-        self.scratch_subdirectory_name = 'test_scratch'
+        self.subdirectory_name = 'test_dir'
         call_command('add_directory_defaults')
-        create_secure_dirs(self.project1,
-                           self.groups_subdirectory_name,
-                           'groups')
-        create_secure_dirs(self.project1,
-                           self.scratch_subdirectory_name,
-                           'scratch')
+        create_secure_dirs(self.project1, self.subdirectory_name, 'groups')
+        create_secure_dirs(self.project1, self.subdirectory_name, 'scratch')
 
     def test_allocation_objects_created(self):
         """Testing that allocation objects are created"""
@@ -81,13 +71,13 @@ class TestCreateSecureDir(TestBase):
             allocation_attribute_type=allocation_attribute_type,
             allocation=groups_allocation,
             value=os.path.join(groups_p2p3_path.value,
-                               self.groups_subdirectory_name))
+                               self.subdirectory_name))
 
         scratch_p2p3_subdirectory = AllocationAttribute.objects.filter(
             allocation_attribute_type=allocation_attribute_type,
             allocation=scratch_allocation,
             value=os.path.join(scratch_p2p3_path.value,
-                               self.scratch_subdirectory_name))
+                               self.subdirectory_name))
 
         self.assertTrue(groups_p2p3_subdirectory.exists())
         self.assertTrue(scratch_p2p3_subdirectory.exists())

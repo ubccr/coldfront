@@ -1,0 +1,50 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load common_tags %}
+{% load static %}
+
+
+{% block title %}
+  Secure Directory {{ request_filter|title }} Requests
+{% endblock %}
+
+
+{% block content %}
+  <h1>{{ request_filter|title }} Secure Directory Requests</h1>
+  <hr>
+
+  <p>
+    {% if request_filter == 'completed' %}
+      Viewing completed secure directory requests. You may also view pending requests
+      <a href="{% url 'secure-dir-pending-request-list' %}">
+        <span class="accessibility-link-text">Pending Requests</span>
+        here</a>.
+    {% else %}
+      Viewing pending secure directory requests. You may also view
+      completed requests 
+      <a href="{% url 'secure-dir-completed-request-list' %}">
+        <span class="accessibility-link-text">Completed Requests</span>
+        here</a>.
+    {% endif %}
+  </p>
+
+  {% if secure_dir_request_list %}
+    <div class="table-responsive">
+      {% with queryset=secure_dir_request_list %}
+        {% include 'secure_dir/secure_dir_request/secure_dir_request_list_table.html' %}
+      {% endwith %}
+    </div>
+  {% else %}
+    <div class="alert alert-info">
+      No {{ request_filter }} secure directory requests!
+    </div>
+  {% endif %}
+
+  <script>
+      $("#navbar-main > ul > li.active").removeClass("active");
+      $("#navbar-admin").addClass("active");
+      $("#navbar-secure-directory-requests").addClass("active");
+
+  </script>
+
+{% endblock %}

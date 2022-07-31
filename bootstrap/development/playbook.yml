@@ -325,6 +325,15 @@
         virtualenv: "{{ git_prefix }}/venv"
       become_user: "{{ djangooperator }}"
 
+    - name: Run Django management command - add_allowance_defaults
+      django_manage:
+        command: add_allowance_defaults
+        app_path: "{{ git_prefix }}/{{ reponame }}"
+        settings: "config.settings"
+        pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+        virtualenv: "{{ git_prefix }}/venv"
+      become_user: "{{ djangooperator }}"
+
     - name: Run Django management command - add_directory_defaults
       django_manage:
         command: add_directory_defaults

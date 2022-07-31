@@ -20,6 +20,7 @@ from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
+from coldfront.core.resource.utils import get_primary_compute_resource
 from coldfront.core.statistics.models import Job
 from coldfront.core.user.models import ExpiringToken
 from coldfront.core.user.models import UserProfile
@@ -547,18 +548,17 @@ class TestJobSerializer(TestJobBase):
     def test_no_active_compute_allocation(self):
         """Test that requests wherein the account has no active compute
         allocation fail."""
-        message = 'Account test_project has no active compute allocation.'
+        message = 'Account fc_project has no active compute allocation.'
         # The allocation is expired.
         self.allocation.status = AllocationStatusChoice.objects.get(
             name='Expired')
         self.allocation.save()
         self.assert_error_message(self.data, message)
-        # The allocation is active, but does not have Savio Compute as a
-        # resource.
+        # The allocation is active, but is not to the primary compute resource.
         self.allocation.status = AllocationStatusChoice.objects.get(
             name='Active')
-        self.allocation.resources.all().delete()
-        self.allocation.save()
+        resource = get_primary_compute_resource()
+        self.allocation.resources.remove(resource)
         self.assert_error_message(self.data, message)
         # The allocation does not exist.
         self.allocation.delete()
@@ -569,7 +569,7 @@ class TestJobSerializer(TestJobBase):
         of the account's compute allocation fail."""
         message = (
             f'User user0 is not an active member of the compute allocation '
-            f'for account test_project.')
+            f'for account fc_project.')
         # The allocation user has been removed from the allocation.
         self.allocation_user.status = AllocationUserStatusChoice.objects.get(
             name='Removed')
