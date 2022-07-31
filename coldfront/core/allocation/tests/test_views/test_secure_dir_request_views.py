@@ -5,6 +5,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.core import mail
 from django.urls import reverse
+from flags.state import enable_flag
 from iso8601 import iso8601
 
 from coldfront.api.statistics.utils import create_project_allocation, \
@@ -29,6 +30,7 @@ class TestSecureDirRequestBase(TestBase):
 
     def setUp(self):
         """Set up test data."""
+        enable_flag('SECURE_DIRS_REQUESTABLE')
         super().setUp()
 
         # Create two PIs.
