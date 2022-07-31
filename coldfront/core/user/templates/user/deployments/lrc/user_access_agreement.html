@@ -1,0 +1,194 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}
+User Access Agreement
+{% endblock %}
+
+{% block content %}
+<script>
+    $("#navbar-main > ul > li.active").removeClass("active");
+    $("#navbar-user").addClass("active");
+    $("#navbar-user-user-profile").addClass("active");
+</script>
+
+
+<div class="card">
+  <div class="card-header"><i class="fas fa-user" aria-hidden="true"></i>
+    User Access Agreement
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table">
+        <tbody>
+          <tr>
+            <th scope="row">IT must have a signed copy of this form for each user.</th>
+            <td>
+              <p>
+                Everyone requesting access to a cluster or a resource managed by the Berkeley Lab, IT Division, HPCS group has to review and sign this Access Agreement form before they obtain their credentials to the resource.
+              </p>
+              <p>
+                Answer the questions on the top, read all policies, click accept at the bottom of the page and submit.
+              </p>
+              <p>
+                Email us at <a href="">hpcshelp@lbl.gov</a> if you have any questions or concerns.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">Access Agreement Form</th>
+            <td>
+              <p>
+                This form provides a subset of important policies, which govern your access to an LBNL resource. In addition, the RPM (in particular Section Information Management, subsections Information Categories and Controls and Information Technology), State and Federal law, and applicable University policies apply. Additional information at: <a href="https://commons.lbl.gov/display/rpm2/Home">https://commons.lbl.gov/display/rpm2/Home</a>.
+              </p>
+              <p>
+                The system you are being provided access to is for approved uses only as determined by the principal investigator and consistent with LBNL policies. This system is only approved for unclassified, non-proprietary fundamental scientific research.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">Computer Use</th>
+            <td>
+              <p>
+                Storage or processing of classified or sensitive information (including UCNI, NNPI, or any weapons-related work) is strictly prohibited and may be subject to civil and criminal penalties.
+              </p>
+              <p>
+                You have no expectation of privacy in your use of this system. Your actions, history, and userdata are subject to inspection and review by authorized parties per LBNL Policy. LBNL may share this information with law enforcement at its discretion.
+              </p>
+              <p>
+                No incidental personal use is permitted on LBNL Clusters.
+              </p>
+              <p>
+                This system is provided without warranty or set service level. LBNL will not be held liable in the event of any system failure or loss of data.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">Data Retention</th>
+            <td>
+              <p>
+                When a user account is deleted, all permanent files (in home directories and LBNL cluster systems) are assigned to the PI, who is responsible for deleting unneeded files.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">User Accountability</th>
+            <td>
+              <p>
+                You are accountable for your actions. Sanctions for policy violations may include termination of access, and civil and criminal penalties.
+              </p>
+              <p>
+                A user identifier (username and password) is required of all users. You must adhere to LBNL password guidelines. Passwords must not be shared. The password must be changed as soon as possible after an unacceptable exposure or suspected compromise.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">Access</th>
+            <td>
+              <p>
+                Passwords are checked for integrity on a regular basis. It is the user's responsibility to maintain a strong password that conforms to the LBNL password policy as per RPM policy. Accounts with weak passwords or passphrase less keys will automatically be deactivated upon discovery for security reasons. LBNL is not obligated to notify users prior to account deactivation if they have violated the password policy.
+              </p>
+              <p>
+                Users may be required to use a one-time password-generating device to gain access to their clusters. Users are not allowed to offer the OTP credentials to any other third party or host other than the LBNL clusters they are authorized to access.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">Best Practices</th>
+            <td>
+              <p>
+                Users are not allowed to list their username, hostname and OTP credentials (PIN) on the OTP device.
+              </p>
+              <p>
+                Users are asked to access the clusters directly from their workstations and laptops and avoid using other hosts as intermediate hops.
+              </p>
+              <p>
+                Users should not leave their login sessions open and idle for long periods of time and should lock their screens while away from their workstations and laptops.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">Unauthorized Access</th>
+            <td>
+              <p>
+                Users are not to attempt to receive unintended messages or access information by some unauthorized means, such as imitating another system, impersonating another user or other person, misuse of legal user credentials (usernames, passwords, etc.), or by causing some system component to function incorrectly.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">Software Use</th>
+            <td>
+              <p>
+                All software used on LBNL computers must be appropriately acquired and used according to the appropriate licensing. Possession or use of illegally copied software is prohibited. Likewise, users shall not copy, store or transfer copyrighted software or data, except as permitted by the owner of the copyright.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">Altering Authorized Access</th>
+            <td>
+              <p>
+                Users are prohibited from changing or circumventing access controls to allow themselves or others to perform actions outside their authorized privileges or to circumvent security systems.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">Data Modification or Destruction</th>
+            <td>
+              <p>
+                Users are prohibited from taking unauthorized actions to intentionally modify, delete, or reconstruct information or programs.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">Malicious Software</th>
+            <td>
+              <p>
+                Users must not intentionally introduce or use malicious software such as computer viruses, Trojan horses, or worms. Users are responsible for taking reasonable steps to ensure the integrity and security of software they introduce to the system.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">Denial of Service Actions</th>
+            <td>
+              <p>
+                Users may not deliberately interfere with other users accessing system resources.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">Notification</th>
+            <td>
+              <p>
+                Users must notify LBNL immediately when they become aware that any of the accounts used to access LBNL have been compromised. LBNL reserves the right to temporarily disable accounts without prior notification in the event of a security compromise.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <th scope="row">Account Usage</th>
+            <td>
+              <p>
+                Each user of this system must have a unique login. Users are not allowed to share their accounts with others.
+              </p>
+              <p>
+                IMPORTANT: The number one threat to this cluster is from a compromised endpoint (like your desktop computer) which allows your username/password to be stolen or your session to be hijacked. You are responsible for taking reasonable steps to ensure the security of any system you use to access LBNL systems.
+              </p>
+            </td>
+          </tr>
+          {% if user.userprofile.access_agreement_signed_date is None %}
+            <tr>
+              <th scope="row">Submit</th>
+              <td>
+                <div>
+                  {% include "user/user_access_agreement_form.html" %}
+                </div>
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

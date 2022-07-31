@@ -80,6 +80,26 @@ if SENTRY_DSN:
     ignore_logger('coldfront.core.utils.middleware')
 
 #------------------------------------------------------------------------------
+# django-constance settings
+#------------------------------------------------------------------------------
+
+from datetime import date
+
+
+CONSTANCE_CONFIG = {
+    'FEEDBACK_FORM_URL': ('', 'The URL to the feedback form.'),
+    'DOCS_GETTING_HELP_URL': (
+        '', 'The URL to the documentation page on getting help.'),
+    'LAUNCH_DATE': (date(1970, 1, 1), 'The date the portal was launched.'),
+}
+CONSTANCE_REDIS_CONNECTION = {
+    'host': '127.0.0.1',
+    'port': 6379,
+    'db': 0,
+    'password': '{{ redis_passwd }}',
+}
+
+#------------------------------------------------------------------------------
 # django-flags settings
 #------------------------------------------------------------------------------
 
@@ -89,6 +109,7 @@ FLAGS = {
     ],
     'BRC_ONLY': [{'condition': 'boolean', 'value': {{ flag_brc_enabled }}}],
     'LRC_ONLY': [{'condition': 'boolean', 'value': {{ flag_lrc_enabled }}}],
+    'SECURE_DIRS_REQUESTABLE': [{'condition': 'boolean', 'value': {{ flag_brc_enabled }}}],
     'SERVICE_UNITS_PURCHASABLE': [{'condition': 'boolean', 'value': {{ flag_brc_enabled }}}],
 }
 
