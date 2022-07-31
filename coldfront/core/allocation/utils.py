@@ -24,7 +24,9 @@ from coldfront.core.allocation.models import (AllocationAttributeType,
                                               SecureDirAddUserRequest,
                                               SecureDirAddUserRequestStatusChoice,
                                               SecureDirRemoveUserRequest,
-                                              SecureDirRemoveUserRequestStatusChoice)
+                                              SecureDirRemoveUserRequestStatusChoice,
+                                              SecureDirRequest,
+                                              SecureDirRequestStatusChoice)
 from coldfront.core.allocation.signals import allocation_activate_user
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
@@ -244,17 +246,13 @@ def create_secure_dirs(project, subdirectory_name, scratch_or_groups):
     scratch directory, depending on scratch_or_groups. Additionally creates
     an AllocationAttribute for the new allocation that corresponds to the
     directory path on the cluster.
-
     Parameters:
         - project (Project): a Project object to create a secure directory
                             allocation for
         - subdirectory_name (str): the name of the subdirectory on the cluster
         - scratch_or_groups (str): one of either 'scratch' or 'groups'
-
-
     Returns:
         - allocation
-
     Raises:
         - TypeError, if subdirectory_name has an invalid type
         - ValueError, if scratch_or_groups does not have a valid value
@@ -304,11 +302,9 @@ def get_secure_dir_manage_user_request_objects(self, action):
     """
     Sets attributes pertaining to a secure directory based on the
     action being performed.
-
     Parameters:
         - self (object): object to set attributes for
         - action (str): the action being performed, either 'add' or 'remove'
-
     Raises:
         - TypeError, if the 'self' object is not an object
         - ValueError, if action is not one of 'add' or 'remove'
@@ -343,13 +339,10 @@ def get_secure_dir_manage_user_request_objects(self, action):
 def has_cluster_access(user):
     """
     Returns True if the user has cluster access, False otherwise
-
     Parameters:
     - user (User): the user to check
-
     Raises:
     - TypeError, if user is not a User object
-
     Returns:
     - Bool: True if the user has cluster access and False otherwise
     """

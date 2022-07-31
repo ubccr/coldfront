@@ -2,6 +2,8 @@
 {% load common_tags %}
 {% load feature_flags %}
 {% block content %}
+{% load feature_flags %}
+{% flag_enabled 'SECURE_DIRS_REQUESTABLE' as secure_dirs_requestable %}
 
   <h1>Request Hub</h1>
 
@@ -64,13 +66,19 @@
     {% include 'request_hub/request_section.html' %}
   {% endwith %}
 
-  {% with request_obj=secure_dir_join_request_obj %}
-    {% include 'request_hub/request_section.html' %}
-  {% endwith %}
+  {% if secure_dirs_requestable %}
+    {% with request_obj=secure_dir_request_obj %}
+      {% include 'request_hub/request_section.html' %}
+    {% endwith %}
 
-  {% with request_obj=secure_dir_remove_request_obj %}
-    {% include 'request_hub/request_section.html' %}
-  {% endwith %}
+    {% with request_obj=secure_dir_join_request_obj %}
+      {% include 'request_hub/request_section.html' %}
+    {% endwith %}
+
+    {% with request_obj=secure_dir_remove_request_obj %}
+      {% include 'request_hub/request_section.html' %}
+    {% endwith %}
+  {% endif %}
 
   {% flag_enabled 'SERVICE_UNITS_PURCHASABLE' as service_units_purchasable %}
   {% if service_units_purchasable %}

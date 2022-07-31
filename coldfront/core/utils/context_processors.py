@@ -1,6 +1,7 @@
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 
+from constance import config
 from django.conf import settings
 from django.db.models import Q
 
@@ -35,6 +36,10 @@ def allocation_navbar_visibility(request):
     context[allocation_key] = project_user.exists()
 
     return context
+
+
+def constance_config(request):
+    return {'CONSTANCE_CONFIG': config}
 
 
 def current_allowance_year_allocation_period(request):

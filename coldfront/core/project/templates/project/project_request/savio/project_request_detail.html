@@ -13,19 +13,6 @@
 {% block content %}
 <h1>
   {{ PRIMARY_CLUSTER_NAME }}: {{ savio_request }}
-  {% with status=savio_request.status.name %}
-    {% if status == 'Under Review' %}
-      <span class="badge badge-warning" style="float: right;">{{ status }}</span>
-    {% elif status == 'Approved - Processing' %}
-      <span class="badge badge-warning" style="float: right;">{{ status }}</span>
-    {% elif status == 'Approved - Scheduled' %}
-      <span class="badge badge-warning" style="float: right;">{{ status }}</span>
-    {% elif status == 'Approved - Complete' %}
-      <span class="badge badge-success" style="float: right;">{{ status }}</span>
-    {% else %}
-      <span class="badge badge-danger" style="float: right;">{{ status }}</span>
-    {% endif %}
-  {% endwith %}
 </h1>
 <hr>
 

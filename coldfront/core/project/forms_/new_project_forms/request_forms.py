@@ -18,6 +18,7 @@ from coldfront.core.utils.common import utc_now_offset_aware
 from django import forms
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.core.exceptions import ImproperlyConfigured
 from django.core.validators import MaxValueValidator
 from django.core.validators import MinLengthValidator
 from django.core.validators import MinValueValidator
@@ -567,9 +568,7 @@ class SavioProjectDetailsForm(forms.Form):
 
 
 class SavioProjectSurveyForm(forms.Form):
-    # TODO: Customize based on feature flags.
 
-    # Question 3
     scope_and_intent = forms.CharField(
         label='Scope and intent of research needing computation',
         validators=[MinLengthValidator(10)],
@@ -581,19 +580,26 @@ class SavioProjectSurveyForm(forms.Form):
         required=True,
         widget=forms.Textarea(attrs={'rows': 3}))
     existing_resources = forms.CharField(
-        label=(
-            'Existing computing resources (outside of Savio) currently being '
-            'used by this project. If you use cloud computing resources, we '
-            'would be interested in hearing about it.'),
+        label='',  # Set dynamically.
         required=False,
         widget=forms.Textarea(attrs={'rows': 3}))
     system_needs = forms.MultipleChoiceField(
         choices=(
-            ('intermittent_need', 'Meets intermittent or small need for compute cycles'),
-            ('cannot_purchase', 'Provides a resource since my group/area cannot purchase its own'),
-            ('additional_compute_beyond_cluster', 'Provides additional compute cycles beyond what is provided on my own cluster'),
-            ('larger_jobs', 'Provides ability to run larger-scale jobs than those I can\'t run on my own cluster'),
-            ('onramp', 'Provides an onramp to prepare for running on large systems or applying for grants and supercomputing center allocations'),
+            ('intermittent_need', (
+                'Meets intermittent or small need for compute cycles')),
+            ('cannot_purchase', (
+                'Provides a resource since my group/area cannot purchase its '
+                'own')),
+            ('additional_compute_beyond_cluster', (
+                'Provides additional compute cycles beyond what is provided '
+                'on my own cluster')),
+            ('larger_jobs', (
+                'Provides ability to run larger-scale jobs than those I '
+                'can\'t run on my own cluster')),
+            ('onramp', (
+                'Provides an onramp to prepare for running on large systems '
+                'or applying for grants and supercomputing center '
+                'allocations')),
             ('additional_compute', 'Provides additional compute cycles'),
         ),
         label=(
@@ -602,7 +608,6 @@ class SavioProjectSurveyForm(forms.Form):
         required=False,
         widget=forms.CheckboxSelectMultiple())
 
-    # Question 4
     num_processor_cores = forms.CharField(
         label=(
             'How many processor cores does your application use? (min, max, '
@@ -619,28 +624,14 @@ class SavioProjectSurveyForm(forms.Form):
             'over the year.'),
         required=False)
     large_memory_nodes = forms.CharField(
-        label=(
-            'BRC has a number of large memory nodes, each with 512GB or '
-            '384GB. Do you have a need to use these nodes? If so, what is '
-            'your expected use of these nodes?'),
+        label='',  # Set dynamically.
         required=False)
     data_storage_space = forms.CharField(
-        help_text=mark_safe(
-            'BRC provides each user with 10GB of backed up home directory '
-            'space; and free access to a not-backed-up shared Global Scratch '
-            'high performance parallel filesystem. Research projects that '
-            'need to share datasets among their team members can also be '
-            'allocated up to 30 GB of not-backed-up shared filesystem space '
-            'on request. Users needing more storage can choose to join the '
-            'Condo Storage service by purchasing 42TB at the cost of $6539. '
-            'More details about this program are available <a href="https://docs-research-it.berkeley.edu/services/high-performance-computing/condos/condo-storage-service/"><span class="accessibility-link-text">Data Storage program details</span>here</a>. '
-            'Please indicate if you need additional space and how much.'),
+        help_text='',  # Set dynamically.
         label='Data Storage Space',
         required=False)
     io = forms.CharField(
-        help_text=(
-            'Savio provides a shared Lustre parallel filesystem for jobs '
-            'needing access to high performance storage.'),
+        help_text='',  # Set dynamically.
         label='Describe your applications I/O requirements',
         required=False)
     interconnect = forms.ChoiceField(
@@ -663,7 +654,7 @@ class SavioProjectSurveyForm(forms.Form):
             'cluster? If yes, what is the max you you might transfer in a '
             'day? What would be typical for a month? Do you have need for '
             'file sharing of large datasets?'),
-        label='Network connection from Savio to the Internet',
+        label='',  # Set dynamically.
         required=False)
     cloud_computing = forms.ChoiceField(
         choices=(
@@ -674,13 +665,10 @@ class SavioProjectSurveyForm(forms.Form):
             ('4', '4'),
             ('5', '5 - Important'),
         ),
-        help_text=(
-            'BRC is developing a cloud computing offering. What is your '
-            'interest in using the cloud for your computation?'),
+        help_text='',  # Set dynamically.
         label='Cloud computing',
         required=False)
 
-    # Question 5
     software_source = forms.CharField(
         help_text=(
             'Specify your software applications. If you have need for '
@@ -694,39 +682,85 @@ class SavioProjectSurveyForm(forms.Form):
         required=False)
 
     def __init__(self, *args, **kwargs):
+        self.primary_cluster_name = settings.PRIMARY_CLUSTER_NAME
         self.computing_allowance = kwargs.pop('computing_allowance', None)
         disable_fields = kwargs.pop('disable_fields', False)
         super().__init__(*args, **kwargs)
         if self.computing_allowance is not None:
             self.computing_allowance = ComputingAllowance(
                 self.computing_allowance)
-            self._update_field_attributes()
+        self._update_field_attributes()
         if disable_fields:
             for field in self.fields:
                 self.fields[field].disabled = True
 
     def _update_field_attributes(self):
-        """Update fields for select allowances."""
-        if self.computing_allowance.is_instructional():
-            self.fields['scope_and_intent'].label = (
-                'Scope and intent of coursework needing computation')
-            self.fields['computational_aspects'].help_text = (
-                'Describe the nature of the coursework for which students '
-                'will use Savio (e.g., homework, problem sets, projects, '
-                'etc.).')
-            self.fields['computational_aspects'].label = (
-                'Computational aspects of the coursework')
-            self.fields['existing_resources'].label = (
-                'Existing computing resources (outside of Savio) currently '
-                'being used by this course. If you use cloud computing '
-                'resources, we would be interested in hearing about it.')
-            self.fields['num_processor_cores'].label = (
-                'How many processor cores does a single execution (i.e., by '
-                'one student) of your application use? (min, max, typical '
-                'runs)')
-            self.fields['processor_core_hours_year'].label = (
-                'Estimate how many processor-core-hrs your students will need '
-                'over the duration of the course.')
+        """Update field attributes that have deployment-specific
+        content."""
+        self.fields['existing_resources'].label = (
+            f'Existing computing resources (outside of '
+            f'{self.primary_cluster_name}) currently being used by this '
+            f'project. If you use cloud computing resources, we would be '
+            f'interested in hearing about it.')
+        self.fields['large_memory_nodes'].label = (
+            f'{settings.PROGRAM_NAME_SHORT} has a number of large memory '
+            f'nodes, each with hundreds of GB. Do you have a need to use '
+            f'these nodes? If so, what is your expected use of these nodes?')
+        self.fields['io'].help_text = (
+            f'{self.primary_cluster_name} provides a shared Lustre parallel '
+            f'filesystem for jobs needing access to high performance storage.')
+        self.fields['network_to_internet'].label = (
+            f'Network connection from {self.primary_cluster_name} to the '
+            f'Internet')
+
+        if flag_enabled('BRC_ONLY'):
+            condo_docs_url = (
+                'https://docs-research-it.berkeley.edu/services/'
+                'high-performance-computing/condos/condo-storage-service/')
+            self.fields['data_storage_space'].help_text = mark_safe(
+                f'{settings.PROGRAM_NAME_SHORT} provides each user with 10GB '
+                f'of backed up home directory space; and free access to a '
+                f'not-backed-up shared Global Scratch high performance '
+                f'parallel filesystem. Research projects that need to share '
+                f'datasets among their team members can also be allocated up '
+                f'to 30 GB of not-backed-up shared filesystem space on '
+                f'request. Users needing more storage can choose to join the '
+                f'Condo Storage service by purchasing 42TB at the cost of '
+                f'$6539. More details about this program are available '
+                f'<a href="{condo_docs_url}">'
+                f'<span class="accessibility-link-text">Data Storage program '
+                f'details</span>here</a>. Please indicate if you need '
+                f'additional space and how much.')
+            self.fields['cloud_computing'].help_text = (
+                f'{settings.PROGRAM_NAME_SHORT} is developing a cloud '
+                f'computing offering. What is your interest in using the '
+                f'cloud for your computation?')
+            if (isinstance(self.computing_allowance, ComputingAllowance) and
+                    self.computing_allowance.is_instructional()):
+                self.fields['scope_and_intent'].label = (
+                    'Scope and intent of coursework needing computation')
+                self.fields['computational_aspects'].help_text = (
+                    f'Describe the nature of the coursework for which '
+                    f'students will use {self.primary_cluster_name} (e.g., '
+                    f'homework, problem sets, projects, etc.).')
+                self.fields['computational_aspects'].label = (
+                    'Computational aspects of the coursework')
+                self.fields['existing_resources'].label = (
+                    f'Existing computing resources (outside of '
+                    f'{self.primary_cluster_name}) currently being used by '
+                    f'this course. If you use cloud computing resources, we '
+                    f'would be interested in hearing about it.')
+                self.fields['num_processor_cores'].label = (
+                    'How many processor cores does a single execution (i.e., '
+                    'by one student) of your application use? (min, max, '
+                    'typical runs)')
+                self.fields['processor_core_hours_year'].label = (
+                    'Estimate how many processor-core-hrs your students will '
+                    'need over the duration of the course.')
+
+        if flag_enabled('LRC_ONLY'):
+            self.fields.pop('data_storage_space')
+            self.fields.pop('cloud_computing')
 
 
 # =============================================================================

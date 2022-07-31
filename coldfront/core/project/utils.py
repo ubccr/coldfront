@@ -10,8 +10,8 @@ from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.resource.utils import get_compute_resource_names
 from coldfront.core.resource.utils import get_primary_compute_resource_name
-from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.common import display_time_zone_current_date
+from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.common import project_detail_url
 from coldfront.core.utils.mail import send_email_template
 from django.conf import settings

@@ -1,0 +1,185 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load common_tags %}
+{% load static %}
+{% load iso8601_to_datetime %}
+
+
+{% block title %}
+Secure Directory Request Detail
+{% endblock %}
+
+
+{% block content %}
+<h1>
+  Secure Directory: {{ secure_dir_request.project.name }}
+  {% with status=secure_dir_request.status.name %}
+    {% if status == 'Under Review' %}
+      <span class="badge badge-warning" style="float: right;">{{ status }}</span>
+    {% elif status == 'Approved - Processing' %}
+      <span class="badge badge-warning" style="float: right;">{{ status }}</span>
+    {% elif status == 'Approved - Scheduled' %}
+      <span class="badge badge-warning" style="float: right;">{{ status }}</span>
+    {% elif status == 'Approved - Complete' %}
+      <span class="badge badge-success" style="float: right;">{{ status }}</span>
+    {% else %}
+      <span class="badge badge-danger" style="float: right;">{{ status }}</span>
+    {% endif %}
+  {% endwith %}
+</h1>
+<hr>
+
+{% include 'secure_dir/secure_dir_request/secure_dir_request_card.html' with secure_dir_request=secure_dir_request %}
+
+<div class="card mb-3">
+  <div class="card-header">
+    <h2>
+      <i class="fas fa-question-circle" aria-hidden="true"></i>
+      Request Status
+    </h2>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-sm">
+        <tbody>
+          <tr>
+              {% with status=secure_dir_request.status.name %}
+                {% if status == 'Under Review' %}
+                  <p>
+                    <strong>Status:</strong>
+                    This request is currently under review. Administrators must
+                    confirm that the requester has consulted with RDM and signed the MOU.
+                  </p>
+                {% elif status == 'Approved - Processing' %}
+                  <p>
+                    <strong>Status:</strong>
+                    This request has been approved, and is currently being set
+                    up on the cluster.
+                  </p>
+                {% elif status == 'Approved - Complete' %}
+                  <p>
+                    <strong>Status:</strong>
+                    This request has been approved, and is fully processed.
+                  </p>
+                {% else %}
+                  <p>
+                    <strong>Status:</strong>
+                    This request has been denied. Below are specific details:
+                  </p>
+                  <p>
+                    <strong>Category:</strong>
+                    {{ denial_reason.category }}
+                  </p>
+                  <p>
+                    <strong>Justification:</strong>
+                    {{ denial_reason.justification }}
+                  </p>
+                  <p>
+                    <strong>Timestamp:</strong>
+                    {{ denial_reason.timestamp|iso8601_to_datetime }}
+                  </p>
+                    {% if user.is_superuser %}
+                    <p>
+                    <strong>Un-deny Request:</strong>
+                    <a href="{% url 'secure-dir-request-undeny' secure_dir_request.pk %}" class="btn btn-primary">
+                        Un-deny
+                    </a>
+                    </p>
+                        {% endif %}
+                    <p>If you have any questions or concerns, please contact us at {{ support_email }}.</p>
+                {% endif %}
+              {% endwith %}
+            </td>
+          </tr>
+          <tr>
+            <strong>Latest Update Timestamp:</strong>
+            {{ latest_update_timestamp }}
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% if is_allowed_to_manage_request and secure_dir_request.status.name not in 'Approved - Complete,Denied' %}
+  <div class="card mb-3">
+    <div class="card-header">
+      <h2>
+        <i class="fas fa-check-circle" aria-hidden="true"></i>
+        System Administrator Checklist
+      </h2>
+    </div>
+    <div class="card-body">
+      <p>
+        This section, which is only visible for system administrators,
+        manages this request. Please review the given information and complete
+        the checklist in the following order before final approval. You may
+        also deny the request for some other reason.
+      </p>
+      <div class="table-responsive">
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th scope="col">Task</th>
+              <th scope="col">Status</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for item in checklist %}
+            <tr>
+              <td>{{ item.0 }}</td>
+              <td>
+                {% with status=item.1 latest_update_timestamp=item.2 %}
+                  {% if status == 'Pending' %}
+                    <span class="badge badge-warning">
+                  {% elif status in 'Approved,Completed' %}
+                    <span class="badge badge-success">
+                  {% else %}
+                    <span class="badge badge-danger">
+                  {% endif %}
+                {{ status }}
+                {% if latest_update_timestamp %}
+                  {{ latest_update_timestamp|iso8601_to_datetime }}
+                {% endif %}
+                </span>
+                {% endwith %}
+              </td>
+              <td>
+                {% if item.3 %}
+                  <a href="{{ item.4 }}" class="btn btn-primary">
+                    Manage
+                  </a>
+                {% else %}
+                  <button class="btn btn-primary" disabled="true">
+                    Manage
+                  </button>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <hr>
+      {% if is_checklist_complete %}
+        <form action="{% url 'secure-dir-request-detail' secure_dir_request.pk %}" method="post">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-primary">Submit</button>
+          <a href="{% url 'secure-dir-pending-request-list' %}" class="btn btn-secondary">Cancel</a>
+          <a href="{% url 'secure-dir-request-review-deny' secure_dir_request.pk %}" class="btn btn-danger" style="float: right;">
+            Deny For Other Reason
+          </a>
+        </form>
+      {% else %}
+        <button type="button" class="btn btn-primary" disabled>Submit</button>
+        <a href="{% url 'secure-dir-pending-request-list' %}" class="btn btn-secondary">Cancel</a>
+        <a href="{% url 'secure-dir-request-review-deny' secure_dir_request.pk %}" class="btn btn-danger" style="float: right;">
+          Deny For Other Reason
+        </a>
+      {% endif %}
+    </div>
+  </div>
+{% endif %}
+
+{% endblock %}
