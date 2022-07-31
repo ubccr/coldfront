@@ -1,6 +1,7 @@
 from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.project.forms_.new_project_forms.request_forms import SavioProjectAllocationPeriodForm
-from coldfront.core.project.models import SavioProjectAllocationRequest
+from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
 from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.tests.test_base import TestBase
 
@@ -68,13 +69,13 @@ class TestSavioProjectAllocationPeriodForm(TestBase):
             start_date=today + timedelta(days=2 * num_days_before_ica),
             end_date=today + timedelta(days=3 * num_days_before_ica))
 
-    def test_fca_pca_allocation_types_choices(self):
+    def test_fca_pca_allowance_choices(self):
         """Test that the AllocationPeriods that are selectable for the
-        FCA and PCA allocation types are the expected ones."""
-        allocation_types = (
-            SavioProjectAllocationRequest.FCA,
-            SavioProjectAllocationRequest.PCA,
-        )
+        FCA and PCA computing allowances on BRC are the expected
+        ones."""
+        computing_allowances = (
+            Resource.objects.get(name=BRCAllowances.FCA),
+            Resource.objects.get(name=BRCAllowances.PCA))
 
         flag_name = 'ALLOCATION_RENEWAL_FOR_NEXT_PERIOD_REQUESTABLE'
 
@@ -84,39 +85,38 @@ class TestSavioProjectAllocationPeriodForm(TestBase):
         flags_copy = deepcopy(settings.FLAGS)
         flags_copy.pop(flag_name)
         with override_settings(FLAGS=flags_copy):
-            for allocation_type in allocation_types:
-                form = self.form_class(allocation_type=allocation_type)
+            for computing_allowance in computing_allowances:
+                form = self.form_class(computing_allowance=computing_allowance)
                 period_choices = form.fields['allocation_period'].queryset
                 self.assertEqual(period_choices.count(), 1)
                 self.assertIn(self.current_fca_pca_period, period_choices)
 
         # Otherwise, it should be selectable.
         enable_flag(flag_name)
-        for allocation_type in allocation_types:
-            form = self.form_class(allocation_type=allocation_type)
+        for computing_allowance in computing_allowances:
+            form = self.form_class(computing_allowance=computing_allowance)
             period_choices = form.fields['allocation_period'].queryset
             self.assertEqual(period_choices.count(), 2)
             self.assertIn(self.current_fca_pca_period, period_choices)
             self.assertIn(self.next_fca_pca_period, period_choices)
 
-    def test_ica_allocation_type_choices(self):
+    def test_ica_allowance_choices(self):
         """Test that the AllocationPeriods that are selectable for the
         ICA allocation type are the expected ones."""
-        allocation_type = SavioProjectAllocationRequest.ICA
-        form = self.form_class(allocation_type=allocation_type)
+        computing_allowance = Resource.objects.get(name=BRCAllowances.ICA)
+        form = self.form_class(computing_allowance=computing_allowance)
         period_choices = form.fields['allocation_period'].queryset
         self.assertEqual(period_choices.count(), 2)
         self.assertIn(self.current_ica_period, period_choices)
         self.assertIn(self.soon_ica_period, period_choices)
 
-    def test_other_allocation_type_choices(self):
+    def test_other_allowance_choices(self):
         """Test that the AllocationPeriods that are selectable for the
         other allocation types are the expected ones."""
-        allocation_types = (
-            SavioProjectAllocationRequest.CO,
-            SavioProjectAllocationRequest.RECHARGE,
-        )
-        for allocation_type in allocation_types:
-            form = self.form_class(allocation_type=allocation_type)
+        computing_allowances = (
+            Resource.objects.get(name=BRCAllowances.CO),
+            Resource.objects.get(name=BRCAllowances.RECHARGE))
+        for computing_allowance in computing_allowances:
+            form = self.form_class(computing_allowance=computing_allowance)
             period_choices = form.fields['allocation_period'].queryset
             self.assertEqual(period_choices.count(), 0)

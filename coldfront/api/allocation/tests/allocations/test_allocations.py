@@ -2,6 +2,7 @@ from coldfront.api.allocation.tests.test_allocation_base import TestAllocationBa
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.resource.models import Resource
 from coldfront.core.resource.models import ResourceType
+from coldfront.core.resource.utils import get_primary_compute_resource_name
 from http import HTTPStatus
 
 """A test suite for the /allocations/ endpoints, divided by method."""
@@ -102,15 +103,16 @@ class TestListAllocations(TestAllocationBase):
             name='Other Compute', resource_type=resource_type)
         allocation.resources.add(resource)
 
+        resource_name = get_primary_compute_resource_name()
         url = self.endpoint_url()
         query_parameters = {
-            'resources': 'Savio Compute',
+            'resources': resource_name,
         }
         response = self.client.get(url, query_parameters)
         json = response.json()
         self.assertEqual(json['count'], 2)
         for result in json['results']:
-            self.assertIn({'name': 'Savio Compute'}, result['resources'])
+            self.assertIn({'name': resource_name}, result['resources'])
 
         query_parameters = {
             'resources': 'Other Compute',

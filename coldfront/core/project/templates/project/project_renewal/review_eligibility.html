@@ -13,13 +13,12 @@ Allocation Renewal Request - Review Eligibility
 <hr>
 
 <p>
-  Please determine whether the request's PI is eligible for a Savio allowance.
+  Please determine whether the request's PI is still eligible for a {{ computing_allowance_name }}.
 
-  {% if savio_request.allocation_type == "FCA" or savio_request.allocation_type == "PCA" %}
+  {% if is_allowance_one_per_pi  %}
     <b>
       As part of this, confirm that the PI does not already have an existing
-      {{ savio_request.allocation_type }}, possibly under a different email
-      address.
+      {{ computing_allowance_name }}, possibly under a different email address.
     </b>
   {% endif %}
 

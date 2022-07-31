@@ -24,6 +24,7 @@ from coldfront.core.allocation.models import (Allocation,
 from coldfront.core.allocation.signals import allocation_activate_user
 from coldfront.core.allocation.utils import get_allocation_user_cluster_access_status
 from coldfront.core.allocation.utils import get_project_compute_allocation
+from coldfront.core.allocation.utils import get_project_compute_resource_name
 # from coldfront.core.grant.models import Grant
 from coldfront.core.allocation.utils_.secure_dir_utils import \
     pi_eligible_to_request_secure_dir
@@ -47,7 +48,8 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserRemovalRequestStatusChoice,
                                            SavioProjectAllocationRequest,
                                            VectorProjectAllocationRequest)
-from coldfront.core.project.utils import (ProjectClusterAccessRequestRunner,
+from coldfront.core.project.utils import (annotate_queryset_with_cluster_name,
+                                          ProjectClusterAccessRequestRunner,
                                           send_added_to_project_notification_email,
                                           send_project_join_notification_email,
                                           send_project_join_request_approval_email,
@@ -56,8 +58,10 @@ from coldfront.core.project.utils_.addition_utils import can_project_purchase_se
 from coldfront.core.project.utils_.new_project_utils import add_vector_user_to_designated_savio_project
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.project.utils_.renewal_utils import is_any_project_pi_renewable
+from coldfront.core.resource.utils import get_primary_compute_resource_name
+from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.user.forms import UserSearchForm
-from coldfront.core.user.models import UserProfile
 from coldfront.core.user.utils import CombinedUserSearch, is_lbl_employee, \
     needs_host, access_agreement_signed
 from coldfront.core.utils.common import (get_domain_url, import_from_settings)
@@ -234,15 +238,23 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['cluster_accounts_requestable'] = cluster_accounts_requestable
         context['cluster_accounts_tooltip'] = cluster_accounts_tooltip
 
-        # Display the "Renew Allowance" button for eligible allocation types.
-        eligible_project_prefixes = (
-            'fc_'
-            # TODO: Include these when ready.
-            # 'ic_',
-            # 'pc_',
-        )
-        context['renew_allowance_visible'] = self.object.name.startswith(
-            eligible_project_prefixes)
+        # Some features are only available to Projects corresponding to the
+        # primary cluster.
+        compute_resource_name = get_project_compute_resource_name(self.object)
+        is_primary_cluster_project = (
+            compute_resource_name == get_primary_compute_resource_name())
+
+        # Display the "Renew Allowance" button for eligible allocation types
+        # under the primary cluster.
+        renew_allowance_visible = False
+        if is_primary_cluster_project:
+            computing_allowance_interface = ComputingAllowanceInterface()
+            computing_allowance = ComputingAllowance(
+                computing_allowance_interface.allowance_from_project(
+                    self.object))
+            renew_allowance_visible = \
+                computing_allowance.is_renewal_supported()
+        context['renew_allowance_visible'] = renew_allowance_visible
         # Only allow the "Renew Allowance" button to be clickable if
         #     (a) any PIs do not have pending/approved renewal requests for the
         #         current period, or
@@ -254,11 +266,16 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             is_any_project_pi_renewable(self.object, allocation_period) or
             flag_enabled('ALLOCATION_RENEWAL_FOR_NEXT_PERIOD_REQUESTABLE'))
 
-        # Display the "Purchase Service Units" button for eligible allocation
-        # types, for those allowed to update the project.
+        # Display the "Purchase Service Units" button when the functionality is
+        # enabled, for eligible allocation types, for those allowed to update
+        # the project.
         context['purchase_sus_visible'] = (
+            flag_enabled('SERVICE_UNITS_PURCHASABLE') and
+            is_primary_cluster_project and
             can_project_purchase_service_units(self.object) and
             context.get('is_allowed_to_update_project', False))
+
+        context['cluster_name'] = compute_resource_name.replace(' Compute', '')
 
         # Only active PIs of active FCAs, ICAs and Condos can request
         # secure directories
@@ -299,27 +316,15 @@ class ProjectListView(LoginRequiredMixin, ListView):
             if data.get('show_all_projects') and (self.request.user.is_superuser or self.request.user.has_perm('project.can_view_all_projects')):
                 projects = Project.objects.prefetch_related('field_of_science', 'status',).filter(
                     status__name__in=['New', 'Active', 'Inactive', ]
-                ).annotate(
-                    cluster_name=Case(
-                        When(name='abc', then=Value('ABC')),
-                        When(name__startswith='vector_', then=Value('Vector')),
-                        default=Value('Savio'),
-                        output_field=CharField(),
-                    )
                 ).order_by(order_by)
+                projects = annotate_queryset_with_cluster_name(projects)
             else:
                 projects = Project.objects.prefetch_related('field_of_science', 'status',).filter(
                     Q(status__name__in=['New', 'Active', 'Inactive', ]) &
                     Q(projectuser__user=self.request.user) &
                     Q(projectuser__status__name__in=['Active',  'Pending - Remove'])
-                ).annotate(
-                    cluster_name=Case(
-                        When(name='abc', then=Value('ABC')),
-                        When(name__startswith='vector_', then=Value('Vector')),
-                        default=Value('Savio'),
-                        output_field=CharField(),
-                    ),
                 ).order_by(order_by)
+                projects = annotate_queryset_with_cluster_name(projects)
 
             # Last Name
             if data.get('last_name'):
@@ -362,14 +367,8 @@ class ProjectListView(LoginRequiredMixin, ListView):
                 Q(status__name__in=['New', 'Active', 'Inactive', ]) &
                 Q(projectuser__user=self.request.user) &
                 Q(projectuser__status__name__in=['Active', 'Pending - Remove'])
-            ).annotate(
-                cluster_name=Case(
-                    When(name='abc', then=Value('ABC')),
-                    When(name__startswith='vector_', then=Value('Vector')),
-                    default=Value('Savio'),
-                    output_field=CharField(),
-                ),
             ).order_by(order_by)
+            projects = annotate_queryset_with_cluster_name(projects)
 
         return projects.distinct()
 
@@ -961,9 +960,11 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                         self.logger.error(message)
                         self.logger.exception(e)
 
-                    # If the Project is a Vector project, automatically add the
-                    # User to the designated Savio project for Vector users.
-                    if project_obj.name.startswith('vector_'):
+                    # On BRC only, if the Project is a Vector project,
+                    # automatically add the User to the designated Savio
+                    # project for Vector users.
+                    if (flag_enabled('BRC_ONLY') and
+                            project_obj.name.startswith('vector_')):
                         try:
                             add_vector_user_to_designated_savio_project(
                                 user_obj)
@@ -1553,14 +1554,8 @@ class ProjectJoinListView(ProjectListView, UserPassesTestMixin):
         projects = Project.objects.prefetch_related(
             'field_of_science', 'status').filter(
                 status__name__in=['New', 'Active', ]
-        ).annotate(
-            cluster_name=Case(
-                When(name='abc', then=Value('ABC')),
-                When(name__startswith='vector_', then=Value('Vector')),
-                default=Value('Savio'),
-                output_field=CharField(),
-            ),
         ).order_by(order_by)
+        projects = annotate_queryset_with_cluster_name(projects)
 
         if project_search_form.is_valid():
             data = project_search_form.cleaned_data
@@ -1650,11 +1645,8 @@ class ProjectJoinListView(ProjectListView, UserPassesTestMixin):
 
         join_requests = Project.objects.filter(Q(projectuser__user=self.request.user)
                                                & Q(status__name__in=['New', 'Active', ])
-                                               & Q(projectuser__status__name__in=['Pending - Add']))\
-            .annotate(cluster_name=Case(When(name='abc', then=Value('ABC')),
-                                        When(name__startswith='vector_', then=Value('Vector')),
-                                        default=Value('Savio'),
-                                        output_field=CharField()))
+                                               & Q(projectuser__status__name__in=['Pending - Add']))
+        join_requests = annotate_queryset_with_cluster_name(join_requests)
 
         context['join_requests'] = join_requests
         context['not_joinable'] = not_joinable

@@ -10,7 +10,8 @@ from coldfront.core.allocation.models import AllocationUserStatusChoice
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserStatusChoice
-from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils import get_primary_compute_resource
+from coldfront.core.resource.utils import get_primary_compute_resource_name
 from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.utils.common import utc_now_offset_aware
@@ -86,7 +87,7 @@ def create_project_allocation(project, value):
     if not isinstance(value, Decimal):
         raise TypeError(f'Value {value} is not a Decimal.')
 
-    resource = Resource.objects.get(name='Savio Compute')
+    resource = get_primary_compute_resource()
 
     status = AllocationStatusChoice.objects.get(name='Active')
     allocation = Allocation.objects.create(project=project, status=status)
@@ -138,7 +139,7 @@ def create_user_project_allocation(user, project, value):
     if not isinstance(value, Decimal):
         raise TypeError(f'Value {value} is not a Decimal.')
 
-    resource = Resource.objects.get(name='Savio Compute')
+    resource = get_primary_compute_resource()
 
     status = AllocationStatusChoice.objects.get(name='Active')
     allocation = Allocation.objects.get(
@@ -194,7 +195,7 @@ def get_accounting_allocation_objects(project, user=None,
 
     allocation_kwargs = {
         'project': project,
-        'resources__name': 'Savio Compute',
+        'resources__name': get_primary_compute_resource_name(),
     }
     if enforce_allocation_active:
         # Check that the project has an active Allocation to the

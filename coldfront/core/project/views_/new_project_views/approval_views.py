@@ -4,11 +4,9 @@ from coldfront.core.allocation.utils import prorated_allocation_amount
 from coldfront.core.project.forms import MemorandumSignedForm
 from coldfront.core.project.forms import ReviewDenyForm
 from coldfront.core.project.forms import ReviewStatusForm
+from coldfront.core.project.forms_.new_project_forms.request_forms import NewProjectExtraFieldsFormFactory
 from coldfront.core.project.forms_.new_project_forms.approval_forms import SavioProjectReviewSetupForm
 from coldfront.core.project.forms_.new_project_forms.approval_forms import VectorProjectReviewSetupForm
-from coldfront.core.project.forms_.new_project_forms.request_forms import SavioProjectExtraFieldsForm
-from coldfront.core.project.forms_.new_project_forms.request_forms import SavioProjectICAExtraFieldsForm
-from coldfront.core.project.forms_.new_project_forms.request_forms import SavioProjectRechargeExtraFieldsForm
 from coldfront.core.project.forms_.new_project_forms.request_forms import SavioProjectSurveyForm
 from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
@@ -20,6 +18,8 @@ from coldfront.core.project.utils_.new_project_utils import savio_request_state_
 from coldfront.core.project.utils_.new_project_utils import send_project_request_pooling_email
 from coldfront.core.project.utils_.new_project_utils import VectorProjectProcessingRunner
 from coldfront.core.project.utils_.new_project_utils import vector_request_state_status
+from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import format_date_month_name_day_year
 from coldfront.core.utils.common import utc_now_offset_aware
@@ -39,6 +39,8 @@ from django.views import View
 from django.views.generic import DetailView
 from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
+
+from flags.state import flag_enabled
 
 import iso8601
 import logging
@@ -100,21 +102,39 @@ class SavioProjectRequestMixin(object):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.interface = ComputingAllowanceInterface()
         self.request_obj = None
+        self.computing_allowance_obj = None
 
-    @staticmethod
-    def get_extra_fields_form(allocation_type, extra_fields):
+    def assert_attributes_set(self):
+        """Assert that the attributes have been set."""
+        assert isinstance(self.request_obj, SavioProjectAllocationRequest)
+        assert isinstance(self.computing_allowance_obj, ComputingAllowance)
+
+    def get_extra_fields_form(self):
+        """Return a form of extra fields for the request, based on its
+        computing allowance, and populated with initial data."""
+        self.assert_attributes_set()
+        computing_allowance = self.computing_allowance_obj
+        extra_fields = self.request_obj.extra_fields
         kwargs = {
             'initial': extra_fields,
             'disable_fields': True,
         }
-        if allocation_type == SavioProjectAllocationRequest.ICA:
-            form = SavioProjectICAExtraFieldsForm
-        elif allocation_type == SavioProjectAllocationRequest.RECHARGE:
-            form = SavioProjectRechargeExtraFieldsForm
-        else:
-            form = SavioProjectExtraFieldsForm
-        return form(**kwargs)
+        factory = NewProjectExtraFieldsFormFactory()
+        return factory.get_form(computing_allowance, **kwargs)
+
+    def get_survey_form(self):
+        """Return a disabled form containing the survey answers for the
+        request."""
+        self.assert_attributes_set()
+        survey_answers = self.request_obj.survey_answers
+        kwargs = {
+            'initial': survey_answers,
+            'disable_fields': True,
+        }
+        # TODO
+        return SavioProjectSurveyForm(**kwargs)
 
     def redirect_if_disallowed_status(self, http_request,
                                       disallowed_status_names=(
@@ -123,10 +143,7 @@ class SavioProjectRequestMixin(object):
         project request if its status has one of the given disallowed
         names, after sending a message to the user. Otherwise, return
         None."""
-        if not isinstance(self.request_obj, SavioProjectAllocationRequest):
-            raise TypeError(
-                f'Request object has unexpected type '
-                f'{type(self.request_obj)}.')
+        self.assert_attributes_set()
         status_name = self.request_obj.status.name
         if status_name in disallowed_status_names:
             message = (
@@ -141,14 +158,35 @@ class SavioProjectRequestMixin(object):
     def request_detail_url(pk):
         """Return the URL to the detail view for the request with the
         given primary key."""
-        return reverse('savio-project-request-detail', kwargs={'pk': pk})
+        return reverse('new-project-request-detail', kwargs={'pk': pk})
 
-    def set_request_obj(self, pk):
+    def set_attributes(self, pk):
         """Set this instance's request_obj to be the
         SavioProjectAllocationRequest with the given primary key."""
         self.request_obj = get_object_or_404(
             SavioProjectAllocationRequest.objects.prefetch_related(
                 'pi', 'project', 'requester'), pk=pk)
+        self.computing_allowance_obj = ComputingAllowance(
+            self.request_obj.computing_allowance)
+
+    def set_common_context_data(self, context):
+        """Given a dictionary of context variables to include in the
+        template, add additional, commonly-used variables."""
+        self.assert_attributes_set()
+        context['savio_request'] = self.request_obj
+        context['computing_allowance_name'] = \
+            self.computing_allowance_obj.get_name()
+        context['allowance_has_extra_fields'] = \
+            self.computing_allowance_obj.requires_extra_information()
+        if context['allowance_has_extra_fields']:
+            context['extra_fields_form'] = self.get_extra_fields_form()
+        context['allowance_requires_mou'] = \
+            self.computing_allowance_obj.requires_memorandum_of_understanding()
+        context['allowance_requires_funds_transfer'] = (
+            self.computing_allowance_obj.is_recharge() and
+            context['allowance_has_extra_fields'])
+        context['survey_form'] = SavioProjectSurveyForm(
+            initial=self.request_obj.survey_answers, disable_fields=True)
 
 
 class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
@@ -156,13 +194,12 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
     model = SavioProjectAllocationRequest
     template_name = 'project/project_request/savio/project_request_detail.html'
     login_url = '/'
-    context_object_name = 'savio_request'
 
     logger = logging.getLogger(__name__)
 
     error_message = 'Unexpected failure. Please contact an administrator.'
 
-    redirect = reverse_lazy('savio-project-pending-request-list')
+    redirect = reverse_lazy('new-project-pending-request-list')
 
     def test_func(self):
         """UserPassesTestMixin tests."""
@@ -181,16 +218,12 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.set_request_obj(pk)
+        self.set_attributes(pk)
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
-        context['extra_fields_form'] = self.get_extra_fields_form(
-            self.request_obj.allocation_type, self.request_obj.extra_fields)
-        context['survey_form'] = SavioProjectSurveyForm(
-            initial=self.request_obj.survey_answers, disable_fields=True)
+        self.set_common_context_data(context)
 
         try:
             context['allocation_amount'] = self.get_service_units_to_allocate()
@@ -240,8 +273,8 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         context['has_allocation_period_started'] = \
             self.has_request_allocation_period_started()
         context['setup_status'] = self.get_setup_status()
+        context['checklist'] = self.get_checklist()
         context['is_checklist_complete'] = self.is_checklist_complete()
-
         context['is_allowed_to_manage_request'] = \
             self.request.user.is_superuser
 
@@ -256,14 +289,14 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
             pk = self.request_obj.pk
 
             return HttpResponseRedirect(
-                reverse('savio-project-request-detail', kwargs={'pk': pk}))
+                reverse('new-project-request-detail', kwargs={'pk': pk}))
 
         if not self.is_checklist_complete():
             message = 'Please complete the checklist before final activation.'
             messages.error(request, message)
             pk = self.request_obj.pk
             return HttpResponseRedirect(
-                reverse('savio-project-request-detail', kwargs={'pk': pk}))
+                reverse('new-project-request-detail', kwargs={'pk': pk}))
 
         processing_runner = None
         project = self.request_obj.project
@@ -313,9 +346,79 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
         return HttpResponseRedirect(self.redirect)
 
+    def get_checklist(self):
+        """Return a nested list, where each row contains the details of
+        one item on the checklist.
+
+        Each row is of the form: [task text, status name, latest update
+        timestamp, is "Manage" button available, URL of "Manage"
+        button.]"""
+        pk = self.request_obj.pk
+        state = self.request_obj.state
+        checklist = []
+
+        eligibility = state['eligibility']
+        checklist.append([
+            (f'Confirm that the requested PI is eligible for a new '
+             f'{self.computing_allowance_obj.get_name()}.'),
+            eligibility['status'],
+            eligibility['timestamp'],
+            True,
+            reverse(
+                'new-project-request-review-eligibility', kwargs={'pk': pk})
+        ])
+        is_eligible = eligibility['status'] == 'Approved'
+
+        readiness = state['readiness']
+        checklist.append([
+            ('Confirm that the project satisfies the readiness status '
+             'criteria.'),
+            readiness['status'],
+            readiness['timestamp'],
+            True,
+            reverse(
+                'new-project-request-review-readiness', kwargs={'pk': pk})
+        ])
+        is_ready = readiness['status'] == 'Approved'
+
+        mou_required = \
+            self.computing_allowance_obj.requires_memorandum_of_understanding()
+        if mou_required:
+            memorandum_signed = state['memorandum_signed']
+            task_text = (
+                'Confirm that the Memorandum of Understanding has been '
+                'signed.')
+            if (self.computing_allowance_obj.is_recharge() and
+                    self.computing_allowance_obj.requires_extra_information()):
+                task_text += (
+                    ' Additionally, confirm that funds have been transferred.')
+            checklist.append([
+                task_text,
+                memorandum_signed['status'],
+                memorandum_signed['timestamp'],
+                is_eligible and is_ready,
+                reverse(
+                    'new-project-request-review-memorandum-signed',
+                    kwargs={'pk': pk})
+            ])
+        is_memorandum_signed = (
+            not mou_required or
+            state['memorandum_signed']['status'] == 'Complete')
+
+        setup = state['setup']
+        checklist.append([
+            'Perform project setup on the cluster.',
+            self.get_setup_status(),
+            setup['timestamp'],
+            is_eligible and is_ready and is_memorandum_signed,
+            reverse('new-project-request-review-setup', kwargs={'pk': pk})
+        ])
+
+        return checklist
+
     def get_service_units_to_allocate(self):
-        """Return the number of service units to allocate to the
-        project, based on its request_time.
+        """Return the possibly-prorated number of service units to
+        allocate to the project.
 
         If the request was created as part of an allocation renewal, it
         may be associated with at most one AllocationRenewalRequest. If
@@ -324,40 +427,31 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         if AllocationRenewalRequest.objects.filter(
                 new_project_request=self.request_obj).exists():
             return settings.ALLOCATION_MIN
-
-        allocation_type = self.request_obj.allocation_type
-        if allocation_type == SavioProjectAllocationRequest.CO:
-            return settings.CO_DEFAULT_ALLOCATION
-        elif allocation_type == SavioProjectAllocationRequest.FCA:
-            return prorated_allocation_amount(
-                settings.FCA_DEFAULT_ALLOCATION, self.request_obj.request_time,
-                self.request_obj.allocation_period)
-        elif allocation_type == SavioProjectAllocationRequest.ICA:
-            return settings.ICA_DEFAULT_ALLOCATION
-        elif allocation_type == SavioProjectAllocationRequest.PCA:
-            return prorated_allocation_amount(
-                settings.PCA_DEFAULT_ALLOCATION, self.request_obj.request_time,
-                self.request_obj.allocation_period)
-        elif allocation_type == SavioProjectAllocationRequest.RECHARGE:
-            num_service_units = \
-                self.request_obj.extra_fields['num_service_units']
-            return Decimal(f'{num_service_units:.2f}')
+        if self.computing_allowance_obj.are_service_units_user_specified():
+            num_service_units_int = self.request_obj.extra_fields[
+                'num_service_units']
+            num_service_units = Decimal(f'{num_service_units_int:.2f}')
         else:
-            raise ValueError(f'Invalid allocation_type {allocation_type}.')
+            allowance_name = self.request_obj.computing_allowance.name
+            num_service_units = Decimal(
+                self.interface.service_units_from_name(allowance_name))
+            if self.computing_allowance_obj.are_service_units_prorated():
+                num_service_units = prorated_allocation_amount(
+                    num_service_units, self.request_obj.request_time,
+                    self.request_obj.allocation_period)
+        return num_service_units
 
     def get_setup_status(self):
         """Return one of the following statuses for the 'setup' step of
         the request: 'N/A', 'Pending', 'Complete'."""
-        allocation_type = self.request_obj.allocation_type
         state = self.request_obj.state
         if (state['eligibility']['status'] == 'Denied' or
                 state['readiness']['status'] == 'Denied'):
             return 'N/A'
         else:
             pending = 'Pending'
-            ica = SavioProjectAllocationRequest.ICA
-            recharge = SavioProjectAllocationRequest.RECHARGE
-            if allocation_type in (ica, recharge):
+            if self.computing_allowance_obj.\
+                    requires_memorandum_of_understanding():
                 if state['memorandum_signed']['status'] == pending:
                     return pending
         return state['setup']['status']
@@ -394,7 +488,7 @@ class SavioProjectReviewEligibilityView(LoginRequiredMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.set_request_obj(pk)
+        self.set_attributes(pk)
         redirect = self.redirect_if_disallowed_status(request)
         if redirect is not None:
             return redirect
@@ -427,11 +521,9 @@ class SavioProjectReviewEligibilityView(LoginRequiredMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['savio_request'] = self.request_obj
-        context['extra_fields_form'] = self.get_extra_fields_form(
-            self.request_obj.allocation_type, self.request_obj.extra_fields)
-        context['survey_form'] = SavioProjectSurveyForm(
-            initial=self.request_obj.survey_answers, disable_fields=True)
+        self.set_common_context_data(context)
+        context['is_allowance_one_per_pi'] = \
+            self.computing_allowance_obj.is_one_per_pi()
         return context
 
     def get_initial(self):
@@ -443,7 +535,7 @@ class SavioProjectReviewEligibilityView(LoginRequiredMixin,
 
     def get_success_url(self):
         return reverse(
-            'savio-project-request-detail',
+            'new-project-request-detail',
             kwargs={'pk': self.kwargs.get('pk')})
 
 
@@ -466,7 +558,7 @@ class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.set_request_obj(pk)
+        self.set_attributes(pk)
         redirect = self.redirect_if_disallowed_status(request)
         if redirect is not None:
             return redirect
@@ -507,11 +599,7 @@ class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['extra_fields_form'] = self.get_extra_fields_form(
-            self.request_obj.allocation_type, self.request_obj.extra_fields)
-        context['savio_request'] = self.request_obj
-        context['survey_form'] = SavioProjectSurveyForm(
-            initial=self.request_obj.survey_answers, disable_fields=True)
+        self.set_common_context_data(context)
         return context
 
     def get_initial(self):
@@ -523,7 +611,7 @@ class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
 
     def get_success_url(self):
         return reverse(
-            'savio-project-request-detail',
+            'new-project-request-detail',
             kwargs={'pk': self.kwargs.get('pk')})
 
 
@@ -548,19 +636,15 @@ class SavioProjectReviewMemorandumSignedView(LoginRequiredMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.set_request_obj(pk)
-        allocation_type = self.request_obj.allocation_type
-        memorandum_types = (
-            SavioProjectAllocationRequest.ICA,
-            SavioProjectAllocationRequest.RECHARGE,
-        )
-        if allocation_type not in memorandum_types:
+        self.set_attributes(pk)
+        if not self.computing_allowance_obj.\
+                requires_memorandum_of_understanding():
             message = (
-                f'This view is not applicable for projects with allocation '
-                f'type {allocation_type}.')
+                'A memorandum of understanding does not need to be signed for '
+                'this request.')
             messages.error(request, message)
             return HttpResponseRedirect(
-                reverse('savio-project-request-detail', kwargs={'pk': pk}))
+                reverse('new-project-request-detail', kwargs={'pk': pk}))
         redirect = self.redirect_if_disallowed_status(request)
         if redirect is not None:
             return redirect
@@ -588,11 +672,7 @@ class SavioProjectReviewMemorandumSignedView(LoginRequiredMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['savio_request'] = self.request_obj
-        context['extra_fields_form'] = self.get_extra_fields_form(
-            self.request_obj.allocation_type, self.request_obj.extra_fields)
-        context['survey_form'] = SavioProjectSurveyForm(
-            initial=self.request_obj.survey_answers, disable_fields=True)
+        self.set_common_context_data(context)
         return context
 
     def get_initial(self):
@@ -603,7 +683,7 @@ class SavioProjectReviewMemorandumSignedView(LoginRequiredMixin,
 
     def get_success_url(self):
         return reverse(
-            'savio-project-request-detail',
+            'new-project-request-detail',
             kwargs={'pk': self.kwargs.get('pk')})
 
 
@@ -623,7 +703,7 @@ class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.set_request_obj(pk)
+        self.set_attributes(pk)
         redirect = self.redirect_if_disallowed_status(request)
         if redirect is not None:
             return redirect
@@ -667,11 +747,7 @@ class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['savio_request'] = self.request_obj
-        context['extra_fields_form'] = self.get_extra_fields_form(
-            self.request_obj.allocation_type, self.request_obj.extra_fields)
-        context['survey_form'] = SavioProjectSurveyForm(
-            initial=self.request_obj.survey_answers, disable_fields=True)
+        self.set_common_context_data(context)
         return context
 
     def get_form_kwargs(self):
@@ -679,6 +755,7 @@ class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
         kwargs['project_pk'] = self.request_obj.project.pk
         kwargs['requested_name'] = (
             self.request_obj.state['setup']['name_change']['requested_name'])
+        kwargs['computing_allowance'] = self.request_obj.computing_allowance
         return kwargs
 
     def get_initial(self):
@@ -691,7 +768,7 @@ class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
 
     def get_success_url(self):
         return reverse(
-            'savio-project-request-detail',
+            'new-project-request-detail',
             kwargs={'pk': self.kwargs.get('pk')})
 
 
@@ -712,7 +789,7 @@ class SavioProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.set_request_obj(pk)
+        self.set_attributes(pk)
         redirect = self.redirect_if_disallowed_status(request)
         if redirect is not None:
             return redirect
@@ -742,11 +819,7 @@ class SavioProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin,
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['savio_request'] = self.request_obj
-        context['extra_fields_form'] = self.get_extra_fields_form(
-            self.request_obj.allocation_type, self.request_obj.extra_fields)
-        context['survey_form'] = SavioProjectSurveyForm(
-            initial=self.request_obj.survey_answers, disable_fields=True)
+        self.set_common_context_data(context)
         return context
 
     def get_initial(self):
@@ -757,7 +830,7 @@ class SavioProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin,
 
     def get_success_url(self):
         return reverse(
-            'savio-project-request-detail',
+            'new-project-request-detail',
             kwargs={'pk': self.kwargs.get('pk')})
 
 
@@ -776,7 +849,7 @@ class SavioProjectUndenyRequestView(LoginRequiredMixin, UserPassesTestMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.set_request_obj(pk)
+        self.set_attributes(pk)
 
         disallowed_status_names = list(
             ProjectAllocationRequestStatusChoice.objects.filter(
@@ -814,7 +887,7 @@ class SavioProjectUndenyRequestView(LoginRequiredMixin, UserPassesTestMixin,
 
         return HttpResponseRedirect(
             reverse(
-                'savio-project-request-detail',
+                'new-project-request-detail',
                 kwargs={'pk': kwargs.get('pk')}))
 
 
@@ -901,7 +974,7 @@ class VectorProjectRequestMixin(object):
         given primary key."""
         return reverse('vector-project-request-detail', kwargs={'pk': pk})
 
-    def set_request_obj(self, pk):
+    def set_attributes(self, pk):
         """Set this instance's request_obj to be the
         VectorProjectAllocationRequest with the given primary key."""
         self.request_obj = get_object_or_404(
@@ -941,7 +1014,7 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.set_request_obj(pk)
+        self.set_attributes(pk)
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
@@ -1056,7 +1129,7 @@ class VectorProjectReviewEligibilityView(LoginRequiredMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.set_request_obj(pk)
+        self.set_attributes(pk)
         redirect = self.redirect_if_disallowed_status(request)
         if redirect is not None:
             return redirect
@@ -1121,7 +1194,7 @@ class VectorProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.set_request_obj(pk)
+        self.set_attributes(pk)
         redirect = self.redirect_if_disallowed_status(request)
         if redirect is not None:
             return redirect
@@ -1204,7 +1277,7 @@ class VectorProjectUndenyRequestView(LoginRequiredMixin, UserPassesTestMixin,
 
     def dispatch(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        self.set_request_obj(pk)
+        self.set_attributes(pk)
 
         disallowed_status_names = list(
             ProjectAllocationRequestStatusChoice.objects.filter(

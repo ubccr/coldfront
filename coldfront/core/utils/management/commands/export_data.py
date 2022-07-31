@@ -12,6 +12,7 @@ from coldfront.core.allocation.models import AllocationAttributeType, \
 from coldfront.core.statistics.models import Job
 from coldfront.core.project.models import Project, ProjectStatusChoice, \
     SavioProjectAllocationRequest, VectorProjectAllocationRequest
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import display_time_zone_date_to_utc_datetime
 
 
@@ -23,6 +24,15 @@ class Command(BaseCommand):
 
     help = 'Exports data based on the requested query.'
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.computing_allowance_interface = ComputingAllowanceInterface()
+        self.allowance_prefixes = []
+        for allowance in self.computing_allowance_interface.allowances():
+            self.allowance_prefixes.append(
+                self.computing_allowance_interface.code_from_name(
+                    allowance.name))
+
     def add_arguments(self, parser):
         """Define subcommands with different functions."""
         subparsers = parser.add_subparsers(
@@ -32,8 +42,7 @@ class Command(BaseCommand):
         subparsers.required = True
         self.add_subparsers(subparsers)
 
-    @staticmethod
-    def add_subparsers(subparsers):
+    def add_subparsers(self, subparsers):
         """Add subcommands and their respective parsers."""
         latest_jobs_by_user_parser = \
             subparsers.add_parser('latest_jobs_by_user',
@@ -84,7 +93,7 @@ class Command(BaseCommand):
             type=valid_date)
         job_avg_queue_time_parser.add_argument(
             '--allowance_type',
-            choices=['ac_', 'co_', 'fc_', 'ic_', 'pc_'],
+            choices=self.allowance_prefixes,
             help='Filter projects by the given allowance type.',
             type=str)
         job_avg_queue_time_parser.add_argument(
@@ -95,8 +104,7 @@ class Command(BaseCommand):
         project_subparser = subparsers.add_parser('projects',
                                                   help='Export projects data')
         project_subparser.add_argument('--allowance_type',
-                                       choices=['ac_', 'co_',
-                                                'fc_', 'ic_', 'pc_'],
+                                       choices=self.allowance_prefixes,
                                        help='Filter projects by the given allowance type.',
                                        type=str)
         project_subparser.add_argument('--format',
@@ -130,7 +138,7 @@ class Command(BaseCommand):
         survey_responses_subparser.add_argument('--allowance_type',
                                                 help='Dump responses for Projects with given prefix',
                                                 type=str, required=False, default='',
-                                                choices=['ac_', 'co_', 'fc_', 'ic_', 'pc_'])
+                                                choices=self.allowance_prefixes)
 
     def handle(self, *args, **options):
         """Call the handler for the provided subcommand."""

@@ -80,21 +80,3 @@ class Command(BaseCommand):
         allocation_attribute_type.is_unique = True
         allocation_attribute_type.is_private = False
         allocation_attribute_type.save()
-
-        # Each Allocation has at most one '{cluster_name} Allocation Type'
-        # attribute of type Text. Note: Allocation types are only relevant for
-        # certain clusters.
-        attribute_type, _ = AttributeType.objects.get_or_create(name='Text')
-        cluster_names_by_flag_name = {
-            'BRC_ONLY': 'Savio',
-            'LRC_ONLY': 'Lawrencium',
-        }
-        for flag_name, cluster_name in cluster_names_by_flag_name.items():
-            if flag_enabled(flag_name):
-                allocation_attribute_type, _ = \
-                    AllocationAttributeType.objects.get_or_create(
-                        attribute_type=attribute_type,
-                        name=f'{cluster_name} Allocation Type')
-                allocation_attribute_type.is_required = False
-                allocation_attribute_type.is_unique = True
-                allocation_attribute_type.save()

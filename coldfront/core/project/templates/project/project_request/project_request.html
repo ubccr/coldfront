@@ -1,6 +1,7 @@
 {% extends "common/base.html" %}
 {% load crispy_forms_tags %}
 {% load static %}
+{% load feature_flags %}
 
 
 {% block title %}
@@ -15,45 +16,21 @@ Project Request
 
 <div class="row">
   <div class="col-lg-12 mt-2">
-    <p>Request to create a new project (Slurm account) on the Savio or Vector cluster. You may also request to <a href="{% url 'project-join-list' %}">join</a> an existing project.</p>
+    <p>Request to create a new project (Slurm account) on one of the clusters below. You may also request to <a href="{% url 'project-join-list' %}">join</a> an existing project.</p>
   </div>
 </div>
 
 <div class="row">
   <div class="col-lg-6 mt-2">
-    <select
-        class="form-control"
-        onchange="this.options[this.selectedIndex].value && (window.location = this.options[this.selectedIndex].value);">
-      <option value="">Select a cluster.</option>
-      <option value="{% url 'project-request-savio-landing' %}">Savio</option>
-      <option value="{% url 'project-request-vector-landing' %}">Vector</option>
-    </select>
-  </div>
-</div>
-
-<br><br>
-
-<h1>Pending Requests</h1>
-<hr>
-
-<div class="row">
-  <div class="col-lg-6 mt-2">
-    <h2>Savio</h2>
-    <p>
-      You may view your
-      <a href="{% url 'savio-project-pending-request-list' %}">pending</a> and
-      <a href="{% url 'savio-project-completed-request-list' %}">completed</a>
-      requests.
-    </p>
-  </div>
-  <div class="col-lg-6 mt-2">
-    <h2>Vector</h2>
-    <p>
-      You may view your
-      <a href="{% url 'vector-project-pending-request-list' %}">pending</a> and
-      <a href="{% url 'vector-project-completed-request-list' %}">completed</a>
-      requests.
-    </p>
+    <a class="btn btn-primary" href="{% url 'project-request-landing' %}" role="button">
+      {{ PRIMARY_CLUSTER_NAME }}
+    </a>
+    {% flag_enabled 'BRC_ONLY' as brc_only %}
+    {% if brc_only %}
+    <a class="btn btn-primary" href="{% url 'project-request-vector-landing' %}" role="button">
+      Vector
+    </a>
+    {% endif %}
   </div>
 </div>
 

@@ -8,19 +8,17 @@ from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils import deactivate_project_and_allocation
 from coldfront.core.project.utils_.new_project_utils import SavioProjectProcessingRunner
 from coldfront.core.project.utils_.renewal_utils import AllocationRenewalProcessingRunner
+from coldfront.core.resource.utils import get_primary_compute_resource
+from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import add_argparse_dry_run_argument
 from coldfront.core.utils.common import display_time_zone_current_date
 
-from django.conf import settings
+from decimal import Decimal
+
 from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
-from django.db.models import Case
-from django.db.models import CharField
 from django.db.models import Q
-from django.db.models import Value
-from django.db.models import When
-
-from flags.state import flag_enabled
 
 import logging
 
@@ -37,6 +35,10 @@ class Command(BaseCommand):
         '(de)activating project allocations.')
 
     logger = logging.getLogger(__name__)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.computing_allowance_interface = ComputingAllowanceInterface()
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -73,13 +75,8 @@ class Command(BaseCommand):
                     f'({allocation_period.start_date}, '
                     f'{allocation_period.end_date}) is not current.')
 
-        if flag_enabled('BRC_ONLY'):
-            if allocation_period.name.startswith('Allowance Year'):
-                self.handle_allowance_year_period(
-                    allocation_period, skip_deactivations, dry_run)
-            else:
-                self.handle_instructional_period(
-                    allocation_period, skip_deactivations, dry_run)
+        self.handle_allocation_period(
+            allocation_period, skip_deactivations, dry_run)
 
     def deactivate_projects(self, projects, dry_run):
         """Deactivate the given queryset of Projects. Return the number
@@ -124,94 +121,81 @@ class Command(BaseCommand):
                     self.logger.info(message)
         return num_successes
 
-    @staticmethod
-    def get_deactivation_eligible_projects(allocation_period, allocation_type):
-        """Given an AllocationPeriod and an allocation type (FCA, ICA,
-        or PCA), return a queryset of Projects that are eligible for
-        deactivation.
+    def get_allowances_for_allocation_period(self, allocation_period):
+        """For the given AllocationPeriod, return a list of computing
+        allowances (Resource objects) that correspond to the period."""
+        all_allowances = self.computing_allowance_interface.allowances()
+        filtered_allowances = []
+        if allocation_period.name.startswith('Allowance Year'):
+            for allowance in all_allowances:
+                wrapper = ComputingAllowance(allowance)
+                if wrapper.is_yearly():
+                    filtered_allowances.append(allowance)
+        else:
+            for allowance in all_allowances:
+                wrapper = ComputingAllowance(allowance)
+                if wrapper.is_instructional():
+                    filtered_allowances.append(allowance)
+        return filtered_allowances
+
+    def get_deactivation_eligible_projects(self, allocation_period,
+                                           computing_allowance):
+        """Given an AllocationPeriod and a computing allowance (Resource
+        object), return a queryset of Projects with the allowance that
+        are eligible for deactivation.
 
         In particular, "Active" Projects with no end dates or end dates
         before the start date of the AllocationPeriod may be
         deactivated."""
-        if allocation_type == SavioProjectAllocationRequest.FCA:
-            prefix = 'fc_'
-        elif allocation_type == SavioProjectAllocationRequest.ICA:
-            prefix = 'ic_'
-        elif allocation_type == SavioProjectAllocationRequest.PCA:
-            prefix = 'pc_'
-        else:
-            raise ValueError(f'Unexpected allocation type: {allocation_type}.')
+        wrapper = ComputingAllowance(computing_allowance)
+        if not wrapper.is_periodic():
+            raise ValueError(
+                f'Unexpected allowance: "{computing_allowance.name}".')
+        project_name_prefix = \
+            self.computing_allowance_interface.code_from_name(
+                computing_allowance.name)
+        resource = get_primary_compute_resource()
         expired_project_pks = set(
             Allocation.objects.filter(
                 (Q(end_date__isnull=True) |
                  Q(end_date__lt=allocation_period.start_date)) &
-                Q(project__name__startswith=prefix) &
+                Q(project__name__startswith=project_name_prefix) &
                 Q(project__status__name='Active') &
-                Q(resources__name='Savio Compute')
+                Q(resources=resource)
             ).values_list('project__pk', flat=True))
         return Project.objects.filter(pk__in=expired_project_pks)
 
-    def handle_allowance_year_period(self, allocation_period,
-                                     skip_deactivations, dry_run):
-        """Optionally deactivate eligible FCA and PCA projects. Then,
-        process all requests for new projects and allocation renewals
-        that are scheduled for this period.
+    def handle_allocation_period(self, allocation_period, skip_deactivations,
+                                 dry_run):
+        """Optionally deactivate eligible projects associated with the
+        given period. Then, process all requests for new projects and
+        allocation renewals that are scheduled for the period.
 
         If any deactivations fail, do not proceed with processing
         requests.
 
         Optionally display updates instead of performing them."""
         if not skip_deactivations:
-            fc_projects = self.get_deactivation_eligible_projects(
-                allocation_period, SavioProjectAllocationRequest.FCA)
-            fc_num_projects = fc_projects.count()
-            fc_num_successes = self.deactivate_projects(fc_projects, dry_run)
-            fc_num_failures = fc_num_projects - fc_num_successes
-
-            pc_projects = self.get_deactivation_eligible_projects(
-                allocation_period, SavioProjectAllocationRequest.PCA)
-            pc_num_projects = pc_projects.count()
-            pc_num_successes = self.deactivate_projects(pc_projects, dry_run)
-            pc_num_failures = pc_num_projects - pc_num_successes
+            allowances = self.get_allowances_for_allocation_period(
+                allocation_period)
 
             failure_messages = []
-            if fc_num_failures > 0:
-                failure_messages.append(
-                    f'{fc_num_failures}/{fc_num_projects} FCA Projects')
-            if pc_num_failures > 0:
-                failure_messages.append(
-                    f'{pc_num_failures}/{pc_num_projects} PCA Projects')
+            for allowance in allowances:
+                projects = self.get_deactivation_eligible_projects(
+                    allocation_period, allowance)
+                num_projects = projects.count()
+                num_successes = self.deactivate_projects(projects, dry_run)
+                num_failures = num_projects - num_successes
+                if num_failures > 0:
+                    failure_messages.append(
+                        f'Failed to deactivate {num_failures}/{num_projects} '
+                        f'"{allowance.name}" Projects.')
+
             if failure_messages:
-                raise CommandError(
-                    f'Failed to deactivate {" and ".join(failure_messages)}.')
+                raise CommandError(" ".join(failure_messages))
 
         # New project requests should be processed prior to renewal requests,
         # since a renewal request may depend on a new project request.
-        self.process_new_project_requests(allocation_period, dry_run)
-        self.process_allocation_renewal_requests(allocation_period, dry_run)
-
-    def handle_instructional_period(self, allocation_period,
-                                    skip_deactivations, dry_run):
-        """Optionally deactivate eligible ICA projects. Then, process
-        all requests for new projects and allocation renewals that are
-        scheduled for this period.
-
-        If any deactivations fail, do not proceed with processing
-        requests.
-
-        Optionally display updates instead of performing them."""
-        if not skip_deactivations:
-            ic_projects = self.get_deactivation_eligible_projects(
-                allocation_period, SavioProjectAllocationRequest.ICA)
-            ic_num_projects = ic_projects.count()
-            ic_num_successes = self.deactivate_projects(ic_projects, dry_run)
-            ic_num_failures = ic_num_projects - ic_num_successes
-
-            if ic_num_failures > 0:
-                raise CommandError(
-                    f'Failed to deactivate {ic_num_failures}/'
-                    f'{ic_num_projects} ICA Projects.')
-
         self.process_new_project_requests(allocation_period, dry_run)
         self.process_allocation_renewal_requests(allocation_period, dry_run)
 
@@ -225,26 +209,12 @@ class Command(BaseCommand):
 
     def process_allocation_renewal_requests(self, allocation_period, dry_run):
         """Process the "Approved" AllocationRenewalRequests for the
-        given AllocationPeriod. Optionally display updates instead of
-        performing them."""
+        given AllocationPeriod and allowance. Optionally display updates
+        instead of performing them."""
         model = AllocationRenewalRequest
         runner_class = AllocationRenewalProcessingRunner
-
-        fca = SavioProjectAllocationRequest.FCA
-        ica = SavioProjectAllocationRequest.ICA
-        pca = SavioProjectAllocationRequest.PCA
-        allocation_type_case = Case(
-            When(post_project__name__startswith='fc_', then=Value(fca)),
-            When(post_project__name__startswith='ic_', then=Value(ica)),
-            When(post_project__name__startswith='pc_', then=Value(pca)),
-            default=Value('Invalid'),
-            output_field=CharField())
-
         eligible_requests = model.objects.filter(
-            allocation_period=allocation_period,
-            status__name='Approved'
-        ).annotate(
-            allocation_type=allocation_type_case)
+            allocation_period=allocation_period, status__name='Approved')
         self.process_requests(model, runner_class, eligible_requests, dry_run)
 
     def process_new_project_requests(self, allocation_period, dry_run):
@@ -266,28 +236,26 @@ class Command(BaseCommand):
         model_name = model.__name__
         num_successes, num_failures = 0, 0
 
+        interface = self.computing_allowance_interface
+        cached_allowance_data = {}
         for request in requests:
             try:
-                # Note: AllocationRenewalRequests do not have allocation_types,
-                # so the queryset must be annotated beforehand.
-                allocation_type = request.allocation_type
-                if allocation_type == SavioProjectAllocationRequest.FCA:
+                computing_allowance = request.computing_allowance
+                if computing_allowance not in cached_allowance_data:
+                    wrapper = ComputingAllowance(computing_allowance)
+                    data = {
+                        'num_service_units': Decimal(
+                            interface.service_units_from_name(
+                                wrapper.get_name())),
+                        'is_prorated': wrapper.are_service_units_prorated(),
+                    }
+                    cached_allowance_data[computing_allowance] = data
+                data = cached_allowance_data[computing_allowance]
+                num_service_units = data['num_service_units']
+                if data['is_prorated']:
                     num_service_units = prorated_allocation_amount(
-                        settings.FCA_DEFAULT_ALLOCATION, request.request_time,
+                        num_service_units, request.request_time,
                         request.allocation_period)
-                elif allocation_type == SavioProjectAllocationRequest.ICA:
-                    num_service_units = settings.ICA_DEFAULT_ALLOCATION
-                elif allocation_type == SavioProjectAllocationRequest.PCA:
-                    num_service_units = prorated_allocation_amount(
-                        settings.PCA_DEFAULT_ALLOCATION, request.request_time,
-                        request.allocation_period)
-                else:
-                    message = (
-                        f'{model_name} {request.pk} has unexpected allocation '
-                        f'type {allocation_type}.')
-                    self.stderr.write(self.style.ERROR(message))
-                    self.logger.error(message)
-                    continue
             except Exception as e:
                 num_failures = num_failures + 1
                 message = (

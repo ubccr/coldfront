@@ -77,9 +77,9 @@
 <!--      {{ savio_request.project.field_of_science }}-->
 <!--    </p>-->
     <p class="card-text text-justify">
-      <strong>Allocation Type: </strong>
-      {{ savio_request.allocation_type }}
-      {% if savio_request.allocation_type in 'ICA,RECHARGE' %}
+      <strong>Allowance: </strong>
+      {{ computing_allowance_name }}
+      {% if allowance_has_extra_fields %}
         <button id="view-extra-fields" class="btn btn-info" role="button">
           Details
         </button>
