@@ -47,7 +47,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
                   </div>
                   <div class="form-group mx-sm-3 mb-2">
                     {% csrf_token %}
-                    <button class="btn btn-secondary" type="submit"><i class="fas fa-chevron-circle-up" aria-hidden="true"></i> Upgrade Account</button>
+                    <button class="btn btn-secondary" type="submit"><i class="fas fa-chevron-circle-up" aria-hidden="true"></i> Upgrade Account</button> 
                   </div>
                 </form>
               {% endif %}
@@ -56,11 +56,17 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
           <tr>
             <th scope="row">ORCID:</th>
             <td>
-              <form class="form-inline" method="post" action="{% url 'user-profile' %}">
-                {% csrf_token %}
-                {{ orcid_edit_form|crispy }}
-                <button class="btn btn-primary mx-sm-3" type="submit"><i class="fas fa-edit" aria-hidden="true"></i> Update ORCID</button>
-              </form>
+             
+              
+                {% if orcid_linked %}
+                <form class="form-inline" method="post" action="{% url 'social:disconnect' 'orcid-sandbox' %}" style="display:inline-block">
+                  {% csrf_token %}
+                  <button  type="submit" class="btn btn-danger mx-sm-3"> <i class="fas fa-edit" aria-hidden="true"></i>Unlink ORCID Account</a>
+                </form>
+                {% else %}
+                <a class="btn btn-success mx-sm-3" href="{% url 'social:begin' 'orcid-sandbox' %}" role="button"> <i class="fas fa-edit" aria-hidden="true"></i>Link ORCID Account</a>
+                {% endif %}
+          
             </td>
           </tr>
           <tr>

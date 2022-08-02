@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.contrib.auth.views import LoginView, LogoutView
-from django.urls import path, reverse_lazy
+from django.urls import path, reverse_lazy, include
 
 import coldfront.core.user.views as user_views
 
@@ -26,4 +26,5 @@ urlpatterns = [
     path('user-select-home/', user_views.UserSelectHome.as_view(), name='user-select-home'),
     path('user-select-results/', user_views.UserSelectResults.as_view(), name='user-select-results'),
     path('user-list-allocations/', user_views.UserListAllocations.as_view(), name='user-list-allocations'),
+ 
 ]

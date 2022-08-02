@@ -17,7 +17,7 @@ SU_LOGOUT_REDIRECT_URL = "/admin/auth/user/"
 
 SESSION_COOKIE_AGE = 60 * 15
 SESSION_SAVE_EVERY_REQUEST = True
-SESSION_COOKIE_SAMESITE = 'Strict'
+SESSION_COOKIE_SAMESITE = 'Lax'
 SESSION_COOKIE_SECURE = True
 
 #------------------------------------------------------------------------------

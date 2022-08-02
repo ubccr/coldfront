@@ -45,6 +45,7 @@ setup(
         'humanize==3.13.1',
         'idna==3.3',
         'orcid==1.0.3',
+        'social-auth-app-django==5.0.0',
         'pyparsing==3.0.6',
         'python-dateutil==2.8.2',
         'python-memcached==1.59',

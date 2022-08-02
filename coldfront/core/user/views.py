@@ -2,6 +2,8 @@ from argparse import ArgumentError
 import logging
 import re
 from typing import List
+from urllib import response
+from coldfront.plugins.orcid.orcid_vars import OrcidAPI
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -62,48 +64,55 @@ class UserProfileView(TemplateView):
         else:
             viewed_user = self.request.user
         
-        viewed_user_profile: UserProfile = UserProfile.objects.get(user_id = viewed_user.id)
+        try:
+            orcid_is_linked = viewed_user.social_auth.get(provider='orcid-sandbox')
+            if orcid_is_linked.user.username == viewed_user.username:
+                is_linked = True 
+        except:
+            orcid_is_linked = None
+            is_linked = False 
+
+    
+        profile = UserProfile.objects.get(user_id=viewed_user.id) 
+        if orcid_is_linked and not profile.orcid_id:
+            profile.orcid_id = orcid_is_linked.uid
 
         group_list = ', '.join(
             [group.name for group in viewed_user.groups.all()])
 
-        init_orcid_data = {
-            'username': viewed_user.username,
-            'orcid': viewed_user_profile.orcid_id
-        }
-
+        context['orcid_linked'] = is_linked
         context['group_list'] = group_list
         context['viewed_user'] = viewed_user
-        context['orcid_edit_form'] = UserOrcidEditForm(initial=init_orcid_data)
         return context
     
-    def post(self, request, *args, **kwargs):
-        form = UserOrcidEditForm(request.POST)
-        viewed_username = request.POST['username']
-        viewed_user = get_object_or_404(User, username=viewed_username)
-
-        if form.is_valid():
-            profile_cleaned = form.cleaned_data
-            orcid_raw = re.sub("[^0-9a-zA-Z]+", "", profile_cleaned['orcid'])
-
-            if len(orcid_raw) == 0:
-                # Only handle 0 length strings here; everything else is handled by
-                # the validator
-                messages.error(request, "Invalid formatting: ORCID must be 16 characters in length, not including dashes.")
-                return HttpResponseRedirect(reverse('user-profile', kwargs={'viewed_username': viewed_username}))
-
-            orcids = [orcid_raw[i:i+4] for i in range(0, 16, 4)]
-
-            viewed_user_profile: UserProfile = UserProfile.objects.get(user_id=viewed_user.id)
-            viewed_user_profile.orcid_id = '-'.join(orcids)
-            
-            try:
-                viewed_user_profile.save()
-                messages.success(request, "ORCID successfully updated.")
-            except ValidationError as e:
-                messages.error(request, e.message)
+    # def post(self, request, *args, **kwargs):
         
-        return HttpResponseRedirect(reverse('user-profile', kwargs={'viewed_username': viewed_username}))
+    #     form = UserOrcidEditForm(request.POST)
+    #     viewed_username = request.POST['username']
+    #     viewed_user = get_object_or_404(User, username=viewed_username)
+
+    #     if form.is_valid():
+    #         profile_cleaned = form.cleaned_data
+    #         orcid_raw = re.sub("[^0-9a-zA-Z]+", "", profile_cleaned['orcid'])
+
+    #         if len(orcid_raw) == 0:
+    #             # Only handle 0 length strings here; everything else is handled by
+    #             # the validator
+    #             messages.error(request, "Invalid formatting: ORCID must be 16 characters in length, not including dashes.")
+    #             return HttpResponseRedirect(reverse('user-profile', kwargs={'viewed_username': viewed_username}))
+
+    #         orcids = [orcid_raw[i:i+4] for i in range(0, 16, 4)]
+
+    #         viewed_user_profile: UserProfile = UserProfile.objects.get(user_id=viewed_user.id)
+    #         viewed_user_profile.orcid_id = '-'.join(orcids)
+            
+    #         try:
+    #             viewed_user_profile.save()
+    #             messages.success(request, "ORCID successfully updated.")
+    #         except ValidationError as e:
+    #             messages.error(request, e.message)
+        
+    #     return HttpResponseRedirect(reverse('user-profile', kwargs={'viewed_username': viewed_username}))
 
 
 @method_decorator(login_required, name='dispatch')
