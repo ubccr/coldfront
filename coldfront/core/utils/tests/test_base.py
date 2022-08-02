@@ -11,6 +11,7 @@ from django.core.management import call_command
 from django.test import Client
 from django.test import override_settings
 from django.test import TestCase
+from django.urls import reverse
 
 from flags.state import enable_flag
 
@@ -61,6 +62,18 @@ class TestBase(TestCase):
                 self.assertIn(message, actual_messages)
         self.assertEqual(response.status_code, status_code)
         self.client.logout()
+
+    def assert_redirects_to_login(self, response, next_url=None,
+                                  target_status_code=301):
+        """Assert that the response involves being redirected to the
+        login view."""
+        # Remove the trailing slash.
+        login_url = reverse('login')
+        if next_url:
+            login_url = login_url[:-1] + f'?next={next_url}'
+        self.assertRedirects(
+            response, login_url, status_code=302,
+            target_status_code=target_status_code)
 
     @staticmethod
     def call_setup_commands():
