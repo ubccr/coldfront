@@ -1,6 +1,6 @@
 Dear {{ user_name }},
 
-This is a reminder that you have {{ num_requests }} project join request(s) in the MyBRC User Portal.
+This is a reminder that you have {{ num_requests }} project join request(s) in the {{ PORTAL_NAME }} User Portal.
 
 Project | Request Time
 {{ request_list }}

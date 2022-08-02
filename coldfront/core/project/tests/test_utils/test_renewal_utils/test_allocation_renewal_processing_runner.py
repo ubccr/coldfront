@@ -1,6 +1,5 @@
 from coldfront.api.statistics.utils import create_user_project_allocation
 from coldfront.core.allocation.models import Allocation
-from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AllocationAttributeUsage
 from coldfront.core.allocation.models import AllocationPeriod
@@ -17,24 +16,27 @@ from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
-from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.tests.test_utils.test_renewal_utils.utils import TestRunnerMixinBase
 from coldfront.core.project.utils_.new_project_utils import SavioProjectProcessingRunner
 from coldfront.core.project.utils_.renewal_utils import AllocationRenewalProcessingRunner
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.project.utils_.renewal_utils import get_next_allowance_year_period
+from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import utc_now_offset_aware
-from datetime import date
 from datetime import timedelta
 from decimal import Decimal
 from django.conf import settings
 from django.core import mail
 from django.test import override_settings
 from django.test import TestCase
+
+
+TEST_PRIMARY_CLUSTER_NAME = 'Savio'
 
 
 class TestRunnerMixin(TestRunnerMixinBase):
@@ -617,8 +619,9 @@ class TestRunnerMixin(TestRunnerMixinBase):
         allocation = get_project_compute_allocation(project)
 
         # Set the end_date, but not the start_date.
+        today = display_time_zone_current_date()
         allocation.start_date = None
-        end_date = date.today() + timedelta(days=30)
+        end_date = today + timedelta(days=30)
         allocation.end_date = end_date
         allocation.save()
 
@@ -628,37 +631,8 @@ class TestRunnerMixin(TestRunnerMixinBase):
 
         # The start_date should have been updated, but not the end_date.
         allocation.refresh_from_db()
-        self.assertEqual(date.today(), allocation.start_date)
+        self.assertEqual(today, allocation.start_date)
         self.assertEqual(end_date, allocation.end_date)
-
-    def test_runner_sets_allocation_type(self):
-        """Test that the runner sets an AllocationAttribute with type
-        'Savio Allocation Type' on the post_project's compute
-        Allocation."""
-        request = self.request_obj
-        project = request.post_project
-        allocation = get_project_compute_allocation(project)
-        # Delete any that already exist.
-        allocation_attribute_type = AllocationAttributeType.objects.get(
-            name='Savio Allocation Type')
-        kwargs = {
-            'allocation_attribute_type': allocation_attribute_type,
-        }
-        allocation.allocationattribute_set.filter(**kwargs).delete()
-
-        num_service_units = Decimal('1000.00')
-        runner = AllocationRenewalProcessingRunner(request, num_service_units)
-        runner.run()
-
-        allocation.refresh_from_db()
-        try:
-            allocation_attribute = allocation.allocationattribute_set.get(
-                **kwargs)
-        except AllocationAttribute.DoesNotExist:
-            self.fail('An AllocationAttribute should have been created.')
-        else:
-            self.assertEqual(
-                allocation_attribute.value, SavioProjectAllocationRequest.FCA)
 
     def test_runner_sets_is_pi_field_of_pi_user_profile(self):
         """Test that the User designated as the PI on the request has
@@ -802,6 +776,8 @@ class TestFutureRequestsUpdateMixin(object):
             name=project_name,
             title=project_name,
             status=ProjectStatusChoice.objects.get(name='Active'))
+        computing_allowance = ComputingAllowanceInterface(
+            ).allowance_from_project(self.different_project)
 
         allocation_period = get_next_allowance_year_period()
         approved_status = AllocationRenewalRequestStatusChoice.objects.get(
@@ -810,6 +786,7 @@ class TestFutureRequestsUpdateMixin(object):
         return AllocationRenewalRequest.objects.create(
             requester=request.requester,
             pi=request.pi,
+            computing_allowance=computing_allowance,
             allocation_period=allocation_period,
             status=approved_status,
             pre_project=request.pre_project,
@@ -838,10 +815,16 @@ class TestFutureRequestsUpdateMixin(object):
         conditions for being updated are not updated."""
         request = self.request_obj
 
+        computing_allowance_interface = ComputingAllowanceInterface()
+        allowance_name = BRCAllowances.FCA
+        project_name_prefix = computing_allowance_interface.code_from_name(
+            allowance_name)
+
         future_requests = []
         for i in range(4):
             future_requests.append(
-                self.create_different_project_and_request(f'fc_different_{i}'))
+                self.create_different_project_and_request(
+                    f'{project_name_prefix}different_{i}'))
 
         # The first request has a 'Complete' or 'Denied' status.
         future_requests[0].status = \
@@ -852,9 +835,12 @@ class TestFutureRequestsUpdateMixin(object):
         future_requests[1].allocation_period = \
             get_current_allowance_year_period()
         future_requests[1].save()
-        # The third request has a different allocation type.
+        # The third request has a different allowance type.
+        other_project_name_prefix = \
+            computing_allowance_interface.code_from_name(BRCAllowances.ICA)
         future_requests[2].pre_project.name = (
-            f'ic_{future_requests[2].pre_project.name}')
+            f'{other_project_name_prefix}'
+            f'{future_requests[2].pre_project.name}')
         future_requests[2].pre_project.save()
         # The fourth request has a different PI.
         future_requests[3].pi = future_requests[3].requester
@@ -936,7 +922,7 @@ class TestFutureRequestsUpdateMixin(object):
         current_date = display_time_zone_current_date()
         self.assertGreater(
             future_request.allocation_period.start_date, current_date)
-        # The future request has the same allocation type as this one.
+        # The future request has the same allowance type as this one.
         self.assertEqual(
             future_request.pre_project.name[3:], request.pre_project.name[3:])
         # The future request has the same PI as this one.
@@ -995,6 +981,7 @@ class TestPIDemotionMixin(object):
         self.assertEqual(user_role, pi_project_user.role)
 
 
+@override_settings(PRIMARY_CLUSTER_NAME=TEST_PRIMARY_CLUSTER_NAME)
 class TestUnpooledToUnpooled(TestFutureRequestsUpdateMixin, TestRunnerMixin,
                              TestCase):
     """A class for testing the AllocationRenewalProcessingRunner in the
@@ -1007,6 +994,7 @@ class TestUnpooledToUnpooled(TestFutureRequestsUpdateMixin, TestRunnerMixin,
             status=AllocationRenewalRequestStatusChoice.objects.get(
                 name='Approved'),
             pi=self.pi0,
+            computing_allowance=self.computing_allowance,
             pre_project=self.unpooled_project0,
             post_project=self.unpooled_project0)
 
@@ -1017,6 +1005,7 @@ class TestUnpooledToUnpooled(TestFutureRequestsUpdateMixin, TestRunnerMixin,
             AllocationRenewalRequest.UNPOOLED_TO_UNPOOLED)
 
 
+@override_settings(PRIMARY_CLUSTER_NAME=TEST_PRIMARY_CLUSTER_NAME)
 class TestUnpooledToPooled(TestFutureRequestsUpdateMixin, TestRunnerMixin,
                            TestCase):
     """A class for testing the AllocationRenewalProcessingRunner in the
@@ -1029,6 +1018,7 @@ class TestUnpooledToPooled(TestFutureRequestsUpdateMixin, TestRunnerMixin,
             status=AllocationRenewalRequestStatusChoice.objects.get(
                 name='Approved'),
             pi=self.pi0,
+            computing_allowance=self.computing_allowance,
             pre_project=self.unpooled_project0,
             post_project=self.pooled_project1)
 
@@ -1039,6 +1029,7 @@ class TestUnpooledToPooled(TestFutureRequestsUpdateMixin, TestRunnerMixin,
             AllocationRenewalRequest.UNPOOLED_TO_POOLED)
 
 
+@override_settings(PRIMARY_CLUSTER_NAME=TEST_PRIMARY_CLUSTER_NAME)
 class TestPooledToPooledSame(TestFutureRequestsUpdateMixin, TestRunnerMixin,
                              TestCase):
     """A class for testing the AllocationRenewalProcessingRunner in the
@@ -1051,6 +1042,7 @@ class TestPooledToPooledSame(TestFutureRequestsUpdateMixin, TestRunnerMixin,
             status=AllocationRenewalRequestStatusChoice.objects.get(
                 name='Approved'),
             pi=self.pi0,
+            computing_allowance=self.computing_allowance,
             pre_project=self.pooled_project0,
             post_project=self.pooled_project0)
 
@@ -1061,6 +1053,7 @@ class TestPooledToPooledSame(TestFutureRequestsUpdateMixin, TestRunnerMixin,
             AllocationRenewalRequest.POOLED_TO_POOLED_SAME)
 
 
+@override_settings(PRIMARY_CLUSTER_NAME=TEST_PRIMARY_CLUSTER_NAME)
 class TestPooledToPooledDifferent(TestFutureRequestsUpdateMixin,
                                   TestPIDemotionMixin, TestRunnerMixin,
                                   TestCase):
@@ -1074,6 +1067,7 @@ class TestPooledToPooledDifferent(TestFutureRequestsUpdateMixin,
             status=AllocationRenewalRequestStatusChoice.objects.get(
                 name='Approved'),
             pi=self.pi0,
+            computing_allowance=self.computing_allowance,
             pre_project=self.pooled_project0,
             post_project=self.pooled_project1)
 
@@ -1084,6 +1078,7 @@ class TestPooledToPooledDifferent(TestFutureRequestsUpdateMixin,
             AllocationRenewalRequest.POOLED_TO_POOLED_DIFFERENT)
 
 
+@override_settings(PRIMARY_CLUSTER_NAME=TEST_PRIMARY_CLUSTER_NAME)
 class TestPooledToUnpooledOld(TestFutureRequestsUpdateMixin,
                               TestPIDemotionMixin, TestRunnerMixin, TestCase):
     """A class for testing the AllocationRenewalProcessingRunner in the
@@ -1096,6 +1091,7 @@ class TestPooledToUnpooledOld(TestFutureRequestsUpdateMixin,
             status=AllocationRenewalRequestStatusChoice.objects.get(
                 name='Approved'),
             pi=self.pi0,
+            computing_allowance=self.computing_allowance,
             pre_project=self.pooled_project0,
             post_project=self.unpooled_project0)
 
@@ -1106,6 +1102,7 @@ class TestPooledToUnpooledOld(TestFutureRequestsUpdateMixin,
             AllocationRenewalRequest.POOLED_TO_UNPOOLED_OLD)
 
 
+@override_settings(PRIMARY_CLUSTER_NAME=TEST_PRIMARY_CLUSTER_NAME)
 class TestPooledToUnpooledNew(TestFutureRequestsUpdateMixin,
                               TestPIDemotionMixin, TestRunnerMixin, TestCase):
     """A class for testing the AllocationRenewalProcessingRunner in the
@@ -1120,6 +1117,7 @@ class TestPooledToUnpooledNew(TestFutureRequestsUpdateMixin,
             status=AllocationRenewalRequestStatusChoice.objects.get(
                 name='Approved'),
             pi=self.pi0,
+            computing_allowance=self.computing_allowance,
             pre_project=self.pooled_project0,
             post_project=new_project_request.project,
             new_project_request=new_project_request)

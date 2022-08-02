@@ -1,12 +1,12 @@
 Dear {{ user.first_name }} {{ user.last_name }},
 
-As requested, your user account on the BRC supercluster now has access to the project {{ project_name }}.
+As requested, your user account on the {{ PROGRAM_NAME_SHORT }} supercluster now has access to the project {{ project_name }}.
 
-Your BRC supercluster username is - {{ user.username }}
+Your {{ PROGRAM_NAME_SHORT }} supercluster username is - {{ user.username }}
 
-Instructions on how to access the BRC supercluster, hardware details, filesystems, job scheduler etc... are all available at this user guide: {{ center_user_guide }}
+Instructions on how to access the {{ PROGRAM_NAME_SHORT }} supercluster, hardware details, filesystems, job scheduler etc... are all available at this user guide: {{ center_user_guide }}
 
-If this is the first time you are accessing the BRC supercluster, start with the below Logging In page: {{ center_login_guide }}
+If this is the first time you are accessing the {{ PROGRAM_NAME_SHORT }} supercluster, start with the below Logging In page: {{ center_login_guide }}
 
 Please review online documentation. For any additional help or support questions contact us at {{ center_help_email }}
 

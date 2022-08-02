@@ -121,17 +121,14 @@
         state: restarted
         enabled: yes
 
-    - name: Install the PostgreSQL rpm from a remote repository
-      yum:
-        name: https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
-        state: present
-
-    - name: Install PostgreSQL packages from the local rpm
+    - name: Install Postgresql packages
       yum:
         name:
-          - postgresql96
-          - postgresql96-server
-          - postgresql96-devel
+          - 'https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/postgresql96-9.6.24-1PGDG.rhel7.x86_64.rpm'
+          - 'https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/postgresql96-libs-9.6.24-1PGDG.rhel7.x86_64.rpm'
+          - 'https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/postgresql96-devel-9.6.24-1PGDG.rhel7.x86_64.rpm'
+          - 'https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/postgresql96-test-9.6.24-1PGDG.rhel7.x86_64.rpm'
+          - 'https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/postgresql96-server-9.6.24-1PGDG.rhel7.x86_64.rpm'
         state: present
 
     # Configure PostgreSQL.
@@ -295,6 +292,10 @@
         src: "{{ git_prefix }}/{{ reponame }}/bootstrap/ansible/settings_template.tmpl"
         dest: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}/config/{{ deployment }}_settings.py"
 
+    - name: Create the deployment-specific password reset email subject text file from a template
+      template: src={{ git_prefix }}/{{ reponame }}/bootstrap/ansible/password_reset_subject_template.tmpl
+                dest={{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}/core/user/templates/user/passwords/password_reset_subject.txt
+
     # Run Django management commands.
 
     - name: Run Django management command - initial_setup
@@ -324,9 +325,27 @@
         virtualenv: "{{ git_prefix }}/venv"
       become_user: "{{ djangooperator }}"
 
+    - name: Run Django management command - add_allowance_defaults
+      django_manage:
+        command: add_allowance_defaults
+        app_path: "{{ git_prefix }}/{{ reponame }}"
+        settings: "config.settings"
+        pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+        virtualenv: "{{ git_prefix }}/venv"
+      become_user: "{{ djangooperator }}"
+
     - name: Run Django management command - add_directory_defaults
       django_manage:
         command: add_directory_defaults
+        app_path: "{{ git_prefix }}/{{ reponame }}"
+        settings: "config.settings"
+        pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+        virtualenv: "{{ git_prefix }}/venv"
+      become_user: "{{ djangooperator }}"
+
+    - name: Run Django management command - create_allocation_periods
+      django_manage:
+        command: create_allocation_periods
         app_path: "{{ git_prefix }}/{{ reponame }}"
         settings: "config.settings"
         pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"

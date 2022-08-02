@@ -36,7 +36,7 @@ from coldfront.core.user.forms import UserProfileUpdateForm
 from coldfront.core.user.forms import UserRegistrationForm
 from coldfront.core.user.forms import UserSearchForm, UserSearchListForm
 from coldfront.core.user.models import EmailAddress
-from coldfront.core.user.utils import CombinedUserSearch
+from coldfront.core.user.utils import CombinedUserSearch, is_lbl_employee
 from coldfront.core.user.utils import ExpiringTokenGenerator
 from coldfront.core.user.utils import send_account_activation_email
 from coldfront.core.user.utils import send_account_already_active_email
@@ -146,6 +146,8 @@ class UserProfile(TemplateView):
                 if billing_activity:
                     billing_id = billing_activity.full_id()
             context['monthly_user_account_fee_billing_id'] = billing_id
+
+        context['is_lbl_employee'] = is_lbl_employee(viewed_user)
 
         return context
 
@@ -697,7 +699,16 @@ def user_access_agreement(request):
             messages.error(request, message)
     else:
         form = UserAccessAgreementForm()
-    return render(request, 'user/user_access_agreement.html', {'form': form})
+
+    if flag_enabled('BRC_ONLY'):
+        template_name = 'user/deployments/brc/user_access_agreement.html'
+    elif flag_enabled('LRC_ONLY'):
+        template_name = 'user/deployments/lrc/user_access_agreement.html'
+    else:
+        raise ImproperlyConfigured(
+            'One of the following flags must be enabled: BRC_ONLY, LRC_ONLY.')
+
+    return render(request, template_name, context={'form': form})
 
 
 class EmailAddressAddView(LoginRequiredMixin, FormView):

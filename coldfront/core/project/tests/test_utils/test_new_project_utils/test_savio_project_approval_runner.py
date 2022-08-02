@@ -2,6 +2,9 @@ from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.tests.test_utils.test_new_project_utils.utils import TestRunnerMixinBase
 from coldfront.core.project.utils_.new_project_utils import SavioProjectApprovalRunner
+from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
 
@@ -20,9 +23,13 @@ class TestSavioProjectApprovalRunner(TestRunnerMixinBase, TestBase):
         super().setUp()
 
         # Create a request.
+        computing_allowance = Resource.objects.get(name=BRCAllowances.FCA)
+        interface = ComputingAllowanceInterface()
         self.request_obj = SavioProjectAllocationRequest.objects.create(
             requester=self.requester,
-            allocation_type=SavioProjectAllocationRequest.FCA,
+            allocation_type=interface.name_short_from_name(
+                computing_allowance.name),
+            computing_allowance=computing_allowance,
             allocation_period=self.allocation_period,
             pi=self.pi,
             project=self.project,

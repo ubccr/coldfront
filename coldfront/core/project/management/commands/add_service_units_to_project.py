@@ -9,6 +9,7 @@ from django.core.management import BaseCommand, CommandError
 from coldfront.api.statistics.utils import get_accounting_allocation_objects
 from coldfront.core.allocation.utils_.accounting_utils import set_service_units
 from coldfront.core.project.models import Project
+from coldfront.core.resource.utils import get_primary_compute_resource_name
 from coldfront.core.utils.common import add_argparse_dry_run_argument
 
 
@@ -48,15 +49,16 @@ class Command(BaseCommand):
             error_message = f'Requested project {project_name} does not exist.'
             raise CommandError(error_message)
 
-        # Check that the Project has an active Allocation to the
-        # 'Savio Compute' resource.
+        # Check that the Project has an active Allocation to the primary
+        # compute resource.
+        resource_name = get_primary_compute_resource_name()
         try:
             accounting_allocation_objects = get_accounting_allocation_objects(
                 project)
         except ObjectDoesNotExist:
             error_message = (
-                'Service units may not be added to a Project without an '
-                'active Allocation to "Savio Compute".')
+                f'Service units may not be added to a Project without an '
+                f'active Allocation to "{resource_name}".')
             raise CommandError(error_message)
 
         # Check that the addition, and the updated number after the addition,

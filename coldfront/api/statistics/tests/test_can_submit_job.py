@@ -1,10 +1,9 @@
 from coldfront.api.statistics.tests.test_job_base import TestJobBase
-from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationAttributeUsage
 from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.models import AllocationUserAttributeUsage
 from coldfront.core.allocation.models import AllocationUserStatusChoice
-from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils import get_primary_compute_resource
 from decimal import ConversionSyntax
 from decimal import Decimal
 from django.conf import settings
@@ -84,43 +83,42 @@ class TestCanSubmitJobView(TestJobBase):
         """Test that requests with an unrelated user and account
         fail."""
         self.project_user.delete()
-        message = f'User user0 is not a member of account test_project.'
-        self.assert_result('1.00', '0', 'test_project', 400, False, message)
+        message = f'User user0 is not a member of account fc_project.'
+        self.assert_result('1.00', '0', 'fc_project', 200, False, message)
 
     def test_no_active_compute_allocation(self):
         """Test that requests wherein the account has no active compute
         allocation fail."""
-        message = 'Account test_project has no active compute allocation.'
+        message = 'Account fc_project has no active compute allocation.'
         # The allocation is expired.
         self.allocation.status = AllocationStatusChoice.objects.get(
             name='Expired')
         self.allocation.save()
-        self.assert_result('1.00', '0', 'test_project', 400, False, message)
-        # The allocation is active, but does not have Savio Compute as a
-        # resource.
+        self.assert_result('1.00', '0', 'fc_project', 200, False, message)
+        # The allocation is active, but is not to the primary compute resource.
         self.allocation.status = AllocationStatusChoice.objects.get(
             name='Active')
-        self.allocation.resources.all().delete()
-        self.allocation.save()
-        self.assert_result('1.00', '0', 'test_project', 400, False, message)
+        resource = get_primary_compute_resource()
+        self.allocation.resources.remove(resource)
+        self.assert_result('1.00', '0', 'fc_project', 200, False, message)
         # The allocation does not exist.
         self.allocation.delete()
-        self.assert_result('1.00', '0', 'test_project', 400, False, message)
+        self.assert_result('1.00', '0', 'fc_project', 200, False, message)
 
     def test_user_not_member_of_compute_allocation(self):
         """Test that requests wherein the user is not an active member
         of the account's compute allocation fail."""
         message = (
             f'User user0 is not an active member of the compute allocation '
-            f'for account test_project.')
+            f'for account fc_project.')
         # The allocation user has been removed from the allocation.
         self.allocation_user.status = AllocationUserStatusChoice.objects.get(
             name='Removed')
         self.allocation_user.save()
-        self.assert_result('1.00', '0', 'test_project', 400, False, message)
+        self.assert_result('1.00', '0', 'fc_project', 200, False, message)
         # The allocation user does not exist.
         self.allocation_user.delete()
-        self.assert_result('1.00', '0', 'test_project', 400, False, message)
+        self.assert_result('1.00', '0', 'fc_project', 200, False, message)
 
     def test_bad_database_state_causes_server_error(self):
         """Test that requests fails if there are too few or too many of
@@ -128,10 +126,10 @@ class TestCanSubmitJobView(TestJobBase):
         message = 'Unexpected server error.'
         # There are multiple allocation user status choices named 'Active'.
         AllocationUserStatusChoice.objects.create(name='Active')
-        self.assert_result('1.00', '0', 'test_project', 500, False, message)
+        self.assert_result('1.00', '0', 'fc_project', 500, False, message)
         # There are no allocation user status choices named 'Active'.
         AllocationUserStatusChoice.objects.filter(name='Active').delete()
-        self.assert_result('1.00', '0', 'test_project', 500, False, message)
+        self.assert_result('1.00', '0', 'fc_project', 500, False, message)
 
     def test_cost_exceeds_allocation(self):
         """Test that requests with costs that would cause usages to
@@ -154,7 +152,7 @@ class TestCanSubmitJobView(TestJobBase):
         message = (
             'Adding job_cost 0.01 to account balance 1000.00 would exceed '
             'account allocation 1000.00.')
-        self.assert_result('0.01', '0', 'test_project', 200, False, message)
+        self.assert_result('0.01', '0', 'fc_project', 200, False, message)
         # The usages should not have changed.
         self.user_account_usage.refresh_from_db()
         self.account_usage.refresh_from_db()
@@ -168,7 +166,7 @@ class TestCanSubmitJobView(TestJobBase):
         message = (
             'Adding job_cost 0.01 to user balance 500.00 would exceed user '
             'allocation 500.00.')
-        self.assert_result('0.01', '0', 'test_project', 200, False, message)
+        self.assert_result('0.01', '0', 'fc_project', 200, False, message)
         # The usages should not have changed.
         self.user_account_usage.refresh_from_db()
         self.account_usage.refresh_from_db()
@@ -178,7 +176,7 @@ class TestCanSubmitJobView(TestJobBase):
     def test_success(self):
         """Test that requests without issue succeed."""
         message = 'A job with job_cost 500.00 can be submitted.'
-        self.assert_result('500.00', '0', 'test_project', 200, True, message)
+        self.assert_result('500.00', '0', 'fc_project', 200, True, message)
 
     def test_condo_jobs_always_allowed(self):
         """Test that requests under Condo accounts always succeed,
@@ -190,7 +188,7 @@ class TestCanSubmitJobView(TestJobBase):
         message = (
             f'Adding job_cost {job_cost} to account balance 0.00 would exceed '
             f'account allocation 1000.00.')
-        self.assert_result(job_cost, '0', 'test_project', 200, False, message)
+        self.assert_result(job_cost, '0', 'fc_project', 200, False, message)
 
         self.project.name = 'co_project'
         self.project.save()
@@ -205,4 +203,4 @@ class TestCanSubmitJobView(TestJobBase):
 
         self.assertEqual(self.allocation_attribute.value, '1000.00')
         message = f'A job with job_cost {job_cost} can be submitted.'
-        self.assert_result(job_cost, '0', 'test_project', 200, True, message)
+        self.assert_result(job_cost, '0', 'fc_project', 200, True, message)

@@ -1,0 +1,40 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Secure Directory Request - Deny
+{% endblock %}
+
+
+{% block content %}
+<h1>Deny Request</h1>
+<hr>
+
+<p>
+  Deny the request for some other reason. A notification email will be sent to the requester and PI.
+</p>
+
+{% include 'secure_dir/secure_dir_request/secure_dir_request_card.html' with secure_dir_request=secure_dir_request %}
+
+<div class="card mb-3">
+  <div class="card-header">
+    <h2>
+      <i class="fas fa-check-circle" aria-hidden="true"></i>
+      Deny
+    </h2>
+  </div>
+  <div class="card-body">
+    <form action="" method="post">
+      {% csrf_token %}
+      {{ form|crispy }}
+      <input class="btn btn-primary" type="submit" value="Submit" />
+      <a href="{% url 'secure-dir-request-detail' secure_dir_request.pk %}" class="btn btn-secondary">
+        Cancel
+      </a>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

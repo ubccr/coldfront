@@ -4,7 +4,7 @@ import pytz
 from collections import OrderedDict
 from datetime import date
 from datetime import datetime
-from datetime import MAXYEAR
+from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 
 from django.core.exceptions import MultipleObjectsReturned
@@ -32,6 +32,8 @@ from coldfront.core.allocation.models import AllocationUserAttributeUsage
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
+from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.statistics.models import Job
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import display_time_zone_date_to_utc_datetime
@@ -180,8 +182,11 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
                     get_current_allowance_year_period()
                 default_start = display_time_zone_date_to_utc_datetime(
                     current_allowance_year_period.start_date)
-                default_end = display_time_zone_date_to_utc_datetime(
-                    current_allowance_year_period.end_date)
+                default_end = (
+                    display_time_zone_date_to_utc_datetime(
+                        current_allowance_year_period.end_date) +
+                    timedelta(hours=24) -
+                    timedelta(microseconds=1))
             except Exception as e:
                 raise serializers.ValidationError(
                     f'Failed to retrieve default start and end times. '
@@ -488,22 +493,28 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
 
         # The Job's corresponding Allocation may have an end date. (Compare
         # against the maximum date if not.)
-        allocation_types_with_end_dates = ('fc_', 'ic_', 'pc_')
-        if account_name.startswith(allocation_types_with_end_dates):
+        computing_allowance_interface = ComputingAllowanceInterface()
+        periodic_project_name_prefixes = tuple([
+            computing_allowance_interface.code_from_name(allowance.name)
+            for allowance in computing_allowance_interface.allowances()
+            if ComputingAllowance(allowance).is_periodic()])
+        if account_name.startswith(periodic_project_name_prefixes):
             allocation_end_date = allocation.end_date
             if not isinstance(allocation_end_date, date):
                 logger.error(
                     f'Allocation {allocation.pk} (Project {account_name}) '
                     f'does not have an end date.')
                 return False
+            allocation_end_dt_utc = (
+                display_time_zone_date_to_utc_datetime(allocation_end_date) +
+                timedelta(hours=24) -
+                timedelta(microseconds=1))
         else:
-            allocation_end_date = date(MAXYEAR, 12, 31)
+            allocation_end_dt_utc = datetime.max.replace(tzinfo=pytz.utc)
 
-        # The Job should not have ended after its corresponding Allocation's
-        # end date.
+        # The Job should not have ended after the last microsecond of its
+        # corresponding Allocation's end date.
         job_end_dt_utc = expected_dates['enddate']
-        allocation_end_dt_utc = display_time_zone_date_to_utc_datetime(
-            allocation_end_date)
         if job_end_dt_utc > allocation_end_dt_utc:
             logger.warning(
                 f'Job {jobslurmid} end date '
@@ -698,11 +709,11 @@ def can_submit_job(request, job_cost, user_id, account_id):
         message = (
             f'User {user.username} is not a member of account {account.name}.')
         logger.error(message)
-        return client_error(message)
+        return non_affirmative(message)
     except Allocation.DoesNotExist:
         message = f'Account {account.name} has no active compute allocation.'
         logger.error(message)
-        return client_error(message)
+        return non_affirmative(message)
     except Allocation.MultipleObjectsReturned:
         logger.error(
             f'Account {account.name} has more than one active compute '
@@ -713,7 +724,7 @@ def can_submit_job(request, job_cost, user_id, account_id):
             f'User {user.username} is not an active member of the compute '
             f'allocation for account {account.name}.')
         logger.error(message)
-        return client_error(message)
+        return non_affirmative(message)
     except (MultipleObjectsReturned, ObjectDoesNotExist) as e:
         logger.error(
             f'Failed to retrieve a required database object. Details: {e}')
@@ -732,15 +743,14 @@ def can_submit_job(request, job_cost, user_id, account_id):
     user_account_usage = (
         allocation_objects.allocation_user_attribute_usage.value)
 
-    # If the account has allocation type Condo, allow the job, regardless of
+    # If the account has infinite service units, allow the job, regardless of
     # cost.
-    # if account.allowance_has_condo:
-    #     return affirmative
-    if account.name.startswith('co_'):
+    computing_allowance = ComputingAllowance(
+        ComputingAllowanceInterface().allowance_from_project(account))
+    if computing_allowance.has_infinite_service_units():
         return affirmative
 
-    # Return whether or not both usages would not exceed their respective
-    # allocations.
+    # Return whether both usages would not exceed their respective allocations.
     if job_cost + account_usage > account_allocation:
         message = (
             f'Adding job_cost {job_cost} to account balance {account_usage} '

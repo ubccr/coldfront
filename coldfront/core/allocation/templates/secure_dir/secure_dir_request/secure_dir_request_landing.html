@@ -1,0 +1,47 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+  New Secure Directories
+{% endblock %}
+
+
+{% block content %}
+  <h1>New Secure Directories</h1><hr>
+
+  <p>
+    UC Berkeley's institutional Linux cluster, Savio is certified by the
+    campus Information Security and Policy team to host moderately
+    sensitive data, which the campus classifies as P2/P3 (formerly PL1).
+    See more on data classification
+    <a href="https://security.berkeley.edu/data-classification-standard">here</a>.
+  </p>
+  <p>
+    Users of the Savio cluster who want to work with P2/P3 data (including,
+    for example, NIH dbGaP data) should submit this request form to get a
+    special P2/P3 data project set up on Savio. The Berkeley Research
+    Computing (BRC) and Research Data Management (RDM) teams will work with
+    you to come up with a plan for working with your secure or sensitive
+    data on the Savio cluster.
+  </p>
+  <p>
+    Note that at this time, no P4 (formerly PL2) or HIPAA covered data
+    can be used in Savio. We are working to develop a P4/HIPAA solution
+    for campus, and can help with other solutions if you have immediate
+    needs to work with this sort of data. For more info, contact us at
+    research-it@berkeley.edu.
+  </p>
+  <p>
+    The Savio cluster is one of the services offered by Research IT's UC
+    Berkeley Research Computing program. P2/P3 support is coming soon to
+    the AEoD service as well. More details about the Research IT services
+    by can found <a href="http://research-it.berkeley.edu">here</a>.
+  </p>
+
+  <a class="btn btn-primary" href="{% url 'secure-dir-request' project_pk %}">
+    Continue
+  </a>
+
+{% endblock %}

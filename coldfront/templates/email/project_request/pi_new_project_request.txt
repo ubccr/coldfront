@@ -1,6 +1,6 @@
 Dear {{ pi_str }},
 
-A user ({{ requester_str }}) has made a {% if pooling %}pooled {% endif %}project request with you as the Principal Investigator (PI) via the MyBRC User Portal.
+A user ({{ requester_str }}) has made a {% if pooling %}pooled {% endif %}project request with you as the Principal Investigator (PI) via the {{ PORTAL_NAME }} User Portal.
 
 You may view the details of the request here: {{ review_url }}.
 

@@ -1,5 +1,6 @@
 import datetime
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
@@ -23,7 +24,10 @@ from coldfront.core.allocation.models import (Allocation,
 from coldfront.core.allocation.signals import allocation_activate_user
 from coldfront.core.allocation.utils import get_allocation_user_cluster_access_status
 from coldfront.core.allocation.utils import get_project_compute_allocation
+from coldfront.core.allocation.utils import get_project_compute_resource_name
 # from coldfront.core.grant.models import Grant
+from coldfront.core.allocation.utils_.secure_dir_utils import \
+    pi_eligible_to_request_secure_dir
 from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectAddUsersToAllocationForm,
                                           ProjectReviewEmailForm,
@@ -32,7 +36,8 @@ from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectSearchForm,
                                           ProjectUpdateForm,
                                           ProjectUserUpdateForm,
-                                          JoinRequestSearchForm)
+                                          JoinRequestSearchForm,
+                                          ProjectSelectHostUserForm)
 from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectReviewStatusChoice,
                                            ProjectStatusChoice, ProjectUser,
@@ -43,7 +48,8 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserRemovalRequestStatusChoice,
                                            SavioProjectAllocationRequest,
                                            VectorProjectAllocationRequest)
-from coldfront.core.project.utils import (ProjectClusterAccessRequestRunner,
+from coldfront.core.project.utils import (annotate_queryset_with_cluster_name,
+                                          ProjectClusterAccessRequestRunner,
                                           send_added_to_project_notification_email,
                                           send_project_join_notification_email,
                                           send_project_join_request_approval_email,
@@ -52,8 +58,12 @@ from coldfront.core.project.utils_.addition_utils import can_project_purchase_se
 from coldfront.core.project.utils_.new_project_utils import add_vector_user_to_designated_savio_project
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.project.utils_.renewal_utils import is_any_project_pi_renewable
+from coldfront.core.resource.utils import get_primary_compute_resource_name
+from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.user.forms import UserSearchForm
-from coldfront.core.user.utils import CombinedUserSearch
+from coldfront.core.user.utils import CombinedUserSearch, is_lbl_employee, \
+    needs_host, access_agreement_signed
 from coldfront.core.utils.common import (get_domain_url, import_from_settings)
 from coldfront.core.utils.mail import send_email, send_email_template
 
@@ -168,7 +178,12 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['mailto'] = 'mailto:' + \
             ','.join([user.user.email for user in project_users])
 
-        if self.request.user.is_superuser or self.request.user.has_perm('allocation.can_view_all_allocations'):
+        is_pi = self.object.projectuser_set.filter(
+            user=self.request.user,
+            role__name='Principal Investigator',
+            status__name='Active').exists()
+
+        if self.request.user.is_superuser or self.request.user.has_perm('allocation.can_view_all_allocations') or is_pi:
             allocations = Allocation.objects.prefetch_related(
                 'resources').filter(project=self.object).order_by('-end_date')
         else:
@@ -223,15 +238,23 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['cluster_accounts_requestable'] = cluster_accounts_requestable
         context['cluster_accounts_tooltip'] = cluster_accounts_tooltip
 
-        # Display the "Renew Allowance" button for eligible allocation types.
-        eligible_project_prefixes = (
-            'fc_'
-            # TODO: Include these when ready.
-            # 'ic_',
-            # 'pc_',
-        )
-        context['renew_allowance_visible'] = self.object.name.startswith(
-            eligible_project_prefixes)
+        # Some features are only available to Projects corresponding to the
+        # primary cluster.
+        compute_resource_name = get_project_compute_resource_name(self.object)
+        is_primary_cluster_project = (
+            compute_resource_name == get_primary_compute_resource_name())
+
+        # Display the "Renew Allowance" button for eligible allocation types
+        # under the primary cluster.
+        renew_allowance_visible = False
+        if is_primary_cluster_project:
+            computing_allowance_interface = ComputingAllowanceInterface()
+            computing_allowance = ComputingAllowance(
+                computing_allowance_interface.allowance_from_project(
+                    self.object))
+            renew_allowance_visible = \
+                computing_allowance.is_renewal_supported()
+        context['renew_allowance_visible'] = renew_allowance_visible
         # Only allow the "Renew Allowance" button to be clickable if
         #     (a) any PIs do not have pending/approved renewal requests for the
         #         current period, or
@@ -243,11 +266,24 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             is_any_project_pi_renewable(self.object, allocation_period) or
             flag_enabled('ALLOCATION_RENEWAL_FOR_NEXT_PERIOD_REQUESTABLE'))
 
-        # Display the "Purchase Service Units" button for eligible allocation
-        # types, for those allowed to update the project.
+        # Display the "Purchase Service Units" button when the functionality is
+        # enabled, for eligible allocation types, for those allowed to update
+        # the project.
         context['purchase_sus_visible'] = (
+            flag_enabled('SERVICE_UNITS_PURCHASABLE') and
+            is_primary_cluster_project and
             can_project_purchase_service_units(self.object) and
             context.get('is_allowed_to_update_project', False))
+
+        context['cluster_name'] = compute_resource_name.replace(' Compute', '')
+
+        # Only active PIs of active FCAs, ICAs and Condos can request
+        # secure directories
+        context['can_request_sec_dir'] = \
+            pi_eligible_to_request_secure_dir(self.request.user)
+
+        context['user_agreement_signed'] = \
+            access_agreement_signed(self.request.user)
 
         return context
 
@@ -280,27 +316,15 @@ class ProjectListView(LoginRequiredMixin, ListView):
             if data.get('show_all_projects') and (self.request.user.is_superuser or self.request.user.has_perm('project.can_view_all_projects')):
                 projects = Project.objects.prefetch_related('field_of_science', 'status',).filter(
                     status__name__in=['New', 'Active', 'Inactive', ]
-                ).annotate(
-                    cluster_name=Case(
-                        When(name='abc', then=Value('ABC')),
-                        When(name__startswith='vector_', then=Value('Vector')),
-                        default=Value('Savio'),
-                        output_field=CharField(),
-                    )
                 ).order_by(order_by)
+                projects = annotate_queryset_with_cluster_name(projects)
             else:
                 projects = Project.objects.prefetch_related('field_of_science', 'status',).filter(
                     Q(status__name__in=['New', 'Active', 'Inactive', ]) &
                     Q(projectuser__user=self.request.user) &
                     Q(projectuser__status__name__in=['Active',  'Pending - Remove'])
-                ).annotate(
-                    cluster_name=Case(
-                        When(name='abc', then=Value('ABC')),
-                        When(name__startswith='vector_', then=Value('Vector')),
-                        default=Value('Savio'),
-                        output_field=CharField(),
-                    ),
                 ).order_by(order_by)
+                projects = annotate_queryset_with_cluster_name(projects)
 
             # Last Name
             if data.get('last_name'):
@@ -343,14 +367,8 @@ class ProjectListView(LoginRequiredMixin, ListView):
                 Q(status__name__in=['New', 'Active', 'Inactive', ]) &
                 Q(projectuser__user=self.request.user) &
                 Q(projectuser__status__name__in=['Active', 'Pending - Remove'])
-            ).annotate(
-                cluster_name=Case(
-                    When(name='abc', then=Value('ABC')),
-                    When(name__startswith='vector_', then=Value('Vector')),
-                    default=Value('Savio'),
-                    output_field=CharField(),
-                ),
             ).order_by(order_by)
+            projects = annotate_queryset_with_cluster_name(projects)
 
         return projects.distinct()
 
@@ -415,6 +433,9 @@ class ProjectListView(LoginRequiredMixin, ListView):
             ProjectUser.objects.filter(
                 user=self.request.user, role__name__in=role_names,
                 status=status)
+
+        context['user_agreement_signed'] = \
+            access_agreement_signed(self.request.user)
 
         return context
 
@@ -684,7 +705,7 @@ class ProjectAddUsersSearchView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.status.name not in ['Active', 'New', ]:
+        if project_obj.status.name not in ['Active', 'Inactive', 'New', ]:
             messages.error(
                 request, 'You cannot add users to an archived project.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
@@ -717,7 +738,7 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.status.name not in ['Active', 'New', ]:
+        if project_obj.status.name not in ['Active', 'Inactive', 'New', ]:
             messages.error(
                 request, 'You cannot add users to an archived project.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
@@ -806,7 +827,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.status.name not in ['Active', 'New', ]:
+        if project_obj.status.name not in ['Active', 'Inactive', 'New', ]:
             messages.error(
                 request, 'You cannot add users to an archived project.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
@@ -939,9 +960,11 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                         self.logger.error(message)
                         self.logger.exception(e)
 
-                    # If the Project is a Vector project, automatically add the
-                    # User to the designated Savio project for Vector users.
-                    if project_obj.name.startswith('vector_'):
+                    # On BRC only, if the Project is a Vector project,
+                    # automatically add the User to the designated Savio
+                    # project for Vector users.
+                    if (flag_enabled('BRC_ONLY') and
+                            project_obj.name.startswith('vector_')):
                         try:
                             add_vector_user_to_designated_savio_project(
                                 user_obj)
@@ -1448,6 +1471,15 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         status = ProjectUserStatusChoice.objects.get(name='Pending - Add')
         reason = self.request.POST['reason']
 
+        select_host_user_form = ProjectSelectHostUserForm(
+            project=project_obj.name,
+            data=self.request.POST)
+        host_user = None
+        if select_host_user_form.is_valid():
+            host_user = \
+                User.objects.get(
+                    username=select_host_user_form.cleaned_data['host_user'])
+
         if project_users.exists():
             project_user = project_users.first()
             project_user.role = role
@@ -1470,7 +1502,8 @@ class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         # Create a join request
         ProjectUserJoinRequest.objects.create(project_user=project_user,
-                                              reason=reason)
+                                              reason=reason,
+                                              host_user=host_user)
 
         message = (
             f'You have requested to join Project {project_obj.name}. The '
@@ -1521,14 +1554,8 @@ class ProjectJoinListView(ProjectListView, UserPassesTestMixin):
         projects = Project.objects.prefetch_related(
             'field_of_science', 'status').filter(
                 status__name__in=['New', 'Active', ]
-        ).annotate(
-            cluster_name=Case(
-                When(name='abc', then=Value('ABC')),
-                When(name__startswith='vector_', then=Value('Vector')),
-                default=Value('Savio'),
-                output_field=CharField(),
-            ),
         ).order_by(order_by)
+        projects = annotate_queryset_with_cluster_name(projects)
 
         if project_search_form.is_valid():
             data = project_search_form.cleaned_data
@@ -1618,14 +1645,29 @@ class ProjectJoinListView(ProjectListView, UserPassesTestMixin):
 
         join_requests = Project.objects.filter(Q(projectuser__user=self.request.user)
                                                & Q(status__name__in=['New', 'Active', ])
-                                               & Q(projectuser__status__name__in=['Pending - Add']))\
-            .annotate(cluster_name=Case(When(name='abc', then=Value('ABC')),
-                                        When(name__startswith='vector_', then=Value('Vector')),
-                                        default=Value('Savio'),
-                                        output_field=CharField()))
+                                               & Q(projectuser__status__name__in=['Pending - Add']))
+        join_requests = annotate_queryset_with_cluster_name(join_requests)
 
         context['join_requests'] = join_requests
         context['not_joinable'] = not_joinable
+
+        # Only non-LBL employees without a host user and without any pending
+        # join requests need access to the SelectHostUserForm.
+        context['need_host'] = False
+        pending_status = ProjectUserStatusChoice.objects.get(name='Pending - Add')
+        if flag_enabled('LRC_ONLY') \
+                and needs_host(self.request.user) \
+                and not ProjectUser.objects.filter(user=self.request.user,
+                                                   status=pending_status).exists():
+            context['need_host'] = True
+
+            selecthostform_dict = {}
+            for project in context.get('project_list'):
+                selecthostform_dict[project.name] = \
+                    ProjectSelectHostUserForm(project=project.name)
+
+            context['selecthostform_dict'] = selecthostform_dict
+
         return context
 
 
@@ -1708,6 +1750,16 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
                 role__name__in=['Manager', 'Principal Investigator'],
                 status__name='Active').exists():
             context['can_add_users'] = True
+
+        if flag_enabled('LRC_ONLY'):
+            host_dict = {}
+            for user in users_to_review:
+                username = user.get('username')
+                host_dict[username] = \
+                    ProjectUserJoinRequest.objects.filter(
+                        project_user__project=project_obj,
+                        project_user__user__username=username).latest('modified').host_user
+            context['host_dict'] = host_dict
 
         return render(request, self.template_name, context)
 
@@ -1796,6 +1848,27 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
                                 self.logger.error(message)
                                 self.logger.exception(e)
 
+                        # Set the host user if one is provided.
+                        if flag_enabled('LRC_ONLY'):
+                            host_user = \
+                                ProjectUserJoinRequest.objects.filter(
+                                    project_user__project=project_obj,
+                                    project_user=project_user_obj).latest('modified').host_user
+
+                            user_profile = user_obj.userprofile
+
+                            if host_user:
+                                if is_lbl_employee(user_obj) or not needs_host(user_obj):
+                                    message = (
+                                        f'User {user_obj.username} requested '
+                                        f'a host user but already has '
+                                        f'{user_profile.host_user.username} as '
+                                        f'their host user.')
+                                    self.logger.error(message)
+                                else:
+                                    user_profile.host_user = host_user
+                                    user_profile.save()
+
                     # Send an email to the user.
                     try:
                         email_function(project_obj, project_user_obj)
@@ -1807,8 +1880,9 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
 
             message = (
                 f'{message_verb} {reviewed_users_count} user requests to join '
-                f'the project. BRC staff have been notified to set up cluster '
-                f'access for each approved request.')
+                f'the project. {settings.PROGRAM_NAME_SHORT} staff have been '
+                f'notified to set up cluster access for each approved '
+                f'request.')
             messages.success(request, message)
         else:
             for error in formset.errors:

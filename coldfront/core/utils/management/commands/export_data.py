@@ -3,18 +3,17 @@ import json
 import datetime
 from sys import stdout, stderr
 
-import pytz
-
 from django.core.management.base import BaseCommand, CommandError
 from django.db.models import Value, F, CharField, Func, \
     DurationField, ExpressionWrapper
 
-from coldfront.config import settings
 from coldfront.core.allocation.models import AllocationAttributeType, \
     AllocationUserAttribute
 from coldfront.core.statistics.models import Job
 from coldfront.core.project.models import Project, ProjectStatusChoice, \
     SavioProjectAllocationRequest, VectorProjectAllocationRequest
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
+from coldfront.core.utils.common import display_time_zone_date_to_utc_datetime
 
 
 """An admin command that exports the results of useful database queries
@@ -25,6 +24,15 @@ class Command(BaseCommand):
 
     help = 'Exports data based on the requested query.'
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.computing_allowance_interface = ComputingAllowanceInterface()
+        self.allowance_prefixes = []
+        for allowance in self.computing_allowance_interface.allowances():
+            self.allowance_prefixes.append(
+                self.computing_allowance_interface.code_from_name(
+                    allowance.name))
+
     def add_arguments(self, parser):
         """Define subcommands with different functions."""
         subparsers = parser.add_subparsers(
@@ -34,8 +42,7 @@ class Command(BaseCommand):
         subparsers.required = True
         self.add_subparsers(subparsers)
 
-    @staticmethod
-    def add_subparsers(subparsers):
+    def add_subparsers(self, subparsers):
         """Add subcommands and their respective parsers."""
         latest_jobs_by_user_parser = \
             subparsers.add_parser('latest_jobs_by_user',
@@ -86,7 +93,7 @@ class Command(BaseCommand):
             type=valid_date)
         job_avg_queue_time_parser.add_argument(
             '--allowance_type',
-            choices=['ac_', 'co_', 'fc_', 'ic_', 'pc_'],
+            choices=self.allowance_prefixes,
             help='Filter projects by the given allowance type.',
             type=str)
         job_avg_queue_time_parser.add_argument(
@@ -97,8 +104,7 @@ class Command(BaseCommand):
         project_subparser = subparsers.add_parser('projects',
                                                   help='Export projects data')
         project_subparser.add_argument('--allowance_type',
-                                       choices=['ac_', 'co_',
-                                                'fc_', 'ic_', 'pc_'],
+                                       choices=self.allowance_prefixes,
                                        help='Filter projects by the given allowance type.',
                                        type=str)
         project_subparser.add_argument('--format',
@@ -132,7 +138,7 @@ class Command(BaseCommand):
         survey_responses_subparser.add_argument('--allowance_type',
                                                 help='Dump responses for Projects with given prefix',
                                                 type=str, required=False, default='',
-                                                choices=['ac_', 'co_', 'fc_', 'ic_', 'pc_'])
+                                                choices=self.allowance_prefixes)
 
     def handle(self, *args, **options):
         """Call the handler for the provided subcommand."""
@@ -159,7 +165,7 @@ class Command(BaseCommand):
         )
 
         if date:
-            date = self.convert_time_to_utc(date)
+            date = display_time_zone_date_to_utc_datetime(date)
             query_set = query_set.filter(submitdate__gte=date)
 
         query_set = query_set.order_by('userid', '-submitdate').\
@@ -204,7 +210,7 @@ class Command(BaseCommand):
         )
 
         if date:
-            date = self.convert_time_to_utc(date)
+            date = display_time_zone_date_to_utc_datetime(date)
             query_set = query_set.filter(created__gte=date)
 
         query_set = query_set.order_by('username', '-created'). \
@@ -241,11 +247,11 @@ class Command(BaseCommand):
             F('startdate') - F('submitdate'), output_field=DurationField()))
 
         if start_date:
-            start_date = self.convert_time_to_utc(start_date)
+            start_date = display_time_zone_date_to_utc_datetime(start_date)
             query_set = query_set.filter(submitdate__gte=start_date)
 
         if end_date:
-            end_date = self.convert_time_to_utc(end_date)
+            end_date = display_time_zone_date_to_utc_datetime(end_date)
             query_set = query_set.filter(submitdate__lte=end_date)
 
         if allowance_type:
@@ -362,7 +368,7 @@ class Command(BaseCommand):
             header = ['id', 'created', 'modified', 'state']
 
         if date:
-            date = self.convert_time_to_utc(date)
+            date = display_time_zone_date_to_utc_datetime(date)
             requests = requests.filter(created__gte=date)
 
         additional_headers = ['project', 'status', 'requester', 'pi']
@@ -506,16 +512,6 @@ class Command(BaseCommand):
             output.writelines(json_output)
         except Exception as e:
             error.write(str(e))
-
-    @staticmethod
-    def convert_time_to_utc(time):
-        """Convert naive LA time to UTC time"""
-        local_tz = pytz.timezone('America/Los_Angeles')
-        tz = pytz.timezone(settings.TIME_ZONE)
-        naive_dt = datetime.datetime.combine(time, datetime.datetime.min.time())
-        new_time = local_tz.localize(naive_dt).astimezone(tz).isoformat()
-
-        return new_time
 
 
 def valid_date(s):

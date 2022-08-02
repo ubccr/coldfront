@@ -17,6 +17,7 @@ from django.utils.module_loading import import_string
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
+from coldfront.core.billing.models import BillingActivity
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.resource.models import Resource
@@ -451,6 +452,9 @@ class AllocationRenewalRequest(TimeStampedModel):
         related_name='allocation_renewal_requester')
     pi = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='allocation_renewal_pi')
+    computing_allowance = models.ForeignKey(
+        'resource.Resource', blank=True, null=True, on_delete=models.SET_NULL,
+        related_name='renewal_computing_allowance')
     allocation_period = models.ForeignKey(
         AllocationPeriod, on_delete=models.CASCADE)
     status = models.ForeignKey(
@@ -669,3 +673,110 @@ class SecureDirRemoveUserRequest(TimeStampedModel):
     completion_time = models.DateTimeField(null=True)
     status = models.ForeignKey(
         SecureDirRemoveUserRequestStatusChoice, on_delete=models.CASCADE)
+
+
+class SecureDirRequestStatusChoice(TimeStampedModel):
+    name = models.CharField(max_length=64)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name', ]
+
+
+def secure_dir_request_state_schema():
+    """Return the schema for the SecureDirRequest.state
+    field."""
+    return {
+        'rdm_consultation': {
+            'status': 'Pending',
+            'justification': '',
+            'timestamp': ''
+        },
+        'mou': {
+            'status': 'Pending',
+            'justification': '',
+            'timestamp': ''
+        },
+        'setup': {
+            'status': 'Pending',
+            'justification': '',
+            'timestamp': ''
+        },
+        'other': {
+            'justification': '',
+            'timestamp': ''
+        }
+    }
+
+
+class SecureDirRequest(TimeStampedModel):
+    requester = models.ForeignKey(User, on_delete=models.CASCADE)
+    directory_name = models.TextField()
+    data_description = models.TextField()
+    rdm_consultation = models.TextField(null=True)
+    project = models.ForeignKey(Project, null=True, on_delete=models.CASCADE)
+    status = models.ForeignKey(SecureDirRequestStatusChoice, on_delete=models.CASCADE)
+
+    request_time = models.DateTimeField(
+        null=True, blank=True, default=timezone.now)
+    completion_time = models.DateTimeField(null=True, blank=True)
+
+    state = models.JSONField(default=secure_dir_request_state_schema)
+
+    def __str__(self):
+        return f'{self.directory_name} ({self.project.name})'
+
+    def denial_reason(self):
+        """Return the reason why the request was denied, based on its
+        'state' field."""
+        if self.status.name != 'Denied':
+            raise ValueError(
+                f'Provided request has unexpected status '
+                f'{self.status.name}.')
+
+        state = self.state
+        rdm_consultation = state['rdm_consultation']
+        mou = state['mou']
+        setup = state['setup']
+        other = state['other']
+
+        DenialReason = namedtuple(
+            'DenialReason', 'category justification timestamp')
+
+        if rdm_consultation['status'] == 'Denied':
+            category = 'RDM Consultation'
+            justification = rdm_consultation['justification']
+            timestamp = rdm_consultation['timestamp']
+        elif mou['status'] == 'Denied':
+            category = 'Memorandum of Understanding'
+            justification = mou['justification']
+            timestamp = mou['timestamp']
+        elif setup['status'] == 'Denied':
+            category = 'Cluster Setup'
+            justification = setup['justification']
+            timestamp = setup['timestamp']
+        elif other['timestamp']:
+            category = 'Other'
+            justification = other['justification']
+            timestamp = other['timestamp']
+        else:
+            raise ValueError('Provided request has an unexpected state.')
+
+        return DenialReason(category=category,
+                            justification=justification,
+                            timestamp=timestamp)
+
+    def latest_update_timestamp(self):
+        """Return the latest timestamp stored in the request's 'state'
+        field, or the empty string.
+
+        The expected values are ISO 8601 strings, or the empty string,
+        so taking the maximum should provide the correct output."""
+        state = self.state
+        max_timestamp = ''
+        for field in state:
+            max_timestamp = max(
+                max_timestamp, state[field].get('timestamp', ''))
+        return max_timestamp

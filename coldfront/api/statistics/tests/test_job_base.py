@@ -12,6 +12,7 @@ from coldfront.core.project.utils_.renewal_utils import get_current_allowance_ye
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import display_time_zone_date_to_utc_datetime
 from datetime import datetime
+from datetime import timedelta
 from decimal import Decimal
 from django.contrib.auth.models import User
 
@@ -47,7 +48,7 @@ class TestJobBase(TestAPIBase):
         # Create a Project and ProjectUsers.
         project_status = ProjectStatusChoice.objects.get(name='Active')
         self.project = Project.objects.create(
-            name='test_project', status=project_status)
+            name='fc_project', status=project_status)
         status = ProjectUserStatusChoice.objects.get(name='Active')
         user_role = ProjectUserRoleChoice.objects.get(name='User')
         self.project_user = ProjectUser.objects.create(
@@ -65,7 +66,7 @@ class TestJobBase(TestAPIBase):
         self.default_start = display_time_zone_date_to_utc_datetime(
             period_start_date)
         self.default_end = display_time_zone_date_to_utc_datetime(
-            period_end_date)
+            period_end_date) + timedelta(hours=24) - timedelta(microseconds=1)
 
         # Create a "CLUSTER_NAME Compute" Allocation for the Project.
         allocation_objects = create_project_allocation(

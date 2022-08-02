@@ -10,7 +10,6 @@
   {% if formset %}
     <div class="card border-light">
       <div class="card-body">
-
         <form action="{% url url allocation.pk action %}" method="post">
           {% csrf_token %}
           <div class="table-responsive">
@@ -35,11 +34,20 @@
                   {% if can_manage_users %}
                     <td>{{ form.selected }}</td>
                   {% endif %}
-                  <td>{{ forloop.counter }}</td>
-                  <td>{{ form.username.value }}</td>
-                  <td>{{ form.first_name.value }}</td>
-                  <td>{{ form.last_name.value }}</td>
-                  <td>{{ form.email.value }}</td>
+
+                  {% if form.selected %}
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ form.username.value }}</td>
+                    <td>{{ form.first_name.value }}</td>
+                    <td>{{ form.last_name.value }}</td>
+                    <td>{{ form.email.value }}</td>
+                  {% else %}
+                    <td><div class="text-muted">{{ forloop.counter }}</div></td>
+                    <td><div class="text-muted">{{ form.username.value }}</div></td>
+                    <td><div class="text-muted">{{ form.first_name.value }}</div></td>
+                    <td><div class="text-muted">{{ form.last_name.value }}</div></td>
+                    <td><div class="text-muted">{{ form.email.value }}</div></td>
+                  {% endif %}
                 </tr>
               {% endfor %}
               </tbody>

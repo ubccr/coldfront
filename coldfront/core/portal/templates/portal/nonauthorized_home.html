@@ -6,14 +6,14 @@
 
 {% block content %}
 
-<h1>Welcome to MyBRC</h1>
+<h1>Welcome to {{ PORTAL_NAME }}</h1>
 <p class="text-justify">
-  MyBRC is a user portal for managing access to the clusters and other
-  resources provided by UC Berkeley Research IT's Berkeley Research Computing
-  (BRC) program.
+  {{ PORTAL_NAME }} is a user portal for managing access to the clusters and
+  other resources provided by the {{ PROGRAM_NAME_LONG }}
+  ({{ PROGRAM_NAME_SHORT }}) program.
 </p>
 <ul>
-  <li>Join projects and gain access to the Savio, Vector, and ABC clusters.</li>
+  <li>Join projects and gain access to {{ PRIMARY_CLUSTER_NAME }} and other clusters.</li>
   <li>Create new projects and manage project users.</li>
   <li>Request or purchase computing allowances.</li>
   <li>View details of current and past jobs, and allowance usages.</li>
@@ -47,6 +47,7 @@
   {% endif %}
 </p>
 
+
 {% include "portal/extra_app_templates.html" %}
 
 
@@ -56,16 +57,14 @@
 {% block javascript %}
 {{ block.super }}
 <script>
-    $("#navbar-main > ul > li.active").removeClass("active");
-    $("#navbar-home").addClass("active");
-  </script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-home").addClass("active");
+</script>
 
 <script>
-    $("#expand_button").click(function() {
-
-      $('#externalProviderCollapse').collapse();
-
-    });
-  </script>
+  $("#expand_button").click(function() {
+    $('#externalProviderCollapse').collapse();
+  });
+</script>
 
 {% endblock %}

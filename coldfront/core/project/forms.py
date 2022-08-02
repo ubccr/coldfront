@@ -1,6 +1,7 @@
 import datetime
 
 from django import forms
+from django.contrib.auth.models import User
 from django.core.validators import MinLengthValidator
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
@@ -248,3 +249,27 @@ class JoinRequestSearchForm(forms.Form):
     username = forms.CharField(
         label='Username', max_length=100, required=False)
     email = forms.CharField(label='Email', max_length=100, required=False)
+
+
+class ProjectSelectHostUserForm(forms.Form):
+    host_user = forms.ChoiceField(
+        label='Host User',
+        choices=[],
+        widget=forms.Select(),
+        required=True)
+
+    def __init__(self, *args, **kwargs):
+        project_name = kwargs.pop('project', None)
+        super().__init__(*args, **kwargs)
+        if project_name:
+            project = Project.objects.get(name=project_name)
+
+            eligible_PIs = project.projectuser_set.filter(
+                role__name='Principal Investigator',
+                status__name='Active')
+
+            choices = \
+                [('', 'Select a host user.')] + \
+                [(projuser.user, f'{projuser.user.first_name} {projuser.user.last_name} ({projuser.user.username})') for projuser in eligible_PIs]
+
+            self.fields['host_user'].choices = choices

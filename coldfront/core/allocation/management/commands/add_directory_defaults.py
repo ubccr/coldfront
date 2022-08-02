@@ -3,7 +3,8 @@ from coldfront.core.resource.models import ResourceAttribute
 from coldfront.core.resource.models import ResourceAttributeType
 from coldfront.core.resource.models import ResourceType
 from coldfront.core.allocation.models import AllocationAttributeType, \
-    SecureDirAddUserRequestStatusChoice, SecureDirRemoveUserRequestStatusChoice
+    SecureDirAddUserRequestStatusChoice, SecureDirRemoveUserRequestStatusChoice, \
+    SecureDirRequestStatusChoice
 
 from django.core.management.base import BaseCommand
 
@@ -24,7 +25,7 @@ class Command(BaseCommand):
         """
         from coldfront.core.resource.models import AttributeType
         attribute_type, _ = AttributeType.objects.get_or_create(name='Text')
-        path, _ = ResourceAttributeType.objects.update_or_create(
+        path, _ = ResourceAttributeType.objects.get_or_create(
             attribute_type=AttributeType.objects.get(name='Text'),
             name='path',
             defaults={
@@ -33,60 +34,60 @@ class Command(BaseCommand):
                 'is_value_unique': True,
             })
 
-        cluster_directory, _ = ResourceType.objects.update_or_create(
+        cluster_directory, _ = ResourceType.objects.get_or_create(
             name='Cluster Directory',
             defaults={
                 'description': 'Directory on a cluster.',
             })
 
-        groups_directory, _ = Resource.objects.update_or_create(
+        groups_directory, _ = Resource.objects.get_or_create(
             resource_type=cluster_directory,
             name='Groups Directory',
             description='The parent directory containing shared group data.')
 
-        groups_path, _ = ResourceAttribute.objects.update_or_create(
+        groups_path, _ = ResourceAttribute.objects.get_or_create(
             resource_attribute_type=path,
             resource=groups_directory,
             value='/global/home/groups/')
 
-        scratch2_directory, _ = Resource.objects.update_or_create(
+        scratch_directory, _ = Resource.objects.get_or_create(
             resource_type=cluster_directory,
-            name='Scratch2 Directory',
-            description='The parent directory containing scratch2 data.')
+            name='Scratch Directory',
+            description='The parent directory containing scratch data.')
 
-        scratch2_path, _ = ResourceAttribute.objects.update_or_create(
+        scratch_path, _ = ResourceAttribute.objects.get_or_create(
             resource_attribute_type=path,
-            resource=scratch2_directory,
-            value='/global/scratch2/')
+            resource=scratch_directory,
+            value='/global/scratch/')
 
-        groups_p2p3_directory, _ = Resource.objects.update_or_create(
+        groups_p2p3_directory, _ = Resource.objects.get_or_create(
             parent_resource=groups_directory,
             resource_type=cluster_directory,
             name='Groups P2/P3 Directory',
             description='The parent directory containing P2/P3 data '
                         'in the groups directory.')
 
-        groups_p2p3_path, _ = ResourceAttribute.objects.update_or_create(
+        groups_p2p3_path, _ = ResourceAttribute.objects.get_or_create(
             resource_attribute_type=path,
             resource=groups_p2p3_directory,
             value=os.path.join(groups_path.value, 'pl1data'))
 
-        scratch2_p2p3_directory, _ = Resource.objects.update_or_create(
-            parent_resource=scratch2_directory,
+        scratch_p2p3_directory, _ = Resource.objects.get_or_create(
+            parent_resource=scratch_directory,
             resource_type=cluster_directory,
-            name='Scratch2 P2/P3 Directory',
+            name='Scratch P2/P3 Directory',
             description='The parent directory containing P2/P3 data in the '
-                        'scratch2 directory.')
+                        'scratch directory.')
 
-        scratch2_p2p3_path, _ = ResourceAttribute.objects.update_or_create(
+        scratch_p2p3_path, _ = ResourceAttribute.objects.get_or_create(
             resource_attribute_type=path,
-            resource=scratch2_p2p3_directory,
-            value=os.path.join(scratch2_path.value, 'pl1data'))
+            resource=scratch_p2p3_directory,
+            value=os.path.join(scratch_path.value, 'p2p3'))
 
         from coldfront.core.allocation.models import AttributeType
         attribute_type, _ = AttributeType.objects.get_or_create(name='Text')
         allocation_attr_type, _ = \
-            AllocationAttributeType.objects.update_or_create(
+            AllocationAttributeType.objects.get_or_create(
                 attribute_type=attribute_type,
                 name='Cluster Directory Access',
                 defaults={
@@ -104,3 +105,12 @@ class Command(BaseCommand):
                 name=status)
             SecureDirRemoveUserRequestStatusChoice.objects.get_or_create(
                 name=status)
+
+        choices = [
+            'Approved - Complete',
+            'Approved - Processing',
+            'Denied',
+            'Under Review',
+        ]
+        for choice in choices:
+            SecureDirRequestStatusChoice.objects.get_or_create(name=choice)

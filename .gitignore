@@ -17,6 +17,7 @@ prod_settings.py
 staging_settings.py
 local_settings.py
 local_strings.py
+password_reset_subject.txt
 coldfront.db*
 *.code-workspace
 .vscode

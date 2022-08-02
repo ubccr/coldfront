@@ -4,6 +4,8 @@ from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
+from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
 from coldfront.core.utils.tests.test_base import TestBase
 
 
@@ -43,6 +45,8 @@ class TestProjectRenewalProjectSelectionForm(TestBase):
             ProjectUser.objects.create(**kwargs)
 
         kwargs = {
+            'computing_allowance': Resource.objects.get(
+                name=BRCAllowances.FCA),
             'pi_pk': self.user.pk,
             'non_owned_projects': False,
             'exclude_project_pk': None,

@@ -1,6 +1,4 @@
-import datetime
-import pytz
-from django.conf import settings
+from coldfront.core.utils.common import display_time_zone_date_to_utc_datetime
 
 
 def job_query_filtering(job_list, data):
@@ -32,7 +30,8 @@ def job_query_filtering(job_list, data):
 
     if data.get('submitdate'):
         submit_modifier = data.get('submit_modifier')
-        submit_date = convert_time_to_utc(data.get('submitdate'))
+        submit_date = display_time_zone_date_to_utc_datetime(
+            data.get('submitdate'))
 
         if submit_modifier == 'Before':
             job_list = job_list.filter(submitdate__lt=submit_date)
@@ -45,7 +44,8 @@ def job_query_filtering(job_list, data):
 
     if data.get('startdate'):
         start_modifier = data.get('start_modifier')
-        start_date = convert_time_to_utc(data.get('startdate'))
+        start_date = display_time_zone_date_to_utc_datetime(
+            data.get('startdate'))
 
         if start_modifier == 'Before':
             job_list = job_list.filter(startdate__lt=start_date)
@@ -58,7 +58,7 @@ def job_query_filtering(job_list, data):
 
     if data.get('enddate'):
         end_modifier = data.get('end_modifier')
-        end_date = convert_time_to_utc(data.get('enddate'))
+        end_date = display_time_zone_date_to_utc_datetime(data.get('enddate'))
 
         if end_modifier == 'Before':
             job_list = job_list.filter(enddate__lt=end_date)
@@ -70,13 +70,3 @@ def job_query_filtering(job_list, data):
             job_list = job_list.filter(enddate__gt=end_date)
 
     return job_list
-
-
-def convert_time_to_utc(time):
-    """Convert naive display timezone time to UTC time."""
-    local_tz = pytz.timezone(settings.DISPLAY_TIME_ZONE)
-    tz = pytz.timezone(settings.TIME_ZONE)
-    naive_dt = datetime.datetime.combine(time, datetime.datetime.min.time())
-    new_time = local_tz.localize(naive_dt).astimezone(tz).isoformat()
-
-    return new_time

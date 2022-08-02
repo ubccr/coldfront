@@ -104,13 +104,16 @@ function checkNameExists() {
         let data = response.data;
         let exists = data.name_exists;
         if (exists) {
+          let program_name_short = JSON.parse(
+            document.getElementById('program_name_short').textContent);
           alertDiv.innerHTML = '' +
             'A user with the provided first and last name already exists. ' +
-            'If you have previously used a BRC cluster, you should already ' +
-            'have an account. If so, please ' + loginTag + ' or ' +
-            passwordResetTag + ' using the existing address to gain access. ' +
-            'You may then associate additional email addresses with your ' +
-            'account. If you need any assistance, please contact us.';
+            'If you have previously used a ' + program_name_short +
+            ' cluster, you should already have an account. If so, please ' +
+            loginTag + ' or ' + passwordResetTag + ' using the existing ' +
+            'address to gain access. You may then associate additional ' +
+            'email addresses with your account. If you need any assistance, ' +
+            'please contact us.';
           ackDiv.style.display = 'block';
           registerButton.style.display = 'none';
         } else {

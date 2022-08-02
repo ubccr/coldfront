@@ -36,6 +36,9 @@ class UserProfile(models.Model):
     billing_activity = models.ForeignKey(
         BillingActivity, blank=True, null=True, on_delete=models.SET_NULL)
 
+    host_user = models.ForeignKey(
+        User, related_name='host_user', blank=True, null=True, on_delete=models.SET_NULL)
+
 
 class EmailAddress(models.Model):
     user = models.ForeignKey(

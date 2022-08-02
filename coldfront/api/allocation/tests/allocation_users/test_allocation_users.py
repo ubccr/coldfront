@@ -3,6 +3,7 @@ from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationUser
 from coldfront.core.resource.models import Resource
 from coldfront.core.resource.models import ResourceType
+from coldfront.core.resource.utils import get_primary_compute_resource_name
 from http import HTTPStatus
 
 """A test suite for the /allocation_users/ endpoints, divided by
@@ -133,9 +134,10 @@ class TestListAllocationUsers(TestAllocationBase):
         second = Allocation.objects.get(project=self.project1).pk
         allocation_ids_iterator = iter([first, first, second, second])
 
+        resource_name = get_primary_compute_resource_name()
         url = self.endpoint_url()
         query_parameters = {
-            'resources': 'Savio Compute',
+            'resources': resource_name,
         }
         response = self.client.get(url, query_parameters)
         json = response.json()
@@ -145,7 +147,7 @@ class TestListAllocationUsers(TestAllocationBase):
                 next(allocation_ids_iterator), result['allocation'])
             self.assertTrue(
                 Resource.objects.filter(
-                    allocation=allocation, name='Savio Compute'))
+                    allocation=allocation, name=resource_name))
 
         query_parameters = {
             'resources': 'Other Compute',

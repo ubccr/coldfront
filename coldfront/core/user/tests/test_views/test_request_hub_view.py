@@ -97,7 +97,7 @@ class TestRequestHubView(TestBase):
 
         self.requests = ['cluster access request',
                          'project removal request',
-                         'savio project request',
+                         'new project request',
                          'vector project request',
                          'project join request',
                          'project renewal request',
@@ -318,7 +318,7 @@ class TestRequestHubView(TestBase):
         def assert_request_shown(user, url):
             response = self.get_response(user, url)
             soup = BeautifulSoup(response.content, 'html.parser')
-            section = 'savio_project_request_section'
+            section = 'new_project_request_section'
 
             # notification badge is shown
             self.assert_pending_request_badge_shown(
@@ -370,10 +370,10 @@ class TestRequestHubView(TestBase):
         assert_request_shown(self.staff, self.admin_url)
 
         # other request sections should be empty
-        self.assert_no_requests(self.user0, self.url, exclude='savio project request')
-        self.assert_no_requests(self.pi, self.url, exclude='savio project request')
-        self.assert_no_requests(self.admin, self.admin_url, exclude='savio project request')
-        self.assert_no_requests(self.staff, self.admin_url, exclude='savio project request')
+        self.assert_no_requests(self.user0, self.url, exclude='new project request')
+        self.assert_no_requests(self.pi, self.url, exclude='new project request')
+        self.assert_no_requests(self.admin, self.admin_url, exclude='new project request')
+        self.assert_no_requests(self.staff, self.admin_url, exclude='new project request')
 
         # should not see any requests
         self.assert_no_requests(self.user1, self.url)

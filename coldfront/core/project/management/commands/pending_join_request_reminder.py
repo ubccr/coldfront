@@ -48,6 +48,7 @@ class Command(BaseCommand):
                                        for request in proj_join_requests_qeuryset]
 
                 context = {
+                    'PORTAL_NAME': settings.PORTAL_NAME,
                     'project_name': project.name,
                     'request_list': '\n'.join(request_string_list),
                     'num_requests': proj_join_requests_qeuryset.count(),
@@ -94,6 +95,7 @@ class Command(BaseCommand):
                                        for request in proj_join_requests_qeuryset]
 
                 context = {
+                    'PORTAL_NAME': settings.PORTAL_NAME,
                     'user_name': f'{user.first_name} {user.last_name}',
                     'request_list': '\n'.join(request_string_list),
                     'num_requests': proj_join_requests_qeuryset.count(),

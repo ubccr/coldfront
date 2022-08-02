@@ -59,6 +59,9 @@ with flagged_paths('BASIC_AUTH_ENABLED') as f_path:
                    form_class=VerifiedEmailAddressPasswordResetForm,
                    template_name='user/passwords/password_reset_form.html',
                    email_template_name='user/passwords/password_reset_email.html',
+                   extra_email_context={
+                       'PORTAL_NAME': settings.PORTAL_NAME,
+                       'PROGRAM_NAME_SHORT': settings.PROGRAM_NAME_SHORT},
                    subject_template_name='user/passwords/password_reset_subject.txt',
                    success_url=reverse_lazy('password-reset-done')),
                name='password-reset'),
@@ -122,8 +125,6 @@ urlpatterns += [
     path('user-search-results/', user_views.UserSearchResults.as_view(), name='user-search-results'),
     path('user-list-allocations/', user_views.UserListAllocations.as_view(), name='user-list-allocations'),
     path('user-search-all', user_views.UserSearchAll.as_view(), name='user-search-all'),
-
-
 
     # Link Personal Account
     path('identity-linking-request',
