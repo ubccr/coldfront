@@ -12,13 +12,23 @@ Allocation Review New and Pending Requests
 {% block content %}
 <h2>Allocation Requests</h2>
 
+<hr>
+
+<p class="text-justify"> 
+  For each allocation request below, there is the option to activate the allocation request and to view the allocation's detail page.
+</p>
+
+<p class="text-justify"> 
+  By default, activating an allocation will make it active for {{ ALLOCATION_DEFAULT_ALLOCATION_LENGTH }} days.
+</p>
+
 {% if allocation_list %}
   <div class="table-responsive">
     <table class="table table-sm">
       <thead>
         <tr>
           <th scope="col">#</th>
-          <th scope="col">Date Requested/<br>Last Modified</th>
+          <th scope="col">Requested</th>
           <th scope="col">Project Title</th>
           <th scope="col">PI</th>
           <th scope="col">Resource</th>
@@ -26,14 +36,14 @@ Allocation Review New and Pending Requests
             <th scope="col" class="text-nowrap">Project Review Status</th>
           {% endif %}
           <th scope="col">Status</th>
-          <th scope="col">Allocation Actions</th>
+          <th scope="col">Actions</th>
         </tr>
       </thead>
       <tbody>
         {% for allocation in allocation_list %}
           <tr>
-            <td><a href="{% url 'allocation-detail' allocation.pk %}">{{allocation.pk}}</a></td>
-            <td>{{ allocation.modified|date:"M. d, Y" }}</td>
+            <td>{{allocation.pk}}</td>
+            <td>{{ allocation.created|date:"M. d, Y" }}</td>
             <td><a href="{% url 'project-detail' allocation.project.pk %}">{{allocation.project.title|truncatechars:50}}</a></td>
             <td>{{allocation.project.pi.first_name}} {{allocation.project.pi.last_name}}
               ({{allocation.project.pi.username}})</td>
@@ -43,8 +53,13 @@ Allocation Review New and Pending Requests
             {% endif %}
             <td>{{allocation.status}}</td>
             <td class="text-nowrap">
-              <a href="{% url 'allocation-activate-request' allocation.pk %}" class="btn btn-success mr-1">Activate</a>
-              <a href="{% url 'allocation-deny-request' allocation.pk %}" class="btn btn-danger mr-1">Deny</a>
+              {% if allocation.get_information == '' %}
+                <a href="{% url 'allocation-activate-request' allocation.pk %}" class="btn btn-success mr-1 confirm-activate" aria-disabled="true">Approve</a>
+                <a href="{% url 'allocation-detail' allocation.pk %}" class="btn btn-primary mr-1" style="color: white !important">Details</a>
+              {% else %}
+                  <a href="{% url 'allocation-activate-request' allocation.pk %}" class="btn btn-success mr-1" style="color: white !important">Activate</a>
+                  <a href="{% url 'allocation-detail' allocation.pk %}" class="btn btn-primary mr-1" style="color: white !important">Details</a>
+              {% endif %}
             </td>
           </tr>
         {% endfor %}
@@ -61,5 +76,8 @@ Allocation Review New and Pending Requests
   $("#navbar-main > ul > li.active").removeClass("active");
   $("#navbar-admin").addClass("active");
   $("#navbar-allocation-requests").addClass("active");
+  $(document).on('click', '.confirm-activate', function(){
+      return confirm('Are you sure you want to activate this allocation request without setting any allocation attributes?');
+  })
 </script>
 {% endblock %}

@@ -1,0 +1,87 @@
+[
+  {
+    "model": "ifxuser.ifxuser",
+    "pk": 4,
+    "fields": {
+      "password": "",
+      "last_login": null,
+      "is_superuser": false,
+      "ifxid": "",
+      "full_name": "Alice Alice",
+      "hkeymail": null,
+      "primary_affiliation": 2,
+      "username": "aalice",
+      "first_name": "Alice",
+      "last_name": "Alice",
+      "email": "",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2022-02-23T19:16:15.865Z",
+      "last_update": "2022-02-23T19:16:15.881Z",
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+  "model": "ifxuser.organization",
+  "pk": 2,
+  "fields": {
+    "ifxorg": "B",
+    "name": "Gordon Lab",
+    "rank": "lab",
+    "org_tree": "Harvard",
+    "slug": "Gordon Lab (not a Harvard Laboratory)",
+    "code": null,
+    "application_key": null
+    }
+  },
+  {
+    "model": "project.project",
+    "pk": 2,
+    "fields": {
+      "created": "2021-04-01T14:00:00Z",
+      "modified": "2021-08-20T22:01:15.213Z",
+      "title": "gordon_lab",
+      "pi": 4,
+      "description": "Storage allocation for gordon_lab",
+      "field_of_science": 3,
+      "status": 1,
+      "force_review": false,
+      "requires_review": true
+    }
+  },
+  {
+    "model": "allocation.allocation",
+    "pk": 2,
+    "fields": {
+      "created": "2021-07-23T18:05:14.342Z",
+      "modified": "2021-10-05T14:38:53.103Z",
+      "project": 2,
+      "status": 1,
+      "quantity": 1,
+      "start_date": "2021-07-23",
+      "end_date": "2022-07-23",
+      "justification": "Allocation Information for gordon_lab",
+      "description": null,
+      "is_locked": false,
+      "resources": [1]
+    }
+  },
+  {
+    "model": "allocation.allocation",
+    "pk": 3,
+    "fields": {
+      "created": "2021-07-23T18:05:14.342Z",
+      "modified": "2021-10-05T14:38:53.103Z",
+      "project": 2,
+      "status": 1,
+      "quantity": 1,
+      "start_date": "2021-07-23",
+      "end_date": "2022-07-23",
+      "justification": "FASSE allocation",
+      "description": null,
+      "is_locked": false,
+      "resources": [1]
+    }
+  }
+]

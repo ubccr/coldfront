@@ -3,8 +3,10 @@ import pprint
 
 from django.conf import settings
 from django.contrib import messages
+from django import forms
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth import get_user_model
+from django.contrib.auth.decorators import user_passes_test, login_required
 from coldfront.core.utils.common import import_from_settings
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
@@ -37,7 +39,8 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectReviewStatusChoice,
                                            ProjectStatusChoice, ProjectUser,
                                            ProjectUserRoleChoice,
-                                           ProjectUserStatusChoice)
+                                           ProjectUserStatusChoice,
+                                           ProjectUserMessage)
 from coldfront.core.publication.models import Publication
 from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.user.forms import UserSearchForm
@@ -124,7 +127,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['research_outputs'] = ResearchOutput.objects.filter(
             project=self.object).order_by('-created')
         context['grants'] = Grant.objects.filter(
-            project=self.object, status__name__in=['Active', 'Pending'])
+            project=self.object, status__name__in=['Active', 'Pending', 'Archived'])
         context['allocations'] = allocations
         context['project_users'] = project_users # context dictionary; key is project_users; project_users is a variable name
         # print(type(project_users))
@@ -898,25 +901,46 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_obj.pk, 'project_user_pk': project_user_obj.pk}))
 
 
+@login_required
 def project_update_email_notification(request):
 
     if request.method == "POST":
         data = request.POST
         project_user_obj = get_object_or_404(
             ProjectUser, pk=data.get('user_project_id'))
-        checked = data.get('checked')
-        if checked == 'true':
-            project_user_obj.enable_notifications = True
-            project_user_obj.save()
-            return HttpResponse('', status=200)
-        elif checked == 'false':
-            project_user_obj.enable_notifications = False
-            project_user_obj.save()
-            return HttpResponse('', status=200)
+
+
+        project_obj = project_user_obj.project
+
+        allowed = False
+        if project_obj.pi == request.user:
+            allowed = True
+
+        if project_obj.projectuser_set.filter(user=request.user, role__name='Manager', status__name='Active').exists():
+            allowed = True
+
+        if project_user_obj.user == request.user:
+            allowed = True
+
+        if request.user.is_superuser:
+            allowed = True
+
+        if allowed == False:
+             return HttpResponse('not allowed', status=403)
         else:
-            return HttpResponse('', status=400)
+            checked = data.get('checked')
+            if checked == 'true':
+                project_user_obj.enable_notifications = True
+                project_user_obj.save()
+                return HttpResponse('checked', status=200)
+            elif checked == 'false':
+                project_user_obj.enable_notifications = False
+                project_user_obj.save()
+                return HttpResponse('unchecked', status=200)
+            else:
+                return HttpResponse('no checked', status=400)
     else:
-        return HttpResponse('', status=400)
+        return HttpResponse('no POST', status=400)
 
 
 class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -1122,3 +1146,45 @@ class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
     def get_success_url(self):
         return reverse('project-review-list')
+
+
+class ProjectNoteCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    model = ProjectUserMessage
+    fields = '__all__'
+    template_name = 'project/project_note_create.html'
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+
+        if self.request.user.is_superuser:
+            return True
+        else:
+            messages.error(
+                self.request, 'You do not have permission to add allocation notes.')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        pk = self.kwargs.get('pk')
+        project_obj = get_object_or_404(Project, pk=pk)
+        context['project'] = project_obj
+        return context
+
+    def get_initial(self):
+        initial = super().get_initial()
+        pk = self.kwargs.get('pk')
+        project_obj = get_object_or_404(Project, pk=pk)
+        author = self.request.user
+        initial['project'] = project_obj
+        initial['author'] = author
+        return initial
+
+    def get_form(self, form_class=None):
+        """Return an instance of the form to be used in this view."""
+        form = super().get_form(form_class)
+        form.fields['project'].widget = forms.HiddenInput()
+        form.fields['author'].widget = forms.HiddenInput()
+        form.order_fields([ 'project', 'author', 'message', 'is_private' ])
+        return form
+
+    def get_success_url(self):
+        return reverse('project-detail', kwargs={'pk': self.kwargs.get('pk')})

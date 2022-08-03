@@ -53,6 +53,7 @@ class ResourceAdmin(SimpleHistoryAdmin):
     list_filter = ('resource_type__name', 'is_allocatable', 'is_available', 'is_public', 'requires_payment' )
     inlines = [ResourceAttributeInline, ]
     filter_horizontal = ['allowed_groups', 'allowed_users', 'linked_resources', ]
+    save_as = True
 
     def resource_type_name(self, obj):
         return obj.resource_type.name

@@ -22,7 +22,7 @@ ARG IFXMAIL_CLIENT_COMMIT=cc1a9f9cc6cdb951828b6b912bc830c0172785f1
 ARG IFXUSER_COMMIT=eecc611fa78f0c2ebf5f476ecff2cd5cabe80467
 ARG FIINE_CLIENT_COMMIT=e79f569aa22b43876945bfb75cf169b11a555138
 ARG IFXVALIDCODE_COMMIT=4dd332c5a8e13d904a90da014094406a81b617e6
-ARG IFXBILLING_COMMIT=80fd986a8b5e4e6d6d053c81205cc878090d985e
+ARG IFXBILLING_COMMIT=e4394e3a07e679c1f3e3974da98971c3ee7786a4
 
 RUN --mount=type=ssh pip install --upgrade pip && \
     pip install gunicorn && \
@@ -43,4 +43,4 @@ COPY . .
 ENV PYTHONPATH /usr/src/app
 
 CMD ./manage.py collectstatic --no-input && ./manage.py makemigrations && ./manage.py migrate && /usr/bin/supervisord -n
-
+RUN ./manage.py qcluster &

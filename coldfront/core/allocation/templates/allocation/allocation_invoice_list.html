@@ -60,7 +60,7 @@ Allocation Invoice List
         {% for allocation in allocation_list %}
           <tr>
             {% comment %} <td> <input type="checkbox" id="pi" name="email_reminder" value="reminder"></td> {% endcomment %}
-            <td><a target="_blank" href="{% url 'allocation-invoice-detail' allocation.pk %}">{{allocation.pk}}</td>
+            <td><a href="{% url 'allocation-invoice-detail' allocation.pk %}">{{allocation.pk}}</td>
             <td>{{allocation.get_resources_as_string}}</td>
             <td>{{allocation.status}}</td>
             <td>{{allocation.project.pi.username }}</td>

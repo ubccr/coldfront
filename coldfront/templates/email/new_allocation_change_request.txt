@@ -1,0 +1,2 @@
+An allocation change request for has been made for {{pi}} - {{resource}}. Please review the change request:
+{{url}}

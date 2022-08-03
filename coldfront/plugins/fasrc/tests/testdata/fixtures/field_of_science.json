@@ -1,0 +1,44 @@
+[
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 1,
+  "fields": {
+    "created": "2022-02-22T16:06:36.261Z",
+    "modified": "2022-02-22T16:06:36.263Z",
+    "parent_id": null,
+    "is_selectable": false,
+    "description": "Mathematical and Physical Sciences",
+    "fos_nsf_id": 1,
+    "fos_nsf_abbrev": "MPS",
+    "directorate_fos_id": 1
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 2,
+  "fields": {
+    "created": "2022-02-22T16:06:36.268Z",
+    "modified": "2022-02-22T16:06:36.274Z",
+    "parent_id": 1,
+    "is_selectable": false,
+    "description": "Mathematical Sciences",
+    "fos_nsf_id": 2,
+    "fos_nsf_abbrev": "DMS",
+    "directorate_fos_id": 1
+  }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 3,
+  "fields": {
+    "created": "2022-02-22T16:06:36.340Z",
+    "modified": "2022-02-22T16:06:36.346Z",
+    "parent_id": 2,
+    "is_selectable": true,
+    "description": "Statistics and Probability",
+    "fos_nsf_id": 3,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 1
+  }
+}
+]

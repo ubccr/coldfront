@@ -1,0 +1,211 @@
+[
+  {
+    "model": "ifxuser.ifxuser",
+    "pk": 1,
+    "fields": {
+      "password": "",
+      "last_login": null,
+      "is_superuser": false,
+      "ifxid": "",
+      "full_name": "Ladislaus Bortkiewicz",
+      "hkeymail": null,
+      "primary_affiliation": 1,
+      "username": "ljbortkiewicz",
+      "first_name": "Ladislaus",
+      "last_name": "Bortkiewicz",
+      "email": "",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2022-02-23T19:16:15.865Z",
+      "last_update": "2022-02-23T19:16:15.881Z",
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "ifxuser.ifxuser",
+    "pk": 2,
+    "fields": {
+      "password": "",
+      "last_login": null,
+      "is_superuser": false,
+      "ifxid": "",
+      "full_name": "Simeon Denis Poisson",
+      "hkeymail": null,
+      "primary_affiliation": 1,
+      "username": "sdpoisson",
+      "first_name": "Simeon",
+      "last_name": "Poisson",
+      "email": "",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2022-02-23T19:16:15.865Z",
+      "last_update": "2022-02-23T19:16:15.881Z",
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+    {
+      "model": "ifxuser.ifxuser",
+      "pk": 3,
+      "fields": {
+        "password": "",
+        "last_login": null,
+        "is_superuser": false,
+        "ifxid": "",
+        "full_name": "Simon Newcomb",
+        "hkeymail": null,
+        "primary_affiliation": 1,
+        "username": "snewcomb",
+        "first_name": "Simon",
+        "last_name": "Newcomb",
+        "email": "",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2022-02-23T19:16:15.865Z",
+        "last_update": "2022-02-23T19:16:15.881Z",
+        "groups": [],
+        "user_permissions": []
+      }
+    },
+  {
+    "model": "ifxuser.organization",
+    "pk": 1,
+    "fields": {
+      "ifxorg": "a",
+      "name": "Poisson Lab",
+      "rank": "lab",
+      "org_tree": "Harvard",
+      "slug": "Poisson Lab (not a Harvard Laboratory)",
+      "code": null,
+      "application_key": null
+    }
+  },
+  {
+    "model": "project.projectuser",
+    "pk": 1,
+    "fields": {
+      "created": "2022-02-22T16:09:16.835Z",
+      "modified": "2021-12-07T16:50:52.364Z",
+      "user": 1,
+      "project": 1,
+      "role": 2,
+      "status": 1,
+      "enable_notifications": false
+    }
+  },
+  {
+    "model": "project.projectuser",
+    "pk": 2,
+    "fields": {
+      "created": "2022-02-22T16:09:16.835Z",
+      "modified": "2021-12-07T16:50:52.364Z",
+      "user": 2,
+      "project": 1,
+      "role": 1,
+      "status": 1,
+      "enable_notifications": false
+    }
+  },
+  {
+    "model": "project.projectuser",
+    "pk": 3,
+    "fields": {
+      "created": "2022-02-22T16:09:16.835Z",
+      "modified": "2021-12-07T16:50:52.364Z",
+      "user": 3,
+      "project": 1,
+      "role": 2,
+      "status": 1,
+      "enable_notifications": false
+    }
+  },
+  {
+    "model": "project.project",
+    "pk": 1,
+    "fields": {
+      "created": "2021-04-01T14:00:00Z",
+      "modified": "2021-08-20T22:01:15.213Z",
+      "title": "poisson_lab",
+      "pi": 2,
+      "description": "Storage allocation for poisson_lab",
+      "field_of_science": 3,
+      "status": 1,
+      "force_review": false,
+      "requires_review": true
+    }
+  },
+  {
+    "model": "allocation.allocation",
+    "pk": 1,
+    "fields": {
+      "created": "2021-07-23T18:05:14.342Z",
+      "modified": "2021-10-05T14:38:53.103Z",
+      "project": 1,
+      "status": 1,
+      "quantity": 1,
+      "start_date": "2021-07-23",
+      "end_date": "2022-07-23",
+      "justification": "Allocation Information for poisson_lab",
+      "description": null,
+      "is_locked": false,
+      "resources": [
+        1
+      ]
+    }
+  },
+  {
+    "model": "resource.resource",
+    "pk": 1,
+    "fields": {
+      "created": "2022-02-22T16:26:49.635Z",
+      "modified": "2021-10-13T13:57:49.047Z",
+      "parent_resource": null,
+      "resource_type": 1,
+      "name": "holylfs10/tier1",
+      "description": "Holiest of leaves",
+      "is_available": true,
+      "is_public": true,
+      "is_allocatable": true,
+      "requires_payment": true,
+      "allowed_groups": [],
+      "allowed_users": [],
+      "linked_resources": []
+    }
+  },
+  {
+    "model": "allocation.allocationuser",
+    "pk": 1,
+    "fields": {
+      "created": "2021-07-23T18:05:15.731Z",
+      "modified": "2022-02-09T22:02:38.321Z",
+      "allocation": 1,
+      "user": 1,
+      "status": 1,
+      "usage": 222.0,
+      "unit":"Kb",
+      "allocation_group_quota": 2199023255552
+    }
+  },
+  {
+    "model": "allocation.allocationattribute",
+    "pk": 1,
+    "fields": {
+      "created": "2021-07-23T18:05:15.731Z",
+      "modified": "2022-02-09T22:02:38.321Z",
+      "allocation_attribute_type": 1,
+      "allocation": 1,
+      "value": 100
+    }
+  },
+  {
+    "model": "allocation.allocationattributeusage",
+    "pk": 1,
+    "fields": {
+      "created": "2021-07-23T18:05:15.731Z",
+      "modified": "2022-02-09T22:02:38.321Z",
+      "value": 10
+    }
+  }
+]
+

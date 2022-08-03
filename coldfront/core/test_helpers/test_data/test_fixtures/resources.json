@@ -1,0 +1,20 @@
+[
+{
+  "model": "resource.resource",
+  "pk": 1,
+  "fields": {
+    "created": "2022-02-22T16:26:49.635Z",
+    "modified": "2021-10-13T13:57:49.047Z",
+    "parent_resource": null,
+    "resource_type": 1,
+    "name": "holylfs10/tier1",
+    "description": "Holiest of leaves",
+    "is_available": true,
+    "is_public": true,
+    "is_allocatable": true,
+    "requires_payment": true,
+    "allowed_groups": [],
+    "allowed_users": [],
+    "linked_resources": []
+  }
+}]
