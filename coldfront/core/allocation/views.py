@@ -58,11 +58,12 @@ from coldfront.core.allocation.utils import (generate_guauge_data_from_usage,
 from coldfront.core.billing.models import BillingActivity
 from coldfront.core.project.models import (Project, ProjectUser,
                                            ProjectUserStatusChoice)
-from coldfront.core.project.utils import ProjectClusterAccessRequestRunner
+from coldfront.core.project.utils_.project_cluster_access_request_runner import ProjectClusterAccessRequestRunner
 from coldfront.core.allocation.utils_.cluster_access_utils import \
     ClusterAccessRequestCompleteRunner, \
     ClusterAccessRequestDenialRunner
 from coldfront.core.resource.models import Resource
+from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.user.utils import access_agreement_signed
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.common import utc_now_offset_aware
@@ -1778,15 +1779,18 @@ class AllocationRequestClusterAccountView(LoginRequiredMixin,
             return redirect
 
         request_runner = ProjectClusterAccessRequestRunner(project_user_obj)
-        runner_result = request_runner.run()
-        if runner_result.success:
+        try:
+            request_runner.run()
+        except Exception as e:
+            message = (
+                'Unexpected failure. Please try again, or contact an '
+                'administrator if the problem persists.')
+            messages.error(self.request, message)
+        else:
             message = (
                 f'Created a cluster access request for User {user_obj.pk} '
                 f'under Project {project_obj.pk}.')
             messages.success(self.request, message)
-        else:
-            messages.error(self.request, runner_result.error_message)
-
         return redirect
 
 

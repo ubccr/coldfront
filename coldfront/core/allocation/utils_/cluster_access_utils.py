@@ -8,6 +8,8 @@ from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.allocation.utils import set_allocation_user_attribute_value
 from coldfront.core.project.models import ProjectUser
+
+from coldfront.core.resource.utils import get_primary_compute_resource
 from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.utils.common import import_from_settings, \
     utc_now_offset_aware
@@ -56,12 +58,7 @@ class ClusterAccessRequestCompleteRunner(object):
             self._give_cluster_access_attribute()
             self._set_username(username)
             self._set_cluster_uid(cluster_uid)
-
-            # For Savio projects, set the user's service units to that of
-            # the allocation. Attempt this before setting the status to
-            # 'Active' so that failures block completion.
-            if not self.project.name.startswith(('abc', 'vector_')):
-                self._set_user_service_units()
+            self._conditionally_set_user_service_units()
 
         message = (
             f'Successfully completed cluster access request {self.request.pk} '
@@ -72,6 +69,15 @@ class ClusterAccessRequestCompleteRunner(object):
 
         self._log_success_messages()
         self._send_emails_safe()
+
+    def _conditionally_set_user_service_units(self):
+        """If the Allocation is to the primary cluster's compute
+        Resource, set the user's service units to that of the
+        Allocation."""
+        primary_compute_resource = get_primary_compute_resource()
+        if self.allocation.resources.filter(
+                pk=primary_compute_resource.pk).exists():
+            self._set_user_service_units()
 
     def _log_success_messages(self):
         """Write success messages to the log.
