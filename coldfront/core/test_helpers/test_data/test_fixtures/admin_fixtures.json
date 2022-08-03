@@ -1,0 +1,38 @@
+[
+  {
+    "model": "ifxuser.ifxuser",
+    "pk": 10,
+    "fields": {
+      "password": "python",
+      "last_login": null,
+      "is_superuser": true,
+      "ifxid": "",
+      "full_name": "Guido van Rossum",
+      "hkeymail": null,
+      "primary_affiliation": 10,
+      "username": "gvanrossum",
+      "first_name": "Guido",
+      "last_name": "van Rossum",
+      "email": "",
+      "is_staff": true,
+      "is_active": true,
+      "date_joined": "2022-02-23T19:16:15.865Z",
+      "last_update": "2022-02-23T19:16:15.881Z",
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "ifxuser.organization",
+    "pk": 10,
+    "fields": {
+      "ifxorg": "",
+      "name": "Faculty of Arts and Sciences",
+      "rank": "school",
+      "org_tree": "Harvard",
+      "slug": "Faculty of Arts and Sciences (a Harvard School)",
+      "code": null,
+      "application_key": null
+    }
+  }
+]

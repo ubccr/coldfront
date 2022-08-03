@@ -15,10 +15,7 @@ urlpatterns = [
              redirect_authenticated_user=True),
          name='login'
          ),
-    path('logout',
-         LogoutView.as_view(next_page=reverse_lazy('login')),
-         name='logout'
-         ),
+    path('logout', LogoutView.as_view(), name='logout'),
     path('user-profile/', user_views.UserProfile.as_view(), name='user-profile'),
     path('user-profile/<str:viewed_username>', user_views.UserProfile.as_view(), name='user-profile'),
     path('user-projects-managers/', user_views.UserProjectsManagersView.as_view(), name='user-projects-managers'),

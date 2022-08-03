@@ -2,7 +2,6 @@ import os
 import re
 import json
 import time
-import timeit
 import logging
 import requests
 from pathlib import Path
@@ -11,13 +10,14 @@ from datetime import datetime, timedelta
 from django.utils import timezone
 from ifxuser.models import IfxUser, Organization
 from django.contrib.auth import get_user_model
-from dateutil.relativedelta import relativedelta
 from ifxbilling.models import Account, BillingRecord, ProductUsage
 
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.project.models import Project, ProjectUser
-from coldfront.core.resource.models import Resource
-from coldfront.core.allocation.models import Allocation, AllocationUser, AllocationAttribute, AllocationUserStatusChoice
+from coldfront.core.allocation.models import (Allocation, 
+                                            AllocationUser, 
+                                            AllocationAttribute, 
+                                            AllocationUserStatusChoice)
 
 datestr = datetime.today().strftime("%Y%m%d")
 logger = logging.getLogger(__name__)
@@ -71,7 +71,6 @@ class StarFishServer:
     def get_volume_names(self):
         """ Generate a list of the volumes available on the server.
         """
-        vols_paths = {}
         stor_url = self.api_url + "storage/"
         response = return_get_json(stor_url, self.headers)
         volnames = [i["name"] for i in response["items"]]
@@ -166,8 +165,7 @@ class StarFishQuery:
             if response["is_done"] == True:
                 result = self.return_query_result()
                 return result
-            else:
-                time.sleep(sec)
+            time.sleep(sec)
 
     def return_query_result(self):
         query_result_url = self.api_url + "async/query_result/" + self.query_id
@@ -180,30 +178,38 @@ class ColdFrontDB:
     @record_process
     def produce_lab_dict(self, vol):
         """Create dict of labs to collect and the volumes/tiers associated with them.
+        Parameters
+        ----------
+        vol : string
+            If not None, collect only allocations on the specified volume
+
         Returns
         -------
         labs_resources: dict
             Structured as follows:
             "lab_name": [("volume", "tier"),("volume", "tier")]
         """
-        pr_objs = Allocation.objects.only("id", "project_id")
+        pr_objs = Allocation.objects.only("id", "project")
         pr_dict = {}
-        for o in pr_objs:
-            proj = Project.objects.get(id=o.project_id)
-            o_name = proj.title
-            resource_list = o.get_resources_as_string.split(', ')
-            if o_name not in pr_dict:
-                pr_dict[o_name] = resource_list
+        for alloc in pr_objs:
+            proj_name = alloc.project.title
+            resource_list = alloc.get_resources_as_string.split(', ')
+            if proj_name not in pr_dict:
+                pr_dict[proj_name] = resource_list
             else:
-                pr_dict[o_name].extend(resource_list)
+                pr_dict[proj_name].extend(resource_list)
         lr = pr_dict if not vol else {p:[i for i in r if vol in i] for p, r in pr_dict.items()}
         labs_resources = {p:[tuple(rs.split("/")) for rs in r] for p, r in lr.items()}
         logger.debug(f"labs_resources:\n{labs_resources}")
         return labs_resources
 
 
-    def check_server_collection(self, lr, homepath="./coldfront/plugins/sftocf/data/"):
+    def check_volume_collection(self, lr, homepath="./coldfront/plugins/sftocf/data/"):
         '''
+        for each lab-resource combination in parameter lr, check existence of corresponding
+        file in data path. If a file for that lab-resource combination that is <2 days old
+        exists, mark it as collected. If not, slate lab-resource combination for collection.
+
         Parameters
         ----------
         lr : dict
@@ -246,7 +252,7 @@ class ColdFrontDB:
         # 1. produce dict of all labs to be collected and the volumes on which their data is located
         lr = self.produce_lab_dict(volume)
         # 2. produce list of files that have been collected and list of lab/volume/filename tuples to collect
-        filepaths, to_collect = self.check_server_collection(lr)
+        filepaths, to_collect = self.check_volume_collection(lr)
         # 3. produce set of all volumes to be queried
         vol_set = {i[1] for i in to_collect}
         servers_vols = [(k, vol) for k, v in svp.items() for vol in vol_set if vol in v.keys()]
@@ -276,12 +282,12 @@ class ColdFrontDB:
             project = Project.objects.get(title=content["project"])
             # find project allocation
             try:
-                allocation = Allocation.objects.get(project_id=project.id, resources__name=resource)
+                allocation = Allocation.objects.get(project=project, resources__name=resource)
             except Allocation.MultipleObjectsReturned:
                 logger.debug(f"Too many allocations for project id {project.id}; choosing one with 'Allocation Information' in justification.")
                 # try:
                 allocation = Allocation.objects.get(
-                    project_id=project.id,
+                    project=project,
                     resources__name=resource,
                     justification__icontains='Allocation Information',
                     justification__endswith=project.title)
@@ -314,7 +320,7 @@ class ColdFrontDB:
         logger.debug(f"entering for user:{user.username}")
         try:
             allocationuser = AllocationUser.objects.get(
-                allocation_id=str(allocation.id), user_id=str(user.id)
+                allocation=allocation, user=user
             )
         except AllocationUser.DoesNotExist:
             logger.info("creating allocation user:")
@@ -325,7 +331,7 @@ class ColdFrontDB:
                 user=user
             )
             allocationuser = AllocationUser.objects.get(
-                allocation_id=str(allocation.id), user_id=str(user.id)
+                allocation=allocation, user=user
             )
 
         allocationuser.usage_bytes = userdict["size_sum"]
@@ -352,13 +358,12 @@ def clean_data_dir(homepath):
 def write_update_file_line(filepath, patterns):
     with open(filepath, 'a+') as f:
         f.seek(0)
-        lines = f.readlines()
         for pattern in patterns:
             if not any(pattern == line.rstrip('\r\n') for line in f):
                 f.write(pattern + '\n')
 
 def split_num_string(x):
-    n = re.search("\d*\.?\d+", x).group()
+    n = re.search(r"\d*\.?\d+", x).group()
     s = x.replace(n, "")
     return n, s
 
@@ -371,9 +376,9 @@ def save_json(file, contents):
         json.dump(contents, fp, sort_keys=True, indent=4)
 
 def read_json(filepath):
-    logger.debug("read_json for {}".format(filepath))
-    with open(filepath, "r") as myfile:
-        data = json.loads(myfile.read())
+    logger.debug(f"read_json for {filepath}")
+    with open(filepath, "r") as json_file:
+        data = json.loads(json_file.read())
     return data
 
 def locate_or_create_dirpath(dpath):

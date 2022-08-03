@@ -1,0 +1,156 @@
+[
+  {
+    "model": "allocation.allocationuserstatuschoice",
+    "pk": 1,
+    "fields": {
+      "created": "2022-02-22T17:15:50.236Z",
+      "modified": "2022-02-22T17:15:50.236Z",
+      "name": "Active"
+    }
+  },
+  {
+    "model": "allocation.allocationstatuschoice",
+    "pk": 1,
+    "fields": {
+      "created": "2022-02-22T17:00:54.997Z",
+      "modified": "2022-02-22T17:00:54.997Z",
+      "name": "Active"
+    }
+  },
+  {
+    "model": "allocation.allocationstatuschoice",
+    "pk": 2,
+    "fields": {
+      "created": "2022-02-22T17:43:45.967Z",
+      "modified": "2022-02-22T17:43:45.968Z",
+      "name": "New"
+    }
+  },
+{
+    "model": "allocation.attributetype",
+    "pk": 1,
+    "fields": {
+        "created": "2021-07-22T16:52:17.331Z",
+        "modified": "2021-07-22T16:52:17.332Z",
+        "name": "Date"
+    }
+},
+{
+    "model": "allocation.attributetype",
+    "pk": 2,
+    "fields": {
+        "created": "2021-07-22T16:52:25.220Z",
+        "modified": "2021-07-22T16:52:25.220Z",
+        "name": "Int"
+    }
+},
+{
+    "model": "allocation.attributetype",
+    "pk": 3,
+    "fields": {
+        "created": "2021-07-22T16:52:36.648Z",
+        "modified": "2021-07-22T16:52:36.649Z",
+        "name": "Float"
+    }
+},
+{
+    "model": "allocation.attributetype",
+    "pk": 4,
+    "fields": {
+        "created": "2021-07-22T16:52:47.269Z",
+        "modified": "2021-07-22T16:52:47.269Z",
+        "name": "Text"
+    }
+},
+{
+    "model": "allocation.attributetype",
+    "pk": 6,
+    "fields": {
+        "created": "2021-08-20T16:38:18.123Z",
+        "modified": "2021-08-20T16:38:18.124Z",
+        "name": "Boolean"
+    }
+},
+{
+    "model": "allocation.allocationattributetype",
+    "pk": 1,
+    "fields": {
+        "created": "2021-07-22T16:55:20.800Z",
+        "modified": "2021-09-21T14:18:19.394Z",
+        "attribute_type": 3,
+        "name": "Storage Quota (TB)",
+        "has_usage": true,
+        "is_required": false,
+        "is_unique": false,
+        "is_private": false
+    }
+},
+{
+    "model": "allocation.allocationattributetype",
+    "pk": 2,
+    "fields": {
+        "created": "2021-07-22T16:56:21.563Z",
+        "modified": "2021-07-22T16:56:21.565Z",
+        "attribute_type": 3,
+        "name": "Paid",
+        "has_usage": false,
+        "is_required": false,
+        "is_unique": false,
+        "is_private": false
+    }
+},
+{
+    "model": "allocation.allocationattributetype",
+    "pk": 3,
+    "fields": {
+        "created": "2021-07-22T16:56:38.078Z",
+        "modified": "2021-07-22T16:56:38.081Z",
+        "attribute_type": 3,
+        "name": "Offer Letter",
+        "has_usage": false,
+        "is_required": false,
+        "is_unique": false,
+        "is_private": false
+    }
+},
+{
+    "model": "allocation.allocationattributetype",
+    "pk": 4,
+    "fields": {
+        "created": "2021-08-20T16:39:40.245Z",
+        "modified": "2021-08-20T16:39:40.247Z",
+        "attribute_type": 6,
+        "name": "RequiresPayment",
+        "has_usage": false,
+        "is_required": true,
+        "is_unique": true,
+        "is_private": false
+    }
+},
+{
+    "model": "allocation.allocationattributetype",
+    "pk": 5,
+    "fields": {
+        "created": "2021-07-22T16:55:20.800Z",
+        "modified": "2021-09-21T14:18:19.394Z",
+        "attribute_type": 6,
+        "name": "Quota_In_Bytes",
+        "has_usage": true,
+        "is_required": false,
+        "is_unique": false,
+        "is_private": true
+    }
+},
+  {
+    "model": "resource.resourcetype",
+    "pk": 1,
+    "fields": {
+      "created": "2022-02-22T16:14:05.808Z",
+      "modified": "2022-02-22T16:14:05.809Z",
+      "name": "Storage",
+      "description": "Network Storage"
+    }
+  }
+]
+
+

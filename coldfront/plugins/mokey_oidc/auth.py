@@ -24,6 +24,13 @@ class OIDCMokeyAuthenticationBackend(OIDCAuthenticationBackend):
 
         user.userprofile.is_pi = is_pi
 
+    def _parse_groups_from_claims(self, claims):
+        groups = claims.get('groups', []) or []
+        if isinstance(groups, str):
+            groups = groups.split(';')
+
+        return groups
+
     def create_user(self, claims):
         email = claims.get('email')
         username = claims.get('uid')
@@ -39,8 +46,8 @@ class OIDCMokeyAuthenticationBackend(OIDCAuthenticationBackend):
         user.first_name = claims.get('first', '')
         user.last_name = claims.get('last', '')
 
-        groups = claims.get('groups', '')
-        self._sync_groups(user, groups.split(';'))
+        groups = self._parse_groups_from_claims(claims)
+        self._sync_groups(user, groups)
 
         user.save()
 
@@ -55,8 +62,8 @@ class OIDCMokeyAuthenticationBackend(OIDCAuthenticationBackend):
         else:
             logger.warn("Failed to update email. Could not find email for user %s in mokey oidc id_token claims: %s", username, claims)
 
-        groups = claims.get('groups', '')
-        self._sync_groups(user, groups.split(';'))
+        groups = self._parse_groups_from_claims(claims)
+        self._sync_groups(user, groups)
 
         user.save()
 
@@ -78,17 +85,16 @@ class OIDCMokeyAuthenticationBackend(OIDCAuthenticationBackend):
         if len(ALLOWED_GROUPS) == 0 and len(DENY_GROUPS) == 0:
             return verified and True
 
-        groups = claims.get('groups', '')
-        group_list = groups.split(';')
+        groups = self._parse_groups_from_claims(claims)
         
         if len(ALLOWED_GROUPS) > 0:
             for g in ALLOWED_GROUPS:
-                if g not in group_list:
+                if g not in groups:
                     return False
 
         if len(DENY_GROUPS) > 0:
             for g in DENY_GROUPS:
-                if g in group_list:
+                if g in groups:
                     return False
     
         return verified and True

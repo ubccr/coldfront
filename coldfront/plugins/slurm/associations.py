@@ -115,8 +115,7 @@ class SlurmCluster(SlurmBase):
             cluster.add_allocation(allocation, user_specs=user_specs)
 
         # Process child resources
-        children = Resource.objects.filter(
-            parent_resource_id=resource.id, resource_type__name='Cluster Partition')
+        children = Resource.objects.filter(parent_resource_id=resource.id, resource_type__name='Cluster Partition')
         for r in children:
             partition_specs = r.get_attribute_list(SLURM_SPECS_ATTRIBUTE_NAME)
             partition_user_specs = r.get_attribute_list(SLURM_USER_SPECS_ATTRIBUTE_NAME)

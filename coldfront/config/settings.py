@@ -1,4 +1,4 @@
-import os
+import environ
 from split_settings.tools import optional, include
 from coldfront.config.env import ENV, PROJECT_ROOT
 
@@ -26,6 +26,7 @@ plugin_configs = {
     'PLUGIN_AUTH_LDAP': 'plugins/ldap.py',
     'PLUGIN_LDAP_USER_SEARCH': 'plugins/ldap_user_search.py',
     'PLUGIN_SFTOCF': 'plugins/sftocf.py',
+    'PLUGIN_FASRC': 'plugins/fasrc.py',
     'PLUGIN_IFX': 'plugins/ifx.py',
 }
 
@@ -40,7 +41,7 @@ local_configs = [
     # Local settings relative to coldfront.config package
     'local_settings.py',
 
-     # System wide settings for production deployments
+    # System wide settings for production deployments
     '/etc/coldfront/local_settings.py',
 
     # Local settings relative to coldfront project root
