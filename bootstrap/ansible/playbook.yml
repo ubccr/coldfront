@@ -16,7 +16,7 @@
     - "../../main.yml"
 
   tasks:
-    # Provisioning tasks that can be skipped always after the first time.
+    # Provisioning tasks that can generally be skipped after the first time.
     - name: Run Provisioning Tasks
       block:
         - name: Stop and disable NetworkManager service
@@ -214,15 +214,6 @@
           become_user: "{{ djangooperator }}"
           changed_when: venv_register.stdout == "created"
 
-        # Install Django application dependencies, so that psycopg2, which is
-        # required to create the PostgreSQL database and user, is installed.
-
-        - name: Install Django application dependencies
-          pip:
-            requirements: "{{ git_prefix }}/{{ reponame }}/requirements.txt"
-            executable: "{{ git_prefix }}/venv/bin/pip3"
-          become_user: "{{ djangooperator }}"
-
         # Create a PostgreSQL database and a user for the Django application.
 
         - name: Create a new PostgreSQL database
@@ -253,41 +244,6 @@
         - name: Install the mod_wsgi module from Python 3.6 to Apache
           shell: "{{ git_prefix }}/venv/bin/mod_wsgi-express install-module --modules-directory /etc/httpd/modules > /etc/httpd/conf.modules.d/02-wsgi.conf"
           when: not mod_wsgi_installed.stat.exists
-
-        - name: Create a WSGI configuration file from a template if SSL is disabled
-          template:
-            src: "{{ git_prefix }}/{{ reponame }}/bootstrap/ansible/wsgi_conf.tmpl"
-            dest: /etc/httpd/conf.d/{{ wsgi_conf_file_name }}
-          when: not ssl_enabled
-
-        - name: Create a WSGI configuration file from a template if SSL is enabled
-          template:
-            src: "{{ git_prefix }}/{{ reponame }}/bootstrap/ansible/wsgi_conf_ssl.tmpl"
-            dest: /etc/httpd/conf.d/{{ wsgi_conf_file_name }}
-          when: ssl_enabled
-
-        # Configure the Django application.
-
-        - name: Copy the ColdFront local_settings.py file from the sample
-          copy:
-            src: "{{ git_prefix }}/{{ reponame }}/coldfront/config/local_settings.py.sample"
-            dest: "{{ git_prefix }}/{{ reponame }}/coldfront/config/local_settings.py"
-
-        - name: Copy the ColdFront local_strings.py file from the sample
-          copy:
-            src: "{{ git_prefix }}/{{ reponame }}/coldfront/config/local_strings.py.sample"
-            dest: "{{ git_prefix }}/{{ reponame }}/coldfront/config/local_strings.py"
-
-        - name: Create the deployment-specific _settings.py file from a template
-          template:
-            src: "{{ git_prefix }}/{{ reponame }}/bootstrap/ansible/settings_template.tmpl"
-            dest: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}/config/{{ deployment }}_settings.py"
-
-        - name: Create the deployment-specific password reset email subject text file from a template
-          template:
-            src: "{{ git_prefix }}/{{ reponame }}/bootstrap/ansible/password_reset_subject_template.tmpl"
-            dest: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}/core/user/templates/user/passwords/password_reset_subject.txt"
-
 
       when: provisioning_tasks == true
       tags: provisioning_tasks
@@ -341,14 +297,20 @@
                 destfile: /etc/rsyslog.conf
                 insertbefore: "# ### begin forwarding rule ###"
                 block: |
-                  # Send copyof logs to LBL's central syslog server
+                  # Send copy of logs to LBL's central syslog server
                   *.* @syslog.lbl.gov
+
+            - name: Restart rsyslog
+              service:
+                name: rsyslog
+                state: restarted
+                enabled: yes
 
             # TODO: Firewall tasks
 
           when: flag_lrc_enabled
 
-      when: provisioning_tasks == true and deployment == "prod"
+      when: provisioning_tasks == true and (deployment == "prod" or deployment == "staging")
       tags: provisioning
 
     # Development only provisioning tasks.
@@ -364,6 +326,42 @@
     # Meant to be re-run frequently.
     - name: Run Common Tasks
       block:
+
+        # Configure Apache.
+
+        - name: Create a WSGI configuration file from a template if SSL is disabled
+          template:
+            src: "{{ git_prefix }}/{{ reponame }}/bootstrap/ansible/wsgi_conf.tmpl"
+            dest: /etc/httpd/conf.d/{{ wsgi_conf_file_name }}
+          when: not ssl_enabled
+
+        - name: Create a WSGI configuration file from a template if SSL is enabled
+          template:
+            src: "{{ git_prefix }}/{{ reponame }}/bootstrap/ansible/wsgi_conf_ssl.tmpl"
+            dest: /etc/httpd/conf.d/{{ wsgi_conf_file_name }}
+          when: ssl_enabled
+
+        # Configure the Django application.
+
+        - name: Copy the ColdFront local_settings.py file from the sample
+          copy:
+            src: "{{ git_prefix }}/{{ reponame }}/coldfront/config/local_settings.py.sample"
+            dest: "{{ git_prefix }}/{{ reponame }}/coldfront/config/local_settings.py"
+
+        - name: Copy the ColdFront local_strings.py file from the sample
+          copy:
+            src: "{{ git_prefix }}/{{ reponame }}/coldfront/config/local_strings.py.sample"
+            dest: "{{ git_prefix }}/{{ reponame }}/coldfront/config/local_strings.py"
+
+        - name: Create the deployment-specific _settings.py file from a template
+          template:
+            src: "{{ git_prefix }}/{{ reponame }}/bootstrap/ansible/settings_template.tmpl"
+            dest: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}/config/{{ deployment }}_settings.py"
+
+        - name: Create the deployment-specific password reset email subject text file from a template
+          template:
+            src: "{{ git_prefix }}/{{ reponame }}/bootstrap/ansible/password_reset_subject_template.tmpl"
+            dest: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}/core/user/templates/user/passwords/password_reset_subject.txt"
 
         # Restart Services.
 
@@ -385,13 +383,14 @@
             state: restarted
             enabled: yes
 
-        ## LRC-only
-        - name: Restart rsyslog
-          service:
-            name: rsyslog
-            state: restarted
-            enabled: yes
-          when: flag_lrc_enabled
+        # Install Django application dependencies, so that psycopg2, which is
+        # required to create the PostgreSQL database and user, is installed.
+
+        - name: Install Django application dependencies
+          pip:
+            requirements: "{{ git_prefix }}/{{ reponame }}/requirements.txt"
+            executable: "{{ git_prefix }}/venv/bin/pip3"
+          become_user: "{{ djangooperator }}"
 
         # Run Django management commands.
 
@@ -485,6 +484,7 @@
           supervisorctl:
             name: 'django_q'
             state: started
+
       when: provisioning_tasks == true or common_tasks == true
       tags:
         - provisioning
