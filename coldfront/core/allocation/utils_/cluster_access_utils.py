@@ -266,16 +266,12 @@ class ClusterAccessRequestDenialRunner(object):
         If send failures occur, store a warning message.
         """
         try:
-            success = self._send_denial_emails()
+            self._send_denial_emails()
         except Exception as e:
             message = (
                 f'Encountered unexpected exception when sending notification '
                 f'emails. Details: \n{e}')
             logger.exception(message)
-        else:
-            if not success:
-                message = f'Failed to send notification emails.'
-                self._warning_messages.append(message)
 
 
 def send_complete_cluster_access_emails(user, project):
