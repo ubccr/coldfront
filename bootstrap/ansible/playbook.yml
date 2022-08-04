@@ -493,7 +493,7 @@
             path: "{{ git_prefix }}/{{ reponame }}"
             state: directory
             recurse: yes
-            mode: 0755
+            mode: "u=rwX,g=rX,o=rX"
             group: apache
 
         - name: Restart httpd service
