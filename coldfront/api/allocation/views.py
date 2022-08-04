@@ -17,10 +17,13 @@ from coldfront.api.allocation.filters import AllocationUserFilter
 from coldfront.api.allocation.serializers import AllocationAttributeSerializer, \
     ClusterAccessRequestSerializer
 from coldfront.api.allocation.serializers import AllocationSerializer
-from coldfront.api.allocation.serializers import AllocationUserAttributeSerializer
+from coldfront.api.allocation.serializers import \
+    AllocationUserAttributeSerializer
 from coldfront.api.allocation.serializers import AllocationUserSerializer
-from coldfront.api.allocation.serializers import HistoricalAllocationAttributeSerializer
-from coldfront.api.allocation.serializers import HistoricalAllocationUserAttributeSerializer
+from coldfront.api.allocation.serializers import \
+    HistoricalAllocationAttributeSerializer
+from coldfront.api.allocation.serializers import \
+    HistoricalAllocationUserAttributeSerializer
 from coldfront.api.permissions import IsAdminUserOrReadOnly
 from coldfront.core.allocation.models import Allocation, ClusterAccessRequest
 from coldfront.core.allocation.models import AllocationAttribute
@@ -140,9 +143,9 @@ class HistoricalAllocationUserAttributeViewSet(mixins.ListModelMixin,
 
 
 class ClusterAccessRequestViewSet(mixins.ListModelMixin,
-                                       mixins.RetrieveModelMixin,
-                                       mixins.UpdateModelMixin,
-                                       viewsets.GenericViewSet):
+                                  mixins.RetrieveModelMixin,
+                                  mixins.UpdateModelMixin,
+                                  viewsets.GenericViewSet):
     """A ViewSet for the ClusterAccessRequestViewSet model."""
 
     filterset_class = ClusterAccessRequestFilter
@@ -183,63 +186,3 @@ class ClusterAccessRequestViewSet(mixins.ListModelMixin,
     def partial_update(self, request, *args, **kwargs):
         """The method for PATCH (partial update) requests."""
         return super().partial_update(request, *args, **kwargs)
-
-    # @swagger_auto_schema(
-    #     manual_parameters=[authorization_parameter],
-    #     operation_description=(
-    #             'Updates one or more fields of the ClusterAccessRequest '
-    #             'identified by the given ID.'))
-    # @transaction.atomic
-    # def partial_update(self, request, *args, **kwargs):
-    #     """The method for PATCH (partial update) requests."""
-    #
-    #
-    #     partial = kwargs.pop('partial', False)
-    #
-    #     try:
-    #         instance = self.get_object()
-    #         serializer = self.get_serializer(
-    #             instance, data=request.data, partial=partial)
-    #
-    #     except Http404:
-    #         serializer = self.get_serializer(
-    #             data=request.data, partial=partial)
-    #
-    #     serializer.is_valid(raise_exception=True)
-    #
-    #     try:
-    #         status_name = serializer.validated_data.get('status', None).name
-    #
-    #
-    #         if status_name == 'Active':
-    #             runner = \
-    #                 ProjectClusterAccessRequestUpdateRunner(instance)
-    #             runner.complete_request(completion_time=completion_time,
-    #                                     cluster_uid=cluster_uid,
-    #                                     username=username)
-    #
-    #         elif status_name == 'Denied':
-    #             runner = \
-    #                 ClusterAccessRequestDenialRunner(instance)
-    #             runner.deny_request()
-    #         else:
-    #             # Status == Pending - Add
-    #             runner = \
-    #                 ProjectClusterAccessRequestUpdateRunner(instance)
-    #             runner.update_request(status_name)
-    #
-    #         # success_messages, error_messages = runner.get_messages()
-    #
-    #         # if error_messages:
-    #         #     raise Exception(f'Failed to update the status of the removal '
-    #         #                     f'request {kwargs["pk"]}.')
-    #
-    #         return Response(serializer.data,
-    #                         status=rest_framework.status.HTTP_200_OK)
-    #
-    #     except Exception as e:
-    #         logger.exception(f'Failed to update the status of the removal '
-    #                          f'request {kwargs["pk"]}.')
-    #
-    #     return Response(serializer.errors,
-    #                     status=rest_framework.status.HTTP_500_INTERNAL_SERVER_ERROR)
