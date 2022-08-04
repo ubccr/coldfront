@@ -797,9 +797,6 @@ class ClusterAccessRequest(TimeStampedModel):
     allocation_user = models.ForeignKey(AllocationUser, on_delete=models.CASCADE)
     status = models.ForeignKey(ClusterAccessRequestStatusChoice, on_delete=models.CASCADE)
 
-    # cluster_uid = models.CharField(max_length=10, null=True, blank=True)
-    # username = models.CharField(max_length=100, null=True, blank=True)
-
     request_time = models.DateTimeField(
         null=True, blank=True, default=timezone.now)
     completion_time = models.DateTimeField(null=True, blank=True)
