@@ -11,7 +11,8 @@ from coldfront.core.allocation.models import (AllocationAttributeType,
                                               AllocationAdditionRequest,
                                               SecureDirAddUserRequest,
                                               SecureDirRemoveUserRequest,
-                                              SecureDirRequest)
+                                              SecureDirRequest,
+                                              ClusterAccessRequest)
 from coldfront.core.allocation.utils import annotate_queryset_with_allocation_period_not_started_bool
 from coldfront.core.project.models import (ProjectUserRemovalRequest,
                                            SavioProjectAllocationRequest,
@@ -81,21 +82,18 @@ class RequestHubView(LoginRequiredMixin,
 
         user = self.request.user
 
-        cluster_account_status = AllocationAttributeType.objects.get(
-            name='Cluster Account Status')
-        kwargs = {'allocation_attribute_type': cluster_account_status}
-
+        kwargs = {}
         if not self.show_all_requests:
             kwargs['allocation_user__user'] = user
 
         cluster_account_list_complete = \
-            AllocationUserAttribute.objects.filter(
-                value__in=['Denied', 'Active'], **kwargs).order_by(
+            ClusterAccessRequest.objects.filter(
+                status__name__in=['Denied', 'Active'], **kwargs).order_by(
                 'modified')
 
         cluster_account_list_pending = \
-            AllocationUserAttribute.objects.filter(
-                value__in=['Pending - Add', 'Processing'], **kwargs).order_by(
+            ClusterAccessRequest.objects.filter(
+                status__name__in=['Pending - Add', 'Processing'], **kwargs).order_by(
                 'modified')
 
         cluster_request_object.num = self.paginators
