@@ -5,7 +5,7 @@
 
 
 {% block title %}
-Savio Project Request - Existing PI
+{{ PRIMARY_CLUSTER_NAME }} Project Request - Existing PI
 {% endblock %}
 
 
@@ -19,10 +19,10 @@ Savio Project Request - Existing PI
 <script type='text/javascript' src="{% static 'selectize/selectize.min.js' %}"></script>
 <link rel='stylesheet' type='text/css' href="{% static 'selectize/selectize.bootstrap3.css' %}"/>
 
-<h1>Savio: Principal Investigator</h1><hr>
+<h1>{{ PRIMARY_CLUSTER_NAME }}: Principal Investigator</h1><hr>
 
 <ol class="breadcrumb">
-  <li>Allocation Type: {{ allocation_type }}</li>
+  <li>Allowance: {{ computing_allowance.name }}</li>
   <li>&nbsp;<i class="fas fa-angle-double-right"></i>&nbsp;</li>
   <li>Allocation Period: {{ allocation_period.name }}</li>
 </ol>
@@ -33,12 +33,8 @@ Savio Project Request - Existing PI
   <p>Note: Only LBL employees, users with an "@lbl.gov" email, can be selected as a PI.</p>
 {% endif %}
 
-{% if allocation_type == 'FCA' %}
-  <p>Note: Each PI may only have one FCA at a time, so any that have pending requests or active allocations are not selectable.</p>
-{% endif %}
-
-{% if allocation_type == 'PCA' %}
-  <p>Note: Each PI may only have one PCA at a time, so any that have pending requests or active allocations are not selectable.</p>
+{% if allowance_is_one_per_pi %}
+  <p>Note: Each PI may only have one {{ computing_allowance.name }} at a time, so any that have pending requests or active allocations are not selectable.</p>
 {% endif %}
 
 <form action="" method="post">

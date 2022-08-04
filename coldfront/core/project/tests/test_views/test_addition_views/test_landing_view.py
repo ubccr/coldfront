@@ -7,6 +7,8 @@ from coldfront.core.allocation.models import AllocationAdditionRequestStatusChoi
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
+from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
 
@@ -103,20 +105,30 @@ class TestAllocationAdditionRequestLandingView(TestBase):
     def test_ineligible_projects_redirected(self):
         """Test that GET requests for ineligible Projects are redirected
         back to the Project's Detail view."""
-        for prefix in ('ac_', 'co_', 'fc_', 'ic_', 'pc_'):
+        computing_allowance_interface = ComputingAllowanceInterface()
+        expected_num_eligible, actual_num_eligible = 1, 0
+        ineligible_found = True
+        for allowance in computing_allowance_interface.allowances():
+            project_name_prefix = computing_allowance_interface.code_from_name(
+                allowance.name)
+            wrapper = ComputingAllowance(allowance)
             project = self.create_active_project_with_pi(
-                f'{prefix}project', self.user)
+                f'{project_name_prefix}project', self.user)
             url = self.landing_view_url(project.pk)
             response = self.client.get(url)
             messages = self.get_message_strings(response)
-            if prefix == 'ac_':
+            if wrapper.is_recharge():
                 self.assertEqual(response.status_code, HTTPStatus.OK)
                 self.assertFalse(messages)
+                actual_num_eligible += 1
             else:
                 self.assertRedirects(
                     response, self.project_detail_url(project.pk))
                 self.assertEqual(len(messages), 1)
                 self.assertIn('ineligible', messages[0])
+                ineligible_found = True
+        self.assertEqual(expected_num_eligible, actual_num_eligible)
+        self.assertTrue(ineligible_found)
 
     def test_permissions_get(self):
         """Test that the correct users have permissions to perform GET

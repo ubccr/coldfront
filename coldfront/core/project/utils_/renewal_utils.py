@@ -14,6 +14,9 @@ from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
+from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.utils.common import display_time_zone_current_date
@@ -98,25 +101,24 @@ def get_previous_allowance_year_period():
     return allocation_periods.latest('end_date')
 
 
-def get_pi_current_active_fca_project(pi_user):
-    """Given a User object representing a PI, return its current,
-    active fc_ Project.
+def get_pi_active_unique_project(pi_user, computing_allowance,
+                                 allocation_period):
+    """Given a User object representing a PI, return its active, unique
+    Project having the given allowance during the given period.
 
-    A Project is considered "active" if it has a completed
-    AllocationRenewalRequest for the current "Allowance Year"
-    AllocationPeriod or if it has a completed
-    SavioProjectAllocationRequest during the period.
+    The allowance is expected to be one which a PI may have at most one
+    of during a single period.
+
+    A Project is considered active during the period if it was exactly
+    one of the following: (a) successfully created or (b) successfully
+    renewed during the period.
 
     Parameters:
-        - pi_user: a User object.
-
-    Returns:
-        - A Project object.
+        - pi_user: A user object.
+        - computing_allowance: A ComputingAllowance object.
+        - allocation_period: An AllocationPeriod object.
 
     Raises:
-        - AllocationPeriod.DoesNotExist, if no such period is found.
-        - AllocationPeriod.MultipleObjectsReturned, if multiple such
-          periods are found.
         - AllocationRenewalRequest.MultipleObjectsReturned, if the PI
           has more than one 'Complete' renewal request during the
           current AllocationPeriod.
@@ -126,55 +128,70 @@ def get_pi_current_active_fca_project(pi_user):
           PI has more than one 'Approved - Complete' request.
         - Exception, if any other errors occur.
     """
+    assert isinstance(pi_user, User)
+    assert isinstance(computing_allowance, ComputingAllowance)
+    assert isinstance(allocation_period, AllocationPeriod)
+    assert computing_allowance.is_one_per_pi()
+
     project = None
-    allocation_period = get_current_allowance_year_period()
+
+    allowance_name = computing_allowance.get_name()
+    allowance_resource = computing_allowance.get_resource()
 
     # Check AllocationRenewalRequests.
     renewal_request_status = AllocationRenewalRequestStatusChoice.objects.get(
         name='Complete')
     renewal_requests = AllocationRenewalRequest.objects.filter(
+        computing_allowance=allowance_resource,
         allocation_period=allocation_period,
         pi=pi_user,
-        status=renewal_request_status,
-        post_project__name__startswith='fc_')
+        status=renewal_request_status)
     if renewal_requests.exists():
         if renewal_requests.count() > 1:
             message = (
                 f'PI {pi_user.username} unexpectedly has more than one '
-                f'completed FCA AllocationRenewalRequest during '
-                f'AllocationPeriod "{allocation_period.name}".')
+                f'completed AllocationRenewalRequest for allowance '
+                f'"{allowance_name}" during AllocationPeriod '
+                f'"{allocation_period.name}".')
             logger.error(message)
             raise AllocationRenewalRequest.MultipleObjectsReturned(message)
         project = renewal_requests.first().post_project
 
-    # Check SavioProjectAllocationRequests.
-    project_request_status = ProjectAllocationRequestStatusChoice.objects.get(
-        name='Approved - Complete')
-    project_requests = SavioProjectAllocationRequest.objects.filter(
-        allocation_type=SavioProjectAllocationRequest.FCA,
+    # Check new project requests.
+    new_project_request_status = \
+        ProjectAllocationRequestStatusChoice.objects.get(
+            name='Approved - Complete')
+    new_project_requests = SavioProjectAllocationRequest.objects.filter(
+        computing_allowance=allowance_resource,
         allocation_period=allocation_period,
         pi=pi_user,
-        status=project_request_status)
-    if project_requests.exists():
-        if project_requests.count() > 1:
+        status=new_project_request_status)
+    if new_project_requests.exists():
+        if new_project_requests.count() > 1:
             message = (
                 f'PI {pi_user.username} unexpectedly has more than one '
-                f'completed FCA SavioProjectAllocationRequest during '
-                f'AllocationPeriod "{allocation_period.name}".')
+                f'completed new project request for allowance '
+                f'"{allowance_name}" during AllocationPeriod '
+                f'"{allocation_period.name}".')
             logger.error(message)
             raise SavioProjectAllocationRequest.MultipleObjectsReturned(
                 message)
-        # The PI should not have both a renewal request and a project request.
+        # The PI should not have both a completed renewal request and a
+        # completed new project request.
         if project:
             message = (
-                f'PI {pi_user.username} unexpectedly has both an FCA '
-                f'AllocationRenewalRequest and an FCA'
-                f'SavioProjectAllocationRequest.')
+                f'PI {pi_user.username} unexpectedly has both a completed '
+                f'AllocationRenewalRequest and a completed new project '
+                f'request for allowance "{allowance_name}" during '
+                f'AllocationPeriod "{allocation_period.name}".')
             raise Exception(message)
-        project = project_requests.first().project
+        project = new_project_requests.first().project
 
     if not project:
-        message = f'PI {pi_user.username} has no active FCA Project.'
+        message = (
+            f'PI {pi_user.username} has no active Project with allowance '
+            f'"{allowance_name}" during AllocationPeriod '
+            f'"{allocation_period.name}".')
         raise Project.DoesNotExist(message)
 
     return project
@@ -210,6 +227,41 @@ def non_denied_renewal_request_statuses():
     do not have the name 'Denied'."""
     return AllocationRenewalRequestStatusChoice.objects.filter(
         ~Q(name='Denied'))
+
+
+def pis_with_renewal_requests_pks(allocation_period, computing_allowance=None,
+                                  request_status_names=[]):
+    """Return a list of primary keys of PIs of allocation renewal
+    requests for the given AllocationPeriod that match the given filters.
+
+    Parameters:
+        - allocation_period (AllocationPeriod): The AllocationPeriod to
+                                                filter with
+        - computing_allowance (Resource): An optional computing
+                                          allowance to filter with
+        - request_status_names (list[str]): A list of names of request
+                                            statuses to filter with
+
+    Returns:
+        - A list of integers representing primary keys of matching PIs.
+
+    Raises:
+        - AssertionError, if an input has an unexpected type.
+        - ComputingAllowanceInterfaceError, if allowance-related values
+          cannot be retrieved.
+    """
+    assert isinstance(allocation_period, AllocationPeriod)
+    f = Q(allocation_period=allocation_period)
+    if computing_allowance is not None:
+        assert isinstance(computing_allowance, Resource)
+        interface = ComputingAllowanceInterface()
+        project_prefix = interface.code_from_name(computing_allowance.name)
+        f = f & Q(post_project__name__startswith=project_prefix)
+    if request_status_names:
+        f = f & Q(status__name__in=request_status_names)
+    return set(
+        AllocationRenewalRequest.objects.filter(
+            f).values_list('pi__pk', flat=True))
 
 
 def send_allocation_renewal_request_approval_email(request, num_service_units):
@@ -533,6 +585,8 @@ class AllocationRenewalRunnerBase(object):
     def __init__(self, request_obj, *args, **kwargs):
         self.request_obj = request_obj
         self.current_display_tz_date = display_time_zone_current_date()
+        self.computing_allowance_interface = ComputingAllowanceInterface()
+        self.computing_allowance = self.request_obj.computing_allowance
 
     def run(self):
         raise NotImplementedError('This method is not implemented.')
@@ -980,8 +1034,6 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
         ProjectStatusChoice, which the post_project had prior to being
         activated, to potentially set the start and end dates."""
         project = self.request_obj.post_project
-        # TODO: Set this dynamically when supporting other types.
-        allocation_type = SavioProjectAllocationRequest.FCA
         allocation_period = self.request_obj.allocation_period
 
         allocation = get_project_compute_allocation(project)
@@ -993,14 +1045,6 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
         if old_project_status.name != 'Active' or not allocation.end_date:
             allocation.end_date = getattr(allocation_period, 'end_date', None)
         allocation.save()
-
-        # Set the allocation's allocation type.
-        allocation_attribute_type = AllocationAttributeType.objects.get(
-            name='Savio Allocation Type')
-        allocation_attribute, _ = \
-            AllocationAttribute.objects.get_or_create(
-                allocation_attribute_type=allocation_attribute_type,
-                allocation=allocation, defaults={'value': allocation_type})
 
         # Increase the allocation's service units.
         allocation_attribute_type = AllocationAttributeType.objects.get(
@@ -1052,7 +1096,7 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
 
     def update_pre_projects_of_future_period_requests(self):
         """Update the pre_project fields of any 'Under Review',
-        same-allocation-type AllocationRenewalRequests under future
+        same-allowance-type AllocationRenewalRequests under future
         AllocationPeriods and under this request's PI to this request's
         post_project.
 
@@ -1066,20 +1110,17 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
             - When R2 is processed, the PI must be demoted on Project B,
               not Project A, before being promoted on Project C.
 
-        Warning: This only applies to pooling-eligible allocation types.
+        Warning: This only applies to pooling-eligible allowance types.
         """
         request_pk = self.request_obj.pk
         pi = self.request_obj.pi
         post_project = self.request_obj.post_project
 
-        # TODO: Set this dynamically when supporting other types.
-        allocation_type = 'fc_'
-
         future_period_requests = AllocationRenewalRequest.objects.filter(
             ~Q(pk=request_pk) &
             ~Q(status__name__in=['Complete', 'Denied']) &
+            Q(computing_allowance=self.computing_allowance) &
             Q(allocation_period__start_date__gt=self.current_display_tz_date) &
-            Q(pre_project__name__startswith=allocation_type) &
             Q(pi=pi) &
             ~Q(pre_project=post_project))
         if future_period_requests.exists():
@@ -1087,7 +1128,8 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
                 f'Updated AllocationRenewalRequest {{0}}\'s pre_project from '
                 f'{{1}} to {post_project.pk} since AllocationRenewalRequest '
                 f'{request_pk} updated PI {pi.username}\'s active '
-                f'{allocation_type} Project to {post_project.name}.')
+                f'"{self.computing_allowance.name}" Project to '
+                f'{post_project.name}.')
             for future_period_request in future_period_requests:
                 tmp_pre_project = future_period_request.pre_project
                 future_period_request.pre_project = post_project

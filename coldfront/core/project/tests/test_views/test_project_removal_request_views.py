@@ -93,20 +93,20 @@ class TestBase(AllTestsBase):
             name='User')
 
         # Create Projects.
-        self.project1 = Project.objects.create(
-            name='project1', status=active_project_status)
+        self.fc_project1 = Project.objects.create(
+            name='fc_project1', status=active_project_status)
 
         # add pis
         for pi_user in [self.pi1, self.pi2]:
             ProjectUser.objects.create(
-                project=self.project1,
+                project=self.fc_project1,
                 user=pi_user,
                 role=pi_project_role,
                 status=active_project_user_status)
 
         # Add the manager to project1.
         ProjectUser.objects.create(
-            project=self.project1,
+            project=self.fc_project1,
             user=self.manager1,
             role=manager_project_role,
             status=active_project_user_status)
@@ -114,19 +114,19 @@ class TestBase(AllTestsBase):
         # add users to project
         for user in [self.user1, self.user2]:
             ProjectUser.objects.create(
-                project=self.project1,
+                project=self.fc_project1,
                 user=user,
                 role=user_project_role,
                 status=active_project_user_status)
 
         num_service_units = Decimal('0.00')
-        create_project_allocation(self.project1, num_service_units)
+        create_project_allocation(self.fc_project1, num_service_units)
         allocation_attribute_type = AllocationAttributeType.objects.get(
             name='Cluster Account Status')
 
         for user in [self.user1, self.user2, self.pi1, self.pi2, self.manager1]:
             objects = create_user_project_allocation(
-                user, self.project1, num_service_units)
+                user, self.fc_project1, num_service_units)
             allocation = objects.allocation
             allocation_user = objects.allocation_user
             AllocationUserAttribute.objects.create(
@@ -150,18 +150,13 @@ class TestProjectRemoveSelf(TestBase):
         """Test that the correct users have permissions to perform POST
         requests for ProjectRemoveSelf view."""
 
-        def get_message_strings(response):
-            """Return messages included in the given response as a list of
-            strings."""
-            return [str(m) for m in get_messages(response.wsgi_request)]
-
         def assert_has_access(user, has_access=True, expected_messages=[]):
             """Assert that the given user has or does not have access to
             the URL. Optionally assert that any messages were sent to
             the user."""
             self.client.login(username=user.username, password=self.password)
             url = reverse(
-                'project-remove-self', kwargs={'pk': self.project1.pk})
+                'project-remove-self', kwargs={'pk': self.fc_project1.pk})
             status_code = HTTPStatus.FOUND if has_access else HTTPStatus.FORBIDDEN
             response = self.client.post(url, {})
             if expected_messages:
@@ -203,7 +198,7 @@ class TestProjectRemoveSelf(TestBase):
         self.manager2.save()
 
         ProjectUser.objects.create(
-            project=self.project1,
+            project=self.fc_project1,
             user=self.manager2,
             role=ProjectUserRoleChoice.objects.get(name='Manager'),
             status=ProjectUserStatusChoice.objects.get(name='Active'))
@@ -215,7 +210,7 @@ class TestProjectRemoveSelf(TestBase):
         """Test that ProjectRemoveSelf POST performs the correct actions."""
         self.client.login(username=self.user1.username, password=self.password)
         url = reverse(
-            'project-remove-self', kwargs={'pk': self.project1.pk})
+            'project-remove-self', kwargs={'pk': self.fc_project1.pk})
 
         pre_time = utc_now_offset_aware()
         response = self.client.post(url, {})
@@ -239,12 +234,12 @@ class TestProjectRemoveSelf(TestBase):
         self.assertTrue(self.user1.is_superuser)
         self.client.login(username=self.user1.username, password=self.password)
 
-        url = reverse('project-detail', kwargs={'pk': self.project1.pk})
+        url = reverse('project-detail', kwargs={'pk': self.fc_project1.pk})
         response = self.client.get(url)
         self.assertContains(response, 'Leave Project')
 
         url = reverse(
-            'project-remove-self', kwargs={'pk': self.project1.pk})
+            'project-remove-self', kwargs={'pk': self.fc_project1.pk})
         pre_time = utc_now_offset_aware()
         response = self.client.post(url, {})
 
@@ -277,7 +272,7 @@ class TestProjectRemoveUsersView(TestBase):
             the user."""
             self.client.login(username=user.username, password=self.password)
             url = reverse(
-                'project-remove-users', kwargs={'pk': self.project1.pk})
+                'project-remove-users', kwargs={'pk': self.fc_project1.pk})
             status_code = HTTPStatus.OK if has_access else HTTPStatus.FORBIDDEN
             response = self.client.get(url)
             self.assertEqual(response.status_code, status_code)
@@ -353,7 +348,7 @@ class TestProjectRemovalRequestListView(TestBase):
         to different users
         """
         completed_removal_request = ProjectUserRemovalRequest.objects.create(
-            project_user=self.project1.projectuser_set.get(user=self.manager1),
+            project_user=self.fc_project1.projectuser_set.get(user=self.manager1),
             requester=self.pi2,
             completion_time=datetime.datetime.now(datetime.timezone.utc),
             status=ProjectUserRemovalRequestStatusChoice.objects.get(
@@ -361,7 +356,7 @@ class TestProjectRemovalRequestListView(TestBase):
         )
 
         request_runner = ProjectRemovalRequestRunner(
-            self.pi1, self.user2, self.project1)
+            self.pi1, self.user2, self.fc_project1)
         removal_request = request_runner.run()
 
         # Superusers should have access.
@@ -423,7 +418,7 @@ class TestProjectRemovalRequestListView(TestBase):
         to different users
         """
         completed_removal_request = ProjectUserRemovalRequest.objects.create(
-            project_user=self.project1.projectuser_set.get(user=self.manager1),
+            project_user=self.fc_project1.projectuser_set.get(user=self.manager1),
             requester=self.pi2,
             completion_time=datetime.datetime.now(datetime.timezone.utc),
             status=ProjectUserRemovalRequestStatusChoice.objects.get(
@@ -431,7 +426,7 @@ class TestProjectRemovalRequestListView(TestBase):
         )
 
         request_runner = ProjectRemovalRequestRunner(
-            self.pi1, self.user2, self.project1)
+            self.pi1, self.user2, self.fc_project1)
         removal_request = request_runner.run()
 
         # Superusers should have access.
@@ -515,7 +510,7 @@ class TestProjectRemovalRequestUpdateStatusView(TestBase):
             self.client.logout()
 
         request_runner = ProjectRemovalRequestRunner(
-            self.pi1, self.user2, self.project1)
+            self.pi1, self.user2, self.fc_project1)
         removal_request = request_runner.run()
 
         # Superusers should have access.
@@ -536,7 +531,7 @@ class TestProjectRemovalRequestUpdateStatusView(TestBase):
         performs the correct actions
         """
         request_runner = ProjectRemovalRequestRunner(
-            self.pi1, self.user2, self.project1)
+            self.pi1, self.user2, self.fc_project1)
         removal_request = request_runner.run()
 
         # Superusers should have access.
@@ -565,7 +560,7 @@ class TestProjectRemovalRequestCompleteStatusView(TestBase):
 
         # Create a "Processing" request.
         request_runner = ProjectRemovalRequestRunner(
-            self.pi1, self.user2, self.project1)
+            self.pi1, self.user2, self.fc_project1)
         self.removal_request = request_runner.run()
         self.removal_request.status = \
             ProjectUserRemovalRequestStatusChoice.objects.get(
@@ -577,11 +572,11 @@ class TestProjectRemovalRequestCompleteStatusView(TestBase):
         self.user1.save()
 
         # Disable notifications for one PI.
-        self.project1.projectuser_set.filter(user=self.pi2).update(
+        self.fc_project1.projectuser_set.filter(user=self.pi2).update(
             enable_notifications=False)
 
         self.project_user_obj = ProjectUser.objects.get(
-            project=self.project1, user=self.user2)
+            project=self.fc_project1, user=self.user2)
         self.allocation_user_obj = AllocationUser.objects.get(
             allocation__project=self.project_user_obj.project, user=self.user2)
         self.allocation_user_attribute_obj = \
@@ -596,7 +591,7 @@ class TestProjectRemovalRequestCompleteStatusView(TestBase):
             user.email for user in [self.user2, self.pi1, self.manager1]}
         user_name = f'{self.user2.first_name} {self.user2.last_name}'
         pi_name = f'{self.pi1.first_name} {self.pi1.last_name}'
-        project_name = self.project1.name
+        project_name = self.fc_project1.name
         expected_body = (
             f'The request to remove {user_name} of Project {project_name} '
             f'initiated by {pi_name} has been completed. {user_name} is no '
@@ -774,6 +769,117 @@ class TestProjectRemovalRequestCompleteStatusView(TestBase):
         assert_has_access(self.pi1, False)
         assert_has_access(self.pi2, False)
         assert_has_access(self.user2, False)
+
+    def test_removal_request_complete_status_view(self):
+        """
+        Testing ProjectRemovalRequestCompleteStatusView POST request
+        performs the correct actions
+        """
+        request_runner = ProjectRemovalRequestRunner(
+            self.pi1, self.user2, self.fc_project1)
+        self.removal_request.refresh_from_db()
+        self.removal_request.status = \
+            ProjectUserRemovalRequestStatusChoice.objects.get(name='Processing')
+        self.removal_request.save()
+
+        # Superusers should have access.
+        self.user1.is_superuser = True
+        self.user1.save()
+        self.assertTrue(self.user1.is_superuser)
+
+        self.client.login(username=self.user1.username, password=self.password)
+        url = reverse(
+            'project-removal-request-complete-status',
+            kwargs={'pk': self.removal_request.pk})
+        data = {'status': 'Complete'}
+
+        pre_time = utc_now_offset_aware()
+        response = self.client.post(url, data)
+
+        self.assertRedirects(response, reverse('project-removal-request-list'))
+
+        self.removal_request.refresh_from_db()
+        self.assertEqual(self.removal_request.status.name, 'Complete')
+        self.assertTrue(pre_time <= self.removal_request.completion_time <=
+                        utc_now_offset_aware())
+
+        proj_user = self.fc_project1.projectuser_set.get(user=self.user2)
+        self.assertEqual(proj_user.status.name, 'Removed')
+
+        allocation_obj = Allocation.objects.get(project=self.fc_project1)
+        allocation_user = \
+            allocation_obj.allocationuser_set.get(user=self.user2)
+        allocation_user_status_choice_removed = \
+            AllocationUserStatusChoice.objects.get(name='Removed')
+
+        allocation_user.refresh_from_db()
+        self.assertEquals(allocation_user.status,
+                          allocation_user_status_choice_removed)
+
+        cluster_account_status = \
+            allocation_user.allocationuserattribute_set.get(
+                allocation_attribute_type=AllocationAttributeType.objects.get(
+                    name='Cluster Account Status'))
+
+        self.assertEquals(cluster_account_status.value, 'Denied')
+
+        self.client.logout()
+
+    def test_emails_removal_request_complete_status_view(self):
+        """
+        Testing emails sent after admin changes status to Complete in
+        ProjectRemovalRequestCompleteStatusView
+        """
+        pi2_proj_user = self.fc_project1.projectuser_set.get(user=self.pi2)
+        pi2_proj_user.enable_notifications = False
+        pi2_proj_user.save()
+
+        self.assertFalse(pi2_proj_user.enable_notifications)
+
+        request_runner = ProjectRemovalRequestRunner(
+            self.pi1, self.user2, self.fc_project1)
+        request_runner.run()
+        self.removal_request.status = \
+            ProjectUserRemovalRequestStatusChoice.objects.get(name='Processing')
+        self.removal_request.save()
+
+        # Superusers should have access.
+        self.user1.is_superuser = True
+        self.user1.save()
+        self.assertTrue(self.user1.is_superuser)
+
+        self.client.login(username=self.user1.username, password=self.password)
+        url = reverse(
+            'project-removal-request-complete-status',
+            kwargs={'pk': self.removal_request.pk})
+        data = {'status': 'Complete'}
+        response = self.client.post(url, data)
+        self.assertRedirects(response, reverse('project-removal-request-list'))
+
+        email_to_list = [proj_user.user.email for proj_user in
+                         self.fc_project1.projectuser_set.filter(
+                             role__name__in=['Manager', 'Principal Investigator'],
+                             status__name='Active',
+                             enable_notifications=True)] + [self.user2.email]
+        self.assertEqual(len(mail.outbox), len(email_to_list))
+
+        email_body = f'The request to remove {self.user2.first_name} ' \
+                     f'{self.user2.last_name} of Project ' \
+                     f'{self.fc_project1.name} initiated by {self.pi1.first_name}' \
+                     f' {self.pi1.last_name} has been completed. ' \
+                     f'{self.user2.first_name} {self.user2.last_name}' \
+                     f' is no longer a user of Project {self.fc_project1.name}.'
+
+        for email in mail.outbox:
+            self.assertIn(email_body, email.body)
+            self.assertIn(email.to[0], email_to_list)
+            self.assertNotEqual(email.to[0], self.pi2.email)
+            self.assertEqual(settings.EMAIL_SENDER, email.from_email)
+
+        self.client.logout()
+
+        self.removal_request.refresh_from_db()
+        self.assertEqual(self.removal_request.status.name, 'Complete')
 
     def test_success_complete(self):
         """Test that setting the status of the request to 'Complete'

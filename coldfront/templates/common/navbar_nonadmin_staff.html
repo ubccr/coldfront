@@ -1,3 +1,6 @@
+{% load feature_flags %}
+
+
 {% comment %}
     intentionally keeping "navbar-admin" (rather than renaming to navbar-staff),
     since existing templates use javascript to target it by ID
@@ -21,12 +24,15 @@
                 <li><a id="navbar-allocation-cluster-account-requests" class="dropdown-item" href="{% url 'allocation-cluster-account-request-list' %}?show_all_requests=on">
                     Cluster Account Requests
                 </a></li>
-                <li><a id="navbar-project-savio-project-requests" class="dropdown-item" href="{% url 'savio-project-pending-request-list' %}">
-                    New Savio Project Requests
+                <li><a id="navbar-project-new-project-requests" class="dropdown-item" href="{% url 'new-project-pending-request-list' %}">
+                    New Project Requests
                 </a></li>
+                {% flag_enabled 'BRC_ONLY' as brc_only %}
+                {% if brc_only %}
                 <li><a id="navbar-project-vector-project-requests" class="dropdown-item" href="{% url 'vector-project-pending-request-list' %}">
                     New Vector Project Requests
                 </a></li>
+                {% endif %}
                 <li><a id="navbar-project-join-request-list" class="dropdown-item" href="{% url 'project-join-request-list' %}">
                     Project Join Requests
                 </a></li>
@@ -36,9 +42,12 @@
                 <li><a id="navbar-pi-allocation-renewal-requests" class="dropdown-item" href="{% url 'pi-allocation-renewal-pending-request-list' %}">
                     Project Renewal Requests
                 </a></li>
+                {% flag_enabled 'SERVICE_UNITS_PURCHASABLE' as service_units_purchasable %}
+                {% if service_units_purchasable %}
                 <li><a id="navbar-service-units-purchase-requests" class="dropdown-item" href="{% url 'service-units-purchase-pending-request-list' %}">
                     Service Units Purchase Requests
                 </a></li>
+                {% endif %}
             </ul>
         </li>
     </ul>

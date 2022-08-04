@@ -2,6 +2,8 @@ from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationAttributeUsage
 from coldfront.core.allocation.models import AllocationUserAttributeUsage
 from coldfront.core.project.models import Project
+from coldfront.core.resource.utils import get_primary_compute_resource
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.statistics.models import Job
 from collections import defaultdict
 from decimal import Decimal
@@ -17,18 +19,26 @@ class Command(BaseCommand):
     help = (
         'Set usages of "Service Units" attributes based on Jobs '
         'submitted since their respective start dates. This applies '
-        'only to Savio Projects.')
+        'only to Projects with an Allocation to the primary compute '
+        'Resource.')
     logger = logging.getLogger(__name__)
 
     def handle(self, *args, **options):
-        prefixes = ('ac_', 'co_', 'fc_', 'ic_', 'pc_')
+        computing_allowance_interface = ComputingAllowanceInterface()
+        prefixes = []
+        for allowance in computing_allowance_interface.allowances():
+            prefixes.append(
+                computing_allowance_interface.code_from_name(allowance.name))
+        prefixes = tuple(prefixes)
+
         projects = Project.objects.prefetch_related('projectuser_set')
+        resource = get_primary_compute_resource()
         for project in projects.iterator():
             if not project.name.startswith(prefixes):
                 continue
             allocation = Allocation.objects.prefetch_related(
                 'allocationuser_set').filter(
-                    resources__name='Savio Compute', project=project).first()
+                    resources=resource, project=project).first()
             start_date = allocation.start_date
             if not start_date:
                 message = f'Project {project.pk} has no start date.'

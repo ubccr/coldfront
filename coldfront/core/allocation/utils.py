@@ -30,6 +30,8 @@ from coldfront.core.allocation.models import (AllocationAttributeType,
 from coldfront.core.allocation.signals import allocation_activate_user
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils import get_primary_compute_resource_name
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import utc_now_offset_aware
 
@@ -161,11 +163,15 @@ def get_project_compute_resource_name(project_obj):
         elif project_obj.name.startswith('vector_'):
             resource_name = 'Vector Compute'
         else:
-            resource_name = 'Savio Compute'
+            resource_name = get_primary_compute_resource_name()
         return resource_name
     if flag_enabled('LRC_ONLY'):
-        if project_obj.name.startswith(('ac_', 'lr_', 'pc_')):
-            resource_name = 'LAWRENCIUM Compute'
+        computing_allowance_interface = ComputingAllowanceInterface()
+        project_name_prefixes = tuple([
+            computing_allowance_interface.code_from_name(allowance.name)
+            for allowance in computing_allowance_interface.allowances()])
+        if project_obj.name.startswith(project_name_prefixes):
+            resource_name = get_primary_compute_resource_name()
         else:
             # TODO: Verify this behavior.
             resource_name = f'{project_obj.name.upper()} Compute'
@@ -188,8 +194,7 @@ def prorated_allocation_amount(amount, dt, allocation_period):
     return zero.
 
     Parameters:
-        - amount (Decimal): a number of service units (e.g.,
-                            settings.FCA_DEFAULT_ALLOCATION).
+        - amount (Decimal): a base number of service units.
         - dt (datetime): a datetime object whose month is used in the
                          calculation, based on its position relative to
                          the start month of the given AllocationPeriod.

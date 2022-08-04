@@ -58,6 +58,7 @@ from coldfront.core.project.models import (Project, ProjectUser,
                                            ProjectUserStatusChoice)
 from coldfront.core.project.utils import ProjectClusterAccessRequestRunner
 from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils import get_primary_compute_resource
 from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.user.models import UserProfile
 from coldfront.core.user.utils import access_agreement_signed
@@ -2016,10 +2017,12 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
         allocation_obj = self.allocation_user_attribute_obj.allocation
         project_obj = allocation_obj.project
 
-        # For Savio projects, set the user's service units to that of
-        # the allocation. Attempt this before setting the status to
-        # 'Active' so that failures block completion.
-        if not project_obj.name.startswith(('abc', 'vector_')):
+        # For Allocations to the primary compute Resource, set the user's
+        # service units to that of the Allocation. Attempt this before setting
+        # the status to 'Active' so that failures block completion.
+        primary_compute_resource = get_primary_compute_resource()
+        if allocation_obj.resources.filter(
+                pk=primary_compute_resource.pk).exists():
             self.__set_user_service_units()
 
         self.allocation_user_attribute_obj.value = 'Active'

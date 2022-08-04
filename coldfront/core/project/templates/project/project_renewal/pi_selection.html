@@ -25,17 +25,17 @@ Project Renewal - PI Selection
 </ol>
 
 <p>
-  Select the PI whose allocation should be renewed. You are allowed to renew
-  the allocation of any active PI of any Project on which you are an active
-  Manager or PI.
+  Select the PI whose allowance should be renewed. You are allowed to renew the
+  allowance of any active PI of any Project on which you are an active Manager
+  or PI.
 </p>
 
-<!-- TODO: Account for other allocation types. -->
-<!-- TODO: Add "during this allocation period" when they become relevant. -->
+{% if allowance_is_one_per_pi %}
 <p>
-  Note: Each PI may only have one FCA at a time, so any that have pending or
-  approved renewal requests are not selectable.
+  Note: Each PI may only have one {{ computing_allowance.name }} at a time, so
+  any that have pending or approved renewal requests are not selectable.
 </p>
+{% endif %}
 
 <form action="" method="post">
   {% csrf_token %}

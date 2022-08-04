@@ -6,7 +6,6 @@ from unittest.mock import patch
 import re
 import random
 
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.core.management.base import CommandError
@@ -21,7 +20,6 @@ from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoic
 from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.models import AllocationUser
 from coldfront.core.allocation.models import AllocationUserAttribute
-from coldfront.core.allocation.models import AllocationUserAttributeUsage
 from coldfront.core.allocation.models import AllocationUserStatusChoice
 from coldfront.core.allocation.utils import prorated_allocation_amount
 from coldfront.core.project.models import Project
@@ -31,12 +29,16 @@ from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
+from coldfront.core.project.tests.utils import create_project_and_request
 from coldfront.core.project.utils_.new_project_utils import SavioProjectApprovalRunner
 from coldfront.core.project.utils_.new_project_utils import SavioProjectProcessingRunner
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.project.utils_.renewal_utils import get_previous_allowance_year_period
 from coldfront.core.project.utils_.renewal_utils import get_next_allowance_year_period
 from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils import get_primary_compute_resource
+from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
@@ -75,43 +77,47 @@ class TestStartAllocationPeriod(TestBase):
             start_date=self.current_date,
             end_date=self.current_date + timedelta(days=90))
 
-        self.fca = SavioProjectAllocationRequest.FCA
-        self.ica = SavioProjectAllocationRequest.ICA
-        self.pca = SavioProjectAllocationRequest.PCA
+        self.computing_allowance_interface = ComputingAllowanceInterface()
+
+        computing_allowances = {}
+        for allowance_name in (
+                BRCAllowances.FCA, BRCAllowances.ICA, BRCAllowances.PCA):
+            computing_allowances[allowance_name] = Resource.objects.get(
+                name=allowance_name)
 
         # Create existing FCA, ICA, and PCA projects, activated by new project
         # requests from previous AllocationPeriods.
-        prefix_by_allocation_type = {
-            self.fca: 'fc_',
-            self.ica: 'ic_',
-            self.pca: 'pc_',
+        self.previous_allocation_periods_by_allowance = {
+            BRCAllowances.FCA: self.previous_allowance_year,
+            BRCAllowances.ICA: self.previous_instructional_period,
+            BRCAllowances.PCA: self.previous_allowance_year,
         }
-        previous_allocation_periods_by_allocation_type = {
-            self.fca: self.previous_allowance_year,
-            self.ica: self.previous_instructional_period,
-            self.pca: self.previous_allowance_year,
-        }
-        self.allowances_by_allocation_type = {
-            self.fca: settings.FCA_DEFAULT_ALLOCATION,
-            self.ica: settings.ICA_DEFAULT_ALLOCATION,
-            self.pca: settings.PCA_DEFAULT_ALLOCATION,
-        }
-        self.usages_by_allocation_type = {
-            _type: self.allowances_by_allocation_type[_type] - Decimal('0.01')
-            for _type in self.allowances_by_allocation_type}
+        self.num_service_units_by_allowance = {
+            allowance_name:
+                Decimal(
+                    self.computing_allowance_interface.service_units_from_name(
+                        allowance_name))
+            for allowance_name in computing_allowances}
+        self.usages_by_allowance = {
+            allowance_name: (
+                self.num_service_units_by_allowance[allowance_name] -
+                Decimal('0.01'))
+            for allowance_name in self.num_service_units_by_allowance}
         projects_by_name = {}
         self.project_user_data_by_name = {}
         num_extra_users_per_project = 5
-        for allocation_type in previous_allocation_periods_by_allocation_type:
-            prefix = prefix_by_allocation_type[allocation_type]
-            allowance = self.allowances_by_allocation_type[
-                allocation_type]
-            usage = self.usages_by_allocation_type[allocation_type]
-            allocation_period = previous_allocation_periods_by_allocation_type[
-                allocation_type]
-            name = f'{prefix}existing'
+        for allowance_name, allowance in computing_allowances.items():
+            project_name_prefix = \
+                self.computing_allowance_interface.code_from_name(
+                    allowance_name)
+            num_service_units = self.num_service_units_by_allowance[
+                allowance_name]
+            usage = self.usages_by_allowance[allowance_name]
+            allocation_period = self.previous_allocation_periods_by_allowance[
+                allowance_name]
+            name = f'{project_name_prefix}existing'
             project = self.create_project(
-                name, allocation_type, allocation_period, allowance,
+                name, allowance, allocation_period, num_service_units,
                 approve=True, process=True)
             self.set_project_usage(project, usage)
             projects_by_name[name] = project
@@ -124,33 +130,43 @@ class TestStartAllocationPeriod(TestBase):
             requester=User.objects.get(
                 username=f'{fc_existing.name}_requester'),
             pi=User.objects.get(username=f'{fc_existing.name}_pi'),
+            computing_allowance=computing_allowances[BRCAllowances.FCA],
             allocation_period=self.current_allowance_year,
             status=AllocationRenewalRequestStatusChoice.objects.get(
                 name='Approved'),
             pre_project=fc_existing,
             post_project=fc_existing,
-            num_service_units=self.allowances_by_allocation_type[self.fca],
+            num_service_units=self.num_service_units_by_allowance[BRCAllowances.FCA],
             request_time=utc_now_offset_aware(),
             approval_time=utc_now_offset_aware())
 
         # Create new project requests for new FCA, ICA, and PCA projects for
         # the current AllocationPeriod.
-        current_allocation_periods_by_allocation_type = {
-            self.fca: self.current_allowance_year,
-            self.ica: self.current_instructional_period,
-            self.pca: self.current_allowance_year,
+        self.current_allocation_periods_by_allowance = {
+            BRCAllowances.FCA: self.current_allowance_year,
+            BRCAllowances.ICA: self.current_instructional_period,
+            BRCAllowances.PCA: self.current_allowance_year,
         }
-        for allocation_type in current_allocation_periods_by_allocation_type:
-            prefix = prefix_by_allocation_type[allocation_type]
+        for allowance_name, computing_allowance in computing_allowances.items():
+            project_name_prefix = \
+                self.computing_allowance_interface.code_from_name(
+                    allowance_name)
             num_service_units = prorated_allocation_amount(
-                self.allowances_by_allocation_type[allocation_type],
+                self.num_service_units_by_allowance[allowance_name],
                 utc_now_offset_aware(), allocation_period)
-            allocation_period = current_allocation_periods_by_allocation_type[
-                allocation_type]
-            name = f'{prefix}new'
+            allocation_period = self.current_allocation_periods_by_allowance[
+                allowance_name]
+            name = f'{project_name_prefix}new'
             projects_by_name[name] = self.create_project(
-                name, allocation_type, allocation_period, num_service_units,
+                name, computing_allowance, allocation_period, num_service_units,
                 approve=True, process=False)
+
+    def allowance_name_from_project_name(self, project):
+        """Return the name of the Computing Allowance corresponding to
+        the given Project, based on its name."""
+        project_prefix_name = project.name[:3]
+        return self.computing_allowance_interface.allowance_from_code(
+            project_prefix_name).name
 
     def assert_existing_project_pre_state(self, allocation_period, project):
         """Assert that the given existing Project is 'Active', and that
@@ -167,20 +183,15 @@ class TestStartAllocationPeriod(TestBase):
         self.assertEqual(allocation.start_date, self.current_date)
         self.assertEqual(allocation.end_date, allocation_period.end_date)
 
-        if project.name.startswith('fc_'):
-            allocation_type = self.fca
-        elif project.name.startswith('ic_'):
-            allocation_type = self.ica
-        else:
-            allocation_type = self.pca
+        allowance_name = self.allowance_name_from_project_name(project)
 
-        pre_allocation_allowance = self.allowances_by_allocation_type[
-            allocation_type]
+        pre_allocation_allowance = self.num_service_units_by_allowance[
+            allowance_name]
         allocation_attribute = objects.allocation_attribute
         self.assertEqual(
             Decimal(allocation_attribute.value), pre_allocation_allowance)
 
-        pre_allocation_usage = self.usages_by_allocation_type[allocation_type]
+        pre_allocation_usage = self.usages_by_allowance[allowance_name]
         allocation_attribute_usage = objects.allocation_attribute_usage
         self.assertEqual(
             Decimal(allocation_attribute_usage.value), pre_allocation_usage)
@@ -237,23 +248,23 @@ class TestStartAllocationPeriod(TestBase):
         allocated.
 
         If an expected number is None, ignore requests of that type."""
-        types_and_nums = [
-            (self.fca, expected_num_fcas),
-            (self.ica, expected_num_icas),
-            (self.pca, expected_num_pcas),
+        allowance_names_and_nums = [
+            (BRCAllowances.FCA, expected_num_fcas),
+            (BRCAllowances.ICA, expected_num_icas),
+            (BRCAllowances.PCA, expected_num_pcas),
         ]
         num_service_units_by_id = {}
-        for allocation_type, expected_num in types_and_nums:
+        for allowance_name, expected_num in allowance_names_and_nums:
             if expected_num is None:
                 continue
             requests = SavioProjectAllocationRequest.objects.filter(
-                allocation_type=allocation_type,
+                computing_allowance__name=allowance_name,
                 status__name='Approved - Scheduled')
             self.assertEqual(requests.count(), expected_num)
             for request in requests:
-                num_service_units = getattr(
-                    settings, f'{request.allocation_type}_DEFAULT_ALLOCATION')
-                if allocation_type != self.ica:
+                num_service_units = self.num_service_units_by_allowance[
+                    allowance_name]
+                if allowance_name != BRCAllowances.ICA:
                     num_service_units = prorated_allocation_amount(
                         num_service_units, utc_now_offset_aware(),
                         request.allocation_period)
@@ -356,15 +367,9 @@ class TestStartAllocationPeriod(TestBase):
             name='Active')
         new_allocation_status = AllocationStatusChoice.objects.get(name='New')
 
-        if project.name.startswith('fc_'):
-            allocation_period = self.current_allowance_year
-            allocation_type = self.fca
-        elif project.name.startswith('ic_'):
-            allocation_period = self.current_instructional_period
-            allocation_type = self.ica
-        else:
-            allocation_period = self.current_allowance_year
-            allocation_type = self.pca
+        allowance_name = self.allowance_name_from_project_name(project)
+        allocation_period = self.current_allocation_periods_by_allowance[
+            allowance_name]
 
         zero = Decimal('0.00')
 
@@ -403,7 +408,7 @@ class TestStartAllocationPeriod(TestBase):
             post_time)
 
         post_allocation_allowance = prorated_allocation_amount(
-            self.allowances_by_allocation_type[allocation_type],
+            self.num_service_units_by_allowance[allowance_name],
             utc_now_offset_aware(), allocation_period)
         latest_allocation_attribute_values = (
             (str(post_allocation_allowance), True),
@@ -429,27 +434,20 @@ class TestStartAllocationPeriod(TestBase):
         expired_allocation_status = AllocationStatusChoice.objects.get(
             name='Expired')
 
-        if project.name.startswith('fc_'):
-            allocation_period = self.current_allowance_year
-            prev_allocation_period = self.previous_allowance_year
-            allocation_type = self.fca
-        elif project.name.startswith('ic_'):
-            allocation_period = self.current_instructional_period
-            prev_allocation_period = self.previous_instructional_period
-            allocation_type = self.ica
-        else:
-            allocation_period = self.current_allowance_year
-            prev_allocation_period = self.previous_allowance_year
-            allocation_type = self.pca
+        allowance_name = self.allowance_name_from_project_name(project)
+        allocation_period = self.current_allocation_periods_by_allowance[
+            allowance_name]
+        prev_allocation_period = self.previous_allocation_periods_by_allowance[
+            allowance_name]
 
         zero = Decimal('0.00')
 
         objects = get_accounting_allocation_objects(
             project, enforce_allocation_active=False)
 
-        pre_allocation_allowance = self.allowances_by_allocation_type[
-            allocation_type]
-        pre_allocation_usage = self.usages_by_allocation_type[allocation_type]
+        pre_allocation_allowance = self.num_service_units_by_allowance[
+            allowance_name]
+        pre_allocation_usage = self.usages_by_allowance[allowance_name]
 
         allocation = objects.allocation
         allocation_attribute = objects.allocation_attribute
@@ -484,7 +482,7 @@ class TestStartAllocationPeriod(TestBase):
             post_time)
 
         post_allocation_allowance = prorated_allocation_amount(
-            self.allowances_by_allocation_type[allocation_type],
+            self.num_service_units_by_allowance[allowance_name],
             utc_now_offset_aware(), allocation_period)
         latest_allocation_attribute_values = (
             (str(zero), True),
@@ -542,26 +540,19 @@ class TestStartAllocationPeriod(TestBase):
         expired_allocation_status = AllocationStatusChoice.objects.get(
             name='Expired')
 
-        if project.name.startswith('fc_'):
-            allocation_period = self.current_allowance_year
-            prev_allocation_period = self.previous_allowance_year
-            allocation_type = self.fca
-        elif project.name.startswith('ic_'):
-            allocation_period = self.current_instructional_period
-            prev_allocation_period = self.previous_instructional_period
-            allocation_type = self.ica
-        else:
-            allocation_period = self.current_allowance_year
-            prev_allocation_period = self.previous_allowance_year
-            allocation_type = self.pca
+        allowance_name = self.allowance_name_from_project_name(project)
+        allocation_period = self.current_allocation_periods_by_allowance[
+            allowance_name]
+        prev_allocation_period = self.previous_allocation_periods_by_allowance[
+            allowance_name]
 
         zero = Decimal('0.00')
 
         objects = get_accounting_allocation_objects(project)
 
-        pre_allocation_allowance = self.allowances_by_allocation_type[
-            allocation_type]
-        pre_allocation_usage = self.usages_by_allocation_type[allocation_type]
+        pre_allocation_allowance = self.num_service_units_by_allowance[
+            allowance_name]
+        pre_allocation_usage = self.usages_by_allowance[allowance_name]
 
         allocation = objects.allocation
         allocation_attribute = objects.allocation_attribute
@@ -600,7 +591,7 @@ class TestStartAllocationPeriod(TestBase):
             post_time)
 
         post_allocation_allowance = prorated_allocation_amount(
-            self.allowances_by_allocation_type[allocation_type],
+            self.num_service_units_by_allowance[allowance_name],
             utc_now_offset_aware(), allocation_period)
         latest_allocation_attribute_values = (
             (str(post_allocation_allowance), True),
@@ -656,17 +647,20 @@ class TestStartAllocationPeriod(TestBase):
         to project name.
 
         If an expected number is None, ignore Projects of that type."""
-        prefixes_and_nums = [
-            ('fc_', expected_num_fcas),
-            ('ic_', expected_num_icas),
-            ('pc_', expected_num_pcas),
+        allowance_names_and_nums = [
+            (BRCAllowances.FCA, expected_num_fcas),
+            (BRCAllowances.ICA, expected_num_icas),
+            (BRCAllowances.PCA, expected_num_pcas),
         ]
         project_names_by_id = {}
-        for prefix, expected_num in prefixes_and_nums:
+        for allowance_name, expected_num in allowance_names_and_nums:
             if expected_num is None:
                 continue
+            project_name_prefix = \
+                self.computing_allowance_interface.code_from_name(
+                    allowance_name)
             projects = Project.objects.filter(
-                name__startswith=prefix, status__name='Active')
+                name__startswith=project_name_prefix, status__name='Active')
             self.assertEqual(projects.count(), expected_num)
             for project in projects:
                 project_names_by_id[project.id] = project.name
@@ -680,27 +674,26 @@ class TestStartAllocationPeriod(TestBase):
         ID to the number of service units to be allocated.
 
         If an expected number is None, ignore requests of that type."""
-        prefixes_and_nums = [
-            ('fc_', expected_num_fcas),
-            ('ic_', expected_num_icas),
-            ('pc_', expected_num_pcas),
+        allowance_names_and_nums = [
+            (BRCAllowances.FCA, expected_num_fcas),
+            (BRCAllowances.ICA, expected_num_icas),
+            (BRCAllowances.PCA, expected_num_pcas),
         ]
-        types_by_prefix = {
-            'fc_': self.fca,
-            'ic_': self.ica,
-            'pc_': self.pca,
-        }
         num_service_units_by_id = {}
-        for prefix, expected_num in prefixes_and_nums:
+        for allowance_name, expected_num in allowance_names_and_nums:
             if expected_num is None:
                 continue
+            project_name_prefix = \
+                self.computing_allowance_interface.code_from_name(
+                    allowance_name)
             requests = AllocationRenewalRequest.objects.filter(
-                post_project__name__startswith=prefix, status__name='Approved')
+                post_project__name__startswith=project_name_prefix,
+                status__name='Approved')
             self.assertEqual(requests.count(), expected_num)
             for request in requests:
-                num_service_units = getattr(
-                    settings, f'{types_by_prefix[prefix]}_DEFAULT_ALLOCATION')
-                if prefix != 'ic_':
+                num_service_units = self.num_service_units_by_allowance[
+                    allowance_name]
+                if allowance_name != BRCAllowances.ICA:
                     num_service_units = prorated_allocation_amount(
                         num_service_units, utc_now_offset_aware(),
                         request.allocation_period)
@@ -724,40 +717,27 @@ class TestStartAllocationPeriod(TestBase):
         return out.getvalue(), err.getvalue()
 
     @staticmethod
-    def create_project(name, allocation_type, allocation_period,
+    def create_project(name, computing_allowance, allocation_period,
                        num_service_units, approve=False, process=False):
         """Create and return a Project with the given name, from a
         new project request with the given allocation type,
         AllocationPeriod, and number of service units. Optionally
         approve and/or process the request."""
-        new_status = ProjectStatusChoice.objects.get(name='New')
-        project = Project.objects.create(name=name, status=new_status)
-
-        new_allocation_status = AllocationStatusChoice.objects.get(name='New')
-        allocation = Allocation.objects.create(
-            project=project, status=new_allocation_status)
-        resource = Resource.objects.get(name='Savio Compute')
-        allocation.resources.add(resource)
-        allocation.save()
-
         requester = User.objects.create(
             username=f'{name}_requester', email=f'{name}_requester@email.com')
         pi = User.objects.create(
             username=f'{name}_pi', email=f'{name}_pi@email.com')
 
-        approved_processing_request_status = \
-            ProjectAllocationRequestStatusChoice.objects.get(
-                name='Approved - Processing')
-        new_project_request = SavioProjectAllocationRequest.objects.create(
-            requester=requester,
-            allocation_type=allocation_type,
-            allocation_period=allocation_period,
-            pi=pi,
-            project=project,
-            pool=False,
-            survey_answers={},
-            status=approved_processing_request_status,
-            request_time=utc_now_offset_aware())
+        new_project, new_project_request = create_project_and_request(
+            name, 'New', computing_allowance, allocation_period, requester, pi,
+            'Approved - Processing')
+
+        new_allocation_status = AllocationStatusChoice.objects.get(name='New')
+        allocation = Allocation.objects.create(
+            project=new_project, status=new_allocation_status)
+        resource = get_primary_compute_resource()
+        allocation.resources.add(resource)
+        allocation.save()
 
         # Allow runners to process requests with non-current periods.
         runner_args = (new_project_request, num_service_units)
@@ -773,8 +753,8 @@ class TestStartAllocationPeriod(TestBase):
                         *runner_args)
                     processing_runner.run()
 
-        project.refresh_from_db()
-        return project
+        new_project.refresh_from_db()
+        return new_project
 
     @staticmethod
     def create_project_users(project, k):
@@ -956,10 +936,13 @@ class TestStartAllocationPeriod(TestBase):
 
         assert_outcome(
             self.current_allowance_year.id,
-            'Failed to deactivate 1/1 FCA Projects and 1/1 PCA Projects.')
+            ('Failed to deactivate 1/1 "Faculty Computing Allowance" '
+             'Projects. Failed to deactivate 1/1 "Partner Computing '
+             'Allowance" Projects.'))
         assert_outcome(
             self.current_instructional_period.id,
-            'Failed to deactivate 1/1 ICA Projects.')
+            ('Failed to deactivate 1/1 "Instructional Computing Allowance" '
+             'Projects.'))
 
         # The numbers of deactivated Projects and complete requests should not
         # have increased.
@@ -1046,8 +1029,8 @@ class TestStartAllocationPeriod(TestBase):
         # A request for a future AllocationPeriod should not be processed.
         num_service_units = Decimal('300000.00')
         fc_future = self.create_project(
-            'fc_future', self.fca, self.next_allowance_year, num_service_units,
-            approve=True)
+            'fc_future', Resource.objects.get(name=BRCAllowances.FCA),
+            self.next_allowance_year, num_service_units, approve=True)
         fc_future_request = SavioProjectAllocationRequest.objects.get(
             project=fc_future)
         self.assertEqual(fc_future_request.status, approved_scheduled_status)
@@ -1164,11 +1147,16 @@ class TestStartAllocationPeriod(TestBase):
                 self.assertNotIn(message, output)
             self.assertFalse(error)
 
+        project_name_prefix = \
+            self.computing_allowance_interface.code_from_name(
+                BRCAllowances.FCA)
+
         allocation_period = self.current_allowance_year
         active_status = ProjectStatusChoice.objects.get(name='Active')
-        resource = Resource.objects.get(name='Savio Compute')
+        resource = get_primary_compute_resource()
 
-        fc_existing = Project.objects.get(name='fc_existing')
+        fc_existing = Project.objects.get(
+            name=f'{project_name_prefix}existing')
         accounting_allocation_objects = get_accounting_allocation_objects(
             fc_existing)
         allocation = accounting_allocation_objects.allocation
@@ -1179,10 +1167,11 @@ class TestStartAllocationPeriod(TestBase):
             allocation.end_date < allocation_period.start_date)
         # The Project's name must begin with a prefix matching those associated
         # with the AllocationPeriod.
-        self.assertTrue(fc_existing.name.startswith('fc_'))
+
+        self.assertTrue(fc_existing.name.startswith(project_name_prefix))
         # The Project's status must be 'Active'.
         self.assertEqual(fc_existing.status, active_status)
-        # The Project's Allocation must be for the 'Savio Compute' Resource.
+        # The Project's Allocation must be for the primary compute Resource.
         self.assertIn(resource, allocation.resources.all())
 
         # A Project meeting all conditions should be deactivated.
@@ -1207,27 +1196,6 @@ class TestStartAllocationPeriod(TestBase):
 
         assert_message_in_command_output(True)
 
-        # Project name with non-associated or invalid prefix
-        tmp_project_name = fc_existing.name
-        associated_prefixes = ('fc_', 'pc_')
-        invalid_prefixes = ('ac_', 'co_')
-        Project.objects.filter(
-            name__in=['ic_existing', 'pc_existing']).delete()
-        for prefix in ('ac_', 'co_', 'fc_', 'ic_', 'pc_'):
-            fc_existing.name = f'{prefix}{fc_existing.name[3:]}'
-            fc_existing.save()
-            if prefix not in invalid_prefixes:
-                assert_message_in_command_output(
-                    prefix in associated_prefixes,
-                    project_name=fc_existing.name)
-            else:
-                _, err = self.call_command(allocation_period.id, dry_run=True)
-                self.assertTrue(err)
-        fc_existing.name = tmp_project_name
-        fc_existing.save()
-
-        assert_message_in_command_output(True)
-
         # Project with non-'Active' status
         other_statuses = ProjectStatusChoice.objects.exclude(
             pk=active_status.pk)
@@ -1241,7 +1209,7 @@ class TestStartAllocationPeriod(TestBase):
 
         assert_message_in_command_output(True)
 
-        # Allocation not to 'Savio Compute' Resource
+        # Allocation not to primary compute Resource
         allocation.resources.remove(resource)
         assert_message_in_command_output(False)
         allocation.resources.add(resource)

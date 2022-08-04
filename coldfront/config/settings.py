@@ -140,6 +140,7 @@ TEMPLATES = [
                 'coldfront.core.utils.context_processors.current_allowance_year_allocation_period',
                 'coldfront.core.utils.context_processors.display_time_zone',
                 'coldfront.core.utils.context_processors.portal_and_program_names',
+                'coldfront.core.utils.context_processors.primary_cluster_name',
             ],
         },
     },
@@ -205,12 +206,6 @@ DECIMAL_MAX_PLACES = 2
 # The minimum and maximum valid numbers of service units for allocations.
 ALLOCATION_MIN = Decimal('0.00')
 ALLOCATION_MAX = Decimal('100000000.00')
-
-# The default amount of service units to allocate to Savio projects.
-CO_DEFAULT_ALLOCATION = ALLOCATION_MAX
-FCA_DEFAULT_ALLOCATION = Decimal('300000.00')
-ICA_DEFAULT_ALLOCATION = Decimal('200000.00')
-PCA_DEFAULT_ALLOCATION = Decimal('300000.00')
 
 # Whether or not to allow all jobs, bypassing all checks.
 ALLOW_ALL_JOBS = False

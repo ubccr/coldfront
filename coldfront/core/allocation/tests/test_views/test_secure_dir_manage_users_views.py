@@ -7,6 +7,7 @@ from django.contrib.messages import get_messages
 from django.core import mail
 from django.core.management import call_command
 from django.urls import reverse
+from flags.state import enable_flag
 
 from coldfront.api.statistics.utils import create_project_allocation, \
     create_user_project_allocation
@@ -35,6 +36,7 @@ class TestSecureDirBase(TestBase):
 
     def setUp(self):
         """Set up test data."""
+        enable_flag('SECURE_DIRS_REQUESTABLE')
         super().setUp()
 
         self.pi = User.objects.create(
