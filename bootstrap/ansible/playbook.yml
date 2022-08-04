@@ -216,6 +216,18 @@
           become_user: "{{ djangooperator }}"
           changed_when: venv_register.stdout == "created"
 
+        # Install psycopg2 and mod-wsgi, which are required to create the
+        # PostgreSQL database and user, and configuring apache.
+
+        - name: Install psycopg2 and mod-wsgi using pip
+          pip:
+            name:
+              - "psycopg2-binary==2.8.3"
+              - "mod-wsgi==4.6.7"
+            state: present
+            executable: "{{ git_prefix }}/venv/bin/pip3"
+          become_user: "{{ djangooperator }}"
+
         # Create a PostgreSQL database and a user for the Django application.
 
         - name: Create a new PostgreSQL database
@@ -385,8 +397,7 @@
             state: restarted
             enabled: yes
 
-        # Install Django application dependencies, so that psycopg2, which is
-        # required to create the PostgreSQL database and user, is installed.
+        # Install Django application dependencies
 
         - name: Install Django application dependencies
           pip:
