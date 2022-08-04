@@ -22,8 +22,8 @@ Python and released under the GPLv3 license.
 ## Vagrant VM Install (Recommended)
 
 The application may be installed within a Vagrant VM that is running on
-Scientific Linux 7. The VM is provisioned using an Ansible playbook similar to
-the one used in production.
+Scientific Linux 7. The VM is provisioned using the same Ansible playbook
+used in production.
 
 1. Install [VirtualBox](https://www.virtualbox.org/).
 2. Clone the repository.
@@ -104,12 +104,16 @@ which can be done with:
   ```
   sudo service httpd restart
   ```
-- The Ansible playbook can be run manually with:
+- The Ansible playbook can be run manually as follows.
   ```
   cd /vagrant/coldfront_app/coldfront
   # Assert that there is a properly-configured main.yml in the current directory.
   ansible-playbook bootstrap/development/playbook.yml
   ```
+  - Note that to skip initial provisioning tasks you can use the
+`--tags common` or `--skip-tags provisioning` arguments to `ansible-playbook`:
+  - Alternatively, you can set `provisioning_tasks` to `false` in `main.yml`
+
 - Any custom Django settings can be applied by modifying `dev_settings.py`.
 Note that running the Ansible playbook will overwrite these.
 - It may be convenient to add the following to `/home/vagrant/.bashrc`:
@@ -422,6 +426,11 @@ static files, creates WSGI files for Apache, and restarts Apache.
 
 Note that there are some additional server setup steps that are not currently
 captured in the Ansible playbook.
+
+Also note that on production environments you must install necessary Ansible
+collections using
+`ansible-galaxy collection install -r bootstrap/development/requirements.yml`
+before initially running the playbook.
 
 1. Create `main.yml`.
 

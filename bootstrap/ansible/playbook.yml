@@ -216,10 +216,10 @@
           become_user: "{{ djangooperator }}"
           changed_when: venv_register.stdout == "created"
 
-        # Install psycopg2 and mod-wsgi, which are required to create the
-        # PostgreSQL database and user, and configuring apache.
+        # Install psycopg2, required to create the PostgreSQL database and user.
+        # Also install mod-wsgi, required to configure apache.
 
-        - name: Install psycopg2 and mod-wsgi using pip
+        - name: Install psycopg2 and mod-wsgi
           pip:
             name:
               - "psycopg2-binary==2.8.3"
@@ -260,7 +260,7 @@
           when: not mod_wsgi_installed.stat.exists
 
       when: provisioning_tasks == true
-      tags: provisioning_tasks
+      tags: provisioning
 
     # Production only provisioning tasks.
     - name: Run Production provisioning Tasks
