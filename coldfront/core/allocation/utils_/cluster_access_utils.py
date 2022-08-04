@@ -13,6 +13,7 @@ from coldfront.core.resource.utils import get_primary_compute_resource
 from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.utils.common import import_from_settings, \
     utc_now_offset_aware
+from coldfront.core.utils.email.email_strategy import SendEmailStrategy
 from coldfront.core.utils.mail import send_email_template
 from django.conf import settings
 
@@ -45,6 +46,7 @@ class ClusterAccessRequestCompleteRunner(object):
         self.allocation_user = request.allocation_user
         self.allocation = request.allocation_user.allocation
         self.project = request.allocation_user.allocation.project
+        self._email_strategy = SendEmailStrategy()
         self._success_messages = []
         self._warning_messages = []
 
@@ -153,40 +155,9 @@ class ClusterAccessRequestCompleteRunner(object):
 
     def _send_complete_emails(self):
         """Sends emails to the user and managers and PIs of the project."""
-        success = False
-        if settings.EMAIL_ENABLED:
-            subject = 'Cluster Access Activated'
-            template = 'email/cluster_access_activated.txt'
-
-            template_context = {
-                'PROGRAM_NAME_SHORT': settings.PROGRAM_NAME_SHORT,
-                'user': self.user,
-                'project_name': self.project.name,
-                'center_user_guide': settings.CENTER_USER_GUIDE,
-                'center_login_guide': settings.CENTER_LOGIN_GUIDE,
-                'center_help_email': settings.CENTER_HELP_EMAIL,
-                'signature': settings.EMAIL_SIGNATURE,
-            }
-
-            cc_list = self.project.managers_and_pis_emails()
-
-            try:
-                send_email_template(
-                    subject,
-                    template,
-                    template_context,
-                    settings.EMAIL_SENDER,
-                    [self.user.email],
-                    cc=cc_list)
-                success = True
-            except Exception as e:
-                message = (
-                    f'Failed to send a notification email to {self.user.email}.'
-                    f' Details: \n{e}')
-                logger.exception(message)
-                success = False
-
-        return success
+        email_args = (self.user, self.project)
+        self._email_strategy.process_email(send_complete_cluster_access_emails,
+                                           *email_args)
 
     def _send_emails_safe(self):
         """Send emails.
@@ -197,16 +168,12 @@ class ClusterAccessRequestCompleteRunner(object):
         If send failures occur, store a warning message.
         """
         try:
-            success = self._send_complete_emails()
+            self._send_complete_emails()
         except Exception as e:
             message = (
                 f'Encountered unexpected exception when sending notification '
                 f'emails. Details: \n{e}')
             logger.exception(message)
-        else:
-            if not success:
-                message = f'Failed to send notification emails.'
-                self._warning_messages.append(message)
 
 
 class ClusterAccessRequestDenialRunner(object):
@@ -232,6 +199,7 @@ class ClusterAccessRequestDenialRunner(object):
         self.allocation_user = self.request.allocation_user
         self.allocation = self.request.allocation_user.allocation
         self.project = request.allocation_user.allocation.project
+        self._email_strategy = SendEmailStrategy()
         self._success_messages = []
         self._warning_messages = []
 
@@ -285,38 +253,9 @@ class ClusterAccessRequestDenialRunner(object):
         self._success_messages.append(message)
 
     def _send_denial_emails(self):
-        success = False
-        if settings.EMAIL_ENABLED:
-            subject = 'Cluster Access Denied'
-            template = 'email/cluster_access_denied.txt'
-            template_context = {
-                'user': self.user,
-                'center_name': import_from_settings('CENTER_NAME'),
-                'project': self.project.name,
-                'allocation': self.allocation.pk,
-                'opt_out_instruction_url': settings.EMAIL_OPT_OUT_INSTRUCTION_URL,
-                'signature': settings.EMAIL_SIGNATURE,
-            }
-
-            cc_list = self.project.managers_and_pis_emails()
-
-            try:
-                send_email_template(
-                    subject,
-                    template,
-                    template_context,
-                    settings.EMAIL_SENDER,
-                    [self.user.email],
-                    cc=cc_list)
-                success = True
-            except Exception as e:
-                message = (
-                    f'Failed to send a notification email to {self.user.email}.'
-                    f' Details: \n{e}')
-                logger.exception(message)
-                success = False
-
-        return success
+        email_args = (self.user, self.project, self.allocation)
+        self._email_strategy.process_email(send_denial_cluster_access_emails,
+                                           *email_args)
 
     def _send_emails_safe(self):
         """Send emails.
@@ -337,3 +276,53 @@ class ClusterAccessRequestDenialRunner(object):
             if not success:
                 message = f'Failed to send notification emails.'
                 self._warning_messages.append(message)
+
+
+def send_complete_cluster_access_emails(user, project):
+    if settings.EMAIL_ENABLED:
+        subject = 'Cluster Access Activated'
+        template = 'email/cluster_access_activated.txt'
+
+        template_context = {
+            'PROGRAM_NAME_SHORT': settings.PROGRAM_NAME_SHORT,
+            'user': user,
+            'project_name': project.name,
+            'center_user_guide': settings.CENTER_USER_GUIDE,
+            'center_login_guide': settings.CENTER_LOGIN_GUIDE,
+            'center_help_email': settings.CENTER_HELP_EMAIL,
+            'signature': settings.EMAIL_SIGNATURE,
+        }
+
+        cc_list = project.managers_and_pis_emails()
+
+        send_email_template(
+            subject,
+            template,
+            template_context,
+            settings.EMAIL_SENDER,
+            [user.email],
+            cc=cc_list)
+
+
+def send_denial_cluster_access_emails(user, project, allocation):
+    if settings.EMAIL_ENABLED:
+        subject = 'Cluster Access Denied'
+        template = 'email/cluster_access_denied.txt'
+        template_context = {
+            'user': user,
+            'center_name': import_from_settings('CENTER_NAME'),
+            'project': project.name,
+            'allocation': allocation.pk,
+            'opt_out_instruction_url': settings.EMAIL_OPT_OUT_INSTRUCTION_URL,
+            'signature': settings.EMAIL_SIGNATURE,
+        }
+
+        cc_list = project.managers_and_pis_emails()
+
+        send_email_template(
+            subject,
+            template,
+            template_context,
+            settings.EMAIL_SENDER,
+            [user.email],
+            cc=cc_list)
