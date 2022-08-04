@@ -76,7 +76,7 @@ class TestAllocationClusterAccountDenyRequestView(TestClusterAccessRunnersBase):
     def test_success(self):
         """Test that the request status is set to Denied, Cluster Account
         Status AllocationUserAttribute is set to Denied, completion time
-        is set, emails are sent, and log messages are written."""
+        is set, emails are sent."""
         pre_time = utc_now_offset_aware()
         self.assertEqual(len(mail.outbox), 0)
         self._assert_pre_state()

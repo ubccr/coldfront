@@ -37,25 +37,6 @@ class TestAllocationClusterAccountUpdateStatusView(TestBase):
             'allocation-cluster-account-update-status',
             kwargs={'pk': pk})
 
-    def test_logs_request_user(self):
-        """Test that the correct message is written to the log."""
-        url = self.view_url(self.request_obj.pk)
-        data = {
-            'status': 'Processing',
-        }
-        with self.assertLogs('coldfront.core.allocation.views', 'INFO') as cm:
-            response = self.client.post(url, data)
-        self.assertRedirects(
-            response, reverse('allocation-cluster-account-request-list'))
-
-        # Assert that an info message was logged.
-        self.assertEqual(len(cm.output), 1)
-        expected_log_message = (
-            f'Superuser {self.user.pk} changed the value of "Cluster Account '
-            f'Status" AllocationUserAttribute {self.request_obj.pk} from '
-            f'"Pending - Add" to "{data["status"]}".')
-        self.assertIn(expected_log_message, cm.output[0])
-
     def test_updates_value(self):
         """Test that updating the status results in the correct value
         being set."""
