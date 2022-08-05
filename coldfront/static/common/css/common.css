@@ -143,3 +143,5 @@ body > main > div > div.card.border-primary > div.card-body > form > div.alert.a
 	position:relative;
 	top:1px;
 }
+
+.form-control[readonly]{background-color:#ffffff;opacity:1}
