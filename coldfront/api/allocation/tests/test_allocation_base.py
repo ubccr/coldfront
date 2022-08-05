@@ -23,10 +23,6 @@ class TestAllocationBase(TestAPIBase):
         """Set up test data."""
         super().setUp()
 
-        # Create default choices.
-        call_command('add_default_user_choices')
-        call_command('add_allocation_defaults')
-
         # Create a superuser.
         self.superuser = User.objects.create_superuser(
             email='superuser@nonexistent.com',

@@ -151,28 +151,22 @@ class ClusterAccessRequestSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'id': {'read_only': True},
             'completion_time': {'required': False, 'allow_null': True},
-            'allocation_user': {'required': True,
-                                'allow_null': False,
-                                'read_only': True}
         }
 
     def validate(self, data):
-        # If the status is being changed to 'Complete', ensure that a
+        # If the status is being changed to 'Active', ensure that a
         # completion_time, username, and cluster_uid are given.
         if 'status' in data and data['status'].name == 'Active':
             messages = []
-            for field in ['completion_time', 'username', 'cluster_uid']:
-                if (field == 'completion_time' and
-                        not isinstance(data.get('completion_time', None), datetime)):
-                    messages.append('No completion_time is given.')
+            if not isinstance(data.get('completion_time', None), datetime):
+                messages.append('No completion_time is given.')
 
-                elif (field == 'username' and
-                      not isinstance(data.get('username', None), str)):
-                    messages.append('No username is given.')
+            elif not isinstance(data.get('username', None), str):
+                messages.append('No username is given.')
 
-                elif (field == 'cluster_uid' and
-                      not isinstance(data.get('cluster_uid', None), str)):
-                    messages.append('No cluster_uid is given.')
+            elif not isinstance(data.get('cluster_uid', None), str):
+                messages.append('No cluster_uid is given.')
+
             if messages:
                 raise serializers.ValidationError(' '.join(messages))
 

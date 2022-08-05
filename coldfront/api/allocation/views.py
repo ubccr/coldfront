@@ -168,8 +168,7 @@ class ClusterAccessRequestViewSet(mixins.ListModelMixin,
 
                 if instance.status.name == 'Active':
                     runner = ClusterAccessRequestCompleteRunner(instance)
-                    runner.run(cluster_uid=cluster_uid,
-                               username=username)
+                    runner.run(username, cluster_uid)
                 elif instance.status.name == 'Denied':
                     runner = ClusterAccessRequestDenialRunner(instance)
                     runner.run()
@@ -181,7 +180,7 @@ class ClusterAccessRequestViewSet(mixins.ListModelMixin,
     @swagger_auto_schema(
         manual_parameters=[authorization_parameter],
         operation_description=(
-                'Updates one or more fields of the ProjectUserRemovalRequest '
+                'Updates one or more fields of the ClusterAccessRequest '
                 'identified by the given ID.'))
     def partial_update(self, request, *args, **kwargs):
         """The method for PATCH (partial update) requests."""
