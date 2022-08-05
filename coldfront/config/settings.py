@@ -51,4 +51,5 @@ if ENV.str('COLDFRONT_CONFIG', default='') != '':
 for lc in local_configs:
     coldfront_configs.append(optional(lc))
 
+print(coldfront_configs)
 include(*coldfront_configs)
