@@ -24,7 +24,7 @@ from django.views.generic import DetailView, ListView, TemplateView
 from django.views.generic.edit import CreateView, FormView, UpdateView
 
 from coldfront.core.allocation.forms import (AllocationAccountForm,
-                                             AllocationAddUserForm,
+                                             AllocationAddUserForm, AllocationAttributeCreateForm,
                                              AllocationAttributeDeleteForm,
                                              AllocationChangeForm,
                                              AllocationChangeNoteForm,
@@ -375,16 +375,14 @@ class AllocationListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
 
-        order_by = self.request.GET.get('order_by')
-        if order_by:
-            direction = self.request.GET.get('direction')
+        order_by = self.request.GET.get('order_by', 'id')
+        direction = self.request.GET.get('direction', 'asc')
+        if order_by != "name":
             if direction == 'asc':
                 direction = ''
-            elif direction == 'des':
+            if direction == 'des':
                 direction = '-'
             order_by = direction + order_by
-        else:
-            order_by = 'id'
 
         allocation_search_form = AllocationSearchForm(self.request.GET)
 
@@ -923,8 +921,8 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
 class AllocationAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = AllocationAttribute
+    form_class = AllocationAttributeCreateForm
     # fields = ['allocation_attribute_type', 'value', 'is_private', ]
-    fields = '__all__'
     template_name = 'allocation/allocation_allocationattribute_create.html'
 
     def test_func(self):
