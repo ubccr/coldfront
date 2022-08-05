@@ -1,4 +1,6 @@
 import logging
+import os
+from urllib.parse import urljoin
 
 from django.conf import settings
 from django.contrib import messages
@@ -9,25 +11,37 @@ from django.db.models import Q
 from django.forms import formset_factory
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
-from django.urls import reverse
-from django.views.generic import ListView, FormView
+from django.urls import reverse, reverse_lazy
+from django.views.generic import ListView, FormView, DetailView
 from django.views.generic.base import TemplateView, View
+from formtools.wizard.views import SessionWizardView
+from iso8601 import iso8601
 
 from coldfront.core.allocation.forms_.secure_dir_forms import (
     SecureDirManageUsersForm,
     SecureDirManageUsersSearchForm,
     SecureDirManageUsersRequestUpdateStatusForm,
-    SecureDirManageUsersRequestCompletionForm)
+    SecureDirManageUsersRequestCompletionForm, SecureDirDataDescriptionForm,
+    SecureDirRDMConsultationForm, SecureDirDirectoryNamesForm,
+    SecureDirSetupForm, SecureDirRDMConsultationReviewForm)
 from coldfront.core.allocation.models import (Allocation,
                                               SecureDirAddUserRequest,
                                               SecureDirRemoveUserRequest,
                                               AllocationUserStatusChoice,
-                                              AllocationUser)
-from coldfront.core.allocation.utils import \
-    get_secure_dir_manage_user_request_objects
-from coldfront.core.project.models import ProjectUser
-from coldfront.core.resource.models import Resource
-from coldfront.core.utils.common import utc_now_offset_aware
+                                              AllocationUser,
+                                              SecureDirRequestStatusChoice,
+                                              SecureDirRequest)
+from coldfront.core.allocation.utils import has_cluster_access
+from coldfront.core.allocation.utils_.secure_dir_utils import \
+    get_secure_dir_manage_user_request_objects, secure_dir_request_state_status, \
+    SecureDirRequestDenialRunner, SecureDirRequestApprovalRunner, \
+    get_secure_dir_allocations, get_default_secure_dir_paths, \
+    pi_eligible_to_request_secure_dir, set_sec_dir_context
+from coldfront.core.project.forms import ReviewStatusForm, ReviewDenyForm
+from coldfront.core.project.models import ProjectUser, Project
+from coldfront.core.user.utils import access_agreement_signed
+from coldfront.core.utils.common import utc_now_offset_aware, \
+    session_wizard_all_form_data
 from coldfront.core.utils.mail import send_email_template
 
 logger = logging.getLogger(__name__)
@@ -84,9 +98,11 @@ class SecureDirManageUsersView(LoginRequiredMixin,
                         Q(status__name='Active') &
                         Q(user__in=alloc_pis))]
 
+        # Users must have active cluster access to be added.
         users_to_add = set([proj_user.user for proj_user in
                             ProjectUser.objects.filter(project__in=projects,
-                                                       status__name='Active')])
+                                                       status__name='Active')
+                            if has_cluster_access(proj_user.user)])
 
         # Excluding active users that are already part of the allocation.
         users_to_exclude = set(alloc_user.user for alloc_user in
@@ -285,8 +301,8 @@ class SecureDirManageUsersView(LoginRequiredMixin,
                 f'Successfully requested to {self.action} '
                 f'{reviewed_users_count} user'
                 f'{"s" if reviewed_users_count > 1 else ""} '
-                f'{self.language_dict["preposition"]} the secure '
-                f'directory {self.directory}. BRC staff have '
+                f'{self.language_dict["preposition"]} the secure directory '
+                f'{self.directory}. {settings.PROGRAM_NAME_SHORT} staff have '
                 f'been notified.')
             messages.success(request, message)
 
@@ -757,3 +773,924 @@ class SecureDirManageUsersDenyRequestView(LoginRequiredMixin,
         return HttpResponseRedirect(
             reverse(f'secure-dir-manage-users-request-list',
                     kwargs={'action': self.action, 'status': 'pending'}))
+
+
+class SecureDirRequestLandingView(LoginRequiredMixin,
+                                  UserPassesTestMixin,
+                                  TemplateView):
+    """A view for the secure directory request landing page."""
+
+    template_name = \
+        'secure_dir/secure_dir_request/secure_dir_request_landing.html'
+    login_url = '/'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['project_pk'] = kwargs.get('pk', None)
+        return context
+
+    def test_func(self):
+        if self.request.user.is_superuser:
+            return True
+
+        access_agreement = access_agreement_signed(self.request.user)
+
+        eligible_pi = pi_eligible_to_request_secure_dir(self.request.user)
+
+        if eligible_pi and access_agreement:
+            return True
+
+        message = (
+            'You must be an eligible PI and sign the User Access Agreement '
+            'before you can request a new secure directory.')
+        messages.error(self.request, message)
+
+
+class SecureDirRequestWizard(LoginRequiredMixin,
+                             UserPassesTestMixin,
+                             SessionWizardView):
+
+    FORMS = [
+        ('data_description', SecureDirDataDescriptionForm),
+        ('rdm_consultation', SecureDirRDMConsultationForm),
+        # ('existing_pi', SecureDirExistingPIForm),
+        # ('existing_project', SecureDirExistingProjectForm),
+        ('directory_name', SecureDirDirectoryNamesForm)
+    ]
+
+    TEMPLATES = {
+        'data_description':
+            'secure_dir/secure_dir_request/data_description.html',
+        'rdm_consultation':
+            'secure_dir/secure_dir_request/rdm_consultation.html',
+        # 'existing_pi':
+        #     'secure_dir/secure_dir_request/existing_pi.html',
+        # 'existing_project':
+        #     'secure_dir/secure_dir_request/existing_project.html',
+        'directory_name':
+            'secure_dir/secure_dir_request/directory_name.html'
+    }
+
+    form_list = [
+        SecureDirDataDescriptionForm,
+        SecureDirRDMConsultationForm,
+        # SecureDirExistingPIForm,
+        # SecureDirExistingProjectForm,
+        SecureDirDirectoryNamesForm
+    ]
+
+    logger = logging.getLogger(__name__)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Define a lookup table from form name to step number.
+        self.step_numbers_by_form_name = {
+            name: i for i, (name, _) in enumerate(self.FORMS)}
+        self.project = None
+
+    def test_func(self):
+        if self.request.user.is_superuser:
+            return True
+
+        access_agreement = access_agreement_signed(self.request.user)
+
+        eligible_pi = pi_eligible_to_request_secure_dir(self.request.user)
+
+        if eligible_pi and access_agreement:
+            return True
+
+        message = (
+            'You must be an eligible PI and sign the User Access Agreement '
+            'before you can request a new secure directory.')
+        messages.error(self.request, message)
+
+    def dispatch(self, request, *args, **kwargs):
+        self.project = Project.objects.get(pk=kwargs.get('pk', None))
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, form, **kwargs):
+        context = super().get_context_data(form=form, **kwargs)
+        current_step = int(self.steps.current)
+        self.__set_data_from_previous_steps(current_step, context)
+
+        groups_path, scratch_path = get_default_secure_dir_paths()
+        context['groups_path'] = groups_path
+        context['scratch_path'] = scratch_path
+
+        return context
+
+    def get_form_kwargs(self, step=None):
+        kwargs = {}
+        step = int(step)
+        # The names of steps that require the past data.
+        step_names = [
+            'rdm_consultation'
+        ]
+        step_numbers = [
+            self.step_numbers_by_form_name[name] for name in step_names]
+        if step in step_numbers:
+            self.__set_data_from_previous_steps(step, kwargs)
+
+        return kwargs
+
+    def get_template_names(self):
+        return [self.TEMPLATES[self.FORMS[int(self.steps.current)][0]]]
+
+    def done(self, form_list, **kwargs):
+        """Perform processing and store information in a request
+        object."""
+        redirect_url = '/'
+        try:
+            form_data = session_wizard_all_form_data(
+                form_list, kwargs['form_dict'], len(self.form_list))
+
+            request_kwargs = {
+                'requester': self.request.user,
+            }
+
+            data_description = self.__get_data_description(form_data)
+            rdm_consultation = self.__get_rdm_consultation(form_data)
+            existing_project = self.project
+            directory_name = self.__get_directory_name(form_data)
+
+            # Store transformed form data in a request.
+            request_kwargs['data_description'] = data_description
+            request_kwargs['rdm_consultation'] = rdm_consultation
+            request_kwargs['project'] = existing_project
+            request_kwargs['directory_name'] = directory_name
+            request_kwargs['status'] = \
+                SecureDirRequestStatusChoice.objects.get(
+                    name='Under Review')
+            request_kwargs['request_time'] = utc_now_offset_aware()
+
+            # Check that the project does not have an existing Secure
+            # Directory or Secure Directory Request.
+            sec_dir_allocations = \
+                get_secure_dir_allocations().filter(project=existing_project)
+
+            sec_dir_requests = \
+                SecureDirRequest.objects.\
+                    filter(project=existing_project).\
+                    exclude(status__name='Denied')
+
+            if sec_dir_allocations.exists() or sec_dir_requests.exists():
+                message = f'The project {existing_project.name} already has ' \
+                          f'a secure directory associated with it.'
+                messages.error(self.request, message)
+                return HttpResponseRedirect(redirect_url)
+
+            request = SecureDirRequest.objects.create(
+                **request_kwargs)
+
+            # Send a notification email to admins.
+            if settings.EMAIL_ENABLED:
+                try:
+                    self.send_admin_notification_email(request)
+                except Exception as e:
+                    self.logger.error(
+                        'Failed to send notification email. Details:\n')
+                    self.logger.exception(e)
+                # Send a notification email to the PIs.
+                try:
+                    self.send_pi_notification_email(request)
+                except Exception as e:
+                    self.logger.error(
+                        'Failed to send notification email. Details:\n')
+                    self.logger.exception(e)
+
+        except Exception as e:
+            self.logger.exception(e)
+            message = 'Unexpected failure. Please contact an administrator.'
+            messages.error(self.request, message)
+        else:
+            message = (
+                'Thank you for your submission. It will be reviewed and '
+                'processed by administrators.')
+            messages.success(self.request, message)
+
+        return HttpResponseRedirect(redirect_url)
+
+    @staticmethod
+    def condition_dict():
+        view = SecureDirRequestWizard
+        return {
+            '1': view.show_rdm_consultation_form_condition
+        }
+
+    def show_rdm_consultation_form_condition(self):
+        step_name = 'data_description'
+        step = str(self.step_numbers_by_form_name[step_name])
+        cleaned_data = self.get_cleaned_data_for_step(step) or {}
+        return cleaned_data.get('rdm_consultation', False)
+
+    def __get_data_description(self, form_data):
+        """Return the data description the user submitted."""
+        step_number = self.step_numbers_by_form_name['data_description']
+        data = form_data[step_number]
+        return data.get('data_description')
+
+    def __get_rdm_consultation(self, form_data):
+        """Return the consultants the user spoke to."""
+        step_number = self.step_numbers_by_form_name['rdm_consultation']
+        data = form_data[step_number]
+        return data.get('rdm_consultants', None)
+
+    def __get_directory_name(self, form_data):
+        """Return the name of the directory."""
+        step_number = self.step_numbers_by_form_name['directory_name']
+        data = form_data[step_number]
+        return data.get('directory_name', None)
+
+    def __set_data_from_previous_steps(self, step, dictionary):
+        """Update the given dictionary with data from previous steps."""
+        rdm_consultation_step = \
+            self.step_numbers_by_form_name['rdm_consultation']
+        if step > rdm_consultation_step:
+            rdm_consultation_form_data = self.get_cleaned_data_for_step(
+                str(rdm_consultation_step))
+            dictionary.update({'breadcrumb_rdm_consultation':
+                                   'Yes' if rdm_consultation_form_data
+                                   else 'No'})
+
+        dictionary.update({'breadcrumb_project': f'Project: {self.project.name}'})
+
+    def send_admin_notification_email(self, request):
+        requester = request.requester
+        requester_str = (
+            f'{requester.first_name} {requester.last_name} ({requester.email})')
+
+        review_url = urljoin(
+            settings.CENTER_BASE_URL,
+            reverse('secure-dir-request-detail', kwargs={'pk': request.pk}))
+
+        context = {
+            'project_name': request.project.name,
+            'requester_str': requester_str,
+            'review_url': review_url,
+        }
+
+        send_email_template(
+            f'New Secure Directory Request',
+            'email/secure_dir_request/secure_dir_new_request_admin.txt',
+            context,
+            settings.EMAIL_SENDER,
+            settings.EMAIL_ADMIN_LIST)
+
+    def send_pi_notification_email(self, request):
+        requester = request.requester
+        requester_str = (
+            f'{requester.first_name} {requester.last_name} ({requester.email})')
+
+        review_url = urljoin(
+            settings.CENTER_BASE_URL,
+            reverse('secure-dir-request-detail', kwargs={'pk': request.pk}))
+
+        pi_emails = request.project.pis_emails()
+        pi_emails.remove(requester.email)
+
+        context = {
+            'project_name': request.project.name,
+            'requester_str': requester_str,
+            'review_url': review_url,
+        }
+
+        send_email_template(
+            f'New Secure Directory Request',
+            'email/secure_dir_request/secure_dir_new_request_pi.txt',
+            context,
+            settings.EMAIL_SENDER,
+            pi_emails)
+
+
+class SecureDirRequestListView(LoginRequiredMixin,
+                               UserPassesTestMixin,
+                               TemplateView):
+
+    template_name = 'secure_dir/secure_dir_request/secure_dir_request_list.html'
+    login_url = '/'
+    # Show completed requests if True; else, show pending requests.
+    completed = False
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.has_perm('allocation.view_securedirrequest'):
+            return True
+
+        message = (
+            'You do not have permission to view the previous page.')
+        messages.error(self.request, message)
+
+    def get_queryset(self):
+        order_by = self.request.GET.get('order_by')
+        if order_by:
+            direction = self.request.GET.get('direction')
+            if direction == 'asc':
+                direction = ''
+            else:
+                direction = '-'
+            order_by = direction + order_by
+        else:
+            order_by = 'id'
+
+        return SecureDirRequest.objects.order_by(order_by)
+
+    def get_context_data(self, **kwargs):
+        """Include either pending or completed requests."""
+        context = super().get_context_data(**kwargs)
+        kwargs = {}
+
+        request_list = self.get_queryset()
+
+        if self.completed:
+            status__name__in = [
+                'Approved - Complete', 'Denied']
+        else:
+            status__name__in = ['Under Review', 'Approved - Processing']
+
+        kwargs['status__name__in'] = status__name__in
+        context['secure_dir_request_list'] = request_list.filter(**kwargs)
+
+        context['request_filter'] = (
+            'completed' if self.completed else 'pending')
+
+        return context
+
+
+class SecureDirRequestMixin(object):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.request_obj = None
+
+    def redirect_if_disallowed_status(self, http_request,
+                                      disallowed_status_names=(
+                                              'Approved - Complete',
+                                              'Denied')):
+        """Return a redirect response to the detail view for this
+        project request if its status has one of the given disallowed
+        names, after sending a message to the user. Otherwise, return
+        None."""
+        if not isinstance(self.request_obj, SecureDirRequest):
+            raise TypeError(
+                f'Request object has unexpected type '
+                f'{type(self.request_obj)}.')
+        status_name = self.request_obj.status.name
+        if status_name in disallowed_status_names:
+            message = (
+                f'You cannot perform this action on a request with status '
+                f'{status_name}.')
+            messages.error(http_request, message)
+            return HttpResponseRedirect(
+                self.request_detail_url(self.request_obj.pk))
+        return None
+
+    @staticmethod
+    def request_detail_url(pk):
+        """Return the URL to the detail view for the request with the
+        given primary key."""
+        return reverse('secure-dir-request-detail', kwargs={'pk': pk})
+
+    def set_request_obj(self, pk):
+        """Set this instance's request_obj to be the SecureDirRequest with
+        the given primary key."""
+        self.request_obj = get_object_or_404(SecureDirRequest, pk=pk)
+
+
+class SecureDirRequestDetailView(LoginRequiredMixin,
+                                 UserPassesTestMixin,
+                                 SecureDirRequestMixin,
+                                 DetailView):
+    model = SecureDirRequest
+    template_name = \
+        'secure_dir/secure_dir_request/secure_dir_request_detail.html'
+    login_url = '/'
+    context_object_name = 'secure_dir_request'
+
+    logger = logging.getLogger(__name__)
+
+    error_message = 'Unexpected failure. Please contact an administrator.'
+
+    redirect = reverse_lazy('secure-dir-pending-request-list')
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.has_perm('allocation.view_securedirrequest'):
+            return True
+
+        pis = self.request_obj.project.projectuser_set.filter(
+            role__name='Principal Investigator',
+            status__name='Active').values_list('user__pk', flat=True)
+        if self.request.user.pk in pis:
+            return True
+
+        message = 'You do not have permission to view the previous page.'
+        messages.error(self.request, message)
+
+    def dispatch(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        self.set_request_obj(pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        try:
+            latest_update_timestamp = \
+                self.request_obj.latest_update_timestamp()
+            if not latest_update_timestamp:
+                latest_update_timestamp = 'No updates yet.'
+            else:
+                # TODO: Upgrade to Python 3.7+ to use this.
+                # latest_update_timestamp = datetime.datetime.fromisoformat(
+                #     latest_update_timestamp)
+                latest_update_timestamp = iso8601.parse_date(
+                    latest_update_timestamp)
+        except Exception as e:
+            self.logger.exception(e)
+            messages.error(self.request, self.error_message)
+            latest_update_timestamp = 'Failed to determine timestamp.'
+        context['latest_update_timestamp'] = latest_update_timestamp
+
+        if self.request_obj.status.name == 'Denied':
+            try:
+                denial_reason = self.request_obj.denial_reason()
+                category = denial_reason.category
+                justification = denial_reason.justification
+                timestamp = denial_reason.timestamp
+            except Exception as e:
+                self.logger.exception(e)
+                messages.error(self.request, self.error_message)
+                category = 'Unknown Category'
+                justification = (
+                    'Failed to determine denial reason. Please contact an '
+                    'administrator.')
+                timestamp = 'Unknown Timestamp'
+            context['denial_reason'] = {
+                'category': category,
+                'justification': justification,
+                'timestamp': timestamp,
+            }
+            context['support_email'] = settings.CENTER_HELP_EMAIL
+
+        context['checklist'] = self.get_checklist()
+        context['setup_status'] = self.get_setup_status()
+        context['is_checklist_complete'] = self.is_checklist_complete()
+
+        context['is_allowed_to_manage_request'] = \
+            self.request.user.is_superuser
+
+        set_sec_dir_context(context, self.request_obj)
+
+        return context
+
+    def get_checklist(self):
+        """Return a nested list, where each row contains the details of
+        one item on the checklist.
+        Each row is of the form: [task text, status name, latest update
+        timestamp, is "Manage" button available, URL of "Manage"
+        button.]"""
+        pk = self.request_obj.pk
+        state = self.request_obj.state
+        checklist = []
+
+        rdm = state['rdm_consultation']
+        checklist.append([
+            'Confirm that the PI has consulted with RDM.',
+            rdm['status'],
+            rdm['timestamp'],
+            True,
+            reverse(
+                'secure-dir-request-review-rdm-consultation', kwargs={'pk': pk})
+        ])
+        rdm_consulted = rdm['status'] == 'Approved'
+
+        mou = state['mou']
+        checklist.append([
+            'Confirm that the PI has signed the Memorandum of Understanding.',
+            mou['status'],
+            mou['timestamp'],
+            True,
+            reverse(
+                'secure-dir-request-review-mou', kwargs={'pk': pk})
+        ])
+        mou_signed = mou['status'] == 'Approved'
+
+        setup = state['setup']
+        checklist.append([
+            'Perform secure directory setup on the cluster.',
+            self.get_setup_status(),
+            setup['timestamp'],
+            rdm_consulted and mou_signed,
+            reverse('secure-dir-request-review-setup', kwargs={'pk': pk})
+        ])
+
+        return checklist
+
+    def post(self, request, *args, **kwargs):
+        """Approve the request."""
+        if not self.request.user.is_superuser:
+            message = 'You do not have permission to access this page.'
+            messages.error(request, message)
+            pk = self.request_obj.pk
+
+            return HttpResponseRedirect(
+                reverse('secure-dir-request-detail', kwargs={'pk': pk}))
+
+        if not self.is_checklist_complete():
+            message = 'Please complete the checklist before final activation.'
+            messages.error(request, message)
+            pk = self.request_obj.pk
+            return HttpResponseRedirect(
+                reverse('secure-dir-request-detail', kwargs={'pk': pk}))
+
+        # Check that the project does not have any Secure Directories yet.
+        sec_dir_allocations = get_secure_dir_allocations()
+        if sec_dir_allocations.filter(project=self.request_obj.project).exists():
+            message = f'The project {self.request_obj.project.name} already ' \
+                      f'has a secure directory associated with it.'
+            messages.error(self.request, message)
+            pk = self.request_obj.pk
+            return HttpResponseRedirect(
+                reverse('secure-dir-request-detail', kwargs={'pk': pk}))
+
+        # Approve the request and send emails to the PI and requester.
+        runner = SecureDirRequestApprovalRunner(self.request_obj)
+        runner.run()
+
+        success_messages, error_messages = runner.get_messages()
+
+        for message in success_messages:
+            messages.success(self.request, message)
+        for message in error_messages:
+            messages.error(self.request, message)
+
+        return HttpResponseRedirect(self.redirect)
+
+    def get_setup_status(self):
+        """Return one of the following statuses for the 'setup' step of
+        the request: 'N/A', 'Pending', 'Completed'."""
+        state = self.request_obj.state
+        if (state['rdm_consultation']['status'] == 'Denied' or
+                state['mou']['status'] == 'Denied'):
+            return 'N/A'
+        return state['setup']['status']
+
+    def is_checklist_complete(self):
+        status_choice = secure_dir_request_state_status(self.request_obj)
+        return (status_choice.name == 'Approved - Processing' and
+                self.request_obj.state['setup']['status'] == 'Completed')
+
+
+class SecureDirRequestReviewRDMConsultView(LoginRequiredMixin,
+                                           UserPassesTestMixin,
+                                           SecureDirRequestMixin,
+                                           FormView):
+    form_class = SecureDirRDMConsultationReviewForm
+    template_name = (
+        'secure_dir/secure_dir_request/secure_dir_consult_rdm.html')
+    login_url = '/'
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+        message = 'You do not have permission to view the previous page.'
+        messages.error(self.request, message)
+        return False
+
+    def dispatch(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        self.set_request_obj(pk=pk)
+        redirect = self.redirect_if_disallowed_status(request)
+        if redirect is not None:
+            return redirect
+        return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        form_data = form.cleaned_data
+        status = form_data['status']
+        justification = form_data['justification']
+        rdm_update = form_data['rdm_update']
+        timestamp = utc_now_offset_aware().isoformat()
+        self.request_obj.state['rdm_consultation'] = {
+            'status': status,
+            'justification': justification,
+            'timestamp': timestamp,
+        }
+        self.request_obj.status = \
+            secure_dir_request_state_status(self.request_obj)
+        self.request_obj.rdm_consultation = rdm_update
+        self.request_obj.save()
+
+        if status == 'Denied':
+            runner = SecureDirRequestDenialRunner(self.request_obj)
+            runner.run()
+
+        message = (
+            f'RDM consultation status for {self.request_obj.project.name}\'s '
+            f'secure directory request has been set to {status}.')
+        messages.success(self.request, message)
+
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        set_sec_dir_context(context, self.request_obj)
+        return context
+
+    def get_initial(self):
+        initial = super().get_initial()
+        rdm_consultation = self.request_obj.state['rdm_consultation']
+        initial['status'] = rdm_consultation['status']
+        initial['justification'] = rdm_consultation['justification']
+        initial['rdm_update'] = self.request_obj.rdm_consultation
+
+        return initial
+
+    def get_success_url(self):
+        return reverse(
+            'secure-dir-request-detail',
+            kwargs={'pk': self.kwargs.get('pk')})
+
+
+class SecureDirRequestReviewMOUView(LoginRequiredMixin,
+                                    UserPassesTestMixin,
+                                    SecureDirRequestMixin,
+                                    FormView):
+    form_class = ReviewStatusForm
+    template_name = (
+        'secure_dir/secure_dir_request/secure_dir_mou.html')
+    login_url = '/'
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+        message = 'You do not have permission to view the previous page.'
+        messages.error(self.request, message)
+        return False
+
+    def dispatch(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        self.set_request_obj(pk=pk)
+        redirect = self.redirect_if_disallowed_status(request)
+        if redirect is not None:
+            return redirect
+        return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        form_data = form.cleaned_data
+        status = form_data['status']
+        justification = form_data['justification']
+        timestamp = utc_now_offset_aware().isoformat()
+        self.request_obj.state['mou'] = {
+            'status': status,
+            'justification': justification,
+            'timestamp': timestamp,
+        }
+        self.request_obj.status = \
+            secure_dir_request_state_status(self.request_obj)
+        self.request_obj.save()
+
+        if status == 'Denied':
+            runner = SecureDirRequestDenialRunner(self.request_obj)
+            runner.run()
+
+        message = (
+            f'MOU status for the secure directory request of project '
+            f'{self.request_obj.project.pk} has been set to {status}.')
+        messages.success(self.request, message)
+
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        set_sec_dir_context(context, self.request_obj)
+        return context
+
+    def get_initial(self):
+        initial = super().get_initial()
+        mou = self.request_obj.state['mou']
+        initial['status'] = mou['status']
+        initial['justification'] = mou['justification']
+        return initial
+
+    def get_success_url(self):
+        return reverse(
+            'secure-dir-request-detail',
+            kwargs={'pk': self.kwargs.get('pk')})
+
+
+class SecureDirRequestReviewSetupView(LoginRequiredMixin,
+                                      UserPassesTestMixin,
+                                      SecureDirRequestMixin,
+                                      FormView):
+    form_class = SecureDirSetupForm
+    template_name = (
+        'secure_dir/secure_dir_request/secure_dir_setup.html')
+    login_url = '/'
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+        message = 'You do not have permission to view the previous page.'
+        messages.error(self.request, message)
+        return False
+
+    def dispatch(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        self.set_request_obj(pk=pk)
+        redirect = self.redirect_if_disallowed_status(request)
+        if redirect is not None:
+            return redirect
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['dir_name'] = self.request_obj.directory_name
+        kwargs['request_pk'] = self.request_obj.pk
+        return kwargs
+
+    def form_valid(self, form):
+        form_data = form.cleaned_data
+        status = form_data['status']
+        justification = form_data['justification']
+        directory_name = form_data['directory_name']
+        timestamp = utc_now_offset_aware().isoformat()
+        self.request_obj.state['setup'] = {
+            'status': status,
+            'justification': justification,
+            'timestamp': timestamp,
+        }
+        self.request_obj.status = \
+            secure_dir_request_state_status(self.request_obj)
+        if directory_name:
+            self.request_obj.directory_name = directory_name
+        self.request_obj.save()
+
+        if status == 'Denied':
+            runner = SecureDirRequestDenialRunner(self.request_obj)
+            runner.run()
+
+        message = (
+            f'Setup status for {self.request_obj.project.name}\'s '
+            f'secure directory request has been set to {status}.')
+        messages.success(self.request, message)
+
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        set_sec_dir_context(context, self.request_obj)
+        return context
+
+    def get_initial(self):
+        initial = super().get_initial()
+        setup = self.request_obj.state['setup']
+        initial['status'] = setup['status']
+        initial['justification'] = setup['justification']
+        return initial
+
+    def get_success_url(self):
+        return reverse(
+            'secure-dir-request-detail',
+            kwargs={'pk': self.kwargs.get('pk')})
+
+
+class SecureDirRequestReviewDenyView(LoginRequiredMixin, UserPassesTestMixin,
+                                     SecureDirRequestMixin, FormView):
+    form_class = ReviewDenyForm
+    template_name = (
+        'secure_dir/secure_dir_request/secure_dir_review_deny.html')
+    login_url = '/'
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+        message = 'You do not have permission to view the previous page.'
+        messages.error(self.request, message)
+        return False
+
+    def dispatch(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        self.set_request_obj(pk)
+        redirect = self.redirect_if_disallowed_status(request)
+        if redirect is not None:
+            return redirect
+        return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        form_data = form.cleaned_data
+        justification = form_data['justification']
+        timestamp = utc_now_offset_aware().isoformat()
+        self.request_obj.state['other'] = {
+            'justification': justification,
+            'timestamp': timestamp,
+        }
+        self.request_obj.status = \
+            secure_dir_request_state_status(self.request_obj)
+
+        runner = SecureDirRequestDenialRunner(self.request_obj)
+        runner.run()
+
+        self.request_obj.save()
+
+        message = (
+            f'Status for {self.request_obj.project.name}\'s '
+            f'secure directory request has been set to '
+            f'{self.request_obj.status}.')
+        messages.success(self.request, message)
+
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        set_sec_dir_context(context, self.request_obj)
+        return context
+
+    def get_initial(self):
+        initial = super().get_initial()
+        other = self.request_obj.state['other']
+        initial['justification'] = other['justification']
+        return initial
+
+    def get_success_url(self):
+        return reverse(
+            'secure-dir-request-detail',
+            kwargs={'pk': self.kwargs.get('pk')})
+
+
+class SecureDirRequestUndenyRequestView(LoginRequiredMixin,
+                                        UserPassesTestMixin,
+                                        SecureDirRequestMixin,
+                                        View):
+    login_url = '/'
+
+    def test_func(self):
+        """UserPassesTestMixin tests."""
+        if self.request.user.is_superuser:
+            return True
+        message = (
+            'You do not have permission to undeny a secure directory request.')
+        messages.error(self.request, message)
+
+    def dispatch(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        self.set_request_obj(pk)
+
+        disallowed_status_names = list(
+            SecureDirRequestStatusChoice.objects.filter(
+                ~Q(name='Denied')).values_list('name', flat=True))
+        redirect = self.redirect_if_disallowed_status(
+            request, disallowed_status_names=disallowed_status_names)
+        if redirect is not None:
+            return redirect
+
+        return super().dispatch(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        state = self.request_obj.state
+
+        rdm_consultation = state['rdm_consultation']
+        if rdm_consultation['status'] == 'Denied':
+            rdm_consultation['status'] = 'Pending'
+            rdm_consultation['timestamp'] = ''
+            rdm_consultation['justification'] = ''
+
+        mou = state['mou']
+        if mou['status'] == 'Denied':
+            mou['status'] = 'Pending'
+            mou['timestamp'] = ''
+            mou['justification'] = ''
+
+        setup = state['setup']
+        if setup['status'] != 'Pending':
+            setup['status'] = 'Pending'
+            setup['timestamp'] = ''
+            setup['justification'] = ''
+
+        other = state['other']
+        if other['timestamp']:
+            other['justification'] = ''
+            other['timestamp'] = ''
+
+        self.request_obj.status = \
+            secure_dir_request_state_status(self.request_obj)
+        self.request_obj.save()
+
+        message = (
+            f'Secure directory request for {self.request_obj.project.name} has '
+            f'been un-denied and will need to be reviewed again.')
+        messages.success(request, message)
+
+        return HttpResponseRedirect(
+            reverse(
+                'secure-dir-request-detail',
+                kwargs={'pk': kwargs.get('pk')}))

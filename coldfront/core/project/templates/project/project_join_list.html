@@ -2,12 +2,14 @@
 {% load common_tags %}
 {% load crispy_forms_tags %}
 {% load static %}
+{% load feature_flags %}
 
 {% block title %}
 Project List
 {% endblock %}
 
 {% block content %}
+
 <h1>Join a Project</h1><hr>
 
 
@@ -50,7 +52,7 @@ Project List
           <td>{{ project.name }}</td>
           <td>{% for pi in project.pis %}{{ pi.username }}<br>{% endfor %}</td>
           <td style="text-align: justify; text-justify: inter-word;">{{ project.title }}</td>
-          <td>{{ project.cluster_name }}</td>
+          <td>{{ project.cluster_name|upper }}</td>
         </tr>
       {% endfor %}
     </tbody>
@@ -60,6 +62,12 @@ Project List
 <br>
 <b>Make a New Request</b>
 <hr>
+
+{% if need_host %}
+  <div>If you are joining your first project and are not an LBL employee with an LBL email (@lbl.gov), you must
+    select an eligible PI to become your host user when requesting to join a project.</div>
+    <hr>
+{% endif %}
 
 {% if expand_accordion == "show" or project_list or user.is_superuser%}
 <div class="mb-3" id="accordion">
@@ -84,6 +92,7 @@ Project List
 {% endif %}
 {% if project_list %}
 <strong>Projects: {{projects_count}}  </strong>
+
 <div class="table-responsive">
   <table class="table table-sm">
     <thead>
@@ -150,7 +159,7 @@ Project List
           {% endfor %}
         </td>
         <td style="text-align: justify; text-justify: inter-word;">{{ project.title }}</td>
-        <td>{{ project.cluster_name }}</td>
+        <td>{{ project.cluster_name|upper }}</td>
 <!--        <td>{{ project.field_of_science.description }}</td>-->
         <td>{{ project.status.name }}</td>
         <td>
@@ -176,6 +185,9 @@ Project List
                             <label for="reason{{ project.pk }}Input">Reason*</label>
                             <textarea required id="reason{{ project.pk }}Input" aria-describedby="reason{{ project.pk }}Help" class="form-control" name="reason" minlength="20" maxlength="1000"></textarea>
                             <small id="reason{{ project.pk }}Help" class="form-text text-muted">Please provide a short reason that will be reviewed by the project managers.</small>
+                            {% if need_host %}
+                              {{ selecthostform_dict|get_value_from_dict:project.name | crispy }}
+                            {% endif %}
                         </div>
 
                         <div class="modal-footer">

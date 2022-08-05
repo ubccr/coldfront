@@ -1,6 +1,9 @@
 {% extends "common/base.html" %}
 {% load common_tags %}
+{% load feature_flags %}
 {% block content %}
+{% load feature_flags %}
+{% flag_enabled 'SECURE_DIRS_REQUESTABLE' as secure_dirs_requestable %}
 
   <h1>Request Hub</h1>
 
@@ -10,16 +13,16 @@
       <tr>
         <td>
           {% if show_all %}
-              Below are all of the requests in MyBRC. Click on a request
+              Below are all the requests in {{ PORTAL_NAME }}. Click on a request
               section to view requests of that type. To perform actions on a specific request,
               click the button to go to the request's main page and perform the actions there.
               Click <a href="{% url 'request-hub' %}">here</a> to view only your requests.
           {% else %}
-              Below are all of your requests in MyBRC. Click on a request
+              Below are all of your requests in {{ PORTAL_NAME }}. Click on a request
               section to view your requests of that type.
 
               {% if admin_staff %}
-                Click <a href="{% url 'request-hub-admin' %}">here</a> to view all requests in MyBRC.
+                Click <a href="{% url 'request-hub-admin' %}">here</a> to view all requests in {{ PORTAL_NAME }}.
               {% endif %}
           {% endif %}
         </td>
@@ -63,21 +66,33 @@
     {% include 'request_hub/request_section.html' %}
   {% endwith %}
 
-  {% with request_obj=secure_dir_join_request_obj %}
-    {% include 'request_hub/request_section.html' %}
-  {% endwith %}
+  {% if secure_dirs_requestable %}
+    {% with request_obj=secure_dir_request_obj %}
+      {% include 'request_hub/request_section.html' %}
+    {% endwith %}
 
-  {% with request_obj=secure_dir_remove_request_obj %}
-    {% include 'request_hub/request_section.html' %}
-  {% endwith %}
+    {% with request_obj=secure_dir_join_request_obj %}
+      {% include 'request_hub/request_section.html' %}
+    {% endwith %}
 
-  {% with request_obj=su_purchase_request_obj %}
-    {% include 'request_hub/request_section.html' %}
-  {% endwith %}
+    {% with request_obj=secure_dir_remove_request_obj %}
+      {% include 'request_hub/request_section.html' %}
+    {% endwith %}
+  {% endif %}
 
-  {% with request_obj=vector_project_request_obj %}
-    {% include 'request_hub/request_section.html' %}
-  {% endwith %}
+  {% flag_enabled 'SERVICE_UNITS_PURCHASABLE' as service_units_purchasable %}
+  {% if service_units_purchasable %}
+    {% with request_obj=su_purchase_request_obj %}
+      {% include 'request_hub/request_section.html' %}
+    {% endwith %}
+  {% endif %}
+
+  {% flag_enabled 'BRC_ONLY' as brc_only %}
+  {% if brc_only %}
+    {% with request_obj=vector_project_request_obj %}
+      {% include 'request_hub/request_section.html' %}
+    {% endwith %}
+  {% endif %}
 
   <script>
     {# set variables to be used for scroll position #}

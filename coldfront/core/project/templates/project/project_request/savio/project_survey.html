@@ -4,7 +4,7 @@
 
 
 {% block title %}
-Savio Project Request - Survey
+{{ PRIMARY_CLUSTER_NAME }} Project Request - Survey
 {% endblock %}
 
 
@@ -18,10 +18,10 @@ Savio Project Request - Survey
 <script type='text/javascript' src="{% static 'selectize/selectize.min.js' %}"></script>
 <link rel='stylesheet' type='text/css' href="{% static 'selectize/selectize.bootstrap3.css' %}"/>
 
-<h1>Savio: Survey</h1><hr>
+<h1>{{ PRIMARY_CLUSTER_NAME }}: Survey</h1><hr>
 
 <ol class="breadcrumb">
-  <li>Allocation Type: {{ allocation_type }}</li>
+  <li>Allowance: {{ computing_allowance.name }}</li>
   <li>&nbsp;<i class="fas fa-angle-double-right"></i>&nbsp;</li>
   <li>Allocation Period: {{ allocation_period.name }}</li>
   <li>&nbsp;<i class="fas fa-angle-double-right"></i>&nbsp;</li>

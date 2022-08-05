@@ -1,14 +1,28 @@
-from coldfront.core.user.models import ExpiringToken
-from django.contrib.auth.models import User
-from django.core.management import call_command
-from django.test import TestCase
-from flags.state import enable_flag
+from copy import deepcopy
 from http import HTTPStatus
-from rest_framework.test import APIClient
 import os
 import sys
 
+from django.conf import settings
+from django.contrib.auth.models import User
+from django.core.management import call_command
+from django.test import override_settings
+from django.test import TestCase
 
+from flags.state import enable_flag
+from rest_framework.test import APIClient
+
+from coldfront.core.user.models import ExpiringToken
+
+
+# TODO: Because FLAGS is set directly in settings, the disable_flag method has
+# TODO: no effect. A better approach is to have a dedicated test_settings
+# TODO: module that is used exclusively for testing.
+FLAGS_COPY = deepcopy(settings.FLAGS)
+FLAGS_COPY.pop('LRC_ONLY')
+
+
+@override_settings(FLAGS=FLAGS_COPY, PRIMARY_CLUSTER_NAME='Savio')
 class TestAPIBase(TestCase):
     """A base class for testing the API."""
 
@@ -126,6 +140,7 @@ class TestAPIBase(TestCase):
         call_command('add_resource_defaults')
         call_command('add_allocation_defaults')
         call_command('add_accounting_defaults')
+        call_command('add_allowance_defaults')
         call_command('create_allocation_periods')
         call_command('create_staff_group')
         sys.stdout = sys.__stdout__

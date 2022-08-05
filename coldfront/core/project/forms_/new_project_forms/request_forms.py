@@ -1,19 +1,24 @@
 from coldfront.core.allocation.forms import AllocationPeriodChoiceField
 from coldfront.core.allocation.models import AllocationPeriod
-from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.project.forms import DisabledChoicesSelectWidget
 from coldfront.core.project.models import Project
-from coldfront.core.project.models import ProjectUser
-from coldfront.core.project.models import ProjectUserRoleChoice
-from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils_.new_project_utils import non_denied_new_project_request_statuses
+from coldfront.core.project.utils_.new_project_utils import pis_with_new_project_requests_pks
+from coldfront.core.project.utils_.new_project_utils import project_pi_pks
 from coldfront.core.project.utils_.renewal_utils import non_denied_renewal_request_statuses
-from coldfront.core.user.models import EmailAddress
+from coldfront.core.project.utils_.renewal_utils import pis_with_renewal_requests_pks
+from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
+from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
+from coldfront.core.resource.utils_.allowance_utils.constants import LRCAllowances
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
+from coldfront.core.user.utils import is_lbl_employee
 from coldfront.core.utils.common import utc_now_offset_aware
 
 from django import forms
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.core.exceptions import ImproperlyConfigured
 from django.core.validators import MaxValueValidator
 from django.core.validators import MinLengthValidator
 from django.core.validators import MinValueValidator
@@ -44,62 +49,93 @@ class SavioProjectAllocationPeriodForm(forms.Form):
         required=True)
 
     def __init__(self, *args, **kwargs):
-        self.allocation_type = kwargs.pop('allocation_type', None)
+        computing_allowance = kwargs.pop('computing_allowance', None)
         super().__init__(*args, **kwargs)
         display_timezone = pytz.timezone(settings.DISPLAY_TIME_ZONE)
         queryset = self.allocation_period_choices(
-            self.allocation_type, utc_now_offset_aware(), display_timezone)
+            computing_allowance, utc_now_offset_aware(), display_timezone)
         self.fields['allocation_period'] = AllocationPeriodChoiceField(
-            allocation_type=self.allocation_type,
+            computing_allowance=computing_allowance,
             label='Allocation Period',
             queryset=queryset,
             required=True)
 
-    def allocation_period_choices(self, allocation_type, utc_dt,
+    def allocation_period_choices(self, computing_allowance, utc_dt,
                                   display_timezone):
         """Return a queryset of AllocationPeriods to be available in the
         form if rendered at the given datetime, whose tzinfo must be
         pytz.utc and which will be converted to the given timezone, for
-        an allocation with the given type."""
+        the given computing allowance."""
+        none = AllocationPeriod.objects.none()
+        if not computing_allowance:
+            return none
+
         if utc_dt.tzinfo != pytz.utc:
             raise ValueError(f'Datetime {utc_dt}\'s tzinfo is not pytz.utc.')
         dt = utc_dt.astimezone(display_timezone)
         date = datetime.date(dt)
         f = Q(end_date__gte=date)
         order_by = ('start_date', 'end_date')
-        if allocation_type in ('FCA', 'PCA'):
-            if flag_enabled('ALLOCATION_RENEWAL_FOR_NEXT_PERIOD_REQUESTABLE'):
-                # If projects for the next period may be requested, include it.
-                started_before_date = (
-                    date + timedelta(days=self.NUM_DAYS_IN_ALLOCATION_YEAR))
-                # Special handling: During the time in which renewals for the
-                # next period can be requested, the first option should be the
-                # period that is most relevant to most users (i.e., the
-                # upcoming one).
-                order_by = ('-start_date', '-end_date')
-            else:
-                # Otherwise, include only the current period.
-                started_before_date = date
-            f = f & Q(start_date__lte=started_before_date)
-            f = f & Q(name__startswith='Allowance Year')
-        elif allocation_type == 'ICA':
+
+        if flag_enabled('BRC_ONLY'):
+            return self._allocation_period_choices_brc(
+                computing_allowance, date, f, order_by)
+        elif flag_enabled('LRC_ONLY'):
+            return self._allocation_period_choices_lrc(
+                computing_allowance, date, f, order_by)
+        return none
+
+    def _allocation_period_choices_brc(self, computing_allowance, date, f,
+                                       order_by):
+        """TODO"""
+        allowance_name = computing_allowance.name
+        if allowance_name in (BRCAllowances.FCA, BRCAllowances.PCA):
+            return self._allocation_period_choices_allowance_year(
+                date, f, order_by)
+        elif allowance_name == BRCAllowances.ICA:
             num_days = self.NUM_DAYS_BEFORE_ICA
             f = f & Q(start_date__lte=date + timedelta(days=num_days))
             f = f & (
                 Q(name__startswith='Fall Semester') |
                 Q(name__startswith='Spring Semester') |
                 Q(name__startswith='Summer Sessions'))
+            return AllocationPeriod.objects.filter(f).order_by(*order_by)
+        return AllocationPeriod.objects.none()
+
+    def _allocation_period_choices_lrc(self, computing_allowance, date, f,
+                                       order_by):
+        """TODO"""
+        allowance_name = computing_allowance.name
+        if allowance_name == LRCAllowances.PCA:
+            return self._allocation_period_choices_allowance_year(
+                date, f, order_by)
+        return AllocationPeriod.objects.none()
+
+    def _allocation_period_choices_allowance_year(self, date, f, order_by):
+        """TODO"""
+        if flag_enabled('ALLOCATION_RENEWAL_FOR_NEXT_PERIOD_REQUESTABLE'):
+            # If projects for the next period may be requested, include it.
+            started_before_date = (
+                    date + timedelta(days=self.NUM_DAYS_IN_ALLOCATION_YEAR))
+            # Special handling: During the time in which renewals for the
+            # next period can be requested, the first option should be the
+            # period that is most relevant to most users (i.e., the
+            # upcoming one).
+            order_by = ('-start_date', '-end_date')
         else:
-            return AllocationPeriod.objects.none()
+            # Otherwise, include only the current period.
+            started_before_date = date
+        f = f & Q(start_date__lte=started_before_date)
+        f = f & Q(name__startswith='Allowance Year')
         return AllocationPeriod.objects.filter(f).order_by(*order_by)
 
 
-class SavioProjectAllocationTypeForm(forms.Form):
+class ComputingAllowanceForm(forms.Form):
 
-    allocation_type = forms.ChoiceField(
-        choices=SavioProjectAllocationRequest.ALLOCATION_TYPE_CHOICES,
-        label='Allocation Type',
-        widget=forms.Select())
+    computing_allowance = forms.ModelChoiceField(
+        label='Computing Allowance',
+        queryset=Resource.objects.filter(
+            resource_type__name='Computing Allowance').order_by('pk'))
 
 
 class PIChoiceField(forms.ModelChoiceField):
@@ -117,96 +153,14 @@ class SavioProjectExistingPIForm(forms.Form):
         widget=DisabledChoicesSelectWidget())
 
     def __init__(self, *args, **kwargs):
-
-        self.allocation_type = kwargs.pop('allocation_type', None)
+        self.computing_allowance = kwargs.pop('computing_allowance', None)
         self.allocation_period = kwargs.pop('allocation_period', None)
-
         super().__init__(*args, **kwargs)
-
-        queryset = User.objects.all()
-        exclude_user_pks = set()
-        pi_role = ProjectUserRoleChoice.objects.get(
-            name='Principal Investigator')
-
-        ineligible_project_status_names = ['New', 'Active', 'Inactive']
-        ineligible_project_request_statuses = \
-            non_denied_new_project_request_statuses()
-        ineligible_renewal_request_statuses = \
-            non_denied_renewal_request_statuses()
-
-        if self.allocation_type == 'FCA':
-
-            # PIs may only have one FCA, so disable any PIs who:
-            #     (a) have an existing 'New', 'Active', or 'Inactive' FCA,
-            #     (b) have non-denied AllocationRenewalRequests during the
-            #         specified AllocationPeriod, or
-            #     (c) have non-denied SavioProjectAllocationRequests during
-            #         the specified AllocationPeriod.
-
-            pis_with_existing_fcas = set(ProjectUser.objects.filter(
-                role=pi_role,
-                project__name__startswith='fc_',
-                project__status__name__in=ineligible_project_status_names
-            ).values_list('user__pk', flat=True))
-            pis_with_pending_requests = set(
-                SavioProjectAllocationRequest.objects.filter(
-                    allocation_type=SavioProjectAllocationRequest.FCA,
-                    allocation_period=self.allocation_period,
-                    status__in=ineligible_project_request_statuses
-                ).values_list('pi__pk', flat=True))
-            pis_with_renewal_requests = set(
-                AllocationRenewalRequest.objects.filter(
-                    allocation_period=self.allocation_period,
-                    status__in=ineligible_renewal_request_statuses
-                ).values_list('pi__pk', flat=True))
-            exclude_user_pks.update(
-                set.union(
-                    pis_with_existing_fcas,
-                    pis_with_pending_requests,
-                    pis_with_renewal_requests))
-        elif self.allocation_type == 'PCA':
-
-            # PIs may only have one PCA, so disable any PIs who:
-            #     (a) have an existing 'New' or 'Active' PCA, or
-            #     (b) have non-denied SavioProjectAllocationRequests during
-            #         the specified AllocationPeriod.
-
-            pis_with_existing_pcas = set(ProjectUser.objects.filter(
-                role=pi_role,
-                project__name__startswith='pc_',
-                project__status__name__in=ineligible_project_status_names
-            ).values_list('user__pk', flat=True))
-            pis_with_pending_requests = set(
-                SavioProjectAllocationRequest.objects.filter(
-                    allocation_type=SavioProjectAllocationRequest.PCA,
-                    allocation_period=self.allocation_period,
-                    status__in=ineligible_project_request_statuses
-                ).values_list('pi__pk', flat=True))
-            exclude_user_pks.update(
-                set.union(pis_with_existing_pcas, pis_with_pending_requests))
-
-        if flag_enabled('LRC_ONLY'):
-            # Exclude users with non-LBL emails.
-            users_with_non_lbl_primary_emails = set(ProjectUser.objects.exclude(
-                user__email__endswith='@lbl.gov'
-            ).values_list('user__pk', flat=True))
-
-            # Checking if users have a non-primary LBL email.
-            users_with_lbl_nonprimary_emails = set(EmailAddress.objects.filter(
-                email__endswith='@lbl.gov',
-                is_verified=True
-            ).values_list('user__pk', flat=True))
-
-            users_with_non_lbl_email = \
-                users_with_non_lbl_primary_emails.difference(
-                    users_with_lbl_nonprimary_emails)
-
-            exclude_user_pks.update(users_with_non_lbl_email)
-
-        # Exclude any user that does not have an email address.
-        queryset = queryset.exclude(Q(email__isnull=True) | Q(email__exact=''))
-        self.fields['PI'].queryset = queryset
-        self.fields['PI'].widget.disabled_choices = exclude_user_pks
+        if self.computing_allowance is not None:
+            self.computing_allowance = ComputingAllowance(
+                self.computing_allowance)
+            self.disable_pi_choices()
+        self.exclude_pi_choices()
 
     def clean(self):
         cleaned_data = super().clean()
@@ -214,6 +168,57 @@ class SavioProjectExistingPIForm(forms.Form):
         if pi is not None and pi not in self.fields['PI'].queryset:
             raise forms.ValidationError(f'Invalid selection {pi.username}.')
         return cleaned_data
+
+    def disable_pi_choices(self):
+        """Prevent certain Users, who should be displayed, from being
+        selected as PIs."""
+        disable_user_pks = set()
+
+        if self.computing_allowance.is_one_per_pi() and self.allocation_period:
+            # Disable any PI who has:
+            #     (a) an existing Project with the allowance*,
+            #     (b) a new project request for a Project with the allowance
+            #         during the AllocationPeriod*, or
+            #     (c) an allowance renewal request for a Project with the
+            #         allowance during the AllocationPeriod*.
+            # * Projects/requests must have ineligible statuses.
+            resource = self.computing_allowance.get_resource()
+            project_status_names = ['New', 'Active', 'Inactive']
+            disable_user_pks.update(
+                project_pi_pks(
+                    computing_allowance=resource,
+                    project_status_names=project_status_names))
+            new_project_request_status_names = list(
+                non_denied_new_project_request_statuses().values_list(
+                    'name', flat=True))
+            disable_user_pks.update(
+                pis_with_new_project_requests_pks(
+                    self.allocation_period,
+                    computing_allowance=resource,
+                    request_status_names=new_project_request_status_names))
+            renewal_request_status_names = list(
+                non_denied_renewal_request_statuses().values_list(
+                    'name', flat=True))
+            disable_user_pks.update(
+                pis_with_renewal_requests_pks(
+                    self.allocation_period,
+                    computing_allowance=resource,
+                    request_status_names=renewal_request_status_names))
+
+        if flag_enabled('LRC_ONLY'):
+            # On LRC, PIs must be LBL employees.
+            non_lbl_employees = set(
+                [user.pk for user in User.objects.all()
+                 if not is_lbl_employee(user)])
+            disable_user_pks.update(non_lbl_employees)
+
+        self.fields['PI'].widget.disabled_choices = disable_user_pks
+
+    def exclude_pi_choices(self):
+        """Exclude certain Users from being displayed as PI options."""
+        # Exclude any user that does not have an email address.
+        self.fields['PI'].queryset = User.objects.exclude(
+            Q(email__isnull=True) | Q(email__exact=''))
 
 
 class SavioProjectNewPIForm(forms.Form):
@@ -240,7 +245,8 @@ class SavioProjectNewPIForm(forms.Form):
 
 
 class SavioProjectExtraFieldsForm(forms.Form):
-    """A placeholder for extra fields for non-ICA/Recharge projects."""
+    """A base form for retrieving additional information for the
+    requested allowance."""
 
     def __init__(self, *args, **kwargs):
         disable_fields = kwargs.pop('disable_fields', False)
@@ -248,6 +254,31 @@ class SavioProjectExtraFieldsForm(forms.Form):
         if disable_fields:
             for field in self.fields:
                 self.fields[field].disabled = True
+
+
+class NewProjectExtraFieldsFormFactory(object):
+    """A factory for returning a form to acquire additional information
+    about a particular allowance."""
+
+    def get_form(self, computing_allowance, *args, **kwargs):
+        """Return an instantiated form for the given allowance with the
+        given arguments and keyword arguments."""
+        assert isinstance(computing_allowance, ComputingAllowance)
+        return self._get_form_class(computing_allowance)(*args, **kwargs)
+
+    @staticmethod
+    def _get_form_class(computing_allowance):
+        """Return the appropriate form class for the given allowance. If
+        none are applicable, raise a ValueError."""
+        allowance_name = computing_allowance.get_name()
+        if flag_enabled('BRC_ONLY'):
+            if allowance_name == BRCAllowances.ICA:
+                return SavioProjectICAExtraFieldsForm
+            elif allowance_name == BRCAllowances.RECHARGE:
+                return SavioProjectRechargeExtraFieldsForm
+        raise ValueError(
+            f'Computing Allowance {allowance_name} does not require extra '
+            f'fields.')
 
 
 class SavioProjectICAExtraFieldsForm(SavioProjectExtraFieldsForm):
@@ -447,23 +478,21 @@ class SavioProjectPooledProjectSelectionForm(forms.Form):
         widget=forms.Select())
 
     def __init__(self, *args, **kwargs):
-        self.allocation_type = kwargs.pop('allocation_type', None)
-        kwargs.pop('allocation_period', None)
-        kwargs.pop('breadcrumb_pi', None)
-        kwargs.pop('breadcrumb_pooling', None)
+        self.computing_allowance = kwargs.pop('computing_allowance', None)
+        self.interface = ComputingAllowanceInterface()
         super().__init__(*args, **kwargs)
-        projects = Project.objects.prefetch_related(
-            'projectuser_set__user'
-        ).filter(
-            status__name__in=['Pending - Add', 'New', 'Active']
-        )
-        if self.allocation_type == 'FCA':
-            projects = projects.filter(name__startswith='fc_')
-        elif self.allocation_type == 'CO':
-            projects = projects.filter(name__startswith='co_')
-        elif self.allocation_type == 'PCA':
-            projects = projects.filter(name__startswith='pc_')
-        self.fields['project'].queryset = projects
+
+        f = Q(status__name__in=['Pending - Add', 'New', 'Active'])
+
+        if self.computing_allowance is not None:
+            self.computing_allowance = ComputingAllowance(
+                self.computing_allowance)
+            prefix = self.interface.code_from_name(
+                self.computing_allowance.get_name())
+            f = f & Q(name__startswith=prefix)
+
+        self.fields['project'].queryset = Project.objects.prefetch_related(
+            'projectuser_set__user').filter(f)
 
     def clean(self):
         cleaned_data = super().clean()
@@ -508,40 +537,38 @@ class SavioProjectDetailsForm(forms.Form):
     #     queryset=FieldOfScience.objects.all())
 
     def __init__(self, *args, **kwargs):
-        self.allocation_type = kwargs.pop('allocation_type', None)
-        kwargs.pop('allocation_period', None)
-        kwargs.pop('breadcrumb_pi', None)
-        kwargs.pop('breadcrumb_pooling', None)
+        self.computing_allowance = kwargs.pop('computing_allowance', None)
+        self.interface = ComputingAllowanceInterface()
         super().__init__(*args, **kwargs)
-        if self.allocation_type == SavioProjectAllocationRequest.ICA:
-            self.fields['name'].help_text = (
-                'A unique name for the course, which must contain only '
-                'lowercase letters and numbers. This will be used to set up '
-                'the project\'s SLURM scheduler account. It may be the course '
-                'number (e.g., pmb220b, pht32, etc.).')
+        if self.computing_allowance is not None:
+            self.computing_allowance = ComputingAllowance(
+                self.computing_allowance)
+            self._update_field_attributes()
 
     def clean_name(self):
         cleaned_data = super().clean()
-        name = cleaned_data['name'].lower()
-        if self.allocation_type == SavioProjectAllocationRequest.CO:
-            name = f'co_{name}'
-        elif self.allocation_type == SavioProjectAllocationRequest.FCA:
-            name = f'fc_{name}'
-        elif self.allocation_type == SavioProjectAllocationRequest.ICA:
-            name = f'ic_{name}'
-        elif self.allocation_type == SavioProjectAllocationRequest.RECHARGE:
-            name = f'ac_{name}'
-        elif self.allocation_type == SavioProjectAllocationRequest.PCA:
-            name = f'pc_{name}'
+        prefix = self.interface.code_from_name(
+            self.computing_allowance.get_name())
+        suffix = cleaned_data['name'].lower()
+        name = f'{prefix}{suffix}'
         if Project.objects.filter(name=name):
             raise forms.ValidationError(
                 f'A project with name {name} already exists.')
         return name
 
+    def _update_field_attributes(self):
+        """Update fields for select allowances."""
+        field = self.fields['name']
+        if self.computing_allowance.is_instructional():
+            field.help_text = (
+                'A unique name for the course, which must contain only '
+                'lowercase letters and numbers. This will be used to set up '
+                'the project\'s SLURM scheduler account. It may be the course '
+                'number (e.g., pmb220b, pht32, etc.).')
+
 
 class SavioProjectSurveyForm(forms.Form):
 
-    # Question 3
     scope_and_intent = forms.CharField(
         label='Scope and intent of research needing computation',
         validators=[MinLengthValidator(10)],
@@ -553,19 +580,26 @@ class SavioProjectSurveyForm(forms.Form):
         required=True,
         widget=forms.Textarea(attrs={'rows': 3}))
     existing_resources = forms.CharField(
-        label=(
-            'Existing computing resources (outside of Savio) currently being '
-            'used by this project. If you use cloud computing resources, we '
-            'would be interested in hearing about it.'),
+        label='',  # Set dynamically.
         required=False,
         widget=forms.Textarea(attrs={'rows': 3}))
     system_needs = forms.MultipleChoiceField(
         choices=(
-            ('intermittent_need', 'Meets intermittent or small need for compute cycles'),
-            ('cannot_purchase', 'Provides a resource since my group/area cannot purchase its own'),
-            ('additional_compute_beyond_cluster', 'Provides additional compute cycles beyond what is provided on my own cluster'),
-            ('larger_jobs', 'Provides ability to run larger-scale jobs than those I can\'t run on my own cluster'),
-            ('onramp', 'Provides an onramp to prepare for running on large systems or applying for grants and supercomputing center allocations'),
+            ('intermittent_need', (
+                'Meets intermittent or small need for compute cycles')),
+            ('cannot_purchase', (
+                'Provides a resource since my group/area cannot purchase its '
+                'own')),
+            ('additional_compute_beyond_cluster', (
+                'Provides additional compute cycles beyond what is provided '
+                'on my own cluster')),
+            ('larger_jobs', (
+                'Provides ability to run larger-scale jobs than those I '
+                'can\'t run on my own cluster')),
+            ('onramp', (
+                'Provides an onramp to prepare for running on large systems '
+                'or applying for grants and supercomputing center '
+                'allocations')),
             ('additional_compute', 'Provides additional compute cycles'),
         ),
         label=(
@@ -574,7 +608,6 @@ class SavioProjectSurveyForm(forms.Form):
         required=False,
         widget=forms.CheckboxSelectMultiple())
 
-    # Question 4
     num_processor_cores = forms.CharField(
         label=(
             'How many processor cores does your application use? (min, max, '
@@ -591,28 +624,14 @@ class SavioProjectSurveyForm(forms.Form):
             'over the year.'),
         required=False)
     large_memory_nodes = forms.CharField(
-        label=(
-            'BRC has a number of large memory nodes, each with 512GB or '
-            '384GB. Do you have a need to use these nodes? If so, what is '
-            'your expected use of these nodes?'),
+        label='',  # Set dynamically.
         required=False)
     data_storage_space = forms.CharField(
-        help_text=mark_safe(
-            'BRC provides each user with 10GB of backed up home directory '
-            'space; and free access to a not-backed-up shared Global Scratch '
-            'high performance parallel filesystem. Research projects that '
-            'need to share datasets among their team members can also be '
-            'allocated up to 30 GB of not-backed-up shared filesystem space '
-            'on request. Users needing more storage can choose to join the '
-            'Condo Storage service by purchasing 42TB at the cost of $6539. '
-            'More details about this program are available <a href="https://docs-research-it.berkeley.edu/services/high-performance-computing/condos/condo-storage-service/"><span class="accessibility-link-text">Data Storage program details</span>here</a>. '
-            'Please indicate if you need additional space and how much.'),
+        help_text='',  # Set dynamically.
         label='Data Storage Space',
         required=False)
     io = forms.CharField(
-        help_text=(
-            'Savio provides a shared Lustre parallel filesystem for jobs '
-            'needing access to high performance storage.'),
+        help_text='',  # Set dynamically.
         label='Describe your applications I/O requirements',
         required=False)
     interconnect = forms.ChoiceField(
@@ -635,7 +654,7 @@ class SavioProjectSurveyForm(forms.Form):
             'cluster? If yes, what is the max you you might transfer in a '
             'day? What would be typical for a month? Do you have need for '
             'file sharing of large datasets?'),
-        label='Network connection from Savio to the Internet',
+        label='',  # Set dynamically.
         required=False)
     cloud_computing = forms.ChoiceField(
         choices=(
@@ -646,13 +665,10 @@ class SavioProjectSurveyForm(forms.Form):
             ('4', '4'),
             ('5', '5 - Important'),
         ),
-        help_text=(
-            'BRC is developing a cloud computing offering. What is your '
-            'interest in using the cloud for your computation?'),
+        help_text='',  # Set dynamically.
         label='Cloud computing',
         required=False)
 
-    # Question 5
     software_source = forms.CharField(
         help_text=(
             'Specify your software applications. If you have need for '
@@ -666,36 +682,85 @@ class SavioProjectSurveyForm(forms.Form):
         required=False)
 
     def __init__(self, *args, **kwargs):
-        allocation_type = kwargs.pop('allocation_type', None)
-        kwargs.pop('allocation_period', None)
-        kwargs.pop('breadcrumb_pi', None)
-        kwargs.pop('breadcrumb_pooling', None)
-        kwargs.pop('breadcrumb_project', None)
+        self.primary_cluster_name = settings.PRIMARY_CLUSTER_NAME
+        self.computing_allowance = kwargs.pop('computing_allowance', None)
         disable_fields = kwargs.pop('disable_fields', False)
         super().__init__(*args, **kwargs)
-        if allocation_type == SavioProjectAllocationRequest.ICA:
-            self.fields['scope_and_intent'].label = (
-                'Scope and intent of coursework needing computation')
-            self.fields['computational_aspects'].help_text = (
-                'Describe the nature of the coursework for which students '
-                'will use Savio (e.g., homework, problem sets, projects, '
-                'etc.).')
-            self.fields['computational_aspects'].label = (
-                'Computational aspects of the coursework')
-            self.fields['existing_resources'].label = (
-                'Existing computing resources (outside of Savio) currently '
-                'being used by this course. If you use cloud computing '
-                'resources, we would be interested in hearing about it.')
-            self.fields['num_processor_cores'].label = (
-                'How many processor cores does a single execution (i.e., by '
-                'one student) of your application use? (min, max, typical '
-                'runs)')
-            self.fields['processor_core_hours_year'].label = (
-                'Estimate how many processor-core-hrs your students will need '
-                'over the duration of the course.')
+        if self.computing_allowance is not None:
+            self.computing_allowance = ComputingAllowance(
+                self.computing_allowance)
+        self._update_field_attributes()
         if disable_fields:
             for field in self.fields:
                 self.fields[field].disabled = True
+
+    def _update_field_attributes(self):
+        """Update field attributes that have deployment-specific
+        content."""
+        self.fields['existing_resources'].label = (
+            f'Existing computing resources (outside of '
+            f'{self.primary_cluster_name}) currently being used by this '
+            f'project. If you use cloud computing resources, we would be '
+            f'interested in hearing about it.')
+        self.fields['large_memory_nodes'].label = (
+            f'{settings.PROGRAM_NAME_SHORT} has a number of large memory '
+            f'nodes, each with hundreds of GB. Do you have a need to use '
+            f'these nodes? If so, what is your expected use of these nodes?')
+        self.fields['io'].help_text = (
+            f'{self.primary_cluster_name} provides a shared Lustre parallel '
+            f'filesystem for jobs needing access to high performance storage.')
+        self.fields['network_to_internet'].label = (
+            f'Network connection from {self.primary_cluster_name} to the '
+            f'Internet')
+
+        if flag_enabled('BRC_ONLY'):
+            condo_docs_url = (
+                'https://docs-research-it.berkeley.edu/services/'
+                'high-performance-computing/condos/condo-storage-service/')
+            self.fields['data_storage_space'].help_text = mark_safe(
+                f'{settings.PROGRAM_NAME_SHORT} provides each user with 10GB '
+                f'of backed up home directory space; and free access to a '
+                f'not-backed-up shared Global Scratch high performance '
+                f'parallel filesystem. Research projects that need to share '
+                f'datasets among their team members can also be allocated up '
+                f'to 30 GB of not-backed-up shared filesystem space on '
+                f'request. Users needing more storage can choose to join the '
+                f'Condo Storage service by purchasing 42TB at the cost of '
+                f'$6539. More details about this program are available '
+                f'<a href="{condo_docs_url}">'
+                f'<span class="accessibility-link-text">Data Storage program '
+                f'details</span>here</a>. Please indicate if you need '
+                f'additional space and how much.')
+            self.fields['cloud_computing'].help_text = (
+                f'{settings.PROGRAM_NAME_SHORT} is developing a cloud '
+                f'computing offering. What is your interest in using the '
+                f'cloud for your computation?')
+            if (isinstance(self.computing_allowance, ComputingAllowance) and
+                    self.computing_allowance.is_instructional()):
+                self.fields['scope_and_intent'].label = (
+                    'Scope and intent of coursework needing computation')
+                self.fields['computational_aspects'].help_text = (
+                    f'Describe the nature of the coursework for which '
+                    f'students will use {self.primary_cluster_name} (e.g., '
+                    f'homework, problem sets, projects, etc.).')
+                self.fields['computational_aspects'].label = (
+                    'Computational aspects of the coursework')
+                self.fields['existing_resources'].label = (
+                    f'Existing computing resources (outside of '
+                    f'{self.primary_cluster_name}) currently being used by '
+                    f'this course. If you use cloud computing resources, we '
+                    f'would be interested in hearing about it.')
+                self.fields['num_processor_cores'].label = (
+                    'How many processor cores does a single execution (i.e., '
+                    'by one student) of your application use? (min, max, '
+                    'typical runs)')
+                self.fields['processor_core_hours_year'].label = (
+                    'Estimate how many processor-core-hrs your students will '
+                    'need over the duration of the course.')
+
+        if flag_enabled('LRC_ONLY'):
+            self.fields.pop('data_storage_space')
+            self.fields.pop('cloud_computing')
 
 
 # =============================================================================

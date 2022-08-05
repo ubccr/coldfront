@@ -6,6 +6,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js" integrity="sha512-bZS47S7sPOxkjU/4Bt0zrhEtWx0y0CRkhEp8IckzK+ltifIIE9EMIMTuT/mEzoIMewUINruDBIR/jJnbguonqQ==" crossorigin="anonymous"></script>
 <script type="text/javascript" src="{% static 'core/user/js/registration.js' %}"></script>
 
+{{ PROGRAM_NAME_SHORT|json_script:"program_name_short" }}
+
 <form method="post" action="{% url 'register' %}?next={{request.GET.next}}">
   {% csrf_token %}
   {{ form.email|as_crispy_field }}
@@ -20,9 +22,9 @@
   <div class="form-check" id="new-user-acknowledgement-form">
     <input class="form-check-input" type="checkbox" id="new-user-acknowledgement">
     <label class="form-check-label" for="new-user-acknowledgement">
-      I acknowledge that I am a new user and have not previously used a BRC
-      cluster. The Register button will be unavailable until this check box is
-      selected.
+      I acknowledge that I am a new user and have not previously used a
+      {{ PROGRAM_NAME_SHORT }} cluster. The Register button will be unavailable
+      until this check box is selected.
     </label>
   </div>
   <button type="submit" class="btn btn-primary btn-block" id="register-button">

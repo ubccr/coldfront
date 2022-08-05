@@ -21,7 +21,7 @@ class TestProjectRequestSavioLanding(TestBase):
     @staticmethod
     def view_url():
         """Return the URL for the landing view."""
-        return reverse('project-request-savio-landing')
+        return reverse('project-request-landing')
 
     def test_next_allowance_year_alert_appears_conditionally(self):
         """Test that an alert, which notes that requests for the next
@@ -29,7 +29,7 @@ class TestProjectRequestSavioLanding(TestBase):
         feature flag is enabled."""
         flag_name = 'ALLOCATION_RENEWAL_FOR_NEXT_PERIOD_REQUESTABLE'
 
-        alert_text = 'The allowance year for FCAs is ending soon'
+        alert_text = 'The allowance year for FCAs, PCAs is ending soon'
 
         enable_flag(flag_name)
         url = self.view_url()

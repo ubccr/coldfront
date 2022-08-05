@@ -16,7 +16,9 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationUserAttributeUsage,
                                               AllocationUserNote,
                                               AllocationUserStatusChoice,
-                                              AttributeType)
+                                              AttributeType, SecureDirRequest,
+                                              SecureDirAddUserRequest,
+                                              SecureDirRemoveUserRequest)
 
 
 @admin.register(AllocationStatusChoice)
@@ -439,3 +441,24 @@ class AllocationUserAttributeUsageAdmin(SimpleHistoryAdmin):
 @admin.register(AllocationPeriod)
 class AllocationPeriodAdmin(admin.ModelAdmin):
     list_display = ('name', 'start_date', 'end_date',)
+
+
+@admin.register(SecureDirRequest)
+class SecureDirRequestAdmin(admin.ModelAdmin):
+    list_display = ('requester', 'directory_name', 'project',
+                    'status', 'request_time', 'completion_time')
+
+    def project(self, obj):
+        return obj.allocation_user_attribute.allocation.project.name
+
+
+@admin.register(SecureDirAddUserRequest)
+class SecureDirAddUserRequestAdmin(admin.ModelAdmin):
+    list_display = ('user', 'allocation', 'directory',
+                    'status', 'request_time', 'completion_time')
+
+
+@admin.register(SecureDirRemoveUserRequest)
+class SecureDirRemoveUserRequestAdmin(admin.ModelAdmin):
+    list_display = ('user', 'allocation', 'directory',
+                    'status', 'request_time', 'completion_time')

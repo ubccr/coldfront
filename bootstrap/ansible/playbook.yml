@@ -66,14 +66,14 @@
         state: restarted
         enabled: yes
 
-    - name: Install Postgresql repo
+    - name: Install Postgresql packages
       yum:
-        name: https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
-        state: present
-
-    - name: Install Postgresql Packages
-      yum:
-        name: [ 'postgresql96', 'postgresql96-server', 'postgresql96-devel' ]
+        name:
+          - 'https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/postgresql96-9.6.24-1PGDG.rhel7.x86_64.rpm'
+          - 'https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/postgresql96-libs-9.6.24-1PGDG.rhel7.x86_64.rpm'
+          - 'https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/postgresql96-devel-9.6.24-1PGDG.rhel7.x86_64.rpm'
+          - 'https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/postgresql96-test-9.6.24-1PGDG.rhel7.x86_64.rpm'
+          - 'https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/postgresql96-server-9.6.24-1PGDG.rhel7.x86_64.rpm'
         state: present
 
     - name: Create a folder for keeping Django app logs
@@ -179,7 +179,12 @@
     - name: Create the deployment-specific _settings.py file from a template
       template: src={{ git_prefix }}/{{ reponame }}/bootstrap/ansible/settings_template.tmpl
                 dest={{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}/config/{{ deployment }}_settings.py
-      become_user:  "{{ djangooperator }}"
+      become_user: "{{ djangooperator }}"
+
+    - name: Create the deployment-specific password reset email subject text file from a template
+      template: src={{ git_prefix }}/{{ reponame }}/bootstrap/ansible/password_reset_subject_template.tmpl
+                dest={{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}/core/user/templates/user/passwords/password_reset_subject.txt
+      become_user: "{{ djangooperator }}"
 
     - name: Run Django management command - initial_setup
       django_manage:
@@ -202,6 +207,15 @@
     - name: Run Django management command - add_accounting_defaults
       django_manage:
         command: add_accounting_defaults
+        app_path: "{{ git_prefix }}/{{ reponame }}"
+        settings: "config.settings"
+        pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"
+        virtualenv: "{{ git_prefix }}/venv"
+      become_user: "{{ djangooperator }}"
+
+    - name: Run Django management command - add_allowance_defaults
+      django_manage:
+        command: add_allowance_defaults
         app_path: "{{ git_prefix }}/{{ reponame }}"
         settings: "config.settings"
         pythonpath: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}"

@@ -12,18 +12,7 @@ Vector Project Request Detail
 
 {% block content %}
 <h1>
-  Vector: {{ vector_request.project.name }} - {{ vector_request.requester.first_name }} {{ vector_request.requester.last_name }}
-  {% with status=vector_request.status.name %}
-    {% if status == 'Under Review' %}
-      <span class="badge badge-warning" style="float: right;">{{ status }}</span>
-    {% elif status == 'Approved - Processing' %}
-      <span class="badge badge-warning" style="float: right;">{{ status }}</span>
-    {% elif status == 'Approved - Complete' %}
-      <span class="badge badge-success" style="float: right;">{{ status }}</span>
-    {% else %}
-      <span class="badge badge-danger" style="float: right;">{{ status }}</span>
-    {% endif %}
-  {% endwith %}
+Vector: {{ vector_request.project.name }} - {{ vector_request.requester.first_name }} {{ vector_request.requester.last_name }}
 </h1>
 <hr>
 

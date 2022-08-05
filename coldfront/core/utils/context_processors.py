@@ -1,6 +1,7 @@
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 
+from constance import config
 from django.conf import settings
 from django.db.models import Q
 
@@ -37,6 +38,10 @@ def allocation_navbar_visibility(request):
     return context
 
 
+def constance_config(request):
+    return {'CONSTANCE_CONFIG': config}
+
+
 def current_allowance_year_allocation_period(request):
     context = {}
     try:
@@ -54,3 +59,17 @@ def current_allowance_year_allocation_period(request):
 
 def display_time_zone(request):
     return {'DISPLAY_TIME_ZONE': settings.DISPLAY_TIME_ZONE}
+
+
+def portal_and_program_names(request):
+    return {
+        'PORTAL_NAME': settings.PORTAL_NAME,
+        'PROGRAM_NAME_LONG': settings.PROGRAM_NAME_LONG,
+        'PROGRAM_NAME_SHORT': settings.PROGRAM_NAME_SHORT,
+    }
+
+
+def primary_cluster_name(request):
+    return {
+        'PRIMARY_CLUSTER_NAME': settings.PRIMARY_CLUSTER_NAME,
+    }

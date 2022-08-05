@@ -1,5 +1,6 @@
 {% extends "common/base.html" %}
 {% load crispy_forms_tags %}
+{% load common_tags %}
 {% load static %}
 
 {% block title %}
@@ -9,25 +10,11 @@ Contact
 
 {% block content %}
 <h1>Contact</h1><hr>
-  <div class="alert alert-success" role="alert">
-    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-      <span aria-hidden="true">&times;</span>
-    </button>
-    <p>MyBRC is a new user portal available to all users of BRC clusters, starting on June 1st, 2021.</p>
-      We'd love to hear your feedback. Please fill out this <a target="_blank" href="https://docs.google.com/forms/d/e/1FAIpQLScZoYXkFMAVEYhoqE2guG64JQb4dsPcwidlhZ0W-TZ2t_Va4w/viewform">Google Form</a> letting us know what you think.
-  </div>
+{% include 'portal/feedback_alert.html' %}
 
 <p>
-  For general inquiries, please email <a href="">research-it@berkeley.edu</a>.
-</p>
-<p>
-  If you are having a technical problem with one of our HPC clusters (Savio, Vector, ABC), you can email the HPC ticketing system directly at <a href="">brc-hpc-help@berkeley.edu</a>.
-</p>
-<p>
-  For research computing consulting questions, please email <a href="">brc@berkeley.edu</a>.
-</p>
-<p>
-  For research data management questions, please email <a href="">researchdata@berkeley.edu</a>.
+  Please refer to our
+  <a href="{{ CONSTANCE_CONFIG.DOCS_GETTING_HELP_URL }}">documentation</a>.
 </p>
 
 {% endblock %}

@@ -13,6 +13,9 @@ from django.test import override_settings
 from django.test import TestCase
 
 
+TEST_PRIMARY_CLUSTER_NAME = 'Savio'
+
+
 class TestRunnerMixin(TestRunnerMixinBase):
     """A mixin for testing AllocationRenewalDenialRunner."""
 
@@ -136,6 +139,7 @@ class TestNewProjectDenialMixin(object):
         self.assertEqual(denied_status, project.status)
 
 
+@override_settings(PRIMARY_CLUSTER_NAME=TEST_PRIMARY_CLUSTER_NAME)
 class TestUnpooledToUnpooled(TestRunnerMixin, TestCase):
     """A class for testing the AllocationRenewalDenialRunner in the
     'unpooled_to_unpooled' case."""
@@ -146,6 +150,7 @@ class TestUnpooledToUnpooled(TestRunnerMixin, TestCase):
         self.request_obj = self.create_request(
             AllocationRenewalRequestStatusChoice.objects.get(
                 name='Under Review'),
+            computing_allowance=self.computing_allowance,
             pi=self.pi0,
             pre_project=self.unpooled_project0,
             post_project=self.unpooled_project0)
@@ -157,6 +162,7 @@ class TestUnpooledToUnpooled(TestRunnerMixin, TestCase):
             AllocationRenewalRequest.UNPOOLED_TO_UNPOOLED)
 
 
+@override_settings(PRIMARY_CLUSTER_NAME=TEST_PRIMARY_CLUSTER_NAME)
 class TestUnpooledToPooled(TestRunnerMixin, TestCase):
     """A class for testing the AllocationRenewalDenialRunner in the
     'unpooled_to_pooled' case."""
@@ -167,6 +173,7 @@ class TestUnpooledToPooled(TestRunnerMixin, TestCase):
         self.request_obj = self.create_request(
             AllocationRenewalRequestStatusChoice.objects.get(
                 name='Under Review'),
+            computing_allowance=self.computing_allowance,
             pi=self.pi0,
             pre_project=self.unpooled_project0,
             post_project=self.pooled_project1)
@@ -178,6 +185,7 @@ class TestUnpooledToPooled(TestRunnerMixin, TestCase):
             AllocationRenewalRequest.UNPOOLED_TO_POOLED)
 
 
+@override_settings(PRIMARY_CLUSTER_NAME=TEST_PRIMARY_CLUSTER_NAME)
 class TestPooledToPooledSame(TestRunnerMixin, TestCase):
     """A class for testing the AllocationRenewalDenialRunner in the
     'pooled_to_pooled_same' case."""
@@ -188,6 +196,7 @@ class TestPooledToPooledSame(TestRunnerMixin, TestCase):
         self.request_obj = self.create_request(
             AllocationRenewalRequestStatusChoice.objects.get(
                 name='Under Review'),
+            computing_allowance=self.computing_allowance,
             pi=self.pi0,
             pre_project=self.pooled_project0,
             post_project=self.pooled_project0)
@@ -199,6 +208,7 @@ class TestPooledToPooledSame(TestRunnerMixin, TestCase):
             AllocationRenewalRequest.POOLED_TO_POOLED_SAME)
 
 
+@override_settings(PRIMARY_CLUSTER_NAME=TEST_PRIMARY_CLUSTER_NAME)
 class TestPooledToPooledDifferent(TestRunnerMixin, TestCase):
     """A class for testing the AllocationRenewalDenialRunner in the
     'pooled_to_pooled_different' case."""
@@ -209,6 +219,7 @@ class TestPooledToPooledDifferent(TestRunnerMixin, TestCase):
         self.request_obj = self.create_request(
             AllocationRenewalRequestStatusChoice.objects.get(
                 name='Under Review'),
+            computing_allowance=self.computing_allowance,
             pi=self.pi0,
             pre_project=self.pooled_project0,
             post_project=self.pooled_project1)
@@ -220,6 +231,7 @@ class TestPooledToPooledDifferent(TestRunnerMixin, TestCase):
             AllocationRenewalRequest.POOLED_TO_POOLED_DIFFERENT)
 
 
+@override_settings(PRIMARY_CLUSTER_NAME=TEST_PRIMARY_CLUSTER_NAME)
 class TestPooledToUnpooledOld(TestRunnerMixin, TestCase):
     """A class for testing the AllocationRenewalDenialRunner in the
     'pooled_to_unpooled_old' case."""
@@ -230,6 +242,7 @@ class TestPooledToUnpooledOld(TestRunnerMixin, TestCase):
         self.request_obj = self.create_request(
             AllocationRenewalRequestStatusChoice.objects.get(
                 name='Under Review'),
+            computing_allowance=self.computing_allowance,
             pi=self.pi0,
             pre_project=self.pooled_project0,
             post_project=self.unpooled_project0)
@@ -241,6 +254,7 @@ class TestPooledToUnpooledOld(TestRunnerMixin, TestCase):
             AllocationRenewalRequest.POOLED_TO_UNPOOLED_OLD)
 
 
+@override_settings(PRIMARY_CLUSTER_NAME=TEST_PRIMARY_CLUSTER_NAME)
 class TestPooledToUnpooledNew(TestNewProjectDenialMixin, TestRunnerMixin,
                               TestCase):
     """A class for testing the AllocationRenewalDenialRunner in the
@@ -253,6 +267,7 @@ class TestPooledToUnpooledNew(TestNewProjectDenialMixin, TestRunnerMixin,
         self.request_obj = self.create_request(
             AllocationRenewalRequestStatusChoice.objects.get(
                 name='Under Review'),
+            computing_allowance=self.computing_allowance,
             pi=self.pi0,
             pre_project=self.pooled_project0,
             post_project=new_project_request.project,

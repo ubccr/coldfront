@@ -182,16 +182,33 @@ We do not have information about your research. Please provide a detailed descri
         return self.projectuser_set.filter(role=pi_role).count() > 1
 
     def managers_and_pis_emails(self):
-        """Return a list of emails belonging to active managers and PIs that
-        have enable_notifications=True."""
+        """Return a list of primary emails belonging to managers and PIs
+        who should be emailed about the project."""
+        users = self.managers_and_pis_to_email()
+        return list(users.values_list('user__email', flat=True))
+
+    def managers_and_pis_to_email(self):
+        """Return a queryset of ProjectUsers who should be emailed about
+        the project, including:
+            a) Active managers (ignoring enable_notifications), and
+            b) Active PIs who have enable_notifications=True"""
         pi_condition = Q(
             role__name='Principal Investigator', status__name='Active',
             enable_notifications=True)
         manager_condition = Q(role__name='Manager', status__name='Active')
+        return self.projectuser_set.filter(
+            pi_condition | manager_condition).distinct()
+
+    def pis_emails(self):
+        """Returns a list of emails belonging to active PIs that have
+        enable_notifications=True."""
+        pi_condition = Q(
+            role__name='Principal Investigator', status__name='Active',
+            enable_notifications=True)
 
         return list(
             self.projectuser_set.filter(
-                pi_condition | manager_condition
+                pi_condition
             ).distinct().values_list('user__email', flat=True))
 
     def __str__(self):
@@ -291,6 +308,11 @@ class ProjectUserJoinRequest(TimeStampedModel):
             validators=[
                 MinLengthValidator(20, 'The project join reason must be > 20 characters.',)
             ])
+    host_user = models.ForeignKey(
+        User,
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL)
 
     def __str__(self):
         user = self.project_user.user
@@ -359,7 +381,7 @@ def savio_project_request_ica_extra_fields_schema():
 
 def savio_project_request_ica_state_schema():
     """Return the schema for the SavioProjectAllocationRequest.state
-    field for Instructional Compute Allowance (ICA) projects."""
+    field for Instructional Computing Allowance (ICA) projects."""
     schema = savio_project_request_state_schema()
     schema['memorandum_signed'] = {
         'status': 'Pending',
@@ -417,20 +439,11 @@ class SavioProjectAllocationRequest(TimeStampedModel):
     requester = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='savio_requester')
 
-    FCA = 'FCA'
-    CO = 'CO'
-    ICA = 'ICA'
-    PCA = 'PCA'
-    RECHARGE = 'RECHARGE'
-    ALLOCATION_TYPE_CHOICES = (
-        (FCA, 'Faculty Compute Allowance (FCA)'),
-        (CO, 'Condo Allocation'),
-        (ICA, 'Instructional Compute Allowance (ICA)'),
-        (PCA, 'Partner Compute Allowance (PCA)'),
-        (RECHARGE, 'Recharge Allocation'),
-    )
-    allocation_type = models.CharField(
-        max_length=16, choices=ALLOCATION_TYPE_CHOICES)
+    # TODO: Retire allocation_type eventually.
+    allocation_type = models.CharField(max_length=16, blank=True, null=True)
+    computing_allowance = models.ForeignKey(
+        'resource.Resource', blank=True, null=True, on_delete=models.SET_NULL,
+        related_name='computing_allowance')
 
     allocation_period = models.ForeignKey(
         'allocation.AllocationPeriod', blank=True, null=True,

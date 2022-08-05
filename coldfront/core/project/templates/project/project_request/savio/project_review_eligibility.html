@@ -4,7 +4,7 @@
 
 
 {% block title %}
-Savio Project Request - Review Eligibility
+{{ PRIMARY_CLUSTER_NAME }} Project Request - Review Eligibility
 {% endblock %}
 
 
@@ -13,10 +13,10 @@ Savio Project Request - Review Eligibility
 <hr>
 
 <p>
-  Please determine whether the request's PI is eligible for a Savio allowance.
+  Please determine whether the request's PI is eligible for a new {{ computing_allowance_name }}.
 
-  {% if savio_request.allocation_type == "FCA" or savio_request.allocation_type == "PCA" %}
-    <b>As part of this, confirm that the PI does not already have an existing {{ savio_request.allocation_type }}, possibly under a different email address.</b>
+  {% if is_allowance_one_per_pi %}
+    <b>As part of this, confirm that the PI does not already have an existing {{ computing_allowance_name }}, possibly under a different email address.</b>
   {% endif %}
 
   If the PI is ineligible, the request will be denied immediately, and a notification email will be sent to the requester and PI.
@@ -36,7 +36,7 @@ Savio Project Request - Review Eligibility
       {% csrf_token %}
       {{ form|crispy }}
       <input class="btn btn-primary" type="submit" value="Submit" />
-      <a href="{% url 'savio-project-request-detail' savio_request.pk %}" class="btn btn-secondary">
+      <a href="{% url 'new-project-request-detail' savio_request.pk %}" class="btn btn-secondary">
         Cancel
       </a>
     </form>
