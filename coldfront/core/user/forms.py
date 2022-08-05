@@ -1,6 +1,4 @@
 from django import forms
-from django.db.models.functions import Lower
-
 from django.utils.html import mark_safe
 
 

@@ -923,7 +923,6 @@ class AllocationAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Cre
     model = AllocationAttribute
     form_class = AllocationAttributeCreateForm
     # fields = ['allocation_attribute_type', 'value', 'is_private', ]
-    # fields = '__all__'
     template_name = 'allocation/allocation_allocationattribute_create.html'
 
     def test_func(self):
