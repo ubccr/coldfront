@@ -30,7 +30,6 @@ EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS = import_from_settings(
     'EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS', [7, ])
 
 EMAIL_ADMINS_ON_ALLOCATION_EXPIRE = import_from_settings('EMAIL_ADMINS_ON_ALLOCATION_EXPIRE')
-print(EMAIL_ADMINS_ON_ALLOCATION_EXPIRE)
 
 def update_statuses():
 
@@ -204,7 +203,6 @@ def send_expiry_emails():
 
             logger.debug(f'Allocation(s) expired email sent to user {user}.')
 
-    print(EMAIL_ADMINS_ON_ALLOCATION_EXPIRE)
     if EMAIL_ADMINS_ON_ALLOCATION_EXPIRE:
 
             admin_template_context = {
