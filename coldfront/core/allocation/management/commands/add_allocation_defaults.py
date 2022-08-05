@@ -33,7 +33,7 @@ class Command(BaseCommand):
             ('CLOUD_USAGE_NOTIFICATION', 'Yes/No', False, True),
             ('Core Usage (Hours)', 'Int', True, False),
             ('Cloud Storage Quota (TB)', 'Float', True, False),
-            ('ALLOCATION_EXPIRE_EMAIL_NOTIFICATION', 'Yes/No', False, True),
+            ('EXPIRE NOTIFICATION', 'Yes/No', False, True),
             ('freeipa_group', 'Text', False, False),
             ('Is Course?', 'Yes/No', False, True),
             ('Paid', 'Float', False, False),
