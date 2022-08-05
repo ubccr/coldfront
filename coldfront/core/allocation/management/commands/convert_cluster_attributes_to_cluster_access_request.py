@@ -7,8 +7,8 @@ from coldfront.core.allocation.models import AllocationAttributeType, \
     ClusterAccessRequest
 
 
-"""An admin command that approves AllocationRenewalRequests for a
-particular Allocation Period."""
+"""An admin command that converts AllocationUserAttribute objects with type 
+Cluster Account Status to the new ClusterAccessRequest model."""
 
 
 class Command(BaseCommand):
