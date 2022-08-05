@@ -2508,16 +2508,3 @@ class AllocationChangeDeleteAttributeView(LoginRequiredMixin, UserPassesTestMixi
         messages.success(
             request, 'Allocation attribute change request successfully deleted.')
         return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': allocation_change_pk}))
-
-# class AllocationAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView): 
-#     form_class = AllocationAttributeCreateForm
-#     model = AllocationAttribute
-#     template_name = 'allocation/allocation_allocationattribute_create.html'
-
-#     def test_func(self):
-#         """ UserPassesTestMixin Tests"""
-#         if self.request.user.is_superuser:
-#             return True
-#         else:
-#             messages.error(
-#                 self.request, 'You do not have permission to delete allocation attributes.')
