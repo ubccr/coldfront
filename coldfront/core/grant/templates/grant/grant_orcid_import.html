@@ -10,8 +10,8 @@ Import Grant from ORCID
 {% block content %}
 <h1>Import Grant from ORCID</h1>
 
-<div class="col">
-    <form method="GET">
+<div class="col" >
+    <form method="GET" id="selected_users">
         {% csrf_token %}
         {{ grant_orcid_query_form|crispy }}
         <button id="search-btn" type="submit" class="btn btn-success btn-block">Import</button>
@@ -46,14 +46,19 @@ Import Grant from ORCID
     });
   
     function create_post() {
-      search_id = $('#id_search_id').val().trim();
-    
+      var test = $('#selected_users')
+      console.log(test)
+      const webform = document.getElementById('selected_users')
+      var form = new FormData()
+      form.append('csrfmiddlewaretoken', webform[0].value)
+      form.append('id_users', webform[1].value)
+
       var pk = "{{ project.pk }}"
       $.ajax({
           url : "/grant/project/" + pk + "/orcid-import-search-result/", // the endpoint
           type : "POST", // http method
           data : {
-            search_id : search_id, 
+            form_info :  form,
             csrfmiddlewaretoken: "{{ csrf_token }}"
           }, // data sent with the post request
           // handle a successful response
@@ -72,13 +77,22 @@ Import Grant from ORCID
   };
   
   $(document).ready(function(){
+    $('<br><input id="selectAll" class="check" type="checkbox"> <strong>Select All Users</strong>').insertAfter($("#div_id_users > label"))
+
+
+    $("#selectAll").click(function () {
+      $("input[name^='users']").prop('checked', $(this).prop('checked'));
+    });
+
+    $("input[name^='users']").click(function (ele) {
+      var id = $(this).attr('id');
+      if (id != "selectAll") {
+        $("#selectAll").prop('checked', false);
+      }
+    });
+
     $('[data-toggle="popover"]').popover();
 
-    console.log('{{ search_immediately }}')
-    if ('{{ search_immediately }}' == 'True')
-    {
-      $('#search-btn').click();
-    }
   });
   </script>
 

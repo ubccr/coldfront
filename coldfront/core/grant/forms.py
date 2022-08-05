@@ -3,6 +3,7 @@ from django import forms
 from django.forms import ModelForm
 from django.shortcuts import get_object_or_404
 
+from coldfront.core.project.models import Project
 from coldfront.core.grant.models import Grant
 from coldfront.core.utils.common import import_from_settings
 
@@ -24,7 +25,23 @@ class GrantForm(ModelForm):
 
 
 class OrcidImportGrantQueryForm(forms.Form):
-    search_id = forms.CharField(required=True, widget=forms.Textarea, label="ORCID ID")
+     users = forms.MultipleChoiceField(
+        widget=forms.CheckboxSelectMultiple, required=False)
+        
+
+     def __init__(self, project_pk,  *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        project_obj = get_object_or_404(Project, pk=project_pk)
+        user_query_set = project_obj.projectuser_set.select_related('user').filter(
+            status__name__in=['Active', ]).order_by("user__username")
+        user_query_set = user_query_set.exclude(user=project_obj.pi)
+        if user_query_set:
+            self.fields['users'].choices = ((user.user.username, "%s %s (%s)" % (
+                user.user.first_name, user.user.last_name, user.user.username)) for user in user_query_set)
+            self.fields['users'].help_text = '<br/>Select users in your project to pull their ORCID grant information.'
+        else:
+            self.fields['users'].widget = forms.HiddenInput()
+
 
 
 class OrcidImportGrantResultForm(forms.Form):

@@ -31,8 +31,6 @@ plugin_configs = {
 # This allows plugins to be enabled via environment variables. Can alternatively
 # add the relevant configs to local_settings.py
 for key, pc in plugin_configs.items():
-    print(key + ":" + pc)
-    print(ENV.bool(key, default=False))
     if ENV.bool(key, default=False):
         coldfront_configs.append(pc)
 
@@ -56,5 +54,5 @@ if ENV.str('COLDFRONT_CONFIG', default='') != '':
 for lc in local_configs:
     coldfront_configs.append(optional(lc))
 
-print(coldfront_configs)
+
 include(*coldfront_configs)

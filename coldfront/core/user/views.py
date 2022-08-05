@@ -58,12 +58,17 @@ class UserProfileView(TemplateView):
 
     def get_context_data(self, viewed_username=None, **kwargs):
         context = super().get_context_data(**kwargs)
-
+        
         if viewed_username:
             viewed_user = get_object_or_404(User, username=viewed_username)
         else:
             viewed_user = self.request.user
         
+        if viewed_user != self.request.user and not self.request.user.is_superuser:
+            viewable = False
+        else:
+            viewable = True 
+
         try:
             orcid_is_linked = viewed_user.social_auth.get(provider='orcid-sandbox')
             if orcid_is_linked.user.username == viewed_user.username:
@@ -72,14 +77,10 @@ class UserProfileView(TemplateView):
             orcid_is_linked = None
             is_linked = False 
 
-    
-        profile = UserProfile.objects.get(user_id=viewed_user.id) 
-        if orcid_is_linked and not profile.orcid_id:
-            profile.orcid_id = orcid_is_linked.uid
-
         group_list = ', '.join(
             [group.name for group in viewed_user.groups.all()])
 
+        context['viewable'] = viewable 
         context['orcid_linked'] = is_linked
         context['group_list'] = group_list
         context['viewed_user'] = viewed_user

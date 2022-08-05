@@ -1,7 +1,9 @@
 import csv
+import json
 import re
 from typing import Union
 
+from django import forms
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.forms import formset_factory
@@ -121,33 +123,32 @@ class GrantOrcidImportView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
 
-        if UserSelectResults.SELECTED_KEY in self.request.session:
-            selected_ids = self.request.session.pop(UserSelectResults.SELECTED_KEY)
-            selected_user_profiles = UserProfile.objects.filter(user_id__in=selected_ids)
-            orcid_ids = []
-            
-            for profile in selected_user_profiles:
-                orcid_ids.append(f'{profile.orcid_id} ({profile.user.username})')
-            
-            goqf_initial = {
-                'search_id': '\n'.join(filter(lambda elem: elem is not None, orcid_ids)),
-            }
-            context['grant_orcid_query_form'] = OrcidImportGrantQueryForm(initial=goqf_initial)
-            context['search_immediately'] = True
-        else:
-            user_profile = UserProfile.objects.filter(user_id__exact = self.request.user.id)
-            orcid_ids = {
-               'search_id' : f'{user_profile[0].orcid_id} ({user_profile[0].user.username})'
-            }
-            
-            context['grant_orcid_query_form'] = OrcidImportGrantQueryForm(initial=orcid_ids)
-            context['search_immediately'] = True
-        
-        context['grant_orcid_import_form'] = OrcidImportGrantResultForm()
         context['project'] = Project.objects.get(
             pk=self.kwargs.get('project_pk'))
+
+        # if UserSelectResults.SELECTED_KEY in self.request.session:
+        #     selected_ids = self.request.session.pop(UserSelectResults.SELECTED_KEY)
+        #     selected_user_profiles = UserProfile.objects.filter(user_id__in=selected_ids)
+        #     orcid_ids = []
+            
+        #     for profile in selected_user_profiles:
+        #         orcid_ids.append(f'{profile.orcid_id} ({profile.user.username})')
+            
+        #     goqf_initial = {
+        #         'search_id': '\n'.join(filter(lambda elem: elem is not None, orcid_ids)),
+        #     }
+        #     context['grant_orcid_query_form'] = OrcidImportGrantQueryForm(project_pk=self.kwargs.get('project_pk'))
+        # else:
+        #     user_profile = UserProfile.objects.filter(user_id__exact = self.request.user.id)
+        #     orcid_ids = {
+        #        'search_id' : f'{user_profile[0].orcid_id} ({user_profile[0].user.username})'
+        #     }
+            
+        context['grant_orcid_query_form'] = OrcidImportGrantQueryForm(project_pk=self.kwargs.get('project_pk'))
+        
         return context
     
+
     def post(self, request, *args, **kwargs):
         grants = eval(request.POST.get('grants'))
         project_pk = self.kwargs.get('project_pk')
@@ -423,11 +424,31 @@ class GrantOrcidImportResultView(LoginRequiredMixin, UserPassesTestMixin, Templa
         return orc_grant_list
 
     def post(self, request, *args, **kwargs):
-        search_ids = list(set(request.POST.get('search_id').split()))
         project_pk = self.kwargs.get('project_pk')
+        print(project_pk)
+        print('Request')
+        data = (request.POST).dict()
+        print( data)
+        # form_post = OrcidImportGrantQueryForm(request.POST)
+        # print('Form Post')
+        # print(form_post)
+        form_data = form_post.get('users')
+        print('Form Data')
+        print(form_data)
+     
 
         project_obj = get_object_or_404(Project, pk=project_pk)
         grants = []
+
+        #Grab ORCID search ID's from users that have one
+        search_ids = []
+        for user in form_data:
+            try:
+                orcid_user = user.social_auth.get(provider='orcid-sandbox')
+                search_ids.append(orcid_user.uid)
+                print(search_ids)
+            except:
+                pass 
 
         try:
             for ele in search_ids:
@@ -456,40 +477,40 @@ class GrantOrcidImportResultView(LoginRequiredMixin, UserPassesTestMixin, Templa
         return render(request, self.template_name, context)
 
 
-class GrantUserOrcidImportView(LoginRequiredMixin, UserPassesTestMixin, View):
-    def test_func(self):
-        """ UserPassesTestMixin Tests"""
-        if self.request.user.is_superuser:
-            return True
+# class GrantUserOrcidImportView(LoginRequiredMixin, UserPassesTestMixin, View):
+#     def test_func(self):
+#         """ UserPassesTestMixin Tests"""
+#         if self.request.user.is_superuser:
+#             return True
 
-        project_obj = get_object_or_404(
-            Project, pk=self.kwargs.get('project_pk'))
+#         project_obj = get_object_or_404(
+#             Project, pk=self.kwargs.get('project_pk'))
 
-        if project_obj.pi == self.request.user:
-            return True
+#         if project_obj.pi == self.request.user:
+#             return True
 
-        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
-            return True
+#         if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+#             return True
     
-    def get(self, request, *args, **kwargs):
-        project_pk = kwargs['project_pk']
+#     def get(self, request, *args, **kwargs):
+#         project_pk = kwargs['project_pk']
 
-        # User selection
-        proj_users = ProjectUser.objects.filter(project_id=project_pk)
-        proj_user_ids = proj_users.values_list("user_id", flat=True)
-        user_ids = list(User.objects.filter(pk__in=proj_user_ids).values_list('pk', flat=True))
+#         # User selection
+#         proj_users = ProjectUser.objects.filter(project_id=project_pk)
+#         proj_user_ids = proj_users.values_list("user_id", flat=True)
+#         user_ids = list(User.objects.filter(pk__in=proj_user_ids).values_list('pk', flat=True))
 
-        redirect_key = reverse('grant-orcid-import', kwargs={'project_pk': project_pk})
+#         redirect_key = reverse('grant-orcid-import', kwargs={'project_pk': project_pk})
 
-        ## Code to enable user search. ##
-        # request.session[UserSelectResults.AVAIL_KEY] = user_ids
-        # request.session[UserSelectResults.REDIRECT_KEY] = redirect_key
-        # # user-select-home is in Users
-        # return HttpResponseRedirect(reverse('user-select-home'))
+#         ## Code to enable user search. ##
+#         # request.session[UserSelectResults.AVAIL_KEY] = user_ids
+#         # request.session[UserSelectResults.REDIRECT_KEY] = redirect_key
+#         # # user-select-home is in Users
+#         # return HttpResponseRedirect(reverse('user-select-home'))
 
-        ## Code to just use all project users. ##
-        request.session[UserSelectResults.SELECTED_KEY] = user_ids
-        return HttpResponseRedirect(redirect_key)
+#         ## Code to just use all project users. ##
+#         request.session[UserSelectResults.SELECTED_KEY] = user_ids
+#         return HttpResponseRedirect(redirect_key)
 
 
 class GrantUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
