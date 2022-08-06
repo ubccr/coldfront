@@ -10,11 +10,13 @@
     <th scope="col">
       {% if request_filter == 'completed' %}
         Completion Time
+        <a href="?order_by=completion_time&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+        <a href="?order_by=completion_time&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
       {% else %}
         Request Time
+        <a href="?order_by=request_time&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+        <a href="?order_by=request_time&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
       {% endif %}
-      <a href="?order_by=created&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-      <a href="?order_by=created&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
     </th>
     <th scope="col">
       User Email
@@ -28,8 +30,8 @@
     </th>
     <th scope="col">
       Project
-      <a href="?order_by=allocation__project__name&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-      <a href="?order_by=allocation__project__name=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+      <a href="?order_by=allocation_user__allocation__project__name&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+      <a href="?order_by=allocation_user__allocation__project__name=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
     </th>
     <th scope="col">
       Allocation
@@ -95,7 +97,7 @@
             <span class="badge badge-warning">Pending</span>
           {% elif status == "Processing" %}
             <span class="badge badge-warning">{{ status }}</span>
-          {% elif status == "Active" %}
+          {% elif status == "Complete" %}
             <span class="badge badge-success">{{ status }}</span>
           {% elif status == "Denied" %}
             <span class="badge badge-danger">{{ status }}</span>
