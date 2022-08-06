@@ -162,16 +162,27 @@ class AllocationClusterAccountRequestListView(LoginRequiredMixin,
             data = cluster_search_form.cleaned_data
 
             if data.get('username'):
-                cluster_access_request_list = cluster_access_request_list.filter(allocation_user__user__username__icontains=data.get('username'))
+                cluster_access_request_list = \
+                    cluster_access_request_list.filter(
+                        allocation_user__user__username__icontains=data.get(
+                            'username'))
 
             if data.get('email'):
-                cluster_access_request_list = cluster_access_request_list.filter(allocation_user__user__email__icontains=data.get('email'))
+                cluster_access_request_list = \
+                    cluster_access_request_list.filter(
+                        allocation_user__user__email__icontains=data.get(
+                            'email'))
 
             if data.get('project_name'):
-                cluster_access_request_list = cluster_access_request_list.filter(allocation_user__allocation__project__name__icontains=data.get('project_name'))
+                cluster_access_request_list = \
+                    cluster_access_request_list.filter(
+                        allocation_user__allocation__project__name__icontains=data.get(
+                            'project_name'))
 
             if data.get('request_status'):
-                cluster_access_request_list = cluster_access_request_list.filter(status__name__icontains=data.get('request_status'))
+                cluster_access_request_list = \
+                    cluster_access_request_list.filter(
+                        status__name__icontains=data.get('request_status'))
 
         return cluster_access_request_list.order_by(order_by)
 
@@ -211,14 +222,16 @@ class AllocationClusterAccountRequestListView(LoginRequiredMixin,
         if order_by:
             direction = self.request.GET.get('direction')
             filter_parameters_with_order_by = filter_parameters + \
-                                              'order_by=%s&direction=%s&' % (order_by, direction)
+                                              'order_by=%s&direction=%s&' % \
+                                              (order_by, direction)
         else:
             filter_parameters_with_order_by = filter_parameters
 
         context['expand_accordion'] = 'show'
 
         context['filter_parameters'] = filter_parameters
-        context['filter_parameters_with_order_by'] = filter_parameters_with_order_by
+        context['filter_parameters_with_order_by'] = \
+            filter_parameters_with_order_by
 
         context['request_filter'] = (
             'completed' if self.completed else 'pending')
