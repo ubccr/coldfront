@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timezone
 
 from django.core.management import BaseCommand
 
@@ -28,7 +29,7 @@ class Command(BaseCommand):
         cluster_account_status = \
             AllocationAttributeType.objects.get(name='Cluster Account Status')
 
-        for status in ['Pending - Add', 'Processing', 'Active', 'Denied']:
+        for status in ['Pending - Add', 'Processing', 'Complete', 'Denied']:
             count = 0
             attributes = \
                 AllocationUserAttribute.objects.filter(
@@ -38,22 +39,26 @@ class Command(BaseCommand):
             status_choice = \
                 ClusterAccessRequestStatusChoice.objects.get(name=status)
 
+            portal_launch = datetime(2021, 6, 1, tzinfo=timezone.utc)
             for attr in attributes.iterator():
-                user = attr.allocation_user.user
+                # Only make requests for AllocationUserAttributes created
+                # after the portal's launch.
+                if attr.created >= portal_launch:
+                    user = attr.allocation_user.user
 
-                request, created = ClusterAccessRequest.objects.get_or_create(
-                    allocation_user=attr.allocation_user,
-                    status=status_choice,
-                    request_time=attr.created,
-                    host_user=user.userprofile.host_user,
-                    billing_activity=user.userprofile.billing_activity)
+                    request, created = ClusterAccessRequest.objects.get_or_create(
+                        allocation_user=attr.allocation_user,
+                        status=status_choice,
+                        request_time=attr.created,
+                        host_user=user.userprofile.host_user,
+                        billing_activity=user.userprofile.billing_activity)
 
-                if created:
-                    count += 1
+                    if created:
+                        count += 1
 
-                if status in ['Active', 'Denied']:
-                    request.completion_time = attr.modified
-                    request.save()
+                    if status in ['Complete', 'Denied']:
+                        request.completion_time = attr.modified
+                        request.save()
 
             message = f'Created {count} new {status} ClusterAccessRequests.'
             self.stdout.write(self.style.SUCCESS(message))
