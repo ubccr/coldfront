@@ -1,41 +1,48 @@
 {% extends "common/base.html" %}
+{% load common_tags %}
 {% load crispy_forms_tags %}
 {% load feature_flags %}
 {% load static %}
 
 
 {% block title %}
-New Savio Project
+New {{ PRIMARY_CLUSTER_NAME }} Project
 {% endblock %}
 
 
 {% block content %}
-<h1>New Savio Project</h1><hr>
+<h1>New {{ PRIMARY_CLUSTER_NAME }} Project</h1><hr>
 
 {% flag_enabled 'ALLOCATION_RENEWAL_FOR_NEXT_PERIOD_REQUESTABLE' as next_period_requestable %}
 {% if next_period_requestable %}
   <div class="alert alert-info" role="alert">
     <i class="fas fa-info-circle" aria-hidden="true"></i>
-    The allowance year for FCAs is ending soon, on
+    The allowance year for {{ yearly_allowance_names }} is ending soon, on
     {{ CURRENT_ALLOWANCE_YEAR_ALLOCATION_PERIOD.end_date|date:"M. d, Y" }}.
     Between now and then, you may request to create a new project for the
-    remainder of the current allocation year, or to create it for the start of
-    the next allocation year. If you choose to create it now, you may complete
+    remainder of the current allowance year, or to create it for the start of
+    the next allowance year. If you choose to create it now, you may complete
     a separate renewal form once it has been approved and processed.
   </div>
 {% endif %}
 
 <p>
-  Eligible users may request to create a new project on the Savio cluster, or
-  pool their allocations with those of existing projects. The following
-  allocation types are available:
+  Eligible users may request to create a new project on the
+  {{ PRIMARY_CLUSTER_NAME }} cluster, or pool their allowances with those of
+  existing projects. The following allowances are available:
 </p>
 <ul>
-  <li>Faculty Compute Allowance (FCA)</li>
-  <li>Condo Allocation</li>
-  <li>Instructional Compute Allowance (ICA)*</li>
-  <li>Partner Compute Allowance (PCA)</li>
-  <li>Recharge Allocation (Purchase time on Savio)*</li>
+  {% for allowance in allowances %}
+  <li>
+    {{ allowance|get_value_from_dict:'name_long' }}
+    {% if allowance|get_value_from_dict:'is_poolable' %}
+      <span class="badge badge-primary">POOL</span>
+    {% endif %}
+    {% if allowance|get_value_from_dict:'requires_mou' %}
+      <span class="badge badge-info">MOU</span>
+    {% endif %}
+  </li>
+  {% endfor %}
 </ul>
 <p>
   This form is intended for Principal Investigators (PIs) or users acting on
@@ -51,10 +58,17 @@ New Savio Project
   notified by email that a request is being made by you.
 </p>
 <p>
-  * The PI will be contacted to provide a signed Memorandum of Understanding
-  as part of the approval process.
+  <div>
+    <span class="badge badge-info">MOU</span>
+    The PI will be contacted to provide a signed Memorandum of Understanding as
+    part of the approval process.
+  </div>
+  <div>
+    <span class="badge badge-primary">POOL</span>
+    The allowance is eligible for pooling of service units.
+  </div>
 </p>
-<a class="btn btn-primary" href="{% url 'savio-project-request' %}">
+<a class="btn btn-primary" href="{% url 'new-project-request' %}">
   Continue
 </a>
 <a class="btn btn-secondary" href="{% url 'project-request' %}">

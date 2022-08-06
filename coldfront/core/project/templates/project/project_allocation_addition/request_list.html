@@ -29,11 +29,6 @@ Service Units Purchase {{ request_filter|title }} Requests %}
   {% endif %}
 </p>
 
-<p>
-  Note: Requests to purchase additional Service Units are limited to Recharge
-  (ac_) projects on Savio.
-</p>
-
 {% if addition_request_list %}
 <div class="table-responsive">
   {% with queryset=addition_request_list %}

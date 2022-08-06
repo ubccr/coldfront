@@ -4,7 +4,7 @@
 
 
 {% block title %}
-Savio Project Request - Setup
+{{ PRIMARY_CLUSTER_NAME }} Project Request - Setup
 {% endblock %}
 
 
@@ -28,7 +28,7 @@ Savio Project Request - Setup
       {% csrf_token %}
       {{ form|crispy }}
       <input class="btn btn-primary" type="submit" value="Submit" />
-      <a href="{% url 'savio-project-request-detail' savio_request.pk %}" class="btn btn-secondary">
+      <a href="{% url 'new-project-request-detail' savio_request.pk %}" class="btn btn-secondary">
         Cancel
       </a>
     </form>

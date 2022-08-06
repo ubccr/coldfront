@@ -22,6 +22,9 @@ from coldfront.core.project.models import Project, ProjectStatusChoice, \
     ProjectUser, ProjectUserStatusChoice, ProjectUserRoleChoice, \
     ProjectAllocationRequestStatusChoice, SavioProjectAllocationRequest, \
     VectorProjectAllocationRequest
+from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 
 DATE_FORMAT = '%m-%d-%Y %H:%M:%S'
 ABR_DATE_FORMAT = '%m-%d-%Y'
@@ -654,6 +657,10 @@ class TestNewProjectRequests(TestBase):
         additional_headers = ['project', 'status', 'requester', 'pi']
 
         # create sample requests
+        fca_computing_allowance = Resource.objects.get(name=BRCAllowances.FCA)
+        fca_allocation_type = \
+            ComputingAllowanceInterface().name_short_from_name(
+                fca_computing_allowance.name)
         projects, statuses, requesters, pis = [], [], [], []
         for index in range(15):
             test_user = User.objects.create(
@@ -681,7 +688,8 @@ class TestNewProjectRequests(TestBase):
             elif 5 <= index < 10:
                 SavioProjectAllocationRequest.objects.create(
                     requester=test_user,
-                    allocation_type=SavioProjectAllocationRequest.FCA,
+                    allocation_type=fca_allocation_type,
+                    computing_allowance=fca_computing_allowance,
                     project=project,
                     survey_answers={'abcd': 'bcda'},
                     pi=test_user,
@@ -693,7 +701,8 @@ class TestNewProjectRequests(TestBase):
             else:
                 SavioProjectAllocationRequest.objects.create(
                     requester=test_user,
-                    allocation_type=SavioProjectAllocationRequest.FCA,
+                    allocation_type=fca_allocation_type,
+                    computing_allowance=fca_computing_allowance,
                     project=project,
                     survey_answers={'abcd': 'bcda'},
                     pi=test_user,
@@ -854,7 +863,10 @@ class TestSurveyResponses(TestBase):
         filtered_fixtures = []
 
         # dummy params
-        allocation_type = SavioProjectAllocationRequest.FCA
+        fca_computing_allowance = Resource.objects.get(name=BRCAllowances.FCA)
+        fca_allocation_type = \
+            ComputingAllowanceInterface().name_short_from_name(
+                fca_computing_allowance.name)
         pool = False
 
         for index in range(5):
@@ -876,7 +888,8 @@ class TestSurveyResponses(TestBase):
             }
 
             kwargs = {
-                'allocation_type': allocation_type,
+                'allocation_type': fca_allocation_type,
+                'computing_allowance': fca_computing_allowance,
                 'pi': pi,
                 'project': project,
                 'pool': pool,

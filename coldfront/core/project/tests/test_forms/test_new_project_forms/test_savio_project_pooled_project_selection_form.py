@@ -1,6 +1,8 @@
 from coldfront.core.project.forms_.new_project_forms.request_forms import SavioProjectPooledProjectSelectionForm
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectStatusChoice
+from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
 from coldfront.core.utils.tests.test_base import TestBase
 
 
@@ -23,7 +25,8 @@ class TestSavioProjectPooledProjectSelectionForm(TestBase):
         Project.objects.create(
             name=inactive_name, title=inactive_name, status=inactive_status)
 
-        form = SavioProjectPooledProjectSelectionForm(allocation_type='FCA')
+        form = SavioProjectPooledProjectSelectionForm(
+            computing_allowance=Resource.objects.get(name=BRCAllowances.FCA))
         project_field_choices = form.fields['project'].queryset
         self.assertEqual(len(project_field_choices), 1)
         self.assertEqual(project_field_choices[0], active_project)

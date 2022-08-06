@@ -3,13 +3,15 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
 from django.views.generic.base import TemplateView
+from flags.state import flag_enabled
 
 from coldfront.core.allocation.models import (AllocationAttributeType,
                                               AllocationUserAttribute,
                                               AllocationRenewalRequest,
                                               AllocationAdditionRequest,
                                               SecureDirAddUserRequest,
-                                              SecureDirRemoveUserRequest)
+                                              SecureDirRemoveUserRequest,
+                                              SecureDirRequest)
 from coldfront.core.allocation.utils import annotate_queryset_with_allocation_period_not_started_bool
 from coldfront.core.project.models import (ProjectUserRemovalRequest,
                                            SavioProjectAllocationRequest,
@@ -193,16 +195,16 @@ class RequestHubView(LoginRequiredMixin,
 
         savio_proj_request_object.num_pending = project_request_pending.count()
 
-        savio_proj_request_object.title = 'Savio Project Requests'
+        savio_proj_request_object.title = 'New Project Requests'
         savio_proj_request_object.table = \
             'project/project_request/savio/project_request_list_table.html'
         savio_proj_request_object.button_path = \
-            'savio-project-pending-request-list'
+            'new-project-pending-request-list'
         savio_proj_request_object.button_text = \
-            'Go To Savio Project Requests Main Page'
-        savio_proj_request_object.id = 'savio_project_request_section'
+            'Go To New Project Requests Main Page'
+        savio_proj_request_object.id = 'new_project_request_section'
         savio_proj_request_object.help_text = \
-            'Showing Savio project requests that you requested or requests ' \
+            'Showing new project requests that you requested or requests ' \
             'in which you are the PI for the associated project.'
 
         return savio_proj_request_object
@@ -516,6 +518,65 @@ class RequestHubView(LoginRequiredMixin,
 
         return secure_dir_remove_request_object
 
+    def get_secure_dir_request(self):
+        """Populates a RequestListItem with data for secure dir requests"""
+        secure_dir_request_object = RequestListItem()
+        user = self.request.user
+
+        secure_dir_pending = SecureDirRequest.objects.filter(
+            status__name__in=['Under Review', 'Approved - Processing']).order_by('modified')
+
+        secure_dir_complete = SecureDirRequest.objects.filter(
+            status__name__in=['Approved - Complete', 'Denied']).order_by('modified')
+
+        if not self.show_all_requests:
+            # limit secure_dir_requests to objects user is a PI of or user has
+            user_cond = Q(requester=user)
+            request_pks = [request.pk for request in secure_dir_pending if
+                           request.project.projectuser_set.filter(
+                               user=user,
+                               role__name='Principle Investigator',
+                               status__name='Active'
+                           ).exists()]
+            pi_cond = Q(pk__in=request_pks)
+
+            secure_dir_pending = secure_dir_pending.filter(user_cond | pi_cond)
+
+            request_pks = [request.pk for request in secure_dir_complete if
+                           request.project.projectuser_set.filter(
+                               user=user,
+                               role__name='Principle Investigator',
+                               status__name='Active'
+                           ).exists()]
+            pi_cond = Q(pk__in=request_pks)
+
+            secure_dir_complete = secure_dir_complete.filter(user_cond | pi_cond)
+
+        secure_dir_request_object.num = self.paginators
+        secure_dir_request_object.pending_queryset = \
+            self.create_paginator(secure_dir_pending)
+
+        secure_dir_request_object.complete_queryset = \
+            self.create_paginator(secure_dir_complete)
+
+        secure_dir_request_object.num_pending = \
+            secure_dir_pending.count()
+
+        secure_dir_request_object.title = \
+            'Secure Directory Requests'
+        secure_dir_request_object.table = \
+            'secure_dir/secure_dir_request/secure_dir_request_list_table.html'
+        secure_dir_request_object.button_path = \
+            'secure-dir-pending-request-list'
+        secure_dir_request_object.button_text = \
+            'Go To Secure Directory Requests Main Page'
+        secure_dir_request_object.id = \
+            'secure_dir_request_section'
+        secure_dir_request_object.help_text = \
+            'Showing secure directory requests for projects where you are a PI.'
+
+        return secure_dir_request_object
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
@@ -525,9 +586,12 @@ class RequestHubView(LoginRequiredMixin,
                     'vector_project_request',
                     'project_join_request',
                     'project_renewal_request',
-                    'su_purchase_request',
-                    'secure_dir_join_request',
-                    'secure_dir_remove_request']
+                    'su_purchase_request']
+
+        if flag_enabled('SECURE_DIRS_REQUESTABLE'):
+            requests += ['secure_dir_request',
+                         'secure_dir_join_request',
+                         'secure_dir_remove_request']
 
         context['show_all'] = ((self.request.user.is_superuser or
                                 self.request.user.is_staff) and

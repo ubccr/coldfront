@@ -1,8 +1,14 @@
 {% load common_tags %}
 {% load crispy_forms_tags %}
+{% load feature_flags %}
+
+{% flag_enabled 'BRC_ONLY' as brc_only %}
 
 
+{% if brc_only %}
 <p>Service Unit usage pop quiz</p>
+{% endif %}
+
 <form method="post">
   {% csrf_token %}
   {{ form|crispy }}

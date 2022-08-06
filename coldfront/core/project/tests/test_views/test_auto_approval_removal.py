@@ -71,13 +71,13 @@ class TestBase(AllTestsBase):
             name='User')
 
         # Create Projects.
-        self.project1 = Project.objects.create(
-            name='project1', status=active_project_status)
+        self.fc_project1 = Project.objects.create(
+            name='fc_project1', status=active_project_status)
 
         # add pis
         for pi_user in [self.pi1, self.pi2]:
             ProjectUser.objects.create(
-                project=self.project1,
+                project=self.fc_project1,
                 user=pi_user,
                 role=pi_project_role,
                 status=active_project_user_status)
@@ -105,7 +105,7 @@ class TestProjectJoinView(TestBase):
         ProjectUserJoinRequest
         """
         url = reverse(
-            'project-join', kwargs={'pk': self.project1.pk})
+            'project-join', kwargs={'pk': self.fc_project1.pk})
         data = {'reason': 'Testing ProjectJoinView. Testing ProjectJoinView.'}
         self.client.login(username=self.user1.username, password=self.password)
         response = self.client.post(url, data)
@@ -113,7 +113,7 @@ class TestProjectJoinView(TestBase):
         self.assertEqual(response.status_code, HTTPStatus.FOUND)
 
         proj_user = ProjectUser.objects.filter(user=self.user1,
-                                               project=self.project1,
+                                               project=self.fc_project1,
                                                status__name='Pending - Add')
         self.assertTrue(proj_user.exists())
         self.assertTrue(ProjectUserJoinRequest.objects.filter(
@@ -128,26 +128,26 @@ class TestProjectJoinView(TestBase):
         PIs after a join request
         """
         url = reverse(
-            'project-join', kwargs={'pk': self.project1.pk})
+            'project-join', kwargs={'pk': self.fc_project1.pk})
         data = {'reason': 'Testing ProjectJoinView. Testing ProjectJoinView.'}
         self.client.login(username=self.user1.username, password=self.password)
         response = self.client.post(url, data)
         self.client.logout()
 
         email_to_list = [proj_user.user.email for proj_user in
-                         self.project1.projectuser_set.filter(
+                         self.fc_project1.projectuser_set.filter(
                              role__name__in=['Manager', 'Principal Investigator'],
                              status__name='Active')]
 
         domain = import_from_settings('CENTER_BASE_URL')
         view = reverse(
-            'project-review-join-requests', kwargs={'pk': self.project1.pk})
+            'project-review-join-requests', kwargs={'pk': self.fc_project1.pk})
         review_url = urljoin(domain, view)
 
         body_components = [
             (f'User {self.user1.first_name} {self.user1.last_name} '
              f'({self.user1.email}) has requested to join your project, '
-             f'{self.project1.name} via the {settings.PORTAL_NAME} User '
+             f'{self.fc_project1.name} via the {settings.PORTAL_NAME} User '
              f'Portal.'),
             f'Please approve/deny this request here: {review_url}.',
         ]
@@ -168,7 +168,7 @@ class TestProjectReviewJoinRequestsView(TestBase):
         """Set up test data."""
         super().setUp()
         url = reverse(
-            'project-join', kwargs={'pk': self.project1.pk})
+            'project-join', kwargs={'pk': self.fc_project1.pk})
         self.data = {'reason': 'Testing ProjectJoinView. Testing ProjectJoinView.'}
         self.client.login(username=self.user1.username, password=self.password)
         response = self.client.post(url, self.data)
@@ -179,7 +179,7 @@ class TestProjectReviewJoinRequestsView(TestBase):
         Test that project-review-join-requests displays correct requests
         """
         url = reverse(
-            'project-review-join-requests', kwargs={'pk': self.project1.pk})
+            'project-review-join-requests', kwargs={'pk': self.fc_project1.pk})
         self.client.login(username=self.pi1.username, password=self.password)
         response = self.client.get(url)
         self.assertEqual(response.status_code, HTTPStatus.OK)
@@ -191,7 +191,7 @@ class TestProjectReviewJoinRequestsView(TestBase):
         Test project-review-join-requests approval
         """
         proj_user = ProjectUser.objects.filter(user=self.user1,
-                                               project=self.project1).first()
+                                               project=self.fc_project1).first()
 
         self.assertEqual(proj_user.status.name, 'Pending - Add')
 
@@ -203,7 +203,7 @@ class TestProjectReviewJoinRequestsView(TestBase):
                      'decision': ['approve']}
 
         url = reverse(
-            'project-review-join-requests', kwargs={'pk': self.project1.pk})
+            'project-review-join-requests', kwargs={'pk': self.fc_project1.pk})
         self.client.login(username=self.pi1.username, password=self.password)
         response = self.client.post(url, form_data)
         self.assertEqual(response.status_code, HTTPStatus.FOUND)
@@ -216,7 +216,7 @@ class TestProjectReviewJoinRequestsView(TestBase):
         Test project-review-join-requests approval
         """
         proj_user = ProjectUser.objects.filter(user=self.user1,
-                                               project=self.project1).first()
+                                               project=self.fc_project1).first()
 
         self.assertEqual(proj_user.status.name, 'Pending - Add')
 
@@ -228,7 +228,7 @@ class TestProjectReviewJoinRequestsView(TestBase):
                      'decision': ['deny']}
 
         url = reverse(
-            'project-review-join-requests', kwargs={'pk': self.project1.pk})
+            'project-review-join-requests', kwargs={'pk': self.fc_project1.pk})
         self.client.login(username=self.pi1.username, password=self.password)
         response = self.client.post(url, form_data)
         self.assertEqual(response.status_code, HTTPStatus.FOUND)
@@ -252,14 +252,14 @@ class TestProjectUpdateView(TestBase):
         form_data = {'title': 'New Updated Title',
                      'description': 'New Updated Description'}
         url = reverse(
-            'project-update', kwargs={'pk': self.project1.pk})
+            'project-update', kwargs={'pk': self.fc_project1.pk})
         self.client.login(username=self.pi1.username, password=self.password)
         response = self.client.post(url, form_data)
         self.assertEqual(response.status_code, HTTPStatus.FOUND)
 
         self.assertRedirects(response, reverse('project-detail',
-                                               kwargs={'pk': self.project1.pk}))
-        self.project1.refresh_from_db()
-        self.assertEqual(self.project1.title, form_data['title'])
-        self.assertEqual(self.project1.description, form_data['description'])
+                                               kwargs={'pk': self.fc_project1.pk}))
+        self.fc_project1.refresh_from_db()
+        self.assertEqual(self.fc_project1.title, form_data['title'])
+        self.assertEqual(self.fc_project1.description, form_data['description'])
 

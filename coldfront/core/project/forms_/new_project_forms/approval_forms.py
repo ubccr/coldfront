@@ -1,4 +1,5 @@
 from coldfront.core.project.models import Project
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 
 from django import forms
 from django.core.validators import MinLengthValidator
@@ -26,10 +27,11 @@ class SavioProjectReviewSetupForm(forms.Form):
             'Update the name of the project, in case it needed to be '
             'changed. It must begin with the correct prefix.'),
         label='Final Name',
-        max_length=len('fc_') + 12,
+        # TODO: Project prefix names are assumed to have 3 characters.
+        max_length=3 + 12,
         required=True,
         validators=[
-            MinLengthValidator(len('fc_') + 4),
+            MinLengthValidator(3 + 4),
             RegexValidator(
                 r'^[0-9a-z_]+$',
                 message=(
@@ -48,6 +50,7 @@ class SavioProjectReviewSetupForm(forms.Form):
     def __init__(self, *args, **kwargs):
         self.project_pk = kwargs.pop('project_pk')
         self.requested_name = kwargs.pop('requested_name')
+        self.computing_allowance = kwargs.pop('computing_allowance')
         super().__init__(*args, **kwargs)
         self.fields['final_name'].initial = self.requested_name
 
@@ -65,15 +68,8 @@ class SavioProjectReviewSetupForm(forms.Form):
     def clean_final_name(self):
         cleaned_data = super().clean()
         final_name = cleaned_data.get('final_name', '').lower()
-        expected_prefix = None
-        for prefix in ('ac_', 'co_', 'fc_', 'ic_', 'pc_'):
-            if self.requested_name.startswith(prefix):
-                expected_prefix = prefix
-                break
-        if not expected_prefix:
-            raise forms.ValidationError(
-                f'Requested project name {self.requested_name} has invalid '
-                f'prefix.')
+        expected_prefix = ComputingAllowanceInterface().code_from_name(
+            self.computing_allowance.name)
         if not final_name.startswith(expected_prefix):
             raise forms.ValidationError(
                 f'Final project name must begin with "{expected_prefix}".')

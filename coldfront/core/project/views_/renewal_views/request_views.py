@@ -17,30 +17,91 @@ from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils_.permissions_utils import is_user_manager_or_pi_of_project
-from coldfront.core.project.utils_.renewal_utils import get_pi_current_active_fca_project
+from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
+from coldfront.core.project.utils_.renewal_utils import get_pi_active_unique_project
 from coldfront.core.project.utils_.renewal_utils import has_non_denied_renewal_request
 from coldfront.core.project.utils_.renewal_utils import send_new_allocation_renewal_request_admin_notification_email
 from coldfront.core.project.utils_.renewal_utils import send_new_allocation_renewal_request_pi_notification_email
 from coldfront.core.project.utils_.renewal_utils import send_new_allocation_renewal_request_pooling_notification_email
 from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils import get_primary_compute_resource
+from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
+from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
+from coldfront.core.resource.utils_.allowance_utils.constants import LRCAllowances
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
+from coldfront.core.user.utils import access_agreement_signed
 from coldfront.core.utils.common import session_wizard_all_form_data
 from coldfront.core.utils.common import utc_now_offset_aware
 
-from django.conf import settings
+from decimal import Decimal
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.mixins import UserPassesTestMixin
+from django.core.exceptions import ImproperlyConfigured
 from django.db import IntegrityError
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
+from django.views.generic.base import TemplateView
 
+from flags.state import flag_enabled
 from formtools.wizard.views import SessionWizardView
 
 import logging
 
 
 logger = logging.getLogger(__name__)
+
+
+class AllocationRenewalLandingView(LoginRequiredMixin, UserPassesTestMixin,
+                                   TemplateView):
+    template_name = 'project/project_renewal/request_landing.html'
+
+    def test_func(self):
+        if self.request.user.is_superuser:
+            return True
+        if access_agreement_signed(self.request.user):
+            return True
+        message = (
+            'You must sign the User Access Agreement before you can request '
+            'to renew an allowance.')
+        messages.error(self.request, message)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        allowances = []
+        yearly_allowance_names = []
+        renewal_supported_allowance_names = []
+        renewal_not_supported_allowance_names = []
+        interface = ComputingAllowanceInterface()
+        for allowance in sorted(interface.allowances(), key=lambda a: a.pk):
+            wrapper = ComputingAllowance(allowance)
+            allowance_name = wrapper.get_name()
+            entry = {
+                'name': allowance_name,
+                'name_long': interface.name_long_from_name(allowance_name),
+            }
+            allowances.append(entry)
+            if wrapper.is_yearly():
+                name_short = interface.name_short_from_name(allowance_name)
+                yearly_allowance_names.append(f'{name_short}s')
+            if wrapper.is_renewable():
+                if wrapper.is_renewal_supported():
+                    renewal_supported_allowance_names.append(allowance_name)
+                else:
+                    renewal_not_supported_allowance_names.append(
+                        allowance_name)
+
+        context['allowances'] = allowances
+        context['yearly_allowance_names'] = ', '.join(yearly_allowance_names)
+        context['renewal_supported_allowance_names'] = \
+            renewal_supported_allowance_names
+        context['renewal_not_supported_allowance_names'] = \
+            renewal_not_supported_allowance_names
+
+        return context
 
 
 class AllocationRenewalMixin(object):
@@ -52,15 +113,32 @@ class AllocationRenewalMixin(object):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # TODO: Set this dynamically when supporting other types.
+        if flag_enabled('BRC_ONLY'):
+            self.computing_allowance = Resource.objects.get(
+                name=BRCAllowances.FCA)
+        elif flag_enabled('LRC_ONLY'):
+            self.computing_allowance = Resource.objects.get(
+                name=LRCAllowances.PCA)
+        else:
+            raise ImproperlyConfigured(
+                'One of the following flags must be enabled: BRC_ONLY, '
+                'LRC_ONLY.')
+        self.interface = ComputingAllowanceInterface()
+        self.num_service_units = Decimal(
+            self.interface.service_units_from_name(
+                self.computing_allowance.name))
 
     @staticmethod
-    def create_allocation_renewal_request(requester, pi, allocation_period,
-                                          pre_project, post_project,
+    def create_allocation_renewal_request(requester, pi, computing_allowance,
+                                          allocation_period, pre_project,
+                                          post_project,
                                           new_project_request=None):
         """Create a new AllocationRenewalRequest."""
         request_kwargs = dict()
         request_kwargs['requester'] = requester
         request_kwargs['pi'] = pi
+        request_kwargs['computing_allowance'] = computing_allowance
         request_kwargs['allocation_period'] = allocation_period
         request_kwargs['status'] = \
             AllocationRenewalRequestStatusChoice.objects.get(
@@ -179,23 +257,24 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
         return context
 
     def get_form_kwargs(self, step=None):
-        # TODO: Set this dynamically when supporting other types.
-        allocation_type = SavioProjectAllocationRequest.FCA
         kwargs = {}
         step = int(step)
         if step == self.step_numbers_by_form_name['allocation_period']:
-            kwargs['allocation_type'] = allocation_type
+            kwargs['computing_allowance'] = self.computing_allowance
         elif step == self.step_numbers_by_form_name['pi_selection']:
+            kwargs['computing_allowance'] = self.computing_allowance
             tmp = {}
             self.__set_data_from_previous_steps(step, tmp)
             kwargs['allocation_period_pk'] = getattr(
                 tmp.get('allocation_period', None), 'pk', None)
             project_pks = []
             user = self.request.user
+            project_name_prefix = self.interface.code_from_name(
+                self.computing_allowance.name)
             role_names = ['Manager', 'Principal Investigator']
             status = ProjectUserStatusChoice.objects.get(name='Active')
             project_users = user.projectuser_set.filter(
-                project__name__startswith='fc_',
+                project__name__startswith=project_name_prefix,
                 role__name__in=role_names,
                 status=status)
             for project_user in project_users:
@@ -207,6 +286,7 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
             kwargs['currently_pooled'] = ('current_project' in tmp and
                                           tmp['current_project'].is_pooled())
         elif step == self.step_numbers_by_form_name['project_selection']:
+            kwargs['computing_allowance'] = self.computing_allowance
             tmp = {}
             self.__set_data_from_previous_steps(step, tmp)
             kwargs['pi_pk'] = tmp['PI'].user.pk
@@ -219,7 +299,9 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
             if 'current_project' in tmp:
                 kwargs['exclude_project_pk'] = tmp['current_project'].pk
         elif step == self.step_numbers_by_form_name['new_project_details']:
-            kwargs['allocation_type'] = allocation_type
+            kwargs['computing_allowance'] = self.computing_allowance
+        elif step == self.step_numbers_by_form_name['new_project_survey']:
+            kwargs['computing_allowance'] = self.computing_allowance
         return kwargs
 
     def get_template_names(self):
@@ -260,8 +342,8 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
                 requested_project = tmp['requested_project']
 
             request = self.create_allocation_renewal_request(
-                self.request.user, pi, allocation_period,
-                tmp['current_project'], requested_project,
+                self.request.user, pi, self.computing_allowance,
+                allocation_period, tmp['current_project'], requested_project,
                 new_project_request=new_project_request)
 
             self.send_emails(request)
@@ -313,7 +395,7 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
         return form_data[step_number]
 
     def __handle_create_new_project(self, form_data):
-        """Create a new project and an allocation to the Savio Compute
+        """Create a new project and an allocation to the primary compute
         resource. This method should only be invoked if a new Project"""
         step_number = self.step_numbers_by_form_name['new_project_details']
         data = form_data[step_number]
@@ -331,10 +413,10 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
                 f'Project {data["name"]} unexpectedly already exists.')
             raise e
 
-        # Create an allocation to the "Savio Compute" resource.
+        # Create an allocation to the primary compute resource.
         status = AllocationStatusChoice.objects.get(name='New')
         allocation = Allocation.objects.create(project=project, status=status)
-        resource = Resource.objects.get(name='Savio Compute')
+        resource = get_primary_compute_resource()
         allocation.resources.add(resource)
         allocation.save()
 
@@ -343,9 +425,12 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
     def __handle_create_new_project_request(self, pi, project, survey_data):
         """Create a new SavioProjectAllocationRequest. This method
         should only be invoked if a new Project is requested."""
+        # TODO: allocation_type will eventually be removed from the model.
         request_kwargs = dict()
         request_kwargs['requester'] = self.request.user
-        request_kwargs['allocation_type'] = SavioProjectAllocationRequest.FCA
+        request_kwargs['allocation_type'] = \
+            self.interface.name_short_from_name(self.computing_allowance.name)
+        request_kwargs['computing_allowance'] = self.computing_allowance
         request_kwargs['pi'] = pi
         request_kwargs['project'] = project
         request_kwargs['pool'] = False
@@ -355,8 +440,47 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
                 name='Under Review')
         return SavioProjectAllocationRequest.objects.create(**request_kwargs)
 
+    def __infer_pi_current_project(self, pi_user, computing_allowance):
+        """Retrieve the PI's current Project with the given
+        allowance."""
+        # TODO: Set this dynamically when supporting other types.
+        allocation_period = get_current_allowance_year_period()
+        try:
+            # TODO: When supporting renewals of allowances that PIs may have
+            # TODO: multiple of, relax the uniqueness constraint.
+            return get_pi_active_unique_project(
+                pi_user, computing_allowance, allocation_period)
+        except Project.DoesNotExist:
+            # If the PI has no active Project with the allowance, fall back on
+            # one shared by the requester and the PI.
+            project_name_prefix = self.interface.code_from_name(
+                computing_allowance.get_name())
+            requester_projects = set(list(
+                ProjectUser.objects.filter(
+                    project__name__startswith=project_name_prefix,
+                    user=self.request.user,
+                    role__name__in=[
+                        'Manager', 'Principal Investigator']
+                ).values_list('project', flat=True)))
+            pi_projects = set(list(
+                ProjectUser.objects.filter(
+                    project__name__startswith=project_name_prefix,
+                    user=pi_user,
+                    role__name='Principal Investigator'
+                ).values_list('project', flat=True)))
+            intersection = set.intersection(
+                requester_projects, pi_projects)
+            project_pk = sorted(list(intersection))[0]
+            return Project.objects.get(pk=project_pk)
+
     def __set_data_from_previous_steps(self, step, dictionary):
         """Update the given dictionary with data from previous steps."""
+        dictionary['computing_allowance'] = self.computing_allowance
+        computing_allowance_wrapper = ComputingAllowance(
+            self.computing_allowance)
+        dictionary['allowance_is_one_per_pi'] = \
+            computing_allowance_wrapper.is_one_per_pi()
+
         allocation_period_form_step = self.step_numbers_by_form_name[
             'allocation_period']
         if step > allocation_period_form_step:
@@ -364,9 +488,8 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
                 str(allocation_period_form_step))
             if data:
                 dictionary.update(data)
-                # TODO: Set this dynamically when supporting other types.
                 dictionary['allocation_amount'] = prorated_allocation_amount(
-                    settings.FCA_DEFAULT_ALLOCATION, utc_now_offset_aware(),
+                    self.num_service_units, utc_now_offset_aware(),
                     data['allocation_period'])
 
         pi_selection_form_step = self.step_numbers_by_form_name['pi_selection']
@@ -375,29 +498,8 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
             if data:
                 dictionary.update(data)
                 pi_user = data['PI'].user
-                try:
-                    current_project = get_pi_current_active_fca_project(
-                        pi_user)
-                except Project.DoesNotExist:
-                    # If the PI has no active FCA Project, fall back on one
-                    # shared by the requester and the PI.
-                    requester_projects = set(list(
-                        ProjectUser.objects.filter(
-                            project__name__startswith='fc_',
-                            user=self.request.user,
-                            role__name__in=[
-                                'Manager', 'Principal Investigator']
-                        ).values_list('project', flat=True)))
-                    pi_projects = set(list(
-                        ProjectUser.objects.filter(
-                            project__name__startswith='fc_',
-                            user=pi_user,
-                            role__name='Principal Investigator'
-                        ).values_list('project', flat=True)))
-                    intersection = set.intersection(
-                        requester_projects, pi_projects)
-                    project_pk = sorted(list(intersection))[0]
-                    current_project = Project.objects.get(pk=project_pk)
+                current_project = self.__infer_pi_current_project(
+                    pi_user, computing_allowance_wrapper)
                 dictionary['current_project'] = current_project
 
         pooling_preference_form_step = self.step_numbers_by_form_name[
@@ -495,8 +597,8 @@ class AllocationRenewalRequestUnderProjectView(LoginRequiredMixin,
                     f'{allocation_period.name}.')
 
             request = self.create_allocation_renewal_request(
-                self.request.user, pi, allocation_period, self.project_obj,
-                self.project_obj)
+                self.request.user, pi, self.computing_allowance,
+                allocation_period, self.project_obj, self.project_obj)
 
             self.send_emails(request)
         except Exception as e:
@@ -514,13 +616,12 @@ class AllocationRenewalRequestUnderProjectView(LoginRequiredMixin,
         return context
 
     def get_form_kwargs(self, step=None):
-        # TODO: Set this dynamically when supporting other types.
-        allocation_type = SavioProjectAllocationRequest.FCA
         kwargs = {}
         step = int(step)
         if step == self.step_numbers_by_form_name['allocation_period']:
-            kwargs['allocation_type'] = allocation_type
+            kwargs['computing_allowance'] = self.computing_allowance
         elif step == self.step_numbers_by_form_name['pi_selection']:
+            kwargs['computing_allowance'] = self.computing_allowance
             tmp = {}
             self.__set_data_from_previous_steps(step, tmp)
             kwargs['allocation_period_pk'] = getattr(
@@ -564,7 +665,7 @@ class AllocationRenewalRequestUnderProjectView(LoginRequiredMixin,
                 dictionary.update(data)
                 # TODO: Set this dynamically when supporting other types.
                 dictionary['allocation_amount'] = prorated_allocation_amount(
-                    settings.FCA_DEFAULT_ALLOCATION, utc_now_offset_aware(),
+                    self.num_service_units, utc_now_offset_aware(),
                     data['allocation_period'])
 
         pi_selection_form_step = self.step_numbers_by_form_name['pi_selection']
@@ -579,5 +680,7 @@ class AllocationRenewalRequestUnderProjectView(LoginRequiredMixin,
                     pooling_preference = form_class.UNPOOLED_TO_UNPOOLED
                 else:
                     pooling_preference = form_class.POOLED_TO_POOLED_SAME
+                form_class = ProjectRenewalPoolingPreferenceForm
                 dictionary['breadcrumb_pooling_preference'] = \
-                    pooling_preference
+                    form_class.SHORT_DESCRIPTIONS.get(
+                        pooling_preference, 'Unknown')

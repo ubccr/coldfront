@@ -13,15 +13,6 @@ Service Units Purchase Request Detail
 {% block content %}
 <h1>
   Service Units Purchase Request ({{ addition_request.project.name }})
-  {% with status=addition_request.status.name %}
-    {% if status == 'Under Review' %}
-      <span class="badge badge-warning float-right">{{ status }}</span>
-    {% elif status == 'Complete' %}
-      <span class="badge badge-success float-right">{{ status }}</span>
-    {% else %}
-      <span class="badge badge-danger float-right">{{ status }}</span>
-    {% endif %}
-  {% endwith %}
 </h1>
 <hr>
 

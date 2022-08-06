@@ -9,6 +9,9 @@ from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils_.new_project_utils import ProjectDenialRunner
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
+from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
 
@@ -58,9 +61,13 @@ class TestProjectDenialRunner(TestBase):
         under_review_request_status = \
             ProjectAllocationRequestStatusChoice.objects.get(
                 name='Under Review')
+        computing_allowance = Resource.objects.get(name=BRCAllowances.FCA)
+        interface = ComputingAllowanceInterface()
         new_project_request = SavioProjectAllocationRequest.objects.create(
             requester=self.user,
-            allocation_type=SavioProjectAllocationRequest.FCA,
+            allocation_type=interface.name_short_from_name(
+                computing_allowance.name),
+            computing_allowance=computing_allowance,
             pi=self.user,
             project=new_project,
             survey_answers={},

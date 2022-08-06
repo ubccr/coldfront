@@ -3,6 +3,19 @@
     <h2>
       <i class="fas fa-info-circle" aria-hidden="true"></i>
       Request Information
+      {% with status=renewal_request.status.name %}
+        {% if status == 'Under Review' %}
+          <span class="badge badge-warning" style="float:right; position:relative; top:5px;">{{ status }}</span>
+        {% elif status == 'Approved' %}
+          <span class="badge badge-warning" style="float:right; position:relative; top:5px;">
+            {{ status }} - Scheduled
+          </span>
+        {% elif status == 'Complete' %}
+          <span class="badge badge-success" style="float:right; position:relative; top:5px;">{{ status }}</span>
+        {% else %}
+          <span class="badge badge-danger" style="float:right; position:relative; top:5px;">{{ status }}</span>
+        {% endif %}
+      {% endwith %}
     </h2>
   </div>
   <div class="card-body">

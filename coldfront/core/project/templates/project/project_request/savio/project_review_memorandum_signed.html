@@ -4,7 +4,7 @@
 
 
 {% block title %}
-Savio Project Request - Confirm MOU Signed
+{{ PRIMARY_CLUSTER_NAME }} Project Request - Confirm MOU Signed
 {% endblock %}
 
 
@@ -12,16 +12,12 @@ Savio Project Request - Confirm MOU Signed
 <h1>Confirm Memorandum of Understanding Signed</h1>
 <hr>
 
-{% if savio_request.allocation_type == 'ICA' %}
-  <p>
-    Please confirm that the Memorandum of Understanding has been signed.
-  </p>
-{% else %}
-  <p>
-    Please confirm that the Memorandum of Understanding has been signed and
-    that funds have been transferred.
-  </p>
-{% endif %}
+<p>
+  Please confirm that the Memorandum of Understanding has been signed.
+  {% if allowance_requires_funds_transfer %}
+    Additionally, confirm that funds have been transferred.
+  {% endif %}
+</p>
 
 {% include 'project/project_request/savio/project_request_card.html' with savio_request=savio_request %}
 
@@ -37,7 +33,7 @@ Savio Project Request - Confirm MOU Signed
       {% csrf_token %}
       {{ form|crispy }}
       <input class="btn btn-primary" type="submit" value="Submit" />
-      <a href="{% url 'savio-project-request-detail' savio_request.pk %}" class="btn btn-secondary">
+      <a href="{% url 'new-project-request-detail' savio_request.pk %}" class="btn btn-secondary">
         Cancel
       </a>
     </form>
