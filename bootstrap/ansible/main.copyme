@@ -135,6 +135,6 @@ sentry_dsn: ""
 # request_approval_cc_list: ['wfeinstein@lbl.gov']
 
 # Types of Ansible tasks to run by default.
-provisioning_tasks: true
-common_tasks: true
+provisioning_tasks: True
+common_tasks: True
 

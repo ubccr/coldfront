@@ -112,7 +112,7 @@ which can be done with:
   ```
   - Note that to skip initial provisioning tasks you can use the
 `--tags common` or `--skip-tags provisioning` arguments to `ansible-playbook`:
-  - Alternatively, you can set `provisioning_tasks` to `false` in `main.yml`
+  - Alternatively, you can set `provisioning_tasks` to `False` in `main.yml`
 
 - Any custom Django settings can be applied by modifying `dev_settings.py`.
 Note that running the Ansible playbook will overwrite these.

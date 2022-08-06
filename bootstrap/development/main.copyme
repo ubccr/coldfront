@@ -100,6 +100,6 @@ ip_range_with_api_access: 0.0.0.0/0
 request_approval_cc_list: ['you@email.com']
 
 # Types of Ansible tasks to run by default.
-provisioning_tasks: true
-common_tasks: true
+provisioning_tasks: True
+common_tasks: True
 
