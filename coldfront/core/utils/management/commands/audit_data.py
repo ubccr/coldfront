@@ -8,12 +8,12 @@ but are not limited to:
 TODO: Lawrencium features don't work and need to be further developed.
 LRC only:
  - Each UserProfile with access to Lawrencium should have a billing_activity.
- - Each Recharge Allocation that has access to Lawrencium should have a 
+ - Each Recharge Allocation that has access to Lawrencium should have a
     "Billing Activity"-typed AllocationAttribute.
  - Each Recharge AllocationUser that has access to Lawrencium should have a
     "Billing Activity"-typed AllocationUserAttribute.
  - From Enforce that LRC PIs are LBL employees #392, each PI of a Project on
-    Lawrencium must be an LBL employee. 
+    Lawrencium must be an LBL employee.
 
 '''
 
@@ -52,11 +52,11 @@ class Command(BaseCommand):
 
         parser.add_argument('--lrc-user-billing', action='store_true',
             help='Check that LRC users have a billing_activity')
-        parser.add_argument('--lrc-recharge-allocation-billing', 
+        parser.add_argument('--lrc-recharge-allocation-billing',
                 action='store_true',
                 help='Check that LRC Recharge Allocations have a '
                 '"Billing Activity"-typed AllocationAttribute')
-        parser.add_argument('--lrc-recharge-allocation-user-billing', 
+        parser.add_argument('--lrc-recharge-allocation-user-billing',
             action='store_true',
             help='Check that LRC Recharge AllocationUsers have a '
             '"Billing Activity"-typed AllocationUserAttribute')
@@ -91,7 +91,7 @@ class Command(BaseCommand):
         and end_date values.
         - Allocation end date is after the start date
         - FCAs and PCAs:
-          FCAs and PCAs are valid within a so-called “Allowance Year” 
+          FCAs and PCAs are valid within a so-called “Allowance Year”
           (June 1st - May 31st for BRC, October 1st - September 30th for LRC):
             - Inactive ones (ones that were not renewed) should have a start
                 date set to the start of the current allowance year
@@ -159,7 +159,7 @@ class Command(BaseCommand):
                     'that is different than its allocation period\'s ({}).' \
                         .format(resource, id, project,
                                 end_date, FCA_PCA_ALLOCATION_PERIOD.end_date)))
-                
+
             elif project.startswith(ICA_PREFIX):
                 if project_status == 'Inactive' and end_date is not None:
                     self.stdout.write(self.style.ERROR('{} {} '
@@ -179,7 +179,7 @@ class Command(BaseCommand):
                     'for {} Recharge or Condo allocation project {} has '
                     'an end date. (it shouldn\'t' \
                         .format(id, project_status.lower(), project)))
-    
+
     def handle_project_inactive(self):
         '''
         Assert that inactive Projects have "Expired" allocations and zero SUs.
@@ -190,7 +190,7 @@ class Command(BaseCommand):
                                     'allocation_set__allocationattribute_set') \
                                 .filter(status__name='Inactive') \
                                 .order_by('name')
-        
+
         for project in inactive_projects:
             for allocation in project.allocation_set \
                               .select_related('status') \
@@ -280,11 +280,11 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.ERROR('Allocation {}'
                 ' has no "Billing Activity"-typed AllocationAttribute.' \
                     .format(allocation.id)))
-    
+
     def handle_lrc_recharge_allocation_user_billing(self):
         '''
         TODO: Lawrencium features don't work and need to be further developed.
-        Assert that all LRC Recharge AllocationUsers have a 
+        Assert that all LRC Recharge AllocationUsers have a
         "Billing Activity"-typed AllocationUserAttribute.
         '''
         allocation_users = AllocationUser.objects \
