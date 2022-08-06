@@ -153,7 +153,7 @@ class AllocationClusterAccountRequestListView(LoginRequiredMixin,
 
         if self.completed:
             cluster_access_request_list = ClusterAccessRequest.objects.filter(
-                status__name__in=['Denied', 'Active'])
+                status__name__in=['Denied', 'Complete'])
         else:
             cluster_access_request_list = ClusterAccessRequest.objects.filter(
                 status__name__in=['Pending - Add', 'Processing'])
@@ -350,7 +350,7 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
         try:
             with transaction.atomic():
                 self.request_obj.status = \
-                    ClusterAccessRequestStatusChoice.objects.get(name='Active')
+                    ClusterAccessRequestStatusChoice.objects.get(name='Complete')
                 self.request_obj.completion_time = utc_now_offset_aware()
                 self.request_obj.save()
                 runner = \

@@ -89,7 +89,7 @@ class TestAllocationClusterAccountActivateRequestView(TestClusterAccessRunnersBa
         self.assertEqual(self.user0.userprofile.cluster_uid, self.cluster_uid)
         self.assertEqual(self.user0.username, self.new_username)
         self.assertTrue(pre_time < self.request_obj.completion_time < post_time)
-        self.assertEqual(self.request_obj.status.name, 'Active')
+        self.assertEqual(self.request_obj.status.name, 'Complete')
         self.assertEqual(self.user0.userprofile.cluster_uid, self.cluster_uid)
         self.assertEqual(self.user0.username, self.new_username)
         self.assertEqual(self.alloc_user_obj.allocation_user_attribute.value,
@@ -127,7 +127,7 @@ class TestAllocationClusterAccountActivateRequestView(TestClusterAccessRunnersBa
         self.assertEqual(len(mail.outbox), 0)
 
     def test_success(self):
-        """Test that the request status is set to Active, Cluster Account
+        """Test that the request status is set to Complete, Cluster Account
         Status AllocationUserAttribute is set to Active, completion time
         is set, emails are sent."""
         pre_time = utc_now_offset_aware()

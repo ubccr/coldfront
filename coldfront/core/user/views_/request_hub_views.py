@@ -88,7 +88,7 @@ class RequestHubView(LoginRequiredMixin,
 
         cluster_account_list_complete = \
             ClusterAccessRequest.objects.filter(
-                status__name__in=['Denied', 'Active'], **kwargs).order_by(
+                status__name__in=['Denied', 'Complete'], **kwargs).order_by(
                 'modified')
 
         cluster_account_list_pending = \

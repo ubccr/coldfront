@@ -93,7 +93,7 @@ class Command(BaseCommand):
 
         choices = [
             'Denied',
-            'Active',
+            'Complete',
             'Pending - Add',
             'Processing'
         ]

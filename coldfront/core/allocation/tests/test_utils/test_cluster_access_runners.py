@@ -92,7 +92,7 @@ class TestClusterAccessRequestCompleteRunner(TestClusterAccessRunnersBase):
         """Set up test data."""
         super().setUp()
         self.request_obj.status = \
-            ClusterAccessRequestStatusChoice.objects.get(name='Active')
+            ClusterAccessRequestStatusChoice.objects.get(name='Complete')
         self.request_obj.completion_time = utc_now_offset_aware()
         self.request_obj.save()
         
@@ -154,7 +154,7 @@ class TestClusterAccessRequestCompleteRunner(TestClusterAccessRunnersBase):
                          'Active')
 
     def test_success(self):
-        """Test that the request status is set to Active, Cluster Account
+        """Test that the request status is set to Complete, Cluster Account
         Status AllocationUserAttribute is set to Active, completion time
         is set, cluster_uid is set, new username is set, user SUs are set to
         allocation's SUs, emails are sent, and log messages are written."""
