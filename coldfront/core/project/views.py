@@ -1,11 +1,11 @@
 import datetime
 
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+from django.db import transaction
 from django.db.models import Case, CharField, Q, Value, When
 from django.forms import formset_factory
 from django.http import HttpResponse, HttpResponseRedirect
@@ -18,10 +18,8 @@ from django.views.generic.edit import FormView
 
 from coldfront.core.allocation.models import (Allocation,
                                               AllocationStatusChoice,
-                                              AllocationUser,
                                               AllocationUserAttribute,
                                               AllocationUserStatusChoice)
-from coldfront.core.allocation.signals import allocation_activate_user
 from coldfront.core.allocation.utils import get_allocation_user_cluster_access_status
 from coldfront.core.allocation.utils import get_project_compute_allocation
 from coldfront.core.allocation.utils import get_project_compute_resource_name
@@ -32,39 +30,28 @@ from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectAddUsersToAllocationForm,
                                           ProjectReviewEmailForm,
                                           ProjectReviewForm,
-                                          ProjectReviewUserJoinForm,
                                           ProjectSearchForm,
                                           ProjectUpdateForm,
-                                          ProjectUserUpdateForm,
-                                          JoinRequestSearchForm,
-                                          ProjectSelectHostUserForm)
+                                          ProjectUserUpdateForm)
 from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectReviewStatusChoice,
                                            ProjectStatusChoice, ProjectUser,
-                                           ProjectUserJoinRequest,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice,
-                                           ProjectUserRemovalRequest,
-                                           ProjectUserRemovalRequestStatusChoice,
-                                           SavioProjectAllocationRequest,
-                                           VectorProjectAllocationRequest)
+                                           ProjectUserRemovalRequest)
 from coldfront.core.project.utils import (annotate_queryset_with_cluster_name,
-                                          ProjectClusterAccessRequestRunner,
-                                          send_added_to_project_notification_email,
-                                          send_project_join_notification_email,
-                                          send_project_join_request_approval_email,
-                                          send_project_join_request_denial_email)
+                                          is_primary_cluster_project)
 from coldfront.core.project.utils_.addition_utils import can_project_purchase_service_units
-from coldfront.core.project.utils_.new_project_utils import add_vector_user_to_designated_savio_project
+from coldfront.core.project.utils_.new_project_user_utils import NewProjectUserRunnerFactory
+from coldfront.core.project.utils_.new_project_user_utils import NewProjectUserSource
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.project.utils_.renewal_utils import is_any_project_pi_renewable
-from coldfront.core.resource.utils import get_primary_compute_resource_name
 from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.user.forms import UserSearchForm
-from coldfront.core.user.utils import CombinedUserSearch, is_lbl_employee, \
-    needs_host, access_agreement_signed
+from coldfront.core.user.utils import CombinedUserSearch, access_agreement_signed
 from coldfront.core.utils.common import (get_domain_url, import_from_settings)
+from coldfront.core.utils.email.email_strategy import EnqueueEmailStrategy
 from coldfront.core.utils.mail import send_email, send_email_template
 
 from flags.state import flag_enabled
@@ -240,14 +227,12 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
         # Some features are only available to Projects corresponding to the
         # primary cluster.
-        compute_resource_name = get_project_compute_resource_name(self.object)
-        is_primary_cluster_project = (
-            compute_resource_name == get_primary_compute_resource_name())
+        _is_primary_cluster_project = is_primary_cluster_project(self.object)
 
         # Display the "Renew Allowance" button for eligible allocation types
         # under the primary cluster.
         renew_allowance_visible = False
-        if is_primary_cluster_project:
+        if _is_primary_cluster_project:
             computing_allowance_interface = ComputingAllowanceInterface()
             computing_allowance = ComputingAllowance(
                 computing_allowance_interface.allowance_from_project(
@@ -267,15 +252,16 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             flag_enabled('ALLOCATION_RENEWAL_FOR_NEXT_PERIOD_REQUESTABLE'))
 
         # Display the "Purchase Service Units" button when the functionality is
-        # enabled, for eligible allocation types, for those allowed to update
-        # the project.
+        # enabled, for eligible allocation types under the primary cluster, for
+        # those allowed to update the project.
         context['purchase_sus_visible'] = (
             flag_enabled('SERVICE_UNITS_PURCHASABLE') and
-            is_primary_cluster_project and
+            _is_primary_cluster_project and
             can_project_purchase_service_units(self.object) and
             context.get('is_allowed_to_update_project', False))
 
-        context['cluster_name'] = compute_resource_name.replace(' Compute', '')
+        context['cluster_name'] = get_project_compute_resource_name(
+            self.object).replace(' Compute', '')
 
         # Only active PIs of active FCAs, ICAs and Condos can request
         # secure directories
@@ -762,15 +748,13 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
 
         matches = context.get('matches')
         for match in matches:
-
+            user = User.objects.get(username=match['username'])
+            user_access_agreement_status = (
+                'Signed' if access_agreement_signed(user) else 'Unsigned')
             # add data for access agreements
             match.update(
                 {'role': ProjectUserRoleChoice.objects.get(name='User'),
-                 'user_access_agreement':
-                     'Signed' if User.objects.get(username=match['username']).
-                                       userprofile.access_agreement_signed_date
-                                 is not None else 'Unsigned'
-                 })
+                 'user_access_agreement': user_access_agreement_status})
 
         if matches:
             formset = formset_factory(ProjectAddUserForm, max_num=len(matches))
@@ -780,7 +764,8 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
             match_users = User.objects.filter(username__in=[form._username for form in formset])
             for form in formset:
                 # disable user matches with unsigned signed user agreement
-                if not match_users.get(username=form._username).userprofile.access_agreement_signed_date is not None:
+                if not access_agreement_signed(
+                        match_users.get(username=form._username)):
                     form.fields.pop('selected')
 
             context['formset'] = formset
@@ -851,13 +836,12 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
         matches = context.get('matches')
         for match in matches:
+            user = User.objects.get(username=match['username'])
+            user_access_agreement_status = (
+                'Signed' if access_agreement_signed(user) else 'Unsigned')
             match.update(
                 {'role': ProjectUserRoleChoice.objects.get(name='User'),
-                 'user_access_agreement':
-                     'Signed' if User.objects.get(username=match['username']).
-                                     userprofile.access_agreement_signed_date
-                                 is not None else 'Unsigned'
-                 })
+                 'user_access_agreement': user_access_agreement_status})
 
         formset = formset_factory(ProjectAddUserForm, max_num=len(matches))
         formset = formset(request.POST, initial=matches, prefix='userform')
@@ -866,7 +850,6 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             request.user, project_obj.pk, request.POST, prefix='allocationform')
 
         added_users_count = 0
-        cluster_access_requests_count = 0
         if formset.is_valid() and allocation_form.is_valid():
             project_user_active_status_choice = ProjectUserStatusChoice.objects.get(
                 name='Active')
@@ -875,135 +858,33 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             allocation_form_data = allocation_form.cleaned_data['allocation']
             if '__select_all__' in allocation_form_data:
                 allocation_form_data.remove('__select_all__')
-
-            unsigned_users = []
-            added_users = []
             for form in formset:
                 user_form_data = form.cleaned_data
-                # checking for users with pending/processing project removal requests.
-                username = user_form_data.get('username')
-                pending_status = ProjectUserRemovalRequestStatusChoice.objects.get(name='Pending')
-                processing_status = ProjectUserRemovalRequestStatusChoice.objects.get(name='Processing')
-
-                if ProjectUserRemovalRequest.objects.\
-                        filter(project_user__user__username=username,
-                               project_user__project=project_obj,
-                               status__in=[pending_status, processing_status]).exists():
-
-                    message = (
-                        f'A pending request to remove User {username} from '
-                        f'Project {project_obj.name} has been made. Please '
-                        f'wait until it is completed before adding the user '
-                        f'again.')
-                    messages.error(request, message)
-                    continue
-
-                # recording users with unsigned user access agreements
-                if user_form_data['user_access_agreement'] == 'Unsigned':
-                    unsigned_users.append(user_form_data['username'])
-                    continue
-
                 if user_form_data['selected']:
-                    added_users_count += 1
-                    added_users.append(user_form_data['username'])
-
-                    # Will create local copy of user if not already present in local database
-                    user_obj, _ = User.objects.get_or_create(
-                        username=user_form_data.get('username'))
-                    user_obj.first_name = user_form_data.get('first_name')
-                    user_obj.last_name = user_form_data.get('last_name')
-                    user_obj.email = user_form_data.get('email')
-                    user_obj.save()
-
-                    role_choice = user_form_data.get('role')
-                    # Is the user already in the project?
-                    if project_obj.projectuser_set.filter(user=user_obj).exists():
-                        project_user_obj = project_obj.projectuser_set.get(
-                            user=user_obj)
-                        project_user_obj.role = role_choice
-                        project_user_obj.status = project_user_active_status_choice
-                        project_user_obj.save()
+                    if not self._validate_user_addable(
+                            request, project_obj, user_form_data):
+                        continue
+                    success = self._process_user(
+                        request, project_obj, user_form_data,
+                        allocation_form_data,
+                        project_user_active_status_choice,
+                        allocation_user_active_status_choice)
+                    if success:
+                        added_users_count += 1
                     else:
-                        project_user_obj = ProjectUser.objects.create(
-                            user=user_obj, project=project_obj, role=role_choice, status=project_user_active_status_choice)
+                        username = user_form_data['username']
+                        message = (
+                            f'Failed to add User {username}. Please try '
+                            f'again, or contact an administrator if the '
+                            f'problem persists.')
+                        messages.error(request, message)
 
-                    for allocation in Allocation.objects.filter(pk__in=allocation_form_data):
-                        if allocation.allocationuser_set.filter(user=user_obj).exists():
-                            allocation_user_obj = allocation.allocationuser_set.get(
-                                user=user_obj)
-                            allocation_user_obj.status = allocation_user_active_status_choice
-                            allocation_user_obj.save()
-                        else:
-                            allocation_user_obj = AllocationUser.objects.create(
-                                allocation=allocation,
-                                user=user_obj,
-                                status=allocation_user_active_status_choice)
-                        allocation_activate_user.send(sender=self.__class__,
-                                                      allocation_user_pk=allocation_user_obj.pk)
-
-                    # Request cluster access for the user.
-                    request_runner = ProjectClusterAccessRequestRunner(
-                        project_user_obj)
-                    runner_result = request_runner.run()
-                    if runner_result.success:
-                        cluster_access_requests_count += 1
-                    else:
-                        messages.error(
-                            self.request, runner_result.error_message)
-
-                    # Notify the user that he/she has been added.
-                    try:
-                        send_added_to_project_notification_email(
-                            project_obj, project_user_obj)
-                    except Exception as e:
-                        message = 'Failed to send notification email. Details:'
-                        self.logger.error(message)
-                        self.logger.exception(e)
-
-                    # On BRC only, if the Project is a Vector project,
-                    # automatically add the User to the designated Savio
-                    # project for Vector users.
-                    if (flag_enabled('BRC_ONLY') and
-                            project_obj.name.startswith('vector_')):
-                        try:
-                            add_vector_user_to_designated_savio_project(
-                                user_obj)
-                        except Exception as e:
-                            message = (
-                                f'Encountered unexpected exception when '
-                                f'automatically providing User {user_obj.pk} '
-                                f'with access to Savio. Details:')
-                            self.logger.error(message)
-                            self.logger.exception(e)
-
-            # checking if there were any users with unsigned user access agreements in the form
-            if unsigned_users:
-                unsigned_users_string = ", ".join(unsigned_users)
-
-                # changing grammar for one vs multiple users
-                if len(unsigned_users) == 1:
-                    message = f'User [{unsigned_users_string}] does not have ' \
-                              f'a signed User Access Agreement and was ' \
-                              f'therefore not added to the project.'
-                else:
-                    message = f'Users [{unsigned_users_string}] do not have ' \
-                              f'a signed User Access Agreement and were ' \
-                              f'therefore not added to the project.'
-                messages.error(request, message)
-
-            if added_users_count != 0:
-                added_users_string = ", ".join(added_users)
-                messages.success(
-                    request, 'Added [{}] to project.'.format(added_users_string))
-
-                message = (
-                    f'Requested cluster access under project for '
-                    f'{cluster_access_requests_count} users.')
-                messages.success(request, message)
-
-            else:
-                messages.info(request, 'No users selected to add.')
-
+            messages.success(
+                request, 'Added {} users to project.'.format(added_users_count))
+            messages.success(
+                request,
+                (f'Requested cluster access under project for '
+                 f'{added_users_count} users.'))
         else:
             if not formset.is_valid():
                 for error in formset.errors:
@@ -1014,6 +895,148 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                     messages.error(request, error)
 
         return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': pk}))
+
+    def _process_user(self, request, project_obj, user_form_data,
+                      allocation_form_data, project_user_status_choice,
+                      allocation_user_status_choice):
+        """Given a Project and form data with user and allocation
+        fields, perform processing. In particular:
+            1. Update or create a User.
+            2. Update or create a ProjectUser, setting the status choice
+               to the given one.
+            3. Update or create AllocationUsers, setting the status
+               choice to the given one.
+            4. Run additional processing.
+
+        Return whether processing succeeded.
+
+        Only send emails if processing succeeded. Prevent email-sending
+        from raising an exception.
+
+        Include warning messages in the response.
+        """
+        try:
+            email_strategy = EnqueueEmailStrategy()
+            with transaction.atomic():
+                user_obj = self._update_or_create_user(user_form_data)
+
+                role_choice = user_form_data.get('role')
+                project_user_obj = self._update_or_create_project_user(
+                    project_obj, user_obj, role_choice,
+                    project_user_status_choice)
+
+                self._update_or_create_allocation_users(
+                    allocation_form_data, user_obj,
+                    allocation_user_status_choice)
+
+                runner_factory = NewProjectUserRunnerFactory()
+                new_project_user_runner = runner_factory.get_runner(
+                    project_user_obj, NewProjectUserSource.ADDED,
+                    email_strategy=email_strategy)
+                new_project_user_runner.run()
+        except Exception as e:
+            return False
+
+        if new_project_user_runner is not None:
+            for message in new_project_user_runner.get_warning_messages():
+                messages.warning(request, message)
+
+        try:
+            if isinstance(email_strategy, EnqueueEmailStrategy):
+                email_strategy.send_queued_emails()
+        except Exception as e:
+            pass
+
+        return True
+
+    def _update_or_create_allocation_users(self, allocation_form_data,
+                                           user_obj, status_choice):
+        """Given form data with allocation fields, a User, and an
+        AllocationUserStatusChoice, update existing or create new
+        AllocationUsers, setting the status.
+
+        For BRC/LRC, this step is not necessary, as Allocations are
+        handled separately.
+        """
+        # for allocation in Allocation.objects.filter(
+        #         pk__in=allocation_form_data):
+        #     if allocation.allocationuser_set.filter(user=user_obj).exists():
+        #         allocation_user_obj = allocation.allocationuser_set.get(
+        #             user=user_obj)
+        #         allocation_user_obj.status = status_choice
+        #         allocation_user_obj.save()
+        #     else:
+        #         allocation_user_obj = AllocationUser.objects.create(
+        #             allocation=allocation,
+        #             user=user_obj,
+        #             status=status_choice)
+        #     allocation_activate_user.send(
+        #         sender=self.__class__,
+        #         allocation_user_pk=allocation_user_obj.pk)
+        pass
+
+    @staticmethod
+    def _update_or_create_project_user(project_obj, user_obj, role_choice,
+                                       status_choice):
+        """Given a Project, User, ProjectUserRoleChoice, and
+        ProjectUserStatusChoice, update an existing ProjectUser or
+        create a new one, setting the role and status. Return the
+        ProjectUser."""
+        # Is the user already in the project?
+        if project_obj.projectuser_set.filter(user=user_obj).exists():
+            project_user_obj = project_obj.projectuser_set.get(
+                user=user_obj)
+            project_user_obj.role = role_choice
+            project_user_obj.status = status_choice
+            project_user_obj.save()
+        else:
+            project_user_obj = ProjectUser.objects.create(
+                user=user_obj, project=project_obj, role=role_choice,
+                status=status_choice)
+        return project_user_obj
+
+    @staticmethod
+    def _update_or_create_user(user_form_data):
+        """Given form data with user fields, update an existing User or
+        create a new one, setting the relevant fields. Return the
+        User."""
+        # Will create local copy of user if not already present in local
+        # database
+        user_obj, _ = User.objects.get_or_create(
+            username=user_form_data.get('username'))
+        user_obj.first_name = user_form_data.get('first_name')
+        user_obj.last_name = user_form_data.get('last_name')
+        user_obj.email = user_form_data.get('email')
+        user_obj.save()
+        return user_obj
+
+    @staticmethod
+    def _validate_user_addable(request, project_obj, user_form_data):
+        """Given a Project and form data with user fields, return
+        whether the user is eligible to be added to the Project. If not,
+        add messages to the given request."""
+        # A User being removed from the Project cannot be added.
+        username = user_form_data.get('username')
+        if ProjectUserRemovalRequest.objects.filter(
+                project_user__user__username=username,
+                project_user__project=project_obj,
+                status__name__in=['Pending', 'Processing']).exists():
+            message = (
+                f'A pending request to remove User {username} from Project '
+                f'{project_obj.name} has been made. Please wait until it is '
+                f'completed before adding the user again.')
+            messages.error(request, message)
+            return False
+
+        # A user who has not signed the access agreement cannot be added.
+        if user_form_data['user_access_agreement'] == 'Unsigned':
+            message = (
+                f'User {username} has not signed the User Access Agreement. '
+                f'Please ensure that the User has done so first.')
+            messages.error(request, message)
+            return False
+
+        return True
 
 
 class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -1382,621 +1405,3 @@ class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
     def get_success_url(self):
         return reverse('project-review-list')
-
-
-class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
-    login_url = '/'
-
-    logger = logging.getLogger(__name__)
-
-    def test_func(self):
-        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        user_obj = self.request.user
-        project_users = project_obj.projectuser_set.filter(user=user_obj)
-        reason = self.request.POST.get('reason')
-
-        if self.request.user.userprofile.access_agreement_signed_date is None:
-            messages.error(
-                self.request, 'You must sign the User Access Agreement before you can join a project.')
-            return False
-
-        inactive_project_status = ProjectStatusChoice.objects.get(
-            name='Inactive')
-        if project_obj.status == inactive_project_status:
-            message = (
-                f'Project {project_obj.name} is inactive, and may not be '
-                f'joined.')
-            messages.error(self.request, message)
-            return False
-
-        if project_users.exists():
-            project_user = project_users.first()
-            if project_user.status.name == 'Active':
-                message = (
-                    f'You are already a member of Project {project_obj.name}.')
-                messages.error(self.request, message)
-                return False
-            if project_user.status.name == 'Pending - Add':
-                message = (
-                    f'You have already requested to join Project '
-                    f'{project_obj.name}.')
-                messages.warning(self.request, message)
-                return False
-
-            pending_status = ProjectUserRemovalRequestStatusChoice.objects.get(name='Pending')
-            processing_status = ProjectUserRemovalRequestStatusChoice.objects.get(name='Processing')
-
-            if ProjectUserRemovalRequest.objects. \
-                    filter(project_user=project_user,
-                           status__in=[pending_status, processing_status]).exists():
-                message = (
-                    f'You cannot join Project {project_obj.name} because you '
-                    f'have a pending removal request for '
-                    f'{project_obj.name}.')
-                messages.error(self.request, message)
-                return False
-
-        # If the user is the requester or PI on a pending request for the
-        # Project, do not allow the join request.
-        if project_obj.name.startswith('vector_'):
-            request_model = VectorProjectAllocationRequest
-        else:
-            request_model = SavioProjectAllocationRequest
-        is_requester_or_pi = Q(requester=user_obj) | Q(pi=user_obj)
-        if request_model.objects.filter(
-                is_requester_or_pi, project=project_obj,
-                status__name__in=['Under Review', 'Approved - Processing']):
-            message = (
-                f'You are the requester or PI of a pending request for '
-                f'Project {project_obj.name}, so you may not join it. You '
-                f'will automatically be added when it is approved.')
-            messages.warning(self.request, message)
-            return False
-
-        if len(reason) < 20:
-            message = 'Please provide a valid reason to join the project (min 20 characters)'
-            messages.error(self.request, message)
-            return False
-
-        return True
-
-    def get(self, *args, **kwargs):
-        return redirect(self.login_url)
-
-    def post(self, request, *args, **kwargs):
-        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        user_obj = self.request.user
-        project_users = project_obj.projectuser_set.filter(user=user_obj)
-        role = ProjectUserRoleChoice.objects.get(name='User')
-        status = ProjectUserStatusChoice.objects.get(name='Pending - Add')
-        reason = self.request.POST['reason']
-
-        select_host_user_form = ProjectSelectHostUserForm(
-            project=project_obj.name,
-            data=self.request.POST)
-        host_user = None
-        if select_host_user_form.is_valid():
-            host_user = \
-                User.objects.get(
-                    username=select_host_user_form.cleaned_data['host_user'])
-
-        if project_users.exists():
-            project_user = project_users.first()
-            project_user.role = role
-            # If the user is Active on the project, raise a warning and exit.
-            if project_user.status.name == 'Active':
-                message = (
-                    f'You are already an Active member of Project '
-                    f'{project_obj.name}.')
-                messages.warning(self.request, message)
-                next_view = reverse('project-join-list')
-                return redirect(next_view)
-            project_user.status = status
-            project_user.save()
-        else:
-            project_user = ProjectUser.objects.create(
-                user=user_obj,
-                project=project_obj,
-                role=role,
-                status=status)
-
-        # Create a join request
-        ProjectUserJoinRequest.objects.create(project_user=project_user,
-                                              reason=reason,
-                                              host_user=host_user)
-
-        message = (
-            f'You have requested to join Project {project_obj.name}. The '
-            f'managers have been notified.')
-        messages.success(self.request, message)
-        next_view = reverse('project-join-list')
-
-        # Send a notification to the project managers.
-        try:
-            send_project_join_notification_email(project_obj, project_user)
-        except Exception as e:
-            message = 'Failed to send notification email. Details:'
-            self.logger.error(message)
-            self.logger.exception(e)
-
-        return redirect(next_view)
-
-
-class ProjectJoinListView(ProjectListView, UserPassesTestMixin):
-
-    template_name = 'project/project_join_list.html'
-
-    def test_func(self):
-        user = self.request.user
-        if user.userprofile.access_agreement_signed_date is None:
-            message = (
-                'You must sign the User Access Agreement before you can join '
-                'a project.')
-            messages.error(self.request, message)
-            return False
-        return True
-
-    def get_queryset(self):
-
-        order_by = self.request.GET.get('order_by')
-        if order_by:
-            direction = self.request.GET.get('direction')
-            if direction == 'asc':
-                direction = ''
-            else:
-                direction = '-'
-            order_by = direction + order_by
-        else:
-            order_by = 'id'
-
-        project_search_form = ProjectSearchForm(self.request.GET)
-
-        projects = Project.objects.prefetch_related(
-            'field_of_science', 'status').filter(
-                status__name__in=['New', 'Active', ]
-        ).order_by(order_by)
-        projects = annotate_queryset_with_cluster_name(projects)
-
-        if project_search_form.is_valid():
-            data = project_search_form.cleaned_data
-
-            # Last Name
-            if data.get('last_name'):
-                pi_project_users = ProjectUser.objects.filter(
-                    project__in=projects,
-                    role__name='Principal Investigator',
-                    user__last_name__icontains=data.get('last_name'))
-                project_ids = pi_project_users.values_list(
-                    'project_id', flat=True)
-                projects = projects.filter(id__in=project_ids)
-
-            # Username
-            if data.get('username'):
-                projects = projects.filter(
-                    Q(projectuser__user__username__icontains=data.get(
-                        'username')) &
-                    (Q(projectuser__role__name='Principal Investigator') |
-                     Q(projectuser__status__name='Active'))
-                )
-
-            # Field of Science
-            if data.get('field_of_science'):
-                projects = projects.filter(
-                    field_of_science__description__icontains=data.get(
-                        'field_of_science'))
-
-            # Project Title
-            if data.get('project_title'):
-                projects = projects.filter(title__icontains=data.get('project_title'))
-
-            # Project Name
-            if data.get('project_name'):
-                projects = projects.filter(name__icontains=data.get('project_name'))
-
-            # Cluster Name
-            if data.get('cluster_name'):
-                projects = projects.filter(cluster_name__icontains=data.get('cluster_name'))
-
-        return projects.distinct()
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        projects = self.get_queryset()
-        user_obj = self.request.user
-
-        # A User may not join a Project he/she is already a pending or active
-        # member of.
-        already_pending_or_active = set(projects.filter(
-            projectuser__user=user_obj,
-            projectuser__status__name__in=['Pending - Add', 'Active', ]
-        ).values_list('name', flat=True))
-        # A User may not join a Project with a pending
-        # SavioProjectAllocationRequest where he/she is the requester or PI.
-        is_requester_or_pi = Q(requester=user_obj) | Q(pi=user_obj)
-        pending_project_request_statuses = [
-            'Under Review', 'Approved - Processing']
-        is_part_of_pending_savio_project_request = set(
-            SavioProjectAllocationRequest.objects.prefetch_related(
-                'project'
-            ).filter(
-                is_requester_or_pi,
-                status__name__in=pending_project_request_statuses
-            ).values_list('project__name', flat=True))
-        # A User may not join a Project with a pending
-        # VectorProjectAllocationRequest where he/she is the requester or PI.
-        is_part_of_pending_vector_project_request = set(
-            VectorProjectAllocationRequest.objects.prefetch_related(
-                'project'
-            ).filter(
-                is_requester_or_pi,
-                status__name__in=pending_project_request_statuses
-            ).values_list('project__name', flat=True))
-        pending_removal_requests = set([removal_request.project_user.project.name
-                                        for removal_request in
-                                        ProjectUserRemovalRequest.objects.filter(
-                                            Q(project_user__user__username=self.request.user.username) &
-                                            Q(status__name='Pending'))])
-
-        not_joinable = set.union(
-            already_pending_or_active,
-            is_part_of_pending_savio_project_request,
-            is_part_of_pending_vector_project_request,
-            pending_removal_requests)
-
-        join_requests = Project.objects.filter(Q(projectuser__user=self.request.user)
-                                               & Q(status__name__in=['New', 'Active', ])
-                                               & Q(projectuser__status__name__in=['Pending - Add']))
-        join_requests = annotate_queryset_with_cluster_name(join_requests)
-
-        context['join_requests'] = join_requests
-        context['not_joinable'] = not_joinable
-
-        # Only non-LBL employees without a host user and without any pending
-        # join requests need access to the SelectHostUserForm.
-        context['need_host'] = False
-        pending_status = ProjectUserStatusChoice.objects.get(name='Pending - Add')
-        if flag_enabled('LRC_ONLY') \
-                and needs_host(self.request.user) \
-                and not ProjectUser.objects.filter(user=self.request.user,
-                                                   status=pending_status).exists():
-            context['need_host'] = True
-
-            selecthostform_dict = {}
-            for project in context.get('project_list'):
-                selecthostform_dict[project.name] = \
-                    ProjectSelectHostUserForm(project=project.name)
-
-            context['selecthostform_dict'] = selecthostform_dict
-
-        return context
-
-
-class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
-                                    TemplateView):
-    template_name = 'project/project_review_join_requests.html'
-
-    logger = logging.getLogger(__name__)
-
-    def test_func(self):
-        if self.request.user.is_superuser:
-            return True
-
-        if self.request.user.has_perm('project.can_view_all_projects'):
-            return True
-
-        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-
-        if project_obj.projectuser_set.filter(
-                user=self.request.user,
-                role__name__in=['Manager', 'Principal Investigator'],
-                status__name='Active').exists():
-            return True
-
-    def dispatch(self, request, *args, **kwargs):
-        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.status.name not in ['Active', 'New', ]:
-            message = 'You cannot review join requests to an archived project.'
-            messages.error(request, message)
-            return HttpResponseRedirect(
-                reverse('project-detail', kwargs={'pk': project_obj.pk}))
-        else:
-            return super().dispatch(request, *args, **kwargs)
-
-    @staticmethod
-    def get_users_to_review(project_obj):
-        users_to_review = []
-        queryset = project_obj.projectuser_set.filter(
-            status__name='Pending - Add').order_by('user__username')
-        for ele in queryset:
-            try:
-                reason = ele.projectuserjoinrequest_set.latest('created').reason
-            except ProjectUserJoinRequest.DoesNotExist:
-                reason = ProjectUserJoinRequest.DEFAULT_REASON
-
-            user = {
-                'username': ele.user.username,
-                'first_name': ele.user.first_name,
-                'last_name': ele.user.last_name,
-                'email': ele.user.email,
-                'role': ele.role,
-                'reason': reason
-            }
-            users_to_review.append(user)
-        return users_to_review
-
-    def get(self, request, *args, **kwargs):
-        pk = self.kwargs.get('pk')
-        project_obj = get_object_or_404(Project, pk=pk)
-
-        users_to_review = self.get_users_to_review(project_obj)
-        context = {}
-
-        if users_to_review:
-            formset = formset_factory(
-                ProjectReviewUserJoinForm, max_num=len(users_to_review))
-            formset = formset(initial=users_to_review, prefix='userform')
-            context['formset'] = formset
-
-        context['project'] = get_object_or_404(Project, pk=pk)
-
-        context['can_add_users'] = False
-        if self.request.user.is_superuser:
-            context['can_add_users'] = True
-
-        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-
-        if project_obj.projectuser_set.filter(
-                user=self.request.user,
-                role__name__in=['Manager', 'Principal Investigator'],
-                status__name='Active').exists():
-            context['can_add_users'] = True
-
-        if flag_enabled('LRC_ONLY'):
-            host_dict = {}
-            for user in users_to_review:
-                username = user.get('username')
-                host_dict[username] = \
-                    ProjectUserJoinRequest.objects.filter(
-                        project_user__project=project_obj,
-                        project_user__user__username=username).latest('modified').host_user
-            context['host_dict'] = host_dict
-
-        return render(request, self.template_name, context)
-
-    def post(self, request, *args, **kwargs):
-        pk = self.kwargs.get('pk')
-        project_obj = get_object_or_404(Project, pk=pk)
-
-        allowed_to_approve_users = False
-        if project_obj.projectuser_set.filter(
-                user=self.request.user,
-                role__name__in=['Manager', 'Principal Investigator'],
-                status__name='Active').exists():
-            allowed_to_approve_users = True
-
-        if self.request.user.is_superuser:
-            allowed_to_approve_users = True
-
-        if not allowed_to_approve_users:
-            message = 'You do not have permission to view the this page.'
-            messages.error(request, message)
-
-            return HttpResponseRedirect(
-                reverse('project-review-join-requests', kwargs={'pk': pk}))
-
-        users_to_review = self.get_users_to_review(project_obj)
-
-        formset = formset_factory(
-            ProjectReviewUserJoinForm, max_num=len(users_to_review))
-        formset = formset(
-            request.POST, initial=users_to_review, prefix='userform')
-
-        reviewed_users_count = 0
-
-        decision = request.POST.get('decision', None)
-        if decision not in ('approve', 'deny'):
-            return HttpResponse('', status=400)
-
-        if formset.is_valid():
-            if decision == 'approve':
-                status_name = 'Active'
-                message_verb = 'Approved'
-                email_function = send_project_join_request_approval_email
-            else:
-                status_name = 'Denied'
-                message_verb = 'Denied'
-                email_function = send_project_join_request_denial_email
-
-            project_user_status_choice = \
-                ProjectUserStatusChoice.objects.get(name=status_name)
-
-            error_message = (
-                'Unexpected server error. Please contact an administrator.')
-
-            for form in formset:
-                user_form_data = form.cleaned_data
-                if user_form_data['selected']:
-                    reviewed_users_count += 1
-                    user_obj = User.objects.get(
-                        username=user_form_data.get('username'))
-                    project_user_obj = project_obj.projectuser_set.get(
-                        user=user_obj)
-                    project_user_obj.status = project_user_status_choice
-                    project_user_obj.save()
-
-                    if status_name == 'Active':
-                        # Request cluster access.
-                        request_runner = ProjectClusterAccessRequestRunner(
-                            project_user_obj)
-                        runner_result = request_runner.run()
-                        if not runner_result.success:
-                            messages.error(
-                                self.request, runner_result.error_message)
-                        # If the Project is a Vector project, automatically add
-                        # the User to the designated Savio project for Vector
-                        # users.
-                        if project_obj.name.startswith('vector_'):
-                            try:
-                                add_vector_user_to_designated_savio_project(
-                                    user_obj)
-                            except Exception as e:
-                                message = (
-                                    f'Encountered unexpected exception when '
-                                    f'automatically providing User '
-                                    f'{user_obj.pk} with access to Savio. '
-                                    f'Details:')
-                                self.logger.error(message)
-                                self.logger.exception(e)
-
-                        # Set the host user if one is provided.
-                        if flag_enabled('LRC_ONLY'):
-                            host_user = \
-                                ProjectUserJoinRequest.objects.filter(
-                                    project_user__project=project_obj,
-                                    project_user=project_user_obj).latest('modified').host_user
-
-                            user_profile = user_obj.userprofile
-
-                            if host_user:
-                                if is_lbl_employee(user_obj) or not needs_host(user_obj):
-                                    message = (
-                                        f'User {user_obj.username} requested '
-                                        f'a host user but already has '
-                                        f'{user_profile.host_user.username} as '
-                                        f'their host user.')
-                                    self.logger.error(message)
-                                else:
-                                    user_profile.host_user = host_user
-                                    user_profile.save()
-
-                    # Send an email to the user.
-                    try:
-                        email_function(project_obj, project_user_obj)
-                    except Exception as e:
-                        message = (
-                            'Failed to send notification email. Details:')
-                        self.logger.error(message)
-                        self.logger.exception(e)
-
-            message = (
-                f'{message_verb} {reviewed_users_count} user requests to join '
-                f'the project. {settings.PROGRAM_NAME_SHORT} staff have been '
-                f'notified to set up cluster access for each approved '
-                f'request.')
-            messages.success(request, message)
-        else:
-            for error in formset.errors:
-                messages.error(request, error)
-
-        return HttpResponseRedirect(
-            reverse('project-detail', kwargs={'pk': pk}))
-
-
-class ProjectJoinRequestListView(LoginRequiredMixin, UserPassesTestMixin,
-                                 ListView):
-    template_name = 'project/project_join_request_list.html'
-    paginate_by = 25
-
-    def get_queryset(self):
-        order_by = self.request.GET.get('order_by')
-        if order_by:
-            direction = self.request.GET.get('direction')
-            if direction == 'asc':
-                direction = ''
-            else:
-                direction = '-'
-            order_by = direction + 'created'
-        else:
-            order_by = '-created'
-
-        project_join_requests = \
-            ProjectUserJoinRequest.objects.filter(
-                pk__in=ProjectUserJoinRequest.objects.filter(
-                    project_user__status__name=
-                    'Pending - Add').order_by(
-                    'project_user', '-created').distinct(
-                    'project_user'))
-
-        join_request_search_form = JoinRequestSearchForm(self.request.GET)
-
-        if join_request_search_form.is_valid():
-            data = join_request_search_form.cleaned_data
-
-            if data.get('username'):
-                project_join_requests = \
-                    project_join_requests.filter(
-                        project_user__user__username__icontains=data.get('username'))
-
-            if data.get('email'):
-                project_join_requests = \
-                    project_join_requests.filter(
-                        project_user__user__email__icontains=data.get('email'))
-
-            if data.get('project_name'):
-                project_join_requests = \
-                    project_join_requests.filter(
-                        project_user__project__name__icontains=data.get('project_name'))
-
-        return project_join_requests.order_by(order_by)
-
-    def test_func(self):
-        """UserPassesTestMixin tests."""
-        if self.request.user.is_superuser:
-            return True
-
-        if self.request.user.has_perm('project.view_projectuserjoinrequest'):
-            return True
-
-        message = (
-            'You do not have permission to view project join requests.')
-        messages.error(self.request, message)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-
-        join_request_search_form = JoinRequestSearchForm(self.request.GET)
-        if join_request_search_form.is_valid():
-            context['join_request_search_form'] = join_request_search_form
-            data = join_request_search_form.cleaned_data
-            filter_parameters = ''
-            for key, value in data.items():
-                if value:
-                    if isinstance(value, list):
-                        for ele in value:
-                            filter_parameters += '{}={}&'.format(key, ele)
-                    else:
-                        filter_parameters += '{}={}&'.format(key, value)
-            context['join_request_search_form'] = join_request_search_form
-        else:
-            filter_parameters = None
-            context['join_request_search_form'] = JoinRequestSearchForm()
-
-        order_by = self.request.GET.get('order_by')
-        if order_by:
-            direction = self.request.GET.get('direction')
-            filter_parameters_with_order_by = filter_parameters + \
-                                              'order_by=%s&direction=%s&' % (order_by, direction)
-        else:
-            filter_parameters_with_order_by = filter_parameters
-
-        context['expand_accordion'] = 'show'
-
-        context['filter_parameters'] = filter_parameters
-        context['filter_parameters_with_order_by'] = filter_parameters_with_order_by
-
-        join_request_queryset = self.get_queryset()
-
-        paginator = Paginator(join_request_queryset, self.paginate_by)
-
-        page = self.request.GET.get('page')
-
-        try:
-            join_requests = paginator.page(page)
-        except PageNotAnInteger:
-            join_requests = paginator.page(1)
-        except EmptyPage:
-            join_requests = paginator.page(paginator.num_pages)
-
-        context['join_request_list'] = join_requests
-
-        return context

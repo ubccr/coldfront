@@ -141,6 +141,7 @@ class TestAPIBase(TestCase):
         call_command('add_allocation_defaults')
         call_command('add_accounting_defaults')
         call_command('add_allowance_defaults')
+        call_command('add_default_user_choices')
         call_command('create_allocation_periods')
         call_command('create_staff_group')
         sys.stdout = sys.__stdout__

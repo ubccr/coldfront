@@ -4,6 +4,8 @@ from flags.state import flag_enabled
 from flags.urls import flagged_paths
 
 import coldfront.core.allocation.views as allocation_views
+import coldfront.core.allocation.views_.cluster_access_views as \
+    cluster_access_views
 import coldfront.core.allocation.views_.secure_dir_views as secure_dir_views
 
 
@@ -28,26 +30,8 @@ urlpatterns = [
     path('<int:pk>/remove-users',
          allocation_views.AllocationRemoveUsersView.as_view(),
          name='allocation-remove-users'),
-    path('<int:pk>/request-cluster-account/<int:user_pk>',
-         allocation_views.AllocationRequestClusterAccountView.as_view(),
-         name='allocation-request-cluster-account'),
-    path('cluster-account/<int:pk>/update-status',
-         allocation_views.AllocationClusterAccountUpdateStatusView.as_view(),
-         name='allocation-cluster-account-update-status'),
-    path('cluster-account/<int:pk>/activate-request',
-         allocation_views.AllocationClusterAccountActivateRequestView.as_view(),
-         name='allocation-cluster-account-activate-request'),
-    path('cluster-account/<int:pk>/deny-request',
-         allocation_views.AllocationClusterAccountDenyRequestView.as_view(),
-         name='allocation-cluster-account-deny-request'),
     path('request-list', allocation_views.AllocationRequestListView.as_view(),
          name='allocation-request-list'),
-    path('cluster-account-request-list',
-         allocation_views.AllocationClusterAccountRequestListView.as_view(completed=False),
-         name='allocation-cluster-account-request-list'),
-    path('cluster-account-request-list-completed',
-         allocation_views.AllocationClusterAccountRequestListView.as_view(completed=True),
-         name='allocation-cluster-account-request-list-completed'),
     # path('<int:pk>/renew', allocation_views.AllocationRenewView.as_view(),
     #      name='allocation-renew'),
     # path('<int:pk>/allocationattribute/add',
@@ -77,6 +61,28 @@ urlpatterns = [
     path('allocation-account-list/',
          allocation_views.AllocationAccountListView.as_view(),
          name='allocation-account-list')]
+
+# Cluster Access Requests
+urlpatterns += [
+    path('<int:pk>/request-cluster-account/<int:user_pk>',
+         cluster_access_views.AllocationRequestClusterAccountView.as_view(),
+         name='allocation-request-cluster-account'),
+    path('cluster-account/<int:pk>/update-status',
+         cluster_access_views.AllocationClusterAccountUpdateStatusView.as_view(),
+         name='allocation-cluster-account-update-status'),
+    path('cluster-account/<int:pk>/activate-request',
+         cluster_access_views.AllocationClusterAccountActivateRequestView.as_view(),
+         name='allocation-cluster-account-activate-request'),
+    path('cluster-account/<int:pk>/deny-request',
+         cluster_access_views.AllocationClusterAccountDenyRequestView.as_view(),
+         name='allocation-cluster-account-deny-request'),
+    path('cluster-account-request-list',
+         cluster_access_views.AllocationClusterAccountRequestListView.as_view(completed=False),
+         name='allocation-cluster-account-request-list'),
+    path('cluster-account-request-list-completed',
+         cluster_access_views.AllocationClusterAccountRequestListView.as_view(completed=True),
+         name='allocation-cluster-account-request-list-completed'),
+]
 
 with flagged_paths('SECURE_DIRS_REQUESTABLE') as path:
     flagged_url_patterns = [

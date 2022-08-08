@@ -22,20 +22,20 @@ Activate Cluster Account
     </h2>
   </div>
   <div class="card-body">
-    {% with user=cluster_account.allocation_user.user %}
+    {% with user=cluster_access_request.allocation_user.user %}
       <p class="card-text text-justify">
         <strong>User:</strong>
         <a href="{% url 'user-profile' user.username %}">{{ user.first_name }} {{user.last_name }}</a>
         ({{ user.email }})
       </p>
     {% endwith %}
-    {% with project=cluster_account.allocation.project %}
+    {% with project=cluster_access_request.allocation_user.allocation.project %}
       <p class="card-text text-justify">
         <strong>Project:</strong>
         <a href="{% url 'project-detail' project.pk %}">{{ project.name }}</a>
       </p>
     {% endwith %}
-    {% with allocation=cluster_account.allocation %}
+    {% with allocation=cluster_access_request.allocation_user.allocation %}
       <p class="card-text text-justify">
         <strong>Allocation:</strong>
         <a href="{% url 'allocation-detail' allocation.pk %}">
