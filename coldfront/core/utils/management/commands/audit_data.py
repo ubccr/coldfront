@@ -125,6 +125,7 @@ class Command(BaseCommand):
                                        | Q(name__startswith='Summer Sessions') \
                                       )).all()
 
+        # TODO: Change these if lrc_enabled
         FCA_PCA_PREFIXES = ('fc_', 'pc_')
         ICA_PREFIX = 'ic_'
         RECHARGE_CONDO_PREFIX = ('co_', 'ac_')
