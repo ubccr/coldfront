@@ -206,13 +206,14 @@ class Command(BaseCommand):
                         resource.endswith('Directory') \
                         else self.style.ERROR
                 if allocation.status.name != 'Expired':
-                    self.stdout.write(style('Project {project.name} is '
+                    self.stdout.write(style(f'Project {project.name} is '
                     f'inactive and has an unexpired '
                     f'{resource} allocation {allocation.id}.'))
                 try:
                     allocation_attribute = allocation.allocationattribute_set \
                         .get(allocation_attribute_type__name='Service Units')
-                    if allocation_attribute.value == 0:
+                    if allocation_attribute.value != '0' and \
+                       allocation_attribute.value != '0.00':
                         self.stdout.write(self.style.ERROR(
                         f'Project {project.name} is inactive and has '
                         f'non-zero SUs.'))
@@ -280,9 +281,8 @@ class Command(BaseCommand):
         for allocation in allocations:
             if allocation.allocationattribute_set \
                     .filter(type='Billing Activity').count() == 0:
-                self.stdout.write(self.style.ERROR('Allocation {}'
-                ' has no "Billing Activity"-typed AllocationAttribute.' \
-                    .format(allocation.id)))
+                self.stdout.write(self.style.ERROR(f'Allocation {allocation.id}'
+                ' has no "Billing Activity"-typed AllocationAttribute.'))
 
     def handle_lrc_recharge_allocation_user_billing(self):
         '''
