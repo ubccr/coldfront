@@ -166,7 +166,7 @@ class ClusterAccessRequestViewSet(mixins.ListModelMixin,
 
                 instance = serializer.save()
 
-                if instance.status.name == 'Active':
+                if instance.status.name == 'Complete':
                     runner = ClusterAccessRequestCompleteRunner(instance)
                     runner.run(username, cluster_uid)
                 elif instance.status.name == 'Denied':

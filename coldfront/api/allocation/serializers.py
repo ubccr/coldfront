@@ -156,7 +156,7 @@ class ClusterAccessRequestSerializer(serializers.ModelSerializer):
     def validate(self, data):
         # If the status is being changed to 'Active', ensure that a
         # completion_time, username, and cluster_uid are given.
-        if 'status' in data and data['status'].name == 'Active':
+        if 'status' in data and data['status'].name == 'Complete':
             messages = []
             if not isinstance(data.get('completion_time', None), datetime):
                 messages.append('No completion_time is given.')

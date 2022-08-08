@@ -40,7 +40,7 @@ class TestClusterAccessRequestsBase(TestAllocationBase):
         super().setUp()
 
         # Create two ClusterAccessRequests with statuses Pending - Add,
-        # Processing, Active, Denied
+        # Processing, Complete, Denied
         status_choices = ClusterAccessRequestStatusChoice.objects.all()
         for i in range(4):
             kwargs = {
@@ -53,7 +53,7 @@ class TestClusterAccessRequestsBase(TestAllocationBase):
             elif i == 1:
                 kwargs['status'] = status_choices.get(name='Processing')
             elif i == 2:
-                kwargs['status'] = status_choices.get(name='Active')
+                kwargs['status'] = status_choices.get(name='Complete')
             else:
                 kwargs['status'] = status_choices.get(name='Denied')
                 
@@ -125,7 +125,7 @@ class TestListClusterAccessRequests(TestClusterAccessRequestsBase):
         """Test that querying by status filters results properly."""
         url = BASE_URL
         self.assertEqual(ClusterAccessRequest.objects.count(), 4)
-        for status in ('Pending - Add', 'Processing', 'Active', 'Denied'):
+        for status in ('Pending - Add', 'Processing', 'Complete', 'Denied'):
             query_parameters = {
                 'status': status,
             }
@@ -250,12 +250,17 @@ class TestUpdatePatchClusterAccessRequests(TestClusterAccessRequestsBase):
     def _assert_post_state(self, pre_time, post_time, status, check_username_clusteruid=True, check_su=True):
         """Assert that the relevant objects have the expected state,
         assuming that the runner has run successfully."""
+        if status == 'Complete':
+            attr_status = 'Active'
+        else:
+            attr_status = status
+
         self._refresh_objects()
         self.assertEqual(self.request0.status.name, status)
         self.assertTrue(pre_time < self.request0.completion_time < post_time)
         self.assertTrue(self._get_cluster_account_status_attr(self.allocation_user0).exists())
         self.assertEqual(self._get_cluster_account_status_attr(self.allocation_user0).first().value,
-                         status)
+                         attr_status)
         self.assertEqual(self.request0.allocation_user.pk, self.allocation_user0.pk)
 
         if check_username_clusteruid:
@@ -292,13 +297,13 @@ class TestUpdatePatchClusterAccessRequests(TestClusterAccessRequestsBase):
         url = self.pk_url(BASE_URL, self.request0.pk)
         data = {
             'id': self.request0.pk + 1,
-            'status': 'Active',
+            'status': 'Complete',
             'completion_time': utc_now_offset_aware(),
             'allocation_user': {'id': 12,
                                 'allocation': 3,
                                 'user': 'user3',
                                 'project': 'project0',
-                                'status': 'Active'},
+                                'status': 'Complete'},
             'username': 'new_username',
             'cluster_uid': '1234'
         }
@@ -321,14 +326,14 @@ class TestUpdatePatchClusterAccessRequests(TestClusterAccessRequestsBase):
 
     def test_valid_data_complete(self):
         """Test that updating an object with valid PATCH data
-        succeeds when the new status is Active."""
+        succeeds when the new status is Complete."""
         self._assert_pre_state()
         pre_time = utc_now_offset_aware()
 
         url = self.pk_url(BASE_URL, self.request0.pk)
         data = {
             'completion_time': utc_now_offset_aware(),
-            'status': 'Active',
+            'status': 'Complete',
             'username': self.new_username,
             'cluster_uid': self.cluster_uid,
         }
@@ -413,12 +418,12 @@ class TestUpdatePatchClusterAccessRequests(TestClusterAccessRequestsBase):
         self.assertEqual(len(mail.outbox), 0)
 
     def test_no_completion_time(self):
-        """Test no completion time given when status == Active."""
+        """Test no completion time given when status == Complete."""
         self._assert_pre_state()
         url = self.pk_url(BASE_URL, self.request0.pk)
 
         data = {
-            'status': 'Active',
+            'status': 'Complete',
             'username': 'new_username',
             'cluster_uid': '1234',
         }
@@ -433,12 +438,12 @@ class TestUpdatePatchClusterAccessRequests(TestClusterAccessRequestsBase):
         self.assertEqual(len(mail.outbox), 0)
 
     def test_no_username_given(self):
-        """Test no username given when status == Active."""
+        """Test no username given when status == Complete."""
         self._assert_pre_state()
         url = self.pk_url(BASE_URL, self.request0.pk)
 
         data = {
-            'status': 'Active',
+            'status': 'Complete',
             'completion_time': utc_now_offset_aware(),
             'cluster_uid': '1234',
         }
@@ -453,12 +458,12 @@ class TestUpdatePatchClusterAccessRequests(TestClusterAccessRequestsBase):
         self.assertEqual(len(mail.outbox), 0)
 
     def test_no_cluster_uid_given(self):
-        """Test no cluster_uid given when status == Active."""
+        """Test no cluster_uid given when status == Complete."""
         self._assert_pre_state()
         url = self.pk_url(BASE_URL, self.request0.pk)
 
         data = {
-            'status': 'Active',
+            'status': 'Complete',
             'completion_time': utc_now_offset_aware(),
             'username': 'new_username',
         }
@@ -478,7 +483,7 @@ class TestUpdatePatchClusterAccessRequests(TestClusterAccessRequestsBase):
         url = self.pk_url(BASE_URL, self.request0.pk)
 
         data = {
-            'status': 'Active',
+            'status': 'Complete',
             'completion_time': utc_now_offset_aware(),
             'username': 'user1',
             'cluster_uid': '1234'
@@ -502,7 +507,7 @@ class TestUpdatePatchClusterAccessRequests(TestClusterAccessRequestsBase):
         url = self.pk_url(BASE_URL, self.request0.pk)
 
         data = {
-            'status': 'Active',
+            'status': 'Complete',
             'completion_time': utc_now_offset_aware(),
             'username': 'user0',
             'cluster_uid': '1234'
@@ -525,7 +530,7 @@ class TestUpdatePatchClusterAccessRequests(TestClusterAccessRequestsBase):
         url = self.pk_url(BASE_URL, self.request0.pk)
         data = {
             'completion_time': utc_now_offset_aware(),
-            'status': 'Active',
+            'status': 'Complete',
             'username': self.new_username,
             'cluster_uid': self.cluster_uid
         }
