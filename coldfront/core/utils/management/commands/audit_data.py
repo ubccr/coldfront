@@ -218,8 +218,7 @@ class Command(BaseCommand):
                 try:
                     allocation_attribute = allocation.allocationattribute_set \
                         .get(allocation_attribute_type__name='Service Units')
-                    if allocation_attribute.value != '0' and \
-                       allocation_attribute.value != '0.00':
+                    if float(allocation_attribute.value) != 0:
                         self.stdout.write(self.style.ERROR(
                         f'Project {project.name} is inactive and has '
                         f'non-zero SUs.'))
