@@ -98,8 +98,8 @@ class Command(BaseCommand):
                 date set to the start of the current allowance year
                 AllocationPeriod, but no end date.
             - Active ones (ones that were renewed, or were created during
-                this allowance year) should have the same start and end date as
-                the current allowance year AllocationPeriod.
+                this allowance year) should have a start before and an end date
+                equal to that of the current allowance year AllocationPeriod.
           ICAs (Instructional Computing Allowances) are valid within a
           particular UC Berkeley semester.
             - Inactive ones should have a start date, but no end date.
