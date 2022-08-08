@@ -117,13 +117,9 @@ class Command(BaseCommand):
                    'project__name','start_date', 'end_date',
                    'resources__name')
 
-        FCA_PCA_ALLOCATION_PERIOD = AllocationPeriod.objects.get(
-                                        name__startswith='Allowance Year',
-                                        start_date__lt=datetime.date.today(),
-                                        end_date__gt=datetime.date.today())
         FCA_PCA_ALLOCATION_PERIOD = get_current_allowance_year_period()
         ICA_ALLOCATION_PERIODS = AllocationPeriod.objects.filter(
-                                    Q(end_date__gt=datetime.date.today())
+                                    Q(end_date__gt=display_time_zone_current_date())
                                     & (Q(name__startswith='Fall Semester')
                                        | Q(name__startswith='Spring Semester')
                                        | Q(name__startswith='Summer Sessions') \
@@ -155,14 +151,21 @@ class Command(BaseCommand):
                     f'allocation period\'s '
                     f'({FCA_PCA_ALLOCATION_PERIOD.start_date} for '
                     f'{FCA_PCA_ALLOCATION_PERIOD}).'))
-                if project_status == 'Active' \
-                        and end_date != FCA_PCA_ALLOCATION_PERIOD.end_date:
-                    self.stdout.write(self.style.ERROR(f'{resource} {id} '
-                    f'for active FCA or PCA project {project} has an end date '
-                    f'of {end_date} that is different than its allocation '
-                    f'period\'s '
-                    f'({FCA_PCA_ALLOCATION_PERIOD.end_date} for '
-                    f'{FCA_PCA_ALLOCATION_PERIOD}).'))
+                if project_status == 'Active':
+                    if start_date < FCA_PCA_ALLOCATION_PERIOD.start_date:
+                        self.stdout.write(self.style.ERROR(f'{resource} {id} '
+                        f'for active FCA or PCA project {project} has a '
+                        f'start date of {start_date} that is before '
+                        f'its allocation period\'s '
+                        f'({FCA_PCA_ALLOCATION_PERIOD.start_date} for '
+                        f'{FCA_PCA_ALLOCATION_PERIOD}).'))
+                    if end_date != FCA_PCA_ALLOCATION_PERIOD.end_date:
+                        self.stdout.write(self.style.ERROR(f'{resource} {id} '
+                        f'for active FCA or PCA project {project} has an end '
+                        f'date of {end_date} that is different than '
+                        f'its allocation period\'s '
+                        f'({FCA_PCA_ALLOCATION_PERIOD.end_date} for '
+                        f'{FCA_PCA_ALLOCATION_PERIOD}).'))
 
             elif project.startswith(ICA_PREFIX):
                 if project_status == 'Inactive' and end_date is not None:
@@ -199,16 +202,19 @@ class Command(BaseCommand):
                               .select_related('status') \
                               .prefetch_related('allocationattribute_set',
                                                 'resources'):
-                resource = allocation.resources.first().name
-                style = (lambda x:
-                        self.style.WARNING('CURRENTLY EXPECTED BEHAVIOR: ') \
-                        + self.style.WARNING(x)) if \
-                        resource.endswith('Directory') \
-                        else self.style.ERROR
-                if allocation.status.name != 'Expired':
-                    self.stdout.write(style(f'Project {project.name} is '
-                    f'inactive and has an unexpired '
-                    f'{resource} allocation {allocation.id}.'))
+                try:
+                    resource = allocation.resources.first().name
+                    style = (lambda x:
+                            self.style.WARNING('CURRENTLY EXPECTED BEHAVIOR: ') \
+                            + self.style.WARNING(x)) if \
+                            resource.endswith('Directory') \
+                            else self.style.ERROR
+                    if allocation.status.name != 'Expired':
+                        self.stdout.write(style(f'Project {project.name} is '
+                        f'inactive and has an unexpired '
+                        f'{resource} allocation {allocation.id}.'))
+                except AttributeError as e:
+                    pass
                 try:
                     allocation_attribute = allocation.allocationattribute_set \
                         .get(allocation_attribute_type__name='Service Units')
@@ -277,12 +283,14 @@ class Command(BaseCommand):
          AllocationAttribute.
         '''
         allocations = Allocation.objects \
+            .prefetch_related('resources') \
             .filter(resources__name__endswith='Compute')
         for allocation in allocations:
             if allocation.allocationattribute_set \
                     .filter(type='Billing Activity').count() == 0:
-                self.stdout.write(self.style.ERROR(f'Allocation {allocation.id}'
-                ' has no "Billing Activity"-typed AllocationAttribute.'))
+                self.stdout.write(self.style.ERROR(
+                f'{allocation.resources.name} Allocation {allocation.id}'
+                f' has no "Billing Activity"-typed AllocationAttribute.'))
 
     def handle_lrc_recharge_allocation_user_billing(self):
         '''
