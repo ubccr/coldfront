@@ -16,7 +16,7 @@
             <thead>
               <tr>
                 <th>
-                  <input type="checkbox" class="check" id="selectAll">
+                  <input type="checkbox" class="check" id="selectAllPubs">
                 </th>
                 <th scope="col">#</th>
                 <th scope="col">Publication</th>
@@ -77,14 +77,14 @@ $(document).ready(function()
 );
   
 
-$("#selectAll").click(function() {
+$("#selectAllPubs").click(function() {
   $("input[name^='pubform-']").prop('checked', $(this).prop('checked'));
 });
 
   $("input[name^='pubform-']").click(function(ele) {
     var id = $(this).attr('id');
-    if (id != "selectAll") {
-      $("#selectAll").prop('checked', false);
+    if (id != "selectAllPubs") {
+      $("#selectAllPubs").prop('checked', false);
     }
   });
 </script>

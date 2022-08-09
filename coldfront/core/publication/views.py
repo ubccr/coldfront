@@ -74,23 +74,24 @@ class PublicationSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
         context['orcid_vars'] = OrcidAPI.orcid_configured()
-        if UserSelectResults.SELECTED_KEY in self.request.session:
-            selected_ids = self.request.session.pop(UserSelectResults.SELECTED_KEY)
-            selected_user_profiles = UserProfile.objects.filter(user_id__in=selected_ids)
-            orcid_ids = []
-            for profile in selected_user_profiles:
-                orcid_ids.append(f'{profile.orcid_id} ({profile.user.username})')
+        # if UserSelectResults.SELECTED_KEY in self.request.session:
+        #     selected_ids = self.request.session.pop(UserSelectResults.SELECTED_KEY)
+        #     selected_user_profiles = UserProfile.objects.filter(user_id__in=selected_ids)
+        #     orcid_ids = []
+        #     for profile in selected_user_profiles:
+        #         orcid_ids.append(f'{profile.orcid_id} ({profile.user.username})')
             
-            psf_initial = {
-                'search_id': '\n'.join(filter(lambda elem: elem is not None, orcid_ids)),
-            }
-            context['publication_search_form'] = PublicationSearchForm(initial=psf_initial)
-            context['search_immediately'] = True
-        else:
-            context['orcid_config_msg'] = OrcidAPI.ORC_CONFIG_MSG
-            context['publication_search_form'] = PublicationSearchForm()
-            context['search_immediately'] = False
+        #     psf_initial = {
+        #         'search_id': '\n'.join(filter(lambda elem: elem is not None, orcid_ids)),
+        #     }
+            
+        #     context['search_immediately'] = True
+        # else:
+        #     context['orcid_config_msg'] = OrcidAPI.ORC_CONFIG_MSG
+        #     context['publication_search_form'] = PublicationSearchForm()
+        #     context['search_immediately'] = False
         
+        context['publication_search_form'] = PublicationSearchForm(project_pk=self.kwargs.get('project_pk'))
         context['project'] = Project.objects.get(
             pk=self.kwargs.get('project_pk'))
         return context
@@ -278,8 +279,17 @@ class PublicationSearchResultView(LoginRequiredMixin, UserPassesTestMixin, Templ
     def post(self, request, *args, **kwargs):
         search_ids = list(set(request.POST.get('search_id').split()))
         project_pk = self.kwargs.get('project_pk')
-
         project_obj = get_object_or_404(Project, pk=project_pk)
+        form_data = json.loads(request.POST.get('form_info'))
+        print('Form Data')
+        print(form_data)
+        for user in form_data:
+                try:
+                    user_obj = User.objects.get(username__exact=user)
+                    orcid_user = user_obj.social_auth.get(provider='orcid-sandbox')
+                    search_ids.append(orcid_user.uid)
+                except:
+                    pub_dict = None
         pubs = []
         for ele in search_ids:
             pub_dict = self._search_id(ele)

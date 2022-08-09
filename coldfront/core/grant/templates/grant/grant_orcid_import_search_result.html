@@ -41,12 +41,17 @@
           <thead>
             <tr>
               <th>
-                <input type="checkbox" class="check" id="selectAll">
+                <input type="checkbox" class="check" id="selectAllGrants">
               </th>
-              <th scope="col">#</th>
+              
+              <th scope="col">Select All</th>
               <th scope="col">Grant</th>
               <th scope="col">Editable Values</th>
               <th scope="col"></th>
+              <th scope="col">Start Year
+                <a href="?order_by=grand_start&direction=asc&"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Grant Start asc</span></a>
+                <a href="?order_by=grand_start&direction=des&"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Grant Start desc</span></a>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -99,6 +104,9 @@
                 </label> <br>
                 {{ form.status }}
               </td>
+              <td>
+                <strong>Start Date: </strong><span class="date_disp">{{ form.grant_start.value }}</span> <br>
+              </td>
             </tr>
             {% endfor %}
           </tbody>
@@ -143,14 +151,14 @@
   );
   
 
-  $("#selectAll").click(function() {
+  $("#selectAllGrants").click(function() {
     $("input[name^='grantform-']").prop('checked', $(this).prop('checked'));
   });
   
   $("input[name^='grantform-']").click(function(ele) {
     var id = $(this).attr('id');
-    if (id != "selectAll") {
-      $("#selectAll").prop('checked', false);
+    if (id != "selectAllGrants") {
+      $("#selectAllGrants").prop('checked', false);
     }
   });
   </script>

@@ -46,19 +46,17 @@ Import Grant from ORCID
     });
   
     function create_post() {
-      var test = $('#selected_users')
-      console.log(test)
-      const webform = document.getElementById('selected_users')
-      var form = new FormData()
-      form.append('csrfmiddlewaretoken', webform[0].value)
-      form.append('id_users', webform[1].value)
+      var users = [];
+      $('input:checked').each(function () {
+            users.push($(this).val());
+          });
 
-      var pk = "{{ project.pk }}"
+      var pk = "{{ project.pk }}";
       $.ajax({
           url : "/grant/project/" + pk + "/orcid-import-search-result/", // the endpoint
           type : "POST", // http method
           data : {
-            form_info :  form,
+            form_info : JSON.stringify(users),
             csrfmiddlewaretoken: "{{ csrf_token }}"
           }, // data sent with the post request
           // handle a successful response

@@ -27,7 +27,7 @@ from coldfront.core.grant.forms import (
     OrcidImportGrantResultForm,
     )
 from coldfront.core.grant.models import (Grant, GrantFundingAgency,
-                                         GrantStatusChoice)
+                                         GrantStatusChoice, GrantStaged)
 from coldfront.core.project.models import Project, ProjectUser
 
 from coldfront.plugins.orcid.orcid_vars import OrcidAPI
@@ -427,15 +427,12 @@ class GrantOrcidImportResultView(LoginRequiredMixin, UserPassesTestMixin, Templa
         project_pk = self.kwargs.get('project_pk')
         print(project_pk)
         print('Request')
-        data = (request.POST).dict()
+        data = (request.POST)
         print( data)
-        # form_post = OrcidImportGrantQueryForm(request.POST)
-        # print('Form Post')
-        # print(form_post)
-        form_data = form_post.get('users')
+        form_data = json.loads(data.get('form_info'))
         print('Form Data')
         print(form_data)
-     
+        
 
         project_obj = get_object_or_404(Project, pk=project_pk)
         grants = []
@@ -444,12 +441,12 @@ class GrantOrcidImportResultView(LoginRequiredMixin, UserPassesTestMixin, Templa
         search_ids = []
         for user in form_data:
             try:
-                orcid_user = user.social_auth.get(provider='orcid-sandbox')
+                user_obj = User.objects.get(username__exact=user)
+                orcid_user = user_obj.social_auth.get(provider='orcid-sandbox')
                 search_ids.append(orcid_user.uid)
-                print(search_ids)
             except:
                 pass 
-
+        print(search_ids)
         try:
             for ele in search_ids:
                 grant_dict = self._search_id(ele)
@@ -467,6 +464,8 @@ class GrantOrcidImportResultView(LoginRequiredMixin, UserPassesTestMixin, Templa
         formset = formset_factory(OrcidImportGrantResultForm, max_num=len(grants))
         formset = formset(initial=grants, prefix='grantform')
 
+
+
         context = {}
         context['orcid_not_found'] = False
         context['project_pk'] = project_obj.pk
@@ -476,6 +475,24 @@ class GrantOrcidImportResultView(LoginRequiredMixin, UserPassesTestMixin, Templa
 
         return render(request, self.template_name, context)
 
+    # def get_queryset(self, formset):
+    #     order_by = self.request.GET.get('order_by', 'grant_start')
+    #     direction = self.request.GET.get('direction', 'asc')
+    #     if order_by != "name":
+    #         if direction == 'asc':
+    #             direction = ''
+    #         if direction == 'des':
+    #             direction = '-'
+    #         order_by = direction + order_by
+
+    #     if formset.is_valid():
+    #         data = formset.cleaned_data
+    #         staged_grants = GrantStaged.objects.prefetch_related('grant_start').all().order_by(order_by)
+    #         if data.get('grand_start'):
+    #             grants = staged_grants.filter(grant_start__lt=data.get(
+    #                 'grant_start'), status__name='Active').order_by('grant_start')
+
+    #     return grants.distinct()
 
 # class GrantUserOrcidImportView(LoginRequiredMixin, UserPassesTestMixin, View):
 #     def test_func(self):

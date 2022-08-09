@@ -19,17 +19,6 @@ Add Publication to Project
     <a class="btn btn-info" href="{% url 'add-publication-manually' project.pk %}" role="button">
       <i class="far fa-edit" aria-hidden="true"></i> Enter Publication Manually
     </a>
-     {% if orcid_vars == True %}
-    <a class="btn btn-info" href="{% url 'publication-user-orcid-import' project.pk %}" role="button">
-      <i class="far fa-user" aria-hidden="true"></i> Import Publications from User ORCIDs
-    </a>
-    {% else %}
-    <div style="display:inline-block" title="{{orcid_config_msg}}" class="mb-3">
-      <a class="btn btn-info disabled" href="{% url 'publication-user-orcid-import' project.pk %}" role="button">
-        <i class="far fa-user" aria-hidden="true"></i> Import Publication from User ORCIDs
-      </a>
-    </div>
-    {% endif %}
   </div>
   
   
@@ -67,11 +56,17 @@ Add Publication to Project
   function create_post() {
     search_id = $('#id_search_id').val().trim();
 
+    var users = [];
+      $('input:checked').each(function () {
+            users.push($(this).val());
+          });
+
     var pk = "{{ project.pk }}"
     $.ajax({
         url : "/publication/publication-search-result/" + pk +"/", // the endpoint
         type : "POST", // http method
         data : {
+          form_info : JSON.stringify(users),
           search_id : search_id, 
           csrfmiddlewaretoken: "{{ csrf_token }}"
         }, // data sent with the post request
@@ -92,10 +87,20 @@ Add Publication to Project
   $(document).ready(function(){
     $('[data-toggle="popover"]').popover();
 
-    if ('{{ search_immediately }}' == 'True')
-    {
-      $('#search-button').click();
-    }
+    $('<br><input id="selectAll" class="check" type="checkbox"> <strong>Select All Users</strong>').insertAfter($("#div_id_users > label"))
+
+
+    $("#selectAll").click(function () {
+      $("input[name^='users']").prop('checked', $(this).prop('checked'));
+    });
+
+    $("input[name^='users']").click(function (ele) {
+      var id = $(this).attr('id');
+      if (id != "selectAll") {
+        $("#selectAll").prop('checked', false);
+      }
+    });
+   
   });
 </script>
 {% endblock %}
