@@ -80,25 +80,13 @@ Cluster Account Review New and Pending Requests
   <hr>
 {% endif %}
 
-{% if cluster_account_list %}
+{% if cluster_access_request_list %}
 <div class="table-responsive">
-  {% with queryset=cluster_account_list actions_visible=actions_visible %}
+  {% with queryset=cluster_access_request_list actions_visible=actions_visible %}
     {% include 'allocation/allocation_cluster_account_request_list_table.html' %}
   {% endwith %}
-  {% if is_paginated %} Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-    <ul class="pagination float-right mr-3">
-      {% if page_obj.has_previous %}
-        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{filter_parameters_with_order_by}}">Previous</a></li>
-      {% else %}
-        <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
-      {% endif %}
-      {% if page_obj.has_next %}
-        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{filter_parameters_with_order_by}}">Next</a></li>
-      {% else %}
-        <li class="page-item disabled"><a class="page-link" href="#">Next</a></li>
-      {% endif %}
-    </ul>
-  {% endif %}
+
+  {% include 'common/pagination.html' %}
 </div>
 {% else %}
 <div class="alert alert-info">

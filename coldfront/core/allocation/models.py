@@ -676,6 +676,7 @@ class SecureDirRemoveUserRequest(TimeStampedModel):
 
 
 class SecureDirRequestStatusChoice(TimeStampedModel):
+
     name = models.CharField(max_length=64)
 
     def __str__(self):
@@ -780,3 +781,27 @@ class SecureDirRequest(TimeStampedModel):
             max_timestamp = max(
                 max_timestamp, state[field].get('timestamp', ''))
         return max_timestamp
+
+
+class ClusterAccessRequestStatusChoice(TimeStampedModel):
+    name = models.CharField(max_length=64)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name', ]
+
+
+class ClusterAccessRequest(TimeStampedModel):
+    allocation_user = models.ForeignKey(AllocationUser, on_delete=models.CASCADE)
+    status = models.ForeignKey(ClusterAccessRequestStatusChoice, on_delete=models.CASCADE)
+
+    request_time = models.DateTimeField(
+        null=True, blank=True, default=timezone.now)
+    completion_time = models.DateTimeField(null=True, blank=True)
+
+    host_user = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
+    billing_activity = models.ForeignKey(BillingActivity, null=True, blank=True, on_delete=models.CASCADE)
+
+    history = HistoricalRecords()

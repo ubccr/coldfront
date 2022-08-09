@@ -341,6 +341,17 @@ def update_user_primary_email_address(email_address):
         email_address.is_primary = True
         email_address.save()
 
+
+def eligible_host_project_users(project):
+    """Return a list of ProjectUser objects associated with the given
+    Project that are eligible to be hosts for external users.
+
+    In particular, return active PIs who are LBL employees."""
+    active_pis = project.projectuser_set.filter(
+        role__name='Principal Investigator', status__name='Active').distinct()
+    return [pi for pi in active_pis if is_lbl_employee(pi.user)]
+
+
 def is_lbl_employee(user):
     """Returns True if the user has any @lbl.gov emails and False otherwise.
 

@@ -1,3 +1,4 @@
+{% load feature_flags %}
 <table class="table table-sm">
   <thead>
   <tr>
@@ -7,9 +8,15 @@
       <a href="?order_by=id&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
     </th>
     <th scope="col">
-      Date Requested/<br>Last Modified
-      <a href="?order_by=created&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-      <a href="?order_by=created&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+      {% if request_filter == 'completed' %}
+        Completion Time
+        <a href="?order_by=completion_time&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+        <a href="?order_by=completion_time&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+      {% else %}
+        Request Time
+        <a href="?order_by=request_time&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+        <a href="?order_by=request_time&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+      {% endif %}
     </th>
     <th scope="col">
       User Email
@@ -23,12 +30,18 @@
     </th>
     <th scope="col">
       Project
-      <a href="?order_by=allocation__project__name&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
-      <a href="?order_by=allocation__project__name=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
+      <a href="?order_by=allocation_user__allocation__project__name&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up"></i></a>
+      <a href="?order_by=allocation_user__allocation__project__name=des&{{filter_parameters}}"><i class="fas fa-sort-down"></i></a>
     </th>
     <th scope="col">
       Allocation
     </th>
+    {% flag_enabled 'LRC_ONLY' as lrc_only%}
+    {% if lrc_only %}
+      <th scope="col">
+        Host User
+      </th>
+    {% endif %}
     <th scope="col">
       Status
     </th>
@@ -40,14 +53,18 @@
   </tr>
   </thead>
   <tbody>
-  {% for cluster_account in queryset %}
+  {% for request in queryset %}
     <tr>
-      <td>{{ cluster_account.pk }}</td>
-      <td>{{ cluster_account.modified|date:"M. d, Y" }}</td>
-      <td>{{ cluster_account.allocation_user.user.email }}</td>
+      <td>{{ request.pk }}</td>
+      {% if request_filter == 'completed' %}
+        <td>{{ request.completion_time|date:"M. d, Y" }}</td>
+      {% else %}
+        <td>{{ request.request_time|date:"M. d, Y" }}</td>
+      {% endif %}
+      <td>{{ request.allocation_user.user.email }}</td>
       <td>
-        {% if cluster_account.allocation_user.user.userprofile.cluster_uid %}
-          {{ cluster_account.allocation_user.user.username }}
+        {% if request.allocation_user.user.userprofile.cluster_uid %}
+          {{ request.allocation_user.user.username }}
         {% else %}
           <span class="badge badge-danger">
               No cluster account.
@@ -55,23 +72,32 @@
         {% endif %}
       </td>
       <td>
-        <a href="{% url 'project-detail' cluster_account.allocation.project.pk %}">
-          {{ cluster_account.allocation.project.name }}
+        <a href="{% url 'project-detail' request.allocation_user.allocation.project.pk %}">
+          {{ request.allocation_user.allocation.project.name }}
         </a>
       </td>
       <td>
-        <a href="{% url 'allocation-detail' cluster_account.allocation.pk %}">
-          <span class="accessibility-link-text">Allocation {{ allocation.pk }}</span>
-          {{ cluster_account.allocation.pk }}
+        <a href="{% url 'allocation-detail' request.allocation_user.allocation.pk %}">
+          <span class="accessibility-link-text">Allocation {{ request.allocation_user.allocation.pk }}</span>
+          {{ request.allocation_user.allocation.pk }}
         </a>
       </td>
+      {% if lrc_only %}
+        <td>
+          {% if request.allocation_user.userprofile.host_user %}
+            {{ request.allocation_user.userprofile.host_user }}
+          {% else %}
+            N/A
+          {% endif %}
+        </td>
+      {% endif %}
       <td>
-        {% with status=cluster_account.value %}
+        {% with status=request.status.name %}
           {% if status == "Pending - Add" %}
             <span class="badge badge-warning">Pending</span>
           {% elif status == "Processing" %}
             <span class="badge badge-warning">{{ status }}</span>
-          {% elif status == "Active" %}
+          {% elif status == "Complete" %}
             <span class="badge badge-success">{{ status }}</span>
           {% elif status == "Denied" %}
             <span class="badge badge-danger">{{ status }}</span>
@@ -80,18 +106,18 @@
       </td>
       {% if user.is_superuser and actions_visible %}
         <td class="text-nowrap">
-          {% if cluster_account.value == "Pending - Add" %}
-            <a href="{% url 'allocation-cluster-account-update-status' cluster_account.pk %}" class="btn btn-success mr-1">
+          {% if request.status.name == "Pending - Add" %}
+            <a href="{% url 'allocation-cluster-account-update-status' request.pk %}" class="btn btn-success mr-1">
               Activate
             </a>
           {% else %}
-            <a href="{% url 'allocation-cluster-account-activate-request' cluster_account.pk %}" class="btn btn-success mr-1">
+            <a href="{% url 'allocation-cluster-account-activate-request' request.pk %}" class="btn btn-success mr-1">
               Activate
             </a>
           {% endif %}
-          <div class="modal fade" id="denial{{ cluster_account.pk }}Modal" tabindex="-1" role="dialog" aria-labelledby="denial{{ cluster_account.pk }}ModalLabel" aria-hidden="true">
+          <div class="modal fade" id="denial{{ request.pk }}Modal" tabindex="-1" role="dialog" aria-labelledby="denial{{ request.pk }}ModalLabel" aria-hidden="true">
             <div class="modal-dialog" role="document">
-              <form action="{% url 'allocation-cluster-account-deny-request' cluster_account.pk %}" method="get" id="denial{{ cluster_account.pk }}Form">
+              <form action="{% url 'allocation-cluster-account-deny-request' request.pk %}" method="post" id="denial{{ request.pk }}Form">
                 {% csrf_token %}
                 <div class="modal-content">
                   <div class="modal-header">
@@ -104,9 +130,9 @@
                   <div class="modal-body">
                     <label>Are You Sure?</label>
 
-                    <br><b>User:</b> {{ cluster_account.allocation_user.user.email }}
-                    <br><b>Project:</b> {{ cluster_account.allocation.project.name }}
-                    <br><b>Allocation:</b> {{ cluster_account.allocation.pk }}
+                    <br><b>User:</b> {{ request.allocation_user.user.email }}
+                    <br><b>Project:</b> {{ request.allocation_user.allocation.project.name }}
+                    <br><b>Allocation:</b> {{ request.allocation_user.allocation.pk }}
                   </div>
 
                   <div class="modal-footer">
@@ -119,7 +145,7 @@
               </form>
             </div>
           </div>
-          <button class="btn btn-danger mr-1" data-toggle="modal" data-target="#denial{{ cluster_account.pk }}Modal">
+          <button class="btn btn-danger mr-1" data-toggle="modal" data-target="#denial{{ request.pk }}Modal">
             Deny
           </button>
         </td>

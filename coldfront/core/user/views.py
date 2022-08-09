@@ -24,7 +24,7 @@ from django.views import View
 from django.views.generic import CreateView, ListView, TemplateView
 from django.views.generic.edit import FormView
 
-from coldfront.core.allocation.models import AllocationUserAttribute
+from coldfront.core.allocation.utils import has_cluster_access
 from coldfront.core.project.models import Project, ProjectUser
 from coldfront.core.user.models import IdentityLinkingRequest, IdentityLinkingRequestStatusChoice
 from coldfront.core.user.models import UserProfile as UserProfileModel
@@ -44,7 +44,6 @@ from coldfront.core.user.utils import send_email_verification_email
 from coldfront.core.user.utils import update_user_primary_email_address
 from coldfront.core.utils.common import (import_from_settings,
                                          utc_now_offset_aware)
-from coldfront.core.utils.mail import send_email_template
 
 from flags.state import flag_enabled
 
@@ -91,10 +90,7 @@ class UserProfile(TemplateView):
         context['group_list'] = group_list
         context['viewed_user'] = viewed_user
 
-        context['has_cluster_access'] = AllocationUserAttribute.objects.filter(
-            allocation_user__user=viewed_user,
-            allocation_attribute_type__name='Cluster Account Status',
-            value='Active').exists()
+        context['has_cluster_access'] = has_cluster_access(viewed_user)
 
         requester_is_viewed_user = viewed_user == self.request.user
 
@@ -943,11 +939,7 @@ class IdentityLinkingRequestView(UserPassesTestMixin, View):
         user = self.request.user
         redirection = HttpResponseRedirect(reverse('user-profile'))
 
-        has_cluster_access = AllocationUserAttribute.objects.filter(
-            allocation_user__user=user,
-            allocation_attribute_type__name='Cluster Account Status',
-            value='Active').exists()
-        if not has_cluster_access:
+        if not has_cluster_access(user):
             message = (
                 'You do not have active cluster access. Please gain access to '
                 'the cluster before attempting to request a linking email.')
