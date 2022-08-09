@@ -1,16 +1,11 @@
-from collections import UserDict
 import datetime
 # import the logging library
 import logging
 
-from django.conf import settings
-from django.core.exceptions import ImproperlyConfigured
-
-from coldfront.core.allocation.models import (Allocation, AllocationAttribute,
+from coldfront.core.allocation.models import (Allocation,
                                               AllocationStatusChoice)
-from coldfront.core.user.models import (User, UserProfile)
-from coldfront.core.project.models import (Project, ProjectUser)
-from coldfront.core.utils.common import get_domain_url, import_from_settings
+from coldfront.core.user.models import User
+from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.mail import send_email_template
 
 # Get an instance of a logger
@@ -21,7 +16,6 @@ CENTER_NAME = import_from_settings('CENTER_NAME')
 CENTER_BASE_URL = import_from_settings('CENTER_BASE_URL')
 CENTER_PROJECT_RENEWAL_HELP_URL = import_from_settings(
     'CENTER_PROJECT_RENEWAL_HELP_URL')
-EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
 EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
 EMAIL_OPT_OUT_INSTRUCTION_URL = import_from_settings(
     'EMAIL_OPT_OUT_INSTRUCTION_URL')
@@ -47,7 +41,7 @@ def update_statuses():
 
 
 def send_expiry_emails():
-    #Allocations expiring today and soon
+    #Allocations expiring soon
     for user in User.objects.all():
         projectdict = {}
         expirationdict = {}
