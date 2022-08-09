@@ -30,6 +30,7 @@ EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS = import_from_settings(
     'EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS', [7, ])
 
 EMAIL_ADMINS_ON_ALLOCATION_EXPIRE = import_from_settings('EMAIL_ADMINS_ON_ALLOCATION_EXPIRE')
+EMAIL_ADMIN_LIST = import_from_settings('EMAIL_ADMIN_LIST')
 
 def update_statuses():
 
@@ -210,5 +211,5 @@ def send_expiry_emails():
                                 'email/admin_allocation_expired.txt',
                                 admin_template_context,
                                 EMAIL_SENDER,
-                                [EMAIL_TICKET_SYSTEM_ADDRESS,]
+                                [EMAIL_ADMIN_LIST,]
                                 )
