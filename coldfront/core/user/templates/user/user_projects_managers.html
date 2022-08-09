@@ -51,9 +51,9 @@ User Projects and Managers{% if not user == viewed_user %}: {{ viewed_user.usern
             <!-- Start Project Managers -->
             <div class="card mb-3">
               <div class="card-header">
-                <h4 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Additional Managers</a></h4> <span class="badge badge-secondary">{{ project.project_managers | length }}</span>
+                <h4 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Additional Managers</a></h4> <span class="badge bg-secondary">{{ project.project_managers | length }}</span>
                 {% if association.is_project_manager and not association.is_project_pi %}
-                  <div class="float-right">
+                  <div class="float-end">
                     <p class="card-text text-success"><strong>{{ user_pronounish }} {{user_verbform_be}} a manager of this project.</strong></p>
                   </div>
                 {% endif %}

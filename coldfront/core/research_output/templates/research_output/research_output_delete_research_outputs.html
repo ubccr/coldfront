@@ -31,7 +31,7 @@ Delete Research Outputs
                     <td>
                       <input type="checkbox" name="{{ research_output.pk }}">
                     </td>
-                    <td title="Entered by {{ research_output.created_by }} on {{ research_output.created|date:"M. d, Y"}}">
+                    <td title="Entered by {{ research_output.created_by }} on {{ research_output.created|date:"Y-m-d"}}">
                       {% if research_output.title %}
                         <strong>{{ research_output.title }}</strong>
                       {% endif %}

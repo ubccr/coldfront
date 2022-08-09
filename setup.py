@@ -29,7 +29,7 @@ setup(
         'blessed==1.19.0',
         'chardet==4.0.0',
         'Django==3.2.14',
-        'django-crispy-forms==1.13.0',
+        'django-crispy-forms==1.14.0',
         'django-environ==0.8.1',
         'django-model-utils==4.2.0',
         'django-picklefield==3.0.1',

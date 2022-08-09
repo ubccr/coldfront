@@ -12,7 +12,7 @@ Project List
 {% block content %}
 <div class="card mb-3 bg-light">
   <div class="card-body">
-    <div class="float-left">
+    <div class="float-start">
       <a class="btn btn-primary" href="{% url 'project-list' %}?{{filter_parameters}}" role="button"><i class="fas fa-arrow-left" aria-hidden="true"></i> Back to active projects</a>
     </div>
   </div>
@@ -25,12 +25,12 @@ Project List
   <div class="mb-3" id="accordion">
     <div class="card">
       <div class="card-header">
-        <a id="expand_button" role="button" class="card-link " data-toggle="collapse" href="#collapseOne"> 
+        <a id="expand_button" role="button" class="card-link " data-bs-toggle="collapse" href="#collapseOne"> 
           <i class="fas fa-filter" aria-hidden="true"></i> Filter
-          <i id="plus_minus" class="fas {{expand_accordion|get_icon}} float-right"></i>
+          <i id="plus_minus" class="fas {{expand_accordion|get_icon}} float-end"></i>
         </a>
       </div>
-      <div id="collapseOne" class="collapse {{expand_accordion}}" data-parent="#accordion">
+      <div id="collapseOne" class="collapse {{expand_accordion}}" data-bs-parent="#accordion">
         <div class="card-body">
           <form id="filter_form" method="GET" action="{% url 'project-archived-list' %}">
             {{ project_search_form|crispy }}
@@ -87,7 +87,7 @@ Project List
       </tbody>
     </table>
     {% if is_paginated %} Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-      <ul class="pagination float-right mr-3">
+      <ul class="pagination float-end me-3">
         {% if page_obj.has_previous %}
           <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{filter_parameters_with_order_by}}">Previous</a></li>
         {% else %}

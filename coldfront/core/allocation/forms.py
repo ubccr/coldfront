@@ -36,7 +36,7 @@ class AllocationForm(forms.Form):
         if user_query_set:
             self.fields['users'].choices = ((user.user.username, "%s %s (%s)" % (
                 user.user.first_name, user.user.last_name, user.user.username)) for user in user_query_set)
-            self.fields['users'].help_text = '<br/>Select users in your project to add to this allocation.'
+            self.fields['users'].help_text = '<Select users in your project to add to this allocation.'
         else:
             self.fields['users'].widget = forms.HiddenInput()
 
@@ -47,11 +47,11 @@ class AllocationForm(forms.Form):
                 self.fields['allocation_account'].choices = (((account.name, account.name))
                                                              for account in allocation_accounts)
 
-            self.fields['allocation_account'].help_text = '<br/>Select account name to associate with resource. <a href="#Modal" id="modal_link">Click here to create an account name!</a>'
+            self.fields['allocation_account'].help_text = '<Select account name to associate with resource. <a href="#Modal" id="modal_link">Click here to create an account name!</a>'
         else:
             self.fields['allocation_account'].widget = forms.HiddenInput()
 
-        self.fields['justification'].help_text = '<br/>Justification for requesting this allocation.'
+        self.fields['justification'].help_text = 'Justification for requesting this allocation.'
 
 
 class AllocationUpdateForm(forms.Form):

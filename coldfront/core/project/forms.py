@@ -58,7 +58,7 @@ class ProjectAddUsersToAllocationForm(forms.Form):
         allocation_choices.insert(0, ('__select_all__', 'Select All'))
         if allocation_query_set:
             self.fields['allocation'].choices = allocation_choices_sorted
-            self.fields['allocation'].help_text = '<br/>Select allocations to add selected users to.'
+            self.fields['allocation'].help_text = 'Select allocations to add selected users to.'
         else:
             self.fields['allocation'].widget = forms.HiddenInput()
 

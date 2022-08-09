@@ -81,7 +81,7 @@ Resource Detail
   <div class="card mb-3">
     <div class="card-header">
       <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Resource Attributes</h3>
-      <div class="float-right">
+      <div class="float-end">
         {% if request.user.is_superuser %}
           <a class="btn btn-success" href="{% url 'resource-attribute-add' resource.pk %}" role="button">
             <i class="fas fa-plus" aria-hidden="true"></i> Add Resource Attribute

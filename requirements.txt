@@ -2,8 +2,13 @@ arrow==1.2.1
 bibtexparser==1.2.0
 blessed==1.19.0
 chardet==4.0.0
+<<<<<<< HEAD
 Django==3.2.14
 django-crispy-forms==1.13.0
+=======
+Django==3.2.13
+django-crispy-forms==1.14.0
+>>>>>>> 38d1c9c (add crispy bootstrap5 pack)
 Faker==11.3.0
 fontawesome-free==5.15.4
 django-environ==0.8.1

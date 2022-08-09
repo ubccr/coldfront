@@ -5,7 +5,7 @@
   <div class="container">
     <a class="navbar-brand d-block d-sm-none text-primary" href="#">ColdFront</a>
 
-    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-main">
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-main">
       <span class="navbar-toggler-icon"></span>
     </button>
 
@@ -18,7 +18,7 @@
           <a class="nav-link" href="{% url 'center-summary' %}">Center Summary</a>
         </li>
         <li id="navbar-project-menu" class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown">Project</a>
+          <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Project</a>
           <div class="dropdown-menu">
             <a id="navbar-project" class="dropdown-item" href="{% url 'project-list' %}">Projects</a>
             <a id="navbar-allocation" class="dropdown-item" href="{% url 'allocation-list' %}">Allocations</a>
@@ -45,7 +45,12 @@
           {% include 'common/navbar_help.html' %}
         {% endif %}
       </ul>
+<<<<<<< HEAD
       <ul class="navbar-nav ml-auto">
+=======
+
+      <ul class="navbar-nav ms-auto">
+>>>>>>> 3363b22 (fixed margin spacing syntax)
         {% include 'common/navbar_login.html' %}
       </ul>
     </div>

@@ -28,7 +28,9 @@ if len(SECRET_KEY) == 0:
 LANGUAGE_CODE = ENV.str('LANGUAGE_CODE', default='en-us')
 TIME_ZONE = ENV.str('TIME_ZONE', default='America/New_York')
 USE_I18N = True
-USE_L10N = True
+USE_L10N = False
+DATE_FORMAT = 'Y-m-d'
+DATETIME_FORMAT = 'Y-m-d H:i'
 USE_TZ = True
 
 #------------------------------------------------------------------------------
@@ -53,13 +55,13 @@ INSTALLED_APPS = [
 # Hack to fix fontawesome. Will be fixed in version 6
 sys.modules['fontawesome_free'] = __import__('fontawesome-free')
 INSTALLED_APPS += [
+    'crispy_bootstrap5',
     'crispy_forms',
     'sslserver',
     'django_q',
     'simple_history',
     'fontawesome_free',
 ]
-
 # ColdFront Apps
 INSTALLED_APPS += [
     'coldfront.core.user',
@@ -134,7 +136,10 @@ if len(SITE_TEMPLATES) > 0:
     else:
         raise ImproperlyConfigured('SITE_TEMPLATES should be a path to a directory')
 
-CRISPY_TEMPLATE_PACK = 'bootstrap4'
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+
+CRISPY_TEMPLATE_PACK = "bootstrap5"
+
 SETTINGS_EXPORT = []
 
 STATIC_URL = '/static/'

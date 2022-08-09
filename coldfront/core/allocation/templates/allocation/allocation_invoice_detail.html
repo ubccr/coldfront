@@ -79,7 +79,7 @@ Allocation Invoice Detail
         </table>
       </div>
       {% if request.user.is_superuser or perms.allocation.can_manage_invoice%}
-        <button type="submit" class="btn btn-success float-right"><i class="fas fa-sync" aria-hidden="true"></i> Update</button>
+        <button type="submit" class="btn btn-success float-end"><i class="fas fa-sync" aria-hidden="true"></i> Update</button>
       {% endif %}
     </form>
   </div>
@@ -89,8 +89,8 @@ Allocation Invoice Detail
 <div class="card mb-3">
   <div class="card-header">
     <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Notes from Staff</h3>
-    <span class="badge badge-secondary">{{allocation.allocationusernote_set.count}}</span>
-    <div class="float-right">
+    <span class="badge bg-secondary">{{allocation.allocationusernote_set.count}}</span>
+    <div class="float-end">
       <a class="btn btn-success" href="{% url 'allocation-add-invoice-note' allocation.pk %}" role="button">
         <i class="fas fa-plus" aria-hidden="true"></i> Add Note
       </a>

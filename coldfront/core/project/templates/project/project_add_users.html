@@ -86,10 +86,10 @@ Add Users to Project
         // handle a non-successful response
         error : function(xhr,errmsg,err) {
             if(xhr.status == 403 || xhr.status == 401) {
-                $('#search_results_inner').html("<div class='alert alert-danger'>Your session expired. Please login again. <a href='#' class='close'>&times;</a></div>");
+                $('#search_results_inner').html("<div class='alert alert-danger'>Your session expired. Please login again. <a href='#' class='close'></a></div>");
             } else {
                 $('#search_results_inner').html("<div class='alert alert-danger'>Oops! We have encountered an error: "+errmsg+
-                    " <a href='#' class='close'>&times;</a></div>"); // add the error to the dom
+                    " <a href='#' class='close'></a></div>"); // add the error to the dom
             }
             console.log(xhr.status + ": " + xhr.responseText); // provide a bit more info about the error to the console
         }
@@ -99,7 +99,7 @@ Add Users to Project
   $(document).ready(function(){
     $('#search_results').hide();
     $('#selected_users').hide();
-    $('[data-toggle="popover"]').popover(); 
+    $('[data-bs-toggle="popover"]').popover(); 
   });
 </script>
 {% endblock %}

@@ -104,12 +104,12 @@ Allocation Detail
                 {{ allocation.end_date }}
               {% endif %}
               {% if allocation.is_locked and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %}
-              <span class="badge badge-warning"><i class="far fa-clock" aria-hidden="true"></i>
+              <span class="badge bg-warning"><i class="far fa-clock" aria-hidden="true"></i>
                 Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} - Not renewable
               </span>
               {% elif is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %}
                 <a href="{% url 'allocation-renew' allocation.pk %}">
-                <span class="badge badge-warning"><i class="fas fa-redo-alt" aria-hidden="true"></i>
+                <span class="badge bg-warning"><i class="fas fa-redo-alt" aria-hidden="true"></i>
                 Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} - Click to renew
                 </span>
                 </a>
@@ -128,11 +128,11 @@ Allocation Detail
           </tr>
           <tr>
             <th scope="row" class="text-nowrap">Created:</th>
-            <td>{{ allocation.created|date:"M. d, Y" }}</td>
+            <td>{{ allocation.created|date:"Y-m-d" }}</td>
           </tr>
           <tr>
             <th scope="row" class="text-nowrap">Last Modified:</th>
-            <td>{{ allocation.modified|date:"M. d, Y" }}</td>
+            <td>{{ allocation.modified|date:"Y-m-d" }}</td>
           </tr>
           <tr>
             {% if request.user.is_superuser or request.user.is_staff %}
@@ -161,10 +161,10 @@ Allocation Detail
         </table>
       </div>
       {% if request.user.is_superuser %}
-      <div class="float-right">
+      <div class="float-end">
         {% if allocation.status.name == 'New' or allocation.status.name == 'Renewal Requested' %}
-          <a href="{% url 'allocation-activate-request' allocation.pk %}" class="btn btn-success mr-1 confirm-activate">Approve</a>
-          <a href="{% url 'allocation-deny-request' allocation.pk %}" class="btn btn-danger mr-1 confirm-deny">Deny</a>
+          <a href="{% url 'allocation-activate-request' allocation.pk %}" class="btn btn-success me-1 confirm-activate">Approve</a>
+          <a href="{% url 'allocation-deny-request' allocation.pk %}" class="btn btn-danger me-1 confirm-deny">Deny</a>
         {% endif %}
         <button type="submit" class="btn btn-primary"><i class="fas fa-sync" aria-hidden="true"></i> Update</button>
       {% endif %}
@@ -177,7 +177,7 @@ Allocation Detail
   <div class="card mb-3">
     <div class="card-header">
       <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Allocation Attributes</h3>
-      <div class="float-right">
+      <div class="float-end">
         {% if request.user.is_superuser %}
           <a class="btn btn-success" href="{% url 'allocation-attribute-add' allocation.pk %}" role="button">
             <i class="fas fa-plus" aria-hidden="true"></i> Add Allocation Attribute
@@ -222,7 +222,7 @@ Allocation Detail
       {% if attributes_with_usage %}
         <hr>
         {% for attribute in attributes_with_usage %}
-          <div class="card mb-3 mr-1">
+          <div class="card mb-3 me-1">
             <div class="card-body">
               <h4 class="card-title">{{attribute}}</h4>
               <div id="gauge-{{forloop.counter0}}"></div>
@@ -237,7 +237,7 @@ Allocation Detail
 <!-- Start Allocation Change Requests -->
 <div class="card mb-3">
   <div class="card-header">
-    <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Allocation Change Requests</h3> <span class="badge badge-secondary">{{allocation_changes.count}}</span>
+    <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Allocation Change Requests</h3> <span class="badge bg-secondary">{{allocation_changes.count}}</span>
   </div>
   
   <div class="card-body">
@@ -255,7 +255,7 @@ Allocation Detail
           <tbody>
             {% for change_request in allocation_changes %}
                 <tr>
-                  <td>{{ change_request.created|date:"M. d, Y" }}</td>
+                  <td>{{ change_request.created|date:"Y-m-d" }}</td>
                   {% if change_request.status.name == 'Approved' %}
                     <td class="text-success">{{ change_request.status.name }}</td>
                   {% elif change_request.status.name == 'Denied' %}
@@ -288,8 +288,8 @@ Allocation Detail
 <div class="card mb-3">
   <div class="card-header">
     <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Users in Allocation</h3>
-    <span class="badge badge-secondary">{{allocation_users.count}}</span>
-    <div class="float-right">
+    <span class="badge bg-secondary">{{allocation_users.count}}</span>
+    <div class="float-end">
       {% if allocation.project.status.name != 'Archived' and is_allowed_to_update_project and allocation.status.name in 'Active,New,Renewal Requested' %}
         <a class="btn btn-success" href="{% url 'allocation-add-users' allocation.pk %}" role="button">
           <i class="fas fa-user-plus" aria-hidden="true"></i> Add Users
@@ -325,7 +325,7 @@ Allocation Detail
               {% else %}
                 <td class="text-info">{{ user.status.name }}</td>
               {% endif %}
-              <td>{{ user.modified|date:"M. d, Y" }}</td>
+              <td>{{ user.modified|date:"Y-m-d" }}</td>
             </tr>
           {% endfor %}
         </tbody>
@@ -338,8 +338,8 @@ Allocation Detail
 <div class="card mb-3">
   <div class="card-header">
     <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Notifications</h3>
-    <span class="badge badge-secondary">{{notes.count}}</span>
-    <div class="float-right">
+    <span class="badge bg-secondary">{{notes.count}}</span>
+    <div class="float-end">
       {% if request.user.is_superuser %}
         <a class="btn btn-success" href="{% url 'allocation-note-add' allocation.pk %}" role="button">
           <i class="fas fa-plus" aria-hidden="true"></i> Add Notification

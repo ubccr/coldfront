@@ -14,7 +14,7 @@ Grants Report
 <div class="card">
   <div class="card-header">
     <h4 class="d-inline"><i class="fas fa-trophy" aria-hidden="true"></i> Grants</h4>
-    <button type="submit" form="download_form" class="btn btn-success float-right"><i class="fas fa-download" aria-hidden="true"></i> Export to CSV</button>
+    <button type="submit" form="download_form" class="btn btn-success float-end"><i class="fas fa-download" aria-hidden="true"></i> Export to CSV</button>
   </div>
   <div class="card-body">
     {% if formset %}
@@ -24,7 +24,7 @@ Grants Report
         <table id="grants-table" class="table table-hover table-sm">
           <thead>
             <tr>
-              <th scope="col"><input type="checkbox" class="check" id="selectAll"></th>
+              <th scope="col"><input type="checkbox" class="form-check-input" id="selectAll"></th>
               <th scope="col">Grant Title</th>
               <th scope="col">Project PI</th>
               <th scope="col">Faculty Role</th>
@@ -49,8 +49,8 @@ Grants Report
                 <td class="text-nowrap">{{ form.total_amount_awarded.value|intcomma }}</td>
                 <td class="text-nowrap">{{ form.funding_agency.value }}</td>
                 <td class="text-nowrap">{{ form.grant_number.value }}</td>
-                <td class="text-nowrap">{{ form.grant_start.value|date:"M. d, Y" }}</td>
-                <td class="text-nowrap">{{ form.grant_end.value|date:"M. d, Y" }}</td>
+                <td class="text-nowrap">{{ form.grant_start.value|date:"Y-m-d" }}</td>
+                <td class="text-nowrap">{{ form.grant_end.value|date:"Y-m-d" }}</td>
                 <td>{{ form.percent_credit.value }}</td>
                 <td>{{ form.direct_funding.value|intcomma }}</td>
               </tr>

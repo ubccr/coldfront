@@ -15,7 +15,7 @@
           <li class="list-group-item">
             <a href="{% url 'project-detail' project.pk %}"><i class="fa fa-folder fa-lg" aria-hidden="true"></i>{{project.title}}</a>
             {% if project.needs_review %}
-              <a href="{% url 'project-review' project.pk %}"><span class="badge badge-warning">Needs Review</span></a>
+              <a href="{% url 'project-review' project.pk %}"><span class="badge bg-warning">Needs Review</span></a>
             {% endif %}
           </li>
         {% endfor %}
@@ -59,11 +59,11 @@
                 Requested</a></td>
             {%  elif allocation.expires_in >= 0 and  allocation.expires_in <= 30 %}
             <td><a href="{% url 'allocation-detail' allocation.id %}" class="btn btn-danger btn-block">Expires in <span
-                  class="badge badge-light">{{allocation.expires_in}}</span> day{{allocation.expires_in|pluralize }}</a>
+                  class="badge bg-light">{{allocation.expires_in}}</span> day{{allocation.expires_in|pluralize }}</a>
             </td>
             {% elif allocation.expires_in > 30 and allocation.expires_in <= 90 %}
             <td><a href="{% url 'allocation-detail' allocation.id %}" class="btn btn-warning btn-block">Expires in <span
-                  class="badge badge-light">{{allocation.expires_in}}</span> day{{allocation.expires_in|pluralize }}</a>
+                  class="badge bg-light">{{allocation.expires_in}}</span> day{{allocation.expires_in|pluralize }}</a>
             </td>
             {% elif allocation.status.name == "Pending" %}
             <td><a href="{% url 'allocation-detail' allocation.id %}"

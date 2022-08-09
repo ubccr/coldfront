@@ -26,9 +26,7 @@ Add Publication to Project
 
 <div class="col" id="search_results">
   <div class="card border-light">
-    <div class="card-body">
-      <div id="search_results_inner"><a class="btn btn-secondary" href="{% url 'project-detail' project_pk %}" role="button">Back to Project</a></div>
-    </div>
+    <div id="search_results_inner"><a class="btn btn-secondary" href="{% url 'project-detail' project_pk %}" role="button">Back to Project</a></div>
   </div>
 </div>
 {% endblock %}
@@ -63,15 +61,15 @@ Add Publication to Project
         },
         // handle a non-successful response
         error : function(xhr,errmsg,err) {
-            $('#results').html("<div class='alert-box alert radius' data-alert>Oops! We have encountered an error: "+errmsg+
-                " <a href='#' class='close'>&times;</a></div>"); // add the error to the dom
+            $('#results').html("<div class='alert-box alert radius' data-bs-alert>Oops! We have encountered an error: "+errmsg+
+                " <a href='#' class='close'></a></div>"); // add the error to the dom
             console.log(xhr.status + ": " + xhr.responseText); // provide a bit more info about the error to the console
         }
     });
   };
 
   $(document).ready(function(){
-    $('[data-toggle="popover"]').popover(); 
+    $('[data-bs-toggle="popover"]').popover(); 
   });
 </script>
 {% endblock %}

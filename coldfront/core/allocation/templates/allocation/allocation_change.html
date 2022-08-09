@@ -53,7 +53,7 @@ Request Allocation Change
                 <td>
                   {{ allocation.end_date }}
                   {% if allocation.is_locked and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %}
-                  <span class="badge badge-warning"><i class="far fa-clock" aria-hidden="true"></i>
+                  <span class="badge bg-warning"><i class="far fa-clock" aria-hidden="true"></i>
                     Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} - Not renewable
                   </span>
                   {% endif %}
@@ -73,11 +73,11 @@ Request Allocation Change
             </tr>
             <tr>
               <th scope="row" class="text-nowrap">Created:</th>
-              <td>{{ allocation.created|date:"M. d, Y" }}</td>
+              <td>{{ allocation.created|date:"Y-m-d" }}</td>
             </tr>
             <tr>
               <th scope="row" class="text-nowrap">Last Modified:</th>
-              <td>{{ allocation.modified|date:"M. d, Y" }}</td>
+              <td>{{ allocation.modified|date:"Y-m-d" }}</td>
             </tr>
             <tr>
               {% if allocation.is_locked %}
