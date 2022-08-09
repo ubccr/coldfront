@@ -1,6 +1,6 @@
 Dear {{center_name}} user,
 
-Your access to {{center_name}} resources are expiring soon. Failure to renew the expiring allocation(s) on time will terminate access to the resource 
+Your access to {{center_name}}'s resources is expiring soon. Failure to renew the expiring allocation(s) on time will terminate access to the resource 
 for all users on the allocation. To renew, login to ColdFront and complete the short renewal process for each expiring allocation.  Below is a list of links to 
 your project(s) containing at least one expiring allocation: 
 {% for project_key, project_url in project_dict.items %}
