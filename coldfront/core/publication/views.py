@@ -74,22 +74,6 @@ class PublicationSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
         context['orcid_vars'] = OrcidAPI.orcid_configured()
-        # if UserSelectResults.SELECTED_KEY in self.request.session:
-        #     selected_ids = self.request.session.pop(UserSelectResults.SELECTED_KEY)
-        #     selected_user_profiles = UserProfile.objects.filter(user_id__in=selected_ids)
-        #     orcid_ids = []
-        #     for profile in selected_user_profiles:
-        #         orcid_ids.append(f'{profile.orcid_id} ({profile.user.username})')
-            
-        #     psf_initial = {
-        #         'search_id': '\n'.join(filter(lambda elem: elem is not None, orcid_ids)),
-        #     }
-            
-        #     context['search_immediately'] = True
-        # else:
-        #     context['orcid_config_msg'] = OrcidAPI.ORC_CONFIG_MSG
-        #     context['publication_search_form'] = PublicationSearchForm()
-        #     context['search_immediately'] = False
         
         context['publication_search_form'] = PublicationSearchForm(project_pk=self.kwargs.get('project_pk'))
         context['project'] = Project.objects.get(
@@ -164,11 +148,6 @@ class PublicationSearchResultView(LoginRequiredMixin, UserPassesTestMixin, Templ
             pub_dict_entree['unique_id'] = unique_id
             pub_dict_entree['source_pk'] = matching_source_obj.pk
 
-            # Uncomment to generate pub_dict_entree dump
-            # log_file = open("pub_dict_dump.json", "w")
-            # log_file.write(json.dumps(pub_dict_entree, indent=2))
-            # log_file.close()
-
             return [pub_dict_entree]
         
         def _gen_pub_dic_orc(matching_source_obj, orc_record, unique_id, orc_id, orc_token) -> Union[dict, bool]:
@@ -179,10 +158,6 @@ class PublicationSearchResultView(LoginRequiredMixin, UserPassesTestMixin, Templ
             :returns: dict, False
                 The dictionary on success, otherwise false.
             """
-            # # Uncomment for orc record dump
-            # log_file = open("orc_record_dump.json", "w")
-            # log_file.write(json.dumps(orc_record, indent=2))
-            # log_file.close()
 
             orc_works = orc_record['group']
             orc_worksummary = [works['work-summary'][0] for works in orc_works]

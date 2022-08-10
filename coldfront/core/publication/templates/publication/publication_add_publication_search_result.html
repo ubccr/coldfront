@@ -12,15 +12,16 @@
       <form action="{% url 'add-publication' project_pk %}" method="post">
         {% csrf_token %}
         <div class="table-responsive">
-          <table class="table table-sm table-hover">
+          <table id="works_table" class="table table-sm table-hover">
             <thead>
               <tr>
                 <th>
                   <input type="checkbox" class="check" id="selectAllPubs">
                 </th>
-                <th scope="col">#</th>
-                <th scope="col">Publication</th>
-                <th scope="col">Unique ID</th>
+                <th scope="col" class="nosort">Select All</th>
+                <th scope="col" class="nosort">Publication</th>
+                <th scope="col" class="nosort">Unique ID</th>
+                <th scope="col" class="text-nowrap"> Year </th>
               </tr>
             </thead>
             <tbody>
@@ -35,6 +36,7 @@
                   <strong>Journal: </strong>{{ form.journal.value }}
                 </td>
                 <td class="text-nowrap">{{ form.unique_id.value }}</td>
+                <td class="text-nowrap"> {{ form.year.value }} </td>
               </tr>
               {% endfor %}
             </tbody>
@@ -76,6 +78,15 @@ $(document).ready(function()
   }
 );
   
+$('#works_table').DataTable({
+      "language": {
+        "search" : "Search Year:"
+      },
+      'aoColumnDefs': [{
+        'bSortable': false,
+        'aTargets': ['nosort']
+      }]
+    });
 
 $("#selectAllPubs").click(function() {
   $("input[name^='pubform-']").prop('checked', $(this).prop('checked'));

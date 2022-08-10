@@ -37,21 +37,18 @@
     <form action="{% url 'grant-orcid-import' project_pk %}" method="post">
       {% csrf_token %}
       <div class="table-responsive">
-        <table class="table table-sm table-hover">
+        <table id="grant_table" class="table table-sm table-hover">
           <thead>
             <tr>
               <th>
                 <input type="checkbox" class="check" id="selectAllGrants">
               </th>
               
-              <th scope="col">Select All</th>
-              <th scope="col">Grant</th>
-              <th scope="col">Editable Values</th>
-              <th scope="col"></th>
-              <th scope="col">Start Year
-                <a href="?order_by=grand_start&direction=asc&"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Grant Start asc</span></a>
-                <a href="?order_by=grand_start&direction=des&"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Grant Start desc</span></a>
-              </th>
+              <th scope="col" class="nosort">Select All</th>
+              <th scope="col" class="nosort">Grant</th>
+              <th scope="col" class="nosort">Editable Values</th>
+              <th scope="col" class="nosort"></th>
+              <th scope="col" class="text-nowrap">Start Year</th>
             </tr>
           </thead>
           <tbody>
@@ -104,7 +101,7 @@
                 </label> <br>
                 {{ form.status }}
               </td>
-              <td>
+              <td class="text-nowrap">
                 <strong>Start Date: </strong><span class="date_disp">{{ form.grant_start.value }}</span> <br>
               </td>
             </tr>
@@ -150,6 +147,15 @@
     }
   );
   
+  $('#grant_table').DataTable({
+      "language": {
+        "search" : "Search Start Year:"
+      },
+      'aoColumnDefs': [{
+        'bSortable': false,
+        'aTargets': ['nosort']
+      }]
+    });
 
   $("#selectAllGrants").click(function() {
     $("input[name^='grantform-']").prop('checked', $(this).prop('checked'));

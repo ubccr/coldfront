@@ -125,24 +125,6 @@ class GrantOrcidImportView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
         context['project'] = Project.objects.get(
             pk=self.kwargs.get('project_pk'))
-
-        # if UserSelectResults.SELECTED_KEY in self.request.session:
-        #     selected_ids = self.request.session.pop(UserSelectResults.SELECTED_KEY)
-        #     selected_user_profiles = UserProfile.objects.filter(user_id__in=selected_ids)
-        #     orcid_ids = []
-            
-        #     for profile in selected_user_profiles:
-        #         orcid_ids.append(f'{profile.orcid_id} ({profile.user.username})')
-            
-        #     goqf_initial = {
-        #         'search_id': '\n'.join(filter(lambda elem: elem is not None, orcid_ids)),
-        #     }
-        #     context['grant_orcid_query_form'] = OrcidImportGrantQueryForm(project_pk=self.kwargs.get('project_pk'))
-        # else:
-        #     user_profile = UserProfile.objects.filter(user_id__exact = self.request.user.id)
-        #     orcid_ids = {
-        #        'search_id' : f'{user_profile[0].orcid_id} ({user_profile[0].user.username})'
-        #     }
             
         context['grant_orcid_query_form'] = OrcidImportGrantQueryForm(project_pk=self.kwargs.get('project_pk'))
         
@@ -333,11 +315,6 @@ class GrantOrcidImportResultView(LoginRequiredMixin, UserPassesTestMixin, Templa
             # Can only find researchers in sandbox env if app is in sandbox
             orc_record : dict = OrcidAPI.orc_api.read_record_public(orc_id, 'fundings', orc_token)
 
-            # # Uncomment for orc record dump
-            # log_file = open("orc_record_dump_funding.json", "w")
-            # log_file.write(json.dumps(orc_record, indent=2))
-            # log_file.close()
-
             orc_grants = orc_record['group']
             orc_grantsummary = [grants['funding-summary'][0] for grants in orc_grants]
 
@@ -409,16 +386,6 @@ class GrantOrcidImportResultView(LoginRequiredMixin, UserPassesTestMixin, Templa
                     orc_grant_info['role'] = stored_grant.role
                     orc_grant_info['status'] = stored_grant.status.name
 
-                # for source in GrantSource.objects.all():
-                #     print(source)
-
-                # orc_grant_info['source_pk'] = GrantSource.pk
-
-                # # Uncomment for full orc record dump
-                # log_file = open(f"orc_record_dump_funding_{orc_grant_info['title']}.json", "w")
-                # log_file.write(json.dumps(orc_grant_full, indent=2))
-                # log_file.close()
-
                 orc_grant_list.append(orc_grant_info)
 
         return orc_grant_list
@@ -474,61 +441,6 @@ class GrantOrcidImportResultView(LoginRequiredMixin, UserPassesTestMixin, Templa
         context['grants'] = grants
 
         return render(request, self.template_name, context)
-
-    # def get_queryset(self, formset):
-    #     order_by = self.request.GET.get('order_by', 'grant_start')
-    #     direction = self.request.GET.get('direction', 'asc')
-    #     if order_by != "name":
-    #         if direction == 'asc':
-    #             direction = ''
-    #         if direction == 'des':
-    #             direction = '-'
-    #         order_by = direction + order_by
-
-    #     if formset.is_valid():
-    #         data = formset.cleaned_data
-    #         staged_grants = GrantStaged.objects.prefetch_related('grant_start').all().order_by(order_by)
-    #         if data.get('grand_start'):
-    #             grants = staged_grants.filter(grant_start__lt=data.get(
-    #                 'grant_start'), status__name='Active').order_by('grant_start')
-
-    #     return grants.distinct()
-
-# class GrantUserOrcidImportView(LoginRequiredMixin, UserPassesTestMixin, View):
-#     def test_func(self):
-#         """ UserPassesTestMixin Tests"""
-#         if self.request.user.is_superuser:
-#             return True
-
-#         project_obj = get_object_or_404(
-#             Project, pk=self.kwargs.get('project_pk'))
-
-#         if project_obj.pi == self.request.user:
-#             return True
-
-#         if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
-#             return True
-    
-#     def get(self, request, *args, **kwargs):
-#         project_pk = kwargs['project_pk']
-
-#         # User selection
-#         proj_users = ProjectUser.objects.filter(project_id=project_pk)
-#         proj_user_ids = proj_users.values_list("user_id", flat=True)
-#         user_ids = list(User.objects.filter(pk__in=proj_user_ids).values_list('pk', flat=True))
-
-#         redirect_key = reverse('grant-orcid-import', kwargs={'project_pk': project_pk})
-
-#         ## Code to enable user search. ##
-#         # request.session[UserSelectResults.AVAIL_KEY] = user_ids
-#         # request.session[UserSelectResults.REDIRECT_KEY] = redirect_key
-#         # # user-select-home is in Users
-#         # return HttpResponseRedirect(reverse('user-select-home'))
-
-#         ## Code to just use all project users. ##
-#         request.session[UserSelectResults.SELECTED_KEY] = user_ids
-#         return HttpResponseRedirect(redirect_key)
-
 
 class GrantUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     def test_func(self):
