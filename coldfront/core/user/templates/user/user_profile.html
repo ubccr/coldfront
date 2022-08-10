@@ -14,7 +14,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
     <i class="fas fa-user" aria-hidden="true"></i>
     {{ viewed_user.username }}
     <div class="float-right">
-      <a class="btn btn-info" href="{% url 'user-projects-managers' viewed_user %}" role="button"><i class="far fa-user-circle" aria-hidden="true"></i> View user projects and managers</a>
+      <a class="btn btn-info" href="{% url 'user-projects-managers' viewed_user.username %}" role="button"><i class="far fa-user-circle" aria-hidden="true"></i> View user projects and managers</a>
     </div>
   </div>
   <div class="card-body">

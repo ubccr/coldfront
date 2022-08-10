@@ -4,6 +4,7 @@ Custom billing calculator class for Coldfront
 import logging
 from collections import defaultdict
 from decimal import Decimal
+from django.core.exceptions import MultipleObjectsReturned
 from django.db import connection
 from django.utils import timezone
 from django.contrib.auth import get_user_model
@@ -298,9 +299,11 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
                 if not offer_letter_code:
                     raise Exception(f'Unable to find offer letter code for allocation {allocation}')
                 try:
-                    account = Account.objects.get(code=offer_letter_code)
+                    account = Account.objects.get(code=offer_letter_code, organization=organization)
                 except Account.DoesNotExist:
                     raise Exception(f'Unable to find offer letter code {offer_letter_code}')
+                except MultipleObjectsReturned:
+                    raise Exception(f'The offer letter code {offer_letter_code}, returned multiple Accounts.')
 
                 offer_letter_tb = offer_letter_data.get('offer_letter_tb')
                 if not offer_letter_tb:
@@ -347,7 +350,8 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
                     except Exception as e:
                         raise Exception(f'Unable to create Offer Letter Usage: {e}')
 
-                charge = Decimal(offer_letter_rate.price) * int(offer_letter_tb)
+                charge = offer_letter_data['offer_letter_charge']
+
                 transactions_data = [
                     {
                         'charge': charge,
