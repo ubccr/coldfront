@@ -46,7 +46,7 @@ class AllTheThingsConn:
         """Produce JSON file of quota data for LFS and Isilon from AlltheThings.
         """
         result_file = 'coldfront/plugins/fasrc/data/allthethings_output.json'
-        volumes = [r.name.split("/")[0] for r in Resource.objects.all()]
+        volumes = "|".join([r.name.split("/")[0] for r in Resource.objects.all()])
         logger.debug("volumes: %s", volumes)
 
         quota = {"match": "[:HasQuota]-(e:Quota)",
@@ -95,6 +95,7 @@ class AllTheThingsConn:
                     replace(e.{d['server']}, '{d['replace']}', '') as server"}
             queries['statements'].append(statement)
         resp = requests.post(self.url, headers=self.headers, data=json.dumps(queries), verify=False)
+        # logger.debug(queries)
         resp_json = json.loads(resp.text)
         # logger.debug(resp_json)
         result_dicts = list(resp_json['results'])
