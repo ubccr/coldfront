@@ -41,14 +41,14 @@
           <thead>
             <tr>
               <th>
-                <input type="checkbox" class="check" id="selectAllGrants">
+                <input type="checkbox" class="nosort check" id="selectAllGrants">
               </th>
               
-              <th scope="col" class="nosort">Select All</th>
+              <th scope="col" class="nosort text-nowrap">Select All</th>
               <th scope="col" class="nosort">Grant</th>
               <th scope="col" class="nosort">Editable Values</th>
               <th scope="col" class="nosort"></th>
-              <th scope="col" class="text-nowrap">Start Year</th>
+              <th scope="col" class="text-nowrap">Start Date</th>
             </tr>
           </thead>
           <tbody>
@@ -149,7 +149,7 @@
   
   $('#grant_table').DataTable({
       "language": {
-        "search" : "Search Start Year:"
+        "search" : "Search Start Date:"
       },
       'aoColumnDefs': [{
         'bSortable': false,

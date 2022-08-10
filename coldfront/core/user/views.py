@@ -33,6 +33,10 @@ if EMAIL_ENABLED:
     EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings(
         'EMAIL_TICKET_SYSTEM_ADDRESS')
 
+PLUGIN_ORCID = import_from_settings('PLUGIN_ORCID', False)
+if PLUGIN_ORCID:
+    ORCID_SANDBOX = import_from_settings('ORCID_SANDBOX', True)
+
 
 @method_decorator(login_required, name='dispatch')
 class UserProfileView(TemplateView):
@@ -82,6 +86,7 @@ class UserProfileView(TemplateView):
 
         context['viewable'] = viewable 
         context['orcid_linked'] = is_linked
+        context['orcid_sandbox'] = ORCID_SANDBOX
         context['group_list'] = group_list
         context['viewed_user'] = viewed_user
         return context
