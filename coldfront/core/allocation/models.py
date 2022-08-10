@@ -1,5 +1,4 @@
 import datetime
-import importlib
 import logging
 from ast import literal_eval
 
@@ -17,7 +16,7 @@ from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import import_from_settings
 from table import Table
 from table.columns import Column
-import coldfront.core.attribute_expansion as attribute_expansion
+from coldfront.core import attribute_expansion
 
 logger = logging.getLogger(__name__)
 
@@ -163,13 +162,12 @@ class Allocation(TimeStampedModel):
             return None
         if self.resources.count() == 1:
             return self.resources.first()
-        else:
-            parent = self.resources.order_by(
-                *ALLOCATION_RESOURCE_ORDERING).first()
-            if parent:
-                return parent
-            # Fallback
-            return self.resources.first()
+        parent = self.resources.order_by(
+            *ALLOCATION_RESOURCE_ORDERING).first()
+        if parent:
+            return parent
+        # Fallback
+        return self.resources.first()
 
     def get_attribute(self, name, expand=True, typed=True,
         extra_allocations=[]):
@@ -198,11 +196,9 @@ class Allocation(TimeStampedModel):
             if expand:
                 return attr.expanded_value(
                     extra_allocations=extra_allocations, typed=typed)
-            else:
-                if typed:
-                    return attr.typed_value()
-                else:
-                    return attr.value
+            if typed:
+                return attr.typed_value()
+            return attr.value
         return None
 
     def set_usage(self, name, value):
@@ -231,10 +227,10 @@ class Allocation(TimeStampedModel):
         found for this allocation with the specified name.
 
         If expand is True (the default), we will return the result of the
-        expanded_value() method for each attribute, which will expand 
-        attributes/parameters in the attribute value for attributes with a base 
-        type of 'Attribute Expanded Text'.  If the attribute is not of that 
-        type, or expand is false, returns the value attribute/data member (i.e. 
+        expanded_value() method for each attribute, which will expand
+        attributes/parameters in the attribute value for attributes with a base
+        type of 'Attribute Expanded Text'.  If the attribute is not of that
+        type, or expand is false, returns the value attribute/data member (i.e.
         the raw, unexpanded value).
 
         Extra_allocations is a list of Allocations which, if expand is True,
@@ -245,11 +241,9 @@ class Allocation(TimeStampedModel):
         if expand:
             return [a.expanded_value(typed=typed,
                 extra_allocations=extra_allocations) for a in attr]
-        else:
-            if typed:
-                return [a.typed_value() for a in attr]
-            else:
-                return [a.value for a in attr]
+        if typed:
+            return [a.typed_value() for a in attr]
+        return [a.value for a in attr]
 
     def __str__(self):
         tmp = self.get_parent_resource
@@ -330,13 +324,13 @@ class AllocationAttribute(TimeStampedModel):
         if expected_value_type == "Int" and not isinstance(literal_eval(self.value), int):
             raise ValidationError(
                 'Invalid Value "%s" for "%s". Value must be an integer.' % (self.value, self.allocation_attribute_type.name))
-        elif expected_value_type == "Float" and not (isinstance(literal_eval(self.value), float) or isinstance(literal_eval(self.value), int)):
+        if expected_value_type == "Float" and not (isinstance(literal_eval(self.value), float) or isinstance(literal_eval(self.value), int)):
             raise ValidationError(
                 'Invalid Value "%s" for "%s". Value must be a float.' % (self.value, self.allocation_attribute_type.name))
-        elif expected_value_type == "Yes/No" and self.value not in ["Yes", "No"]:
+        if expected_value_type == "Yes/No" and self.value not in ["Yes", "No"]:
             raise ValidationError(
                 'Invalid Value "%s" for "%s". Allowed inputs are "Yes" or "No".' % (self.value, self.allocation_attribute_type.name))
-        elif expected_value_type == "Date":
+        if expected_value_type == "Date":
             try:
                 datetime.datetime.strptime(self.value.strip(), "%Y-%m-%d")
             except ValueError:
@@ -361,19 +355,19 @@ class AllocationAttribute(TimeStampedModel):
         atype_name = self.allocation_attribute_type.attribute_type.name
         return attribute_expansion.convert_type(
             value=raw_value, type_name=atype_name)
-                
-    
+
+
     def expanded_value(self, extra_allocations=[], typed=True):
         """Returns the value of the attribute, after attribute expansion.
 
         For attributes with attribute type of  'Attribute Expanded Text' we
         look for an attribute with same name suffixed with '_attriblist' (this
         should be either an AllocationAttribute of the Allocation associated
-        with this attribute  or a ResourceAttribute of a Resource of the 
-        Allocation associated with this AllocationAttribute).  
+        with this attribute  or a ResourceAttribute of a Resource of the
+        Allocation associated with this AllocationAttribute).
         If the attriblist attribute is found, we use
         it to generate a dictionary to use to expand the attribute value,
-        and the expanded value is returned.  
+        and the expanded value is returned.
         If extra_allocations is given, it should be a list of Allocations and
         the attriblist can reference attributes for allocations in the
         extra_allocations list (as well as in the Allocation associated with
@@ -419,7 +413,7 @@ class AllocationAttribute(TimeStampedModel):
             allocations = allocs)
         return expanded
 
-            
+
 
 class AllocationAttributeUsage(TimeStampedModel):
     """ AllocationAttributeUsage. """
@@ -504,8 +498,7 @@ class AllocationChangeRequest(TimeStampedModel):
     def get_parent_resource(self):
         if self.allocation.resources.count() == 1:
             return self.allocation.resources.first()
-        else:
-            return self.allocation.resources.filter(is_allocatable=True).first()
+        return self.allocation.resources.filter(is_allocatable=True).first()
 
     def __str__(self):
         return "%s (%s)" % (self.get_parent_resource.name, self.allocation.project.pi)
