@@ -17,8 +17,8 @@ from coldfront.core.project.utils_.new_project_utils import add_vector_user_to_d
 from coldfront.core.project.utils_.project_cluster_access_request_runner import ProjectClusterAccessRequestRunner
 from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
-from coldfront.core.user.utils import eligible_host_project_users
-from coldfront.core.user.utils import needs_host
+from coldfront.core.user.utils_.host_user_utils import eligible_host_project_users
+from coldfront.core.user.utils_.host_user_utils import needs_host
 from coldfront.core.utils.email.email_strategy import EmailStrategy
 from coldfront.core.utils.email.email_strategy import SendEmailStrategy
 

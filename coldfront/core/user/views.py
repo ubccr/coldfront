@@ -37,12 +37,13 @@ from coldfront.core.user.forms import UserProfileUpdateForm
 from coldfront.core.user.forms import UserRegistrationForm
 from coldfront.core.user.forms import UserSearchForm, UserSearchListForm
 from coldfront.core.user.models import EmailAddress
-from coldfront.core.user.utils import CombinedUserSearch, is_lbl_employee
+from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.user.utils import ExpiringTokenGenerator
 from coldfront.core.user.utils import send_account_activation_email
 from coldfront.core.user.utils import send_account_already_active_email
 from coldfront.core.user.utils import send_email_verification_email
 from coldfront.core.user.utils import update_user_primary_email_address
+from coldfront.core.user.utils_.host_user_utils import is_lbl_employee
 from coldfront.core.utils.common import (import_from_settings,
                                          utc_now_offset_aware)
 from coldfront.core.utils.mail import send_email_template

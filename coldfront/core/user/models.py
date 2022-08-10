@@ -38,7 +38,8 @@ class UserProfile(models.Model):
         BillingActivity, blank=True, null=True, on_delete=models.SET_NULL)
 
     host_user = models.ForeignKey(
-        User, related_name='host_user', blank=True, null=True, on_delete=models.SET_NULL)
+        User, related_name='host_user', blank=True, null=True,
+        on_delete=models.SET_NULL)
 
     history = HistoricalRecords()
 
