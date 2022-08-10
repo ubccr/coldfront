@@ -2,22 +2,22 @@ import os
 import re
 import json
 import time
-import timeit
 import logging
-import requests
 from pathlib import Path
 from datetime import datetime, timedelta
 
-from django.utils import timezone
-from ifxuser.models import IfxUser, Organization
-from django.contrib.auth import get_user_model
-from dateutil.relativedelta import relativedelta
+import requests
 from ifxbilling.models import Account, BillingRecord, ProductUsage
+from django.utils import timezone
+from django.contrib.auth import get_user_model
 
 from coldfront.core.utils.common import import_from_settings
-from coldfront.core.project.models import Project, ProjectUser
+from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
-from coldfront.core.allocation.models import Allocation, AllocationUser, AllocationAttribute, AllocationUserStatusChoice
+from coldfront.core.allocation.models import (Allocation,
+                                                AllocationUser,
+                                                AllocationAttribute,
+                                                AllocationUserStatusChoice)
 
 datestr = datetime.today().strftime("%Y%m%d")
 logger = logging.getLogger(__name__)
@@ -34,9 +34,9 @@ def record_process(func):
     """Wrapper function for logging"""
     def call(*args, **kwargs):
         funcdata = "{} {}".format(func.__name__, func.__code__.co_firstlineno)
-        logger.debug("\n{} START.".format(funcdata))
+        logger.debug("\n%s START.", funcdata)
         result = func(*args, **kwargs)
-        logger.debug("{} END. output:\n{}\n".format(funcdata, result))
+        logger.debug("%s END. output:\n%s\n", funcdata, result)
         return result
     return call
 
@@ -71,7 +71,6 @@ class StarFishServer:
     def get_volume_names(self):
         """ Generate a list of the volumes available on the server.
         """
-        vols_paths = {}
         stor_url = self.api_url + "storage/"
         response = return_get_json(stor_url, self.headers)
         volnames = [i["name"] for i in response["items"]]
@@ -155,7 +154,7 @@ class StarFishQuery:
         }
         r = requests.post(query_url, params=params, headers=self.headers)
         response = r.json()
-        logger.debug(f"response: {response}")
+        logger.debug("response: %s", response)
         return response["query_id"]
 
     @record_process
@@ -166,8 +165,7 @@ class StarFishQuery:
             if response["is_done"] == True:
                 result = self.return_query_result()
                 return result
-            else:
-                time.sleep(sec)
+            time.sleep(sec)
 
     def return_query_result(self):
         query_result_url = self.api_url + "async/query_result/" + self.query_id
@@ -198,7 +196,7 @@ class ColdFrontDB:
                 pr_dict[o_name].extend(resource_list)
         lr = pr_dict if not vol else {p:[i for i in r if vol in i] for p, r in pr_dict.items()}
         labs_resources = {p:[tuple(rs.split("/")) for rs in r] for p, r in lr.items()}
-        logger.debug(f"labs_resources:\n{labs_resources}")
+        logger.debug("labs_resources:%s", labs_resources)
         return labs_resources
 
 
@@ -219,7 +217,7 @@ class ColdFrontDB:
         filepaths = []
         to_collect = []
         labs_resources = [(l, res[0], res[1]) for l, r in lr.items() for res in r]
-        logger.debug(f"labs_resources:{labs_resources}")
+        logger.debug("labs_resources:%s", labs_resources)
 
         yesterdaystr = (datetime.today()-timedelta(1)).strftime("%Y%m%d")
         dates = [yesterdaystr, datestr]
@@ -255,7 +253,7 @@ class ColdFrontDB:
             vol = server_vol[1]
             paths = svp[s][vol]
             to_collect_subset = [t for t in to_collect if t[1] == vol]
-            logger.debug(f"vol:{vol}\nto_collect_subset:{to_collect_subset}")
+            logger.debug("vol:%s\nto_collect_subset:%s", vol, to_collect_subset)
             server = StarFishServer(s)
             fpaths = collect_starfish_usage(server, vol, paths, to_collect_subset)
             filepaths.extend(fpaths)
@@ -278,7 +276,9 @@ class ColdFrontDB:
             try:
                 allocation = Allocation.objects.get(project_id=project.id, resources__name=resource)
             except Allocation.MultipleObjectsReturned:
-                logger.debug(f"Too many allocations for project id {project.id}; choosing one with 'Allocation Information' in justification.")
+                logger.debug("Too many allocations for project id %s; choosing one with 'Allocation Information' in justification.",
+                                                                project.id)
+
                 # try:
                 allocation = Allocation.objects.get(
                     project_id=project.id,
@@ -294,7 +294,8 @@ class ColdFrontDB:
                 #     for a in allocations:
                 #         logger.warning(f"Duplicate item:{a}")
                 #     allocation = allocations.first()
-            logger.debug(f"{project.title}\n usernames: {usernames}\n user_models: {[u.username for u in user_models]}")
+            logger.debug("%s\n usernames: %s\n user_models: %s",
+                    project.title, usernames, [u.username for u in user_models])
 
             for user in user_models:
                 userdict = [d for d in content['contents'] if d["username"] == user.username][0]
@@ -302,7 +303,7 @@ class ColdFrontDB:
                 try:
                     self.update_usage(model, userdict, allocation)
                 except Exception as e:
-                    logger.warning("EXCEPTION FOR ENTRY: {}".format(e), exc_info=True)
+                    logger.warning("EXCEPTION FOR ENTRY: %s", e, exc_info=True)
                     errors = True
             if not errors and clean:
                 os.remove(f)
@@ -311,7 +312,7 @@ class ColdFrontDB:
 
     def update_usage(self, user, userdict, allocation):
         usage, unit = split_num_string(userdict["size_sum_hum"])
-        logger.debug(f"entering for user:{user.username}")
+        logger.debug("entering for user: %s", user.username)
         try:
             allocationuser = AllocationUser.objects.get(
                 allocation_id=str(allocation.id), user_id=str(user.id)
@@ -333,7 +334,7 @@ class ColdFrontDB:
         allocationuser.unit = unit
         # automatically updates "modified" field & adds old record to history
         allocationuser.save()
-        logger.debug(f"successful entry: {userdict['groupname']}, {userdict['username']}")
+        logger.debug("successful entry: %s, %s", userdict['groupname'], userdict['username'])
 
 
 
@@ -371,7 +372,7 @@ def save_json(file, contents):
         json.dump(contents, fp, sort_keys=True, indent=4)
 
 def read_json(filepath):
-    logger.debug("read_json for {}".format(filepath))
+    logger.debug("read_json for %s", filepath)
     with open(filepath, "r") as myfile:
         data = json.loads(myfile.read())
     return data
@@ -379,7 +380,7 @@ def read_json(filepath):
 def locate_or_create_dirpath(dpath):
     if not os.path.exists(dpath):
         os.makedirs(dpath)
-        logger.info(f"created new directory {dpath}")
+        logger.info("created new directory %s", dpath)
 
 @record_process
 def collect_starfish_usage(server, volume, volumepath, projects):
@@ -398,22 +399,22 @@ def collect_starfish_usage(server, volume, volumepath, projects):
     filepaths = []
     datestr = datetime.today().strftime("%Y%m%d")
     locate_or_create_dirpath("./coldfront/plugins/sftocf/data/")
-    logger.debug(f"projects: {projects}")
+    logger.debug("projects: %s", projects)
     for t in projects:
         p = t[0]
         tier = t[2]
         filepath = t[3]
         lab_volpath = volumepath[1] if "_l3" in p else volumepath[0]
-        logger.debug(f"filepath: {filepath} lab: {p} volpath: {lab_volpath}")
+        logger.debug("filepath: %s lab: %s volpath: %s", filepath, p, lab_volpath)
         usage_query = server.create_query(
             f"type=f groupname={p}", "username, groupname", f"{volume}:{lab_volpath}"
         )
         data = usage_query.result
-        logger.debug("usage_query.result:{}".format(data))
+        logger.debug("usage_query.result: %s", data)
         if not data:
-            logger.warning("No starfish result for lab {}".format(p))
+            logger.warning("No starfish result for lab %s", p)
         elif type(data) is dict and "error" in data:
-            logger.warning("Error in starfish result for lab {}:\n{}".format(p, data))
+            logger.warning("Error in starfish result for lab %s:\n%s", p, data)
         else:
             data = usage_query.result
             logger.debug(data)
@@ -439,7 +440,7 @@ def log_missing_user_models(groupname, user_models, usernames):
         fpath = './coldfront/plugins/sftocf/data/missing_ifxusers.csv'
         patterns = [f"{groupname},{uname},{datestr}" for uname in missing_unames]
         write_update_file_line(fpath, patterns)
-        logger.warning(f"no IfxUser found for users: {missing_unames}")
+        logger.warning("no IfxUser found for users: %s", missing_unames)
 
 
 def use_zone(project_name):
@@ -447,10 +448,11 @@ def use_zone(project_name):
     try:
         allocation = Allocation.objects.get(justification__contains=project_name)
     except Allocation.MultipleObjectsReturned:
-        logger.debug(f"Too many allocations for project {project_name}; narrowing to the one that ends with project name")
+        logger.debug("Too many allocations for project %s; narrowing to the one that ends with project name",
+                                                                    project_name)
         allocation = Allocation.objects.get(
             justification__endswith=project_name)
-        logger.debug(f"EXCEPT a_id:{allocation.id}")
+        logger.debug("EXCEPT a_id:%s", allocation.id)
     except Allocation.DoesNotExist:
         return False
     if allocation:
