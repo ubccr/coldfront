@@ -83,11 +83,6 @@ ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING = import_from_settings(
     60
 )
 
-RESOURCE_DEFAULT_SLURM_SPECS = import_from_settings(
-    'RESOURCE_DEFAULT_SLURM_SPECS',
-    'QOS=coldfront'
-)
-
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 if EMAIL_ENABLED:
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
@@ -1082,21 +1077,6 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                     allocation_attribute_type=slurm_account_name_attribute_type,
                     allocation=allocation_obj,
                     value=value
-                )
-
-                slurm_specs_attribute_type = AllocationAttributeType.objects.get(
-                    name='slurm_specs'
-                )
-
-                allocation_slurm_specs = RESOURCE_DEFAULT_SLURM_SPECS
-                resource_slurm_specs = resource_obj.get_attribute("slurm_specs")
-                if (resource_slurm_specs):
-                    allocation_slurm_specs = resource_slurm_specs
-
-                AllocationAttribute.objects.create(
-                    allocation_attribute_type=slurm_specs_attribute_type,
-                    allocation=allocation_obj,
-                    value=allocation_slurm_specs
                 )
 
         if storage_space:
