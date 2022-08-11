@@ -2,7 +2,7 @@ arrow==1.2.1
 bibtexparser==1.2.0
 blessed==1.19.0
 chardet==4.0.0
-Django==3.2.14
+Django==3.2.15
 django-crispy-forms==1.13.0
 Faker==11.3.0
 fontawesome-free==5.15.4
