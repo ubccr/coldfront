@@ -5,7 +5,7 @@ import logging
 from collections import defaultdict
 from decimal import Decimal
 from django.core.exceptions import MultipleObjectsReturned
-from django.db import connection
+from django.db import connection, transaction
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from ifxbilling.calculator import BasicBillingCalculator, NewBillingCalculator
@@ -28,7 +28,7 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
         '''
         Create and save all of the :class:`~ifxbilling.models.BillingRecord` objects for the month for an organization.
 
-        Finds the Project(s) for the Organization and then iterates over the Allocations
+        Finds the Project(s) for the Organization and then iterates over the Project Allocations
 
         If the Allocation has an Offer Letter and Offer Letter Code attribute, a corresponding billing record will be
         created and the total Allocation size reduced.
@@ -57,26 +57,33 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
         successes = []
         errors = []
 
-        projects = organization.projectorganization_set.all()
+        projects = [po.project for po in organization.projectorganization_set.all()]
         if not projects:
             errors.append(f'No project found for {organization.name}')
         else:
-            try:
-                for project in projects:
-                    for allocation in project.projectallocation_set.all():
-                        offer_letter_br, remaining_allocation_tb = self.process_offer_letter(year, month, organization, allocation, recalculate)
-                        if offer_letter_br:
-                            successes.append(offer_letter_br)
-                        user_allocation_percentages = self.get_user_allocation_percentages(year, month, allocation)
-                        for user, allocation_percentage in user_allocation_percentages:
-                            brs = self.generate_billing_records_for_allocation_user(year, month, user, allocation, allocation_percentage, remaining_allocation_tb)
-                            successes.extend(brs)
-            except Exception as e:
-                errors.append(str(e))
-                if self.verbosity == self.CHATTY:
-                    logger.error(e)
-                if self.verbosity == self.LOUD:
-                    logger.exception(e)
+            for project in projects:
+                for allocation in project.allocation_set.all():
+                    try:
+                        with transaction.atomic():
+                            offer_letter_br, remaining_allocation_tb = self.process_offer_letter(year, month, organization, allocation, recalculate)
+                            if offer_letter_br:
+                                successes.append(offer_letter_br)
+                            user_allocation_percentages = self.get_user_allocation_percentages(year, month, allocation)
+                            logger.error(f'alloc percents {user_allocation_percentages}')
+                            for user_id, allocation_percentage in user_allocation_percentages.items():
+                                try:
+                                    user = get_user_model().objects.get(id=user_id)
+                                except get_user_model().DoesNotExist:
+                                    raise Exception(f'Cannot find user with id {user_id}')
+                                brs = self.generate_billing_records_for_allocation_user(year, month, user, allocation, allocation_percentage, remaining_allocation_tb)
+                                if brs:
+                                    successes.extend(brs)
+                    except Exception as e:
+                        errors.append(str(e))
+                        if self.verbosity == self.CHATTY:
+                            logger.error(e)
+                        if self.verbosity == self.LOUD:
+                            logger.exception(e)
 
         return (successes, errors)
 
@@ -103,7 +110,7 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
             # Offer letter product user (the PI)
             product_user = self.get_offer_letter_product_user(allocation)
 
-            # Create the offer letter product usage.  If it already exists and their is a billing record, do the recalculate check
+            # Create the offer letter product usage.  If it already exists and there is a billing record, do the recalculate check
             try:
                 offer_letter_usage = ProductUsage.objects.get(
                     product=offer_letter_product,
@@ -138,7 +145,10 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
             storage_product_rate = self.get_allocation_resource_product_rate(allocation)
             if not storage_product_rate.units == 'TB':
                 raise Exception(f'Storage product rates should be in TB.  Rate {storage_product_rate.name} is in {storage_product_rate.units}')
-            charge = storage_product_rate.decimal_price * offer_letter_tb
+            decimal_price = storage_product_rate.decimal_price
+            if not decimal_price:
+                raise Exception(f'decimal_price for {storage_product_rate.product.product_name} is not set.')
+            charge = decimal_price * offer_letter_tb
 
             # Transaction and rate description
             rate_desc = self.get_rate_description(storage_product_rate)
@@ -154,7 +164,7 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
                 }
             ]
             logger.info('Setting up offer letter charge of %s against %s', str(charge), str(offer_letter_acct))
-            offer_letter_br = self.createBillingRecord(offer_letter_usage, offer_letter_acct, year, month, transactions_data, 100, rate_desc, description)
+            offer_letter_br = self.create_billing_record(year, month, offer_letter_usage, offer_letter_acct, transactions_data, 100, rate_desc, description)
             remaining_allocation_tb = remaining_allocation_tb - offer_letter_tb
 
         return offer_letter_br, remaining_allocation_tb
@@ -254,7 +264,7 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
         if len(resources) > 1:
             raise Exception(f'Allocation {allocation.id} has more than one resource. Cannot figure out a Product Rate.')
 
-        products = resources[0].productresource_set.all()
+        products = [pr.product for pr in resources[0].productresource_set.all()]
         if not products:
             raise Exception(f'Allocation {allocation.id} resource {resources[0]} has no associated Product.')
         if len(products) > 1:
@@ -276,7 +286,7 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
         '''
         product = self.get_allocation_resource_product(allocation)
         try:
-            rate = product.rate_set.get(active=1)
+            rate = product.rate_set.get(is_active=True)
         except Rate.DoesNotExist:
             raise Exception(f'Cannot find an active rate for Product {product.product_name}')
 
@@ -380,6 +390,11 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
             logger.error('Allocation user fractions %s', str(allocation_user_fractions))
         return allocation_user_fractions
 
+    def generate_billing_records_for_allocation_user(self, year, month, user, allocation, allocation_percentage, allocation_tb):
+        '''
+        Make the BillingRecords for the given user from their allocation percentage and the allocation size
+        '''
+        pass
 
 class ColdfrontBillingCalculator(BasicBillingCalculator):
     '''
