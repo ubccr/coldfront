@@ -1078,6 +1078,19 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                     allocation=allocation_obj,
                     value=value
                 )
+        elif (resource_obj.parent_resource is not None and
+              resource_obj.parent_resource.resourceattribute_set.filter(resource_attribute_type__name='slurm_cluster').exists()):
+            if project_obj.slurm_account_name:
+                value = project_obj.slurm_account_name
+
+                slurm_account_name_attribute_type = AllocationAttributeType.objects.get(
+                    name='slurm_account_name'
+                )
+                AllocationAttribute.objects.create(
+                    allocation_attribute_type=slurm_account_name_attribute_type,
+                    allocation=allocation_obj,
+                    value=value
+                )
 
         if storage_space:
             storage_quota_attribute_type = AllocationAttributeType.objects.get(
