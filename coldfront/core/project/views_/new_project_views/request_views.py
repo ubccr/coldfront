@@ -1,5 +1,7 @@
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationStatusChoice
+from coldfront.core.billing.forms import BillingIDValidationForm
+from coldfront.core.billing.models import BillingActivity
 from coldfront.core.project.forms_.new_project_forms.request_forms import ComputingAllowanceForm
 from coldfront.core.project.forms_.new_project_forms.request_forms import SavioProjectAllocationPeriodForm
 from coldfront.core.project.forms_.new_project_forms.request_forms import SavioProjectDetailsForm
@@ -125,6 +127,7 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
         ('pool_allocations', SavioProjectPoolAllocationsForm),
         ('pooled_project_selection', SavioProjectPooledProjectSelectionForm),
         ('details', SavioProjectDetailsForm),
+        ('billing_id', BillingIDValidationForm),
         ('survey', SavioProjectSurveyForm),
     ]
 
@@ -147,6 +150,7 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
             ('project/project_request/savio/'
              'project_pooled_project_selection.html'),
         'details': 'project/project_request/savio/project_details.html',
+        'billing_id': 'project/project_request/savio/project_billing_id.html',
         'survey': 'project/project_request/savio/project_survey.html',
     }
 
@@ -160,6 +164,7 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
         SavioProjectPoolAllocationsForm,
         SavioProjectPooledProjectSelectionForm,
         SavioProjectDetailsForm,
+        BillingIDValidationForm,
         SavioProjectSurveyForm,
     ]
 
@@ -250,6 +255,9 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
                 project = self.__handle_pool_with_existing_project(form_data)
             else:
                 project = self.__handle_create_new_project(form_data)
+                if self.__billing_id_required():
+                    self.__handle_billing_activity(form_data, request_kwargs)
+
             survey_data = self.__get_survey_data(form_data)
 
             # Store transformed form data in a request.
@@ -309,6 +317,7 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
             '6': view.show_pool_allocations_form_condition,
             '7': view.show_pooled_project_selection_form_condition,
             '8': view.show_details_form_condition,
+            '9': view.show_billing_id_form_condition,
         }
 
     def show_allocation_period_form_condition(self):
@@ -321,6 +330,16 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
         if not computing_allowance:
             return False
         return ComputingAllowance(computing_allowance).is_periodic()
+
+    def show_billing_id_form_condition(self):
+        """Only show the form for providing a billing ID when it is
+        required, and when pooling is not requested."""
+        if not self.__billing_id_required():
+            return False
+        step_name = 'pool_allocations'
+        step = str(self.step_numbers_by_form_name[step_name])
+        cleaned_data = self.get_cleaned_data_for_step(step) or {}
+        return not cleaned_data.get('pool', False)
 
     def show_details_form_condition(self):
         step_name = 'pool_allocations'
@@ -373,6 +392,13 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
             computing_allowance.is_recharge() and
             computing_allowance.requires_extra_information())
 
+    @staticmethod
+    def __billing_id_required():
+        """Return whether a billing ID should be requested from the
+        user. Ultimately, the form will only be included if pooling is
+        not requested."""
+        return flag_enabled('LRC_ONLY')
+
     def __get_allocation_period(self, form_data):
         """Return the AllocationPeriod the user selected."""
         step_number = self.step_numbers_by_form_name['allocation_period']
@@ -396,6 +422,15 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
         """Return provided survey data."""
         step_number = self.step_numbers_by_form_name['survey']
         return form_data[step_number]
+
+    def __handle_billing_activity(self, form_data, request_kwargs):
+        """Store the User-provided BillingActivity in the given
+        dictionary to be used during request creation."""
+        step_number = self.step_numbers_by_form_name['billing_id']
+        data = form_data[step_number]
+        billing_activity = data['billing_id']
+        assert isinstance(billing_activity, BillingActivity)
+        request_kwargs['billing_activity'] = billing_activity
 
     def __handle_ica_allowance(self, form_data, computing_allowance_wrapper,
                                request_kwargs):
