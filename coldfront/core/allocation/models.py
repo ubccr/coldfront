@@ -1,10 +1,10 @@
+"""allocation models"""
 import datetime
 import logging
 from ast import literal_eval
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.utils.html import mark_safe
 from django.utils.module_loading import import_string
@@ -14,8 +14,6 @@ from simple_history.models import HistoricalRecords
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import import_from_settings
-from table import Table
-from table.columns import Column
 from coldfront.core import attribute_expansion
 
 logger = logging.getLogger(__name__)
@@ -153,7 +151,7 @@ class Allocation(TimeStampedModel):
 
     @property
     def get_resources_as_list(self):
-        return [ele for ele in self.resources.all().order_by('-is_allocatable')]
+        return list(self.resources.all().order_by('-is_allocatable'))
 
     @property
     def get_parent_resource(self):
@@ -247,7 +245,7 @@ class Allocation(TimeStampedModel):
 
     def __str__(self):
         tmp = self.get_parent_resource
-        if (tmp == None):
+        if tmp is None:
             return "no parent resource"
         return "%s (%s)" % (self.get_parent_resource.name, self.project.pi)
 
@@ -315,30 +313,31 @@ class AllocationAttribute(TimeStampedModel):
                 allocation_attribute=self)
 
     def clean(self):
-        if self.allocation_attribute_type.is_unique and self.allocation.allocationattribute_set.filter(allocation_attribute_type=self.allocation_attribute_type).exists():
-            raise ValidationError("'{}' attribute already exists for this allocation.".format(
-                self.allocation_attribute_type))
+        if self.allocation.allocationattribute_set.filter(
+                allocation_attribute_type=self.allocation_attribute_type).exists():
+            if self.allocation_attribute_type.is_unique:
+                raise ValidationError("'{}' attribute already exists for this allocation.".format(
+                    self.allocation_attribute_type))
 
         expected_value_type = self.allocation_attribute_type.attribute_type.name.strip()
-
-        if expected_value_type == "Int" and not isinstance(literal_eval(self.value), int):
-            raise ValidationError(
-                'Invalid Value "%s" for "%s". Value must be an integer.' % (self.value, self.allocation_attribute_type.name))
-        if expected_value_type == "Float" and not (isinstance(literal_eval(self.value), float) or isinstance(literal_eval(self.value), int)):
-            raise ValidationError(
-                'Invalid Value "%s" for "%s". Value must be a float.' % (self.value, self.allocation_attribute_type.name))
-        if expected_value_type == "Yes/No" and self.value not in ["Yes", "No"]:
-            raise ValidationError(
-                'Invalid Value "%s" for "%s". Allowed inputs are "Yes" or "No".' % (self.value, self.allocation_attribute_type.name))
-        if expected_value_type == "Date":
+        error = None
+        if expected_value_type == "Float" and not isinstance(literal_eval(self.value), (float,int)):
+            error = "Value must be a float."
+        elif expected_value_type == "Int" and not isinstance(literal_eval(self.value), int):
+            error = "Value must be an integer."
+        elif expected_value_type == "Yes/No" and self.value not in ["Yes", "No"]:
+            error = 'Allowed inputs are "Yes" or "No".'
+        elif expected_value_type == "Date":
             try:
                 datetime.datetime.strptime(self.value.strip(), "%Y-%m-%d")
             except ValueError:
-                raise ValidationError(
-                    'Invalid Value "%s" for "%s". Date must be in format YYYY-MM-DD' % (self.value, self.allocation_attribute_type.name))
+                error = 'Date must be in format YYYY-MM-DD'
+        if error:
+            raise ValidationError(
+                'Invalid Value "%s" for "%s". %s' % (self.value, self.allocation_attribute_type.name, error))
 
     def __str__(self):
-        return '%s' % (self.allocation_attribute_type.name)
+        return str(self.allocation_attribute_type.name)
 
     def typed_value(self):
         """Returns the value of the attribute, with proper type.
@@ -454,7 +453,7 @@ class AllocationUser(TimeStampedModel): #allocation user and user are both datab
     history = HistoricalRecords()
 
     def __str__(self):
-        if (self.allocation.resources.first() == None):
+        if (self.allocation.resources.first() is None):
             return '%s (%s)' % (self.user, "None")
         return '%s (%s)' % (self.user, self.allocation.resources.first().name)
 

@@ -1,21 +1,17 @@
 import datetime
-import pprint
 
+from django import forms
 from django.conf import settings
 from django.contrib import messages
-from django import forms
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import user_passes_test, login_required
-from coldfront.core.utils.common import import_from_settings
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
 from django.forms import formset_factory
-from django.http import (HttpResponse, HttpResponseForbidden,
-                         HttpResponseRedirect)
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
-from django.template.loader import render_to_string
 from django.urls import reverse
 from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
@@ -104,7 +100,8 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['mailto'] = 'mailto:' + \
             ','.join([user.user.email for user in project_users])
 
-        if self.request.user.is_superuser or self.request.user.has_perm('allocation.can_view_all_allocations'):
+        if self.request.user.is_superuser or self.request.user.has_perm(
+                                        'allocation.can_view_all_allocations'):
             allocations = Allocation.objects.prefetch_related(
                 'resources').filter(project=self.object).order_by('-end_date')
         else:
@@ -157,10 +154,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
         order_by = self.request.GET.get('order_by')
         if order_by:
             direction = self.request.GET.get('direction')
-            if direction == 'asc':
-                direction = ''
-            else:
-                direction = '-'
+            direction = '' if direction == 'asc' else '-'
             order_by = direction + order_by
         else:
             order_by = 'id'
