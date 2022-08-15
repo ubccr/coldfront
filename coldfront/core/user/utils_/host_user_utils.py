@@ -44,12 +44,6 @@ def lbl_email_address(user):
 
 def needs_host(user):
     """Return whether the given User needs a host user."""
-    if not isinstance(user, User):
-        raise TypeError(f'Invalid User {user}.')
+    assert isinstance(user, User)
+    return not bool(user.userprofile.host_user)
 
-    # If the user has an LBL email, they do not need a host user.
-    if is_lbl_employee(user):
-        return False
-    else:
-        # Check if the user has a host user already.
-        return user.userprofile.host_user is None
