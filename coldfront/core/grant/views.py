@@ -32,6 +32,11 @@ from coldfront.core.project.models import Project, ProjectUser
 
 from coldfront.plugins.orcid.orcid_vars import OrcidAPI
 from coldfront.plugins.orcid.dict_methods import *
+from coldfront.core.utils.common import import_from_settings
+
+PLUGIN_ORCID = import_from_settings('PLUGIN_ORCID', False)
+if PLUGIN_ORCID:
+    ORCID_SANDBOX = import_from_settings('ORCID_SANDBOX', True)
 
 class GrantCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     form_class = GrantForm
@@ -85,13 +90,68 @@ class GrantCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
         context['project'] = Project.objects.get(pk=self.kwargs.get('project_pk'))
-        context['orcid_vars'] = OrcidAPI.orcid_configured()
-        context['orcid_config_msg'] = OrcidAPI.ORC_CONFIG_MSG
         return context
 
     def get_success_url(self):
         messages.success(self.request, 'Added a grant.')
         return reverse('project-detail', kwargs={'pk': self.kwargs.get('project_pk')})
+
+class GrantCreateChoiceView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name = 'grant/grant_create_choice.html'
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
+
+        if project_obj.pi == self.request.user:
+            return True
+
+        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+            return True
+
+        messages.error(self.request, 'You do not have permission to add a new grant to this project.')
+
+    def dispatch(self, request, *args, **kwargs):
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
+        if project_obj.status.name not in ['Active', 'New', ]:
+            messages.error(request, 'You cannot add grants to an archived project.')
+            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
+        else:
+            return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
+
+        user_query_set = project_obj.projectuser_set.select_related('user').filter(
+            status__name__in=['Active', ]).order_by("user__username")
+
+        if user_query_set:
+            orcid_users = []
+            for project_user in user_query_set:
+                try:
+                    user = project_user.user 
+                    if ORCID_SANDBOX: 
+                        orcid_is_linked = user.social_auth.get(provider='orcid-sandbox')
+                    else:
+                        orcid_is_linked = user.social_auth.get(provider='orcid')
+                    orcid_users.append(user.username)
+                except:
+                    pass
+
+        has_orcid_users = False 
+        no_orcid_users = 'No project users have ORCID accounts linked'
+        if orcid_users:
+            has_orcid_users = True 
+        context['project'] = Project.objects.get(pk=self.kwargs.get('project_pk'))
+        context['orcid_vars'] = OrcidAPI.orcid_configured()
+        context['has_orcid_users'] = has_orcid_users
+        context['no_orcid_users'] = no_orcid_users
+        context['orcid_config_msg'] = OrcidAPI.ORC_CONFIG_MSG
+        return context
 
 
 class GrantOrcidImportView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -162,7 +222,7 @@ class GrantOrcidImportView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                     choosen_grant_num = form_data.get('grant_number')
 
                     # Check if grant already exists
-                    if choosen_grant_num and choosen_grant_num != "None":
+                    if choosen_grant_num:
                         try:
                             grant_obj = Grant.objects.filter(grant_number=choosen_grant_num)[0]
 
@@ -214,30 +274,18 @@ class GrantOrcidImportView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                     grants_updated.append(form_data.get('title'))
                 else:
                     grants_skipped.append(form_data.get('title'))
-            
-            msg : str = ""
 
             if grants_added:
-                msg += 'Added {} grant{} to project.'.format(
-                    grants_added, 's' if grants_added > 1 else '')
-                if grants_updated:
-                    # Add space to separate the messages generated from
-                    # grants_added and grants_updated
-                    msg += '. '
+                messages.success(request, f'Added {grants_added} grant(s) to project.')
+
             if grants_updated:
-                msg += "Updated: {}".format(
-                    ", ".join(grants_updated)
-                )
-                if grants_skipped:
-                    # Add space to separate the messages generated from
-                    # grants_updated and grants_skipped
-                    msg += '. '
+               grants_updated = ', '.join(grants_updated) 
+               messages.info(request, f'Updated: {grants_updated}')
+                
             if grants_skipped:
-                msg += 'Skipped adding: {}'.format(
-                    ', '.join(grants_skipped))
-        
-            
-            messages.success(request, msg)
+                grants_skipped = ', '.join(grants_skipped)
+                messages.warning(request, f'Grant(s) already exists on this project. Skipped adding: {grants_skipped}.')
+
         else:
             for error in formset.errors:
                 messages.error(request, error)
@@ -392,14 +440,8 @@ class GrantOrcidImportResultView(LoginRequiredMixin, UserPassesTestMixin, Templa
 
     def post(self, request, *args, **kwargs):
         project_pk = self.kwargs.get('project_pk')
-        print(project_pk)
-        print('Request')
         data = (request.POST)
-        print( data)
         form_data = json.loads(data.get('form_info'))
-        print('Form Data')
-        print(form_data)
-        
 
         project_obj = get_object_or_404(Project, pk=project_pk)
         grants = []
@@ -413,7 +455,7 @@ class GrantOrcidImportResultView(LoginRequiredMixin, UserPassesTestMixin, Templa
                 search_ids.append(orcid_user.uid)
             except:
                 pass 
-        print(search_ids)
+
         try:
             for ele in search_ids:
                 grant_dict = self._search_id(ele)

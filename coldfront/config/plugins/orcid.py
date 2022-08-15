@@ -2,7 +2,10 @@ from coldfront.config.env import ENV
 from coldfront.config.base import AUTHENTICATION_BACKENDS
 from django.core.exceptions import ImproperlyConfigured
 
-if ENV.bool('PLUGIN_ORCID', default=False):
+
+PLUGIN_ORCID = ENV.bool('PLUGIN_ORCID', default=False)
+
+if PLUGIN_ORCID:
 
     try:
         import orcid

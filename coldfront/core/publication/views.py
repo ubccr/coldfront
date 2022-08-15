@@ -30,7 +30,8 @@ from coldfront.core.publication.forms import (
     PublicationAddForm,
     PublicationDeleteForm,
     PublicationResultForm,
-    PublicationSearchForm,
+    PublicationIdentifierSearchForm,
+    PublicationORCIDSearchForm,
     PublicationExportForm,
 )
 from coldfront.core.publication.models import Publication, PublicationSource
@@ -40,8 +41,13 @@ from coldfront.core.user.views import UserSelectResults
 # import orcid #NEW REQUIREMENT: orcid (pip install orcid)
 from coldfront.plugins.orcid.orcid_vars import OrcidAPI
 from coldfront.plugins.orcid.dict_methods import *
+from coldfront.core.utils.common import import_from_settings
 
 MANUAL_SOURCE = 'manual'
+
+PLUGIN_ORCID = import_from_settings('PLUGIN_ORCID', False)
+if PLUGIN_ORCID:
+    ORCID_SANDBOX = import_from_settings('ORCID_SANDBOX', True)
 
 
 class PublicationSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -73,9 +79,103 @@ class PublicationSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
+
+        user_query_set = project_obj.projectuser_set.select_related('user').filter(
+            status__name__in=['Active', ]).order_by("user__username")
+
+        if user_query_set:
+            orcid_users = []
+            for project_user in user_query_set:
+                try:
+                    user = project_user.user 
+                    if ORCID_SANDBOX: 
+                        orcid_is_linked = user.social_auth.get(provider='orcid-sandbox')
+                    else:
+                        orcid_is_linked = user.social_auth.get(provider='orcid')
+                    orcid_users.append(user.username)
+                except:
+                    pass
+
+        has_orcid_users = False 
+        no_orcid_users = 'No project users have ORCID accounts linked'
+        if orcid_users:
+            has_orcid_users = True 
+
+        context['has_orcid_users'] = has_orcid_users
+        context['no_orcid_users'] = no_orcid_users
         context['orcid_vars'] = OrcidAPI.orcid_configured()
-        
-        context['publication_search_form'] = PublicationSearchForm(project_pk=self.kwargs.get('project_pk'))
+        context['project'] = Project.objects.get(
+            pk=self.kwargs.get('project_pk'))
+        return context
+
+
+class PublicationIdentifierSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name = 'publication/publication_add_publication_identifier.html'
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+
+        project_obj = get_object_or_404(
+            Project, pk=self.kwargs.get('project_pk'))
+
+        if project_obj.pi == self.request.user:
+            return True
+
+        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+            return True
+
+    def dispatch(self, request, *args, **kwargs):
+        project_obj = get_object_or_404(
+            Project, pk=self.kwargs.get('project_pk'))
+        if project_obj.status.name not in ['Active', 'New', ]:
+            messages.error(
+                request, 'You cannot add publications to an archived project.')
+            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
+        else:
+            return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context['orcid_vars'] = OrcidAPI.orcid_configured()
+        context['publication_identifier_search_form'] = PublicationIdentifierSearchForm()
+        context['project'] = Project.objects.get(
+            pk=self.kwargs.get('project_pk'))
+        return context
+
+class PublicationORCIDSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name = 'publication/publication_add_publication_orcid.html'
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+
+        project_obj = get_object_or_404(
+            Project, pk=self.kwargs.get('project_pk'))
+
+        if project_obj.pi == self.request.user:
+            return True
+
+        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+            return True
+
+    def dispatch(self, request, *args, **kwargs):
+        project_obj = get_object_or_404(
+            Project, pk=self.kwargs.get('project_pk'))
+        if project_obj.status.name not in ['Active', 'New', ]:
+            messages.error(
+                request, 'You cannot add publications to an archived project.')
+            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
+        else:
+            return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context['orcid_vars'] = OrcidAPI.orcid_configured()
+        context['publication_orcid_search_form'] = PublicationORCIDSearchForm(project_pk=self.kwargs.get('project_pk'))
         context['project'] = Project.objects.get(
             pk=self.kwargs.get('project_pk'))
         return context
@@ -193,7 +293,7 @@ class PublicationSearchResultView(LoginRequiredMixin, UserPassesTestMixin, Templ
                     pass
                 
                 orc_pub_dict.append(orc_pub_dict_entree)
-            
+
             return orc_pub_dict
         
         matching_source_obj = None
@@ -252,19 +352,26 @@ class PublicationSearchResultView(LoginRequiredMixin, UserPassesTestMixin, Templ
         return False
 
     def post(self, request, *args, **kwargs):
-        search_ids = list(set(request.POST.get('search_id').split()))
         project_pk = self.kwargs.get('project_pk')
         project_obj = get_object_or_404(Project, pk=project_pk)
-        form_data = json.loads(request.POST.get('form_info'))
-        print('Form Data')
-        print(form_data)
-        for user in form_data:
-                try:
-                    user_obj = User.objects.get(username__exact=user)
-                    orcid_user = user_obj.social_auth.get(provider='orcid-sandbox')
-                    search_ids.append(orcid_user.uid)
-                except:
-                    pub_dict = None
+        try:
+            search_ids = list(set(request.POST.get('search_id').split()))
+        except:
+            search_ids = [] 
+
+        try:
+            form_data = json.loads(request.POST.get('form_info'))
+        except:
+            form_data = None     
+
+        if form_data:
+            for user in form_data:
+                    try:
+                        user_obj = User.objects.get(username__exact=user)
+                        orcid_user = user_obj.social_auth.get(provider='orcid-sandbox')
+                        search_ids.append(orcid_user.uid)
+                    except:
+                        pub_dict = None
         pubs = []
         for ele in search_ids:
             pub_dict = self._search_id(ele)
@@ -351,21 +458,15 @@ class PublicationAddView(LoginRequiredMixin, UserPassesTestMixin, View):
                     if created:
                         publications_added += 1
                     else:
-                        publications_skipped.append(form_data.get('unique_id'))
+                        publications_skipped.append(form_data.get('title'))
 
-            msg = ''
             if publications_added:
-                msg += 'Added {} publication{} to project.'.format(
-                    publications_added, 's' if publications_added > 1 else '')
-                if publications_skipped:
-                    # Add space to separate the messages generated from
-                    # publications_added and publications_skipped
-                    msg += ' '
-            if publications_skipped:
-                msg += 'Publication already exists on this project. Skipped adding: {}'.format(
-                    ', '.join(publications_skipped))
+                messages.success(request, f'Added {publications_added} publication(s) to project.')
 
-            messages.success(request, msg)
+            if publications_skipped:
+                publications_skipped = ', '.join(publications_skipped)
+                messages.warning(request, f'Publication(s) already exists on this project. Skipped adding: {publications_skipped}')
+
         else:
             for error in formset.errors:
                 messages.error(request, error)

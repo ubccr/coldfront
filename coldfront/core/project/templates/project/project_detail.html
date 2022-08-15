@@ -233,7 +233,7 @@ Project Detail
         <span class="badge badge-info">Last Updated: {{project.latest_grant.modified|date:"M. d, Y"}}</span>
       {% endif %}
       {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
-        <a class="btn btn-success" href="{% url 'grant-create' project.id %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add Grant</a>
+        <a class="btn btn-success" href="{% url 'grant-create-choice' project.id %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add Grant</a>
         {% if grants %}
           <a class="btn btn-danger" href="{% url 'grant-delete-grants' project.pk %}" role="button"><i class="fas fa-minus" aria-hidden="true"></i> Delete Grants</a>
         {% endif %}

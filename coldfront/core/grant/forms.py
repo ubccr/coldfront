@@ -7,6 +7,10 @@ from coldfront.core.project.models import Project
 from coldfront.core.grant.models import Grant
 from coldfront.core.utils.common import import_from_settings
 
+PLUGIN_ORCID = import_from_settings('PLUGIN_ORCID', False)
+if PLUGIN_ORCID:
+    ORCID_SANDBOX = import_from_settings('ORCID_SANDBOX', True)
+
 CENTER_NAME = import_from_settings('CENTER_NAME')
 
 
@@ -35,8 +39,21 @@ class OrcidImportGrantQueryForm(forms.Form):
         user_query_set = project_obj.projectuser_set.select_related('user').filter(
             status__name__in=['Active', ]).order_by("user__username")
         if user_query_set:
-            self.fields['users'].choices = ((user.user.username, "%s %s (%s)" % (
-                user.user.first_name, user.user.last_name, user.user.username)) for user in user_query_set)
+            user_choices = []
+            for project_user in user_query_set:
+                try:
+                    user = project_user.user 
+                    if ORCID_SANDBOX: 
+                        orcid_is_linked = user.social_auth.get(provider='orcid-sandbox')
+                    else:
+                        orcid_is_linked = user.social_auth.get(provider='orcid')
+                    if project_obj.pi == user:
+                        user_choices.append((user.username, f"You ({user.username})"))
+                    else:
+                        user_choices.append((user.username, f"{user.first_name} {user.last_name} ({user.username})"))
+                except:
+                    pass
+            self.fields['users'].choices = user_choices
             self.fields['users'].help_text = '<br/>Select users in your project to pull their ORCID grant information.'
         else:
             self.fields['users'].widget = forms.HiddenInput()

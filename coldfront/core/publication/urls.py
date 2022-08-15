@@ -10,4 +10,6 @@ urlpatterns = [
     path('publication-user-orcid-import/<int:project_pk>/', publication_views.PublicationUserOrcidImportView.as_view(), name='publication-user-orcid-import'),
     path('project/<int:project_pk>/delete-publications/', publication_views.PublicationDeletePublicationsView.as_view(), name='publication-delete-publications'),
     path('project/<int:project_pk>/export-publications/', publication_views.PublicationExportPublicationsView.as_view(), name='publication-export-publications'),
+    path('add-publication-identifier/<int:project_pk>/', publication_views.PublicationIdentifierSearchView.as_view(), name='add-publication-identifier'),
+    path('add-publication-orcid/<int:project_pk>/', publication_views.PublicationORCIDSearchView.as_view(), name='add-publication-orcid'),
 ]

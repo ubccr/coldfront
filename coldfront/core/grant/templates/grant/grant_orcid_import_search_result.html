@@ -113,7 +113,6 @@
       {{ formset.management_form }}
       <div>
         <button type="submit" class="btn btn-primary"><i class="fas fa-plus" aria-hidden="true"></i> Add Selected Grants to Project</button>
-        <a class="btn btn-secondary" href="{% url 'project-detail' project_pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a>
         <input id="search_ids" type="hidden" name="search_ids" value="{{search_ids}}">
         <input id="grants" type="hidden" name="grants" value="{{grants}}">
       </div>
@@ -122,7 +121,7 @@
   </div>
   </div>
   {% else %} 
-    <a class="btn btn-secondary mb-3" href="{% url 'project-detail' project_pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a> 
+    <a class="btn btn-secondary mb-3" href="{% url 'grant-create-choice' project_pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Cancel</a> 
     <div class="alert alert-info">
       No grants to add!
     </div>

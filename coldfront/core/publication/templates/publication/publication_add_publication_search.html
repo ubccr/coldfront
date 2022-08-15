@@ -11,96 +11,45 @@ Add Publication to Project
 {% block content %}
 <h2>Add publication to project: {{project.title}}</h2>
 <hr>
-
-<div class="col">
  
-  <div class="mb-3">
+  <div class="mb-3" style="display:inline-block">
    
     <a class="btn btn-info" href="{% url 'add-publication-manually' project.pk %}" role="button">
-      <i class="far fa-edit" aria-hidden="true"></i> Enter Publication Manually
+      <i class="far fa-edit" aria-hidden="true"></i> Add Publication Manually
     </a>
   </div>
-  
-  
-  
 
-  <form id="post-form">
-    {% csrf_token %}
-    {{ publication_search_form|crispy }}
-    <button id="search-button" type="submit" class="btn btn-success btn-block"><i class="fas fa-search" aria-hidden="true"></i> Search</button>
-  </form>
+<div class="mb-3" style="display:inline-block">
+  
+  <a class="btn btn-info" href="{% url 'add-publication-identifier' project.pk %}" role="button">
+    <i class="far fa-edit" aria-hidden="true"></i> Add Publication by DOI
+  </a>
+  </div>
+  
+  {% if orcid_vars == True %}
+  {% if has_orcid_users %}
+  <div class="mb-3" style="display:inline-block">
+    <a class="btn btn-info" href="{% url 'add-publication-orcid' project.pk %}" role="button">
+      <i class="far fa-user" aria-hidden="true"></i> Add Publication by ORCID Import
+    </a>
+  </div>
+  {% else %}
+  <div title="{{no_orcid_users}}" class="mb-3" style="display:inline-block">
+      <a class="btn btn-info disabled" href="{% url 'add-publication-orcid' project.pk %}" role="button">
+        <i class="far fa-user" aria-hidden="true"></i> Add Publication by ORCID Import
+      </a>
+    </div>
+  {% endif %}
+{% else %}
+<div title="{{orcid_config_msg}}" class="mb-3" style="display:inline-block">
+  <a class="btn btn-info disabled" href="{% url 'add-publication-orcid' project.pk %}" role="button">
+    <i class="far fa-user" aria-hidden="true"></i> Add Publication by ORCID Import
+  </a>
 </div>
+{% endif %}
 
 <br>
 
-<div class="col" id="search_results">
-  <div class="card border-light">
-    <div class="card-body">
-      <div id="search_results_inner"><a class="btn btn-secondary" href="{% url 'project-detail' project_pk %}" role="button">Back to Project</a></div>
-    </div>
-  </div>
-</div>
-{% endblock %}
+<a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button">Back to Project</a>
 
-
-{% block javascript %}
-  {{ block.super }}
-<script>
-  $('#post-form').on('submit', function(event){
-    event.preventDefault();
-    $('#search_results').show();
-    $("#search_results_inner").html('<div class="alert alert-info text-center"><i class="fas fa-sync fa-spin fa-fw" aria-hidden="true"></i> Searching</div>')
-    create_post();
-  });
-
-  function create_post() {
-    search_id = $('#id_search_id').val().trim();
-
-    var users = [];
-      $('input:checked').each(function () {
-            users.push($(this).val());
-          });
-
-    var pk = "{{ project.pk }}"
-    $.ajax({
-        url : "/publication/publication-search-result/" + pk +"/", // the endpoint
-        type : "POST", // http method
-        data : {
-          form_info : JSON.stringify(users),
-          search_id : search_id, 
-          csrfmiddlewaretoken: "{{ csrf_token }}"
-        }, // data sent with the post request
-        // handle a successful response
-        success : function(data) {
-            $('#search_results').show();
-            $('#search_results_inner').html(data);
-        },
-        // handle a non-successful response
-        error : function(xhr,errmsg,err) {
-            $('#results').html("<div class='alert-box alert radius' data-alert>Oops! We have encountered an error: "+errmsg+
-                " <a href='#' class='close'>&times;</a></div>"); // add the error to the dom
-            console.log(xhr.status + ": " + xhr.responseText); // provide a bit more info about the error to the console
-        }
-    });
-  };
-
-  $(document).ready(function(){
-    $('[data-toggle="popover"]').popover();
-
-    $('<br><input id="selectAll" class="check" type="checkbox"> <strong>Select All Users</strong>').insertAfter($("#div_id_users > label"))
-
-
-    $("#selectAll").click(function () {
-      $("input[name^='users']").prop('checked', $(this).prop('checked'));
-    });
-
-    $("input[name^='users']").click(function (ele) {
-      var id = $(this).attr('id');
-      if (id != "selectAll") {
-        $("#selectAll").prop('checked', false);
-      }
-    });
-   
-  });
-</script>
 {% endblock %}

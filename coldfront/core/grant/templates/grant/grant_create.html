@@ -4,34 +4,27 @@
 
 
 {% block title %}
-Create Grant
+Manually Enter Grant
 {% endblock %}
-
-
-
 {% block content %}
-  {% if orcid_vars == True %}
-    <div class="mb-3">
-      <a class="btn btn-info" href="{% url 'grant-orcid-import' project.pk %}" role="button">
-        <i class="far fa-user" aria-hidden="true"></i> Import Grants from Project User ORCIDs
-      </a>
-    </div>
-  {% else %}
-  <div title="{{orcid_config_msg}}" class="mb-3">
-    <a class="btn btn-info disabled" href="{% url 'grant-orcid-import' project.pk %}" role="button">
-      <i class="far fa-user" aria-hidden="true"></i> Import Grants from Project User ORCIDs
-    </a>
-  </div>
-  {% endif %}
 
-  <br>
-
-  <form method="post">{% csrf_token %}
+  <form method="post">
+    {% csrf_token %}
     {{ form|crispy }}
-    <input class="btn btn-primary" type="submit" value="Save" />
-    <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button">Cancel</a><br>
+    <div>
+      <button type="submit" class="btn btn-primary"><i class="fas fa-plus" aria-hidden="true"></i> Add Grant </button>
+    </div>
+    
 </form>
 
+<br/>
+
+<a class="btn btn-info" href="{% url 'grant-create-choice' project.pk %}" role="button">
+  <i class="fas fa-search" aria-hidden="true"></i> Back to Search
+</a>
+<a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button">
+    <i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project
+</a>
 
 {% endblock %}
 

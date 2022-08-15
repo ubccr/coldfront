@@ -1,0 +1,42 @@
+{% extends "common/base.html" %} 
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Enter Grant
+{% endblock %}
+
+{% block content %}
+   <div class="mb-3" style="display:inline-block">
+    <a class="btn btn-info" href="{% url 'grant-create' project.pk %}" role="button">
+      <i class="far fa-user" aria-hidden="true"></i> Add Grant Manually 
+    </a>
+  </div>
+  {% if orcid_vars == True %}
+    {% if has_orcid_users %}
+    <div class="mb-3" style="display:inline-block">
+      <a class="btn btn-info" href="{% url 'grant-orcid-import' project.pk %}" role="button">
+        <i class="far fa-user" aria-hidden="true"></i> Import Grants from Project User ORCIDs
+      </a>
+    </div>
+    {% else %}
+    <div title="{{no_orcid_users}}" class="mb-3" style="display:inline-block">
+        <a class="btn btn-info disabled" href="{% url 'grant-orcid-import' project.pk %}" role="button">
+          <i class="far fa-user" aria-hidden="true"></i> Import Grants from Project User ORCIDs
+        </a>
+      </div>
+    {% endif %}
+  {% else %}
+  <div title="{{orcid_config_msg}}" class="mb-3" style="display:inline-block">
+    <a class="btn btn-info disabled" href="{% url 'grant-orcid-import' project.pk %}" role="button">
+      <i class="far fa-user" aria-hidden="true"></i> Import Grants from Project User ORCIDs
+    </a>
+  </div>
+  {% endif %}
+  <br>
+  <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button">Back to Project</a>
+
+
+
+{% endblock %}

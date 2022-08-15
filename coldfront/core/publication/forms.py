@@ -3,6 +3,11 @@ from django import forms
 from coldfront.core.publication.models import PublicationSource
 from django.shortcuts import get_object_or_404
 from coldfront.core.project.models import Project
+from coldfront.core.utils.common import import_from_settings
+
+PLUGIN_ORCID = import_from_settings('PLUGIN_ORCID', False)
+if PLUGIN_ORCID:
+    ORCID_SANDBOX = import_from_settings('ORCID_SANDBOX', True)
 
 class PublicationAddForm(forms.Form):
     title = forms.CharField(max_length=1024, required=True)
@@ -12,7 +17,12 @@ class PublicationAddForm(forms.Form):
     source = forms.CharField(widget=forms.HiddenInput())  # initialized by view
 
 
-class PublicationSearchForm(forms.Form):
+class PublicationIdentifierSearchForm(forms.Form):
+    search_id = forms.CharField(
+        label='Search DOI', widget=forms.Textarea, required=False)
+
+
+class PublicationORCIDSearchForm(forms.Form):
     users = forms.MultipleChoiceField(
         widget=forms.CheckboxSelectMultiple, required=False)
         
@@ -23,14 +33,26 @@ class PublicationSearchForm(forms.Form):
         user_query_set = project_obj.projectuser_set.select_related('user').filter(
             status__name__in=['Active', ]).order_by("user__username")
         if user_query_set:
-            self.fields['users'].choices = ((user.user.username, "%s %s (%s)" % (
-                user.user.first_name, user.user.last_name, user.user.username)) for user in user_query_set)
-            self.fields['search_id'].help_text = '<br/>Enter ID such as DOI or Bibliographic Code to search or select users to import ORCID works.'
+            user_choices = []
+            for project_user in user_query_set:
+                try:
+                    user = project_user.user
+                    if ORCID_SANDBOX: 
+                        orcid_is_linked = user.social_auth.get(provider='orcid-sandbox')
+                    else:
+                        orcid_is_linked = user.social_auth.get(provider='orcid')
+                    if project_obj.pi == user:
+                        user_choices.append((user.username, f"You ({user.username})"))
+                    else:
+                        user_choices.append((user.username, f"{user.first_name} {user.last_name} ({user.username})"))
+                except:
+                    pass
+            self.fields['users'].choices = user_choices
+            self.fields['users'].help_text = '<br/>Select users in your project to pull their ORCID works information.'
         else:
             self.fields['users'].widget = forms.HiddenInput()
     
-    search_id = forms.CharField(
-        label='Search ID', widget=forms.Textarea, required=False)
+    
 
 class PublicationResultForm(forms.Form):
     title = forms.CharField(max_length=1024, disabled=True)

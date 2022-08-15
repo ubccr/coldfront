@@ -8,7 +8,9 @@ import importlib
 INSTALLED_APPS +=  ['social_django',
 ]
 
-if ENV.bool('PLUGIN_SOCIAL_CORE', default=False):
+PLUGIN_SOCIAL_CORE = ENV.bool('PLUGIN_SOCIAL_CORE', default=False)
+
+if PLUGIN_SOCIAL_CORE:
 
     # try:
     #     importlib.import_module('social-auth-app-django')

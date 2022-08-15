@@ -31,18 +31,11 @@ Add Publication to Project Manually
 
 <br/>
 
-<div class="row">
-  <div class="col">
-    <div class="card border-light">
-      <div class="card-body">
-        <a class="btn btn-info" href="{% url 'publication-search' project.pk %}" role="button">
-          <i class="fas fa-search" aria-hidden="true"></i> Back to Search
-        </a>
-        <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button">
-          <i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project
-        </a>
-      </div>
-    </div>
-  </div>
-</div>
+<a class="btn btn-info" href="{% url 'publication-search' project.pk %}" role="button">
+  <i class="fas fa-search" aria-hidden="true"></i> Back to Search
+</a>
+<a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button">
+  <i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project
+</a>
+
 {% endblock %}

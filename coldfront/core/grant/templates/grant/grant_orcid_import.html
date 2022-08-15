@@ -20,13 +20,22 @@ Import Grant from ORCID
 
 <br/>
 
+<div class="col" >
+</div>
 <div class="col" id="search_results" >
     <div class="card border-light">
       <div class="card-body">
-        <div id="search_results_inner"><a class="btn btn-secondary" href="{% url 'project-detail' project_pk %}" role="button">Back to Project</a></div>
+        <div id="search_results_inner"></div>
       </div>
     </div>
 </div>
+
+<a class="btn btn-info" href="{% url 'grant-create-choice' project.pk %}" role="button">
+  <i class="fas fa-search" aria-hidden="true"></i> Back to Search
+</a>
+<a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button">
+    <i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project
+</a>
 
 {% endblock %}
 

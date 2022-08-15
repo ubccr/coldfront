@@ -2,8 +2,9 @@ from argparse import ArgumentError
 import logging
 import re
 from typing import List
-from urllib import response
+from urllib import request, response
 from coldfront.plugins.orcid.orcid_vars import OrcidAPI
+from django.contrib.auth import logout as auth_logout
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required

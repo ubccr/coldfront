@@ -11,4 +11,5 @@ urlpatterns = [
     path('project/<int:project_pk>/delete-grants/', grant_views.GrantDeleteGrantsView.as_view(), name='grant-delete-grants'),
     path('grant-report/', grant_views.GrantReportView.as_view(), name='grant-report'),
     path('grant-download/', grant_views.GrantDownloadView.as_view(), name='grant-download'),
+    path('project/<int:project_pk>/create-choice/', grant_views.GrantCreateChoiceView.as_view(), name='grant-create-choice'),
 ]
