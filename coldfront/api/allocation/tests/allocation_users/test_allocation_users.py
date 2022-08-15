@@ -9,7 +9,8 @@ from http import HTTPStatus
 """A test suite for the /allocation_users/ endpoints, divided by
 method."""
 
-SERIALIZER_FIELDS = ('id', 'allocation', 'user', 'project', 'status',)
+SERIALIZER_FIELDS = (
+    'id', 'allocation', 'user', 'user_id', 'project', 'status',)
 
 
 class TestListAllocationUsers(TestAllocationBase):

@@ -41,6 +41,9 @@
       <th scope="col">
         Host User
       </th>
+      <th scope="col">
+        Billing ID
+      </th>
     {% endif %}
     <th scope="col">
       Status
@@ -84,8 +87,15 @@
       </td>
       {% if lrc_only %}
         <td>
-          {% if request.allocation_user.userprofile.host_user %}
-            {{ request.allocation_user.userprofile.host_user }}
+          {% if request.host_user %}
+            {{ request.host_user.username }}
+          {% else %}
+            N/A
+          {% endif %}
+        </td>
+        <td>
+          {% if request.billing_activity %}
+            {{ request.billing_activity.full_id }}
           {% else %}
             N/A
           {% endif %}

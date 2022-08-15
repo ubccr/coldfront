@@ -27,7 +27,7 @@ from coldfront.core.project.models import VectorProjectAllocationRequest
 from coldfront.core.project.utils import annotate_queryset_with_cluster_name
 from coldfront.core.project.utils import send_project_join_notification_email
 from coldfront.core.project.views import ProjectListView
-from coldfront.core.user.utils import needs_host
+from coldfront.core.user.utils_.host_user_utils import needs_host
 
 
 logger = logging.getLogger(__name__)

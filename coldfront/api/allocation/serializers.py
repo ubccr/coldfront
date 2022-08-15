@@ -86,14 +86,19 @@ class AllocationUserSerializer(serializers.ModelSerializer):
 
     user = serializers.SlugRelatedField(
         slug_field='username', queryset=User.objects.all())
+    user_id = serializers.SerializerMethodField()
     project = serializers.CharField(source='allocation.project.name')
     status = serializers.SlugRelatedField(
         slug_field='name', queryset=AllocationUserStatusChoice.objects.all())
 
+    @staticmethod
+    def get_user_id(obj):
+        """Return the ID of the User."""
+        return obj.user.id
+
     class Meta:
         model = AllocationUser
-        fields = (
-            'id', 'allocation', 'user', 'project', 'status',)
+        fields = ('id', 'allocation', 'user', 'user_id', 'project', 'status')
 
 
 class HistoricalAllocationAttributeSerializer(serializers.ModelSerializer):
