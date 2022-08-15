@@ -18,6 +18,7 @@ from coldfront.core.project.utils_.project_cluster_access_request_runner import 
 from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.user.utils_.host_user_utils import eligible_host_project_users
+from coldfront.core.user.utils_.host_user_utils import lbl_email_address
 from coldfront.core.user.utils_.host_user_utils import needs_host
 from coldfront.core.utils.email.email_strategy import EmailStrategy
 from coldfront.core.utils.email.email_strategy import SendEmailStrategy
@@ -172,16 +173,23 @@ class LRCNewProjectUserRunner(NewProjectUserRunner):
         """Determine and set a host_user in the ProjectUser's
         UserProfile if possible. If not, raise an exception."""
         host_user = None
-        if self._source == NewProjectUserSource.JOINED:
-            join_requests = ProjectUserJoinRequest.objects.filter(
-                project_user=self._project_user_obj, host_user__isnull=False)
-            if join_requests.exists():
-                host_user = join_requests.latest('modified').host_user
 
-        if not host_user:
-            eligible_hosts = eligible_host_project_users(self._project_obj)
-            if eligible_hosts:
-                host_user = eligible_hosts[0].user
+        lbl_address = lbl_email_address(self._user_obj)
+        if lbl_address is not None:
+            # LBL employee: set host to self.
+            host_user = self._user_obj
+        else:
+            # Non-LBL employee: set host to an LBL employee project PI.
+            if self._source == NewProjectUserSource.JOINED:
+                join_requests = ProjectUserJoinRequest.objects.filter(
+                    project_user=self._project_user_obj,
+                    host_user__isnull=False)
+                if join_requests.exists():
+                    host_user = join_requests.latest('modified').host_user
+            if not host_user:
+                eligible_hosts = eligible_host_project_users(self._project_obj)
+                if eligible_hosts:
+                    host_user = eligible_hosts[0].user
 
         if not host_user:
             message = (
