@@ -367,9 +367,28 @@ class TestLRCNewProjectUserRunner(TestCommonRunnerMixin, TestRunnerBase):
         self.assertEqual(len(queue), 1)
 
     @enable_deployment('LRC')
-    def test_set_host_user_from_add_success(self):
-        """Test that the runner sets the host user when the user was
-        added to the Project."""
+    def test_set_host_user_for_lbl_employee_success(self):
+        """Test that the runner sets the host user for an LBL
+        employee to the same user."""
+        self.user.email = 'user@lbl.gov'
+        self.user.save()
+
+        user_profile = self.user.userprofile
+        self.assertIsNone(user_profile.host_user)
+
+        runner = self._runner_factory.get_runner(
+            self.project_user, NewProjectUserSource.ADDED)
+        runner.run()
+
+        user_profile.refresh_from_db()
+        self.assertEqual(user_profile.host_user, self.user)
+
+        self._assert_post_state()
+
+    @enable_deployment('LRC')
+    def test_set_host_user_for_non_lbl_employee_from_add_success(self):
+        """Test that the runner sets the host user for a non-LBL
+        employee when the user was added to the Project."""
         self._assert_pre_state()
 
         user_profile = self.user.userprofile
@@ -385,9 +404,9 @@ class TestLRCNewProjectUserRunner(TestCommonRunnerMixin, TestRunnerBase):
         self._assert_post_state()
 
     @enable_deployment('LRC')
-    def test_set_host_user_from_join_success(self):
-        """Test that the runner sets the host user when the user joined
-        the Project."""
+    def test_set_host_user_for_non_lbl_employee_from_join_success(self):
+        """Test that the runner sets the host user for a non-LBL
+        employee when the user joined the Project."""
         self._assert_pre_state()
 
         user_profile = self.user.userprofile
@@ -402,5 +421,29 @@ class TestLRCNewProjectUserRunner(TestCommonRunnerMixin, TestRunnerBase):
 
         user_profile.refresh_from_db()
         self.assertEqual(user_profile.host_user, self.pi)
+
+        self._assert_post_state()
+
+    @enable_deployment('LRC')
+    def test_set_host_user_skipped_if_has_one(self):
+        """Test that the runner does not set the host user for an LBL
+        employee if it already has one."""
+        self.user.email = 'user@lbl.gov'
+        self.user.save()
+
+        user_profile = self.user.userprofile
+        user_profile.host_user = self.user
+        user_profile.save()
+
+        # The method for setting a host user should never be invoked, so an
+        # exception should not be raised.
+        with patch.object(
+                LRCNewProjectUserRunner, '_set_host_user', raise_exception):
+            runner = self._runner_factory.get_runner(
+                self.project_user, NewProjectUserSource.ADDED)
+            runner.run()
+
+        user_profile.refresh_from_db()
+        self.assertEqual(user_profile.host_user, self.user)
 
         self._assert_post_state()
