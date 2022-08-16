@@ -36,11 +36,8 @@ RUN pip install reportlab==3.6.6
 # RUN python3 ./manage.py initial_setup
 # RUN python3 ./manage.py load_test_data
 
-ENV DEBUG=True
-
 EXPOSE 80
 EXPOSE 25
 
 CMD ["python", "manage.py", "runserver", "0.0.0.0:80", "--insecure"]
 RUN ./manage.py qcluster &
-
