@@ -2,7 +2,7 @@
 
 <div>
   {% if not pi_projects and pi_username != '' %}
-    <p class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i> {{ pi_username }} is not a PI in any projects.</p>
+    <p class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i> {{ pi_username }} is not a PI in any available projects.</p>
   {% elif pi_projects %}
   <ul class="list-group list-group-flush">
     {% for project in pi_projects %}

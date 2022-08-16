@@ -381,6 +381,7 @@ class ProjectPISearchView(LoginRequiredMixin, ListView):
     template_name = 'project/project_pi_list.html'
 
     def post(self, request, *args, **kwargs):
+        username = request.user.username
         pi_username = request.POST.get('pi_username')
         context = {}
         context["pi_username"] = pi_username
@@ -389,6 +390,8 @@ class ProjectPISearchView(LoginRequiredMixin, ListView):
             Q(projectuser__status__name='Active') &
             Q(status__name__in=['New', 'Active', ]) &
             Q(private=False)
+        ).exclude(
+            projectuser__user__username=username,
         ).distinct()
         context["pi_projects"] = projects
         context['EMAIL_ENABLED'] = EMAIL_ENABLED
