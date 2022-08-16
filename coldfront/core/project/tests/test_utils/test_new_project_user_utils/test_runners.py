@@ -7,11 +7,13 @@ from django.core import mail
 
 from coldfront.api.statistics.utils import create_project_allocation
 from coldfront.core.allocation.models import Allocation
+from coldfront.core.allocation.models import AllocationUser
+from coldfront.core.allocation.models import AllocationUserStatusChoice
 from coldfront.core.allocation.models import ClusterAccessRequest
+from coldfront.core.allocation.utils_.cluster_access_utils import send_new_cluster_access_request_notification_email
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
-from coldfront.core.project.utils import send_new_cluster_access_request_notification_email
 from coldfront.core.project.utils_.new_project_user_utils import BRCNewProjectUserRunner
 from coldfront.core.project.utils_.new_project_user_utils import LRCNewProjectUserRunner
 from coldfront.core.project.utils_.new_project_user_utils import NewProjectUserRunner
@@ -89,6 +91,10 @@ class TestCommonRunnerMixin(object):
     def _assert_post_state(self):
         """Assert that the relevant objects have the expected state,
         assuming that the runner has run successfully."""
+        active_allocation_users = AllocationUser.objects.filter(
+            allocation=self.allocation, user=self.user, status__name='Active')
+        self.assertEqual(active_allocation_users.count(), 1)
+
         cluster_access_requests = ClusterAccessRequest.objects.filter(
             allocation_user__user=self.user, status__name='Pending - Add')
         self.assertEqual(cluster_access_requests.count(), 1)
@@ -97,6 +103,10 @@ class TestCommonRunnerMixin(object):
         """Assert that the relevant objects have the expected state,
         assuming that the runner has either not run or not run
         successfully."""
+        active_allocation_users = AllocationUser.objects.filter(
+            allocation=self.allocation, user=self.user, status__name='Active')
+        self.assertEqual(active_allocation_users.count(), 0)
+
         cluster_access_requests = ClusterAccessRequest.objects.filter(
             allocation_user__user=self.user)
         self.assertFalse(cluster_access_requests.exists())
@@ -204,6 +214,26 @@ class TestCommonRunnerMixin(object):
             runner = self._runner_factory.get_runner(
                 self.project_user, NewProjectUserSource.ADDED)
         runner.run()
+
+        self._assert_post_state()
+
+    def test_updates_existent_allocation_user(self):
+        """Test that the runner updates an AllocationUser object if it
+        already exists."""
+        self._assert_pre_state()
+
+        removed_status = AllocationUserStatusChoice.objects.get(name='Removed')
+        allocation_user = AllocationUser.objects.create(
+            allocation=self.allocation, user=self.user, status=removed_status)
+
+        with enable_deployment(self._deployment_name):
+            runner = self._runner_factory.get_runner(
+                self.project_user, NewProjectUserSource.ADDED)
+        runner.run()
+
+        allocation_user.refresh_from_db()
+        active_status = AllocationUserStatusChoice.objects.get(name='Active')
+        self.assertEqual(allocation_user.status, active_status)
 
         self._assert_post_state()
 
