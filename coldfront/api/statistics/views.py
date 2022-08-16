@@ -703,7 +703,7 @@ def can_submit_job(request, job_cost, user_id, account_id):
         return client_error(message)
 
     # Allow all jobs for accounts that are not intended to have
-    # computing allowances (e.g., departmental cluster-specific projects).
+    # computing allowances (e.g., departmental cluster-specific accounts).
     computing_allowance_project_prefixes = \
         get_computing_allowance_project_prefixes()
     if not account.name.startswith(computing_allowance_project_prefixes):
