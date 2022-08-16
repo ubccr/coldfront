@@ -32,6 +32,7 @@ from coldfront.core.allocation.models import AllocationUserAttributeUsage
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
+from coldfront.core.resource.utils import get_computing_allowance_project_prefixes
 from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.statistics.models import Job
@@ -700,6 +701,13 @@ def can_submit_job(request, job_cost, user_id, account_id):
     except Project.DoesNotExist:
         message = f'No account exists with account_id {account_id}.'
         return client_error(message)
+
+    # Allow all jobs for accounts that are not intended to have
+    # computing allowances (e.g., departmental cluster-specific projects).
+    computing_allowance_project_prefixes = \
+        get_computing_allowance_project_prefixes()
+    if not account.name.startswith(computing_allowance_project_prefixes):
+        return affirmative
 
     # Validate that needed accounting objects exist.
     try:
