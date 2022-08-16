@@ -1,0 +1,184 @@
+#------------------------------------------------------------------------------
+# Base settings
+#------------------------------------------------------------------------------
+
+# If you're setting up a production instance, DELETE THE LINE BELOW.
+DEBUG=True
+
+# SECRET_KEY is used to provide cryptographic signing, and should be set to a unique,
+# unpredictable value. If you don't provide this, one will be generated each time
+# ColdFront starts. See https://docs.djangoproject.com/en/3.1/ref/settings/#secret-key.
+# SECRET_KEY=CRYPTOGRAPHIC_SECRET_KEY
+
+
+#------------------------------------------------------------------------------
+# Core settings
+#------------------------------------------------------------------------------
+
+# Enable administrators to login as other users, default True
+# ENABLE_SU=True
+
+# Enable or disable project reviews, default True
+# PROJECT_ENABLE_PROJECT_REVIEW=True
+
+# Enable or disable allocation renewals, default True
+# ALLOCATION_ENABLE_ALLOCATION_RENEWAL=True
+
+# 	Default number of days an allocation is active for, default 365
+# ALLOCATION_DEFAULT_ALLOCATION_LENGTH=365
+
+# 	Enable or disable allocation change requests, default True
+# ALLOCATION_ENABLE_CHANGE_REQUESTS_BY_DEFAULT=True
+
+# 	List of days users can request extensions in an allocation change request, default 30,60,90
+# ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS=30,60,90
+
+# 	Allow user to select account name for allocation, default False
+# ALLOCATION_ACCOUNT_ENABLED=False
+
+# 	Controls the ordering of parent resources for an allocation (if allocation has
+#   multiple resources). Should be a list of field names suitable for Django QuerySet
+#   order_by method, default is ['-is_allocatable', 'name']; i.e. prefer Resources
+#   with is_allocatable field set, ordered by name of the Resource.
+# ALLOCATION_RESOURCE_ORDERING=['-is_allocatable', 'name']
+
+#	Enable or disable invoices, default True
+# INVOICE_ENABLED=True
+
+#	The URL to your Open OnDemand installation
+# ONDEMAND_URL=ONDEMAND_URL
+
+#	Custom message when user fails to login. Here you can paint a custom link to your user account portal
+# LOGIN_FAIL_MESSAGE="Login Failed"
+
+#------------------------------------------------------------------------------
+# General Center Information
+#------------------------------------------------------------------------------
+# The display name of your center. Used in emails, among other places.
+CENTER_NAME = 'Harvard FASRC'
+
+# The URL of your help ticketing system. This is the url to which the "Help" link
+# in the nav bar will redirect.
+CENTER_HELP_URL = 'https://portal.rc.fas.harvard.edu/rcrt/submit_ticket'
+
+# The URL of the article describing project renewals
+#CENTER_PROJECT_RENEWAL_HELP_URL = 'https://portal.rc.fas.harvard.edu/rcrt/submit_ticket'
+
+# The base URL of your center.
+#CENTER_BASE_URL = 'https://www.rc.fas.harvard.edu/'
+
+#------------------------------------------------------------------------------
+# Locale settings
+#------------------------------------------------------------------------------
+# Default values are provided below; uncomment and alter if you want to change them.
+#LANGUAGE_CODE = 'en-us'
+#TIME_ZONE = 'America/New_York'
+
+
+
+# Path to store static assets. These are currently set to the defaults used in the
+# FASRC Coldfront Docker containers.
+STATIC_ROOT=/static/
+LOCALDATA_ROOT=/usr/src/app
+
+COLDFRONT_DATA_LOAD=/n/coldfront
+
+#------------------------------------------------------------------------------
+# Session settings
+#------------------------------------------------------------------------------
+# Set to True in production when using HTTPS
+SESSION_COOKIE_SECURE=True
+
+
+#------------------------------------------------------------------------------
+# Custom Database settings
+#------------------------------------------------------------------------------
+# None of the below settings are needed if using a sqlite database for testing.
+
+# # username for database login
+# DB_USER=coldfront
+# # Database connection. Default is sqlite:///coldfront.db
+# DB_URL=mysql://user:password@127.0.0.1:3306/database
+# # password for database login
+# DB_PASS=MYPASSWORD
+# # host container for database
+# DB_HOST=coldfront-db
+
+
+
+#------------------------------------------------------------------------------
+# LDAP Configs
+#------------------------------------------------------------------------------
+# set the following if you are using LDAP integration
+
+# # Enable LDAP Authentication Backend, default False
+# PLUGIN_AUTH_LDAP=False
+
+# # URI of LDAP server
+# AUTH_LDAP_SERVER_URI=ldaps://my.ldap:636
+
+# # User search base dn
+# AUTH_LDAP_USER_SEARCH_BASE='OU=Domain Users,dc=rc,dc=domain'
+
+# # Enable/disable start tls, default True
+# AUTH_LDAP_START_TLS=False
+
+# # Authentication will leave the LDAP connection bound as the authenticating user, rather than forcing it to re-bind, default False
+# AUTH_LDAP_BIND_AS_AUTHENTICATING_USER=False
+
+# # The distinguished name to use when binding to the LDAP server
+# AUTH_LDAP_BIND_DN='CN=xdmodldap,OU=Service Accounts,OU=Domain Users,DC=rc,DC=domain'
+
+# # The password to use AUTH_LDAP_BIND_DN
+# AUTH_LDAP_BIND_PASSWORD='password_in_singlequotes'
+
+# # Enable/disable mirroring of groups, default True
+# AUTH_LDAP_MIRROR_GROUPS=True
+
+# # Group search base dn
+# AUTH_LDAP_GROUP_SEARCH_BASE='OU=Domain Groups,dc=rc,dc=domain'
+
+
+
+#------------------------------------------------------------------------------
+# FASRC-specific Plugins
+#------------------------------------------------------------------------------
+# If using the IFX plugin, set PLUGIN_IFX to True. This is not commented out here because
+# IFX is critical enough to FASRC Coldfront that it should be the assumed default.
+PLUGIN_IFX=True
+
+# If using the FASRC plugin, uncomment the lines below and add the neo4j password.
+# PLUGIN_FASRC=True
+# neo4jp=NEO4J_INSTANCE_PASSWORD
+
+#------------------------------------------------------------------------------
+# Starfish Plugin
+#------------------------------------------------------------------------------
+# If using the SFtoCF plugin, uncomment the lines below and add the starfish account
+# details.
+# PLUGIN_SFTOCF=True
+# SFUSER=STARFISH_ACCOUNT_USERNAME
+# SFPASS=STARFISH_ACCOUNT_PASSWORD
+
+#------------------------------------------------------------------------------
+# Email
+#------------------------------------------------------------------------------
+# All of the following variables must be set and EMAIL_ENABLED uncommented in order
+# to use email
+
+# EMAIL_ENABLED=True
+
+# EMAIL_SUBJECT_PREFIX="[coldfront]"
+# EMAIL_HOST='hostaddress.domain.university.edu'
+# EMAIL_SENDER='default_sender@domain.university.edu'
+# EMAIL_TICKET_SYSTEM_ADDRESS=tickets@domain.university.edu
+# EMAIL_DIRECTOR_EMAIL_ADDRESS=director@domain.university.edu'
+# EMAIL_PROJECT_REVIEW_CONTACT='director@domain.university.edu'
+
+# # LIST  can be multiple values
+# EMAIL_ADMIN_LIST=admin1@domain.university.edu,admin2@domain.university.edu
+# EMAIL_DEVELOPMENT_EMAIL_LIST=developer1@domain.university.edu,developer2@domain.university.edu
+
+# # The following items are part of the standard email templates
+EMAIL_OPT_OUT_INSTRUCTION_URL='https://coldfront.rc.fas.harvard.edu/opt_out/'
+EMAIL_SIGNATURE='FAS Research Computing'
