@@ -3,7 +3,9 @@ from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationStatusChoice
+from coldfront.core.allocation.utils import get_or_create_active_allocation_user
 from coldfront.core.allocation.utils import get_project_compute_allocation
+from coldfront.core.allocation.utils_.cluster_access_utils import ClusterAccessRequestRunner
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
 from coldfront.core.project.models import ProjectUser
@@ -14,7 +16,6 @@ from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.models import VectorProjectAllocationRequest
 from coldfront.core.project.signals import new_project_request_denied
 from coldfront.core.project.utils import send_added_to_project_notification_email
-from coldfront.core.project.utils_.project_cluster_access_request_runner import ProjectClusterAccessRequestRunner
 from coldfront.core.project.utils_.request_processing_utils import create_allocation_users
 from coldfront.core.project.utils_.request_processing_utils import create_cluster_access_request_for_requester
 from coldfront.core.project.utils_.request_processing_utils import create_project_users
@@ -79,8 +80,12 @@ def add_vector_user_to_designated_savio_project(user_obj):
             project_user_obj.status = active_status
             project_user_obj.save()
 
+        allocation_obj = get_project_compute_allocation(project_obj)
+        allocation_user_obj = get_or_create_active_allocation_user(
+            allocation_obj, user_obj)
+
         # Request cluster access for the user.
-        request_runner = ProjectClusterAccessRequestRunner(project_user_obj)
+        request_runner = ClusterAccessRequestRunner(allocation_user_obj)
         request_runner.run()
 
     # Send a notification email to the user if the user was not already a

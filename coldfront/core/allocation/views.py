@@ -3,43 +3,32 @@ import logging
 from datetime import date
 
 from dateutil.relativedelta import relativedelta
-from decimal import Decimal
 from django import forms
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
-from django.core.exceptions import ValidationError
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.core.validators import validate_email
-from django.core.validators import ValidationError
-from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.db.models.query import QuerySet
 from django.forms import formset_factory
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, render
-from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
 from django.utils.html import format_html, mark_safe
 from django.views import View
-from django.views.generic import DetailView, ListView, TemplateView
+from django.views.generic import ListView, TemplateView
 from django.views.generic.edit import CreateView, FormView, UpdateView
 
 from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationAddUserForm,
                                              AllocationAttributeDeleteForm,
-                                             AllocationClusterAccountRequestActivationForm,
-                                             AllocationClusterAccountUpdateStatusForm,
                                              AllocationForm,
                                              AllocationInvoiceNoteDeleteForm,
                                              AllocationInvoiceUpdateForm,
                                              AllocationRemoveUserForm,
-                                             AllocationRequestClusterAccountForm,
                                              AllocationReviewUserForm,
                                              AllocationSearchForm,
-                                             AllocationUpdateForm,
-                                             ClusterRequestSearchForm)
+                                             AllocationUpdateForm)
 from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationAttribute,
                                               AllocationAttributeType,
@@ -47,26 +36,17 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationUser,
                                               AllocationUserAttribute,
                                               AllocationUserNote,
-                                              AllocationUserStatusChoice,
-                                              ClusterAccessRequest,
-                                              ClusterAccessRequestStatusChoice)
+                                              AllocationUserStatusChoice)
 from coldfront.core.allocation.signals import (allocation_activate_user,
                                                allocation_remove_user)
 from coldfront.core.allocation.utils import (generate_guauge_data_from_usage,
-                                             get_user_resources,
-                                             set_allocation_user_attribute_value)
+                                             get_user_resources)
 from coldfront.core.billing.models import BillingActivity
 from coldfront.core.project.models import (Project, ProjectUser,
                                            ProjectUserStatusChoice)
-from coldfront.core.project.utils_.project_cluster_access_request_runner import ProjectClusterAccessRequestRunner
-from coldfront.core.allocation.utils_.cluster_access_utils import \
-    ClusterAccessRequestCompleteRunner, \
-    ClusterAccessRequestDenialRunner
 from coldfront.core.resource.models import Resource
-from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.user.utils import access_agreement_signed
 from coldfront.core.utils.common import get_domain_url, import_from_settings
-from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.mail import send_email_template
 
 from flags.state import flag_enabled
