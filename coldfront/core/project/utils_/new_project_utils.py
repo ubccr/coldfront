@@ -3,7 +3,6 @@ from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationStatusChoice
-from coldfront.core.allocation.utils import get_or_create_active_allocation_user
 from coldfront.core.allocation.utils import get_project_compute_allocation
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
@@ -16,6 +15,9 @@ from coldfront.core.project.models import VectorProjectAllocationRequest
 from coldfront.core.project.signals import new_project_request_denied
 from coldfront.core.project.utils import send_added_to_project_notification_email
 from coldfront.core.project.utils_.project_cluster_access_request_runner import ProjectClusterAccessRequestRunner
+from coldfront.core.project.utils_.request_processing_utils import create_allocation_users
+from coldfront.core.project.utils_.request_processing_utils import create_cluster_access_request_for_requester
+from coldfront.core.project.utils_.request_processing_utils import create_project_users
 from coldfront.core.resource.models import Resource
 from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
@@ -238,17 +240,19 @@ class ProjectProcessingRunner(object):
                 self.request_obj.pool):
             self.update_existing_user_allocations(new_value)
 
-        self.create_project_users()
+        requester = self.request_obj.requester
+        pi = self.request_obj.pi
+
+        create_project_users(project, requester, pi)
         requester_allocation_user, pi_allocation_user = \
-            self.create_allocation_users(allocation)
+            create_allocation_users(allocation, requester, pi)
 
         # If the AllocationUser for the requester was not created, then
         # the PI was the requester.
         if requester_allocation_user is None:
-            self.create_cluster_access_request_for_requester(
-                pi_allocation_user)
+            create_cluster_access_request_for_requester(pi_allocation_user)
         else:
-            self.create_cluster_access_request_for_requester(
+            create_cluster_access_request_for_requester(
                 requester_allocation_user)
 
         self.complete_request()
@@ -273,78 +277,6 @@ class ProjectProcessingRunner(object):
                 name='Approved - Complete')
         self.request_obj.completion_time = utc_now_offset_aware()
         self.request_obj.save()
-
-    def create_allocation_users(self, allocation):
-        """Create active AllocationUsers for the requester and/or the
-        PI. Return the created objects (requester and then PI)."""
-        requester = self.request_obj.requester
-        pi = self.request_obj.pi
-        requester_allocation_user = None
-        if requester.pk != pi.pk:
-            requester_allocation_user = get_or_create_active_allocation_user(
-                allocation, requester)
-        pi_allocation_user = get_or_create_active_allocation_user(
-            allocation, pi)
-        return requester_allocation_user, pi_allocation_user
-
-    @staticmethod
-    def create_cluster_access_request_for_requester(allocation_user):
-        """Create a 'Cluster Account Status' for the given
-        AllocationUser corresponding to the request's requester."""
-        allocation_attribute_type = AllocationAttributeType.objects.get(
-            name='Cluster Account Status')
-        pending_add = 'Pending - Add'
-        # get_or_create's 'defaults' arguments are only considered if a create
-        # is required.
-        defaults = {
-            'value': pending_add,
-        }
-        allocation_user_attribute, created = \
-            allocation_user.allocationuserattribute_set.get_or_create(
-                allocation_attribute_type=allocation_attribute_type,
-                allocation=allocation_user.allocation,
-                defaults=defaults)
-        if not created:
-            if allocation_user_attribute.value == 'Active':
-                message = (
-                    f'AllocationUser {allocation_user.pk} for requester '
-                    f'{allocation_user.user.pk} unexpectedly already has '
-                    f'active cluster access status.')
-                logger.warning(message)
-            else:
-                allocation_user_attribute.value = pending_add
-                allocation_user_attribute.save()
-
-    def create_project_users(self):
-        """Create active ProjectUsers with the appropriate roles for the
-        requester and/or the PI."""
-        project = self.request_obj.project
-        requester = self.request_obj.requester
-        pi = self.request_obj.pi
-        status = ProjectUserStatusChoice.objects.get(name='Active')
-
-        if requester.pk != pi.pk:
-            role = ProjectUserRoleChoice.objects.get(name='Manager')
-            if project.projectuser_set.filter(user=requester).exists():
-                requester_project_user = project.projectuser_set.get(
-                    user=requester)
-                requester_project_user.role = role
-                requester_project_user.status = status
-                requester_project_user.save()
-            else:
-                ProjectUser.objects.create(
-                    project=project, user=requester, role=role, status=status)
-
-        role = ProjectUserRoleChoice.objects.get(
-            name='Principal Investigator')
-        if project.projectuser_set.filter(user=pi).exists():
-            pi_project_user = project.projectuser_set.get(user=pi)
-            pi_project_user.role = role
-            pi_project_user.status = status
-            pi_project_user.save()
-        else:
-            ProjectUser.objects.create(
-                project=project, user=pi, role=role, status=status)
 
     def get_user_messages(self):
         """A getter for this instance's user_messages."""
