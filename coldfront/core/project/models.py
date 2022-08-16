@@ -263,4 +263,13 @@ class ProjectAttribute(TimeStampedModel):
                 raise ValidationError(
                     'Invalid Value "%s" for "%s". Date must be in format YYYY-MM-DD' % (self.value, self.proj_attr_type.name))
     
+class ProjectAttributeUsage(TimeStampedModel):
+    """ ProjectAttributeUsage. """
+    project_attribute = models.OneToOneField(
+        ProjectAttribute, on_delete=models.CASCADE, primary_key=True)
+    value = models.FloatField(default=0)
+    history = HistoricalRecords()
+
+    def __str__(self):
+        return '{}: {}'.format(self.project_attribute.proj_attr_type.name, self.value)
     
