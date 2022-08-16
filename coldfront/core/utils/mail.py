@@ -2,6 +2,7 @@ import logging
 from smtplib import SMTPException
 
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 
@@ -74,3 +75,14 @@ def send_email_template(subject, template_name, context, sender,
                       receiver_list,
                       cc=cc,
                       html_body=html_body)
+
+
+def dummy_email_address():
+    """Return the first email address in the setting
+    EMAIL_DEVELOPMENT_EMAIL_LIST. Raise an exception if it is empty."""
+    dev_email_list = settings.EMAIL_DEVELOPMENT_EMAIL_LIST
+    if not dev_email_list:
+        raise ImproperlyConfigured(
+            'There should be at least one address in '
+            'EMAIL_DEVELOPMENT_EMAIL_LIST.')
+    return dev_email_list[0]

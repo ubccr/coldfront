@@ -1,0 +1,122 @@
+{% extends "common/base.html" %}
+{% load feature_flags %}
+{% load socialaccount %}
+
+{% load common_tags %}
+{% load static %}
+
+{% block title %}
+Log In
+{% endblock %}
+
+{% block content %}
+
+<h1>Log In: I am a...</h1>
+
+<div class="row">
+  <div class="col-sm-6 col-md-4">
+    <hr>
+    <div class="thumbnail">
+      <img src="{% static 'core/portal/imgs/berkeley_lab_logo.png' %}" alt="berkeley_lab_logo" height="64" vspace="16">
+      <hr>
+      <div class="caption">
+        <h3>Berkeley Lab User</h3>
+        <p>
+          I have a Berkeley Lab Identity.
+          <br><br>
+        </p>
+        <p>
+          <a href="{% provider_login_url 'cilogon' process='login' auth_params='idphint=urn:mace:incommon:lbl.gov' %}" class="btn btn-primary btn-lg" role="button">
+            <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
+            Log In
+          </a>
+        </p>
+        <hr>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-md-4">
+    <hr>
+    <div class="thumbnail">
+      <img src="{% static 'core/portal/imgs/uc_berkeley_logo_words.png' %}" alt="uc_berkeley_logo_words" height="64" vspace="16">
+      <hr>
+      <div class="caption">
+        <h3>UC Berkeley Collaborator</h3>
+        <p>
+          I do not have a Berkeley Lab Identity, but I do have a CalNet ID.
+        </p>
+        <p>
+          <a href="{% provider_login_url 'cilogon' process='login' auth_params='idphint=urn:mace:incommon:berkeley.edu' %}" class="btn btn-secondary btn-lg" role="button">
+            <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
+            Log In
+          </a>
+        </p>
+        <hr>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-md-4">
+    <hr>
+    <div class="thumbnail">
+      <img src="{% static 'core/portal/imgs/cilogon_logo.png' %}" alt="cilogon_logo" height="64" vspace="16">
+      <hr>
+      <div class="caption">
+        <h3>External Collaborator</h3>
+        <p>
+          I do not have a Berkeley Lab Identity, and I do not have a CalNet ID.
+        </p>
+        <p>
+          <a href="{% provider_login_url 'cilogon' process='login' auth_params='initialidp=https://accounts.google.com/o/oauth2/auth' %}" class="btn btn-secondary btn-lg" role="button">
+            <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
+            Log In
+          </a>
+        </p>
+        <hr>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mb-3" id="hintsAccordion">
+  <div class="card">
+    <div class="card-header">
+      <a id="expand_button" role="button" class="card-link" data-toggle="collapse" href="#hintsCollapse">
+        <i class="fas fa-info-circle"></i>
+        Hints
+      </a>
+    </div>
+    <div id="hintsCollapse" class="collapse" data-parent="#hintsAccordion">
+      <div class="card-body">
+        <ul>
+          <li>
+            Authentication is managed by
+            <a href="https://www.cilogon.org/">CILogon</a>. You will be
+            redirected there, where you will select a provider to authenticate
+            with (<b>Lawrence Berkeley National Laboratory</b> for most users).
+          </li>
+          <li>
+            If you have a Berkeley Lab Identity, please authenticate using the
+            first option above. Lab users who do not use their Lab Identity may
+            experience delays when requesting cluster access.
+          </li>
+          <li>
+            External collaborators should select the provider of their home
+            institution. If your provider is not listed, select the
+            <b>Google</b> provider.
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+
+{% block javascript %}
+{{ block.super }}
+<script>
+    $("#navbar-main > ul > li.active").removeClass("active");
+    $("#navbar-home").addClass("active");
+  </script>
+{% endblock %}

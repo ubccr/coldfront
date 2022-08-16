@@ -80,6 +80,13 @@ if SENTRY_DSN:
     ignore_logger('coldfront.core.utils.middleware')
 
 #------------------------------------------------------------------------------
+# Django All-Auth settings
+#------------------------------------------------------------------------------
+
+CILOGON_APP_CLIENT_ID = '{{ cilogon_app_client_id }}'
+CILOGON_APP_SECRET = '{{ cilogon_app_secret }}'
+
+#------------------------------------------------------------------------------
 # django-constance settings
 #------------------------------------------------------------------------------
 
@@ -107,10 +114,12 @@ FLAGS = {
     'ALLOCATION_RENEWAL_FOR_NEXT_PERIOD_REQUESTABLE': [
         {'condition': 'during month', 'value': '{{ flag_next_period_renewal_requestable_month }}'},
     ],
+    'BASIC_AUTH_ENABLED': [{'condition': 'boolean', 'value': {{ flag_basic_auth_enabled }}}],
     'BRC_ONLY': [{'condition': 'boolean', 'value': {{ flag_brc_enabled }}}],
     'LRC_ONLY': [{'condition': 'boolean', 'value': {{ flag_lrc_enabled }}}],
     'SECURE_DIRS_REQUESTABLE': [{'condition': 'boolean', 'value': {{ flag_brc_enabled }}}],
     'SERVICE_UNITS_PURCHASABLE': [{'condition': 'boolean', 'value': {{ flag_brc_enabled }}}],
+    'SSO_ENABLED': [{'condition': 'boolean', 'value': {{ flag_sso_enabled }}}],
 }
 
 #------------------------------------------------------------------------------

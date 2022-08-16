@@ -45,7 +45,8 @@ class UserProfile(models.Model):
 
 
 class EmailAddress(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='emailaddress_user')
     email = models.EmailField(
         'email address',
         unique=True,

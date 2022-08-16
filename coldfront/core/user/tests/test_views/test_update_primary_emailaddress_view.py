@@ -1,3 +1,5 @@
+from flags.state import enable_flag
+
 from coldfront.core.user.models import EmailAddress
 from coldfront.core.user.tests.utils import TestUserBase
 from django.contrib.auth.models import User
@@ -14,6 +16,7 @@ class TestUpdateUserPrimaryEmailAddress(TestUserBase):
 
     def setUp(self):
         """Set up test data."""
+        enable_flag('BASIC_AUTH_ENABLED')
         super().setUp()
 
         self.password = 'password'
