@@ -1,25 +1,147 @@
 from decimal import Decimal
-
-from django.db import transaction
-
-from coldfront.core.allocation.models import ClusterAccessRequestStatusChoice, \
-    ClusterAccessRequest
-from coldfront.core.allocation.models import AllocationAttributeType
-from coldfront.core.allocation.models import AllocationUserAttribute
-from coldfront.core.allocation.utils import set_allocation_user_attribute_value
-from coldfront.core.project.models import ProjectUser
-
-from coldfront.core.resource.utils import get_primary_compute_resource
-from coldfront.core.statistics.models import ProjectUserTransaction
-from coldfront.core.utils.common import import_from_settings, \
-    utc_now_offset_aware
-from coldfront.core.utils.email.email_strategy import SendEmailStrategy
-from coldfront.core.utils.mail import send_email_template
-from django.conf import settings
-
 import logging
 
+from django.conf import settings
+from django.db import transaction
+
+
+from coldfront.core.allocation.models import AllocationAttributeType
+from coldfront.core.allocation.models import AllocationUser
+from coldfront.core.allocation.models import AllocationUserAttribute
+from coldfront.core.allocation.models import AllocationUserStatusChoice
+from coldfront.core.allocation.models import ClusterAccessRequest
+from coldfront.core.allocation.models import ClusterAccessRequestStatusChoice
+from coldfront.core.allocation.utils import review_cluster_access_requests_url
+from coldfront.core.allocation.utils import set_allocation_user_attribute_value
+from coldfront.core.project.models import ProjectUser
+from coldfront.core.resource.utils import get_primary_compute_resource
+from coldfront.core.statistics.models import ProjectUserTransaction
+from coldfront.core.utils.common import import_from_settings
+from coldfront.core.utils.common import utc_now_offset_aware
+from coldfront.core.utils.email.email_strategy import EmailStrategy
+from coldfront.core.utils.email.email_strategy import SendEmailStrategy
+from coldfront.core.utils.mail import send_email_template
+
+
 logger = logging.getLogger(__name__)
+
+
+class ClusterAccessRequestRunner(object):
+    """An object that performs necessary database checks and updates
+    when access to a project on the cluster is requested for a given
+    user."""
+
+    def __init__(self, allocation_user_obj, email_strategy=None):
+        """Validate inputs."""
+        assert isinstance(allocation_user_obj, AllocationUser)
+        assert (
+            allocation_user_obj.status ==
+            AllocationUserStatusChoice.objects.get(name='Active'))
+        self._allocation_user_obj = allocation_user_obj
+        self._allocation_user_attribute_obj = None
+        self._allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Cluster Account Status')
+
+        self._project_obj = self._allocation_user_obj.allocation.project
+        self._user_obj = self._allocation_user_obj.user
+
+        if email_strategy is not None:
+            assert isinstance(email_strategy, EmailStrategy)
+            self._email_strategy = email_strategy
+        else:
+            self._email_strategy = SendEmailStrategy()
+
+        self._success_messages = []
+        self._warning_messages = []
+
+    def run(self):
+        """Perform checks and updates."""
+        with transaction.atomic():
+            self._assert_no_existing_cluster_access()
+            self._request_cluster_access()
+        self._log_success_messages()
+        self._send_emails_safe()
+
+    def _assert_no_existing_cluster_access(self):
+        """Assert that the User does not already have pending or active
+        access to the Project on the cluster."""
+        has_pending_or_active_status = \
+            self._allocation_user_obj.allocationuserattribute_set.filter(
+                allocation_attribute_type=self._allocation_attribute_type,
+                value__in=['Pending - Add', 'Processing', 'Active']).exists()
+        message = (
+            f'User {self._user_obj.username} already has pending or active '
+            f'access to the cluster under Project {self._project_obj.name}.')
+        assert not has_pending_or_active_status, message
+
+    def _create_cluster_access_request(self):
+        """Create a ClusterAccessRequest with status 'Pending - Add'."""
+        request = ClusterAccessRequest.objects.create(
+            allocation_user=self._allocation_user_obj,
+            status=ClusterAccessRequestStatusChoice.objects.get(
+                name='Pending - Add'),
+            request_time=utc_now_offset_aware(),
+            host_user=self._user_obj.userprofile.host_user,
+            billing_activity=self._user_obj.userprofile.billing_activity)
+        message = (
+            f'Created a ClusterAccessRequest {request.pk} for user '
+            f'{self._user_obj.pk} and Project {self._project_obj.pk}.')
+        self._success_messages.append(message)
+
+    def _create_pending_allocation_user_attribute(self):
+        """Create or update an AllocationUserAttribute for the
+        AllocationUser with type 'Cluster Account Status' to have status
+        'Pending - Add'."""
+        type_name = self._allocation_attribute_type.name
+        value = 'Pending - Add'
+        self._allocation_user_attribute_obj = \
+            set_allocation_user_attribute_value(
+                self._allocation_user_obj, type_name, value)
+        message = (
+            f'Created or updated a AllocationUserAttribute of type '
+            f'"{type_name}" to have value {value} for User '
+            f'{self._user_obj.pk} and Project {self._project_obj.pk}.')
+        self._success_messages.append(message)
+
+    def _log_success_messages(self):
+        """Write success messages to the log.
+
+        Catch all exceptions to prevent rolling back any enclosing
+        transaction.
+
+        Warning: If the enclosing transaction fails, the already-written
+        log messages are not revoked."""
+        try:
+            for message in self._success_messages:
+                logger.info(message)
+        except Exception:
+            pass
+
+    def _request_cluster_access(self):
+        """Request cluster access for the User under the Project."""
+        self._create_pending_allocation_user_attribute()
+        self._create_cluster_access_request()
+
+    def _send_emails(self):
+        """Email cluster administrators, notifying them of the new
+        request."""
+        email_method = send_new_cluster_access_request_notification_email
+        email_args = (self._allocation_user_obj,)
+        self._email_strategy.process_email(email_method, *email_args)
+
+    def _send_emails_safe(self):
+        """Send emails.
+
+        Catch all exceptions to prevent rolling back any enclosing
+        transaction.
+        """
+        try:
+            self._send_emails()
+        except Exception as e:
+            message = (
+                f'Encountered unexpected exception when sending notification '
+                f'emails. Details: \n{e}')
+            logger.exception(message)
 
 
 class ClusterAccessRequestCompleteRunner(object):
@@ -322,3 +444,28 @@ def send_denial_cluster_access_emails(user, project, allocation):
             settings.EMAIL_SENDER,
             [user.email],
             cc=cc_list)
+
+
+def send_new_cluster_access_request_notification_email(allocation_user):
+    """Email admins notifying them of a new cluster access request for
+    the given AllocationUser."""
+    email_enabled = import_from_settings('EMAIL_ENABLED', False)
+    if not email_enabled:
+        return
+
+    subject = 'New Cluster Access Request'
+    template_name = 'email/new_cluster_access_request.txt'
+
+    user = allocation_user.user
+    user_string = f'{user.first_name} {user.last_name} ({user.email})'
+
+    context = {
+        'project_name': allocation_user.allocation.project.name,
+        'user_string': user_string,
+        'review_url': review_cluster_access_requests_url(),
+    }
+
+    sender = settings.EMAIL_SENDER
+    receiver_list = settings.EMAIL_ADMIN_LIST
+
+    send_email_template(subject, template_name, context, sender, receiver_list)
