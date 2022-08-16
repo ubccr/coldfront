@@ -3,6 +3,9 @@ from split_settings.tools import optional, include
 from coldfront.config.env import ENV, PROJECT_ROOT
 
 
+# enable correct url to be displayed in e.g. email correspondence
+USE_X_FORWARDED_HOST = True
+
 # ColdFront split settings
 coldfront_configs = [
     'base.py',
