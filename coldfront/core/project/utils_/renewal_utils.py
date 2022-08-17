@@ -23,6 +23,7 @@ from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.common import project_detail_url
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.common import validate_num_service_units
+from coldfront.core.utils.email.email_strategy import validate_email_strategy_or_get_default
 from coldfront.core.utils.mail import send_email_template
 from collections import namedtuple
 from decimal import Decimal
@@ -819,7 +820,7 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
     """An object that performs necessary database changes when an
     AllocationRenewalRequest is processed."""
 
-    def __init__(self, request_obj, num_service_units):
+    def __init__(self, request_obj, num_service_units, email_strategy=None):
         super().__init__(request_obj)
         self.request_obj.allocation_period.assert_started()
         self.request_obj.allocation_period.assert_not_ended()
@@ -828,6 +829,9 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
         self.assert_request_status(expected_status)
         validate_num_service_units(num_service_units)
         self.num_service_units = num_service_units
+
+        self._email_strategy = validate_email_strategy_or_get_default(
+            email_strategy=email_strategy)
 
     def run(self):
         request = self.request_obj
@@ -843,7 +847,7 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
 
             create_project_users(
                 post_project, request.requester, request.pi,
-                AllocationRenewalRequest)
+                AllocationRenewalRequest, email_strategy=self._email_strategy)
 
             self.update_pre_projects_of_future_period_requests()
 
@@ -938,13 +942,13 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
 
     def send_email(self):
         """Send a notification email to the requester and PI."""
-        request = self.request_obj
         try:
-            send_allocation_renewal_request_processing_email(
-                request, self.num_service_units)
+            email_method = send_allocation_renewal_request_processing_email
+            email_args = (self.request_obj, self.num_service_units)
+            self._email_strategy.process_email(email_method, *email_args)
         except Exception as e:
-            logger.error('Failed to send notification email. Details:')
-            logger.exception(e)
+            logger.exception(
+                f'Failed to send notification email. Details:\n{e}')
 
     def update_allocation(self, old_project_status):
         """Perform allocation-related handling. Use the given

@@ -17,8 +17,8 @@ from coldfront.core.resource.utils import get_primary_compute_resource
 from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.common import utc_now_offset_aware
-from coldfront.core.utils.email.email_strategy import EmailStrategy
 from coldfront.core.utils.email.email_strategy import SendEmailStrategy
+from coldfront.core.utils.email.email_strategy import validate_email_strategy_or_get_default
 from coldfront.core.utils.mail import send_email_template
 
 
@@ -50,11 +50,8 @@ class ClusterAccessRequestRunner(object):
         self._project_obj = self._allocation_user_obj.allocation.project
         self._user_obj = self._allocation_user_obj.user
 
-        if email_strategy is not None:
-            assert isinstance(email_strategy, EmailStrategy)
-            self._email_strategy = email_strategy
-        else:
-            self._email_strategy = SendEmailStrategy()
+        self._email_strategy = validate_email_strategy_or_get_default(
+            email_strategy=email_strategy)
 
         self._success_messages = []
         self._warning_messages = []

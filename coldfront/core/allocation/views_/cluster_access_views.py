@@ -14,14 +14,12 @@ from django.views import View
 from django.views.generic import ListView
 from django.views.generic.edit import FormView
 
-from coldfront.core.allocation.forms import \
-    (AllocationClusterAccountRequestActivationForm,
-     AllocationClusterAccountUpdateStatusForm,
-     ClusterRequestSearchForm)
-from coldfront.core.allocation.models import (Allocation,
-                                              AllocationUser,
-                                              ClusterAccessRequest,
-                                              ClusterAccessRequestStatusChoice)
+from coldfront.core.allocation.forms import AllocationClusterAccountRequestActivationForm
+from coldfront.core.allocation.forms import AllocationClusterAccountUpdateStatusForm
+from coldfront.core.allocation.forms import ClusterRequestSearchForm
+from coldfront.core.allocation.models import Allocation
+from coldfront.core.allocation.models import ClusterAccessRequest
+from coldfront.core.allocation.models import ClusterAccessRequestStatusChoice
 from coldfront.core.allocation.utils_.cluster_access_utils import ClusterAccessRequestCompleteRunner
 from coldfront.core.allocation.utils_.cluster_access_utils import ClusterAccessRequestDenialRunner
 from coldfront.core.allocation.utils_.cluster_access_utils import ClusterAccessRequestRunner

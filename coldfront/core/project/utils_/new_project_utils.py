@@ -22,6 +22,7 @@ from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.common import project_detail_url
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.common import validate_num_service_units
+from coldfront.core.utils.email.email_strategy import validate_email_strategy_or_get_default
 from coldfront.core.utils.mail import send_email_template
 
 from collections import namedtuple
@@ -169,10 +170,10 @@ class ProjectProcessingRunner(object):
     """An object that performs necessary database changes when a new
     project request is processed."""
 
-    def __init__(self, request_obj):
+    def __init__(self, request_obj, email_strategy=None):
         self.request_obj = request_obj
-        # A list of messages to display to the user.
-        self.user_messages = []
+        self._email_strategy = validate_email_strategy_or_get_default(
+            email_strategy=email_strategy)
 
     def run(self):
         with transaction.atomic():
@@ -180,15 +181,12 @@ class ProjectProcessingRunner(object):
             project = self.activate_project()
 
             allocation, new_value = self.update_allocation()
-            # In the pooling case, set the Service Units of the existing users
-            # to the updated value.
-            if (isinstance(self.request_obj, SavioProjectAllocationRequest) and
-                    self.request_obj.pool):
+            if self._should_update_existing_user_allocations():
                 self.update_existing_user_allocations(new_value)
 
             create_project_users(
                 project, self.request_obj.requester, self.request_obj.pi,
-                type(self.request_obj))
+                type(self.request_obj), email_strategy=self._email_strategy)
 
             self.complete_request()
             self.send_email()
@@ -211,17 +209,23 @@ class ProjectProcessingRunner(object):
         self.request_obj.completion_time = utc_now_offset_aware()
         self.request_obj.save()
 
-    def get_user_messages(self):
-        """A getter for this instance's user_messages."""
-        return self.user_messages
-
     def send_email(self):
         """Send a notification email to the requester and PI."""
         try:
-            send_project_request_processing_email(self.request_obj)
+            email_method = send_project_request_processing_email
+            email_args = (self.request_obj,)
+            self._email_strategy.process_email(email_method, *email_args)
         except Exception as e:
-            logger.error('Failed to send notification email. Details:\n')
-            logger.exception(e)
+            logger.exception(
+                f'Failed to send notification email. Details:\n{e}')
+
+    def _should_update_existing_user_allocations(self):
+        """Return whether the Allocations of existing users on the
+        Project should be updated. Specifically, return whether the
+        request is a Savio request, and pooling is requested."""
+        return (
+            isinstance(self.request_obj, SavioProjectAllocationRequest) and
+            self.request_obj.pool)
 
     def update_allocation(self):
         """Perform allocation-related handling. This should be
@@ -245,19 +249,18 @@ class SavioProjectApprovalRunner(ProjectApprovalRunner):
     """An object that performs necessary database changes when a new
     Savio project request is approved."""
 
-    def __init__(self, request_obj, num_service_units, send_email=False):
+    def __init__(self, request_obj, num_service_units, email_strategy=None):
         validate_num_service_units(num_service_units)
         self.num_service_units = num_service_units
         super().__init__(request_obj)
         if self.request_obj.allocation_period:
             self.request_obj.allocation_period.assert_not_ended()
-        # Note: send_email is already the name of a method.
-        self.can_send_email = bool(send_email)
+        self._email_strategy = validate_email_strategy_or_get_default(
+            email_strategy=email_strategy)
 
     def run(self):
         self.approve_request()
-        if self.can_send_email:
-            self.send_email()
+        self.send_email()
 
     def approve_request(self):
         """Set the status of the request to 'Approved - Scheduled' and
@@ -270,23 +273,23 @@ class SavioProjectApprovalRunner(ProjectApprovalRunner):
 
     def send_email(self):
         """Send a notification email to the requester and PI."""
-        request = self.request_obj
         try:
-            send_project_request_approval_email(
-                request, self.num_service_units)
+            email_method = send_project_request_approval_email
+            email_args = (self.request_obj, self.num_service_units)
+            self._email_strategy.process_email(email_method, *email_args)
         except Exception as e:
-            logger.error('Failed to send notification email. Details:\n')
-            logger.exception(e)
+            logger.exception(
+                f'Failed to send notification email. Details:\n{e}')
 
 
 class SavioProjectProcessingRunner(ProjectProcessingRunner):
     """An object that performs necessary database changes when a new
     Savio project request is processed."""
 
-    def __init__(self, request_obj, num_service_units):
+    def __init__(self, request_obj, num_service_units, email_strategy=None):
         validate_num_service_units(num_service_units)
         self.num_service_units = num_service_units
-        super().__init__(request_obj)
+        super().__init__(request_obj, email_strategy=email_strategy)
         if self.request_obj.allocation_period:
             self.request_obj.allocation_period.assert_started()
             self.request_obj.allocation_period.assert_not_ended()

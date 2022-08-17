@@ -25,8 +25,7 @@ from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAl
 from coldfront.core.user.utils_.host_user_utils import eligible_host_project_users
 from coldfront.core.user.utils_.host_user_utils import lbl_email_address
 from coldfront.core.user.utils_.host_user_utils import needs_host
-from coldfront.core.utils.email.email_strategy import EmailStrategy
-from coldfront.core.utils.email.email_strategy import SendEmailStrategy
+from coldfront.core.utils.email.email_strategy import validate_email_strategy_or_get_default
 
 
 logger = logging.getLogger(__name__)
@@ -41,10 +40,8 @@ def add_vector_user_to_designated_savio_project(user_obj, email_strategy=None):
 
     Only perform processing if the User is not already active on the
     Project."""
-    if email_strategy is not None:
-        assert isinstance(email_strategy, EmailStrategy)
-    else:
-        email_strategy = SendEmailStrategy()
+    email_strategy = validate_email_strategy_or_get_default(
+        email_strategy=email_strategy)
 
     project_name = settings.SAVIO_PROJECT_FOR_VECTOR_USERS
     project_obj = Project.objects.get(name=project_name)
@@ -122,11 +119,8 @@ class NewProjectUserRunner(ABC):
         self._user_obj = self._project_user_obj.user
         self._allocation_user_obj = None
 
-        if email_strategy is not None:
-            assert isinstance(email_strategy, EmailStrategy)
-            self._email_strategy = email_strategy
-        else:
-            self._email_strategy = SendEmailStrategy()
+        self._email_strategy = validate_email_strategy_or_get_default(
+            email_strategy=email_strategy)
 
         self._success_messages = []
         self._warning_messages = []
