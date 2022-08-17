@@ -185,10 +185,10 @@ class ProjectListView(LoginRequiredMixin, ListView):
             data = project_search_form.cleaned_data
             if data.get('show_all_projects') and (self.request.user.is_superuser or self.request.user.has_perm('project.can_view_all_projects')):
                 projects = Project.objects.prefetch_related( 'pi',  'status',).filter(
-                    status__name__in=['New', 'field_of_science','Active', ]).order_by(order_by)
+                    status__name__in=['New', 'Active', ]).order_by(order_by)
             else:
                 projects = Project.objects.prefetch_related('pi',  'status',).filter(
-                    Q(status__name__in=['New', 'field_of_science','Active', ]) &
+                    Q(status__name__in=['New', 'Active', ]) &
                     Q(projectuser__user=self.request.user) &
                     Q(projectuser__status__name='Active')
                 ).order_by(order_by)
