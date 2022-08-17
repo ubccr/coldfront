@@ -25,7 +25,9 @@ def create_project_users(project, requester, pi, request_class,
     manager_role = ProjectUserRoleChoice.objects.get(name='Manager')
     pi_role = ProjectUserRoleChoice.objects.get(name='Principal Investigator')
 
-    if requester.pk != pi.pk:
+    is_requester_pi = requester.pk == pi.pk
+
+    if not is_requester_pi:
         run_runner = False
         if project.projectuser_set.filter(user=requester).exists():
             requester_project_user = project.projectuser_set.get(
@@ -66,9 +68,16 @@ def create_project_users(project, requester, pi, request_class,
     if run_runner:
         runner_factory = NewProjectUserRunnerFactory()
         if request_class == AllocationRenewalRequest:
-            source = NewProjectUserSource.ALLOCATION_RENEWAL_NON_REQUESTER_PI
+            if is_requester_pi:
+                source = NewProjectUserSource.ALLOCATION_RENEWAL_REQUESTER
+            else:
+                source = \
+                    NewProjectUserSource.ALLOCATION_RENEWAL_NON_REQUESTER_PI
         else:
-            source = NewProjectUserSource.NEW_PROJECT_NON_REQUESTER_PI
+            if is_requester_pi:
+                source = NewProjectUserSource.NEW_PROJECT_REQUESTER
+            else:
+                source = NewProjectUserSource.NEW_PROJECT_NON_REQUESTER_PI
         new_project_user_runner = runner_factory.get_runner(
             pi_project_user, source, email_strategy=email_strategy)
         new_project_user_runner.run()
