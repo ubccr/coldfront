@@ -91,9 +91,6 @@ class Project(TimeStampedModel):
         if 'Auto-Import Project'.lower() in self.title.lower():
             raise ValidationError('You must update the project title. You cannot have "Auto-Import Project" in the title.')
 
-        if '' in self.description:
-            raise ValidationError('You must update the project description.')
-
     @property
     def last_project_review(self):
         if self.projectreview_set.exists():
