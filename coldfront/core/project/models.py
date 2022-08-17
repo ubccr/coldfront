@@ -43,13 +43,12 @@ class ProjectTypeChoice(TimeStampedModel):
 
 class Project(TimeStampedModel):
 
-    DEFAULT_DESCRIPTION = '''
-We do not have information about your research. Please provide a detailed description of your work and update your field of science. Thank you!
-        '''
+    DEFAULT_DESCRIPTION = ''
 
     title = models.CharField(max_length=255,)
     pi = models.ForeignKey(User, on_delete=models.CASCADE,)
     pi_username = models.CharField(
+        verbose_name="PI Username",
         max_length=20,
         blank=True,
         help_text='Required if you will not be the PI of this project. Graduate students cannot be the PI'
@@ -75,7 +74,7 @@ We do not have information about your research. Please provide a detailed descri
     type = models.ForeignKey(
         ProjectTypeChoice,
         on_delete=models.CASCADE,
-        help_text="This cannot be changed once your project is submitted."
+        help_text="This cannot be changed once your project is submitted. Class projects expire at the end of every semester. Research projects expire once a year."
     )
     private = models.BooleanField(
         default=False,
@@ -92,7 +91,7 @@ We do not have information about your research. Please provide a detailed descri
         if 'Auto-Import Project'.lower() in self.title.lower():
             raise ValidationError('You must update the project title. You cannot have "Auto-Import Project" in the title.')
 
-        if 'We do not have information about your research. Please provide a detailed description of your work and update your field of science. Thank you!' in self.description:
+        if '' in self.description:
             raise ValidationError('You must update the project description.')
 
     @property
