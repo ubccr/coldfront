@@ -127,5 +127,5 @@ class Command(BaseCommand):
         """Instantiate and run tne approval runner for the given request
         and number of service units, sending emails."""
         approval_runner = AllocationRenewalApprovalRunner(
-            request, num_service_units, send_email=True)
+            request, num_service_units)
         approval_runner.run()

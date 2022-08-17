@@ -7,11 +7,18 @@ from django.core import mail
 
 from coldfront.api.statistics.utils import create_project_allocation
 from coldfront.core.allocation.models import Allocation
+from coldfront.core.allocation.models import AllocationAttributeType
+from coldfront.core.allocation.models import AllocationUser
+from coldfront.core.allocation.models import AllocationUserAttribute
+from coldfront.core.allocation.models import AllocationUserStatusChoice
 from coldfront.core.allocation.models import ClusterAccessRequest
+from coldfront.core.allocation.utils_.cluster_access_utils import ClusterAccessRequestRunnerValidationError
+from coldfront.core.allocation.utils_.cluster_access_utils import send_new_cluster_access_request_notification_email
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
-from coldfront.core.project.utils import send_new_cluster_access_request_notification_email
+from coldfront.core.project.utils import send_added_to_project_notification_email
+from coldfront.core.project.utils import send_project_join_request_approval_email
 from coldfront.core.project.utils_.new_project_user_utils import BRCNewProjectUserRunner
 from coldfront.core.project.utils_.new_project_user_utils import LRCNewProjectUserRunner
 from coldfront.core.project.utils_.new_project_user_utils import NewProjectUserRunner
@@ -89,6 +96,10 @@ class TestCommonRunnerMixin(object):
     def _assert_post_state(self):
         """Assert that the relevant objects have the expected state,
         assuming that the runner has run successfully."""
+        active_allocation_users = AllocationUser.objects.filter(
+            allocation=self.allocation, user=self.user, status__name='Active')
+        self.assertEqual(active_allocation_users.count(), 1)
+
         cluster_access_requests = ClusterAccessRequest.objects.filter(
             allocation_user__user=self.user, status__name='Pending - Add')
         self.assertEqual(cluster_access_requests.count(), 1)
@@ -97,9 +108,44 @@ class TestCommonRunnerMixin(object):
         """Assert that the relevant objects have the expected state,
         assuming that the runner has either not run or not run
         successfully."""
+        active_allocation_users = AllocationUser.objects.filter(
+            allocation=self.allocation, user=self.user, status__name='Active')
+        self.assertEqual(active_allocation_users.count(), 0)
+
         cluster_access_requests = ClusterAccessRequest.objects.filter(
             allocation_user__user=self.user)
         self.assertFalse(cluster_access_requests.exists())
+
+    def _rollback_changes(self):
+        """Roll back changes made by the runner so that it may be run
+        again."""
+        AllocationUser.objects.filter(
+            allocation=self.allocation, user=self.project_user.user).delete()
+
+    def test_cluster_access_not_requested_based_on_source(self):
+        """Test that no attempt is made to request cluster access for
+        particular NewProjectUserSources."""
+        excluded_sources = {
+            NewProjectUserSource.NEW_PROJECT_NON_REQUESTER_PI,
+            NewProjectUserSource.ALLOCATION_RENEWAL_NON_REQUESTER_PI,
+        }
+        for source in NewProjectUserSource:
+            email_strategy = EnqueueEmailStrategy()
+            args = (self.project_user, source)
+            kwargs = {'email_strategy': email_strategy}
+            with enable_deployment(self._deployment_name):
+                _class = self._runner_factory.get_runner(
+                    *args, **kwargs).__class__
+                with patch.object(
+                        _class, '_request_cluster_access', raise_exception):
+                    runner = self._runner_factory.get_runner(*args, **kwargs)
+                    if source not in excluded_sources:
+                        with self.assertRaises(Exception) as cm:
+                            runner.run()
+                        self.assertEqual(str(cm.exception), 'Test exception.')
+                    else:
+                        runner.run()
+                        self._rollback_changes()
 
     def test_email_strategy_default(self):
         """Test that, if no EmailStrategy is provided to the runner, it
@@ -150,6 +196,60 @@ class TestCommonRunnerMixin(object):
                 break
         self.assertTrue(join_approval_email_found)
 
+    def test_emails_conditionally_sent_based_on_source(self):
+        """Test that emails about the new project user (excluding those
+        about cluster access) are only sent for particular
+        NewProjectUserSources."""
+        expected_email_methods_by_source = {
+            NewProjectUserSource.ADDED: (
+                send_added_to_project_notification_email),
+            NewProjectUserSource.JOINED: (
+                send_project_join_request_approval_email),
+            NewProjectUserSource.AUTO_ADDED: (
+                send_added_to_project_notification_email),
+        }
+        cluster_access_email_method = \
+            send_new_cluster_access_request_notification_email
+        for source in NewProjectUserSource:
+            email_strategy = EnqueueEmailStrategy()
+            with enable_deployment(self._deployment_name):
+                runner = self._runner_factory.get_runner(
+                    self.project_user, source, email_strategy=email_strategy)
+            runner.run()
+
+            self.assertEqual(len(mail.outbox), 0)
+
+            queued_emails = email_strategy.get_queue()
+            if source in expected_email_methods_by_source:
+                # If an email is expected, assert that it is the correct one,
+                # ignoring any email about cluster access.
+                expected_method = expected_email_methods_by_source[source]
+                match_found = False
+                while queued_emails:
+                    item = queued_emails.popleft()
+                    email_method = item[0]
+                    if email_method == cluster_access_email_method:
+                        continue
+                    if email_method == expected_method:
+                        match_found = True
+                        break
+                self.assertTrue(match_found)
+            else:
+                # Otherwise, assert that no email is sent, ignoring any email
+                # about cluster access.
+                unexpected_found = False
+                while queued_emails:
+                    item = queued_emails.popleft()
+                    email_method = item[0]
+                    if email_method == cluster_access_email_method:
+                        continue
+                    else:
+                        unexpected_found = True
+                        break
+                self.assertFalse(unexpected_found)
+
+            self._rollback_changes()
+
     def test_failure(self):
         """Test that, when an exception is raised inside the
         transaction, changes made so far are rolled back. Test that only
@@ -196,6 +296,41 @@ class TestCommonRunnerMixin(object):
         email = mail.outbox[0]
         self.assertIn('New Cluster Access Request', email.subject)
 
+    def test_preexisting_cluster_access_allowed_based_on_source(self):
+        """Test that, when the user already has access to the cluster,
+        an exception is not raised for particular
+        NewProjectUserSources."""
+        allowed_sources = {
+            NewProjectUserSource.NEW_PROJECT_REQUESTER,
+            NewProjectUserSource.NEW_PROJECT_NON_REQUESTER_PI,
+            NewProjectUserSource.ALLOCATION_RENEWAL_REQUESTER,
+            NewProjectUserSource.ALLOCATION_RENEWAL_NON_REQUESTER_PI,
+            NewProjectUserSource.AUTO_ADDED,
+        }
+
+        active_status = AllocationUserStatusChoice.objects.get(name='Active')
+        allocation_user = AllocationUser.objects.create(
+            allocation=self.allocation, user=self.user, status=active_status)
+        AllocationUserAttribute.objects.create(
+            allocation_attribute_type=AllocationAttributeType.objects.get(
+                name='Cluster Account Status'),
+            allocation=self.allocation,
+            allocation_user=allocation_user,
+            value='Pending - Add')
+
+        expected_exception = ClusterAccessRequestRunnerValidationError
+        for source in NewProjectUserSource:
+            email_strategy = EnqueueEmailStrategy()
+            args = (self.project_user, source)
+            kwargs = {'email_strategy': email_strategy}
+            with enable_deployment(self._deployment_name):
+                runner = self._runner_factory.get_runner(*args, **kwargs)
+                if source not in allowed_sources:
+                    with self.assertRaises(expected_exception):
+                        runner.run()
+                else:
+                    runner.run()
+
     def test_success(self):
         """Test that the runner performs expected processing."""
         self._assert_pre_state()
@@ -204,6 +339,26 @@ class TestCommonRunnerMixin(object):
             runner = self._runner_factory.get_runner(
                 self.project_user, NewProjectUserSource.ADDED)
         runner.run()
+
+        self._assert_post_state()
+
+    def test_updates_allocation_user_if_existent(self):
+        """Test that the runner updates an AllocationUser object if it
+        already exists."""
+        self._assert_pre_state()
+
+        removed_status = AllocationUserStatusChoice.objects.get(name='Removed')
+        allocation_user = AllocationUser.objects.create(
+            allocation=self.allocation, user=self.user, status=removed_status)
+
+        with enable_deployment(self._deployment_name):
+            runner = self._runner_factory.get_runner(
+                self.project_user, NewProjectUserSource.ADDED)
+        runner.run()
+
+        allocation_user.refresh_from_db()
+        active_status = AllocationUserStatusChoice.objects.get(name='Active')
+        self.assertEqual(allocation_user.status, active_status)
 
         self._assert_post_state()
 

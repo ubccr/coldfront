@@ -14,19 +14,15 @@ from django.views import View
 from django.views.generic import ListView
 from django.views.generic.edit import FormView
 
-from coldfront.core.allocation.forms import \
-    (AllocationClusterAccountRequestActivationForm,
-     AllocationClusterAccountUpdateStatusForm,
-     ClusterRequestSearchForm)
-from coldfront.core.allocation.models import (Allocation,
-                                              ClusterAccessRequest,
-                                              ClusterAccessRequestStatusChoice)
-from coldfront.core.project.models import ProjectUser
-from coldfront.core.project.utils_.project_cluster_access_request_runner import \
-    ProjectClusterAccessRequestRunner
-from coldfront.core.allocation.utils_.cluster_access_utils import \
-    ClusterAccessRequestCompleteRunner, \
-    ClusterAccessRequestDenialRunner
+from coldfront.core.allocation.forms import AllocationClusterAccountRequestActivationForm
+from coldfront.core.allocation.forms import AllocationClusterAccountUpdateStatusForm
+from coldfront.core.allocation.forms import ClusterRequestSearchForm
+from coldfront.core.allocation.models import Allocation
+from coldfront.core.allocation.models import ClusterAccessRequest
+from coldfront.core.allocation.models import ClusterAccessRequestStatusChoice
+from coldfront.core.allocation.utils_.cluster_access_utils import ClusterAccessRequestCompleteRunner
+from coldfront.core.allocation.utils_.cluster_access_utils import ClusterAccessRequestDenialRunner
+from coldfront.core.allocation.utils_.cluster_access_utils import ClusterAccessRequestRunner
 from coldfront.core.utils.common import utc_now_offset_aware
 
 
@@ -36,6 +32,10 @@ logger = logging.getLogger(__name__)
 class AllocationRequestClusterAccountView(LoginRequiredMixin,
                                           UserPassesTestMixin,
                                           View):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.allocation_user_obj = None
 
     def test_func(self):
         """UserPassesTestMixin tests."""
@@ -73,13 +73,15 @@ class AllocationRequestClusterAccountView(LoginRequiredMixin,
             messages.error(self.request, message)
             return redirect
 
-        if not allocation_obj.allocationuser_set.filter(
-                user=user_obj, status__name='Active').exists():
+        allocation_user_objs = allocation_obj.allocationuser_set.filter(
+            user=user_obj, status__name='Active')
+        if not allocation_user_objs.exists():
             message = (
                 f'User {user_obj.username} is not a member of allocation '
                 f'{allocation_obj.pk}.')
             messages.error(self.request, message)
             return redirect
+        self.allocation_user_obj = allocation_user_objs.first()
 
         acceptable_statuses = [
             'Active', 'New', 'Renewal Requested', 'Payment Pending',
@@ -103,16 +105,7 @@ class AllocationRequestClusterAccountView(LoginRequiredMixin,
         redirect = HttpResponseRedirect(
             reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
-        try:
-            project_user_obj = ProjectUser.objects.get(
-                user=user_obj, project=project_obj)
-        except ProjectUser.DoesNotExist:
-            message = (
-                'Unexpected server error. Please contact an administrator.')
-            messages.error(self.request, message)
-            return redirect
-
-        request_runner = ProjectClusterAccessRequestRunner(project_user_obj)
+        request_runner = ClusterAccessRequestRunner(self.allocation_user_obj)
         try:
             request_runner.run()
         except Exception as e:

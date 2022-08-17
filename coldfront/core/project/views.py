@@ -915,8 +915,8 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
         Include warning messages in the response.
         """
+        email_strategy = EnqueueEmailStrategy()
         try:
-            email_strategy = EnqueueEmailStrategy()
             with transaction.atomic():
                 user_obj = self._update_or_create_user(user_form_data)
 
@@ -942,8 +942,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                 messages.warning(request, message)
 
         try:
-            if isinstance(email_strategy, EnqueueEmailStrategy):
-                email_strategy.send_queued_emails()
+            email_strategy.send_queued_emails()
         except Exception as e:
             pass
 
