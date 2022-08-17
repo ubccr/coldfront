@@ -499,7 +499,7 @@
         - name: Restart httpd service
           service:
             name: httpd
-            state: restarted
+            state: reloaded
 
         # supervisorctl is included in community.general.
         - name: Ensure that a Supervisor worker is running a django_q cluster
