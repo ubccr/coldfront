@@ -116,16 +116,18 @@ class ProjectDenialRunner(object):
     project request is denied."""
 
     def __init__(self, request_obj):
+        # TODO: Incorporate EmailStrategy.
         self.request_obj = request_obj
 
     def run(self):
-        # Only update the Project if pooling is not involved.
-        if (isinstance(self.request_obj, VectorProjectAllocationRequest) or
-                not self.request_obj.pool):
-            self.deny_project()
-        self.deny_request()
+        with transaction.atomic():
+            # Only update the Project if pooling is not involved.
+            if (isinstance(self.request_obj, VectorProjectAllocationRequest) or
+                    not self.request_obj.pool):
+                self.deny_project()
+            self.deny_request()
+            self.deny_associated_renewal_request_if_existent()
         self.send_email()
-        self.deny_associated_renewal_request_if_existent()
 
     def deny_associated_renewal_request_if_existent(self):
         """Send a signal to deny any AllocationRenewalRequest that
@@ -178,7 +180,7 @@ class ProjectProcessingRunner(object):
                 type(self.request_obj), email_strategy=self._email_strategy)
 
             self.complete_request()
-            self.send_email()
+        self.send_email()
 
         return project, allocation
 

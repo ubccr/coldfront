@@ -761,8 +761,9 @@ class AllocationRenewalDenialRunner(AllocationRenewalRunnerBase):
         self.assert_request_not_status(unexpected_status)
 
     def run(self):
-        self.handle_by_preference()
-        self.deny_request()
+        with transaction.atomic():
+            self.handle_by_preference()
+            self.deny_request()
         self.send_email()
 
     def deny_post_project(self):
@@ -854,7 +855,7 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
 
             self.handle_by_preference()
             self.complete_request(self.num_service_units)
-            self.send_email()
+        self.send_email()
 
         return post_project, allocation
 
