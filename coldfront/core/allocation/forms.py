@@ -157,7 +157,7 @@ class AllocationForm(forms.Form):
         self.fields['start_date'].help_text = 'Format: mm/dd/yyyy'
         self.fields['end_date'].help_text = 'Format: mm/dd/yyyy'
         self.fields['account_number'].help_text = 'Format: 00-000-00'
-        self.fields['applications_list'].help_text = 'Format: app1,app2,app3,etc'
+        self.fields['applications_list'].help_text = 'Format: tensorflow,pytorch,etc'
         self.fields['it_pros'].help_text = 'Format: name1,name2,name3,etc'
         self.fields['project_directory_name'].help_text = 'Must be alphanumeric and not exceed 10 characters in length'
         self.fields['data_manager'].help_text = 'Must be a project Manager. Only this user can add and remove users from this resource. They will automatically be added to the resource.'
@@ -238,9 +238,7 @@ class AllocationForm(forms.Form):
                 'for_coursework': cleaned_data.get('for_coursework'),
             },
             'Carbonate GPU': {
-                'leverage_multiple_gpus': cleaned_data.get('leverage_multiple_gpus'),
                 'dl_workflow': cleaned_data.get('dl_workflow'),
-                'for_coursework': cleaned_data.get('for_coursework'),
             },
             'Carbonate PHI Nodes': {
                 'phi_association': cleaned_data.get('phi_association'),
