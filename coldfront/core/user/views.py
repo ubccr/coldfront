@@ -224,10 +224,10 @@ class UserUpgradeAccount(LoginRequiredMixin, UserPassesTestMixin, View):
             messages.error(request, 'Your account has already been upgraded')
             return HttpResponseRedirect(reverse('user-profile'))
 
-        if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
-            if request.user.userprofile.title not in ['Faculty', 'Staff', 'Graduate', ]:
-                messages.error(request, 'You cannot be a PI')
-                return HttpResponseRedirect(reverse('user-profile'))
+        # if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
+        #     if request.user.userprofile.title not in ['Faculty', 'Staff', 'Graduate', ]:
+        #         messages.error(request, 'You cannot be a PI')
+        #         return HttpResponseRedirect(reverse('user-profile'))
 
         return super().dispatch(request, *args, **kwargs)
 
