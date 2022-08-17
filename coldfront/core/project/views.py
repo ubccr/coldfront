@@ -291,9 +291,9 @@ class ProjectListView(LoginRequiredMixin, ListView):
                 )
 
             # Field of Science
-            if data.get('field_of_science'):
-                projects = projects.filter(
-                    field_of_science__description__icontains=data.get('field_of_science'))
+            # if data.get('field_of_science'):
+            #     projects = projects.filter(
+            #         field_of_science__description__icontains=data.get('field_of_science'))
 
         else:
             projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
@@ -445,9 +445,9 @@ class ProjectArchivedListView(LoginRequiredMixin, ListView):
                     pi__username__icontains=data.get('username'))
 
             # Field of Science
-            if data.get('field_of_science'):
-                projects = projects.filter(
-                    field_of_science__description__icontains=data.get('field_of_science'))
+            # if data.get('field_of_science'):
+            #     projects = projects.filter(
+            #         field_of_science__description__icontains=data.get('field_of_science'))
 
         else:
             projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
@@ -558,9 +558,9 @@ class ProjectDeniedListView(LoginRequiredMixin, ListView):
                     pi__username__icontains=data.get('username'))
 
             # Field of Science
-            if data.get('field_of_science'):
-                projects = projects.filter(
-                    field_of_science__description__icontains=data.get('field_of_science'))
+            # if data.get('field_of_science'):
+            #     projects = projects.filter(
+            #         field_of_science__description__icontains=data.get('field_of_science'))
 
         else:
             projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
@@ -887,7 +887,7 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
         form_data = form.cleaned_data
         project_obj.title = form_data.get('title')
         project_obj.description = form_data.get('description')
-        project_obj.field_of_science = form_data.get('field_of_science')
+        # project_obj.field_of_science = form_data.get('field_of_science')
         project_obj.save()
 
         return super().form_valid(form)

@@ -109,11 +109,11 @@ Project List
             <a href="?order_by=pi__username&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort PI desc</span></a>
           </th>
           <th scope="col">Title</th>
-          <th scope="col" class="text-nowrap">
+          <!-- <th scope="col" class="text-nowrap">
             Field of Science
             <a href="?order_by=field_of_science&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Field of Science asc</span></a>
             <a href="?order_by=field_of_science&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Field of Science desc</span></a>
-          </th>
+          </th> -->
           <th scope="col" class="text-nowrap">
             Type
             <a href="?order_by=type&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Type asc</span></a>
@@ -138,7 +138,7 @@ Project List
             <td>{{ project.id }}</td>
             <td>{{ project.pi.username }}</td>
             <td style="text-align: justify; text-justify: inter-word;">{{ project.title|truncatechars:30 }}</td>
-            <td>{{ project.field_of_science.description }}</td>
+            <!-- <td>{{ project.field_of_science.description }}</td> -->
             <td>{{ project.type.name }}</td>
             {% if project.status.name == 'Active' %}
               {% if project.can_be_reviewed %}

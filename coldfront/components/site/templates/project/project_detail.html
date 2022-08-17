@@ -112,7 +112,7 @@ Project Detail
     {% if project.slurm_account_name %}
       <p class="card-text text-justify"><strong>Slurm Account Name: </strong>{{ project.slurm_account_name }}</p>
     {% endif %}
-    <p class="card-text text-justify"><strong>Field of Science: </strong>{{ project.field_of_science}}</p>
+    <!-- <p class="card-text text-justify"><strong>Field of Science: </strong>{{ project.field_of_science}}</p> -->
     <p class="card-text text-justify"><strong>Project Type: </strong>{{ project.type.name }}</p>
     <p class="card-text text-justify"><strong>Project Status: </strong>
     {% if project.status.name == 'Active' %}

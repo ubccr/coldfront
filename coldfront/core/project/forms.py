@@ -39,13 +39,13 @@ class ProjectSearchForm(forms.Form):
     """
     LAST_NAME = 'Last Name'
     USERNAME = 'Username'
-    FIELD_OF_SCIENCE = 'Field of Science'
+    # FIELD_OF_SCIENCE = 'Field of Science'
 
     last_name = forms.CharField(
         label=LAST_NAME, max_length=100, required=False)
     username = forms.CharField(label=USERNAME, max_length=100, required=False)
-    field_of_science = forms.CharField(
-        label=FIELD_OF_SCIENCE, max_length=100, required=False)
+    # field_of_science = forms.CharField(
+    #     label=FIELD_OF_SCIENCE, max_length=100, required=False)
     show_all_projects = forms.BooleanField(initial=False, required=False)
 
 
@@ -187,7 +187,6 @@ class ProjectUpdateForm(forms.Form):
         ],
         widget=forms.Textarea
     )
-    field_of_science = forms.ModelChoiceField(queryset=FieldOfScience.objects.all())
 
     def __init__(self, project_pk, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -195,4 +194,3 @@ class ProjectUpdateForm(forms.Form):
 
         self.fields['title'].initial = project_obj.title
         self.fields['description'].initial = project_obj.description
-        self.fields['field_of_science'].initial = project_obj.field_of_science
