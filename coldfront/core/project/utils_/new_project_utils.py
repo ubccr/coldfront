@@ -10,9 +10,6 @@ from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.models import VectorProjectAllocationRequest
 from coldfront.core.project.signals import new_project_request_denied
-from coldfront.core.project.utils_.new_project_user_utils import add_vector_user_to_designated_savio_project
-from coldfront.core.project.utils_.request_processing_utils import create_allocation_users
-from coldfront.core.project.utils_.request_processing_utils import create_cluster_access_request_for_requester
 from coldfront.core.project.utils_.request_processing_utils import create_project_users
 from coldfront.core.resource.models import Resource
 from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
@@ -31,6 +28,7 @@ from collections import namedtuple
 from decimal import Decimal
 
 from django.conf import settings
+from django.db import transaction
 from django.db.models import Q
 from django.urls import reverse
 
@@ -177,35 +175,23 @@ class ProjectProcessingRunner(object):
         self.user_messages = []
 
     def run(self):
-        self.upgrade_pi_user()
-        project = self.activate_project()
+        with transaction.atomic():
+            self.upgrade_pi_user()
+            project = self.activate_project()
 
-        allocation, new_value = self.update_allocation()
-        # In the pooling case, set the Service Units of the existing users to
-        # the updated value.
-        if (isinstance(self.request_obj, SavioProjectAllocationRequest) and
-                self.request_obj.pool):
-            self.update_existing_user_allocations(new_value)
+            allocation, new_value = self.update_allocation()
+            # In the pooling case, set the Service Units of the existing users
+            # to the updated value.
+            if (isinstance(self.request_obj, SavioProjectAllocationRequest) and
+                    self.request_obj.pool):
+                self.update_existing_user_allocations(new_value)
 
-        requester = self.request_obj.requester
-        pi = self.request_obj.pi
+            create_project_users(
+                project, self.request_obj.requester, self.request_obj.pi,
+                type(self.request_obj))
 
-        create_project_users(project, requester, pi)
-        requester_allocation_user, pi_allocation_user = \
-            create_allocation_users(allocation, requester, pi)
-
-        # If the AllocationUser for the requester was not created, then
-        # the PI was the requester.
-        if requester_allocation_user is None:
-            create_cluster_access_request_for_requester(pi_allocation_user)
-        else:
-            create_cluster_access_request_for_requester(
-                requester_allocation_user)
-
-        self.complete_request()
-        self.send_email()
-
-        self.run_extra_processing()
+            self.complete_request()
+            self.send_email()
 
         return project, allocation
 
@@ -228,10 +214,6 @@ class ProjectProcessingRunner(object):
     def get_user_messages(self):
         """A getter for this instance's user_messages."""
         return self.user_messages
-
-    def run_extra_processing(self):
-        """Run additional subclass-specific processing."""
-        pass
 
     def send_email(self):
         """Send a notification email to the requester and PI."""
@@ -666,12 +648,6 @@ class VectorProjectProcessingRunner(ProjectProcessingRunner):
     """An object that performs necessary database changes when a new
     Vector project request is processed."""
 
-    def run_extra_processing(self):
-        """Run additional subclass-specific processing."""
-        # Automatically provide the requester with access to the designated
-        # Savio project for Vector users.
-        self.__add_user_to_savio_project()
-
     def update_allocation(self):
         """Perform allocation-related handling."""
         project = self.request_obj.project
@@ -684,30 +660,6 @@ class VectorProjectProcessingRunner(ProjectProcessingRunner):
     def update_existing_user_allocations(self, value):
         """Perform user-allocation-related handling."""
         pass
-
-    def __add_user_to_savio_project(self):
-        user_obj = self.request_obj.requester
-        savio_project_name = settings.SAVIO_PROJECT_FOR_VECTOR_USERS
-        try:
-            add_vector_user_to_designated_savio_project(user_obj)
-        except Exception as e:
-            message = (
-                f'Encountered unexpected exception when automatically '
-                f'providing User {user_obj.pk} with access to Savio. Details:')
-            logger.error(message)
-            logger.exception(e)
-            user_message = (
-                f'A failure occurred when automatically adding User '
-                f'{user_obj.username} to Savio project {savio_project_name} '
-                f'and requesting cluster access. Please see the logs for more '
-                f'information.')
-        else:
-            user_message = (
-                f'User {user_obj.username} has automatically been added to '
-                f'Savio project {savio_project_name}. A cluster access '
-                f'request has automatically been made, assuming the user did '
-                f'not already pending or active status.')
-        self.user_messages.append(user_message)
 
 
 def vector_request_denial_reason(vector_request):

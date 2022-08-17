@@ -12,8 +12,6 @@ from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
-from coldfront.core.project.utils_.request_processing_utils import create_allocation_users
-from coldfront.core.project.utils_.request_processing_utils import create_cluster_access_request_for_requester
 from coldfront.core.project.utils_.request_processing_utils import create_project_users
 from coldfront.core.resource.models import Resource
 from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
@@ -30,6 +28,7 @@ from collections import namedtuple
 from decimal import Decimal
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.db import transaction
 from django.db.models import Q
 from django.urls import reverse
 from urllib.parse import urljoin
@@ -833,31 +832,24 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
     def run(self):
         request = self.request_obj
         post_project = request.post_project
-
-        self.upgrade_pi_user()
         old_project_status = post_project.status
-        post_project = self.activate_project(post_project)
 
-        allocation, new_value = self.update_allocation(old_project_status)
-        self.update_existing_user_allocations(new_value)
+        with transaction.atomic():
+            self.upgrade_pi_user()
+            post_project = self.activate_project(post_project)
 
-        create_project_users(post_project, request.requester, request.pi)
-        requester_allocation_user, pi_allocation_user = \
-            create_allocation_users(allocation, request.requester, request.pi)
+            allocation, new_value = self.update_allocation(old_project_status)
+            self.update_existing_user_allocations(new_value)
 
-        # If the AllocationUser for the requester was not created, then the PI
-        # was the requester.
-        if requester_allocation_user is None:
-            create_cluster_access_request_for_requester(pi_allocation_user)
-        else:
-            create_cluster_access_request_for_requester(
-                requester_allocation_user)
+            create_project_users(
+                post_project, request.requester, request.pi,
+                AllocationRenewalRequest)
 
-        self.update_pre_projects_of_future_period_requests()
+            self.update_pre_projects_of_future_period_requests()
 
-        self.handle_by_preference()
-        self.complete_request(self.num_service_units)
-        self.send_email()
+            self.handle_by_preference()
+            self.complete_request(self.num_service_units)
+            self.send_email()
 
         return post_project, allocation
 
