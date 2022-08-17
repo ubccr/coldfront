@@ -3,19 +3,14 @@ from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationStatusChoice
-from coldfront.core.allocation.utils import get_or_create_active_allocation_user
 from coldfront.core.allocation.utils import get_project_compute_allocation
-from coldfront.core.allocation.utils_.cluster_access_utils import ClusterAccessRequestRunner
-from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
 from coldfront.core.project.models import ProjectUser
-from coldfront.core.project.models import ProjectUserRoleChoice
-from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.models import VectorProjectAllocationRequest
 from coldfront.core.project.signals import new_project_request_denied
-from coldfront.core.project.utils import send_added_to_project_notification_email
+from coldfront.core.project.utils_.new_project_user_utils import add_vector_user_to_designated_savio_project
 from coldfront.core.project.utils_.request_processing_utils import create_allocation_users
 from coldfront.core.project.utils_.request_processing_utils import create_cluster_access_request_for_requester
 from coldfront.core.project.utils_.request_processing_utils import create_project_users
@@ -36,7 +31,6 @@ from collections import namedtuple
 from decimal import Decimal
 
 from django.conf import settings
-from django.db import transaction
 from django.db.models import Q
 from django.urls import reverse
 
@@ -46,58 +40,6 @@ import logging
 
 
 logger = logging.getLogger(__name__)
-
-
-def add_vector_user_to_designated_savio_project(user_obj):
-    """Add the given User to the Savio project that all Vector users
-    also have access to.
-
-    This is intended for use after the user's request has been approved
-    and the user has been successfully added to a Vector project."""
-    # TODO: Eventually, this method should be incorporated into
-    # TODO: new_project_user_utils and use the latter's methods.
-    project_name = settings.SAVIO_PROJECT_FOR_VECTOR_USERS
-    project_obj = Project.objects.get(name=project_name)
-
-    # Create a ProjectUser if needed; set its status to 'Active'.
-    user_role = ProjectUserRoleChoice.objects.get(name='User')
-    active_status = ProjectUserStatusChoice.objects.get(name='Active')
-    defaults = {
-        'role': user_role,
-        'status': active_status,
-        'enable_notifications': False,
-    }
-
-    with transaction.atomic():
-        project_user_obj, created = ProjectUser.objects.get_or_create(
-            project=project_obj, user=user_obj, defaults=defaults)
-        if created:
-            message = (
-                f'Created ProjectUser {project_user_obj.pk} between Project '
-                f'{project_obj.pk} and User {user_obj.pk}.')
-            logger.info(message)
-        else:
-            project_user_obj.status = active_status
-            project_user_obj.save()
-
-        allocation_obj = get_project_compute_allocation(project_obj)
-        allocation_user_obj = get_or_create_active_allocation_user(
-            allocation_obj, user_obj)
-
-        # Request cluster access for the user.
-        request_runner = ClusterAccessRequestRunner(allocation_user_obj)
-        request_runner.run()
-
-    # Send a notification email to the user if the user was not already a
-    # member of the project.
-    if created:
-        try:
-            send_added_to_project_notification_email(
-                project_obj, project_user_obj)
-        except Exception as e:
-            message = 'Failed to send notification email. Details:'
-            logger.error(message)
-            logger.exception(e)
 
 
 def non_denied_new_project_request_statuses():

@@ -4,7 +4,6 @@ import logging
 from django.conf import settings
 from django.db import transaction
 
-
 from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AllocationUser
 from coldfront.core.allocation.models import AllocationUserAttribute
@@ -24,6 +23,12 @@ from coldfront.core.utils.mail import send_email_template
 
 
 logger = logging.getLogger(__name__)
+
+
+class ClusterAccessRequestRunnerValidationError(Exception):
+    """An exception to be raised by ClusterAccessRequestRunner when the
+    underlying AllocationUser already has cluster access."""
+    pass
 
 
 class ClusterAccessRequestRunner(object):
@@ -57,22 +62,10 @@ class ClusterAccessRequestRunner(object):
     def run(self):
         """Perform checks and updates."""
         with transaction.atomic():
-            self._assert_no_existing_cluster_access()
+            self._validate_no_existing_cluster_access()
             self._request_cluster_access()
         self._log_success_messages()
         self._send_emails_safe()
-
-    def _assert_no_existing_cluster_access(self):
-        """Assert that the User does not already have pending or active
-        access to the Project on the cluster."""
-        has_pending_or_active_status = \
-            self._allocation_user_obj.allocationuserattribute_set.filter(
-                allocation_attribute_type=self._allocation_attribute_type,
-                value__in=['Pending - Add', 'Processing', 'Active']).exists()
-        message = (
-            f'User {self._user_obj.username} already has pending or active '
-            f'access to the cluster under Project {self._project_obj.name}.')
-        assert not has_pending_or_active_status, message
 
     def _create_cluster_access_request(self):
         """Create a ClusterAccessRequest with status 'Pending - Add'."""
@@ -142,6 +135,20 @@ class ClusterAccessRequestRunner(object):
                 f'Encountered unexpected exception when sending notification '
                 f'emails. Details: \n{e}')
             logger.exception(message)
+
+    def _validate_no_existing_cluster_access(self):
+        """Raise an exception if the User already has pending or active
+        access to the Project on the cluster."""
+        has_pending_or_active_status = \
+            self._allocation_user_obj.allocationuserattribute_set.filter(
+                allocation_attribute_type=self._allocation_attribute_type,
+                value__in=['Pending - Add', 'Processing', 'Active']).exists()
+        if has_pending_or_active_status:
+            message = (
+                f'User {self._user_obj.username} already has pending or '
+                f'active access to the cluster under Project '
+                f'{self._project_obj.name}.')
+            raise ClusterAccessRequestRunnerValidationError(message)
 
 
 class ClusterAccessRequestCompleteRunner(object):

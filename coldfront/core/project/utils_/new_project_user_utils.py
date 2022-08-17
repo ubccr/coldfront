@@ -3,6 +3,7 @@ from abc import abstractmethod
 from enum import Enum
 import logging
 
+from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.db import transaction
 
@@ -11,12 +12,14 @@ from flags.state import flag_enabled
 from coldfront.core.allocation.utils import get_or_create_active_allocation_user
 from coldfront.core.allocation.utils import get_project_compute_allocation
 from coldfront.core.allocation.utils_.cluster_access_utils import ClusterAccessRequestRunner
+from coldfront.core.allocation.utils_.cluster_access_utils import ClusterAccessRequestRunnerValidationError
+from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserJoinRequest
+from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.utils import send_added_to_project_notification_email
 from coldfront.core.project.utils import send_project_join_request_approval_email
-from coldfront.core.project.utils_.new_project_utils import add_vector_user_to_designated_savio_project
 from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.user.utils_.host_user_utils import eligible_host_project_users
@@ -29,6 +32,49 @@ from coldfront.core.utils.email.email_strategy import SendEmailStrategy
 logger = logging.getLogger(__name__)
 
 
+def add_vector_user_to_designated_savio_project(user_obj, email_strategy=None):
+    """Add the given User to the Savio project that all Vector users
+    also have access to.
+
+    This is intended for use after the user's request has been approved
+    and the user has been successfully added to a Vector project.
+
+    Only perform processing if the User is not already active on the
+    Project."""
+    if email_strategy is not None:
+        assert isinstance(email_strategy, EmailStrategy)
+    else:
+        email_strategy = SendEmailStrategy()
+
+    project_name = settings.SAVIO_PROJECT_FOR_VECTOR_USERS
+    project_obj = Project.objects.get(name=project_name)
+
+    user_role = ProjectUserRoleChoice.objects.get(name='User')
+    active_status = ProjectUserStatusChoice.objects.get(name='Active')
+
+    project_user_exists = ProjectUser.objects.filter(
+        project=project_obj, user=user_obj).exists()
+    with transaction.atomic():
+        run_runner = False
+        if project_user_exists:
+            project_user_obj = project_user_exists.first()
+            if project_user_obj.status != active_status:
+                project_user_obj.status = active_status
+                project_user_obj.save()
+                run_runner = True
+        else:
+            project_user_obj = ProjectUser.objects.create(
+                project=project_obj, user=user_obj, role=user_role,
+                status=active_status, enable_notifications=False)
+            run_runner = True
+        if run_runner:
+            runner_factory = NewProjectUserRunnerFactory()
+            new_project_user_runner = runner_factory.get_runner(
+                project_user_obj, NewProjectUserSource.AUTO_ADDED,
+                email_strategy=email_strategy)
+            new_project_user_runner.run()
+
+
 class NewProjectUserSource(Enum):
     """The ways in which a ProjectUser could be newly-associated with a
     Project."""
@@ -37,6 +83,18 @@ class NewProjectUserSource(Enum):
     ADDED = 1
     # The User requested to join, and the request was approved.
     JOINED = 2
+    # The User made a request to create (or pool with) the project.
+    NEW_PROJECT_REQUESTER = 3
+    # The User was listed as a PI on a request to create (or pool with) the
+    # project, and did not make the request themselves.
+    NEW_PROJECT_NON_REQUESTER_PI = 4
+    # The User made a request to renew a PI's allocation under the project.
+    ALLOCATION_RENEWAL_REQUESTER = 5
+    # The User was listed as the PI on a request to renew a PI's allocation
+    # under the project, and did not make the request themselves.
+    ALLOCATION_RENEWAL_NON_REQUESTER_PI = 6
+    # The User was automatically added to the project due to business logic.
+    AUTO_ADDED = 7
 
 
 class NewProjectUserRunner(ABC):
@@ -52,7 +110,12 @@ class NewProjectUserRunner(ABC):
             ProjectUserStatusChoice.objects.get(name='Active'))
         assert isinstance(source, NewProjectUserSource)
         self._project_user_obj = project_user_obj
+
         self._source = source
+        self._should_request_cluster_access = True
+        self._should_allow_preexisting_cluster_access = False
+        self._update_processing_options_from_source()
+
         self._project_obj = self._project_user_obj.project
         self._allocation_obj = get_project_compute_allocation(
             self._project_obj)
@@ -77,7 +140,8 @@ class NewProjectUserRunner(ABC):
         and send notification emails."""
         with transaction.atomic():
             self._create_or_update_active_compute_allocation_user()
-            self._request_cluster_access()
+            if self._should_request_cluster_access:
+                self._request_cluster_access()
             self._run_extra_steps()
         self._send_emails_safe()
 
@@ -97,18 +161,28 @@ class NewProjectUserRunner(ABC):
         the Project."""
         project_cluster_access_request_runner = ClusterAccessRequestRunner(
             self._allocation_user_obj, email_strategy=self._email_strategy)
-        project_cluster_access_request_runner.run()
+        try:
+            project_cluster_access_request_runner.run()
+        except ClusterAccessRequestRunnerValidationError as e:
+            if self._should_allow_preexisting_cluster_access:
+                pass
+            else:
+                raise e
 
     def _run_extra_steps(self):
         """Run extra processing steps."""
         pass
 
     def _send_emails(self):
-        """Send the appropriate email to the new user."""
+        """Send the appropriate email to the new user if needed."""
         if self._source == NewProjectUserSource.ADDED:
             email_method = send_added_to_project_notification_email
-        else:
+        elif self._source == NewProjectUserSource.JOINED:
             email_method = send_project_join_request_approval_email
+        elif self._source == NewProjectUserSource.AUTO_ADDED:
+            email_method = send_added_to_project_notification_email
+        else:
+            return
         email_args = (self._project_obj, self._project_user_obj)
         self._email_strategy.process_email(email_method, *email_args)
 
@@ -125,6 +199,25 @@ class NewProjectUserRunner(ABC):
                 f'Encountered unexpected exception when sending notification '
                 f'emails. Details:\n{e}')
             logger.exception(message)
+
+    def _update_processing_options_from_source(self):
+        """Given the manner in which the User was associated with the
+        Project (NewProjectUserSource), update boolean options that
+        control processing logic."""
+        source = self._source
+        source_enum = NewProjectUserSource
+        if source == source_enum.NEW_PROJECT_REQUESTER:
+            self._should_allow_preexisting_cluster_access = True
+        elif source == source_enum.NEW_PROJECT_NON_REQUESTER_PI:
+            self._should_request_cluster_access = False
+            self._should_allow_preexisting_cluster_access = True
+        elif source == source_enum.ALLOCATION_RENEWAL_REQUESTER:
+            self._should_allow_preexisting_cluster_access = True
+        elif source == source_enum.ALLOCATION_RENEWAL_NON_REQUESTER_PI:
+            self._should_request_cluster_access = False
+            self._should_allow_preexisting_cluster_access = True
+        elif source == source_enum.AUTO_ADDED:
+            self._should_allow_preexisting_cluster_access = True
 
 
 class BRCNewProjectUserRunner(NewProjectUserRunner):
@@ -143,7 +236,8 @@ class BRCNewProjectUserRunner(NewProjectUserRunner):
         """
         if self._is_vector_project():
             try:
-                add_vector_user_to_designated_savio_project(self._user_obj)
+                add_vector_user_to_designated_savio_project(
+                    self._user_obj, email_strategy=self._email_strategy)
             except Exception as e:
                 message = (
                     f'Failed to automatically add User '
