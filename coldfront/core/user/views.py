@@ -24,7 +24,6 @@ from django.views import View
 from django.views.generic import CreateView, ListView, TemplateView
 from django.views.generic.edit import FormView
 
-from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.allocation.utils import has_cluster_access
 from coldfront.core.project.models import Project, ProjectUser
 from coldfront.core.user.models import IdentityLinkingRequest, IdentityLinkingRequestStatusChoice
@@ -37,15 +36,15 @@ from coldfront.core.user.forms import UserProfileUpdateForm
 from coldfront.core.user.forms import UserRegistrationForm
 from coldfront.core.user.forms import UserSearchForm, UserSearchListForm
 from coldfront.core.user.models import EmailAddress
-from coldfront.core.user.utils import CombinedUserSearch, is_lbl_employee
+from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.user.utils import ExpiringTokenGenerator
 from coldfront.core.user.utils import send_account_activation_email
 from coldfront.core.user.utils import send_account_already_active_email
 from coldfront.core.user.utils import send_email_verification_email
 from coldfront.core.user.utils import update_user_primary_email_address
+from coldfront.core.user.utils_.host_user_utils import is_lbl_employee
 from coldfront.core.utils.common import (import_from_settings,
                                          utc_now_offset_aware)
-from coldfront.core.utils.mail import send_email_template
 
 from flags.state import flag_enabled
 
@@ -92,15 +91,43 @@ class UserProfile(TemplateView):
         context['group_list'] = group_list
         context['viewed_user'] = viewed_user
 
-        context['other_emails'] = EmailAddress.objects.filter(
-            user=viewed_user, is_primary=False).order_by('email')
-
         context['has_cluster_access'] = has_cluster_access(viewed_user)
 
-        if viewed_user == self.request.user:
+        requester_is_viewed_user = viewed_user == self.request.user
+
+        if requester_is_viewed_user:
             self.update_context_with_identity_linking_request_data(context)
 
         context['help_email'] = import_from_settings('CENTER_HELP_EMAIL')
+
+        # Only display the "Other Email Addresses" section for
+        # coldfront.core.user.models.EmailAddress if basic auth. is enabled.
+        is_basic_auth_enabled = flag_enabled('BASIC_AUTH_ENABLED')
+        context['requester_is_viewed_user'] = requester_is_viewed_user
+        context['primary_address_updatable'] = (
+            is_basic_auth_enabled and requester_is_viewed_user)
+        context['change_password_enabled'] = (
+            is_basic_auth_enabled and requester_is_viewed_user)
+        context['core_user_email_addresses_visible'] = is_basic_auth_enabled
+        if context['core_user_email_addresses_visible']:
+            context['other_emails'] = EmailAddress.objects.filter(
+                user=viewed_user, is_primary=False).order_by('email')
+            context['core_user_email_addresses_updatable'] = \
+                requester_is_viewed_user
+
+        # Only display the "Other Email Addresses" section for
+        # allauth.account.models.EmailAddress if SSO is enabled.
+        is_sso_enabled = flag_enabled('SSO_ENABLED')
+        context['allauth_email_addresses_visible'] = is_sso_enabled
+        if context['allauth_email_addresses_visible']:
+            context['allauth_email_addresses_updatable'] = \
+                requester_is_viewed_user
+
+        # Only display the "Third-Party Accounts" section if SSO is enabled.
+        context['third_party_accounts_visible'] = is_sso_enabled
+        if context['third_party_accounts_visible']:
+            context['third_party_accounts_updatable'] = \
+                requester_is_viewed_user
 
         if flag_enabled('LRC_ONLY'):
             billing_id = 'N/A'
@@ -515,6 +542,33 @@ class CustomPasswordChangeView(PasswordChangeView):
             'to use your PIN and OTP to access the cluster.')
         messages.success(self.request, message)
         return super().form_valid(form)
+
+
+class UserLoginView(View):
+    """Redirect to the Basic Auth. login view or the SSO login view
+    based on enabled flags."""
+
+    def dispatch(self, request, *args, **kwargs):
+        basic_auth_enabled = 'BASIC_AUTH_ENABLED'
+        if flag_enabled(basic_auth_enabled):
+            return redirect(reverse('basic-auth-login'))
+        sso_enabled = 'SSO_ENABLED'
+        if flag_enabled(sso_enabled):
+            return redirect(reverse('sso-login'))
+        raise ImproperlyConfigured(
+            f'One of the following flags must be enabled: '
+            f'{basic_auth_enabled}, {sso_enabled}.')
+
+
+class SSOLoginView(TemplateView):
+    """Display the template for SSO login. If the user is authenticated,
+    redirect to the home page."""
+    template_name = 'user/sso_login.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            return redirect(reverse('home'))
+        return super().dispatch(request, *args, **kwargs)
 
 
 class UserRegistrationView(CreateView):

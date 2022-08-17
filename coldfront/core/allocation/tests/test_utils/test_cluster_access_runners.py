@@ -5,17 +5,25 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.core import mail
 
-from coldfront.api.statistics.utils import create_project_allocation, \
-    create_user_project_allocation
-from coldfront.core.allocation.models import ClusterAccessRequest, \
-    ClusterAccessRequestStatusChoice, AllocationAttributeType, \
-    AllocationUserAttribute
-from coldfront.core.allocation.utils_.cluster_access_utils import \
-    ClusterAccessRequestCompleteRunner, \
-    ClusterAccessRequestDenialRunner
-from coldfront.core.project.models import ProjectStatusChoice, \
-    ProjectUserStatusChoice, ProjectUserRoleChoice, ProjectUser, Project
+from coldfront.api.statistics.utils import create_project_allocation
+from coldfront.api.statistics.utils import create_user_project_allocation
+from coldfront.core.allocation.models import AllocationAttributeType
+from coldfront.core.allocation.models import AllocationUserAttribute
+from coldfront.core.allocation.models import AllocationUserStatusChoice
+from coldfront.core.allocation.models import ClusterAccessRequest
+from coldfront.core.allocation.models import ClusterAccessRequestStatusChoice
+from coldfront.core.allocation.utils import get_or_create_active_allocation_user
+from coldfront.core.allocation.utils_.cluster_access_utils import ClusterAccessRequestCompleteRunner
+from coldfront.core.allocation.utils_.cluster_access_utils import ClusterAccessRequestDenialRunner
+from coldfront.core.allocation.utils_.cluster_access_utils import ClusterAccessRequestRunner
+from coldfront.core.allocation.utils_.cluster_access_utils import ClusterAccessRequestRunnerValidationError
+from coldfront.core.project.models import Project
+from coldfront.core.project.models import ProjectStatusChoice
+from coldfront.core.project.models import ProjectUser
+from coldfront.core.project.models import ProjectUserRoleChoice
+from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.utils.common import utc_now_offset_aware
+from coldfront.core.utils.email.email_strategy import EnqueueEmailStrategy
 from coldfront.core.utils.tests.test_base import TestBase
 
 
@@ -349,3 +357,191 @@ class TestClusterAccessRequestDenialRunner(TestClusterAccessRunnersBase):
 
         self.assertGreater(len(log_cm.output), 0)
         self.assertEqual(len(mail.outbox), 0)
+
+
+class TestClusterAccessRequestRunner(TestBase):
+    """A class for testing ClusterAccessRequestRunner."""
+
+    def setUp(self):
+        """Set up test data."""
+        super().setUp()
+        self.create_test_user()
+        self.sign_user_access_agreement(self.user)
+
+        # Create a Project with a computing allowance, along with an 'Active'
+        # ProjectUser.
+        self.project = self.create_active_project_with_pi(
+            'fc_project', self.user)
+        accounting_allocation_objects = create_project_allocation(
+            self.project, Decimal('0.00'))
+        self.allocation = accounting_allocation_objects.allocation
+        self.project_user = self.project.projectuser_set.get(user=self.user)
+        self.allocation_user = get_or_create_active_allocation_user(
+            self.allocation, self.user)
+
+    def _assert_post_state(self):
+        """Assert that the relevant objects have the expected state,
+        assuming that the runner has run successfully."""
+        pending_add_allocation_user_attributes = \
+            AllocationUserAttribute.objects.filter(
+                allocation_attribute_type__name='Cluster Account Status',
+                allocation_user__allocation=self.allocation,
+                allocation_user__user=self.user,
+                value='Pending - Add')
+        self.assertEqual(pending_add_allocation_user_attributes.count(), 1)
+
+        cluster_access_requests = ClusterAccessRequest.objects.filter(
+            allocation_user__allocation=self.allocation,
+            allocation_user__user=self.user)
+        self.assertEqual(cluster_access_requests.count(), 1)
+
+    def _assert_pre_state(self):
+        """Assert that the relevant objects have the expected state,
+        assuming that the runner has either not run or not run
+        successfully."""
+        pending_add_allocation_user_attributes = \
+            AllocationUserAttribute.objects.filter(
+                allocation_attribute_type__name='Cluster Account Status',
+                allocation_user__allocation=self.allocation,
+                allocation_user__user=self.user,
+                value='Pending - Add')
+        self.assertFalse(pending_add_allocation_user_attributes.exists())
+
+        cluster_access_requests = ClusterAccessRequest.objects.filter(
+            allocation_user__allocation=self.allocation,
+            allocation_user__user=self.user)
+        self.assertFalse(cluster_access_requests.exists())
+
+    def test_asserts_allocation_user_active(self):
+        """Test that the runner asserts that the input AllocationUser
+        has the 'Active' status."""
+        active_status = AllocationUserStatusChoice.objects.get(name='Active')
+        self.assertEqual(self.allocation_user.status, active_status)
+        ClusterAccessRequestRunner(self.allocation_user)
+
+        other_statuses = AllocationUserStatusChoice.objects.exclude(
+            pk=active_status.pk)
+        self.assertTrue(other_statuses.exists())
+        for status in other_statuses:
+            self.allocation_user.status = status
+            self.allocation_user.save()
+            with self.assertRaises(AssertionError):
+                ClusterAccessRequestRunner(self.allocation_user)
+
+    def test_email_strategy_default(self):
+        """Test that, if no EmailStrategy is provided to the runner, it
+        defaults to using SendEmailStrategy (i.e., it sends emails
+        immediately)."""
+        self.assertEqual(len(mail.outbox), 0)
+
+        runner = ClusterAccessRequestRunner(self.allocation_user)
+        runner.run()
+
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_email_strategy_enqueue(self):
+        """Test that, if the EnqueueEmailStrategy is provided to the
+        runner, it does not send emails, but enqueues them for later
+        sending."""
+        self.assertEqual(len(mail.outbox), 0)
+
+        email_strategy = EnqueueEmailStrategy()
+        runner = ClusterAccessRequestRunner(
+            self.allocation_user, email_strategy=email_strategy)
+        runner.run()
+
+        self.assertEqual(len(mail.outbox), 0)
+
+        self.assertEqual(len(email_strategy.get_queue()), 1)
+        email_strategy.send_queued_emails()
+
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_failure(self):
+        """Test that, when an exception is raised inside the
+        transaction, changes made so far are rolled back, and no emails
+        are sent or queued for sending."""
+        self.assertEqual(len(mail.outbox), 0)
+
+        self._assert_pre_state()
+
+        email_strategy = EnqueueEmailStrategy()
+        with patch.object(
+                ClusterAccessRequestRunner,
+                '_create_cluster_access_request', raise_exception):
+            runner = ClusterAccessRequestRunner(
+                self.allocation_user, email_strategy=email_strategy)
+            with self.assertRaises(Exception) as cm:
+                runner.run()
+            self.assertEqual(str(cm.exception), 'Test exception.')
+
+        self._assert_pre_state()
+        self.assertEqual(len(mail.outbox), 0)
+        self.assertEqual(len(email_strategy.get_queue()), 0)
+
+    def test_success_previously_existent_objects(self):
+        """Test that the runner creates and updates expected database
+        objects when some objects previously existed."""
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Cluster Account Status')
+        allocation_user_attribute = AllocationUserAttribute.objects.create(
+            allocation_attribute_type=allocation_attribute_type,
+            allocation=self.allocation,
+            allocation_user=self.allocation_user,
+            value='Denied')
+
+        self._assert_pre_state()
+
+        runner = ClusterAccessRequestRunner(self.allocation_user)
+        runner.run()
+
+        self._assert_post_state()
+
+        allocation_user_attribute.refresh_from_db()
+        self.assertEqual(allocation_user_attribute.value, 'Pending - Add')
+
+    def test_success_previously_nonexistent_objects(self):
+        """Test that the runner creates and updates expected database
+        objects when some objects previously did not exist."""
+        self._assert_pre_state()
+
+        allocation_user_attributes = \
+            AllocationUserAttribute.objects.filter(
+                allocation_attribute_type__name='Cluster Account Status',
+                allocation_user__allocation=self.allocation,
+                allocation_user__user=self.user)
+        self.assertFalse(allocation_user_attributes.exists())
+
+        runner = ClusterAccessRequestRunner(self.allocation_user)
+        runner.run()
+
+        self._assert_post_state()
+
+    def test_validates_no_existing_cluster_access(self):
+        """Test that the runner raises an exception if the User already
+        has a pending or active AllocationUserAttribute with type
+        'Cluster Account Status'."""
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Cluster Account Status')
+        allocation_user_attribute = AllocationUserAttribute.objects.create(
+            allocation_attribute_type=allocation_attribute_type,
+            allocation=self.allocation,
+            allocation_user=self.allocation_user,
+            value='')
+
+        self._assert_pre_state()
+
+        runner = ClusterAccessRequestRunner(self.allocation_user)
+        expected_exception = ClusterAccessRequestRunnerValidationError
+        for invalid_value in ('Pending - Add', 'Processing', 'Active'):
+            allocation_user_attribute.value = invalid_value
+            allocation_user_attribute.save()
+            with self.assertRaises(expected_exception) as cm:
+                runner.run()
+            self.assertIn(
+                'already has pending or active access', str(cm.exception))
+
+        allocation_user_attribute.value = ''
+        allocation_user_attribute.save()
+
+        self._assert_pre_state()

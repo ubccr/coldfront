@@ -1,11 +1,18 @@
 from coldfront.api.user.tests.test_user_base import TestUserBase
 from coldfront.api.user.tests.utils import assert_user_serialization
+from coldfront.core.billing.models import BillingActivity
+from coldfront.core.billing.models import BillingProject
+from coldfront.core.utils.tests.test_base import enable_deployment
 from django.contrib.auth.models import User
 from http import HTTPStatus
 
 """A test suite for the /users/ endpoints, divided by method."""
 
-SERIALIZER_FIELDS = ('id', 'username', 'first_name', 'last_name', 'email')
+SERIALIZER_FIELDS = (
+    'id', 'username', 'first_name', 'last_name', 'email', 'profile')
+PROFILE_SERIALIZER_FIELDS = (
+    'id', 'user', 'is_pi', 'middle_name', 'cluster_uid', 'phone_number',
+    'access_agreement_signed_date')
 BASE_URL = '/api/users/'
 
 
@@ -107,7 +114,8 @@ class TestListUsers(TestUsersBase):
         self.assertIsNone(json['previous'])
         for result in json['results']:
             user = User.objects.get(id=result['id'])
-            assert_user_serialization(user, result, SERIALIZER_FIELDS)
+            assert_user_serialization(
+                user, result, SERIALIZER_FIELDS, PROFILE_SERIALIZER_FIELDS)
 
 
 class TestRetrieveUsers(TestUsersBase):
@@ -136,15 +144,69 @@ class TestRetrieveUsers(TestUsersBase):
         url = self.pk_url(BASE_URL, user.pk)
         self.assert_retrieve_result_format(url, SERIALIZER_FIELDS)
 
-    def test_valid_pk(self):
+    @enable_deployment('BRC')
+    def test_valid_pk_brc(self):
         """Test that the response for a valid primary key contains the
-        correct values."""
+        correct values, when BRC_ONLY is True."""
         user = User.objects.first()
         url = self.pk_url(BASE_URL, user.pk)
         response = self.client.get(url)
         self.assertEqual(response.status_code, HTTPStatus.OK)
         json = response.json()
-        assert_user_serialization(user, json, SERIALIZER_FIELDS)
+        assert_user_serialization(
+            user, json, SERIALIZER_FIELDS, PROFILE_SERIALIZER_FIELDS)
+
+    @enable_deployment('LRC')
+    def test_valid_pk_lrc(self):
+        """Test that the response for a valid primary key contains the
+        correct values, when LRC_ONLY is True."""
+        user = User.objects.first()
+        url = self.pk_url(BASE_URL, user.pk)
+
+        billing_project = BillingProject.objects.create(identifier='123456')
+        billing_activity = BillingActivity.objects.create(
+            billing_project=billing_project, identifier='789')
+        expected_billing_id = '123456-789'
+
+        lbl_host_user = User.objects.create(
+            username='lbl_host_user', email='lbl_host_user@lbl.gov')
+        non_lbl_host_user = User.objects.create(
+            username='non_lbl_host_user', email='non_lbl_host_user@notlbl.gov')
+
+        inputs_and_outputs = {
+            (None, None): (None, None, None),
+            (billing_activity, lbl_host_user):  (
+                expected_billing_id, lbl_host_user.id, lbl_host_user.email),
+            (billing_activity, non_lbl_host_user): (
+                expected_billing_id, non_lbl_host_user.id, None),
+        }
+
+        user_profile = user.userprofile
+        for inputs, outputs in inputs_and_outputs.items():
+            user_profile.billing_activity = inputs[0]
+            user_profile.host_user = inputs[1]
+            user_profile.save()
+
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, HTTPStatus.OK)
+            json = response.json()
+            profile_serializer_fields = (
+                PROFILE_SERIALIZER_FIELDS +
+                ('billing_activity', 'host_user', 'host_user_lbl_email'))
+            assert_user_serialization(
+                user, json, SERIALIZER_FIELDS, profile_serializer_fields)
+
+            expected_billing_activity = outputs[0]
+            expected_host_user = outputs[1]
+            expected_host_user_lbl_email = outputs[2]
+
+            json_profile = json['profile']
+            self.assertEqual(
+                json_profile['billing_activity'], expected_billing_activity)
+            self.assertEqual(json_profile['host_user'], expected_host_user)
+            self.assertEqual(
+                json_profile['host_user_lbl_email'],
+                expected_host_user_lbl_email)
 
     def test_invalid_pk(self):
         """Test that the response for a nonexistent or unassociated

@@ -63,8 +63,8 @@ Project List
 <b>Make a New Request</b>
 <hr>
 
-{% if need_host %}
-  <div>If you are joining your first project and are not an LBL employee with an LBL email (@lbl.gov), you must
+{% if require_host_user %}
+  <div>If you are joining your first project and are not an LBL employee with a verified LBL email (@lbl.gov), you must
     select an eligible PI to become your host user when requesting to join a project.</div>
     <hr>
 {% endif %}
@@ -185,7 +185,7 @@ Project List
                             <label for="reason{{ project.pk }}Input">Reason*</label>
                             <textarea required id="reason{{ project.pk }}Input" aria-describedby="reason{{ project.pk }}Help" class="form-control" name="reason" minlength="20" maxlength="1000"></textarea>
                             <small id="reason{{ project.pk }}Help" class="form-text text-muted">Please provide a short reason that will be reviewed by the project managers.</small>
-                            {% if need_host %}
+                            {% if require_host_user %}
                               {{ selecthostform_dict|get_value_from_dict:project.name | crispy }}
                             {% endif %}
                         </div>

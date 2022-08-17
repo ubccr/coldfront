@@ -70,3 +70,14 @@ class SendEmailStrategy(EmailStrategy):
             email_method(*email_args, **email_kwargs)
         except Exception as e:
             logger.exception(e)
+
+
+def validate_email_strategy_or_get_default(email_strategy=None):
+    """Given an input, if it is non-null, assert that is an
+    EmailStrategy before returning it. If it is null, return
+    SendEmailStrategy."""
+    if email_strategy is not None:
+        assert isinstance(email_strategy, EmailStrategy)
+    else:
+        email_strategy = SendEmailStrategy()
+    return email_strategy

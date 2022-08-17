@@ -4,7 +4,6 @@ from flags.state import flag_enabled
 from coldfront.api.statistics.utils import get_accounting_allocation_objects
 from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.utils import get_project_compute_resource_name
-from coldfront.core.allocation.utils import review_cluster_access_requests_url
 from coldfront.core.allocation.utils_.accounting_utils import set_service_units
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectStatusChoice
@@ -160,31 +159,6 @@ def send_project_join_request_denial_email(project, project_user):
 
     sender = settings.EMAIL_SENDER
     receiver_list = [user.email]
-
-    send_email_template(subject, template_name, context, sender, receiver_list)
-
-
-def send_new_cluster_access_request_notification_email(project, project_user):
-    """Send an email to admins notifying them of a new cluster access
-    request from the given ProjectUser under the given Project."""
-    email_enabled = import_from_settings('EMAIL_ENABLED', False)
-    if not email_enabled:
-        return
-
-    subject = 'New Cluster Access Request'
-    template_name = 'email/new_cluster_access_request.txt'
-
-    user = project_user.user
-    user_string = f'{user.first_name} {user.last_name} ({user.email})'
-
-    context = {
-        'project_name': project.name,
-        'user_string': user_string,
-        'review_url': review_cluster_access_requests_url(),
-    }
-
-    sender = settings.EMAIL_SENDER
-    receiver_list = settings.EMAIL_ADMIN_LIST
 
     send_email_template(subject, template_name, context, sender, receiver_list)
 

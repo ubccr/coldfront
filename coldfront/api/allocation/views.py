@@ -1,13 +1,10 @@
 import logging
 
-import rest_framework
 from django.db import transaction
-from django.http import Http404
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework.exceptions import APIException
-from rest_framework.response import Response
-from rest_framework import mixins, status, viewsets
+from rest_framework import mixins, viewsets
 
 from coldfront.api.allocation.filters import AllocationAttributeFilter, \
     ClusterAccessRequestFilter
@@ -24,7 +21,6 @@ from coldfront.api.allocation.serializers import \
     HistoricalAllocationAttributeSerializer
 from coldfront.api.allocation.serializers import \
     HistoricalAllocationUserAttributeSerializer
-from coldfront.api.permissions import IsAdminUserOrReadOnly
 from coldfront.core.allocation.models import Allocation, ClusterAccessRequest
 from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationUser
@@ -158,14 +154,12 @@ class ClusterAccessRequestViewSet(mixins.ListModelMixin,
 
     def perform_update(self, serializer):
         try:
+            # Pop read-only fields.
+            cluster_uid = serializer.validated_data.pop('cluster_uid', None)
+            username = serializer.validated_data.pop('username', None)
+            serializer.validated_data.pop('allocation_user', None)
             with transaction.atomic():
-                # Pop read only fields
-                cluster_uid = serializer.validated_data.pop('cluster_uid', None)
-                username = serializer.validated_data.pop('username', None)
-                serializer.validated_data.pop('allocation_user', None)
-
                 instance = serializer.save()
-
                 if instance.status.name == 'Complete':
                     runner = ClusterAccessRequestCompleteRunner(instance)
                     runner.run(username, cluster_uid)

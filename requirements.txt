@@ -5,6 +5,7 @@ blessed==1.15.0
 chardet==3.0.4
 coverage==6.2
 Django==3.2.5
+django-allauth==0.46.0
 django-constance==2.9.0
 django-crispy-forms==1.11.1
 django-durationwidget==1.0.5

@@ -27,7 +27,8 @@ from coldfront.core.project.models import VectorProjectAllocationRequest
 from coldfront.core.project.utils import annotate_queryset_with_cluster_name
 from coldfront.core.project.utils import send_project_join_notification_email
 from coldfront.core.project.views import ProjectListView
-from coldfront.core.user.utils import needs_host
+from coldfront.core.user.utils_.host_user_utils import is_lbl_employee
+from coldfront.core.user.utils_.host_user_utils import needs_host
 
 
 logger = logging.getLogger(__name__)
@@ -283,7 +284,7 @@ class ProjectJoinListView(ProjectListView, UserPassesTestMixin):
         pending_removal_requests = set([removal_request.project_user.project.name
                                         for removal_request in
                                         ProjectUserRemovalRequest.objects.filter(
-                                            Q(project_user__user__username=self.request.user.username) &
+                                            Q(project_user__user__username=user_obj.username) &
                                             Q(status__name='Pending'))])
 
         not_joinable = set.union(
@@ -300,21 +301,22 @@ class ProjectJoinListView(ProjectListView, UserPassesTestMixin):
         context['join_requests'] = join_requests
         context['not_joinable'] = not_joinable
 
-        # Only non-LBL employees without a host user and without any pending
-        # join requests need access to the SelectHostUserForm.
-        context['need_host'] = False
-        pending_status = ProjectUserStatusChoice.objects.get(name='Pending - Add')
-        if flag_enabled('LRC_ONLY') \
-                and needs_host(self.request.user) \
-                and not ProjectUser.objects.filter(user=self.request.user,
-                                                   status=pending_status).exists():
-            context['need_host'] = True
-
+        # On LRC only, require that the user select a host user if the user is
+        # not an LBL employee, does not already have a host user, and is not
+        # already in the process of being added to another project (for which
+        # they would have had to select a host user).
+        is_being_added_to_project = ProjectUser.objects.filter(
+            user=user_obj, status__name='Pending - Add').exists()
+        context['require_host_user'] = (
+            flag_enabled('LRC_ONLY') and
+            not is_lbl_employee(user_obj) and
+            needs_host(user_obj) and
+            not is_being_added_to_project)
+        if context['require_host_user']:
             selecthostform_dict = {}
             for project in context.get('project_list'):
                 selecthostform_dict[project.name] = \
                     ProjectSelectHostUserForm(project=project.name)
-
             context['selecthostform_dict'] = selecthostform_dict
 
         return context
