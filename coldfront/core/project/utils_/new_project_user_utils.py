@@ -96,7 +96,11 @@ class NewProjectUserSource(Enum):
 
 class NewProjectUserRunner(ABC):
     """An abstract class that performs processing when a User is
-    newly-associated with a Project."""
+    associated with a Project.
+
+    This should only be used when a ProjectUser is created, or when it
+    goes from a non-'Active' status to the 'Active' one.
+    """
 
     @abstractmethod
     def __init__(self, project_user_obj, source, email_strategy=None):
