@@ -15,37 +15,38 @@ Add Publication to Project
   <div class="mb-3" style="display:inline-block">
    
     <a class="btn btn-info" href="{% url 'add-publication-manually' project.pk %}" role="button">
-      <i class="far fa-edit" aria-hidden="true"></i> Add Publication Manually
+      <i aria-hidden="true"></i> Add Publication Manually
     </a>
   </div>
 
 <div class="mb-3" style="display:inline-block">
   
   <a class="btn btn-info" href="{% url 'add-publication-identifier' project.pk %}" role="button">
-    <i class="far fa-edit" aria-hidden="true"></i> Add Publication by DOI
+    <i aria-hidden="true"></i> Add Publication by DOI
   </a>
   </div>
-  
-  {% if orcid_vars == True %}
-  {% if has_orcid_users %}
-  <div class="mb-3" style="display:inline-block">
-    <a class="btn btn-info" href="{% url 'add-publication-orcid' project.pk %}" role="button">
-      <i class="far fa-user" aria-hidden="true"></i> Add Publication by ORCID Import
+  {% if orcid_plugin %}
+    {% if orcid_vars == True %}
+      {% if has_orcid_users %}
+      <div class="mb-3" style="display:inline-block">
+        <a class="btn btn-info" href="{% url 'add-publication-orcid' project.pk %}" role="button">
+          <i aria-hidden="true"></i> Add Publication by ORCID Import
+        </a>
+      </div>
+      {% else %}
+      <div title="{{no_orcid_users}}" class="mb-3" style="display:inline-block">
+          <a class="btn btn-info disabled" href="{% url 'add-publication-orcid' project.pk %}" role="button">
+            <i aria-hidden="true"></i> Add Publication by ORCID Import
+          </a>
+        </div>
+      {% endif %}
+  {% else %}
+  <div title="{{orcid_config_msg}}" class="mb-3" style="display:inline-block">
+    <a class="btn btn-info disabled" href="{% url 'add-publication-orcid' project.pk %}" role="button">
+      <i aria-hidden="true"></i> Add Publication by ORCID Import
     </a>
   </div>
-  {% else %}
-  <div title="{{no_orcid_users}}" class="mb-3" style="display:inline-block">
-      <a class="btn btn-info disabled" href="{% url 'add-publication-orcid' project.pk %}" role="button">
-        <i class="far fa-user" aria-hidden="true"></i> Add Publication by ORCID Import
-      </a>
-    </div>
   {% endif %}
-{% else %}
-<div title="{{orcid_config_msg}}" class="mb-3" style="display:inline-block">
-  <a class="btn btn-info disabled" href="{% url 'add-publication-orcid' project.pk %}" role="button">
-    <i class="far fa-user" aria-hidden="true"></i> Add Publication by ORCID Import
-  </a>
-</div>
 {% endif %}
 
 <br>

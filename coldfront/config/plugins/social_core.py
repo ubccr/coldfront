@@ -8,14 +8,12 @@ import importlib
 INSTALLED_APPS +=  ['social_django',
 ]
 
-PLUGIN_SOCIAL_CORE = ENV.bool('PLUGIN_SOCIAL_CORE', default=False)
+if ENV.bool('PLUGIN_SOCIAL_CORE', default=False):
 
-if PLUGIN_SOCIAL_CORE:
-
-    # try:
-    #     importlib.import_module('social-auth-app-django')
-    # except ImportError:
-    #     raise ImproperlyConfigured('Please run: pip install social-auth-app-django')
+    try:
+        import social_core
+    except ImportError:
+        raise ImproperlyConfigured('Please run: pip install social-auth-app-django')
 
     TEMPLATES[0]['OPTIONS']['context_processors'].extend(['social_django.context_processors.backends',
                                                 'social_django.context_processors.login_redirect',])

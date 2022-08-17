@@ -30,13 +30,13 @@ from coldfront.core.grant.models import (Grant, GrantFundingAgency,
                                          GrantStatusChoice, GrantStaged)
 from coldfront.core.project.models import Project, ProjectUser
 
-from coldfront.plugins.orcid.orcid_vars import OrcidAPI
 from coldfront.plugins.orcid.dict_methods import *
 from coldfront.core.utils.common import import_from_settings
 
 PLUGIN_ORCID = import_from_settings('PLUGIN_ORCID', False)
 if PLUGIN_ORCID:
     ORCID_SANDBOX = import_from_settings('ORCID_SANDBOX', True)
+    from coldfront.plugins.orcid.orcid_vars import OrcidAPI
 
 class GrantCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     form_class = GrantForm
@@ -129,28 +129,33 @@ class GrantCreateChoiceView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
         user_query_set = project_obj.projectuser_set.select_related('user').filter(
             status__name__in=['Active', ]).order_by("user__username")
 
-        if user_query_set:
-            orcid_users = []
-            for project_user in user_query_set:
-                try:
-                    user = project_user.user 
-                    if ORCID_SANDBOX: 
-                        orcid_is_linked = user.social_auth.get(provider='orcid-sandbox')
-                    else:
-                        orcid_is_linked = user.social_auth.get(provider='orcid')
-                    orcid_users.append(user.username)
-                except:
-                    pass
+        if PLUGIN_ORCID:
+            if user_query_set:
+                orcid_users = []
+                for project_user in user_query_set:
+                    try:
+                        user = project_user.user 
+                        if ORCID_SANDBOX: 
+                            orcid_is_linked = user.social_auth.get(provider='orcid-sandbox')
+                        else:
+                            orcid_is_linked = user.social_auth.get(provider='orcid')
+                        orcid_users.append(user.username)
+                    except:
+                        pass
 
-        has_orcid_users = False 
-        no_orcid_users = 'No project users have ORCID accounts linked'
-        if orcid_users:
-            has_orcid_users = True 
+            has_orcid_users = False 
+            no_orcid_users = 'No project users have ORCID accounts linked'
+            if orcid_users:
+                has_orcid_users = True 
+            
+            context['orcid_vars'] = OrcidAPI.orcid_configured()
+            context['has_orcid_users'] = has_orcid_users
+            context['no_orcid_users'] = no_orcid_users
+            context['orcid_config_msg'] = OrcidAPI.ORC_CONFIG_MSG
+
+       
         context['project'] = Project.objects.get(pk=self.kwargs.get('project_pk'))
-        context['orcid_vars'] = OrcidAPI.orcid_configured()
-        context['has_orcid_users'] = has_orcid_users
-        context['no_orcid_users'] = no_orcid_users
-        context['orcid_config_msg'] = OrcidAPI.ORC_CONFIG_MSG
+        context['orcid_plugin'] = PLUGIN_ORCID
         return context
 
 

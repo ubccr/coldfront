@@ -3,7 +3,7 @@ import logging
 import re
 from typing import List
 from urllib import request, response
-from coldfront.plugins.orcid.orcid_vars import OrcidAPI
+
 from django.contrib.auth import logout as auth_logout
 
 from django.contrib import messages
@@ -35,8 +35,10 @@ if EMAIL_ENABLED:
         'EMAIL_TICKET_SYSTEM_ADDRESS')
 
 PLUGIN_ORCID = import_from_settings('PLUGIN_ORCID', False)
+ORCID_SANDBOX = import_from_settings('ORCID_SANDBOX', True)
+
 if PLUGIN_ORCID:
-    ORCID_SANDBOX = import_from_settings('ORCID_SANDBOX', True)
+    from coldfront.plugins.orcid.orcid_vars import OrcidAPI
 
 
 @method_decorator(login_required, name='dispatch')
@@ -74,53 +76,28 @@ class UserProfileView(TemplateView):
         else:
             viewable = True 
 
-        try:
-            orcid_is_linked = viewed_user.social_auth.get(provider='orcid-sandbox')
-            if orcid_is_linked.user.username == viewed_user.username:
-                is_linked = True 
-        except:
-            orcid_is_linked = None
-            is_linked = False 
+        if PLUGIN_ORCID:
+            try:
+                if ORCID_SANDBOX:
+                    orcid_is_linked = viewed_user.social_auth.get(provider='orcid-sandbox')
+                else:
+                    orcid_is_linked = viewed_user.social_auth.get(provider='orcid')
+                if orcid_is_linked.user.username == viewed_user.username:
+                    is_linked = True 
+            except:
+                orcid_is_linked = None
+                is_linked = False
+
+            context['viewable'] = viewable 
+            context['orcid_linked'] = is_linked
+            context['orcid_sandbox'] = ORCID_SANDBOX 
 
         group_list = ', '.join(
             [group.name for group in viewed_user.groups.all()])
-
-        context['viewable'] = viewable 
-        context['orcid_linked'] = is_linked
-        context['orcid_sandbox'] = ORCID_SANDBOX
+        context['orcid_plugin'] = PLUGIN_ORCID
         context['group_list'] = group_list
         context['viewed_user'] = viewed_user
         return context
-    
-    # def post(self, request, *args, **kwargs):
-        
-    #     form = UserOrcidEditForm(request.POST)
-    #     viewed_username = request.POST['username']
-    #     viewed_user = get_object_or_404(User, username=viewed_username)
-
-    #     if form.is_valid():
-    #         profile_cleaned = form.cleaned_data
-    #         orcid_raw = re.sub("[^0-9a-zA-Z]+", "", profile_cleaned['orcid'])
-
-    #         if len(orcid_raw) == 0:
-    #             # Only handle 0 length strings here; everything else is handled by
-    #             # the validator
-    #             messages.error(request, "Invalid formatting: ORCID must be 16 characters in length, not including dashes.")
-    #             return HttpResponseRedirect(reverse('user-profile', kwargs={'viewed_username': viewed_username}))
-
-    #         orcids = [orcid_raw[i:i+4] for i in range(0, 16, 4)]
-
-    #         viewed_user_profile: UserProfile = UserProfile.objects.get(user_id=viewed_user.id)
-    #         viewed_user_profile.orcid_id = '-'.join(orcids)
-            
-    #         try:
-    #             viewed_user_profile.save()
-    #             messages.success(request, "ORCID successfully updated.")
-    #         except ValidationError as e:
-    #             messages.error(request, e.message)
-        
-    #     return HttpResponseRedirect(reverse('user-profile', kwargs={'viewed_username': viewed_username}))
-
 
 @method_decorator(login_required, name='dispatch')
 class UserProjectsManagersView(ListView):

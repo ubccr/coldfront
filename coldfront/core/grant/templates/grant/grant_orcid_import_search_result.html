@@ -41,13 +41,13 @@
           <thead>
             <tr>
               <th>
-                <input type="checkbox" class="nosort check" id="selectAllGrants">
+                <input type="checkbox" style="width: 8%;" class="nosort check" id="selectAllGrants">
               </th>
               
-              <th scope="col" class="nosort text-nowrap">Select All</th>
+              <th scope="col" style="width: 8%;" class="nosort text-nowrap">Select All</th>
               <th scope="col" class="nosort">Grant</th>
               <th scope="col" class="nosort">Editable Values</th>
-              <th scope="col" class="nosort"></th>
+              <th scope="col" class="nosort text-nowrap" style="width: 24%;"></th>
               <th scope="col" class="text-nowrap">Start Date</th>
             </tr>
           </thead>
@@ -90,7 +90,7 @@
                   <span>{{ form.amount_awarded_currency.value }}</span>
                 </div>
               </td>
-              <td>
+              <td class="text-nowrap">
                 <label for="id_grantform-0-role" class="col-form-label">
                   Project PI Role
                 </label> <br>

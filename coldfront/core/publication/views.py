@@ -3,7 +3,7 @@ import imp
 import json
 from pipes import Template
 import re
-
+import uuid
 from typing import Any, Dict, List, Tuple, Union
 from django.conf import settings
 
@@ -38,8 +38,6 @@ from coldfront.core.publication.models import Publication, PublicationSource
 from doi2bib import crossref
 from coldfront.core.user.forms import UserSelectForm
 from coldfront.core.user.views import UserSelectResults
-# import orcid #NEW REQUIREMENT: orcid (pip install orcid)
-from coldfront.plugins.orcid.orcid_vars import OrcidAPI
 from coldfront.plugins.orcid.dict_methods import *
 from coldfront.core.utils.common import import_from_settings
 
@@ -47,6 +45,7 @@ MANUAL_SOURCE = 'manual'
 
 PLUGIN_ORCID = import_from_settings('PLUGIN_ORCID', False)
 if PLUGIN_ORCID:
+    from coldfront.plugins.orcid.orcid_vars import OrcidAPI
     ORCID_SANDBOX = import_from_settings('ORCID_SANDBOX', True)
 
 
@@ -84,27 +83,34 @@ class PublicationSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
         user_query_set = project_obj.projectuser_set.select_related('user').filter(
             status__name__in=['Active', ]).order_by("user__username")
 
-        if user_query_set:
-            orcid_users = []
-            for project_user in user_query_set:
-                try:
-                    user = project_user.user 
-                    if ORCID_SANDBOX: 
-                        orcid_is_linked = user.social_auth.get(provider='orcid-sandbox')
-                    else:
-                        orcid_is_linked = user.social_auth.get(provider='orcid')
-                    orcid_users.append(user.username)
-                except:
-                    pass
+        if PLUGIN_ORCID:
+            if user_query_set:
+                orcid_users = []
+                for project_user in user_query_set:
+                    try:
+                        user = project_user.user 
+                        if ORCID_SANDBOX: 
+                            orcid_is_linked = user.social_auth.get(provider='orcid-sandbox')
+                        else:
+                            orcid_is_linked = user.social_auth.get(provider='orcid')
+                        orcid_users.append(user.username)
+                    except:
+                        pass
 
-        has_orcid_users = False 
-        no_orcid_users = 'No project users have ORCID accounts linked'
-        if orcid_users:
-            has_orcid_users = True 
+            has_orcid_users = False 
+            no_orcid_users = 'No project users have ORCID accounts linked'
+            if orcid_users:
+                has_orcid_users = True 
 
-        context['has_orcid_users'] = has_orcid_users
-        context['no_orcid_users'] = no_orcid_users
-        context['orcid_vars'] = OrcidAPI.orcid_configured()
+            context['has_orcid_users'] = has_orcid_users
+            context['no_orcid_users'] = no_orcid_users
+            
+            context['orcid_vars'] = OrcidAPI.orcid_configured()
+
+        
+
+        context['orcid_plugin'] = PLUGIN_ORCID
+        
         context['project'] = Project.objects.get(
             pk=self.kwargs.get('project_pk'))
         return context
@@ -139,7 +145,6 @@ class PublicationIdentifierSearchView(LoginRequiredMixin, UserPassesTestMixin, T
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
-        context['orcid_vars'] = OrcidAPI.orcid_configured()
         context['publication_identifier_search_form'] = PublicationIdentifierSearchForm()
         context['project'] = Project.objects.get(
             pk=self.kwargs.get('project_pk'))
@@ -174,7 +179,6 @@ class PublicationORCIDSearchView(LoginRequiredMixin, UserPassesTestMixin, Templa
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
-        context['orcid_vars'] = OrcidAPI.orcid_configured()
         context['publication_orcid_search_form'] = PublicationORCIDSearchForm(project_pk=self.kwargs.get('project_pk'))
         context['project'] = Project.objects.get(
             pk=self.kwargs.get('project_pk'))
@@ -383,16 +387,18 @@ class PublicationSearchResultView(LoginRequiredMixin, UserPassesTestMixin, Templ
         formset = formset_factory(PublicationResultForm, max_num=len(pubs))
         formset = formset(initial=pubs, prefix='pubform')
 
-        has_orcid = re.search(OrcidAPI.ORC_RE_KEY, ele) is not None
-        # True if the system detects an ORCID, but the ORCID API is not set up
-        missing_orcid_api = has_orcid and not OrcidAPI.orcid_configured()
-
         context = {}
+        if PLUGIN_ORCID:
+            has_orcid = re.search(OrcidAPI.ORC_RE_KEY, ele) is not None
+            # True if the system detects an ORCID, but the ORCID API is not set up
+            missing_orcid_api = has_orcid and not OrcidAPI.orcid_configured()
+            context['missing_orcid_api'] = missing_orcid_api
+
+        
         context['project_pk'] = project_obj.pk
         context['formset'] = formset
         context['search_ids'] = search_ids
         context['pubs'] = pubs
-        context['missing_orcid_api'] = missing_orcid_api
 
         return render(request, self.template_name, context)
 

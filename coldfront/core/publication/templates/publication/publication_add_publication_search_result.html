@@ -3,7 +3,7 @@
 {% if missing_orcid_api %}
 <p>
   ORCID detected in search, but the ORCID API has not been set up yet.
-  See the ORCID API settings in local_settings.py.sample for more information.
+  See the ORCID API settings in the configuration section within our documentation for more information.
 </p>
 {% endif %}
 {% if formset %}
@@ -16,9 +16,9 @@
             <thead>
               <tr>
                 <th>
-                  <input type="checkbox" class="check" id="selectAllPubs">
+                  <input type="checkbox" style="width: 8%;" class="check" id="selectAllPubs">
                 </th>
-                <th scope="col" class="nosort">Select All</th>
+                <th scope="col" style="width: 8%;" class="nosort">Select All</th>
                 <th scope="col" class="nosort">Publication</th>
                 <th scope="col" class="text-nowrap"> Year </th>
               </tr>

@@ -53,6 +53,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
               {% endif %}
             </td>
           </tr>
+          {% if orcid_plugin %} 
           <tr>
             <th scope="row">ORCID:</th>
             <td>
@@ -82,6 +83,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
           
             </td>
           </tr>
+          {% endif %}
           <tr>
             <th scope="row">Last Login:</th>
             <td>{{viewed_user.last_login}}</td>
