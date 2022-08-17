@@ -685,7 +685,7 @@ class AllocationRenewalApprovalRunner(AllocationRenewalRunnerBase):
     """An object that performs necessary database changes when an
     AllocationRenewalRequest is approved."""
 
-    def __init__(self, request_obj, num_service_units, send_email=False):
+    def __init__(self, request_obj, num_service_units, email_strategy=None):
         super().__init__(request_obj)
         self.request_obj.allocation_period.assert_not_ended()
         expected_status = AllocationRenewalRequestStatusChoice.objects.get(
@@ -693,13 +693,12 @@ class AllocationRenewalApprovalRunner(AllocationRenewalRunnerBase):
         self.assert_request_status(expected_status)
         validate_num_service_units(num_service_units)
         self.num_service_units = num_service_units
-        # Note: send_email is already the name of a method.
-        self.can_send_email = bool(send_email)
+        self._email_strategy = validate_email_strategy_or_get_default(
+            email_strategy=email_strategy)
 
     def run(self):
         self.approve_request()
-        if self.can_send_email:
-            self.send_email()
+        self.send_email()
 
     def approve_request(self):
         """Set the status of the request to 'Approved' and set its
@@ -742,11 +741,12 @@ class AllocationRenewalApprovalRunner(AllocationRenewalRunnerBase):
         """Send a notification email to the requester and PI."""
         request = self.request_obj
         try:
-            send_allocation_renewal_request_approval_email(
-                request, self.num_service_units)
+            email_method = send_allocation_renewal_request_approval_email
+            email_args = (request, self.num_service_units)
+            self._email_strategy.process_email(email_method, *email_args)
         except Exception as e:
-            logger.error('Failed to send notification email. Details:')
-            logger.exception(e)
+            logger.exception(
+                f'Failed to send notification email. Details:\n{e}')
 
 
 class AllocationRenewalDenialRunner(AllocationRenewalRunnerBase):
@@ -812,8 +812,8 @@ class AllocationRenewalDenialRunner(AllocationRenewalRunnerBase):
         try:
             send_allocation_renewal_request_denial_email(request)
         except Exception as e:
-            logger.error('Failed to send notification email. Details:')
-            logger.exception(e)
+            logger.exception(
+                'Failed to send notification email. Details:\n{e}')
 
 
 class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):

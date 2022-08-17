@@ -111,17 +111,6 @@ def project_pi_pks(computing_allowance=None, project_status_names=[]):
         ).values_list('user__pk', flat=True))
 
 
-class ProjectApprovalRunner(object):
-    """An object that performs necessary database changes when a new
-    project request is approved."""
-
-    def __init__(self, request_obj, *args, **kwargs):
-        self.request_obj = request_obj
-
-    def run(self):
-        raise NotImplementedError('This method is not implemented.')
-
-
 class ProjectDenialRunner(object):
     """An object that performs necessary database changes when a new
     project request is denied."""
@@ -245,14 +234,14 @@ class ProjectProcessingRunner(object):
         raise NotImplementedError('This method is not implemented.')
 
 
-class SavioProjectApprovalRunner(ProjectApprovalRunner):
+class SavioProjectApprovalRunner(object):
     """An object that performs necessary database changes when a new
     Savio project request is approved."""
 
     def __init__(self, request_obj, num_service_units, email_strategy=None):
+        self.request_obj = request_obj
         validate_num_service_units(num_service_units)
         self.num_service_units = num_service_units
-        super().__init__(request_obj)
         if self.request_obj.allocation_period:
             self.request_obj.allocation_period.assert_not_ended()
         self._email_strategy = validate_email_strategy_or_get_default(
