@@ -10,6 +10,7 @@ from coldfront.core.allocation.models import AllocationUser
 from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.allocation.models import AllocationUserAttributeUsage
 from coldfront.core.allocation.models import AllocationUserStatusChoice
+from coldfront.core.allocation.models import ClusterAccessRequest
 from coldfront.core.allocation.utils import get_project_compute_allocation
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectStatusChoice
@@ -50,6 +51,8 @@ class TestRunnerMixin(TestRunnerMixinBase):
         project = request.post_project
         allocation = get_project_compute_allocation(project)
 
+        ClusterAccessRequest.objects.all().delete()
+
         # Delete all such attributes.
         allocation_attribute_type = AllocationAttributeType.objects.get(
             name='Cluster Account Status')
@@ -78,6 +81,15 @@ class TestRunnerMixin(TestRunnerMixinBase):
             if expected_num_attributes:
                 self.assertEqual(attributes.first().value, 'Pending - Add')
 
+            cluster_access_requests = ClusterAccessRequest.objects.filter(
+                allocation_user=allocation_user)
+            self.assertEqual(
+                expected_num_attributes, cluster_access_requests.count())
+            if expected_num_attributes:
+                self.assertEqual(
+                    cluster_access_requests.first().status.name,
+                    'Pending - Add')
+
     def test_cluster_access_requests_not_updated_if_project_user_active(self):
         """Test that the runner does not update existent
         AllocationUserAttributes with type 'Cluster Account Status' when
@@ -86,6 +98,8 @@ class TestRunnerMixin(TestRunnerMixinBase):
         request = self.request_obj
         project = request.post_project
         allocation = get_project_compute_allocation(project)
+
+        ClusterAccessRequest.objects.all().delete()
 
         # Only the requester should have one cluster access request. Set its
         # status to 'Active'.
@@ -124,6 +138,9 @@ class TestRunnerMixin(TestRunnerMixinBase):
             if expected_num_attributes:
                 self.assertEqual(attributes.first().value, 'Denied')
 
+        # No ClusterAccessRequests should have been created.
+        self.assertEqual(ClusterAccessRequest.objects.count(), 0)
+
     def test_cluster_access_requests_updated_if_project_user_not_active(self):
         """Test that the runner updates existent, non-'Active'
         AllocationUserAttributes with type 'Cluster Account Status' when
@@ -131,6 +148,8 @@ class TestRunnerMixin(TestRunnerMixinBase):
         request = self.request_obj
         project = request.post_project
         allocation = get_project_compute_allocation(project)
+
+        ClusterAccessRequest.objects.all().delete()
 
         # Only the requester should have one cluster access request. Set its
         # associated ProjectUser's status to 'Removed'.
@@ -167,6 +186,15 @@ class TestRunnerMixin(TestRunnerMixinBase):
             self.assertEqual(expected_num_attributes, attributes.count())
             if expected_num_attributes:
                 self.assertEqual(attributes.first().value, 'Pending - Add')
+
+            cluster_access_requests = ClusterAccessRequest.objects.filter(
+                allocation_user=allocation_user)
+            self.assertEqual(
+                expected_num_attributes, cluster_access_requests.count())
+            if expected_num_attributes:
+                self.assertEqual(
+                    cluster_access_requests.first().status.name,
+                    'Pending - Add')
 
     def test_num_service_units_validated(self):
         """Test that the provided number of service units must be valid,
