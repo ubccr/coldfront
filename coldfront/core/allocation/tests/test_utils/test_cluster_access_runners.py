@@ -8,7 +8,6 @@ from django.core import mail
 from coldfront.api.statistics.utils import create_project_allocation
 from coldfront.api.statistics.utils import create_user_project_allocation
 from coldfront.core.allocation.models import AllocationAttributeType
-from coldfront.core.allocation.models import AllocationUser
 from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.allocation.models import AllocationUserStatusChoice
 from coldfront.core.allocation.models import ClusterAccessRequest
@@ -17,6 +16,7 @@ from coldfront.core.allocation.utils import get_or_create_active_allocation_user
 from coldfront.core.allocation.utils_.cluster_access_utils import ClusterAccessRequestCompleteRunner
 from coldfront.core.allocation.utils_.cluster_access_utils import ClusterAccessRequestDenialRunner
 from coldfront.core.allocation.utils_.cluster_access_utils import ClusterAccessRequestRunner
+from coldfront.core.allocation.utils_.cluster_access_utils import ClusterAccessRequestRunnerValidationError
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
@@ -428,34 +428,6 @@ class TestClusterAccessRequestRunner(TestBase):
             with self.assertRaises(AssertionError):
                 ClusterAccessRequestRunner(self.allocation_user)
 
-    def test_asserts_no_existing_cluster_access(self):
-        """Test that the runner asserts that the User does not have a
-        pending or active AllocationUserAttribute with type 'Cluster
-        Account Status'."""
-        allocation_attribute_type = AllocationAttributeType.objects.get(
-            name='Cluster Account Status')
-        allocation_user_attribute = AllocationUserAttribute.objects.create(
-            allocation_attribute_type=allocation_attribute_type,
-            allocation=self.allocation,
-            allocation_user=self.allocation_user,
-            value='')
-
-        self._assert_pre_state()
-
-        runner = ClusterAccessRequestRunner(self.allocation_user)
-        for invalid_value in ('Pending - Add', 'Processing', 'Active'):
-            allocation_user_attribute.value = invalid_value
-            allocation_user_attribute.save()
-            with self.assertRaises(AssertionError) as cm:
-                runner.run()
-            self.assertIn(
-                'already has pending or active access', str(cm.exception))
-
-        allocation_user_attribute.value = ''
-        allocation_user_attribute.save()
-
-        self._assert_pre_state()
-
     def test_email_strategy_default(self):
         """Test that, if no EmailStrategy is provided to the runner, it
         defaults to using SendEmailStrategy (i.e., it sends emails
@@ -544,3 +516,32 @@ class TestClusterAccessRequestRunner(TestBase):
         runner.run()
 
         self._assert_post_state()
+
+    def test_validates_no_existing_cluster_access(self):
+        """Test that the runner raises an exception if the User already
+        has a pending or active AllocationUserAttribute with type
+        'Cluster Account Status'."""
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Cluster Account Status')
+        allocation_user_attribute = AllocationUserAttribute.objects.create(
+            allocation_attribute_type=allocation_attribute_type,
+            allocation=self.allocation,
+            allocation_user=self.allocation_user,
+            value='')
+
+        self._assert_pre_state()
+
+        runner = ClusterAccessRequestRunner(self.allocation_user)
+        expected_exception = ClusterAccessRequestRunnerValidationError
+        for invalid_value in ('Pending - Add', 'Processing', 'Active'):
+            allocation_user_attribute.value = invalid_value
+            allocation_user_attribute.save()
+            with self.assertRaises(expected_exception) as cm:
+                runner.run()
+            self.assertIn(
+                'already has pending or active access', str(cm.exception))
+
+        allocation_user_attribute.value = ''
+        allocation_user_attribute.save()
+
+        self._assert_pre_state()
