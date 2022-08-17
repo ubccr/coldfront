@@ -248,7 +248,8 @@ class SavioProjectApprovalRunner(object):
             email_strategy=email_strategy)
 
     def run(self):
-        self.approve_request()
+        with transaction.atomic():
+            self.approve_request()
         self.send_email()
 
     def approve_request(self):
