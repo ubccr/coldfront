@@ -138,6 +138,7 @@ disabled:
 | EMAIL_OPT_OUT_INSTRUCTION_URL   | URL of article regarding opt out          |
 | EMAIL_SIGNATURE                 | Email signature to add to outgoing emails |
 | EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS   | List of days to send email notifications for expiring allocations. Default 7,14,30 |
+| EMAIL_ADMINS_ON_ALLOCATION_EXPIRE | Setting this to True will send a daily email notification to administrators with a list of allocations that have expired that day. |
 
 ### Plugin settings
 For more info on [ColdFront plugins](plugin.md) (Django apps)

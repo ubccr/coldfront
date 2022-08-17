@@ -19,12 +19,18 @@ Manually Enter Grant
 
 <br/>
 
+
 <a class="btn btn-info" href="{% url 'grant-create-choice' project.pk %}" role="button">
   <i class="fas fa-search" aria-hidden="true"></i> Back to Search
 </a>
 <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button">
     <i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project
 </a>
+
+<script>
+ $('#id_grant_start').flatpickr();
+ $('#id_grant_end').flatpickr();
+</script>
 
 {% endblock %}
 
