@@ -44,6 +44,12 @@ class ProjectTypeChoice(TimeStampedModel):
 class Project(TimeStampedModel):
 
     DEFAULT_DESCRIPTION = ''
+    DESCRIPTION_HELP_TEXT = """
+Please provide a brief description or abstract about your project including any applications or
+workflows you intend to use, and how you primarily intend to use the system, including if PHI will
+be stored. Please include your area of research and your department. If this is for a class please
+put the approximate class size.
+"""
 
     title = models.CharField(max_length=255,)
     pi = models.ForeignKey(User, on_delete=models.CASCADE,)
@@ -51,11 +57,12 @@ class Project(TimeStampedModel):
         verbose_name="PI Username",
         max_length=20,
         blank=True,
-        help_text='Required if you will not be the PI of this project. Graduate students cannot be the PI'
+        help_text='Required if you will not be the PI of this project. Only faculty and staff can be the PI'
     )
     requestor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='requestor_user')
     description = models.TextField(
         default=DEFAULT_DESCRIPTION,
+        help_text=DESCRIPTION_HELP_TEXT,
         validators=[
             MinLengthValidator(
                 10,
