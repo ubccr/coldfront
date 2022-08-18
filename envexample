@@ -36,16 +36,16 @@ PROJECT_ENABLE_PROJECT_REVIEW=False
 # allocations are meant to continue indefinitely.
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL=False
 
-# 	Default number of days an allocation is active for, default 365
+# Default number of days an allocation is active for, default 365
 # ALLOCATION_DEFAULT_ALLOCATION_LENGTH=365
 
-# 	Enable or disable allocation change requests, default True
+# Enable or disable allocation change requests, default True
 # ALLOCATION_ENABLE_CHANGE_REQUESTS_BY_DEFAULT=True
 
-# 	List of days users can request extensions in an allocation change request, default 30,60,90
+# List of days users can request extensions in an allocation change request, default 30,60,90
 # ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS=30,60,90
 
-# 	Allow user to select account name for allocation, default False
+# Allow user to select account name for allocation, default False
 # ALLOCATION_ACCOUNT_ENABLED=False
 
 # Controls the ordering of parent resources for an allocation (if allocation has
