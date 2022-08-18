@@ -20,6 +20,7 @@ from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.utils import send_added_to_project_notification_email
 from coldfront.core.project.utils import send_project_join_request_approval_email
+from coldfront.core.resource.utils import get_computing_allowance_project_prefixes
 from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.user.utils_.host_user_utils import eligible_host_project_users
@@ -261,21 +262,19 @@ class LRCNewProjectUserRunner(NewProjectUserRunner):
     def _run_extra_steps(self):
         """Run extra processing steps.
             1. For external users who require a host user, set it.
-            2. For Recharge projects, set a BillingActivity for usage.
+            2. For projects requiring one, set a BillingActivity.
         """
         if needs_host(self._user_obj):
             self._set_host_user()
-        if self._is_recharge_project():
-            self._set_recharge_billing_activity()
+        if self._is_billing_activity_required():
+            self._set_billing_activity()
 
-    def _is_recharge_project(self):
-        """Return whether the Project has a Recharge allowance."""
-        computing_allowance_interface = ComputingAllowanceInterface()
-        computing_allowance = \
-            computing_allowance_interface.allowance_from_project(
-                self._project_obj)
-        computing_allowance = ComputingAllowance(computing_allowance)
-        return computing_allowance.is_recharge()
+    def _is_billing_activity_required(self):
+        """Return whether a billing activity needs to be set."""
+        computing_allowance_project_prefixes = \
+            get_computing_allowance_project_prefixes()
+        return self._project_obj.name.startswith(
+            computing_allowance_project_prefixes)
 
     def _set_host_user(self):
         """Determine and set a host_user in the ProjectUser's
@@ -309,7 +308,7 @@ class LRCNewProjectUserRunner(NewProjectUserRunner):
         self._user_obj.userprofile.host_user = host_user
         self._user_obj.userprofile.save()
 
-    def _set_recharge_billing_activity(self):
+    def _set_billing_activity(self):
         """TODO"""
         pass
 

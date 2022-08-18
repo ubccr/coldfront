@@ -115,10 +115,10 @@ class ProjectReviewJoinRequestsView(LoginRequiredMixin, UserPassesTestMixin,
         num_reviews = 0
         failed_usernames = []
         for form in formset:
-            num_reviews += 1
             user_form_data = form.cleaned_data
             if not user_form_data['selected']:
                 continue
+            num_reviews += 1
             username = user_form_data.get('username')
             user_obj = User.objects.get(username=username)
             project_user_obj = self.project_obj.projectuser_set.get(
