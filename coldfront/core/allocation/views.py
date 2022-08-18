@@ -1942,11 +1942,11 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                         if form_data.get('end_date_extension') != allocation_change_obj.end_date_extension:
                             allocation_change_obj.end_date_extension = form_data.get('end_date_extension')
 
-                        new_end_date = allocation_change_obj.allocation.end_date + relativedelta(
+                            new_end_date = allocation_change_obj.allocation.end_date + relativedelta(
                             days=allocation_change_obj.end_date_extension)
 
-                        allocation_change_obj.allocation.end_date = new_end_date
-                        allocation_change_obj.allocation.save()
+                            allocation_change_obj.allocation.end_date = new_end_date
+                            allocation_change_obj.allocation.save()
 
                         allocation_change_obj.save()
 
@@ -2009,9 +2009,9 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                             if selected_extension != allocation_change_obj.end_date_extension:
                                 allocation_change_obj.end_date_extension = selected_extension
 
-                            new_end_date = allocation_change_obj.allocation.end_date + relativedelta(
-                                days=allocation_change_obj.end_date_extension)
-                            allocation_change_obj.allocation.end_date = new_end_date
+                                new_end_date = allocation_change_obj.allocation.end_date + relativedelta(
+                                    days=allocation_change_obj.end_date_extension)
+                                allocation_change_obj.allocation.end_date = new_end_date
 
                             allocation_change_obj.allocation.save()
                             allocation_change_obj.save()
