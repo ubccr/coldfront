@@ -34,7 +34,7 @@ class DepartmentListView(LoginRequiredMixin, ListView):
             order_by = 'id'
 
         department_search_form = DepartmentSearchForm(self.request.GET)
-        departments = Department.objects.prefetch_related('name', 'rank')
+        departments = Department.objects.prefetch_related('projects')
         user_filter = ( Q(departmentmember__member=self.request.user) &
                         Q(departmentmember__status__name='Active'))
 
@@ -101,6 +101,7 @@ class DepartmentListView(LoginRequiredMixin, ListView):
             department_list = paginator.page(1)
         except EmptyPage:
             department_list = paginator.page(paginator.num_pages)
+        context['department_list'] = department_list
 
         return context
 
