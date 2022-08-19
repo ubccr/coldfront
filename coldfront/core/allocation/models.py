@@ -794,14 +794,13 @@ class ClusterAccessRequestStatusChoice(TimeStampedModel):
 
 
 class ClusterAccessRequest(TimeStampedModel):
-    allocation_user = models.ForeignKey(AllocationUser, on_delete=models.CASCADE)
-    status = models.ForeignKey(ClusterAccessRequestStatusChoice, on_delete=models.CASCADE)
+    allocation_user = models.ForeignKey(
+        AllocationUser, on_delete=models.CASCADE)
+    status = models.ForeignKey(
+        ClusterAccessRequestStatusChoice, on_delete=models.CASCADE)
 
     request_time = models.DateTimeField(
         null=True, blank=True, default=timezone.now)
     completion_time = models.DateTimeField(null=True, blank=True)
-
-    host_user = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
-    billing_activity = models.ForeignKey(BillingActivity, null=True, blank=True, on_delete=models.CASCADE)
 
     history = HistoricalRecords()
