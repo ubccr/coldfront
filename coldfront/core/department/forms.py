@@ -6,6 +6,5 @@ class DepartmentSearchForm(forms.Form):
     """
 
     name = forms.CharField(label='Department Name', max_length=100, required=False)
-    field_of_science = forms.CharField(
-        label='Field of Science', max_length=100, required=False)
+    rank = forms.CharField(label='Rank', max_length=100, required=False)
     show_all_departments = forms.BooleanField(initial=False, required=False)

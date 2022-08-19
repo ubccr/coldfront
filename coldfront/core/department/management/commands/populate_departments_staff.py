@@ -2,8 +2,7 @@
 
 import logging
 
-from django.db.models import Q
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from ifxuser.models import (Organization,
                             OrgRelation,
                             Contact,
@@ -29,7 +28,10 @@ class Command(BaseCommand):
     help = 'populate Department records from Nanites Organization tables. Usage:\n' + \
         './manage.py populate_Department_records'
 
+
+
     def handle(self, *args, **kwargs):
+        # create DepartmentMemberStatus
         for status in ["Active", "Inactive"]:
             DepartmentMemberStatus.objects.get_or_create(name=status)
         # start with only those labs that have a direct or indirect relationship
@@ -54,12 +56,16 @@ class Command(BaseCommand):
             org = Organization.objects.get(id=org_id)
             print(org.name, org.rank, org.id)
             rank = DepartmentRank.objects.get_or_create(name=org.rank)[0]
+            # create Department
             department = Department.objects.get_or_create(name=org.name, rank=rank)[0]
             project = ProjectOrganization.objects.get(organization_id=lab_id).project
-            deptproject = DepartmentProjects.objects.get_or_create(department=department, project=project)[0]
+            # create DepartmentProjects
+            DepartmentProjects.objects.get_or_create(department=department, project=project)
             affiliated = UserAffiliation.objects.filter(organization=org)
             for aff_user in affiliated:
+                # create DepartmentMemberRoles
                 role = DepartmentMemberRole.objects.get_or_create(name=aff_user.role)[0]
                 status = "Active" if aff_user.active == 1 else "Inactive"
-                DepartmentMember.objects.get_or_create(
-                        department=department, member=aff_user.user, role=role, status=DepartmentMemberStatus.objects.get(name=status))
+                # create DepartmentMembers
+                DepartmentMember.objects.get_or_create(department=department, member=aff_user.user,
+                            role=role, status=DepartmentMemberStatus.objects.get(name=status))

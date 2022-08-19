@@ -28,8 +28,6 @@ class Department(TimeStampedModel):
     name = models.CharField(max_length=255,)
     rank = models.ForeignKey(DepartmentRank, on_delete=models.CASCADE)
     projects = models.ManyToManyField(Project, through='DepartmentProjects')
-    # field_of_science = models.ForeignKey(FieldOfScience, on_delete=models.CASCADE,
-    #                                             default=FieldOfScience.DEFAULT_PK)
     history = HistoricalRecords()
 
 
