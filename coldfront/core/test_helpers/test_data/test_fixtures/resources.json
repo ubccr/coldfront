@@ -17,4 +17,40 @@
     "allowed_users": [],
     "linked_resources": []
   }
+},
+{
+  "model": "ifxbilling.facility",
+  "pk": 1,
+  "fields": {
+    "name":"Research Computing Storage",
+    "application_username":"coldfront",
+    "credit_code": "CODE",
+    "invoice_prefix": "RC",
+    "object_code": 8250
+  }
+},
+{
+  "model": "ifxbilling.rate",
+  "pk": 1,
+  "fields": {
+    "name": "Uni Rate",
+    "price": 100,
+    "units": "TB",
+    "is_active": true,
+    "product_id": 1,
+    "max_qty": null
+  }
+},
+{
+  "model": "ifxbilling.product",
+  "pk": 1,
+  "fields": {
+    "product_name": "holylfs10/tier1",
+    "product_number": "IFXNANANANANANANANANA",
+    "product_description": "holylfs10/tier1",
+    "billing_calculator": "coldfront.plugins.ifx.calculator.ColdfrontBillingCalculator",
+    "reporting_group": "null",
+    "facility_id": 1,
+    "billable": 1
+  }
 }]

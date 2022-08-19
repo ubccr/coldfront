@@ -7,7 +7,8 @@ from django.contrib.auth import get_user_model
 
 from coldfront.core.allocation.models import (Allocation,
                                 AllocationAttribute,
-                                AllocationChangeRequest)
+                                AllocationChangeRequest,
+                                AllocationAttributeUsage)
 
 FIXTURES = [
             "coldfront/core/test_helpers/test_data/test_fixtures/resources.json",

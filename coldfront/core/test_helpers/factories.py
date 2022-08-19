@@ -4,6 +4,7 @@ from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.resource.models import ResourceType
 from coldfront.core.department.models import Department
 from coldfront.core.project.models import Project, ProjectStatusChoice
+from coldfront.core.allocation.models import Allocation
 from coldfront.core.grant.models import GrantFundingAgency, GrantStatusChoice
 from coldfront.core.publication.models import PublicationSource
 
@@ -16,6 +17,11 @@ from factory import SubFactory
 class UserFactory(DjangoModelFactory):
     class Meta:
         model = get_user_model()
+
+
+class AllocationFactory(DjangoModelFactory):
+    class Meta:
+        model = Allocation
 
 
 class FieldOfScienceFactory(DjangoModelFactory):
