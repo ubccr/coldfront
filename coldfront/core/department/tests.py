@@ -2,8 +2,8 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.test import TestCase, Client
 
-
-from coldfront.core.department.models import Department
+from coldfront.core.test_helpers import test_utils
+from coldfront.core.department.models import Department, DepartmentMember
 
 
 FIXTURES = [
@@ -20,20 +20,17 @@ class DepartmentListViewTest(TestCase):
     fixtures = FIXTURES
 
     def setUp(self):
-        self.test_user1 = get_user_model().objects.get(username='gvanrossum')
-        self.test_user2 = get_user_model().objects.get(username='eostrom')
+        self.admin_user = get_user_model().objects.get(username='gvanrossum')
+        self.dept_manager_user = get_user_model().objects.get(username='eostrom')
         self.client = Client()
 
     def test_department_list_access(self):
-        """Test department-list access controls
-        """
-        # no login means redirect
-        response = self.client.get("/department/")
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, "/user/login?next=/department/")
+        """Test department list access controls."""
+        # If not logged in, can't see page; redirect to login page.
+        test_utils.test_redirect_to_login(self, "/department/")
 
         # after login, user and admin can access list page
-        self.client.force_login(self.test_user2, backend="django.contrib.auth.backends.ModelBackend")
+        self.client.force_login(self.dept_manager_user, backend="django.contrib.auth.backends.ModelBackend")
         response = self.client.get("/department/")
         self.assertEqual(response.status_code, 200)
 
@@ -41,40 +38,49 @@ class DepartmentListViewTest(TestCase):
     def test_department_list_content(self):
         """Confirm that department-list has correct content
         """
-        self.client.force_login(self.test_user2, backend="django.contrib.auth.backends.ModelBackend")
 
-        # non-admins can't see all departments.
+        # non-admins can only see departments they belong to.
+        self.client.force_login(self.dept_manager_user, backend="django.contrib.auth.backends.ModelBackend")
         response = self.client.get("/department/?show_all_departments=on")
-        print("LIST", response, str(list(response.context['messages'])))
+        # print("LIST", response, str(list(response.context['messages'])))
 
-        # admins can see all departments
+        # admins can see all departments.
+        self.client.force_login(self.admin_user, backend="django.contrib.auth.backends.ModelBackend")
+
 
 
 class DepartmentDetailViewTest(TestCase):
     fixtures = FIXTURES
 
     def setUp(self):
-        self.test_user1 = get_user_model().objects.get(username='gvanrossum')
-        # eostrom has connection with dept 1
-        self.test_user2 = get_user_model().objects.get(username='eostrom')
+        self.admin_user = get_user_model().objects.get(username='gvanrossum')
+        self.department = Department.objects.first()
+        self.dept_manager_user = DepartmentMember.objects.get(
+                                                    role_id=1,
+                                                    department_id=self.department.pk
+                                                    ).member
         self.client = Client()
 
 
     def test_department_detail_access(self):
         """Test department-detail access controls
         """
-        response = self.client.get("/department/1/")
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, "/user/login?next=/department/1/")
+        dept_id = self.department.pk
+        # If not logged in, can't see page; redirect to login page.
+        test_utils.test_redirect_to_login(self, f"/department/{dept_id}/")
 
         # admin can access
-        self.client.force_login(self.test_user1, backend="django.contrib.auth.backends.ModelBackend")
-        response = self.client.get("/department/1/")
-        self.assertEqual(response.status_code, 200)
+        test_utils.test_admin_can_access(self, f"/department/{dept_id}/")
 
         # user belonging to department can access
-        self.client.force_login(self.test_user2, backend="django.contrib.auth.backends.ModelBackend")
-        response = self.client.get("/department/1/")
-        print(response)
+        # self.client.force_login(self.dept_manager_user, backend="django.contrib.auth.backends.ModelBackend")
+        # response = self.client.get(f"/department/{dept_id}/")
+        # print(response)
 
         # user not belonging to department cannot access
+
+    def test_department_detail_content(self):
+        """Check content of department detail pages.
+        """
+        # department members who are not administrators cannot update department details
+        # or review bills

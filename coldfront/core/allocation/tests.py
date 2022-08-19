@@ -5,6 +5,7 @@ from django.test import TestCase, Client
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth import get_user_model
 
+from coldfront.core.test_helpers import test_utils
 from coldfront.core.allocation.models import (Allocation,
                                 AllocationAttribute,
                                 AllocationChangeRequest)
@@ -33,21 +34,18 @@ class AllocationListViewTest(TestCase):
     fixtures = FIXTURES
 
     def setUp(self):
-        user = get_user_model().objects.get(username="gvanrossum")
+        self.admin_user = get_user_model().objects.get(username="gvanrossum")
         self.user2 = get_user_model().objects.get(username='snewcomb')
         self.client = Client()
         # self.client.force_login(user, backend="django.contrib.auth.backends.ModelBackend")
         # did_login_succeed = self.c.login(username='gvanrossum', password="python")
         # self.assertTrue(did_login_succeed)
 
-    def test_allocation_list_template(self):
+    def test_allocation_list_access(self):
         """Confirm that allocation-list renders correctly
         """
         # no login means redirect
-        response = self.client.get("/allocation/")
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, "/user/login?next=/allocation/")
-
+        test_utils.test_redirect_to_login(self, "/allocation/")
 
         response = self.client.get("/allocation/")
         self.client.force_login(self.user2, backend="django.contrib.auth.backends.ModelBackend")
@@ -120,6 +118,9 @@ class AllocationDetailViewTest(TestCase):
         user = get_user_model().objects.get(username="gvanrossum")
         self.c = Client()
         self.c.force_login(user, backend="django.contrib.auth.backends.ModelBackend")
+
+    def test_allocation_detail_access(self):
+        test_utils.test_redirect_to_login(self, "/allocation/1/")
 
     def test_allocation_detail_template_value_render(self):
         """Confirm that quota_tb and usage_tb are correctly rendered in the generated
