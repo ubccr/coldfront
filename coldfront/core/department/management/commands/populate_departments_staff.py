@@ -3,19 +3,12 @@
 import logging
 
 from django.core.management.base import BaseCommand
-from ifxuser.models import (Organization,
-                            OrgRelation,
-                            Contact,
-                            IfxUserAffiliation,
-                            IfxUser,
-                            UserContact,
-                            UserAffiliation)
+from ifxuser.models import Organization, OrgRelation, UserAffiliation
 
 from coldfront.plugins.ifx.models import ProjectOrganization
 from coldfront.core.department.models import (Department, DepartmentMemberRole,
                                             DepartmentProjects, DepartmentRank,
                                             DepartmentMemberStatus, DepartmentMember)
-
 
 
 logger = logging.getLogger('')

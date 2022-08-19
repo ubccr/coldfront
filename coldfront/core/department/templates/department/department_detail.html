@@ -203,14 +203,6 @@
     <div class="card-header">
       <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Notes from Staff</h3>
       <span class="badge badge-secondary">{{allocation.allocationusernote_set.count}}</span>
-      <div class="float-right">
-        <a class="btn btn-success" href="{% url 'allocation-add-invoice-note' allocation.pk %}" role="button">
-          <i class="fas fa-plus" aria-hidden="true"></i> Add Note
-        </a>
-        <a class="btn btn-danger" href="{% url 'allocation-delete-invoice-note' allocation.pk %}" role="button">
-          <i class="fas fa-minus" aria-hidden="true"></i> Delete Notes
-        </a>
-      </div>
     </div>
     <div class="card-body">
       {% if allocation.allocationusernote_set.all %}
