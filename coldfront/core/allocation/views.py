@@ -863,8 +863,7 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
         if self.request.user.is_superuser:
             return True
 
-        allocation_obj = get_object_or_404(
-            Allocation, pk=self.kwargs.get('pk'))
+        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
 
         permissions = user_can_access_allocation(self.request.user, allocation_obj)
         if "manager" in permissions or "pi" in permissions:
@@ -1019,7 +1018,8 @@ class AllocationAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Tem
             allocation=allocation_obj)
         allocation_attributes_to_delete = [
 
-            {'pk': attribute.pk,
+            {
+             'pk': attribute.pk,
              'name': attribute.allocation_attribute_type.name,
              'value': attribute.value,
              }
@@ -1575,11 +1575,8 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
 
-        initial_data = {
-            'status': allocation_obj.status,
-        }
-        form = AllocationInvoiceUpdateForm(
-            request.POST, initial=initial_data)
+        initial_data = {'status': allocation_obj.status,}
+        form = AllocationInvoiceUpdateForm(request.POST, initial=initial_data)
 
         if form.is_valid():
             form_data = form.cleaned_data
@@ -2211,65 +2208,7 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             formset = formset(
                 request.POST, initial=allocation_attributes_to_change, prefix='attributeform')
 
-            if form.is_valid() and formset.is_valid():
-                form_data = form.cleaned_data
-
-                if form_data.get('end_date_extension') != 0:
-                    change_requested = True
-
-                for entry in formset:
-                    formset_data = entry.cleaned_data
-
-                    new_value = formset_data.get('new_value')
-
-                    if new_value != "":
-                        change_requested = True
-
-                        allocation_attribute = AllocationAttribute.objects.get(pk=formset_data.get('pk'))
-                        attribute_changes_to_make.add((allocation_attribute, new_value))
-
-                if change_requested:
-
-                    end_date_extension = form_data.get('end_date_extension')
-                    justification = form_data.get('justification')
-
-                    change_request_status_obj = AllocationChangeStatusChoice.objects.get(
-                        name='Pending')
-
-                    allocation_change_request_obj = AllocationChangeRequest.objects.create(
-                        allocation=allocation_obj,
-                        end_date_extension=end_date_extension,
-                        justification=justification,
-                        status=change_request_status_obj
-                        )
-
-                    for attribute in attribute_changes_to_make:
-                        attribute_change_request_obj = AllocationAttributeChangeRequest.objects.create(
-                            allocation_change_request=allocation_change_request_obj,
-                            allocation_attribute=attribute[0],
-                            new_value=attribute[1]
-                            )
-                    messages.success(
-                        request, 'Allocation change request successfully submitted.')
-
-                    pi_name = '{} {} ({})'.format(allocation_obj.project.pi.first_name,
-                                                allocation_obj.project.pi.last_name, allocation_obj.project.pi.username)
-                    resource_name = allocation_obj.get_parent_resource
-                    domain_url = get_domain_url(self.request)
-                    url = '{}{}'.format(domain_url, reverse('allocation-change-list'))
-
-                    if EMAIL_ENABLED:
-                        title = f'New Allocation Change Request: {pi_name} - {resource_name}'
-                        template = 'email/new_allocation_change_request.txt',
-                        send_allocation_admin_email(pi_name, resource_name, url, title, template)
-
-                    return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
-
-                else:
-                    messages.error(request, 'You must request a change.')
-                    return HttpResponseRedirect(reverse('allocation-change', kwargs={'pk': pk}))
-
-            else:
+            if not form.is_valid() or not formset.is_valid():
                 attribute_errors = ""
                 for error in form.errors:
                     messages.error(request, error)
@@ -2277,48 +2216,75 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                     if error: attribute_errors += error.get('__all__')
                 messages.error(request, attribute_errors)
                 return HttpResponseRedirect(reverse('allocation-change', kwargs={'pk': pk}))
+            form_data = form.cleaned_data
+
+            if form_data.get('end_date_extension') != 0:
+                change_requested = True
+
+            for entry in formset:
+                formset_data = entry.cleaned_data
+
+                new_value = formset_data.get('new_value')
+
+                if new_value != "":
+                    change_requested = True
+                    allocation_attribute = AllocationAttribute.objects.get(pk=formset_data.get('pk'))
+                    attribute_changes_to_make.add((allocation_attribute, new_value))
+
+            if not change_requested:
+                messages.error(request, 'You must request a change.')
+                return HttpResponseRedirect(reverse('allocation-change', kwargs={'pk': pk}))
+
+
         else:
-            if form.is_valid():
-                form_data = form.cleaned_data
-
-                if form_data.get('end_date_extension') != 0:
-
-                    end_date_extension = form_data.get('end_date_extension')
-                    justification = form_data.get('justification')
-
-                    change_request_status_obj = AllocationChangeStatusChoice.objects.get(
-                        name='Pending')
-
-                    allocation_change_request_obj = AllocationChangeRequest.objects.create(
-                        allocation=allocation_obj,
-                        end_date_extension=end_date_extension,
-                        justification=justification,
-                        status=change_request_status_obj
-                        )
-                    messages.success(
-                        request, 'Allocation change request successfully submitted.')
-
-                pi_name = '{} {} ({})'.format(allocation_obj.project.pi.first_name,
-                                            allocation_obj.project.pi.last_name, allocation_obj.project.pi.username)
-                resource_name = allocation_obj.get_parent_resource
-                domain_url = get_domain_url(self.request)
-                url = '{}{}'.format(domain_url, reverse('allocation-change-list'))
-
-                if EMAIL_ENABLED:
-                    title = f'New Allocation Change Request: {pi_name} - {resource_name}'
-                    template = 'email/new_allocation_change_request.txt',
-                    send_allocation_admin_email(pi_name, resource_name, url, title, template)
-
-                    return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
-
-                else:
-                    messages.error(request, 'You must request a change.')
-                    return HttpResponseRedirect(reverse('allocation-change', kwargs={'pk': pk}))
-
-            else:
+            if not form.is_valid():
                 for error in form.errors:
                     messages.error(request, error)
                 return HttpResponseRedirect(reverse('allocation-change', kwargs={'pk': pk}))
+            form_data = form.cleaned_data
+
+            if form_data.get('end_date_extension') == 0:
+                messages.error(request, 'You must request a change.')
+                return HttpResponseRedirect(reverse('allocation-change', kwargs={'pk': pk}))
+
+        end_date_extension = form_data.get('end_date_extension')
+        justification = form_data.get('justification')
+
+        change_request_status_obj = AllocationChangeStatusChoice.objects.get(
+            name='Pending')
+
+        allocation_change_request_obj = AllocationChangeRequest.objects.create(
+            allocation=allocation_obj,
+            end_date_extension=end_date_extension,
+            justification=justification,
+            status=change_request_status_obj
+            )
+
+        if allocation_attributes_to_change:
+
+            for attribute in attribute_changes_to_make:
+                attribute_change_request_obj = AllocationAttributeChangeRequest.objects.create(
+                    allocation_change_request=allocation_change_request_obj,
+                    allocation_attribute=attribute[0],
+                    new_value=attribute[1]
+                    )
+
+        messages.success(
+            request, 'Allocation change request successfully submitted.')
+
+        pi_name = '{} {} ({})'.format(allocation_obj.project.pi.first_name,
+                                    allocation_obj.project.pi.last_name, allocation_obj.project.pi.username)
+        resource_name = allocation_obj.get_parent_resource
+        domain_url = get_domain_url(self.request)
+        url = '{}{}'.format(domain_url, reverse('allocation-change-list'))
+
+        if EMAIL_ENABLED:
+            title = f'New Allocation Change Request: {pi_name} - {resource_name}'
+            template = 'email/new_allocation_change_request.txt'
+            send_allocation_admin_email(pi_name, resource_name, url, title, template)
+
+        return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
+
 
 
 class AllocationChangeActivateView(LoginRequiredMixin, UserPassesTestMixin, View):
@@ -2350,7 +2316,7 @@ class AllocationChangeActivateView(LoginRequiredMixin, UserPassesTestMixin, View
 
             allocation_change_obj.allocation.end_date = new_end_date
 
-        allocation_change_obj.allocation.save()
+            allocation_change_obj.allocation.save()
         allocation_change_obj.save()
 
         attribute_change_list = allocation_change_obj.allocationattributechangerequest_set.all()
