@@ -15,7 +15,6 @@ class BillingProject(TimeStampedModel):
             RegexValidator(
                 r'^[0-9]{6}$', message='Identifier must contain 6 numbers.')
         ])
-    description = models.CharField(max_length=255)
     history = HistoricalRecords()
 
     class Meta:
@@ -35,8 +34,6 @@ class BillingActivity(TimeStampedModel):
             RegexValidator(
                 r'^[0-9]{3}$', message='Identifier must contain 3 numbers.')
         ])
-    description = models.CharField(max_length=255)
-    is_valid = models.BooleanField(default=False)
     history = HistoricalRecords()
 
     class Meta:
