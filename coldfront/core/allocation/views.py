@@ -194,9 +194,9 @@ def user_can_access_allocation(user, allocation):
         permissions.append("manager")
 
     if allocation.project.projectuser_set.filter(
-        Q(status__name='Active') & Q(user=user) & Q(project__pi_id=user.id)
-        ).exists():
-            permissions.append("pi")
+                Q(status__name='Active') & Q(user=user) & Q(project__pi_id=user.id)
+                ).exists():
+        permissions.append("pi")
 
     if allocation.allocationuser_set.filter(
             user=user, status__name__in=['Active', ]
@@ -275,11 +275,9 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context['is_allowed_to_update_project'] = set_proj_update_permissions(
                                                     allocation_obj, self.request.user)
 
-        if self.request.user.is_superuser:
-            notes = allocation_obj.allocationusernote_set.all()
-        else:
-            notes = allocation_obj.allocationusernote_set.filter(
-                is_private=False)
+        noteset = allocation_obj.allocationusernote_set
+        notes = noteset.all() if self.request.user.is_superuser else noteset.filter(
+                                                            is_private=False)
 
         context['notes'] = notes
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
@@ -327,102 +325,95 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         }
         form = AllocationUpdateForm(request.POST, initial=initial_data)
 
-        if form.is_valid():
-            form_data = form.cleaned_data
-            end_date = form_data.get('end_date')
-            start_date = form_data.get('start_date')
-            description = form_data.get('description')
-            is_locked = form_data.get('is_locked')
-            is_changeable = form_data.get('is_changeable')
+        if not form.is_valid():
+            context = self.get_context_data()
+            context['form'] = form
+            context['allocation'] = allocation_obj
+            return render(request, self.template_name, context)
 
-            allocation_obj.description = description
+        form_data = form.cleaned_data
+        end_date = form_data.get('end_date')
+        start_date = form_data.get('start_date')
+        description = form_data.get('description')
+        is_locked = form_data.get('is_locked')
+        is_changeable = form_data.get('is_changeable')
+
+        allocation_obj.description = description
+
+        old_status = allocation_obj.status.name
+        new_status = form_data.get('status').name
+
+        allocation_obj.status = form_data.get('status')
+        allocation_obj.is_locked = is_locked
+        allocation_obj.is_changeable = is_changeable
+
+        if start_date and allocation_obj.start_date != start_date:
+            allocation_obj.start_date = start_date
+
+        if end_date and allocation_obj.end_date != end_date:
+            allocation_obj.end_date = end_date
+        allocation_obj.save()
+
+        if EMAIL_ENABLED:
+            resource_name = allocation_obj.get_parent_resource
+            domain_url = get_domain_url(self.request)
+            allocation_url = '{}{}'.format(domain_url, reverse(
+                'allocation-detail', kwargs={'pk': allocation_obj.pk}))
+
+        if old_status != 'Active' == new_status:
+            if not start_date:
+                start_date = datetime.datetime.now()
+            if not end_date:
+                end_date = datetime.datetime.now(
+                ) + relativedelta(days=ALLOCATION_DEFAULT_ALLOCATION_LENGTH)
+
+            allocation_obj.start_date = start_date
+            allocation_obj.end_date = end_date
             allocation_obj.save()
 
-            old_status = allocation_obj.status.name
-            new_status = form_data.get('status').name
-
-            allocation_obj.status = form_data.get('status')
-            allocation_obj.is_locked = is_locked
-            allocation_obj.is_changeable = is_changeable
-            allocation_obj.save()
-
-            if start_date and allocation_obj.start_date != start_date:
-                allocation_obj.start_date = start_date
-                allocation_obj.save()
-
-            if end_date and allocation_obj.end_date != end_date:
-                allocation_obj.end_date = end_date
-                allocation_obj.save()
+            allocation_activate.send(
+                sender=self.__class__, allocation_pk=allocation_obj.pk)
+            allocation_users = allocation_obj.allocationuser_set.exclude(status__name__in=['Removed', 'Error'])
+            for allocation_user in allocation_users:
+                allocation_activate_user.send(
+                    sender=self.__class__, allocation_user_pk=allocation_user.pk)
 
             if EMAIL_ENABLED:
-                resource_name = allocation_obj.get_parent_resource
-                domain_url = get_domain_url(self.request)
-                allocation_url = '{}{}'.format(domain_url, reverse(
-                    'allocation-detail', kwargs={'pk': allocation_obj.pk}))
+                send_allocation_customer_email(
+                                        resource_name,
+                                        allocation_url,
+                                        allocation_users,
+                                        'Allocation Activated',
+                                        'email/allocation_activated.txt',
+                                        )
 
-            if old_status != 'Active' and new_status == 'Active':
-                if not start_date:
-                    start_date = datetime.datetime.now()
-                if not end_date:
-                    end_date = datetime.datetime.now(
-                    ) + relativedelta(days=ALLOCATION_DEFAULT_ALLOCATION_LENGTH)
+        elif old_status != new_status in ['Denied', 'New']:
+            allocation_obj.start_date = None
+            allocation_obj.end_date = None
+            allocation_obj.save()
 
-                allocation_obj.start_date = start_date
-                allocation_obj.end_date = end_date
-                allocation_obj.save()
-
-                allocation_activate.send(
-                    sender=self.__class__, allocation_pk=allocation_obj.pk)
-                allocation_users = allocation_obj.allocationuser_set.exclude(status__name__in=['Removed', 'Error'])
-                for allocation_user in allocation_users:
-                    allocation_activate_user.send(
-                        sender=self.__class__, allocation_user_pk=allocation_user.pk)
-
-                if EMAIL_ENABLED:
-                    send_allocation_customer_email(
-                                            resource_name,
-                                            allocation_url,
-                                            allocation_users,
-                                            'Allocation Activated',
-                                            'email/allocation_activated.txt',
-                                            )
-
-            elif old_status != 'Denied' and new_status == 'Denied':
-                allocation_obj.start_date = None
-                allocation_obj.end_date = None
-                allocation_obj.save()
-
+            if new_status == 'Denied':
                 allocation_disable.send(
                     sender=self.__class__, allocation_pk=allocation_obj.pk)
-                allocation_users = allocation_obj.allocationuser_set.exclude(status__name__in=['Removed', 'Error'])
+                allocation_users = allocation_obj.allocationuser_set.exclude(
+                                        status__name__in=['Removed', 'Error'])
                 for allocation_user in allocation_users:
                     allocation_remove_user.send(
                         sender=self.__class__, allocation_user_pk=allocation_user.pk)
 
                 if EMAIL_ENABLED:
                     send_allocation_customer_email(
-                                            resource_name,
-                                            allocation_url,
-                                            allocation_users,
-                                            'Allocation Denied',
-                                            'email/allocation_denied.txt',
-                                            )
+                                        resource_name,
+                                        allocation_url,
+                                        allocation_users,
+                                        'Allocation Denied',
+                                        'email/allocation_denied.txt',
+                                        )
 
-            elif old_status != 'New' and new_status == 'New':
-                allocation_obj.start_date = None
-                allocation_obj.end_date = None
-                allocation_obj.save()
+        allocation_obj.refresh_from_db()
 
-            allocation_obj.refresh_from_db()
-
-            messages.success(request, 'Allocation updated!')
-            return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
-        else:
-            context = self.get_context_data()
-            context['form'] = form
-            context['allocation'] = allocation_obj
-
-            return render(request, self.template_name, context)
+        messages.success(request, 'Allocation updated!')
+        return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
 
 class AllocationListView(LoginRequiredMixin, ListView):
@@ -438,7 +429,7 @@ class AllocationListView(LoginRequiredMixin, ListView):
         if order_by:
             direction = self.request.GET.get('direction')
             dir_dict = {'asc':'', 'des':'-'}
-            direction == dir_dict[direction]
+            direction = dir_dict[direction]
             order_by = direction + order_by
         else:
             order_by = 'id'
