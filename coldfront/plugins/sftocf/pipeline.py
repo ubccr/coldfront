@@ -13,11 +13,10 @@ from django.contrib.auth import get_user_model
 
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.project.models import Project
-from coldfront.core.resource.models import Resource
 from coldfront.core.allocation.models import (Allocation,
-                                                AllocationUser,
-                                                AllocationAttribute,
-                                                AllocationUserStatusChoice)
+                                            AllocationUser,
+                                            AllocationAttribute,
+                                            AllocationUserStatusChoice)
 
 datestr = datetime.today().strftime("%Y%m%d")
 logger = logging.getLogger(__name__)
@@ -306,7 +305,7 @@ class ColdFrontDB:
                     project.title, usernames, [u.username for u in user_models])
 
             for user in user_models:
-                userdict = [d for d in content['contents'] if d["username"] == user.username][0]
+                userdict = next(d for d in content['contents'] if d["username"] == user.username)
                 model = user_models.get(username=userdict["username"])
                 try:
                     self.update_usage(model, userdict, allocation)
