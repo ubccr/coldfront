@@ -30,20 +30,20 @@ class AllocationQC(unittest.TestCase):
         self.assertEqual(over_one.count(), 0)
 
 
-class AllocationViewTest(TestCase):
+class AllocationListViewTest(TestCase):
     fixtures = FIXTURES
 
     def setUp(self):
         user = get_user_model().objects.get(username="gvanrossum")
-        self.c = Client()
-        self.c.force_login(user, backend="django.contrib.auth.backends.ModelBackend")
+        self.client = Client()
+        self.client.force_login(user, backend="django.contrib.auth.backends.ModelBackend")
         # did_login_succeed = self.c.login(username='gvanrossum', password="python")
         # self.assertTrue(did_login_succeed)
 
     def test_allocation_list_template(self):
         """Confirm that allocation-list renders correctly
         """
-        response = self.c.get("/allocation/")
+        response = self.client.get("/allocation/")
         # response = self.client.get(reverse_lazy('allocation-list'))
         self.assertEqual(response.status_code, 200)
 
