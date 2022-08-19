@@ -27,6 +27,7 @@ class Department(TimeStampedModel):
     name = models.CharField(max_length=255,)
     rank = models.ForeignKey(DepartmentRank, on_delete=models.CASCADE)
     projects = models.ManyToManyField(Project, through='DepartmentProjects')
+    biller = models.BooleanField(default=False)
     # field_of_science = models.ForeignKey(FieldOfScience, on_delete=models.CASCADE,
     #                                             default=FieldOfScience.DEFAULT_PK)
     history = HistoricalRecords()
@@ -35,7 +36,7 @@ class Department(TimeStampedModel):
 class DepartmentProjects(TimeStampedModel):
     department = models.ForeignKey(Department, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    dept_billing = models.BooleanField(default=False)
+    history = HistoricalRecords()
 
 
 class DepartmentMemberRole(TimeStampedModel):

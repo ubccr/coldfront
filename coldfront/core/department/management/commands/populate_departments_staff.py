@@ -24,6 +24,8 @@ class Command(BaseCommand):
 
 
     def handle(self, *args, **kwargs):
+        # Ensure that the department_admin role gets created, determine how to assign that
+        # departmentmemberrole to the right departmentmembers.
         # create DepartmentMemberStatus
         for status in ["Active", "Inactive"]:
             DepartmentMemberStatus.objects.get_or_create(name=status)

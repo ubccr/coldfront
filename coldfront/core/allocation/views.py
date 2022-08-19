@@ -2019,7 +2019,6 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
 
                 allocation_change_obj.allocation.save()
             allocation_change_obj.save()
-
             if allocation_attributes_to_change:
                 attribute_change_list = allocation_change_obj.allocationattributechangerequest_set.all()
                 for attribute_change in attribute_change_list:

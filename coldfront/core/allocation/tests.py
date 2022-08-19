@@ -7,8 +7,7 @@ from django.contrib.auth import get_user_model
 
 from coldfront.core.allocation.models import (Allocation,
                                 AllocationAttribute,
-                                AllocationChangeRequest,
-                                AllocationAttributeUsage)
+                                AllocationChangeRequest)
 
 FIXTURES = [
             "coldfront/core/test_helpers/test_data/test_fixtures/resources.json",
@@ -27,7 +26,6 @@ class AllocationQC(unittest.TestCase):
 
     def check_resource_counts(self):
         over_one = Allocation.objects.annotate(resource_count=Count('resources')).filter(resource_count__gt=1)
-        print(over_one)
         self.assertEqual(over_one.count(), 0)
 
 
@@ -36,17 +34,26 @@ class AllocationListViewTest(TestCase):
 
     def setUp(self):
         user = get_user_model().objects.get(username="gvanrossum")
+        self.user2 = get_user_model().objects.get(username='snewcomb')
         self.client = Client()
-        self.client.force_login(user, backend="django.contrib.auth.backends.ModelBackend")
+        # self.client.force_login(user, backend="django.contrib.auth.backends.ModelBackend")
         # did_login_succeed = self.c.login(username='gvanrossum', password="python")
         # self.assertTrue(did_login_succeed)
 
     def test_allocation_list_template(self):
         """Confirm that allocation-list renders correctly
         """
+        # no login means redirect
         response = self.client.get("/allocation/")
-        # response = self.client.get(reverse_lazy('allocation-list'))
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, "/user/login?next=/allocation/")
+
+
+        response = self.client.get("/allocation/")
+        self.client.force_login(self.user2, backend="django.contrib.auth.backends.ModelBackend")
+        response = self.client.get("/allocation/?show_all_allocations=on")
         self.assertEqual(response.status_code, 200)
+
 
 class AllocationChangeDetailViewTest(TestCase):
 
@@ -75,14 +82,15 @@ class AllocationChangeDetailViewTest(TestCase):
         self.assertEqual(alloc_change_req.status_id, 3)
 
     def test_allocationchangedetailview_post_approve(self):
-        AllocationChangeRequest.objects.create(pk=2, allocation_id=1, status_id=1,
-                        justification="Test.").save()
+        # with nothing changed, should get error message of "You must make a change to the allocation."
         param = {'choice': 'approve'}
         response = self.client.post(reverse('allocation-change-detail', kwargs={'pk':2}),
         param, follow=True)
+        messages = list(response.context['messages'])
         self.assertEqual(response.status_code, 200)
-        alloc_change_req = AllocationChangeRequest.objects.get(pk=2)
-        self.assertEqual(alloc_change_req.status_id, 2)
+        self.assertEqual(str(messages[0]), "You must make a change to the allocation.")
+        # alloc_change_req = AllocationChangeRequest.objects.get(pk=2)
+        # self.assertEqual(alloc_change_req.status_id, 2)
 
 
 class AllocationChangeViewTest(TestCase):
