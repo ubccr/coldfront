@@ -121,52 +121,64 @@
       });
 
     </script>
-<!-- Start Department Projects -->
+    <!-- Start Department Projects -->
 
-<div class="html2pdf__page-break"></div>
-<div class="card mb-3">
-  <div class="card-header">
-    <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Projects in Department</h3>
-    <span class="badge badge-secondary">{{projects.count}}</span>
-    {% comment %} <div class="float-right">
+    <div class="html2pdf__page-break"></div>
+    <div class="card mb-3">
+      <div class="card-header">
+        <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Projects in Department</h3>
+        <span class="badge badge-secondary">{{projects.count}}</span>
+        {% comment %} <div class="float-right">
 
-    </div> {% endcomment %}
-  </div>
-  <div class="card-body">
-    <div class="table-responsive">
-    <div class = "container mb-3 mt-3">
-        <table id = "mydatatable" class = "table table-striped table-bordered">
-        <thead>
-          <tr>
-            <th scope="col">Name</th>
-            <th scope="col">Allocations</th>
-            <th scope="col">Total Usage</th>
-            <th scope="col">Price Breakdown</th>
-            <th scope="col">Monthly Cost in Dollars</th>
+        </div> {% endcomment %}
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+        <div class = "container mb-3 mt-3">
+            <table id = "mydatatable" class = "table table-striped table-bordered">
+            <thead>
+              <tr>
+                <th scope="col">Project Name</th>
+                <th scope="col">Allocation ID</th>
+                <th scope="col">Resource Type</th>
+                <th scope="col">Total Space</th>
+                <th scope="col">Total Monthly Cost</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
 
-          </tr>
-        </thead>
-        <tbody>
+              {% for project in projects %}
 
-          {% for project in projects %}
+                <tr style="background-color:#C2C2C2">
+                  <td><a href="{% url 'project-detail' project.pk %}">{{ project.title }}</a></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td data-sort = "{{project.total_price}}">${{ project.total_price|floatformat:2 }}</td>
 
-            <tr>
-              <td><a href="{% url 'project-detail' project.pk %}"> {{ project.title }}</a></td>
-              <td>{{ project.allocation_set.count }}</td>
-              <td>{{project.total_quota}}</td>
-              <td>{{project.price_detail }}</td>
-              <td data-sort = "{{project.total_price}}">{{ project.total_price }}</td>
+                </tr>
+                  {% for allocation in project.allocations.all %}
 
-            </tr>
+                <tr style="background-color:#FFFFFF">
+                  <td></td>
+                  <td><a href="{% url 'allocation-detail' allocation.id %}">{{allocation.id}}</a></td>
+                  <td>{{allocation.resources__name}}</td>
+                  <td>{{allocation.allocationattribute__value|floatformat:1}}</td>
+                  <td>${{allocation.cost| floatformat:2}}</td>
+                  <td></td>
+                </tr>
 
-          {% endfor %}
-        </tbody>
-      </table>
+                  {% endfor %}
+
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        </div>
+      </div>
     </div>
-
-    </div>
-  </div>
-</div>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.24/af-2.3.5/b-1.7.0/b-colvis-1.7.0/b-html5-1.7.0/b-print-1.7.0/cr-1.5.3/date-1.0.2/fc-3.3.2/kt-2.6.1/r-2.2.7/rg-1.1.2/rr-1.2.7/sl-1.3.2/datatables.min.css"/>
