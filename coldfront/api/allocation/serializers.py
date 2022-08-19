@@ -136,11 +136,6 @@ class ClusterAccessRequestSerializer(serializers.ModelSerializer):
         slug_field='name',
         queryset=ClusterAccessRequestStatusChoice.objects.all())
 
-    billing_activity = serializers.CharField(source='billing_activity.full_id',
-                                             allow_null=True,
-                                             required=False,
-                                             read_only=True)
-
     allocation_user = AllocationUserSerializer(read_only=True,
                                                allow_null=True,
                                                required=False)
@@ -151,8 +146,8 @@ class ClusterAccessRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = ClusterAccessRequest
         fields = (
-            'id', 'status', 'completion_time', 'cluster_uid',
-            'username', 'billing_activity', 'allocation_user')
+            'id', 'status', 'completion_time', 'cluster_uid', 'username',
+            'allocation_user')
         extra_kwargs = {
             'id': {'read_only': True},
             'completion_time': {'required': False, 'allow_null': True},
