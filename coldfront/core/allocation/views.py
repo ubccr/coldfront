@@ -547,19 +547,17 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         resources_form_default_quantities = {}
         resources_form_label_texts = {}
         resources_with_eula = {}
+        attr_types = ('quantity_default', 'quantity_label', 'eula')
         for resource in user_resources:
-            attr_types = {'quantity_default': None, 'quantity_label': None, 'eula': None}
             for attr_type in attr_types:
-                if resource.resourceattribute_set.filter(
-                        resource_attribute_type__name=attr_type).exists():
-                    attr_types[attr_type] = resource.resourceattribute_set.get(
-                            resource_attribute_type__name=attr_type).value
-
-            resources_form_default_quantities[resource.id] = int(attr_types['quantity_default'])
-            resources_form_label_texts[resource.id] = mark_safe(
-                    '<strong>{}*</strong>'.format(attr_types['quantity_label']))
-            resources_with_eula[resource.id] = attr_types['eula']
-
+                if resource.resourceattribute_set.filter(resource_attribute_type__name=attr_type).exists():
+                    value = resource.resourceattribute_set.get(resource_attribute_type__name=attr_type).value
+                    if attr_type == "eula":
+                        resources_with_eula[resource.id] = value
+                    elif attr_type == "quantity_default":
+                        resources_form_default_quantities[resource.id] = int(value)
+                    elif attr_type == "quantity_label":
+                        resources_form_label_texts[resource.id] = mark_safe(f'<strong>{value}*</strong>')
         context['AllocationAccountForm'] = AllocationAccountForm()
         context['resources_form_default_quantities'] = resources_form_default_quantities
         context['resources_form_label_texts'] = resources_form_label_texts
