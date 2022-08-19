@@ -255,7 +255,7 @@ class TestUpdatePatchClusterAccessRequests(TestClusterAccessRequestsBase):
 
         self._refresh_objects()
         self.assertEqual(self.request0.status.name, status)
-        self.assertTrue(pre_time < self.request0.completion_time < post_time)
+        self.assertTrue(pre_time <= self.request0.completion_time <= post_time)
         self.assertTrue(self._get_cluster_account_status_attr(self.allocation_user0).exists())
         self.assertEqual(self._get_cluster_account_status_attr(self.allocation_user0).first().value,
                          attr_status)

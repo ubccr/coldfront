@@ -11,6 +11,7 @@ from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
 from decimal import Decimal
 
+from django.conf import settings
 from django.core import mail
 from django.urls import reverse
 from http import HTTPStatus
@@ -105,13 +106,20 @@ class TestSavioProjectRequestDetailView(TestBase):
             post_time)
 
         # One email about processing should have been sent; an email about
-        # approval should not have been sent.
-        self.assertEqual(len(mail.outbox), 1)
-        email = mail.outbox[0]
-        self.assertIn(
-            (f'New Project Request ({new_project_request.project.name}) '
-             f'Processed'),
-            email.subject)
+        # approval should not have been sent. In addition, an email about a new
+        # cluster access request should have been sent.
+        self.assertEqual(len(mail.outbox), 2)
+        prefix = settings.EMAIL_SUBJECT_PREFIX
+        expected_subjects = {
+            f'{prefix} New Cluster Access Request',
+            (f'{prefix} New Project Request '
+             f'({new_project_request.project.name}) Processed'),
+        }
+        for email in mail.outbox:
+            subject = email.subject
+            self.assertIn(subject, expected_subjects)
+            expected_subjects.remove(subject)
+        self.assertFalse(expected_subjects)
 
         # The 'CLUSTER_NAME Compute' Allocation's Service Units should have
         # increased.
@@ -249,13 +257,20 @@ class TestSavioProjectRequestDetailView(TestBase):
             post_time)
 
         # One email about processing should have been sent; an email about
-        # approval should not have been sent.
-        self.assertEqual(len(mail.outbox), 1)
-        email = mail.outbox[0]
-        self.assertIn(
-            (f'New Project Request ({new_project_request.project.name}) '
-             f'Processed'),
-            email.subject)
+        # approval should not have been sent. In addition, an email about a new
+        # cluster access request should have been sent.
+        self.assertEqual(len(mail.outbox), 2)
+        prefix = settings.EMAIL_SUBJECT_PREFIX
+        expected_subjects = {
+            f'{prefix} New Cluster Access Request',
+            (f'{prefix} New Project Request '
+             f'({new_project_request.project.name}) Processed'),
+        }
+        for email in mail.outbox:
+            subject = email.subject
+            self.assertIn(subject, expected_subjects)
+            expected_subjects.remove(subject)
+        self.assertFalse(expected_subjects)
 
         # The 'CLUSTER_NAME Compute' Allocation's Service Units should have
         # increased.
@@ -325,13 +340,20 @@ class TestSavioProjectRequestDetailView(TestBase):
             post_time)
 
         # One email about processing should have been sent; an email about
-        # approval should not have been sent.
-        self.assertEqual(len(mail.outbox), 1)
-        email = mail.outbox[0]
-        self.assertIn(
-            (f'New Project Request ({new_project_request.project.name}) '
-             f'Processed'),
-            email.subject)
+        # approval should not have been sent. In addition, an email about a new
+        # cluster access request should have been sent.
+        self.assertEqual(len(mail.outbox), 2)
+        prefix = settings.EMAIL_SUBJECT_PREFIX
+        expected_subjects = {
+            f'{prefix} New Cluster Access Request',
+            (f'{prefix} New Project Request '
+             f'({new_project_request.project.name}) Processed'),
+        }
+        for email in mail.outbox:
+            subject = email.subject
+            self.assertIn(subject, expected_subjects)
+            expected_subjects.remove(subject)
+        self.assertFalse(expected_subjects)
 
         # The 'CLUSTER_NAME Compute' Allocation's Service Units should have
         # increased.
