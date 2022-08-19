@@ -57,6 +57,7 @@
   </thead>
   <tbody>
   {% for request in queryset %}
+    {% with request_user=request.allocation_user.user %}
     <tr>
       <td>{{ request.pk }}</td>
       {% if request_filter == 'completed' %}
@@ -64,10 +65,10 @@
       {% else %}
         <td>{{ request.request_time|date:"M. d, Y" }}</td>
       {% endif %}
-      <td>{{ request.allocation_user.user.email }}</td>
+      <td>{{ request_user.email }}</td>
       <td>
-        {% if request.allocation_user.user.userprofile.cluster_uid %}
-          {{ request.allocation_user.user.username }}
+        {% if request_user.userprofile.cluster_uid %}
+          {{ request_user.username }}
         {% else %}
           <span class="badge badge-danger">
               No cluster account.
@@ -87,15 +88,15 @@
       </td>
       {% if lrc_only %}
         <td>
-          {% if request.host_user %}
-            {{ request.host_user.username }}
+          {% if request.host_user_lbl_email %}
+            {{ request.host_user_lbl_email }}
           {% else %}
             N/A
           {% endif %}
         </td>
         <td>
-          {% if request.billing_activity %}
-            {{ request.billing_activity.full_id }}
+          {% if request_user.userprofile.billing_activity %}
+            {{ request_user.userprofile.billing_activity.full_id }}
           {% else %}
             N/A
           {% endif %}
@@ -161,6 +162,7 @@
         </td>
       {% endif %}
     </tr>
+    {% endwith %}
   {% endfor %}
   </tbody>
 </table>

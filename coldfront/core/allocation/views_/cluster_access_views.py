@@ -14,6 +14,8 @@ from django.views import View
 from django.views.generic import ListView
 from django.views.generic.edit import FormView
 
+from flags.state import flag_enabled
+
 from coldfront.core.allocation.forms import AllocationClusterAccountRequestActivationForm
 from coldfront.core.allocation.forms import AllocationClusterAccountUpdateStatusForm
 from coldfront.core.allocation.forms import ClusterRequestSearchForm
@@ -23,6 +25,7 @@ from coldfront.core.allocation.models import ClusterAccessRequestStatusChoice
 from coldfront.core.allocation.utils_.cluster_access_utils import ClusterAccessRequestCompleteRunner
 from coldfront.core.allocation.utils_.cluster_access_utils import ClusterAccessRequestDenialRunner
 from coldfront.core.allocation.utils_.cluster_access_utils import ClusterAccessRequestRunner
+from coldfront.core.user.utils_.host_user_utils import host_user_lbl_email
 from coldfront.core.utils.common import utc_now_offset_aware
 
 
@@ -242,6 +245,12 @@ class AllocationClusterAccountRequestListView(LoginRequiredMixin,
             cluster_access_requests = paginator.page(paginator.num_pages)
 
         context['cluster_access_request_list'] = cluster_access_requests
+
+        if flag_enabled('LRC_ONLY'):
+            for cluster_access_request in cluster_access_requests:
+                cluster_access_request.host_user_lbl_email = \
+                    host_user_lbl_email(
+                        cluster_access_request.allocation_user.user)
 
         context['actions_visible'] = not self.completed
 
