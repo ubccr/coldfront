@@ -66,14 +66,14 @@ class Allocation(TimeStampedModel):
 
     def clean(self):
         if self.status.name == 'Expired':
-            if not self.end_date:
-                raise ValidationError('You have to set the end date.')
+        #     if not self.end_date:
+        #         raise ValidationError('You have to set the end date.')
 
-            if self.end_date > datetime.datetime.now().date():
+            if self.end_date and self.end_date > datetime.datetime.now().date():
                 raise ValidationError(
                     'End date cannot be greater than today.')
 
-            if self.start_date > self.end_date:
+            if self.end_date and self.start_date > self.end_date:
                 raise ValidationError(
                     'End date cannot be greater than start date.')
 
@@ -81,10 +81,10 @@ class Allocation(TimeStampedModel):
             if not self.start_date:
                 raise ValidationError('You have to set the start date.')
 
-            if not self.end_date:
-                raise ValidationError('You have to set the end date.')
+        #     if not self.end_date:
+        #         raise ValidationError('You have to set the end date.')
 
-            if self.start_date > self.end_date:
+            if self.end_date and self.start_date > self.end_date:
                 raise ValidationError(
                     'Start date cannot be greater than the end date.')
 
