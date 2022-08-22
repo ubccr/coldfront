@@ -54,10 +54,10 @@ Allocation Detail
       </div>
     </div>
     {% else %}
-      <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>   
+      <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>
     {% endif %}
   </div>
-  
+
   <div class="card-body">
     <form method="post">
       {% csrf_token %}
@@ -280,7 +280,7 @@ Allocation Detail
   <div class="card-header">
     <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Allocation Change Requests</h3> <span class="badge badge-secondary">{{allocation_changes.count}}</span>
   </div>
-  
+
   <div class="card-body">
     {% if allocation_changes %}
       <div class="table-responsive">
@@ -366,21 +366,27 @@ Allocation Detail
         </thead>
 
 
-
         <tbody>
           {% for user in allocation_users %}
             <tr>
 
               <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
+              {% if user.usage_bytes == 0.0 %}
+              <td data-sort = "{{user.usage_bytes}}" name = "usage_bytes">{{ user.usage }} bytes</td>
+              {% else %}
               <td data-sort = "{{user.usage_bytes}}" name = "usage_bytes">{{ user.usage }}{{ user.unit }}</td>
+              {% endif %}
+              {% if allocation_usoge_bytes == None %}
+              <td>0</td>
+              {% else %}
               <td>{{user.usage_bytes|div:allocation_usage_bytes|mul:100|floatformat:2 }}</td>
+              {% endif %}
               <td>{{user.usage_bytes|div:1099511627776|mul:price|floatformat:2}}</td>
             </tr>
 
           {% endfor %}
 
         </tbody>
-
 
         <script type="text/javascript">
         function findTotal(){
