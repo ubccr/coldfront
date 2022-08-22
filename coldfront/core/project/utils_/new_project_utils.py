@@ -33,6 +33,8 @@ from django.db import transaction
 from django.db.models import Q
 from django.urls import reverse
 
+from flags.state import flag_enabled
+
 from urllib.parse import urljoin
 
 import logging
@@ -175,6 +177,9 @@ class ProjectProcessingRunner(object):
             if self._should_update_existing_user_allocations():
                 self.update_existing_user_allocations(new_value)
 
+            if self._should_set_billing_activity():
+                self._set_billing_activity(allocation)
+
             create_project_users(
                 project, self.request_obj.requester, self.request_obj.pi,
                 type(self.request_obj), email_strategy=self._email_strategy)
@@ -209,6 +214,25 @@ class ProjectProcessingRunner(object):
         except Exception as e:
             logger.exception(
                 f'Failed to send notification email. Details:\n{e}')
+
+    def _set_billing_activity(self, allocation):
+        """Store the BillingActivity of the request in the given
+        Allocation's AllocationAttribute of type 'Billing Activity',
+        creating it if it does not exist, and updating it if it does."""
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Billing Activity')
+        value = str(self.request_obj.billing_activity.pk)
+        AllocationAttribute.objects.update_or_create(
+            allocation_attribute_type=allocation_attribute_type,
+            allocation=allocation,
+            defaults={'value': value})
+
+    def _should_set_billing_activity(self):
+        """Return whether a billing activity needs to be set."""
+        return (flag_enabled('LRC_ONLY') and
+                isinstance(self.request_obj, SavioProjectAllocationRequest) and
+                not self.request_obj.pool and
+                self.request_obj.billing_activity is not None)
 
     def _should_update_existing_user_allocations(self):
         """Return whether the Allocations of existing users on the

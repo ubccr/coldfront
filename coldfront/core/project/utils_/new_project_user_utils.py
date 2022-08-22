@@ -353,7 +353,7 @@ class LRCNewProjectUserRunner(NewProjectUserRunner):
         self._user_obj.userprofile.save()
 
     def _should_set_billing_activities(self):
-        """Return whether a billing activity needs to be set."""
+        """Return whether billing activities need to be set."""
         computing_allowance_project_prefixes = \
             get_computing_allowance_project_prefixes()
         return self._project_obj.name.startswith(
