@@ -164,11 +164,6 @@
             contype: host
             source: "0.0.0.0/0"
 
-        - name: Restart PostgreSQL service
-          service:
-            name: postgresql-9.6
-            state: restarted
-
         # Create Django application log files.
 
         - name: Create a parent directory for storing Django application logs
@@ -216,15 +211,13 @@
           become_user: "{{ djangooperator }}"
           changed_when: venv_register.stdout == "created"
 
-        # Install psycopg2, required to create the PostgreSQL database and user.
-        # Also install mod-wsgi, required to configure apache.
+        # Install Django application dependencies, including psycopg2,
+        # required to create the PostgreSQL database and user, and mod-wsgi,
+        # required to configure apache.
 
-        - name: Install psycopg2 and mod-wsgi
+        - name: Install Django application dependencies
           pip:
-            name:
-              - "psycopg2-binary==2.8.3"
-              - "mod-wsgi==4.6.7"
-            state: present
+            requirements: "{{ git_prefix }}/{{ reponame }}/requirements.txt"
             executable: "{{ git_prefix }}/venv/bin/pip3"
           become_user: "{{ djangooperator }}"
 
@@ -324,7 +317,16 @@
 
           when: flag_lrc_enabled
 
-      when: provisioning_tasks == true and (deployment == "prod" or deployment == "staging")
+      when: provisioning_tasks == true and deployment == "prod"
+      tags: provisioning
+
+    # Staging only provisioning tasks.
+    - name: Run Staging Provisioning Tasks
+      block:
+        # Don't do anything as there aren't any provisioning-specific tasks yet.
+        - meta: noop
+      # Uncomment when tasks are added.
+      # when: provisioning_tasks == true and deployment == "staging"
       tags: provisioning
 
     # Development only provisioning tasks.
