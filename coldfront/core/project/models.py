@@ -262,6 +262,9 @@ class ProjectAttribute(TimeStampedModel):
             except ValueError:
                 raise ValidationError(
                     'Invalid Value "%s" for "%s". Date must be in format YYYY-MM-DD' % (self.value, self.proj_attr_type.name))
+
+    def __str__(self):
+        return '%s' % (self.proj_attr_type.name)
     
 class ProjectAttributeUsage(TimeStampedModel):
     """ ProjectAttributeUsage. """

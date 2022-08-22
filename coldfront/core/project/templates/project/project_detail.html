@@ -95,7 +95,7 @@ Project Detail
             <th scope="col">Username</th>
             <th scope="col">Name</th>
             <th scope="col">Email</th>
-            <th scope="col">Role <a href="#" data-toggle="popover" title="Role" data-trigger="hover" data-content="Manager role grants user access to add/remove users, allocations, grants, and publications to the project."><i class="fas fa-info-circle" aria-hidden="true"></i><span class="sr-only">Manager role grants user access to add/remove users, allocations, grants, and publications to the project.</span></a></th>
+            <th scope="col">Role <a href="#" data-toggle="popover" title="Role" data-trigger="hover" data-content="Manager role grants user access to add/remove users, allocations, attributes, grants, and publications to the project."><i class="fas fa-info-circle" aria-hidden="true"></i><span class="sr-only">Manager role grants user access to add/remove users, allocations, attributes, grants, and publications to the project.</span></a></th>
             <th scope="col">Status</th>
             <th scope="col"><input type="checkbox" class="check" id="selectAll" style="margin-right: 5px;">Enable Notifications <a href="#" title="Enable Notifications" data-toggle="popover" data-trigger="hover" data-content="When disabled, user will not receive notifications for allocation requests and expirations or cloud usage (if applicable)."><i class="fas fa-info-circle" aria-hidden="true"></i><span class="sr-only">When disabled, user will not receive notifications for allocation requests and expirations or cloud usage (if applicable).</span></a></th>
             <th scope="col">Actions</th>
@@ -176,19 +176,40 @@ Project Detail
           </thead>
           <tbody>
             {% for attribute in attributes %}
-              <tr>
-                <td>{{ attribute.proj_attr_type }}</td>
-                <td>{{ attribute.value }}</td>
-              </tr>
-            {% endfor %}
+                {% if attribute.proj_attr_type.is_private %}
+                  <tr style="background-color:#eee">
+                    <td><i class="fas fa-lock" aria-hidden="true"></i> {{attribute.proj_attr_type}}</td>
+                    <td>{{attribute.value}}</td>
+                  </tr>
+                {% else %}
+                  <tr>
+                    <td>{{attribute.proj_attr_type}}</td>
+                    <td>
+                      {{attribute.value}}
+                    </td>
+                  </tr>
+                {% endif %}
+              {% endfor %}
           </tbody>
         </table>
       </div>
+      {% if attributes_with_usage %}
+      <hr>
+      {% for attribute in attributes_with_usage %}
+        <div class="card mb-3 mr-1">
+          <div class="card-body">
+            <h4 class="card-title">{{attribute.value}}</h4>
+            <div id="gauge-{{forloop.counter0}}"></div>
+          </div>
+        </div>
+      {% endfor %}
+      {% endif %}
     {% else %}
       <div class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i> There are no attributes to display.</div>
     {% endif %}
   </div>
 </div>
+
 <!-- End Project Attributes -->
 
 <!-- Start Project Allocations -->

@@ -2,6 +2,7 @@ import datetime
 from pipes import Template
 import pprint
 import django
+import logging 
 from django import forms
 
 from django.conf import settings
@@ -19,6 +20,7 @@ from django.http import (HttpResponse, HttpResponseForbidden,
                          HttpResponseRedirect)
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
+from coldfront.core.allocation.utils import generate_guauge_data_from_usage
 from django.urls import reverse
 from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
@@ -68,6 +70,8 @@ if EMAIL_ENABLED:
         'EMAIL_DIRECTOR_EMAIL_ADDRESS')
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
 
+logger = logging.getLogger(__name__)
+
 
 class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     model = Project
@@ -106,6 +110,37 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         else:
             context['is_allowed_to_update_project'] = False
 
+        pk = self.kwargs.get('pk')
+        project_obj = get_object_or_404(Project, pk=pk)
+
+        if self.request.user.is_superuser or project_user.role.name == 'Manager':
+            attributes_with_usage = [attribute for attribute in project_obj.projectattribute_set.all(
+            ).order_by('proj_attr_type__name') if hasattr(attribute, 'projattrusage')]
+
+            attributes = [attribute for attribute in project_obj.projectattribute_set.all(
+            ).order_by('proj_attr_type__name')]
+
+        else:
+            attributes_with_usage = [attribute for attribute in project_obj.projectattribute_set.filter(
+                proj_attr_type__is_private=False) if hasattr(attribute, 'projattrusage')]
+
+            attributes = [attribute for attribute in project_obj.projectattribute_set.filter(
+                proj_attr_type__is_private=False)]
+
+        guage_data = []
+        invalid_attributes = []
+        for attribute in attributes_with_usage:
+            try:
+                guage_data.append(generate_guauge_data_from_usage(attribute.proj_attr_type.name,
+                                                                  float(attribute.value), float(attribute.projectattributeusage.value)))
+            except ValueError:
+                logger.error("Allocation attribute '%s' is not an int but has a usage",
+                             attribute.allocation_attribute_type.name)
+                invalid_attributes.append(attribute)
+
+        for a in invalid_attributes:
+            attributes_with_usage.remove(a)
+
         # Only show 'Active Users'
         project_users = self.object.projectuser_set.filter(
             status__name='Active').order_by('user__username')
@@ -136,7 +171,9 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['grants'] = Grant.objects.filter(
             project=self.object, status__name__in=['Active', 'Pending', 'Archived'])
         context['allocations'] = allocations
-        context['attributes'] = ProjectAttribute.objects.filter(project=self.object).order_by("value")
+        context['attributes'] = attributes
+        context['guage_data'] = guage_data
+        context['attributes_with_usage'] = attributes_with_usage
         context['project_users'] = project_users
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
 
@@ -1178,12 +1215,19 @@ class ProjectAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Create
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
 
         if self.request.user.is_superuser:
             return True
-        else:
-            messages.error(
-                self.request, 'You do not have permission to add project attributes.')
+
+        if project_obj.pi == self.request.user:
+            return True
+
+        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+            return True
+
+        messages.error(
+            self.request, 'You do not have permission to add project attributes.')
 
     def get_initial(self):
         initial = super().get_initial()
@@ -1215,26 +1259,22 @@ class ProjectAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Templa
     def test_func(self):
         """ UserPassesTestMixin Tests"""
 
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+
         if self.request.user.is_superuser:
             return True
-        else:
-            messages.error(
-                self.request, 'You do not have permission to add project attributes.')
 
-    def get_initial(self):
-        initial = super().get_initial()
-        pk = self.kwargs.get('pk')
-        initial['project'] = get_object_or_404(Project, pk=pk)
-        return initial
+        if project_obj.pi == self.request.user:
+            return True
 
-    def get_form(self, form_class=None):
-        """Return an instance of the form to be used in this view."""
-        form = super().get_form(form_class)
-        form.fields['project'].widget = forms.HiddenInput()
-        return form
+        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+            return True
 
-    def get_avail_attrs(self, pk: int) -> list:
-        avail_attrs = ProjectAttribute.objects.filter(project_id=pk)
+        messages.error(
+            self.request, 'You do not have permission to add project attributes.')
+
+    def get_avail_attrs(self, project_obj):
+        avail_attrs = ProjectAttribute.objects.filter(project=project_obj)
         avail_attrs_dicts = [
             {
                 'pk' : attr.pk,
@@ -1248,23 +1288,22 @@ class ProjectAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Templa
 
         return avail_attrs_dicts
 
-    def get_context_data(self, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        context = super().get_context_data(*args, **kwargs)
-        context['project'] = get_object_or_404(Project, pk=pk)
+        project_obj = get_object_or_404(Project, pk=pk)
 
-        avail_attrs = ProjectAttribute.objects.filter(project_id=pk)
-        proj_attr_formset = formset_factory(
-            ProjectAttributeDeleteForm,
-            max_num=len(avail_attrs)
-        )
-        formset = proj_attr_formset(
-            initial=self.get_avail_attrs(pk),
-            prefix="attributeform"
-        )
+        project_attributes_to_delete = self.get_avail_attrs(
+            project_obj)
+        context = {}
 
-        context['formset'] = formset
-        return context
+        if project_attributes_to_delete:
+            formset = formset_factory(ProjectAttributeDeleteForm, max_num=len(
+                project_attributes_to_delete))
+            formset = formset(
+                initial=project_attributes_to_delete, prefix='attributeform')
+            context['formset'] = formset
+        context['project'] = project_obj
+        return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
@@ -1298,4 +1337,4 @@ class ProjectAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Templa
             for error in formset.errors:
                 messages.error(request, error)
 
-        return reverse('project-detail', kwargs={'pk': pk})
+        return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': pk}))
