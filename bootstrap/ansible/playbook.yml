@@ -498,7 +498,7 @@
             mode: "u=rwX,g=rX,o=rX"
             group: apache
 
-        - name: Restart httpd service
+        - name: Reload httpd service
           service:
             name: httpd
             state: reloaded
