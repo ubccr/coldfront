@@ -259,8 +259,20 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             attributes_with_usage.remove(a)
 
         allocation_quota_bytes, allocation_usage_bytes = return_allocation_bytes_values(attributes_with_usage, allocation_users)
+
+
+        allocation_quota_tb = next((a for a in attributes_with_usage if \
+            a.allocation_attribute_type.name == "Storage Quota (TB)"), "None")
+
+        allocation_usage_tb = float(allocation_quota_tb.allocationattributeusage.value)
+        allocation_quota_bytes, allocation_usage_bytes = return_allocation_bytes_values(attributes_with_usage, allocation_users)
         context['allocation_quota_bytes'] = allocation_quota_bytes
         context['allocation_usage_bytes'] = allocation_usage_bytes
+        context['allocation_quota_tb'] = 0 if not allocation_quota_bytes else allocation_quota_bytes/1099511627776
+        context['allocation_usage_tb'] = 0 if not allocation_usage_bytes else allocation_usage_bytes/1099511627776
+
+
+
         context['allocation_users'] = allocation_users
         context['guage_data'] = guage_data
         context['attributes_with_usage'] = attributes_with_usage
@@ -1514,9 +1526,15 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
             attributes_with_usage.remove(a)
 
 
+        allocation_quota_tb = next((a for a in attributes_with_usage if \
+            a.allocation_attribute_type.name == "Storage Quota (TB)"), "None")
+
+        allocation_usage_tb = float(allocation_quota_tb.allocationattributeusage.value)
         allocation_quota_bytes, allocation_usage_bytes = return_allocation_bytes_values(attributes_with_usage, allocation_users)
         context['allocation_quota_bytes'] = allocation_quota_bytes
         context['allocation_usage_bytes'] = allocation_usage_bytes
+        context['allocation_quota_tb'] = 0 if not allocation_quota_bytes else allocation_quota_bytes/1099511627776
+        context['allocation_usage_tb'] = 0 if not allocation_usage_bytes else allocation_usage_bytes/1099511627776
 
         context['guage_data'] = guage_data
         context['attributes_with_usage'] = attributes_with_usage
