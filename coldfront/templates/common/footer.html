@@ -8,7 +8,7 @@
     <div class="row justify-content-center">
       {% flag_enabled 'LRC_ONLY' as lrc_only %}
       {% if lrc_only %}
-      <img src="{% static 'core/portal/imgs/cloud_computing.png' %}" alt="cloud_computing_logo" height="100">
+      <img src="{% static 'core/portal/imgs/science_it_logo.png' %}" alt="science_it_logo" height="75">
       {% endif %}
 
       {% flag_enabled 'BRC_ONLY' as brc_only %}
@@ -17,10 +17,7 @@
       <img src="{% static 'core/portal/imgs/uc_berkeley_logo.png' %}" alt="uc_berkeley_logo" height="75">
       {% endif %}
     </div>
-    {% if brc_only %}
     <br>
-    {% endif %}
-
     <div class="row justify-content-center">
       <p>Powered by ColdFront Version {% get_version %} | <a href="https://github.com/ubccr/coldfront"><i
             class="fab fa-github" aria-hidden="true"></i> GitHub</a></p>
