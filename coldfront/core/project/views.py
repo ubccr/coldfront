@@ -26,6 +26,7 @@ from coldfront.core.allocation.utils import get_project_compute_resource_name
 # from coldfront.core.grant.models import Grant
 from coldfront.core.allocation.utils_.secure_dir_utils import \
     pi_eligible_to_request_secure_dir
+from coldfront.core.billing.utils.queries import is_project_billing_id_required_and_missing
 from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectAddUsersToAllocationForm,
                                           ProjectReviewEmailForm,
@@ -812,10 +813,18 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+        _redirect = HttpResponseRedirect(
+            reverse('project-detail', kwargs={'pk': project_obj.pk}))
         if project_obj.status.name not in ['Active', 'Inactive', 'New', ]:
             messages.error(
                 request, 'You cannot add users to an archived project.')
-            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
+            return _redirect
+        elif is_project_billing_id_required_and_missing(project_obj):
+            message = (
+                f'Project {project_obj.name} does not have a LBL Project ID '
+                f'for billing. You cannot add users until one is set.')
+            messages.error(request, message)
+            return _redirect
         else:
             return super().dispatch(request, *args, **kwargs)
 
