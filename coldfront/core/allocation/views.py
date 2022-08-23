@@ -1944,7 +1944,6 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
         notes = note_form.cleaned_data.get('notes')
 
 
-
         if request.POST.get('choice') == 'deny':
             allocation_change_obj.notes = notes
 
