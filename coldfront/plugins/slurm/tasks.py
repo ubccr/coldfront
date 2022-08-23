@@ -2,14 +2,16 @@ import os
 import logging
 
 from coldfront.core.resource.models import ResourceAttribute
-from coldfront.plugins.slurm.utils import SLURM_CLUSTER_ATTRIBUTE_NAME
+from coldfront.plugins.slurm.utils import SLURM_CLUSTER_ATTRIBUTE_NAME, SLURM_DUMP_TASK_BASE_DIR
 from coldfront.plugins.slurm.associations import SlurmCluster
 
 logger = logging.getLogger(__name__)
 
 
 def run_slurm_dump():
-    base_dir = '/home/mkusz/Work/source/coldfront/slurm_files/slurm_dump'
+    base_dir = SLURM_DUMP_TASK_BASE_DIR
+    if not base_dir:
+        base_dir = os.getcwd()
 
     for attr in ResourceAttribute.objects.filter(resource_attribute_type__name=SLURM_CLUSTER_ATTRIBUTE_NAME):
         if not attr.resource.is_available:

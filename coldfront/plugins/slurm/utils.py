@@ -6,6 +6,7 @@ from io import StringIO
 
 from coldfront.core.utils.common import import_from_settings
 
+SLURM_DUMP_TASK_BASE_DIR = import_from_settings('SLURM_DUMP_TASK_BASE_DIR', '')
 SLURM_CLUSTER_ATTRIBUTE_NAME = import_from_settings('SLURM_CLUSTER_ATTRIBUTE_NAME', 'slurm_cluster')
 SLURM_ACCOUNT_ATTRIBUTE_NAME = import_from_settings('SLURM_ACCOUNT_ATTRIBUTE_NAME', 'slurm_account_name')
 SLURM_SPECS_ATTRIBUTE_NAME = import_from_settings('SLURM_SPECS_ATTRIBUTE_NAME', 'slurm_specs')
