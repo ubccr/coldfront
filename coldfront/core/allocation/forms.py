@@ -66,7 +66,7 @@ class AllocationUpdateForm(forms.Form):
         start_date = cleaned_data.get("start_date")
         end_date = cleaned_data.get("end_date")
 
-        if start_date and end_date < start_date:
+        if start_date and end_date and end_date < start_date:
             raise forms.ValidationError(
                 'End date cannot be less than start date'
             )

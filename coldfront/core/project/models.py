@@ -59,22 +59,19 @@ We do not have information about your research. Please provide a detailed descri
     def last_project_review(self):
         if self.projectreview_set.exists():
             return self.projectreview_set.order_by('-created')[0]
-        else:
-            return None
+        return None
 
     @property
     def latest_grant(self):
         if self.grant_set.exists():
             return self.grant_set.order_by('-modified')[0]
-        else:
-            return None
+        return None
 
     @property
     def latest_publication(self):
         if self.publication_set.exists():
             return self.publication_set.order_by('-created')[0]
-        else:
-            return None
+        return None
 
     @property
     def needs_review(self):

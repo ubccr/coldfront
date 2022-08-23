@@ -7,7 +7,6 @@ from django import forms
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import user_passes_test, login_required
-from coldfront.core.utils.common import import_from_settings
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
@@ -410,7 +409,8 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
         if project_obj.pi == self.request.user:
             return True
 
-        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager',
+                                        status__name='Active').exists():
             return True
 
     def get_context_data(self, **kwargs):
@@ -496,8 +496,7 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
         if project_obj.status.name not in ['Active', 'New', ]:
             messages.error(request, 'You cannot update an archived project.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
-        else:
-            return super().dispatch(request, *args, **kwargs)
+        return super().dispatch(request, *args, **kwargs)
 
     def get_success_url(self):
         return reverse('project-detail', kwargs={'pk': self.object.pk})
@@ -525,8 +524,7 @@ class ProjectAddUsersSearchView(LoginRequiredMixin, UserPassesTestMixin, Templat
             messages.error(
                 request, 'You cannot add users to an archived project.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
-        else:
-            return super().dispatch(request, *args, **kwargs)
+        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
@@ -558,8 +556,7 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
             messages.error(
                 request, 'You cannot add users to an archived project.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
-        else:
-            return super().dispatch(request, *args, **kwargs)
+        return super().dispatch(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         user_search_string = request.POST.get('q')
@@ -744,8 +741,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             messages.error(
                 request, 'You cannot remove users from an archived project.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
-        else:
-            return super().dispatch(request, *args, **kwargs)
+        return super().dispatch(request, *args, **kwargs)
 
     def get_users_to_remove(self, project_obj):
         users_to_remove = [
@@ -1001,34 +997,32 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         project_review_status_choice = ProjectReviewStatusChoice.objects.get(
             name='Pending')
 
-        if project_review_form.is_valid():
-            form_data = project_review_form.cleaned_data
-            project_review_obj = ProjectReview.objects.create(
-                project=project_obj,
-                reason_for_not_updating_project=form_data.get('reason'),
-                status=project_review_status_choice)
-
-            project_obj.force_review = False
-            project_obj.save()
-
-            domain_url = get_domain_url(self.request)
-            url = '{}{}'.format(domain_url, reverse('project-review-list'))
-
-            if EMAIL_ENABLED:
-                send_email_template(
-                    'New project review has been submitted',
-                    'email/new_project_review.txt',
-                    {'url': url},
-                    EMAIL_SENDER,
-                    [EMAIL_DIRECTOR_EMAIL_ADDRESS, ]
-                )
-
-            messages.success(request, 'Project reviewed successfully.')
+        if not project_review_form.is_valid():
+            messages.error(request, 'There was an error in processing  your project review.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
-        else:
-            messages.error(
-                request, 'There was an error in processing  your project review.')
-            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
+        form_data = project_review_form.cleaned_data
+        project_review_obj = ProjectReview.objects.create(
+            project=project_obj,
+            reason_for_not_updating_project=form_data.get('reason'),
+            status=project_review_status_choice)
+
+        project_obj.force_review = False
+        project_obj.save()
+
+        domain_url = get_domain_url(self.request)
+        url = '{}{}'.format(domain_url, reverse('project-review-list'))
+
+        if EMAIL_ENABLED:
+            send_email_template(
+                'New project review has been submitted',
+                'email/new_project_review.txt',
+                {'url': url},
+                EMAIL_SENDER,
+                [EMAIL_DIRECTOR_EMAIL_ADDRESS, ]
+            )
+
+        messages.success(request, 'Project reviewed successfully.')
+        return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
 
 class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
@@ -1158,9 +1152,8 @@ class ProjectNoteCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView)
 
         if self.request.user.is_superuser:
             return True
-        else:
-            messages.error(
-                self.request, 'You do not have permission to add allocation notes.')
+        messages.error(
+            self.request, 'You do not have permission to add allocation notes.')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
