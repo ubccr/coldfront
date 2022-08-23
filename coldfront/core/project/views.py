@@ -115,14 +115,14 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
         if self.request.user.is_superuser or project_user.role.name == 'Manager':
             attributes_with_usage = [attribute for attribute in project_obj.projectattribute_set.all(
-            ).order_by('proj_attr_type__name') if hasattr(attribute, 'projattrusage')]
+            ).order_by('proj_attr_type__name') if hasattr(attribute, 'projectattributeusage')]
 
             attributes = [attribute for attribute in project_obj.projectattribute_set.all(
             ).order_by('proj_attr_type__name')]
 
         else:
             attributes_with_usage = [attribute for attribute in project_obj.projectattribute_set.filter(
-                proj_attr_type__is_private=False) if hasattr(attribute, 'projattrusage')]
+                proj_attr_type__is_private=False) if hasattr(attribute, 'projectattributeusage')]
 
             attributes = [attribute for attribute in project_obj.projectattribute_set.filter(
                 proj_attr_type__is_private=False)]

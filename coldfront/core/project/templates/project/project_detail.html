@@ -178,12 +178,12 @@ Project Detail
             {% for attribute in attributes %}
                 {% if attribute.proj_attr_type.is_private %}
                   <tr style="background-color:#eee">
-                    <td><i class="fas fa-lock" aria-hidden="true"></i> {{attribute.proj_attr_type}}</td>
+                    <td><i class="fas fa-lock" aria-hidden="true"></i> {{attribute}}</td>
                     <td>{{attribute.value}}</td>
                   </tr>
                 {% else %}
                   <tr>
-                    <td>{{attribute.proj_attr_type}}</td>
+                    <td>{{attribute}}</td>
                     <td>
                       {{attribute.value}}
                     </td>
@@ -198,7 +198,7 @@ Project Detail
       {% for attribute in attributes_with_usage %}
         <div class="card mb-3 mr-1">
           <div class="card-body">
-            <h4 class="card-title">{{attribute.value}}</h4>
+            <h4 class="card-title">{{attribute}}</h4>
             <div id="gauge-{{forloop.counter0}}"></div>
           </div>
         </div>
@@ -483,6 +483,11 @@ Project Detail
 <!-- End Admin Messages -->
 
 <script>
+  
+
+
+
+
   function getCookie(name) {
     var cookieValue = null;
     if (document.cookie && document.cookie != '') {
@@ -501,6 +506,9 @@ Project Detail
 
   $(document).ready(function(){
     $('[data-toggle="popover"]').popover();
+
+    var guage_data = {{ guage_data | safe }};
+    drawGauges(guage_data);
 
     $('#publication-table').DataTable({
       "aLengthMenu": [
@@ -550,5 +558,20 @@ Project Detail
       });
     });
   });
+
+  function drawGauges(guage_data) {
+    var arrayLength = guage_data.length;
+    for (var i = 0; i < arrayLength; i++) {
+      c3.generate({
+        bindto: '#gauge-' + i,
+        data: guage_data[i],
+        legend: {
+          item: {
+            onclick: function (id) { }
+          }
+        }
+      });
+    }
+  }
 </script>
 {% endblock %}

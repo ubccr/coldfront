@@ -250,3 +250,46 @@ class ProjectAttributeAdmin(SimpleHistoryAdmin):
             return []
         else:
             return super().get_inline_instances(request)
+
+
+class ValueFilter(admin.SimpleListFilter):
+    title = _('value')
+
+    parameter_name = 'value'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('>0', _('Greater than > 0')),
+            ('>10', _('Greater than > 10')),
+            ('>100', _('Greater than > 100')),
+            ('>1000', _('Greater than > 1000')),
+        )
+
+    def queryset(self, request, queryset):
+
+        if self.value() == '>0':
+            return queryset.filter(value__gt=0)
+
+        if self.value() == '>10':
+            return queryset.filter(value__gt=10)
+
+        if self.value() == '>100':
+            return queryset.filter(value__gt=100)
+
+        if self.value() == '>1000':
+            return queryset.filter(value__gt=1000)
+
+@admin.register(ProjectAttributeUsage)
+class ProjectAttributeUsageAdmin(SimpleHistoryAdmin):
+    list_display = ('project_attribute', 'project',
+                    'project_pi', 'value',)
+    readonly_fields = ('project_attribute',)
+    fields = ('project_attribute', 'value',)
+    list_filter = ('project_attribute__proj_attr_type',
+                    ValueFilter, )
+
+    def project(self, obj):
+        return obj.project_attribute.project.title
+
+    def project_pi(self, obj):
+        return obj.project_attribute.project.pi.username

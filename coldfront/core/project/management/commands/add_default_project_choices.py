@@ -35,10 +35,8 @@ class Command(BaseCommand):
 
         ProjectAttributeType.objects.all().delete()
         for name, attribute_type, has_usage, is_private in (
-            ('Sample Attr 1', 'Text', False, False),
-            ('Sample Attr 2', 'Yes/No', False, True),
-            ('Sample Attr 3', 'Int', True, False),
-            ('Sample Attr 4', 'Float', True, False),
+            ('Project ID', 'Int', True, False),
+            ('Account Number', 'Int', True, False),
         ):
             ProjectAttributeType.objects.get_or_create(name=name, attribute_type=AttributeType.objects.get(
                 name=attribute_type), has_usage=has_usage, is_private=is_private)

@@ -17,7 +17,8 @@ from coldfront.core.grant.models import (Grant, GrantFundingAgency,
                                          GrantStatusChoice)
 from coldfront.core.project.models import (Project, ProjectStatusChoice,
                                            ProjectUser, ProjectUserRoleChoice,
-                                           ProjectUserStatusChoice)
+                                           ProjectUserStatusChoice, ProjectAttribute
+                                           , ProjectAttributeType, AttributeType)
 from coldfront.core.publication.models import Publication, PublicationSource
 from coldfront.core.resource.models import (Resource, ResourceAttribute,
                                             ResourceAttributeType,
@@ -198,6 +199,34 @@ class Command(BaseCommand):
                 description='Chemistry'),
             status=ProjectStatusChoice.objects.get(name='Active'),
             force_review=True
+        )
+
+        AttributeType.objects.get_or_create(
+            name='Int'
+        )
+
+        ProjectAttributeType.objects.get_or_create(
+            attribute_type=AttributeType.objects.get(name='Int'),
+            name='Project ID',
+            is_private=False,
+        )
+
+        ProjectAttributeType.objects.get_or_create(
+            attribute_type=AttributeType.objects.get(name='Int'),
+            name='Account Number',
+            is_private=True,
+        )
+
+        ProjectAttribute.objects.get_or_create(
+            proj_attr_type=ProjectAttributeType.objects.get(name='Project ID'),
+            project=project_obj,
+            value=1242021,
+        )
+
+        ProjectAttribute.objects.get_or_create(
+            proj_attr_type=ProjectAttributeType.objects.get(name='Account Number'),
+            project=project_obj,
+            value=1756522,
         )
 
         univ_hpc = Resource.objects.get(name='University HPC')

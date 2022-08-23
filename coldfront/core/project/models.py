@@ -178,7 +178,6 @@ class ProjectUserStatusChoice(TimeStampedModel):
 
 
 class ProjectUser(TimeStampedModel):
-
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     role = models.ForeignKey(ProjectUserRoleChoice, on_delete=models.CASCADE)
@@ -232,27 +231,25 @@ class ProjectAttribute(TimeStampedModel):
     value = models.CharField(max_length=128)
     history = HistoricalRecords()
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if self.proj_attr_type.has_usage and not ProjectAttributeUsage.objects.filter(project_attribute=self).exists():
+            ProjectAttributeUsage.objects.create(
+                project_attribute=self)
+
     def clean(self):
-        if self.proj_attr_type.is_unique and self.allocation.allocationattribute_set.filter(proj_attr_type=self.proj_attr_type).exists():
-            raise ValidationError("'{}' attribute already exists for this allocation.".format(
+        if self.proj_attr_type.is_unique and self.project.projectattribute_set.filter(proj_attr_type=self.proj_attr_type).exists():
+            raise ValidationError("'{}' attribute already exists for this project.".format(
                 self.proj_attr_type))
 
         expected_value_type = self.proj_attr_type.attribute_type.name.strip()
 
-        if expected_value_type == "Int":
-            # Changed from the literal casting to try catch because certain invalid inputs could lead to SyntaxErrors and
-            # other errors.
-            try:
-                _ = int(self.value)
-            except ValueError:
-                raise ValidationError(
+        if expected_value_type == "Int" and not isinstance(literal_eval(self.value), int):
+            raise ValidationError(
                 'Invalid Value "%s" for "%s". Value must be an integer.' % (self.value, self.proj_attr_type.name))
-        elif expected_value_type == "Float":
-            try:
-                _ = float(self.value)
-            except ValueError:
-                raise ValidationError(
-                    'Invalid Value "%s" for "%s". Value must be a float.' % (self.value, self.proj_attr_type.name))
+        elif expected_value_type == "Float" and not (isinstance(literal_eval(self.value), float) or isinstance(literal_eval(self.value), int)):
+            raise ValidationError(
+                'Invalid Value "%s" for "%s". Value must be a float.' % (self.value, self.proj_attr_type.name))
         elif expected_value_type == "Yes/No" and self.value not in ["Yes", "No"]:
             raise ValidationError(
                 'Invalid Value "%s" for "%s". Allowed inputs are "Yes" or "No".' % (self.value, self.proj_attr_type.name))
