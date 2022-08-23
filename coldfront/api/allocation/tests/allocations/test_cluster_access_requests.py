@@ -19,9 +19,7 @@ from http import HTTPStatus
 """A test suite for the /cluster_access_requests/ endpoints, divided
 by method."""
 
-SERIALIZER_FIELDS = (
-    'id', 'status', 'completion_time',
-    'billing_activity', 'allocation_user')
+SERIALIZER_FIELDS = ('id', 'status', 'completion_time', 'allocation_user')
 
 BASE_URL = '/api/cluster_access_requests/'
 

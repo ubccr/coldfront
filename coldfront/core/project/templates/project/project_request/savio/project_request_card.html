@@ -72,6 +72,12 @@
       <strong>Description: </strong>
       {{ savio_request.project.description }}
     </p>
+    {% if savio_request.billing_activity %}
+    <p class="card-text text-justify">
+      <strong>Project ID: </strong>
+      {{ savio_request.billing_activity.full_id }}
+    </p>
+    {% endif %}
 <!--    <p class="card-text text-justify">-->
 <!--      <strong>UCB Campus Division or Department: </strong>-->
 <!--      {{ savio_request.project.field_of_science }}-->

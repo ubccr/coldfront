@@ -70,9 +70,7 @@ class ClusterAccessRequestRunner(object):
             allocation_user=self._allocation_user_obj,
             status=ClusterAccessRequestStatusChoice.objects.get(
                 name='Pending - Add'),
-            request_time=utc_now_offset_aware(),
-            host_user=self._user_obj.userprofile.host_user,
-            billing_activity=self._user_obj.userprofile.billing_activity)
+            request_time=utc_now_offset_aware())
         message = (
             f'Created a ClusterAccessRequest {request.pk} for user '
             f'{self._user_obj.pk} and Project {self._project_obj.pk}.')

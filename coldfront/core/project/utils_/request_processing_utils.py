@@ -26,6 +26,7 @@ def create_project_users(project, requester, pi, request_class,
     pi_role = ProjectUserRoleChoice.objects.get(name='Principal Investigator')
 
     is_requester_pi = requester.pk == pi.pk
+    runners_to_run = []
 
     if not is_requester_pi:
         run_runner = False
@@ -51,7 +52,7 @@ def create_project_users(project, requester, pi, request_class,
                 source = NewProjectUserSource.NEW_PROJECT_REQUESTER
             new_project_user_runner = runner_factory.get_runner(
                 requester_project_user, source, email_strategy=email_strategy)
-            new_project_user_runner.run()
+            runners_to_run.append(new_project_user_runner)
 
     run_runner = False
     if project.projectuser_set.filter(user=pi).exists():
@@ -80,4 +81,7 @@ def create_project_users(project, requester, pi, request_class,
                 source = NewProjectUserSource.NEW_PROJECT_NON_REQUESTER_PI
         new_project_user_runner = runner_factory.get_runner(
             pi_project_user, source, email_strategy=email_strategy)
-        new_project_user_runner.run()
+        runners_to_run.append(new_project_user_runner)
+
+    for runner in runners_to_run:
+        runner.run()

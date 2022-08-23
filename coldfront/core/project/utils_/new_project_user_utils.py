@@ -9,10 +9,13 @@ from django.db import transaction
 
 from flags.state import flag_enabled
 
+from coldfront.core.allocation.models import AllocationAttributeType
+from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.allocation.utils import get_or_create_active_allocation_user
 from coldfront.core.allocation.utils import get_project_compute_allocation
 from coldfront.core.allocation.utils_.cluster_access_utils import ClusterAccessRequestRunner
 from coldfront.core.allocation.utils_.cluster_access_utils import ClusterAccessRequestRunnerValidationError
+from coldfront.core.billing.models import BillingActivity
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserJoinRequest
@@ -21,8 +24,6 @@ from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.utils import send_added_to_project_notification_email
 from coldfront.core.project.utils import send_project_join_request_approval_email
 from coldfront.core.resource.utils import get_computing_allowance_project_prefixes
-from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
-from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.user.utils_.host_user_utils import eligible_host_project_users
 from coldfront.core.user.utils_.host_user_utils import lbl_email_address
 from coldfront.core.user.utils_.host_user_utils import needs_host
@@ -259,6 +260,26 @@ class LRCNewProjectUserRunner(NewProjectUserRunner):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+    def _get_allocation_billing_attribute(self):
+        """Return the AllocationAttribute with type 'Billing Activity'
+        associated with the Allocation, which is expected to exist."""
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Billing Activity')
+        return self._allocation_obj.allocationattribute_set.get(
+            allocation_attribute_type=allocation_attribute_type)
+
+    def _get_allocation_user_billing_attribute(self):
+        """Return the AllocationUserAttribute with type 'Billing
+        Activity' associated with the AllocationUser if it exists, else
+        None."""
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Billing Activity')
+        try:
+            return self._allocation_user_obj.allocationuserattribute_set.get(
+                allocation_attribute_type=allocation_attribute_type)
+        except AllocationUserAttribute.DoesNotExist:
+            return None
+
     def _run_extra_steps(self):
         """Run extra processing steps.
             1. For external users who require a host user, set it.
@@ -266,15 +287,38 @@ class LRCNewProjectUserRunner(NewProjectUserRunner):
         """
         if needs_host(self._user_obj):
             self._set_host_user()
-        if self._is_billing_activity_required():
-            self._set_billing_activity()
+        if self._should_set_billing_activities():
+            self._set_billing_activities()
 
-    def _is_billing_activity_required(self):
-        """Return whether a billing activity needs to be set."""
-        computing_allowance_project_prefixes = \
-            get_computing_allowance_project_prefixes()
-        return self._project_obj.name.startswith(
-            computing_allowance_project_prefixes)
+    def _set_billing_activities(self):
+        """Propagate the BillingActivity of the Allocation to:
+            1. The User's UserProfile, if it does not have one, and
+            2. The AllocationUser's AllocationUserAttribute of type
+               'Billing Activity', if one does not exist or is empty."""
+        allocation_billing_attribute = self._get_allocation_billing_attribute()
+        billing_activity = BillingActivity.objects.get(
+            pk=int(allocation_billing_attribute.value))
+
+        user_profile = self._user_obj.userprofile
+        if not user_profile.billing_activity:
+            user_profile.billing_activity = billing_activity
+            user_profile.save()
+
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Billing Activity')
+        allocation_user_billing_attribute = \
+            self._get_allocation_user_billing_attribute()
+        if not isinstance(
+                allocation_user_billing_attribute, AllocationUserAttribute):
+            AllocationUserAttribute.objects.create(
+                allocation_attribute_type=allocation_attribute_type,
+                allocation=self._allocation_obj,
+                allocation_user=self._allocation_user_obj,
+                value=allocation_billing_attribute.value)
+        elif not allocation_user_billing_attribute.value.strip():
+            allocation_user_billing_attribute.value = \
+                allocation_billing_attribute.value
+            allocation_user_billing_attribute.save()
 
     def _set_host_user(self):
         """Determine and set a host_user in the ProjectUser's
@@ -308,9 +352,12 @@ class LRCNewProjectUserRunner(NewProjectUserRunner):
         self._user_obj.userprofile.host_user = host_user
         self._user_obj.userprofile.save()
 
-    def _set_billing_activity(self):
-        """TODO"""
-        pass
+    def _should_set_billing_activities(self):
+        """Return whether billing activities need to be set."""
+        computing_allowance_project_prefixes = \
+            get_computing_allowance_project_prefixes()
+        return self._project_obj.name.startswith(
+            computing_allowance_project_prefixes)
 
 
 class NewProjectUserRunnerFactory(object):
