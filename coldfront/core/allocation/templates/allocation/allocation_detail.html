@@ -376,10 +376,10 @@ Allocation Detail
               {% else %}
               <td data-sort = "{{user.usage_bytes}}" name = "usage_bytes">{{ user.usage }}{{ user.unit }}</td>
               {% endif %}
-              {% if allocation_usage_bytes == None %}
+              {% if allocation_usage_bytes == None or allocation_usage_bytes == 0 %}
               <td>0</td>
               {% else %}
-              <td>{{user.usage_bytes|div:1099511627776|div:allocation_usage_tb|mul:100|floatformat:2 }}</td>
+              <td>{{user.usage_bytes|div:allocation_usage_bytes|mul:100|floatformat:2 }}</td>
               {% endif %}
               <td>{{user.usage_bytes|div:1099511627776|mul:price|floatformat:2}}</td>
             </tr>
