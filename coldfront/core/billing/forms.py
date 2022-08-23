@@ -44,7 +44,8 @@ class BillingIDValidationForm(forms.Form):
         except BillingActivity.DoesNotExist:
             raise forms.ValidationError(
                 f'Project ID {billing_id} does not currently exist.')
-        if self.enforce_validity and not billing_activity.is_valid:
-            raise forms.ValidationError(
-                f'Project ID {billing_id} is not currently valid.')
+        # TODO: Enforce validity. BillingActivity no longer has is_valid.
+        # if self.enforce_validity and not billing_activity.is_valid:
+        #     raise forms.ValidationError(
+        #         f'Project ID {billing_id} is not currently valid.')
         return billing_activity
