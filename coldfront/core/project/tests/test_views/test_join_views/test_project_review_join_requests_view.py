@@ -134,7 +134,7 @@ class TestLRCProjectReviewJoinRequestsView(TestViewMixin, TestBase):
         """Set up test data."""
         super().setUp()
 
-        # Rename the Projects.
+        # Rename the Project.
         self.project0.name = 'pc_project0'
         self.project0.save()
 
