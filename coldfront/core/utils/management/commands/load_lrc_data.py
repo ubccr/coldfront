@@ -339,7 +339,7 @@ class Command(BaseCommand):
                                 matching_email_addresses.first().user
                         else:
                             # If no matching User could be found, create a new
-                            # User object.
+                            # User object, setting its host_user to itself.
                             new_host_user = User.objects.create(
                                 username=email,
                                 email=email,
@@ -351,6 +351,7 @@ class Command(BaseCommand):
                                 user=new_host_user)
                             new_host_user_profile.middle_name = user_data[
                                 'middle_name'].title()
+                            new_host_user_profile.host_user = new_host_user
                             new_host_user_profile.save()
 
             if new_host_user is not None:
