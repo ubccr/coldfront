@@ -4,18 +4,15 @@
   <div class="container">
     <div class="row">
       <div class="col">
-        <h1 class="float-left" style="max-width: 500px;">{{ PORTAL_NAME }} - <small>{{ PROGRAM_NAME_LONG }} Access
-            Management System</small></h1>
+        <h1 class="float-left" style="max-width: 500px;">{{ PORTAL_NAME }} - <small>{{ PROGRAM_NAME_LONG }} Access Management System</small></h1>
         {% flag_enabled 'LRC_ONLY' as lrc_only %}
         {% if lrc_only %}
-        <img src="{% static 'core/portal/imgs/white_berkeley_lab_logo.png' %}" alt="white_berkeley_lab_logo"
-          width="250;" style="margin: 10px;" class="float-right">
+        <img src="{% static 'core/portal/imgs/white_berkeley_lab_logo.png' %}" alt="white_berkeley_lab_logo" height="100" style="margin: 10px;" class="float-right">
         {% endif %}
 
         {% flag_enabled 'BRC_ONLY' as brc_only %}
         {% if brc_only %}
-        <img src="{% static 'core/portal/imgs/brc_logo.png' %}" alt="brc_logo" width="100;" style="margin: 10px;"
-          class="float-right">
+        <img src="{% static 'core/portal/imgs/brc_logo.png' %}" alt="brc_logo" height="100" style="margin: 10px;" class="float-right">
         {% endif %}
 
       </div>
