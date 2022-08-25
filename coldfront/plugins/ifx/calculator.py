@@ -69,7 +69,7 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
                             if offer_letter_br:
                                 successes.append(offer_letter_br)
                             user_allocation_percentages = self.get_user_allocation_percentages(year, month, allocation)
-                            logger.error(f'alloc percents {user_allocation_percentages}')
+                            logger.debug(f'alloc percents {user_allocation_percentages}')
                             for user_id, allocation_percentage in user_allocation_percentages.items():
                                 try:
                                     user = get_user_model().objects.get(id=user_id)
