@@ -30,9 +30,7 @@ class DepartmentListViewTest(TestCase):
         test_utils.test_redirect_to_login(self, "/department/")
 
         # after login, user and admin can access list page
-        self.client.force_login(self.dept_manager_user, backend="django.contrib.auth.backends.ModelBackend")
-        response = self.client.get("/department/")
-        self.assertEqual(response.status_code, 200)
+        test_utils.test_user_can_access(self, self.dept_manager_user, "/department/")
 
 
     def test_department_list_content(self):
@@ -42,10 +40,15 @@ class DepartmentListViewTest(TestCase):
         # non-admins can only see departments they belong to.
         self.client.force_login(self.dept_manager_user, backend="django.contrib.auth.backends.ModelBackend")
         response = self.client.get("/department/?show_all_departments=on")
-        # print("LIST", response, str(list(response.context['messages'])))
+        self.assertEqual(len(response.context['object_list']), 1)
+        self.assertEqual(response.context['object_list'].first().name, 'School of Maths and Sciences')
 
         # admins can see all departments.
         self.client.force_login(self.admin_user, backend="django.contrib.auth.backends.ModelBackend")
+        response = self.client.get("/department/?show_all_departments=on")
+        self.assertEqual(len(response.context['object_list']), 2)
+        self.assertEqual([i.name for i in response.context['object_list'].all()],
+                        ['School of Maths and Sciences', 'Statistics Department'])
 
 
 
@@ -56,9 +59,14 @@ class DepartmentDetailViewTest(TestCase):
         self.admin_user = get_user_model().objects.get(username='gvanrossum')
         self.department = Department.objects.first()
         self.dept_manager_user = DepartmentMember.objects.get(
+                                                    role_id=4,
+                                                    department_id=self.department.pk
+                                                    ).member
+        self.dept_member_user = DepartmentMember.objects.get(
                                                     role_id=1,
                                                     department_id=self.department.pk
                                                     ).member
+        self.nondept_user = get_user_model().objects.get(username='sdpoisson')
         self.client = Client()
 
 
@@ -72,12 +80,20 @@ class DepartmentDetailViewTest(TestCase):
         # admin can access
         test_utils.test_admin_can_access(self, f"/department/{dept_id}/")
 
-        # user belonging to department can access
-        # self.client.force_login(self.dept_manager_user, backend="django.contrib.auth.backends.ModelBackend")
-        # response = self.client.get(f"/department/{dept_id}/")
-        # print(response)
+        # manager user belonging to department can access
+        test_utils.test_user_can_access(self, self.dept_manager_user, f"/department/{dept_id}/")
+
+        # non-manager user belonging to department can access
+        test_utils.test_user_can_access(self, self.dept_member_user, f"/department/{dept_id}/")
 
         # user not belonging to department cannot access
+        self.client.force_login(self.nondept_user,
+                                backend="django.contrib.auth.backends.ModelBackend")
+        response = self.client.get(f"/department/{dept_id}/")
+        print("response", response)
+        self.assertEqual(response.status_code, 403)
+
+
 
     def test_department_detail_content(self):
         """Check content of department detail pages.
