@@ -85,7 +85,7 @@
 
             <tr>
                 <th  style="background-color:#D3D3D3" bordercolor="red" scope="row" class="text-nowrap">Total Amount Due:   </th>
-                <td style="background-color:#D3D3D3">${{full_price}}</td>
+                <td style="background-color:#D3D3D3">${{ full_price|floatformat:2 }}</td>
 
                 {% comment %} <td  style="background-color:#D3D3D3" id = "totalamount"></td> {% endcomment %}
               </tr>
@@ -158,14 +158,14 @@
                   <td data-sort = "{{project.total_price}}">${{ project.total_price|floatformat:2 }}</td>
 
                 </tr>
-                  {% for allocation in project.allocations.all %}
+                  {% for allocation in project.allocs %}
 
                 <tr style="background-color:#FFFFFF">
                   <td></td>
                   <td><a href="{% url 'allocation-detail' allocation.id %}">{{allocation.id}}</a></td>
                   <td>{{allocation.resources__name}}</td>
                   <td>{{allocation.allocationattribute__value|floatformat:1}}</td>
-                  <td>${{allocation.cost| floatformat:2}}</td>
+                  <td>${{ allocation.cost|floatformat:2 }}</td>
                   <td></td>
                 </tr>
 

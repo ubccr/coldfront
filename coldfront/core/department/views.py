@@ -11,10 +11,12 @@ from django.urls import reverse
 from django.conf import settings
 
 from coldfront.core.project.models import Project
+from coldfront.core.utils.fasrc import get_resource_rate
 from coldfront.core.allocation.models import Allocation,AllocationUser, AllocationUserNote
 from coldfront.core.department.forms import DepartmentSearchForm
 from coldfront.core.department.models import (Department, DepartmentMemberRole,
                                             DepartmentMemberStatus, DepartmentMember)
+
 
 
 class DepartmentListView(LoginRequiredMixin, ListView):
@@ -34,7 +36,8 @@ class DepartmentListView(LoginRequiredMixin, ListView):
             order_by = 'id'
 
         department_search_form = DepartmentSearchForm(self.request.GET)
-        departments = Department.objects.prefetch_related('projects')
+        departments = Department.objects.prefetch_related('projects').annotate(
+                                            project_count=Count('projects'))
         user_filter = ( Q(departmentmember__member=self.request.user) &
                         Q(departmentmember__status__name='Active'))
 
@@ -70,7 +73,7 @@ class DepartmentListView(LoginRequiredMixin, ListView):
                     if isinstance(value, list):
                         filter_parameters += "".join([f'{key}={ele}&' for ele in value])
                     else:
-                        filter_parameters += '{}={}&'.format(key, value)
+                        filter_parameters += f'{key}={value}&'
             context['department_search_form'] = department_search_form
         else:
             filter_parameters = None
@@ -80,7 +83,7 @@ class DepartmentListView(LoginRequiredMixin, ListView):
         if order_by:
             direction = self.request.GET.get('direction')
             filter_parameters_with_order_by = filter_parameters + \
-                'order_by=%s&direction=%s&' % (order_by, direction)
+                f'order_by={order_by}&direction={direction}&'
         else:
             filter_parameters_with_order_by = filter_parameters
 
@@ -109,7 +112,7 @@ class DepartmentListView(LoginRequiredMixin, ListView):
 
 
 
-# class DepartmentAllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+# class DepartmentInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 #
 #     def get_context_data(self, **kwargs):
 #         """Create all the variables for allocation_invoice_detail.html"""
@@ -149,7 +152,9 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         """
         if self.request.user.is_superuser:
             return True
-        if self.request.user.has_perm('department.can_manage_invoices'):
+        pk = self.kwargs.get('pk')
+        department_obj = get_object_or_404(Department, pk=pk)
+        if department_obj.departmentmember_set.filter(member=self.request.user).exists():
             return True
 
         messages.error(
@@ -168,7 +173,7 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         elif department_obj.departmentmember_set.filter(member=self.request.user).exists():
             department_member = department_obj.departmentmember_set.get(
                 member=self.request.user)
-            if department_member.role.name == 'Manager':
+            if department_member.role.name == 'department_admin':
                 context['is_allowed_to_update_department'] = True
             else:
                 context['is_allowed_to_update_department'] = False
@@ -178,42 +183,39 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
         project_objs = department_obj.projects.all()\
                     .annotate(total_quota=Sum('allocation__allocationattribute__value', filter=(
-                                Q(allocation__allocationattribute__allocation_attribute_type_id=1))\
-                                &(Q(allocation__status_id=1))))#\
+                        Q(allocation__allocationattribute__allocation_attribute_type_id=1))&(
+                        Q(allocation__status_id=1))))
 
-        price_dict = {1:4.16, 17:20.80, 8:20.80, 7:.41, 2:4.16 }
-
-        whens = [When(resources=k, then=Value(v)) for k, v in price_dict.items()]
 
         for p in project_objs:
-            p.allocations = p.allocation_set.all().\
+            p.allocs = p.allocation_set.all().\
                     filter(allocationattribute__allocation_attribute_type_id=1).\
-                    values('resources__name', 'resources','allocationattribute__value','id').\
-                    annotate(price=Case(*whens, output_field=FloatField(), default=Value(0))).\
-                    annotate(cost=Sum(F('price')*F('allocationattribute__value'), output_field=FloatField()))
+                    values('resources__name', 'resources','allocationattribute__value','id')
+            for allocation in p.allocs:
+                allocation['price'] = get_resource_rate(allocation['resources__name'])
+                allocation['cost'] = allocation['price'] * int(allocation['allocationattribute__value'])
 
-            p.total_price = sum(float(a['allocationattribute__value']) * price_dict[a['resources']] for a in p.allocations)
+            p.total_price = sum(float(a['cost']) for a in p.allocs)
 
 
-
+        context['x'] = [p.allocs for p in project_objs]
         context['full_price'] = sum(p.total_price for p in project_objs)
         context['projects'] = project_objs
 
         allocation_objs = Allocation.objects.filter(project_id__in=[o.id for o in project_objs])
+        # for allocation in allocation_objs:
+        #     allocation.price = get_resource_rate(allocation.resources.first().name)
+        #     allocation.cost = allocation.price * int(allocation.allocationattribute__value)
 
-        if self.request.user.is_superuser:
-            notes = allocation_objs.first().allocationusernote_set.all()
-        else:
-            notes = allocation_objs.first().allocationusernote_set.filter(is_private=False)
-
-        context['notes'] = notes
         context['department'] = department_obj
-
         context['allocations'] = allocation_objs
 
-        allocation_users = AllocationUser.objects.filter(allocation_id__in=[o.id for o in allocation_objs]).filter(status_id=1)\
-                .exclude(
-            status__name__in=['Removed']).exclude(usage_bytes__isnull=True).order_by('user__username')
+        allocation_users = AllocationUser.objects\
+                .filter(allocation_id__in=[o.id for o in allocation_objs])\
+                .filter(status_id=1)\
+                .exclude(status__name__in=['Removed'])\
+                .exclude(usage_bytes__isnull=True)\
+                .order_by('user__username')
 
 
         # context['is_allowed_to_update_project'] = set_proj_update_permissions(

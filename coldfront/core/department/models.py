@@ -21,27 +21,28 @@ class DepartmentRank(TimeStampedModel):
 
 class Department(TimeStampedModel):
     """
-    Consists of all entities in nanites_organization where rank != lab. If is_biller
+    All entities in nanites_organization where rank != lab. If biller
     is True, Coldfront will generate invoices for the Department.
     """
     name = models.CharField(max_length=255,)
     rank = models.ForeignKey(DepartmentRank, on_delete=models.CASCADE)
-    projects = models.ManyToManyField(Project, through='DepartmentProjects')
+    projects = models.ManyToManyField(Project, through='DepartmentProject')
     biller = models.BooleanField(default=False)
-    # field_of_science = models.ForeignKey(FieldOfScience, on_delete=models.CASCADE,
-    #                                             default=FieldOfScience.DEFAULT_PK)
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True)
     history = HistoricalRecords()
 
 
-class DepartmentProjects(TimeStampedModel):
+    class Meta:
+        ordering = ['name',]
+
+
+class DepartmentProject(TimeStampedModel):
     department = models.ForeignKey(Department, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     history = HistoricalRecords()
 
 
 class DepartmentMemberRole(TimeStampedModel):
-    """
-    """
     name = models.CharField(max_length=64)
 
     def __str__(self):
@@ -52,8 +53,6 @@ class DepartmentMemberRole(TimeStampedModel):
 
 
 class DepartmentMemberStatus(TimeStampedModel):
-    """
-    """
     name = models.CharField(max_length=64)
 
     def __str__(self):
@@ -65,7 +64,7 @@ class DepartmentMemberStatus(TimeStampedModel):
 
 
 class DepartmentMember(TimeStampedModel):
-    """
+    """connect User records with Department records, specify relationship qualities.
     """
     member = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     department = models.ForeignKey(Department, on_delete=models.CASCADE)
