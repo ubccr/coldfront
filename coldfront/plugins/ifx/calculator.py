@@ -364,7 +364,6 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
                             and acct.expiration_date > pu.start_date
                             and ua.product_id = %s
                     )
-            )
                 group by pu.product_user_id
             ) t
             group by product_user_id
