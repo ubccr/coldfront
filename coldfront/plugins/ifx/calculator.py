@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.contrib.auth import get_user_model
 from ifxbilling.calculator import BasicBillingCalculator, NewBillingCalculator
 from ifxbilling.models import Account, Product, ProductUsage, Rate, BillingRecord
-from coldfront.core.allocation.models import Allocation
+from coldfront.core.allocation.models import Allocation, AllocationStatusChoice
 from .models import AllocationUserProductUsage
 
 
@@ -62,8 +62,9 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
         if not projects:
             errors.append(f'No project found for {organization.name}')
         else:
+            active = AllocationStatusChoice.objects.get(name='Active')
             for project in projects:
-                for allocation in project.allocation_set.all():
+                for allocation in project.allocation_set.filter(status=active):
                     try:
                         with transaction.atomic():
                             offer_letter_br, remaining_allocation_tb = self.process_offer_letter(year, month, organization, allocation, recalculate)

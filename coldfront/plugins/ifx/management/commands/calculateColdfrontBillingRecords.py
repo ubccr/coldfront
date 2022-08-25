@@ -106,7 +106,7 @@ def print_report(output, terminalsize):
 {errorlines}
             '''.format(
                 lab=lab,
-                errorlines=descwrapper.fill('\n'.join(output[lab][1])),
+                errorlines='\n'.join([descwrapper.fill(err) for err in output[lab][1]]),
             )
             reportlines.append(errorstr)
 
