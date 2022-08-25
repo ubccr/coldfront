@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 '''
-Calculate billing records for the given year and month
+Calculate Coldfront billing records for the given year and month
 '''
 import logging
 import os
@@ -17,10 +17,10 @@ logger = logging.getLogger('ifxbilling')
 
 class Command(BaseCommand):
     '''
-    Calculate billing records for the given year and month
+    Calculate Coldfront billing records for the given year and month
     '''
-    help = 'Calculate billing records for the given year and month.  Use --recalculate to remove existing records and recreate. Usage:\n' + \
-        "./manage.py calculateBillingRecords --year 2021 --month 3"
+    help = 'Calculate Coldfront billing records for the given year and month.  Use --recalculate to remove existing records and recreate. Usage:\n' + \
+        "./manage.py newCalculateBillingRecords --year 2021 --month 3"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -40,18 +40,21 @@ class Command(BaseCommand):
             action='store_true',
             help='Remove existing billing records and recalculate',
         )
-        parser.add_argument(
-            '--verbose',
-            action='store_true',
-            help='Report full exception for errors',
-        )
+        # parser.add_argument(
+        #     '--verbosity',
+        #     dest='verbosity',
+        #     help='Set verbosity to 0 (quiet), 1 (logger.info, logger.error reported), or 2 (full stack trace for errors)',
+        # )
 
     def handle(self, *args, **kwargs):
         month = int(kwargs['month'])
         year = int(kwargs['year'])
         recalculate = kwargs['recalculate']
+        verbosity = kwargs.get('verbosity', 1) - 1
+        if verbosity < 0:
+            verbosity = 0
         bc = NewColdfrontBillingCalculator()
-        results = bc.calculate_billing_month(month, year, recalculate=recalculate)
+        results = bc.calculate_billing_month(year, month, recalculate=recalculate, verbosity=verbosity)
 
         error_groups = defaultdict(list)
         output = {}
@@ -62,7 +65,7 @@ class Command(BaseCommand):
                 if 'No project found' in errors[0]:
                     error_groups['No project found'].append(org)
                 else:
-                    error_groups[result[1][0]].append(org)
+                    output[org] = result
             elif not successes and not errors:  # Has project, but no active allocations
                 error_groups['No charges'].append(org)
             else:
@@ -103,7 +106,7 @@ def print_report(output, terminalsize):
 {brlines}
             '''.format(
                 lab=lab,
-                brlines=descwrapper.fill('\n'.join([str(br) for br in output[lab][0]])),
+                brlines='\n'.join([descwrapper.fill(str(br)) for br in output[lab][0]]),
             )
             reportlines.append(successstr)
         if output[lab][1]:
