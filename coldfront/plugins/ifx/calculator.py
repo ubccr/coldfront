@@ -345,6 +345,8 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
                             po.project_id = a.project_id
                             and ua.user_id = pu.product_user_id
                             and ua.is_valid = 1
+                            and acct.valid_from <= pu.start_date
+                            and acct.expiration_date > pu.start_date
                     )
                 group by pu.product_user_id
                 union
@@ -367,6 +369,8 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
                     po.project_id = a.project_id
                     and ua.user_id = pu.product_user_id
                     and ua.is_valid = 1
+                    and acct.valid_from <= pu.start_date
+                    and acct.expiration_date > pu.start_date
                     and ua.product_id = %s
             )
                 group by pu.product_user_id
@@ -388,13 +392,19 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
             count += 1
 
         if total == 0 and count == 0:
-            raise Exception(f'Allocation {allocation} has no users at all.  This should be impossible.')
+            # If there are no users, set count to 1 and add PI user id
+            pi = allocation.project.pi
+            allocation_user_fractions[pi.id] = {
+                'quantity': 1,
+                'fraction': 1,
+            }
+            logger.info(f'Allocation {allocation} has no users at all. Setting PI {pi} as user.')
 
         for uid in allocation_user_fractions.keys():
             # For the situation where there is an allocation, and the PI is an allocation user, but no data is used
-            # set fraction to 1 / count where count is probably just one.
+            # set fraction to 1.
             if total == 0:
-                allocation_user_fractions[uid]['fraction'] = Decimal(1 / count)
+                allocation_user_fractions[uid]['fraction'] = Decimal(1)
             else:
                 allocation_user_fractions[uid]['fraction'] = allocation_user_fractions[uid]['quantity'] / Decimal(total)
         if allocation.id == 19:
@@ -681,6 +691,8 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
                             po.project_id = a.project_id
                             and ua.user_id = pu.product_user_id
                             and ua.is_valid = 1
+                            and acct.valid_from <= pu.start_date
+                            and acct.expiration_date > pu.start_date
                     )
                 group by pu.product_user_id
                 union
@@ -703,6 +715,8 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
                             po.project_id = a.project_id
                             and ua.user_id = pu.product_user_id
                             and ua.is_valid = 1
+                            and acct.valid_from <= pu.start_date
+                            and acct.expiration_date > pu.start_date
                             and ua.product_id = %s
                     )
                 group by pu.product_user_id
