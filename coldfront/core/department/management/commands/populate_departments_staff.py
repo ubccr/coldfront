@@ -46,7 +46,7 @@ class Command(BaseCommand):
                 child_ids = [org.parent_id for org in orgs]
             else:
                 break
-        print(child_parent_ids)
+        print("child_parent_ids", child_parent_ids)
         orgs_added_to_departments = []
         for child_id, parent_id in child_parent_ids.items():
             org = Organization.objects.get(id=parent_id)
@@ -67,7 +67,7 @@ class Command(BaseCommand):
                     print("multiples:", projects)
                 # multiple projects for the same organization sometimes exist; link them all.
                 for project in projects:
-                    DepartmentProject.objects.get_or_create(department=department, project_id=project.id)
+                    DepartmentProject.objects.get_or_create(department=department, project_id=project.project_id)
             affiliated = UserAffiliation.objects.filter(organization=org)
             for aff_user in affiliated:
                 # create DepartmentMemberRoles
