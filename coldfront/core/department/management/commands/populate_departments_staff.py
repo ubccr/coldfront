@@ -3,11 +3,12 @@
 import logging
 
 from django.core.management.base import BaseCommand
+from django.core.exceptions import MultipleObjectsReturned
 from ifxuser.models import Organization, OrgRelation, UserAffiliation
 
 from coldfront.plugins.ifx.models import ProjectOrganization
 from coldfront.core.department.models import (Department, DepartmentMemberRole,
-                                            DepartmentProjects, DepartmentRank,
+                                            DepartmentProject, DepartmentRank,
                                             DepartmentMemberStatus, DepartmentMember)
 
 
@@ -32,35 +33,49 @@ class Command(BaseCommand):
         # start with only those labs that have a direct or indirect relationship
         # with a lab that's listed as a project.
         child_ids = ProjectOrganization.objects.all().values_list('organization_id', flat=True)
-        lab_ids = list(child_ids)
         # collect all organizations that are parent to those organizations in the database
-        p_child_ids = {}
+        child_parent_ids = {}
         while True:
             orgs = OrgRelation.objects.filter(child_id__in=child_ids)
+            print(orgs)
             # collect parent and child ids
             if orgs:
                 for org in orgs:
-                    p_child_ids[org.child_id] = org.parent_id
+                    child_parent_ids[org.child_id] = org.parent_id
+                # replace lab_ids with ids of orgs
                 child_ids = [org.parent_id for org in orgs]
             else:
                 break
-        # to test, just use those the keys in lab_ids
-        lab_dict = {k:v for k,v in p_child_ids.items() if k in lab_ids}
-        # new Department for each org in lab_dict values, connected to the labs.
-        for lab_id, org_id in lab_dict.items():
-            org = Organization.objects.get(id=org_id)
+        print(child_parent_ids)
+        orgs_added_to_departments = []
+        for child_id, parent_id in child_parent_ids.items():
+            org = Organization.objects.get(id=parent_id)
             print(org.name, org.rank, org.id)
             rank = DepartmentRank.objects.get_or_create(name=org.rank)[0]
             # create Department
             department = Department.objects.get_or_create(name=org.name, rank=rank)[0]
-            project = ProjectOrganization.objects.get(organization_id=lab_id).project
-            # create DepartmentProjects
-            DepartmentProjects.objects.get_or_create(department=department, project=project)
+            orgs_added_to_departments.append(org.id)
+            # connect department to subdepartment or to project
+            if child_id in orgs_added_to_departments:
+                child_dept = Department.objects.get(pk=child_id)
+                child_dept.parent = department
+                child_dept.save()
+            else:
+                # if child is project instead of department, link via ProjectOrganization table.
+                projects = ProjectOrganization.objects.filter(organization_id=child_id)
+                if len(projects) > 1:
+                    print("multiples:", projects)
+                # multiple projects for the same organization sometimes exist; link them all.
+                for project in projects:
+                    DepartmentProject.objects.get_or_create(department=department, project_id=project.id)
             affiliated = UserAffiliation.objects.filter(organization=org)
             for aff_user in affiliated:
                 # create DepartmentMemberRoles
                 role = DepartmentMemberRole.objects.get_or_create(name=aff_user.role)[0]
                 status = "Active" if aff_user.active == 1 else "Inactive"
                 # create DepartmentMembers
-                DepartmentMember.objects.get_or_create(department=department, member=aff_user.user,
+                member, created = DepartmentMember.objects.get_or_create(department=department, member=aff_user.user,
                             role=role, status=DepartmentMemberStatus.objects.get(name=status))
+                # after updates to nanites_user_affiliation, should be able to mark
+                # as department_admin. The only roles currently in nanites_user_affiliation
+                # are pi, lab_manager, member, and PI.
