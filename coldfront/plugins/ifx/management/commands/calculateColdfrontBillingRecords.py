@@ -40,11 +40,6 @@ class Command(BaseCommand):
             action='store_true',
             help='Remove existing billing records and recalculate',
         )
-        # parser.add_argument(
-        #     '--verbosity',
-        #     dest='verbosity',
-        #     help='Set verbosity to 0 (quiet), 1 (logger.info, logger.error reported), or 2 (full stack trace for errors)',
-        # )
 
     def handle(self, *args, **kwargs):
         month = int(kwargs['month'])
