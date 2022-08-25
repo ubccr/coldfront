@@ -13,7 +13,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
 
-        date = timezone.now() + datetime.timedelta(days=1)
+        date = timezone.localtime() + datetime.timedelta(days=1)
         date = date.replace(hour=0, minute=0, second=0, microsecond=0)
         schedule('coldfront.core.allocation.tasks.update_statuses',
                  schedule_type=Schedule.DAILY,
