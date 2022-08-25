@@ -3,16 +3,12 @@
 '''
 Calculate Coldfront billing records for the given year and month
 '''
-import logging
 import os
 from textwrap import TextWrapper
 from collections import defaultdict
 from django.utils import timezone
 from django.core.management.base import BaseCommand
 from coldfront.plugins.ifx.calculator import NewColdfrontBillingCalculator
-
-
-logger = logging.getLogger('ifxbilling')
 
 
 class Command(BaseCommand):
