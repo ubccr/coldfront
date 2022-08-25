@@ -9,8 +9,9 @@ from django.db import connection, transaction
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from ifxbilling.calculator import BasicBillingCalculator, NewBillingCalculator
-from ifxbilling.models import Account, Product, ProductUsage, Rate
+from ifxbilling.models import Account, Product, ProductUsage, Rate, BillingRecord
 from coldfront.core.allocation.models import Allocation
+from .models import AllocationUserProductUsage
 
 
 logger = logging.getLogger(__name__)
@@ -24,7 +25,7 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
     OFFER_LETTER_CODE_ATTRIBUTE = 'Offer Letter Code'
     STORAGE_QUOTA_ATTRIBUTE = 'Storage Quota (TB)'
 
-    def generate_billing_records_for_organization(self, year, month, organization, recalculate):
+    def generate_billing_records_for_organization(self, year, month, organization, recalculate, **kwargs):
         '''
         Create and save all of the :class:`~ifxbilling.models.BillingRecord` objects for the month for an organization.
 
@@ -69,13 +70,21 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
                             if offer_letter_br:
                                 successes.append(offer_letter_br)
                             user_allocation_percentages = self.get_user_allocation_percentages(year, month, allocation)
-                            logger.error(f'alloc percents {user_allocation_percentages}')
-                            for user_id, allocation_percentage in user_allocation_percentages.items():
+                            for user_id, allocation_percentage_data in user_allocation_percentages.items():
                                 try:
                                     user = get_user_model().objects.get(id=user_id)
                                 except get_user_model().DoesNotExist:
                                     raise Exception(f'Cannot find user with id {user_id}')
-                                brs = self.generate_billing_records_for_allocation_user(year, month, user, allocation, allocation_percentage, remaining_allocation_tb)
+                                brs = self.generate_billing_records_for_allocation_user(
+                                    year,
+                                    month,
+                                    user,
+                                    organization,
+                                    allocation,
+                                    allocation_percentage_data['fraction'],
+                                    remaining_allocation_tb,
+                                    recalculate,
+                                )
                                 if brs:
                                     successes.extend(brs)
                     except Exception as e:
@@ -377,6 +386,8 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
             allocation_user_fractions[row[0]] = {
                 'quantity': row[1]
             }
+            if row[1] is None:
+                raise Exception(f'ProductUsage quantity is None for allocation {allocation}')
             total += row[1]
             count += 1
 
@@ -400,11 +411,110 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
             logger.error('Allocation user fractions %s', str(allocation_user_fractions))
         return allocation_user_fractions
 
-    def generate_billing_records_for_allocation_user(self, year, month, user, allocation, allocation_percentage, allocation_tb):
+    def generate_billing_records_for_allocation_user(self, year, month, user, organization, allocation, allocation_percentage, allocation_tb, recalculate=False):
         '''
-        Make the BillingRecords for the given user from their allocation percentage and the allocation size
+        Make the BillingRecords for the given user from their allocation percentage and the allocation size.
+
+        Gets ProductUsage from Allocation and User
+        Checks for existing BillingRecord, using recalculate to decide to delete
+        Sets the decimal_quantity in ProductUsage to the calculated usage (percentage of allocation after offer letter)
+        Calls `~ifxbilling.calculator.NewBillingCalculator.generate_billing_records_for_usage`
         '''
-        pass
+        product_usage = self.get_product_usage_for_allocation_user(year, month, user, organization, allocation)
+
+        if BillingRecord.objects.filter(product_usage=product_usage).exists():
+            if recalculate:
+                BillingRecord.objects.filter(product_usage=product_usage).delete()
+            else:
+                msg = f'Billing record already exists for usage {product_usage}'
+                raise Exception(msg)
+
+        # Set the decimal_quantity to TB percentage of allocation
+        product_usage = self.set_product_usage_decimal_quantity(product_usage, allocation_percentage, allocation_tb)
+        return self.generate_billing_records_for_usage(year, month, product_usage, allocation_percentage=allocation_percentage, allocation_tb=allocation_tb)
+
+    def calculate_charges(self, product_usage, percent, **kwargs):
+        '''
+        Check for the Allocation information in the usage_data dictionary.  If it's there, use the
+        fractions to figure out the charge.  If not, get the other AllocationUser data to calculate
+        the fractions and save in the usage_data dict.
+        '''
+        product = product_usage.product
+        rate = product.rate_set.get(is_active=True)
+        if rate.units != 'TB':
+            raise Exception(f'Units for {product} should be "TB"')
+        # if product_usage.units != 'b':
+        #     raise Exception('Product usage units should be in bytes (b)')
+
+        rate_desc = self.get_rate_description(rate)
+
+        transactions_data = []
+
+        percent_str = ''
+        if percent < 100:
+            percent_str = f'a {percent}% split of '
+        dollar_price = rate.decimal_price
+
+        user = product_usage.product_user
+
+        # Decimal charge rounded to 4 decimal places
+        decimal_charge = Decimal(rate.decimal_price * product_usage.decimal_quantity * Decimal(percent / 100)).quantize(Decimal('0.0001'))
+
+        if decimal_charge == Decimal('0'):
+            raise Exception('No billing record for $0 charges')
+
+        # Round to dollars
+        dollar_charge = decimal_charge.quantize(Decimal('0.01'))
+
+        allocation_fraction = kwargs.get('allocation_percentage')
+        allocation_tb = kwargs.get('allocation_tb')
+        if not allocation_fraction or not allocation_tb:
+            raise Exception(f'Allocation percent / Allocation TB was not passed to calculate_charges')
+
+        allocation_percent = Decimal(allocation_fraction * 100).quantize(Decimal('0.01'))
+        allocation_string = f'{allocation_percent}% of {allocation_tb} TB'
+
+        description = f'${dollar_charge} for {percent_str}{allocation_string} ({product_usage.decimal_quantity} TB) at ${dollar_price.quantize(Decimal(".01"))} per TB'
+
+        transactions_data.append(
+            {
+                'charge': round(decimal_charge),
+                'decimal_charge': decimal_charge,
+                'description': description,
+                'author': user,
+                'rate': rate_desc,
+            }
+        )
+        return transactions_data
+
+    def set_product_usage_decimal_quantity(self, product_usage, allocation_percentage, allocation_tb):
+        '''
+        Set decimal_quantity to the percentage of the remaining allocation quantity in TB
+        '''
+        product_usage.decimal_quantity = Decimal(allocation_percentage * allocation_tb).quantize(Decimal('0.0001'))
+        product_usage.units = 'TB'
+        product_usage.save()
+        return product_usage
+
+    def get_product_usage_for_allocation_user(self, year, month, user, organization, allocation):
+        '''
+        For the given params, get the ProductUsage from the Allocation
+        '''
+        try:
+            aupu = AllocationUserProductUsage.objects.get(
+                allocation_user__allocation=allocation,
+                product_usage__product_user=user,
+                product_usage__year=year,
+                product_usage__month=month,
+                product_usage__organization=organization,
+            )
+        except AllocationUserProductUsage.DoesNotExist:
+            raise Exception(f'No AllocationUserProductUsage was found for allocation {allocation} and user {user} with organization {organization}')
+        except MultipleObjectsReturned:
+            raise Exception(f'More than one AllocationUserProductUsage found for allocation {allocation}, user {user} with organization {organization}')
+
+        return aupu.product_usage
+
 
 class ColdfrontBillingCalculator(BasicBillingCalculator):
     '''
