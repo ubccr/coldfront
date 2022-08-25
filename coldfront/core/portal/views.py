@@ -71,7 +71,27 @@ def home(request):
             Q(project__projectuser__status__name__in=['Active', ]) &
             Q(allocationuser__user=request.user) &
             Q(allocationuser__status__name__in=['Active', 'Pending - Remove'])
-        ).distinct().order_by('-created')[:5]
+        ).distinct().order_by('-created')
+
+        allocations_for_slurm_accounts = allocation_list.all().exclude(
+            project__status__name__in=['New', ]
+        )
+
+        allocation_list = allocation_list[:5]
+
+        projects_with_slurm_account_to_list = []
+        for allocation in allocations_for_slurm_accounts:
+            resource = allocation.get_parent_resource
+            if resource.is_available:
+                if resource.get_attribute('slurm_cluster'):
+                    if allocation.project not in projects_with_slurm_account_to_list:
+                        projects_with_slurm_account_to_list.append(allocation.project)
+                elif resource.parent_resource:
+                    resource = resource.parent_resource
+                    if (resource.get_attribute('slurm_cluster')):
+                        if allocation.project not in projects_with_slurm_account_to_list:
+                            projects_with_slurm_account_to_list.append(allocation.project)
+        context['projects_with_slurm_account_to_list'] = projects_with_slurm_account_to_list
 
         context['user'] = request.user
         context['project_list'] = project_list

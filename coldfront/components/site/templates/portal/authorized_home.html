@@ -162,8 +162,7 @@
     </div>
     <div class="card-body">
       <ul class="list-group list-group-flush">
-        {% for project in project_list %}
-          {% if project.slurm_account_name %}
+        {% for project in projects_with_slurm_account_to_list %}
             <li class="list-group-item">
               <div class="container">
                 <div class="row">
@@ -178,7 +177,6 @@
               <p><strong>Add to Interactive Job Commands:</strong> srun &lt;commands&gt; --account {{ project.slurm_account_name }}</p>
               <p><strong>Add to Batch Job Scripts:</strong> #SBATCH --account {{ project.slurm_account_name }}</p>
             </li>
-          {% endif %}
         {% endfor %}
       </ul>
     </div>
