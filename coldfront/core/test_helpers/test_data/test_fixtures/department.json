@@ -95,6 +95,16 @@
       }
    },
    {
+      "model":"department.departmentproject",
+      "pk":2,
+      "fields":{
+         "created":"2022-08-17T20:01:14.420Z",
+         "modified":"2022-08-17T20:01:14.420Z",
+         "department":1,
+         "project":2
+      }
+   },
+   {
       "model":"department.departmentmemberrole",
       "pk":1,
       "fields":{
