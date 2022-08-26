@@ -18,7 +18,7 @@ def create_user_profile(sender, instance, created, **kwargs):
     if created:
         if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
             from coldfront.plugins.ldap_user_info.utils import get_user_info
-            attributes = get_user_info(instance.username, ['title', 'department'])
+            attributes = get_user_info(instance.username, ['title', 'department', 'mail', ])
 
             title = attributes['title'][0]
             # max_projects = 0
@@ -47,6 +47,9 @@ def create_user_profile(sender, instance, created, **kwargs):
                 max_projects=max_projects,
                 is_pi=is_pi
             )
+
+            instance.email = attributes['mail'][0]
+            instance.save()
         else:
             UserProfile.objects.create(
                 user=instance,
