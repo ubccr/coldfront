@@ -54,6 +54,7 @@
                   {{ department.name }}
               </td>
             </tr>
+            {% if manager %}
             <tr>
               <th scope="row" class="text-nowrap">Total Labs in Bill:</th>
               <td>
@@ -63,7 +64,7 @@
             <tr>
                 <th scope="row" class="text-nowrap">Total Allocations in Bill:</th>
                 <td>
-                 {{allocations.count}}
+                 {{allocations_count}}
                 </td>
               </tr>
             <tr>
@@ -88,7 +89,32 @@
                 <td style="background-color:#D3D3D3">${{ full_price|floatformat:2 }}</td>
 
                 {% comment %} <td  style="background-color:#D3D3D3" id = "totalamount"></td> {% endcomment %}
+            </tr>
+            {% else %}
+            <tr>
+              <th scope="row" class="text-nowrap">Your Labs:</th>
+              <td>
+                {{ projects|length }}
+              </td>
+            </tr>
+            <tr>
+                <th scope="row" class="text-nowrap">Your Allocations:</th>
+                <td>
+                 {{allocations_count}}
+                </td>
               </tr>
+            <tr>
+            <tr>
+                <th scope="row" class="text-nowrap">Total Users in Your Allocations:</th>
+                <td>{{ allocation_users.count }}</td>
+            </tr>
+            <tr>
+                <th  style="background-color:#D3D3D3" bordercolor="red" scope="row" class="text-nowrap">Amount Due for Projects:   </th>
+                <td style="background-color:#D3D3D3">${{ full_price|floatformat:2 }}</td>
+
+                {% comment %} <td  style="background-color:#D3D3D3" id = "totalamount"></td> {% endcomment %}
+            </tr>
+            {% endif %}
           </table>
         </div>
       </form>

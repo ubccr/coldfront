@@ -17,6 +17,22 @@ from coldfront.core.department.forms import DepartmentSearchForm
 from coldfront.core.department.models import Department
 
 
+def return_department_roles(user, department):
+    """Return list of a user's permissions for the specified department.
+    possible roles are: manager, pi, or member.
+    """
+    member_conditions = (Q(status__name__in=['Active', 'New']) & Q(member=user))
+
+    if not department.departmentmember_set.filter(member_conditions).exists():
+        return ()
+
+    permissions = ["member"]
+    for role in ['department_admin','pi', 'lab_manager']:
+        if department.departmentmember_set.filter(
+                    member_conditions & Q(role__name=role)).exists():
+            permissions.append(role)
+
+    return permissions
 
 class DepartmentListView(LoginRequiredMixin, ListView):
     model = Department
@@ -116,7 +132,7 @@ class DepartmentListView(LoginRequiredMixin, ListView):
 #     def get_context_data(self, **kwargs):
 #         """Create all the variables for allocation_invoice_detail.html"""
 #         pk = self.kwargs.get('pk')
-#         department_obj = get_object_or_404(FieldOfScience, pk=pk)
+#         self.department = get_object_or_404(FieldOfScience, pk=pk)
 #
 #
 #         initial_data = {
@@ -142,7 +158,7 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     # should a user need to be a member of the department to see this?
     model = Department
     template_name = "department/department_detail.html"
-    context_object_name = 'department_detail'
+    context_object_name = 'department'
 
 
     def test_func(self):
@@ -157,42 +173,41 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             return True
 
         messages.error(
-            self.request, 'You do not have permission to manage invoices.')
+            self.request, 'You do not have permission to view this department.')
         return False
 
 
     def get_context_data(self, **kwargs):
-        # context = super().get_context_data(**kwargs)
-        context = {}
-        pk = self.kwargs.get('pk')
-        department_obj = get_object_or_404(Department, pk=pk)
+
+        context = super().get_context_data(**kwargs)
         # Can the user update the department?
-        if self.request.user.is_superuser:
-            context['is_allowed_to_update_department'] = True
-        elif department_obj.departmentmember_set.filter(member=self.request.user).exists():
-            department_member = department_obj.departmentmember_set.get(
-                member=self.request.user)
-            if department_member.role.name == 'department_admin':
-                context['is_allowed_to_update_department'] = True
-            else:
-                context['is_allowed_to_update_department'] = False
+        department_obj = self.object
+        member_permissions = return_department_roles(self.request.user, department_obj)
+
+        if self.request.user.is_superuser or 'department_admin' in member_permissions:
+            context['manager'] = True
+            projectview_filter = Q()
         else:
-            context['is_allowed_to_update_department'] = False
+            context['manager'] = False
+            projectview_filter = Q(projectuser__user=self.request.user)
 
-
-        project_objs = list(department_obj.projects.all()\
+        project_objs = list(department_obj.projects.filter(projectview_filter)\
                     .annotate(total_quota=Sum('allocation__allocationattribute__value', filter=(
                         Q(allocation__allocationattribute__allocation_attribute_type_id=1))&(
                         Q(allocation__status_id=1)))))
+
         child_depts = Department.objects.filter(parent_id=department_obj.id).all()
         if child_depts:
             for dept in child_depts:
-                child_projs = list(dept.projects.all()\
+                child_projs = list(dept.projects.filter(projectview_filter)\
                     .annotate(total_quota=Sum('allocation__allocationattribute__value', filter=(
                         Q(allocation__allocationattribute__allocation_attribute_type_id=1))&(
                         Q(allocation__status_id=1)))))
                 project_objs.extend(child_projs)
 
+        allocationuser_filter = (Q(status__name='Active') &
+                                ~Q(status__name__in=['Removed']) &
+                                ~Q(usage_bytes__isnull=True))
 
         for p in project_objs:
             p.allocs = p.allocation_set.all().\
@@ -203,7 +218,8 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             for allocation in p.allocs:
                 allocation['price'] = get_resource_rate(allocation['resources__name'])
                 allocation['cost'] = allocation['price'] * int(allocation['size']) if allocation['size'] else 0
-                allocation['user_count'] = Allocation.objects.get(pk=allocation['id']).allocationuser_set.count()
+                allocation['user_count'] = Allocation.objects.get(pk=allocation['id']
+                            ).allocationuser_set.filter(allocationuser_filter).count()
                 attr_filter = ( Q(allocation_id=allocation['id']) &
                                 Q(allocation_attribute_type_id=8))
                 if AllocationAttribute.objects.filter(attr_filter):
@@ -213,56 +229,35 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
             p.total_price = sum(float(a['cost']) for a in p.allocs)
 
-        context['x'] = [p.allocs for p in project_objs]
         context['full_price'] = sum(p.total_price for p in project_objs)
         context['projects'] = project_objs
+        context['department'] = department_obj
 
         allocation_objs = Allocation.objects.filter(project_id__in=[o.id for o in project_objs])
-        # for allocation in allocation_objs:
-        #     allocation.price = get_resource_rate(allocation.resources.first().name)
-        #     allocation.cost = allocation.price * int(allocation.allocationattribute__value)
 
-        context['department'] = department_obj
-        context['allocations'] = allocation_objs
+        context['allocations_count'] = allocation_objs.count()
 
         allocation_users = AllocationUser.objects\
-                .filter(allocation_id__in=[o.id for o in allocation_objs])\
-                .filter(status_id=1)\
-                .exclude(status__name__in=['Removed'])\
-                .exclude(usage_bytes__isnull=True)\
+                .filter(Q(allocation_id__in=[o.id for o in allocation_objs]) &
+                        allocationuser_filter)\
                 .order_by('user__username')
 
-
-        # context['is_allowed_to_update_project'] = set_proj_update_permissions(
-        #                                             allocation_objs.first(), self.request.user)
-
-        # Only show 'Active Users'
-        departmentmembers = department_obj.departmentmember_set.filter(
-            status__name='Active').order_by('member__full_name')
-
-        context['departmentmembers'] = departmentmembers
         context['allocation_users'] = allocation_users
 
         try:
             context['ondemand_url'] = settings.ONDEMAND_URL
         except AttributeError:
             pass
-
         return context
 
 
-    def get(self, request, *args, **kwargs):
-        context = self.get_context_data()
-        return render(request, self.template_name, context)
-
-
     def post(self, request, *args, **kwargs):
-        """activated if the Department gets updated"""
+        """activated if the Department is updated"""
         pk = self.kwargs.get('pk')
-        department_obj = get_object_or_404(Department, pk=pk)
+        department = get_object_or_404(Department, pk=pk)
 
         # initial_data = {
-        #     'status': department_obj.status,
+        #     'status': self.department.status,
         # }
         # form = AllocationInvoiceUpdateForm(
         #     request.POST, initial=initial_data)
