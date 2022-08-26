@@ -3,19 +3,18 @@
 from django.db.models import Count, Sum, Q, Value, F, When, Case, FloatField
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.views.generic import CreateView, DetailView, ListView
+from django.views.generic import DetailView, ListView
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.shortcuts import get_object_or_404, render
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.conf import settings
 
-from coldfront.core.project.models import Project
 from coldfront.core.utils.fasrc import get_resource_rate
-from coldfront.core.allocation.models import Allocation,AllocationUser, AllocationUserNote
+from coldfront.core.allocation.models import (Allocation, AllocationUser,
+                                            AllocationAttribute)
 from coldfront.core.department.forms import DepartmentSearchForm
-from coldfront.core.department.models import (Department, DepartmentMemberRole,
-                                            DepartmentMemberStatus, DepartmentMember)
+from coldfront.core.department.models import Department
 
 
 
@@ -181,22 +180,37 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             context['is_allowed_to_update_department'] = False
 
 
-        project_objs = department_obj.projects.all()\
+        project_objs = list(department_obj.projects.all()\
                     .annotate(total_quota=Sum('allocation__allocationattribute__value', filter=(
                         Q(allocation__allocationattribute__allocation_attribute_type_id=1))&(
-                        Q(allocation__status_id=1))))
+                        Q(allocation__status_id=1)))))
+        child_depts = Department.objects.filter(parent_id=department_obj.id).all()
+        if child_depts:
+            for dept in child_depts:
+                child_projs = list(dept.projects.all()\
+                    .annotate(total_quota=Sum('allocation__allocationattribute__value', filter=(
+                        Q(allocation__allocationattribute__allocation_attribute_type_id=1))&(
+                        Q(allocation__status_id=1)))))
+                project_objs.extend(child_projs)
 
 
         for p in project_objs:
             p.allocs = p.allocation_set.all().\
                     filter(allocationattribute__allocation_attribute_type_id=1).\
-                    values('resources__name', 'resources','allocationattribute__value','id')
+                    values('resources__name', 'resources','allocationattribute__value','id').\
+                    annotate(size=Sum('allocationattribute__value', filter=(
+                        Q(allocationattribute__allocation_attribute_type_id=1))))
             for allocation in p.allocs:
                 allocation['price'] = get_resource_rate(allocation['resources__name'])
-                allocation['cost'] = allocation['price'] * int(allocation['allocationattribute__value'])
+                allocation['cost'] = allocation['price'] * int(allocation['size']) if allocation['size'] else 0
+                attr_filter = ( Q(allocation_id=allocation['id']) &
+                                Q(allocation_attribute_type_id=8))
+                if AllocationAttribute.objects.filter(attr_filter):
+                    allocation['path'] = AllocationAttribute.objects.get(attr_filter).value
+                else:
+                    allocation['path'] = ""
 
             p.total_price = sum(float(a['cost']) for a in p.allocs)
-
 
         context['x'] = [p.allocs for p in project_objs]
         context['full_price'] = sum(p.total_price for p in project_objs)

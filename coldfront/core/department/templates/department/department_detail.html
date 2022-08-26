@@ -57,7 +57,7 @@
             <tr>
               <th scope="row" class="text-nowrap">Total Labs in Bill:</th>
               <td>
-                {{ projects.count }}
+                {{ projects|length }}
               </td>
             </tr>
             <tr>
@@ -127,7 +127,7 @@
     <div class="card mb-3">
       <div class="card-header">
         <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Projects in Department</h3>
-        <span class="badge badge-secondary">{{projects.count}}</span>
+        <span class="badge badge-secondary">{{projects|length}}</span>
         {% comment %} <div class="float-right">
 
         </div> {% endcomment %}
@@ -139,8 +139,9 @@
             <thead>
               <tr>
                 <th scope="col">Project Name</th>
-                <th scope="col">Allocation ID</th>
+                <th scope="col">Allocation</th>
                 <th scope="col">Resource Type</th>
+                <th scope="col">Allocation Location</th>
                 <th scope="col">Total Space</th>
                 <th scope="col">Total Monthly Cost</th>
                 <th></th>
@@ -155,6 +156,7 @@
                   <td></td>
                   <td></td>
                   <td></td>
+                  <td></td>
                   <td data-sort = "{{project.total_price}}">${{ project.total_price|floatformat:2 }}</td>
 
                 </tr>
@@ -164,7 +166,8 @@
                   <td></td>
                   <td><a href="{% url 'allocation-detail' allocation.id %}">{{allocation.id}}</a></td>
                   <td>{{allocation.resources__name}}</td>
-                  <td>{{allocation.allocationattribute__value|floatformat:1}}</td>
+                  <td>{{allocation.path}}</td>
+                  <td>{{allocation.size|floatformat:1}}</td>
                   <td>${{ allocation.cost|floatformat:2 }}</td>
                   <td></td>
                 </tr>
