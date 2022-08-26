@@ -177,28 +177,24 @@ def return_allocation_bytes_values(attributes_with_usage, allocation_users):
     return (allocation_quota_bytes, allocation_usage_bytes)
 
 def user_can_access_allocation(user, allocation):
-    """Return list of a user's permissions for the desired allocation
+    """Return list of a user's permissions for the specified allocation
     conditions:
     1. user must be a project user
     2. user must be A. an allocation user, B. a project pi, or C. a project manager.
     """
-    if not allocation.project.projectuser_set.filter(
-            user=user, status__name__in=['Active', 'New', ]).exists():
+    user_conditions = (Q(status__name__in=('Active', 'New')) & Q(user=user))
+    if not allocation.project.projectuser_set.filter(user_conditions).exists():
         return []
 
-    permissions = []
-    # is_pi = allocation_obj.project.pi_id == user.id
+    permissions = ["user"]
+
     if allocation.project.projectuser_set.filter(
-        Q(status__name='Active') & Q(user=user) & Q(role_id=1)).exists():
+                            user_conditions & Q(role_id=1)).exists():
         permissions.append("manager")
 
     if allocation.project.projectuser_set.filter(
-        Q(status__name='Active') & Q(user=user) & Q(project__pi_id=user.id)).exists():
+                            user_conditions & Q(project__pi_id=user.id)).exists():
         permissions.append("pi")
-
-    if allocation.allocationuser_set.filter(
-            user=user, status__name__in=['Active']).exists():
-        permissions.append("user")
 
     return permissions
 
