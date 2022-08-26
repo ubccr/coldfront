@@ -18,35 +18,18 @@ def test_redirect_to_login(test_case, page):
     test_case.assertEqual(response.url, f"/user/login?next={page}")
 
 
-def test_admin_can_access(test_case, page):
-    """Confirm that an admin-level user accessing the page returns a 200 response code.
-
-    Parameters
-    ----------
-    test_case : django.test.TestCase.
-        must have client and admin_user attrs.
-    page : str
-        must begin and end with a slash.
-    """
-    # admin can access
-    test_case.client.force_login(
-                            test_case.admin_user,
-                            backend="django.contrib.auth.backends.ModelBackend"
-                            )
-    response = test_case.client.get(page)
-    test_case.assertEqual(response.status_code, 200)
 
 def test_user_can_access(test_case, user, page):
-    """Confirm that an admin-level user accessing the page returns a 200 response code.
+    """Confirm that accessing the page as the designated user returns a 200 response code.
 
     Parameters
     ----------
     test_case : django.test.TestCase.
-        must have client and admin_user attrs.
+        must have "client" attr set.
+    user : user object
     page : str
         must begin and end with a slash.
     """
-    # admin can access
     test_case.client.force_login(
                             user,
                             backend="django.contrib.auth.backends.ModelBackend"

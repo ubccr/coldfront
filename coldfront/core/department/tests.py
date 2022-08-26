@@ -1,3 +1,4 @@
+import logging
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.test import TestCase, Client
@@ -10,11 +11,13 @@ FIXTURES = [
             "coldfront/core/test_helpers/test_data/test_fixtures/resources.json",
             "coldfront/core/test_helpers/test_data/test_fixtures/department.json",
             "coldfront/core/test_helpers/test_data/test_fixtures/poisson_fixtures.json",
+            "coldfront/core/test_helpers/test_data/test_fixtures/gordon_fixtures.json",
             "coldfront/core/test_helpers/test_data/test_fixtures/admin_fixtures.json",
             "coldfront/core/test_helpers/test_data/test_fixtures/all_res_choices.json",
             "coldfront/core/test_helpers/test_data/test_fixtures/field_of_science.json",
             "coldfront/core/test_helpers/test_data/test_fixtures/project_choices.json",
             ]
+logging.disable(logging.ERROR)
 
 class DepartmentListViewTest(TestCase):
     fixtures = FIXTURES
@@ -30,6 +33,7 @@ class DepartmentListViewTest(TestCase):
         test_utils.test_redirect_to_login(self, "/department/")
 
         # after login, user and admin can access list page
+        test_utils.test_user_can_access(self, self.admin_user, "/department/")
         test_utils.test_user_can_access(self, self.dept_manager_user, "/department/")
 
 
@@ -78,11 +82,9 @@ class DepartmentDetailViewTest(TestCase):
         test_utils.test_redirect_to_login(self, f"/department/{dept_id}/")
 
         # admin can access
-        test_utils.test_admin_can_access(self, f"/department/{dept_id}/")
-
+        test_utils.test_user_can_access(self, self.admin_user, f"/department/{dept_id}/")
         # manager user belonging to department can access
         test_utils.test_user_can_access(self, self.dept_manager_user, f"/department/{dept_id}/")
-
         # non-manager user belonging to department can access
         test_utils.test_user_can_access(self, self.dept_member_user, f"/department/{dept_id}/")
 
@@ -90,7 +92,6 @@ class DepartmentDetailViewTest(TestCase):
         self.client.force_login(self.nondept_user,
                                 backend="django.contrib.auth.backends.ModelBackend")
         response = self.client.get(f"/department/{dept_id}/")
-        print("response", response)
         self.assertEqual(response.status_code, 403)
 
 
@@ -98,5 +99,22 @@ class DepartmentDetailViewTest(TestCase):
     def test_department_detail_content(self):
         """Check content of department detail pages.
         """
+        self.client.force_login(
+                                self.admin_user,
+                                backend="django.contrib.auth.backends.ModelBackend"
+                                )
+        response = self.client.get(f"/department/{self.department.pk}/")
+        # print("response ADMIN:", response.context, "\n\n")
+        # confirm that all projects are visible
+        self.assertEqual(len(response.context['projects']), 2)
+
         # department members who are not administrators cannot update department details
         # or review bills
+        self.client.force_login(
+                                self.dept_member_user,
+                                backend="django.contrib.auth.backends.ModelBackend"
+                                )
+        response = self.client.get(f"/department/{self.department.pk}/")
+        # print("response USER:", response.context, "\n\n")
+        # confirm that only the user's projects are visible
+        self.assertEqual(len(response.context['projects']), 1)
