@@ -7,7 +7,7 @@ import logging
 from django.utils import timezone
 from django.core.management.base import BaseCommand
 from coldfront.core.resource.models import Resource
-from coldfront.core.allocation.models import AllocationUser, Allocation
+from coldfront.core.allocation.models import AllocationUser, Allocation, AllocationUserStatusChoice
 from coldfront.plugins.ifx.models import allocation_user_to_allocation_product_usage
 from ifxbilling.models import Product
 
@@ -85,6 +85,11 @@ class Command(BaseCommand):
                         requires_payment = allocation.get_attribute('RequiresPayment')
                         if requires_payment == 'True':
                             print(f'Generating product usages for {allocation}')
+                            if not AllocationUser.objects.filter(allocation=allocation).count():
+                                # If there are no allocation users, assign the PI
+                                pi = allocation.project.pi
+                                AllocationUser.objects.create(allocation=allocation, user=pi, status=AllocationUserStatusChoice.objects.get(name='Active'))
+                                logger.info(f'Set PI {pi} as a user for {allocation}')
                             for allocation_user in AllocationUser.objects.filter(allocation=allocation):
                                 try:
                                     allocation_user_to_allocation_product_usage(allocation_user, product, overwrite, month=month, year=year)

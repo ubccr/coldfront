@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.contrib.auth import get_user_model
 from ifxbilling.calculator import BasicBillingCalculator, NewBillingCalculator
 from ifxbilling.models import Account, Product, ProductUsage, Rate, BillingRecord
-from coldfront.core.allocation.models import Allocation
+from coldfront.core.allocation.models import Allocation, AllocationStatusChoice
 from .models import AllocationUserProductUsage
 
 
@@ -62,8 +62,9 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
         if not projects:
             errors.append(f'No project found for {organization.name}')
         else:
+            active = AllocationStatusChoice.objects.get(name='Active')
             for project in projects:
-                for allocation in project.allocation_set.all():
+                for allocation in project.allocation_set.filter(status=active):
                     try:
                         with transaction.atomic():
                             offer_letter_br, remaining_allocation_tb = self.process_offer_letter(year, month, organization, allocation, recalculate)
@@ -350,29 +351,29 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
                     )
                 group by pu.product_user_id
                 union
-        select
-            pu.product_user_id, sum(pu.quantity) as quantity
-        from
-            product_usage pu inner join ifx_allocationuserproductusage aupu on pu.id = aupu.product_usage_id
-            inner join allocation_historicalallocationuser hau on hau.history_id = aupu.allocation_user_id
-            inner join allocation_allocation a on a.id = hau.allocation_id
-        where
-            hau.allocation_id = %s
-            and pu.year = %s
-            and pu.month = %s
-            and exists (
-                select 1
+                select
+                    pu.product_user_id, sum(pu.quantity) as quantity
                 from
-                    user_product_account ua inner join account acct on ua.account_id = acct.id
-                    inner join ifx_projectorganization po on acct.organization_id = po.organization_id
+                    product_usage pu inner join ifx_allocationuserproductusage aupu on pu.id = aupu.product_usage_id
+                    inner join allocation_historicalallocationuser hau on hau.history_id = aupu.allocation_user_id
+                    inner join allocation_allocation a on a.id = hau.allocation_id
                 where
-                    po.project_id = a.project_id
-                    and ua.user_id = pu.product_user_id
-                    and ua.is_valid = 1
-                    and acct.valid_from <= pu.start_date
-                    and acct.expiration_date > pu.start_date
-                    and ua.product_id = %s
-            )
+                    hau.allocation_id = %s
+                    and pu.year = %s
+                    and pu.month = %s
+                    and exists (
+                        select 1
+                        from
+                            user_product_account ua inner join account acct on ua.account_id = acct.id
+                            inner join ifx_projectorganization po on acct.organization_id = po.organization_id
+                        where
+                            po.project_id = a.project_id
+                            and ua.user_id = pu.product_user_id
+                            and ua.is_valid = 1
+                            and acct.valid_from <= pu.start_date
+                            and acct.expiration_date > pu.start_date
+                            and ua.product_id = %s
+                    )
                 group by pu.product_user_id
             ) t
             group by product_user_id
@@ -406,7 +407,7 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
             if total == 0:
                 allocation_user_fractions[uid]['fraction'] = Decimal(1)
             else:
-                allocation_user_fractions[uid]['fraction'] = allocation_user_fractions[uid]['quantity'] / Decimal(total)
+                allocation_user_fractions[uid]['fraction'] = Decimal(allocation_user_fractions[uid]['quantity']) / Decimal(total)
         if allocation.id == 19:
             logger.error('Allocation user fractions %s', str(allocation_user_fractions))
         return allocation_user_fractions

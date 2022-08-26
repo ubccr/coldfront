@@ -12,8 +12,8 @@ search.py code in the FreeIPA plugin.
 ColdFront provides an API to define additional user search classes for
 extending the default search functionality. This app implements a
 LDAPUserSearch class in utils.py which performs the LDAP search. This class is
-then registered with ColdFront by setting "ADDITIONAL\_USER\_SEARCH\_CLASSES"
-in local\_settings.py.
+then registered with ColdFront by setting `ADDITIONAL_USER_SEARCH_CLASSES`
+in `local_settings.py`.
 
 ## Requirements
 

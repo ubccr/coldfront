@@ -1,45 +1,57 @@
 #------------------------------------------------------------------------------
 # Base settings
 #------------------------------------------------------------------------------
-
-# If you're setting up a production instance, DELETE THE LINE BELOW.
+# If setting up a production instance, DELETE THE LINE BELOW.
 DEBUG=True
 
 # SECRET_KEY is used to provide cryptographic signing, and should be set to a unique,
-# unpredictable value. If you don't provide this, one will be generated each time
+# unpredictable value. If a value isn't provided here, one will be generated each time
 # ColdFront starts. See https://docs.djangoproject.com/en/3.1/ref/settings/#secret-key.
 # SECRET_KEY=CRYPTOGRAPHIC_SECRET_KEY
+
+# Set to True in production when using HTTPS
+SESSION_COOKIE_SECURE=True
+
+# LANGUAGE_CODE='en-us'
+# TIME_ZONE='America/New_York'
 
 
 #------------------------------------------------------------------------------
 # Core settings
 #------------------------------------------------------------------------------
+# Paths to store static assets. These are currently set to the defaults used in
+# the FASRC Coldfront Docker containers.
+STATIC_ROOT=/static/
+LOCALDATA_ROOT=/usr/src/app
+COLDFRONT_DATA_LOAD=/n/coldfront
 
 # Enable administrators to login as other users, default True
 # ENABLE_SU=True
 
-# Enable or disable project reviews, default True
-# PROJECT_ENABLE_PROJECT_REVIEW=True
+# Enable or disable project reviews, default True. FASRC sets to False. For more
+# on project reviews see https://coldfront.readthedocs.io/en/latest/manual/projects/project_review/
+PROJECT_ENABLE_PROJECT_REVIEW=False
 
-# Enable or disable allocation renewals, default True
-# ALLOCATION_ENABLE_ALLOCATION_RENEWAL=True
+# Enable or disable allocation renewals, default True. We set to False, as our
+# allocations are meant to continue indefinitely.
+ALLOCATION_ENABLE_ALLOCATION_RENEWAL=False
 
-# 	Default number of days an allocation is active for, default 365
+# Default number of days an allocation is active for, default 365
 # ALLOCATION_DEFAULT_ALLOCATION_LENGTH=365
 
-# 	Enable or disable allocation change requests, default True
+# Enable or disable allocation change requests, default True
 # ALLOCATION_ENABLE_CHANGE_REQUESTS_BY_DEFAULT=True
 
-# 	List of days users can request extensions in an allocation change request, default 30,60,90
+# List of days users can request extensions in an allocation change request, default 30,60,90
 # ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS=30,60,90
 
-# 	Allow user to select account name for allocation, default False
+# Allow user to select account name for allocation, default False
 # ALLOCATION_ACCOUNT_ENABLED=False
 
-# 	Controls the ordering of parent resources for an allocation (if allocation has
-#   multiple resources). Should be a list of field names suitable for Django QuerySet
-#   order_by method, default is ['-is_allocatable', 'name']; i.e. prefer Resources
-#   with is_allocatable field set, ordered by name of the Resource.
+# Controls the ordering of parent resources for an allocation (if allocation has
+# multiple resources). Should be a list of field names suitable for Django QuerySet
+# order_by method, default is ['-is_allocatable', 'name']; i.e. prefer Resources
+# with is_allocatable field set, ordered by name of the Resource.
 # ALLOCATION_RESOURCE_ORDERING=['-is_allocatable', 'name']
 
 #	Enable or disable invoices, default True
@@ -48,46 +60,25 @@ DEBUG=True
 #	The URL to your Open OnDemand installation
 # ONDEMAND_URL=ONDEMAND_URL
 
-#	Custom message when user fails to login. Here you can paint a custom link to your user account portal
+#	Custom message when user fails to login. You can paint a custom link to your user account portal.
 # LOGIN_FAIL_MESSAGE="Login Failed"
+
 
 #------------------------------------------------------------------------------
 # General Center Information
 #------------------------------------------------------------------------------
 # The display name of your center. Used in emails, among other places.
-CENTER_NAME = 'Harvard FASRC'
+CENTER_NAME='Harvard FASRC'
 
 # The URL of your help ticketing system. This is the url to which the "Help" link
 # in the nav bar will redirect.
-CENTER_HELP_URL = 'https://portal.rc.fas.harvard.edu/rcrt/submit_ticket'
+CENTER_HELP_URL='https://portal.rc.fas.harvard.edu/rcrt/submit_ticket'
 
 # The URL of the article describing project renewals
-#CENTER_PROJECT_RENEWAL_HELP_URL = 'https://portal.rc.fas.harvard.edu/rcrt/submit_ticket'
+#CENTER_PROJECT_RENEWAL_HELP_URL='https://portal.rc.fas.harvard.edu/rcrt/submit_ticket'
 
 # The base URL of your center.
-#CENTER_BASE_URL = 'https://www.rc.fas.harvard.edu/'
-
-#------------------------------------------------------------------------------
-# Locale settings
-#------------------------------------------------------------------------------
-# Default values are provided below; uncomment and alter if you want to change them.
-#LANGUAGE_CODE = 'en-us'
-#TIME_ZONE = 'America/New_York'
-
-
-
-# Path to store static assets. These are currently set to the defaults used in the
-# FASRC Coldfront Docker containers.
-STATIC_ROOT=/static/
-LOCALDATA_ROOT=/usr/src/app
-
-COLDFRONT_DATA_LOAD=/n/coldfront
-
-#------------------------------------------------------------------------------
-# Session settings
-#------------------------------------------------------------------------------
-# Set to True in production when using HTTPS
-SESSION_COOKIE_SECURE=True
+# CENTER_BASE_URL='https://www.rc.fas.harvard.edu/'
 
 
 #------------------------------------------------------------------------------
@@ -97,7 +88,7 @@ SESSION_COOKIE_SECURE=True
 
 # # username for database login
 # DB_USER=coldfront
-# # Database connection. Default is sqlite:///coldfront.db
+# # Database connection. If not set, sqlite:///coldfront.db will be used.
 # DB_URL=mysql://user:password@127.0.0.1:3306/database
 # # password for database login
 # DB_PASS=MYPASSWORD
@@ -105,9 +96,116 @@ SESSION_COOKIE_SECURE=True
 # DB_HOST=coldfront-db
 
 
+#------------------------------------------------------------------------------
+# Email settings
+#------------------------------------------------------------------------------
+# Set all of the following variables and set EMAIL_ENABLED to True to autosend email
+
+# Enable/disable email. Default False
+# EMAIL_ENABLED=True
+
+# Hostname of smtp server
+# EMAIL_HOST='hostaddress.domain.university.edu'
+# Default sender email address
+# EMAIL_SENDER='default_sender@domain.university.edu'
+# Recipient email addresses for ticketing system, director, project review contact
+# EMAIL_TICKET_SYSTEM_ADDRESS=tickets@domain.university.edu
+# EMAIL_DIRECTOR_EMAIL_ADDRESS=director@domain.university.edu'
+# EMAIL_PROJECT_REVIEW_CONTACT='director@domain.university.edu'
+
+### LIST variables can be multiple comma-separated values.
+# List of admin email addresses.
+# EMAIL_ADMIN_LIST=admin1@domain.university.edu,admin2@domain.university.edu
+# List of emails to send when in debug mode
+# EMAIL_DEVELOPMENT_EMAIL_LIST=dev1@domain.university.edu,dev@domain.university.edu
+
+### The following items are part of the standard email templates.
+# URL of article regarding opt out
+EMAIL_OPT_OUT_INSTRUCTION_URL='https://coldfront.rc.fas.harvard.edu/opt_out/'
+
+# Prefix to add to subject line
+# EMAIL_SUBJECT_PREFIX="[coldfront]"
+# Email signature to add to outgoing emails
+EMAIL_SIGNATURE='FAS Research Computing'
+
+# smtp port
+# EMAIL_PORT
+# Username for smtp
+# EMAIL_HOST_USER
+# password for smtp
+# EMAIL_HOST_PASSWORD
+# Enable/disable tls. Default False
+# EMAIL_USE_TLS
+
 
 #------------------------------------------------------------------------------
-# LDAP Configs
+# Slurm Plugin Settings
+#------------------------------------------------------------------------------
+# Enable Slurm integration. Default False
+# PLUGIN_SLURM=False
+
+# Path to sacctmgr command. Default /usr/bin/sacctmgr
+# SLURM_SACCTMGR_PATH
+
+# Enable/disable noop. Default False
+# SLURM_NOOP=False
+
+# List of user accounts to ignore when generating Slurm associations
+# SLURM_IGNORE_USERS
+
+# List of Slurm accounts to ignore when generating Slurm associations
+# SLURM_IGNORE_ACCOUNTS
+
+
+#------------------------------------------------------------------------------
+# XDMoD Plugin Settings
+#------------------------------------------------------------------------------
+# Enable XDMoD integration. Default False
+# PLUGIN_XDMOD=False
+# URL to XDMoD API
+# XDMOD_API_URL=
+
+
+#------------------------------------------------------------------------------
+# FreeIPA Plugin Settings
+#------------------------------------------------------------------------------
+# Enable FreeIPA integration. Default False
+# PLUGIN_FREEIPA=False
+
+# Path to keytab file
+# FREEIPA_KTNAME
+
+# Hostname of FreeIPA server
+# FREEIPA_SERVER
+
+# User search base dn
+# FREEIPA_USER_SEARCH_BASE
+
+# Enable/Disable signals. Default False
+# FREEIPA_ENABLE_SIGNALS=False
+
+
+#------------------------------------------------------------------------------
+# iquota Plugin Settings
+#------------------------------------------------------------------------------
+# Enable iquota integration. Default False
+# PLUGIN_IQUOTA=False
+
+# Path to keytab file
+# IQUOTA_KEYTAB=
+
+# Path to ca cert
+# IQUOTA_CA_CERT=
+
+# Hostname of iquota server
+# IQUOTA_API_HOST=
+
+# Port of iquota server
+# IQUOTA_API_PORT=
+
+
+#------------------------------------------------------------------------------
+# LDAP Auth Plugin
 #------------------------------------------------------------------------------
 # set the following if you are using LDAP integration
 
@@ -123,7 +221,8 @@ SESSION_COOKIE_SECURE=True
 # # Enable/disable start tls, default True
 # AUTH_LDAP_START_TLS=False
 
-# # Authentication will leave the LDAP connection bound as the authenticating user, rather than forcing it to re-bind, default False
+# # Authentication will leave the LDAP connection bound as the authenticating user,
+# # rather than forcing it to re-bind, default False
 # AUTH_LDAP_BIND_AS_AUTHENTICATING_USER=False
 
 # # The distinguished name to use when binding to the LDAP server
@@ -139,7 +238,6 @@ SESSION_COOKIE_SECURE=True
 # AUTH_LDAP_GROUP_SEARCH_BASE='OU=Domain Groups,dc=rc,dc=domain'
 
 
-
 #------------------------------------------------------------------------------
 # FASRC-specific Plugins
 #------------------------------------------------------------------------------
@@ -151,34 +249,11 @@ PLUGIN_IFX=True
 # PLUGIN_FASRC=True
 # neo4jp=NEO4J_INSTANCE_PASSWORD
 
+
 #------------------------------------------------------------------------------
 # Starfish Plugin
 #------------------------------------------------------------------------------
-# If using the SFtoCF plugin, uncomment the lines below and add the starfish account
-# details.
+# If using SFtoCF, uncomment the lines below and add starfish account details.
 # PLUGIN_SFTOCF=True
 # SFUSER=STARFISH_ACCOUNT_USERNAME
 # SFPASS=STARFISH_ACCOUNT_PASSWORD
-
-#------------------------------------------------------------------------------
-# Email
-#------------------------------------------------------------------------------
-# All of the following variables must be set and EMAIL_ENABLED uncommented in order
-# to use email
-
-# EMAIL_ENABLED=True
-
-# EMAIL_SUBJECT_PREFIX="[coldfront]"
-# EMAIL_HOST='hostaddress.domain.university.edu'
-# EMAIL_SENDER='default_sender@domain.university.edu'
-# EMAIL_TICKET_SYSTEM_ADDRESS=tickets@domain.university.edu
-# EMAIL_DIRECTOR_EMAIL_ADDRESS=director@domain.university.edu'
-# EMAIL_PROJECT_REVIEW_CONTACT='director@domain.university.edu'
-
-# # LIST  can be multiple values
-# EMAIL_ADMIN_LIST=admin1@domain.university.edu,admin2@domain.university.edu
-# EMAIL_DEVELOPMENT_EMAIL_LIST=developer1@domain.university.edu,developer2@domain.university.edu
-
-# # The following items are part of the standard email templates
-EMAIL_OPT_OUT_INSTRUCTION_URL='https://coldfront.rc.fas.harvard.edu/opt_out/'
-EMAIL_SIGNATURE='FAS Research Computing'
