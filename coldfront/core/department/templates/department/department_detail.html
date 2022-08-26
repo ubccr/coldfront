@@ -138,12 +138,13 @@
             <table id = "mydatatable" class = "table table-striped table-bordered">
             <thead>
               <tr>
-                <th scope="col">Project Name</th>
+                <th scope="col">Project</th>
                 <th scope="col">Allocation</th>
+                <th scope="col">User Count</th>
                 <th scope="col">Resource Type</th>
-                <th scope="col">Allocation Location</th>
-                <th scope="col">Total Space</th>
-                <th scope="col">Total Monthly Cost</th>
+                <th scope="col">Location</th>
+                <th scope="col">Total Space (TB)</th>
+                <th scope="col">Monthly Cost</th>
                 <th></th>
               </tr>
             </thead>
@@ -154,6 +155,7 @@
                 <tr style="background-color:#C2C2C2">
                   <td><a href="{% url 'project-detail' project.pk %}">{{ project.title }}</a></td>
                   <td></td>
+                  <td>{{project.projectuser_set.count}}</td>
                   <td></td>
                   <td></td>
                   <td></td>
@@ -165,6 +167,7 @@
                 <tr style="background-color:#FFFFFF">
                   <td></td>
                   <td><a href="{% url 'allocation-detail' allocation.id %}">{{allocation.id}}</a></td>
+                  <td>{{allocation.user_count}}</td>
                   <td>{{allocation.resources__name}}</td>
                   <td>{{allocation.path}}</td>
                   <td>{{allocation.size|floatformat:1}}</td>

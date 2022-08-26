@@ -203,6 +203,7 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             for allocation in p.allocs:
                 allocation['price'] = get_resource_rate(allocation['resources__name'])
                 allocation['cost'] = allocation['price'] * int(allocation['size']) if allocation['size'] else 0
+                allocation['user_count'] = Allocation.objects.get(pk=allocation['id']).allocationuser_set.count()
                 attr_filter = ( Q(allocation_id=allocation['id']) &
                                 Q(allocation_attribute_type_id=8))
                 if AllocationAttribute.objects.filter(attr_filter):
