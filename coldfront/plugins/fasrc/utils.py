@@ -1,24 +1,14 @@
-import os
-import re
 import json
-import time
-import timeit
 import logging
-import requests
-from pathlib import Path
 from functools import reduce
-from datetime import datetime, timedelta
-
+from datetime import datetime
 import operator
+
+import requests
 from django.db.models import Q
-from django.utils import timezone
-from ifxuser.models import IfxUser, Organization
-from django.contrib.auth import get_user_model
-from dateutil.relativedelta import relativedelta
-from ifxbilling.models import Account, BillingRecord, ProductUsage
 
 from coldfront.core.utils.common import import_from_settings
-from coldfront.core.project.models import Project, ProjectUser#, DoesNotExist
+from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
 from coldfront.core.allocation.models import   (Allocation,
                                                 AllocationAttribute,
@@ -37,9 +27,9 @@ def record_process(func):
     """Wrapper function for logging"""
     def call(*args, **kwargs):
         funcdata = "{} {}".format(func.__name__, func.__code__.co_firstlineno)
-        logger.debug("\n{} START.".format(funcdata))
+        logger.debug("\n%s START.", funcdata)
         result = func(*args, **kwargs)
-        logger.debug("{} END. output:\n{}\n".format(funcdata, result))
+        logger.debug("%s END. output:\n%s\n", funcdata, result)
         return result
     return call
 
@@ -56,9 +46,8 @@ class AllTheThingsConn:
         """Produce JSON file of quota data for LFS and Isilon from AlltheThings.
         """
         result_file = 'coldfront/plugins/fasrc/data/allthethings_output.json'
-        svp = read_json("coldfront/plugins/fasrc/servers.json")
-        volumes = "|".join([i for l in [v.keys() for s, v in svp.items()]for i in l])
-        logger.debug(f"volumes: {volumes}")
+        volumes = "|".join([r.name.split("/")[0] for r in Resource.objects.all()])
+        logger.debug("volumes: %s", volumes)
 
         quota = {"match": "[:HasQuota]-(e:Quota)",
             "where":f"WHERE (e.filesystem =~ '.*({volumes}).*')",
@@ -106,9 +95,10 @@ class AllTheThingsConn:
                     replace(e.{d['server']}, '{d['replace']}', '') as server"}
             queries['statements'].append(statement)
         resp = requests.post(self.url, headers=self.headers, data=json.dumps(queries), verify=False)
+        # logger.debug(queries)
         resp_json = json.loads(resp.text)
         # logger.debug(resp_json)
-        result_dicts = [i for i in resp_json['results']]
+        result_dicts = list(resp_json['results'])
         resp_json_formatted = [dict(zip(rdict['columns'],entrydict['row'])) \
                 for rdict in result_dicts for entrydict in rdict['data'] ]
         resp_json_by_lab = {entry['lab']:[] for entry in resp_json_formatted}
@@ -140,7 +130,7 @@ class AllTheThingsConn:
         [result_json.pop(key) for key in missing_projs]
 
         # produce set of server values for which to locate matching resources
-        resource_set = set([a['server'] for l in result_json.values() for a in l])
+        resource_set = {a['server'] for l in result_json.values() for a in l}
         # get resource model
         res_models = Resource.objects.filter(reduce(operator.or_, (Q(name__contains=x) for x in resource_set)))
         res_names = [str(r.name).split("/")[0] for r in res_models]
@@ -151,7 +141,7 @@ class AllTheThingsConn:
             result_json[k] = [a for a in v if a['server'] not in missing_res]
 
         for lab, allocations in result_json.items():
-            logger.debug(f"PROJECT: {lab} ====================================")
+            logger.debug("PROJECT: %s ====================================", lab)
             # Find the correct allocation_allocationattributes to update by:
             # 1. finding the project with a name that matches lab.lab
             proj_query = proj_models.get(title=lab)
@@ -187,7 +177,7 @@ class AllTheThingsConn:
                                                 status__name='Active'   )
 
 
-                logger.info(f"allocation: {a.__dict__}")
+                logger.info("allocation: %s", a.__dict__)
 
 
 
@@ -229,7 +219,7 @@ class AllTheThingsConn:
                         value=True)
                 allocation_attribute_payment.save()
                 counts['complete'] += 1
-        logger.info(f"error counts: {counts}")
+        logger.info("error counts: %s", counts)
 
 
 def log_missing(modelname,
@@ -275,7 +265,7 @@ def generate_headers(token):
     return headers
 
 def read_json(filepath):
-    logger.debug(f"read_json for {filepath}")
+    logger.debug("read_json for %s", filepath)
     with open(filepath, "r") as myfile:
         data = json.loads(myfile.read())
     return data

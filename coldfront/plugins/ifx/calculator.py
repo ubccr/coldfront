@@ -5,15 +5,515 @@ import logging
 from collections import defaultdict
 from decimal import Decimal
 from django.core.exceptions import MultipleObjectsReturned
-from django.db import connection
+from django.db import connection, transaction
 from django.utils import timezone
 from django.contrib.auth import get_user_model
-from ifxbilling.calculator import BasicBillingCalculator
-from ifxbilling.models import Account, Product, ProductUsage
+from ifxbilling.calculator import BasicBillingCalculator, NewBillingCalculator
+from ifxbilling.models import Account, Product, ProductUsage, Rate, BillingRecord
 from coldfront.core.allocation.models import Allocation
+from .models import AllocationUserProductUsage
 
 
 logger = logging.getLogger(__name__)
+
+class NewColdfrontBillingCalculator(NewBillingCalculator):
+    '''
+    New one
+    '''
+    OFFER_LETTER_PRODUCT_NAME = 'Offer Letter Storage'
+    OFFER_LETTER_TB_ATTRIBUTE = 'Offer Letter'
+    OFFER_LETTER_CODE_ATTRIBUTE = 'Offer Letter Code'
+    STORAGE_QUOTA_ATTRIBUTE = 'Storage Quota (TB)'
+
+    def generate_billing_records_for_organization(self, year, month, organization, recalculate, **kwargs):
+        '''
+        Create and save all of the :class:`~ifxbilling.models.BillingRecord` objects for the month for an organization.
+
+        Finds the Project(s) for the Organization and then iterates over the Project Allocations
+
+        If the Allocation has an Offer Letter and Offer Letter Code attribute, a corresponding billing record will be
+        created and the total Allocation size reduced.
+
+        Remaining Allocation will be distributed among the users proportional to their usage.
+
+        Returns a dict that includes a list of successfully created :class:`~ifxbilling.models.BillingRecord` objects
+        ("successes") and a list of error messages ("errors")
+
+        :param year: Year that will be assigned to :class:`~ifxbilling.models.BillingRecord` objects
+        :type year: int
+
+        :param month: Month that will be assigned to :class:`~ifxbilling.models.BillingRecord` objects
+        :type month: int
+
+        :param organization: The organization whose :class:`~ifxbilling.models.BillingRecord` objects should be generated
+        :type organization: list
+
+        :param recalculate: If True, will delete existing :class:`~ifxbilling.models.BillingRecord` objects if possible
+        :type recalculate: bool
+
+        :return: A dictionary with keys "successes" (a list of successfully created :class:`~ifxbilling.models.BillingRecord` objects) and
+            "errors" (a list of error messages)
+        :rtype: dict
+        '''
+        successes = []
+        errors = []
+
+        projects = [po.project for po in organization.projectorganization_set.all()]
+        if not projects:
+            errors.append(f'No project found for {organization.name}')
+        else:
+            for project in projects:
+                for allocation in project.allocation_set.all():
+                    try:
+                        with transaction.atomic():
+                            offer_letter_br, remaining_allocation_tb = self.process_offer_letter(year, month, organization, allocation, recalculate)
+                            if offer_letter_br:
+                                successes.append(offer_letter_br)
+                            user_allocation_percentages = self.get_user_allocation_percentages(year, month, allocation)
+                            for user_id, allocation_percentage_data in user_allocation_percentages.items():
+                                try:
+                                    user = get_user_model().objects.get(id=user_id)
+                                except get_user_model().DoesNotExist:
+                                    raise Exception(f'Cannot find user with id {user_id}')
+                                brs = self.generate_billing_records_for_allocation_user(
+                                    year,
+                                    month,
+                                    user,
+                                    organization,
+                                    allocation,
+                                    allocation_percentage_data['fraction'],
+                                    remaining_allocation_tb,
+                                    recalculate,
+                                )
+                                if brs:
+                                    successes.extend(brs)
+                    except Exception as e:
+                        errors.append(str(e))
+                        if self.verbosity == self.CHATTY:
+                            logger.error(e)
+                        if self.verbosity == self.LOUD:
+                            logger.exception(e)
+
+        return (successes, errors)
+
+    def process_offer_letter(self, year, month, organization, allocation, recalculate):
+        '''
+        Generate a ProductUsage and a BillingRecord for the offer letter, if it exists.
+        Return BillingRecord (may be None) and remaining allocation size (Decimal TB).  If
+        no BillingRecord is generated, the remaining size is the full size.
+        '''
+        offer_letter_br = None
+        remaining_allocation_tb = self.get_allocation_tb(allocation)
+        offer_letter_product = self.get_offer_letter_product(allocation)
+
+        # Decimal quantity in TB
+        offer_letter_tb = self.get_offer_letter_tb(allocation)
+
+        # Account for offer letter code
+        offer_letter_acct = self.get_offer_letter_account(allocation)
+
+        if offer_letter_tb:
+            if not offer_letter_acct:
+                raise Exception(f'Project {allocation.project.title} allocation {allocation.get_resources_as_string()} has an offer letter, but no code.')
+
+            # Offer letter product user (the PI)
+            product_user = self.get_offer_letter_product_user(allocation)
+
+            # Create the offer letter product usage.  If it already exists and there is a billing record, do the recalculate check
+            try:
+                offer_letter_usage = ProductUsage.objects.get(
+                    product=offer_letter_product,
+                    year=year,
+                    month=month,
+                    product_user=product_user,
+                    organization=organization,
+                )
+                if offer_letter_usage.billingrecord_set.count():
+                    if recalculate:
+                        offer_letter_usage.billingrecord_set.all().delete()
+                    else:
+                        raise Exception(f'Billing record exists for product usage {offer_letter_usage} and recalculate is not set.')
+            except ProductUsage.DoesNotExist:
+                try:
+                    offer_letter_usage = ProductUsage.objects.create(
+                        product=offer_letter_product,
+                        year=year,
+                        month=month,
+                        start_date=timezone.now(),
+                        product_user=product_user,
+                        logged_by=product_user,
+                        organization=organization,
+                        quantity=offer_letter_tb,
+                        decimal_quantity=offer_letter_tb,
+                        units='TB'
+                    )
+                except Exception as e:
+                    raise Exception(f'Unable to create Offer Letter Usage: {e}') from e
+
+            # Get the allocation resource product rate for calculating charges
+            storage_product_rate = self.get_allocation_resource_product_rate(allocation)
+            if not storage_product_rate.units == 'TB':
+                raise Exception(f'Storage product rates should be in TB.  Rate {storage_product_rate.name} is in {storage_product_rate.units}')
+            decimal_price = storage_product_rate.decimal_price
+            if not decimal_price:
+                raise Exception(f'decimal_price for {storage_product_rate.product.product_name} is not set.')
+            charge = decimal_price * offer_letter_tb
+
+            # Transaction and rate description
+            rate_desc = self.get_rate_description(storage_product_rate)
+            description = f'{offer_letter_usage.decimal_quantity} {offer_letter_usage.units} at {rate_desc}'
+
+            transactions_data = [
+                {
+                    'charge': charge,
+                    'decimal_charge': charge,
+                    'description': description,
+                    'author': product_user,
+                    'rate': rate_desc,
+                }
+            ]
+            logger.info('Setting up offer letter charge of %s against %s', str(charge), str(offer_letter_acct))
+            offer_letter_br = self.create_billing_record(year, month, offer_letter_usage, offer_letter_acct, transactions_data, 100, rate_desc, description)
+            remaining_allocation_tb = remaining_allocation_tb - offer_letter_tb
+
+        return offer_letter_br, remaining_allocation_tb
+
+    def get_offer_letter_product(self, allocation):
+        '''
+        Return the Product associated with Offer Letters
+
+        :param allocation:  The Allocation
+        :type allocation: `~coldfront.core.allocation.models.Allocation`
+
+        :return: Product for Offer Letters
+        :rtype: `~ifxbilling.models.Product`
+        '''
+        return Product.objects.get(product_name=self.OFFER_LETTER_PRODUCT_NAME)
+
+    def get_offer_letter_product_user(self, allocation):
+        '''
+        Return product_user for offer letter billing record (the PI) for a given allocation
+
+        :param allocation: The Allocation
+        :type allocation: `~coldfront.core.allocation.models.Allocation`
+
+        :raises: Exception if PI is missing
+        :return: The PI user
+        :rtype: `~ifxuser.models.IfxUser`
+        '''
+        pi = allocation.project.pi
+        if not pi:
+            raise Exception(f'Allocation of {allocation.get_resources_as_string()} for {allocation.project.title} has no PI')
+        return pi
+
+    def get_offer_letter_tb(self, allocation):
+        '''
+        Returns the relevant offer letter size as a Decimal or None if nothing is found
+
+        :param allocation: The `~coldfront.core.allocation.models.Allocation`
+        :type allocation: `~coldfront.core.allocation.models.Allocation`
+
+        :return: Decimal representing the offer letter in TB or None
+        :rtype: `~decimal.Decimal` or NoneType
+        '''
+        offer_letter_tb = allocation.get_attribute(self.OFFER_LETTER_TB_ATTRIBUTE)
+        if offer_letter_tb:
+            offer_letter_tb = Decimal(offer_letter_tb)
+        return offer_letter_tb
+
+    def get_offer_letter_account(self, allocation):
+        '''
+        Returns the relevant offer letter expense code or None if nothing is found
+
+        :param allocation: The `~coldfront.core.allocation.models.Allocation`
+        :type allocation: `~coldfront.core.allocation.models.Allocation`
+
+        :return: Account corresponding to the offer letter expense code or None
+        :rtype: `~ifxbilling.models.Account` or NoneType
+        '''
+        code = allocation.get_attribute(self.OFFER_LETTER_CODE_ATTRIBUTE)
+        if code:
+            try:
+                code = Account.objects.get(code=code)
+            except Account.DoesNotExist:
+                raise Exception(f'Cannot find offer letter code {code}')
+        return code
+
+    def get_allocation_tb(self, allocation):
+        '''
+        Return the size of the allocation in TB.  Return value is a Python Decimal.
+
+        :param allocation: The Allocation
+        :type allocation: `~coldfront.core.allocation.models.Allocation`
+
+        :return: Size of the allocation as a Decimal
+        :rtype: `~decimal.Decimal`
+        '''
+        allocation_size_tb = allocation.get_attribute(self.STORAGE_QUOTA_ATTRIBUTE)
+        if not allocation_size_tb:
+            raise Exception(f'Allocation {allocation.id} ({allocation.get_resources_as_string()} for {allocation.project.title}) does not have the {self.STORAGE_QUOTA_ATTRIBUTE} attribute')
+        return Decimal(allocation_size_tb)
+
+    def get_allocation_resource_product(self, allocation):
+        '''
+        Return the product association with the allocation resource
+
+        :param allocation: The Allocation
+        :type allocation: `~coldfront.core.allocation.models.Allocation`
+
+        :raises: Exception if there is not exactly one Resource for the Allocation or exactly one
+            Product for the Resource
+
+        :return: The Allocation storage Product
+        :rtype: `~ifxbilling.models.Product`
+        '''
+        resources = allocation.resources.all()
+        if not resources:
+            raise Exception(f'Allocation {allocation.id} has no resources')
+        if len(resources) > 1:
+            raise Exception(f'Allocation {allocation.id} has more than one resource. Cannot figure out a Product Rate.')
+
+        products = [pr.product for pr in resources[0].productresource_set.all()]
+        if not products:
+            raise Exception(f'Allocation {allocation.id} resource {resources[0]} has no associated Product.')
+        if len(products) > 1:
+            raise Exception(f'Allocation {allocation.id} resource {resources[0]} has multiple Products.')
+
+        return products[0]
+
+    def get_allocation_resource_product_rate(self, allocation):
+        '''
+        Get the active Rate for the Product associated with the Allocation's Resource
+
+        :param allocation: The Allocation
+        :type allocation: `~coldfront.core.allocation.models.Allocation`
+
+        :raises: Exception if there is not exactly one active Rate for the Product
+
+        :return: Active rate for the storage product
+        :rtype: `~ifxbilling.models.Rate`
+        '''
+        product = self.get_allocation_resource_product(allocation)
+        try:
+            rate = product.rate_set.get(is_active=True)
+        except Rate.DoesNotExist:
+            raise Exception(f'Cannot find an active rate for Product {product.product_name}')
+
+        return rate
+
+    def get_user_allocation_percentages(self, year, month, allocation):
+        '''
+        Return a dictionary of user and their percentage of the total allocation
+        '''
+        # Of the form
+        # allocation_user_fractions = {
+        #    <allocation user id 1>: {
+        #       'fraction': 0.2,
+        #       'quantity': 2000
+        #    }
+        #    <allocation user id 2>: {
+        #        'fraction': 0.8,
+        #        'quantity': 8000
+        #    }
+        # }
+
+        allocation_user_fractions = {}
+        product = self.get_allocation_resource_product(allocation)
+
+        # Sum the quantity of usage for users that have user_accounts or user_product_accounts
+        # with an organization that matches the project organization mapping
+        # The UNION combines the user_accounts and the user_product_accounts
+        sql = '''
+            select product_user_id, sum(quantity)
+            from (
+                select
+                    pu.product_user_id, sum(pu.quantity) as quantity
+                from
+                    product_usage pu inner join ifx_allocationuserproductusage aupu on pu.id = aupu.product_usage_id
+                    inner join allocation_historicalallocationuser hau on hau.history_id = aupu.allocation_user_id
+                    inner join allocation_allocation a on a.id = hau.allocation_id
+                where
+                    hau.allocation_id = %s
+                    and pu.year = %s
+                    and pu.month = %s
+                    and exists (
+                        select 1
+                        from
+                            user_account ua inner join account acct on ua.account_id = acct.id
+                            inner join ifx_projectorganization po on acct.organization_id = po.organization_id
+                        where
+                            po.project_id = a.project_id
+                            and ua.user_id = pu.product_user_id
+                            and ua.is_valid = 1
+                            and acct.valid_from <= pu.start_date
+                            and acct.expiration_date > pu.start_date
+                    )
+                group by pu.product_user_id
+                union
+        select
+            pu.product_user_id, sum(pu.quantity) as quantity
+        from
+            product_usage pu inner join ifx_allocationuserproductusage aupu on pu.id = aupu.product_usage_id
+            inner join allocation_historicalallocationuser hau on hau.history_id = aupu.allocation_user_id
+            inner join allocation_allocation a on a.id = hau.allocation_id
+        where
+            hau.allocation_id = %s
+            and pu.year = %s
+            and pu.month = %s
+            and exists (
+                select 1
+                from
+                    user_product_account ua inner join account acct on ua.account_id = acct.id
+                    inner join ifx_projectorganization po on acct.organization_id = po.organization_id
+                where
+                    po.project_id = a.project_id
+                    and ua.user_id = pu.product_user_id
+                    and ua.is_valid = 1
+                    and acct.valid_from <= pu.start_date
+                    and acct.expiration_date > pu.start_date
+                    and ua.product_id = %s
+            )
+                group by pu.product_user_id
+            ) t
+            group by product_user_id
+        '''.replace('\n', ' ')
+
+        cursor = connection.cursor()
+        cursor.execute(sql, [allocation.id, year, month, allocation.id, year, month, product.id])
+        total = 0
+        count = 0
+        for row in cursor.fetchall():
+            allocation_user_fractions[row[0]] = {
+                'quantity': row[1]
+            }
+            if row[1] is None:
+                raise Exception(f'ProductUsage quantity is None for allocation {allocation}')
+            total += row[1]
+            count += 1
+
+        if total == 0 and count == 0:
+            # If there are no users, set count to 1 and add PI user id
+            pi = allocation.project.pi
+            allocation_user_fractions[pi.id] = {
+                'quantity': 1,
+                'fraction': 1,
+            }
+            logger.info(f'Allocation {allocation} has no users at all. Setting PI {pi} as user.')
+
+        for uid in allocation_user_fractions.keys():
+            # For the situation where there is an allocation, and the PI is an allocation user, but no data is used
+            # set fraction to 1.
+            if total == 0:
+                allocation_user_fractions[uid]['fraction'] = Decimal(1)
+            else:
+                allocation_user_fractions[uid]['fraction'] = allocation_user_fractions[uid]['quantity'] / Decimal(total)
+        if allocation.id == 19:
+            logger.error('Allocation user fractions %s', str(allocation_user_fractions))
+        return allocation_user_fractions
+
+    def generate_billing_records_for_allocation_user(self, year, month, user, organization, allocation, allocation_percentage, allocation_tb, recalculate=False):
+        '''
+        Make the BillingRecords for the given user from their allocation percentage and the allocation size.
+
+        Gets ProductUsage from Allocation and User
+        Checks for existing BillingRecord, using recalculate to decide to delete
+        Sets the decimal_quantity in ProductUsage to the calculated usage (percentage of allocation after offer letter)
+        Calls `~ifxbilling.calculator.NewBillingCalculator.generate_billing_records_for_usage`
+        '''
+        product_usage = self.get_product_usage_for_allocation_user(year, month, user, organization, allocation)
+
+        if BillingRecord.objects.filter(product_usage=product_usage).exists():
+            if recalculate:
+                BillingRecord.objects.filter(product_usage=product_usage).delete()
+            else:
+                msg = f'Billing record already exists for usage {product_usage}'
+                raise Exception(msg)
+
+        # Set the decimal_quantity to TB percentage of allocation
+        product_usage = self.set_product_usage_decimal_quantity(product_usage, allocation_percentage, allocation_tb)
+        return self.generate_billing_records_for_usage(year, month, product_usage, allocation_percentage=allocation_percentage, allocation_tb=allocation_tb)
+
+    def calculate_charges(self, product_usage, percent, **kwargs):
+        '''
+        Check for the Allocation information in the usage_data dictionary.  If it's there, use the
+        fractions to figure out the charge.  If not, get the other AllocationUser data to calculate
+        the fractions and save in the usage_data dict.
+        '''
+        product = product_usage.product
+        rate = product.rate_set.get(is_active=True)
+        if rate.units != 'TB':
+            raise Exception(f'Units for {product} should be "TB"')
+        # if product_usage.units != 'b':
+        #     raise Exception('Product usage units should be in bytes (b)')
+
+        rate_desc = self.get_rate_description(rate)
+
+        transactions_data = []
+
+        percent_str = ''
+        if percent < 100:
+            percent_str = f'a {percent}% split of '
+        dollar_price = rate.decimal_price
+
+        user = product_usage.product_user
+
+        # Decimal charge rounded to 4 decimal places
+        decimal_charge = Decimal(rate.decimal_price * product_usage.decimal_quantity * Decimal(percent / 100)).quantize(Decimal('0.0001'))
+
+        if decimal_charge == Decimal('0'):
+            raise Exception('No billing record for $0 charges')
+
+        # Round to dollars
+        dollar_charge = decimal_charge.quantize(Decimal('0.01'))
+
+        allocation_fraction = kwargs.get('allocation_percentage')
+        allocation_tb = kwargs.get('allocation_tb')
+        if not allocation_fraction or not allocation_tb:
+            raise Exception(f'Allocation percent / Allocation TB was not passed to calculate_charges')
+
+        allocation_percent = Decimal(allocation_fraction * 100).quantize(Decimal('0.01'))
+        allocation_string = f'{allocation_percent}% of {allocation_tb} TB'
+
+        description = f'${dollar_charge} for {percent_str}{allocation_string} ({product_usage.decimal_quantity} TB) at ${dollar_price.quantize(Decimal(".01"))} per TB'
+
+        transactions_data.append(
+            {
+                'charge': round(decimal_charge),
+                'decimal_charge': decimal_charge,
+                'description': description,
+                'author': user,
+                'rate': rate_desc,
+            }
+        )
+        return transactions_data
+
+    def set_product_usage_decimal_quantity(self, product_usage, allocation_percentage, allocation_tb):
+        '''
+        Set decimal_quantity to the percentage of the remaining allocation quantity in TB
+        '''
+        product_usage.decimal_quantity = Decimal(allocation_percentage * allocation_tb).quantize(Decimal('0.0001'))
+        product_usage.units = 'TB'
+        product_usage.save()
+        return product_usage
+
+    def get_product_usage_for_allocation_user(self, year, month, user, organization, allocation):
+        '''
+        For the given params, get the ProductUsage from the Allocation
+        '''
+        try:
+            aupu = AllocationUserProductUsage.objects.get(
+                allocation_user__allocation=allocation,
+                product_usage__product_user=user,
+                product_usage__year=year,
+                product_usage__month=month,
+                product_usage__organization=organization,
+            )
+        except AllocationUserProductUsage.DoesNotExist:
+            raise Exception(f'No AllocationUserProductUsage was found for allocation {allocation} and user {user} with organization {organization}')
+        except MultipleObjectsReturned:
+            raise Exception(f'More than one AllocationUserProductUsage found for allocation {allocation}, user {user} with organization {organization}')
+
+        return aupu.product_usage
 
 
 class ColdfrontBillingCalculator(BasicBillingCalculator):
@@ -32,6 +532,7 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
             offer_letter_code = allocation.get_attribute('Offer Letter Code')
             if offer_letter_code:
                 self.allocation_offer_letters[allocation.id]['offer_letter_code'] = offer_letter_code
+
 
 
     def getRateDescription(self, rate):
@@ -190,6 +691,8 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
                             po.project_id = a.project_id
                             and ua.user_id = pu.product_user_id
                             and ua.is_valid = 1
+                            and acct.valid_from <= pu.start_date
+                            and acct.expiration_date > pu.start_date
                     )
                 group by pu.product_user_id
                 union
@@ -212,6 +715,8 @@ class ColdfrontBillingCalculator(BasicBillingCalculator):
                             po.project_id = a.project_id
                             and ua.user_id = pu.product_user_id
                             and ua.is_valid = 1
+                            and acct.valid_from <= pu.start_date
+                            and acct.expiration_date > pu.start_date
                             and ua.product_id = %s
                     )
                 group by pu.product_user_id
