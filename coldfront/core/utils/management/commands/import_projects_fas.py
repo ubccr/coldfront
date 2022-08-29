@@ -113,6 +113,7 @@ class Command(BaseCommand):
                                     field_of_science=field_of_science_obj,
                                     status=project_status_choices[project_status]
                                 )           
+                            print("Project %s created with PI %s", title, pi_username)
                             except get_user_model().DoesNotExist:
                                 print("PI User missing: ", user)
                                 tocsv = [title, user,'PI']
