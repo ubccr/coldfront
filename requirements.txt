@@ -19,7 +19,7 @@ django-q==1.0.1
 django-settings-export==1.2.1
 django-simple-history==2.12.0
 django-sslserver==0.20
-django-su==0.8.0
+django-su==1.0.0
 djangorestframework==3.11.1
 doi2bib==0.3.0
 drf-nested-routers==0.91
