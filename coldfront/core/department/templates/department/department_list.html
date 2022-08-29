@@ -1,0 +1,60 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Department List
+{% endblock %}
+
+
+{% block content %}
+<style>
+.button-container form,
+.button-container form div {
+    display: inline;
+}
+
+.button-container button {
+    display: inline;
+    vertical-align: middle;
+}
+</style>
+
+<h2>Department Reports</h2>
+<br/>
+
+
+{% if department_list %}
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th scope="col">ID</th>
+          <th scope="col">Department</th>
+          <th scope="col">Rank</th>
+          <th scope="col">Number of Projects</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for department in department_list %}
+          <tr>
+            <td><a href="{% url 'department-detail' department.id %}">{{department.id}}</td>
+            <td>{{department.name}}</td>
+            <td>{{department.rank }}</td>
+            <td>{{department.project_count }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+  </div>
+
+
+{% else %}
+  <div class="alert alert-info">
+    No departments visible!
+  </div>
+{% endif %}
+
+{% endblock %}

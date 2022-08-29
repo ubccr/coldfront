@@ -15,11 +15,12 @@ from coldfront.core.allocation.models import   (Allocation,
                                                 AllocationAttributeType,
                                                 AllocationAttributeUsage)
 
-datestr = datetime.today().strftime("%Y%m%d")
+today = datetime.today().strftime("%Y%m%d")
+
 logger = logging.getLogger(__name__)
 logger.propagate = False
 logger.setLevel(logging.DEBUG)
-filehandler = logging.FileHandler(f'coldfront/plugins/fasrc/data/logs/{datestr}.log', 'w')
+filehandler = logging.FileHandler(f'coldfront/plugins/fasrc/data/logs/{today}.log', 'w')
 logger.addHandler(filehandler)
 
 

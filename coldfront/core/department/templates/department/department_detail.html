@@ -1,0 +1,312 @@
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href = "https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel = "stylesheet">
+    <link href = "jquery.datetimepicker.min.css" rel = "stylesheet"/>
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0/css/bootstrap.css">
+    <link rel="stylesheet" href="//cdn.datatables.net/1.10.16/css/dataTables.bootstrap4.min.css">
+    <script src="pdf.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.js"></script>
+  </head>
+
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+{% load mathfilters %}
+{% load django_tables2 %}
+{% render_table table %}
+
+
+{% block content %}
+
+{% if form.non_field_errors %}
+  <div class="alert alert-danger" role="alert">
+    {{ form.non_field_errors }}
+  </div>
+{% endif %}
+<div id = "invoice">
+<div class="mb-3" >
+    <h2>FAS Research Computing Usage Report</h2>
+    <button class = "btn btn-primary" id = "download"> Download PDF </button>
+
+    <hr>
+  </div>
+
+  {% if form.non_field_errors %}
+    <div class="alert alert-danger" role="alert">
+      {{ form.non_field_errors }}
+    </div>
+  {% endif %}
+
+
+  <div class="card mb-3">
+    <div class="card-header">
+      <h3><i class="fas fa-list" aria-hidden="true"></i> Usage Summary For: {{ department.name}}</h3>
+    </div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="table-responsive">
+          <table class="table table-bordered table-sm">
+            <tr>
+              <th scope="row" class="text-nowrap">Department:</th>
+              <td>
+                  {{ department.name }}
+              </td>
+            </tr>
+            {% if manager %}
+            <tr>
+              <th scope="row" class="text-nowrap">Total Labs in Bill:</th>
+              <td>
+                {{ projects|length }}
+              </td>
+            </tr>
+            <tr>
+                <th scope="row" class="text-nowrap">Total Allocations in Bill:</th>
+                <td>
+                 {{allocations_count}}
+                </td>
+              </tr>
+            <tr>
+              <th scope="row" class="text-nowrap">Service Period:</th>
+              <td> 1 Month
+              {% comment %} <select class = "dropdown" name="dropdown" id="billingPeriod" >
+                  <option value="1month" id = "1month" selected>1 Month</option>
+                  <option value="3month" id = "3month">3 Months</option>
+                  <option value="6month" id = "6month">6 Months</option>
+                  <option value="1year" id ="1year">1 Year</option>
+              </select> {% endcomment %}
+             </td>
+            </tr>
+
+            <tr>
+                <th scope="row" class="text-nowrap">Total Users in Your Bill:</th>
+                <td>{{ allocation_users.count }}</td>
+            </tr>
+
+            <tr>
+                <th  style="background-color:#D3D3D3" bordercolor="red" scope="row" class="text-nowrap">Total Amount Due:   </th>
+                <td style="background-color:#D3D3D3">${{ full_price|floatformat:2 }}</td>
+
+                {% comment %} <td  style="background-color:#D3D3D3" id = "totalamount"></td> {% endcomment %}
+            </tr>
+            {% else %}
+            <tr>
+              <th scope="row" class="text-nowrap">Your Labs:</th>
+              <td>
+                {{ projects|length }}
+              </td>
+            </tr>
+            <tr>
+                <th scope="row" class="text-nowrap">Your Allocations:</th>
+                <td>
+                 {{allocations_count}}
+                </td>
+              </tr>
+            <tr>
+            <tr>
+                <th scope="row" class="text-nowrap">Total Users in Your Allocations:</th>
+                <td>{{ allocation_users.count }}</td>
+            </tr>
+            <tr>
+                <th  style="background-color:#D3D3D3" bordercolor="red" scope="row" class="text-nowrap">Amount Due for Projects:   </th>
+                <td style="background-color:#D3D3D3">${{ full_price|floatformat:2 }}</td>
+
+                {% comment %} <td  style="background-color:#D3D3D3" id = "totalamount"></td> {% endcomment %}
+            </tr>
+            {% endif %}
+          </table>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+      const selectElement = document.getElementById('billingPeriod');
+      console.log(selectElement);
+      var price = {{ full_price }} * 1 / 12 * 50;
+      var n = price.toFixed(2);
+
+      document.getElementById("totalamount").innerHTML = n;
+      selectElement.addEventListener('change', (event) => {
+            if (event.target.value=="1month") {
+              var price = {{ full_price }} * 1 / 12 * 50;
+            }
+            // console.log(event.target.value);
+            if (event.target.value=="3month") {
+              var price = {{ full_price }} * 3 / 12 * 50;
+            }
+            if (event.target.value=="6month") {
+              var price = {{ full_price }} * 6 / 12 * 50;
+            }
+            if (event.target.value=="1year") {
+              var price = {{ full_price }} * 12 / 12 * 50;
+            }
+            var n = price.toFixed(2);
+            document.getElementById("totalamount").innerHTML = n;
+      });
+
+    </script>
+    <!-- Start Department Projects -->
+
+    <div class="html2pdf__page-break"></div>
+    <div class="card mb-3">
+      <div class="card-header">
+        <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Projects in Department</h3>
+        <span class="badge badge-secondary">{{projects|length}}</span>
+        {% comment %} <div class="float-right">
+
+        </div> {% endcomment %}
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+        <div class = "container mb-3 mt-3">
+            <table id = "mydatatable" class = "table table-striped table-bordered">
+            <thead>
+              <tr>
+                <th scope="col">Project</th>
+                <th scope="col">Allocation</th>
+                <th scope="col">User Count</th>
+                <th scope="col">Resource Type</th>
+                <th scope="col">Location</th>
+                <th scope="col">Total Space (TB)</th>
+                <th scope="col">Monthly Cost</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+
+              {% for project in projects %}
+
+                <tr style="background-color:#C2C2C2">
+                  <td><a href="{% url 'project-detail' project.pk %}">{{ project.title }}</a></td>
+                  <td></td>
+                  <td>{{project.projectuser_set.count}}</td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td data-sort = "{{project.total_price}}">${{ project.total_price|floatformat:2 }}</td>
+
+                </tr>
+                  {% for allocation in project.allocs %}
+
+                <tr style="background-color:#FFFFFF">
+                  <td></td>
+                  <td><a href="{% url 'allocation-detail' allocation.id %}">{{allocation.id}}</a></td>
+                  <td>{{allocation.user_count}}</td>
+                  <td>{{allocation.resources__name}}</td>
+                  <td>{{allocation.path}}</td>
+                  <td>{{allocation.size|floatformat:1}}</td>
+                  <td>${{ allocation.cost|floatformat:2 }}</td>
+                  <td></td>
+                </tr>
+
+                  {% endfor %}
+
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        </div>
+      </div>
+    </div>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.24/af-2.3.5/b-1.7.0/b-colvis-1.7.0/b-html5-1.7.0/b-print-1.7.0/cr-1.5.3/date-1.0.2/fc-3.3.2/kt-2.6.1/r-2.2.7/rg-1.1.2/rr-1.2.7/sl-1.3.2/datatables.min.css"/>
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/pdfmake.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/vfs_fonts.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.24/af-2.3.5/b-1.7.0/b-colvis-1.7.0/b-html5-1.7.0/b-print-1.7.0/cr-1.5.3/date-1.0.2/fc-3.3.2/kt-2.6.1/r-2.2.7/rg-1.1.2/rr-1.2.7/sl-1.3.2/datatables.min.js"></script>
+
+</script>
+
+
+<script>
+    $(document).ready( function () {
+    $('#mydatatable').DataTable({
+    "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
+    "pageLength": 25,
+    "order": [[ 3, "desc" ]],
+    iDisplayLength: -1,
+    dom: 'B<"clear">lfrtip',
+
+    buttons: {
+        name: 'primary',
+
+        buttons: [ 'csv', 'excel', 'pdf' ]
+
+        }
+    }
+    );
+    } );
+</script>
+
+<div class="html2pdf__page-break"></div>
+<div class="card mb-3">
+    <div class="card-header">
+      <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Notes from Staff</h3>
+      <span class="badge badge-secondary">{{allocation.allocationusernote_set.count}}</span>
+    </div>
+    <div class="card-body">
+      {% if allocation.allocationusernote_set.all %}
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th scope="col">Comment</th>
+                <th scope="col">Author</th>
+                <th scope="col">Last Modified</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for note in allocation.allocationusernote_set.all %}
+                <tr>
+                  <td>{{ note.note }}</td>
+                  <td>{{ note.author.first_name }} {{ note.author.last_name }} ({{ note.author.username }})</td>
+                  <td>{{ note.modified }}</td>
+                  <td><a href="{% url 'allocation-update-invoice-note' note.pk %}"><i class="fas fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="alert alert-info" role="alert">
+          <i class="fa fa-info-circle" aria-hidden="true"></i> There are no messages from system administrators.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+
+<script type="text/javascript">
+window.onload = function () {
+    document.getElementById("download")
+        .addEventListener("click", () => {
+            const invoice = this.document.getElementById("invoice");
+            console.log(invoice);
+            console.log(window);
+            var opt = {
+                margin: 1,
+                filename: 'invoice.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: 'legal', orientation: 'landscape' }
+            };
+            html2pdf().from(invoice).set(opt).save();
+        })
+}
+</script>
+
+
+
+{% endblock %}
+
+
+{% block js %}
+
+</div>
+{% endblock %}

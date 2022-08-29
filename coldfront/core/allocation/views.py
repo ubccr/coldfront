@@ -7,12 +7,10 @@ from xhtml2pdf import pisa
 
 from dateutil.relativedelta import relativedelta
 from django import forms
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.core.exceptions import ValidationError
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
 from django.db.models.query import QuerySet
@@ -23,7 +21,7 @@ from django.template.loader import get_template
 from django.urls import reverse, reverse_lazy
 from django.utils.html import format_html, mark_safe
 from django.views import View
-from django.views.generic import DetailView, ListView, TemplateView
+from django.views.generic import ListView, TemplateView
 from django.views.generic.edit import CreateView, FormView, UpdateView
 
 from coldfront.core.utils.fasrc import get_resource_rate
@@ -116,7 +114,8 @@ def set_proj_update_permissions(allocation_obj, user):
 def generate_email_receiver_list(allocation_users):
     email_receiver_list = []
     for allocation_user in allocation_users:
-        if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
+        if allocation_user.allocation.project.projectuser_set.get(
+                                user=allocation_user.user).enable_notifications:
             email_receiver_list.append(allocation_user.user.email)
     return email_receiver_list
 
@@ -178,30 +177,24 @@ def return_allocation_bytes_values(attributes_with_usage, allocation_users):
     return (allocation_quota_bytes, allocation_usage_bytes)
 
 def user_can_access_allocation(user, allocation):
-    """Return list of a user's permissions for the desired allocation
+    """Return list of a user's permissions for the specified allocation
     conditions:
     1. user must be a project user
     2. user must be A. an allocation user, B. a project pi, or C. a project manager.
     """
-    if not allocation.project.projectuser_set.filter(
-            user=user, status__name__in=['Active', 'New', ]).exists():
+    user_conditions = (Q(status__name__in=('Active', 'New')) & Q(user=user))
+    if not allocation.project.projectuser_set.filter(user_conditions).exists():
         return []
 
-    permissions = []
-    # is_pi = allocation_obj.project.pi_id == user.id
+    permissions = ["user"]
+
     if allocation.project.projectuser_set.filter(
-        Q(status__name='Active') & Q(user=user) & Q(role_id=1)).exists():
+                            user_conditions & Q(role_id=1)).exists():
         permissions.append("manager")
 
     if allocation.project.projectuser_set.filter(
-                Q(status__name='Active') & Q(user=user) & Q(project__pi_id=user.id)
-                ).exists():
+                            user_conditions & Q(project__pi_id=user.id)).exists():
         permissions.append("pi")
-
-    if allocation.allocationuser_set.filter(
-            user=user, status__name__in=['Active', ]
-                ).exists():
-        permissions.append("user")
 
     return permissions
 
@@ -441,8 +434,7 @@ class AllocationListView(LoginRequiredMixin, ListView):
         if order_by:
             direction = self.request.GET.get('direction')
             dir_dict = {'asc':'', 'des':'-'}
-            direction = dir_dict[direction]
-            order_by = direction + order_by
+            order_by = dir_dict[direction] + order_by
         else:
             order_by = 'id'
 
@@ -586,10 +578,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         project_obj = get_object_or_404(
             Project, pk=self.kwargs.get('project_pk'))
 
-        if project_obj.pi == self.request.user:
-            return True
-
-        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        permissions = user_can_access_allocation(self.request.user, project_obj)
+        if "manager" in permissions or "pi" in permissions:
             return True
 
         messages.error(
@@ -702,11 +692,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 value=allocation_account
             )
 
-        allocation_attribute = AllocationAttribute.objects.create(
-                        allocation=allocation_obj,
-                        allocation_attribute_type = AllocationAttributeType.objects.get(pk=1),
-                        value=quantity
-                                                    ).save()
+        AllocationAttribute.objects.create(allocation=allocation_obj, value=quantity,
+            allocation_attribute_type = AllocationAttributeType.objects.get(pk=1))
         allocation_obj.set_usage("Storage Quota (TB)", 0)
 
         for linked_resource in resource_obj.linked_resources.all():
@@ -715,13 +702,11 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         allocation_user_active_status = AllocationUserStatusChoice.objects.get(
             name='Active')
         for user in users:
-            allocation_user_obj = AllocationUser.objects.create(
-                allocation=allocation_obj,
-                user=user,
-                status=allocation_user_active_status)
+            AllocationUser.objects.create(allocation=allocation_obj, user=user,
+                                            status=allocation_user_active_status)
 
         pi_name = '{} {} ({})'.format(allocation_obj.project.pi.first_name,
-                                      allocation_obj.project.pi.last_name, allocation_obj.project.pi.username)
+                  allocation_obj.project.pi.last_name, allocation_obj.project.pi.username)
         resource_name = allocation_obj.get_parent_resource
         domain_url = get_domain_url(self.request)
         url = '{}{}'.format(domain_url, reverse('allocation-request-list'))
@@ -1621,7 +1606,7 @@ class AllocationAddInvoiceNoteView(LoginRequiredMixin, UserPassesTestMixin, Crea
                                                 self.request.user.is_superuser)
 
         attributes_with_usage = [a for a in alloc_attr_set if hasattr(a, 'allocationattributeusage')]
-        attributes = [a for a in alloc_attr_set]
+        attributes = list(alloc_attr_set)
 
         guage_data = []
         invalid_attributes = []
@@ -1652,8 +1637,7 @@ class AllocationAddInvoiceNoteView(LoginRequiredMixin, UserPassesTestMixin, Crea
         if self.request.user.is_superuser:
             notes = allocation_obj.allocationusernote_set.all()
         else:
-            notes = allocation_obj.allocationusernote_set.filter(
-                is_private=False)
+            notes = allocation_obj.allocationusernote_set.filter(is_private=False)
 
         context['notes'] = notes
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
@@ -2048,7 +2032,6 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
 
                 allocation_change_obj.allocation.save()
             allocation_change_obj.save()
-
             if allocation_attributes_to_change:
                 attribute_change_list = allocation_change_obj.allocationattributechangerequest_set.all()
                 for attribute_change in attribute_change_list:
@@ -2245,39 +2228,30 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 for error in form.errors:
                     messages.error(request, error)
                 return HttpResponseRedirect(reverse('allocation-change', kwargs={'pk': pk}))
+
             form_data = form.cleaned_data
 
             if form_data.get('end_date_extension') == 0:
                 messages.error(request, 'You must request a change.')
                 return HttpResponseRedirect(reverse('allocation-change', kwargs={'pk': pk}))
 
-        end_date_extension = form_data.get('end_date_extension')
-        justification = form_data.get('justification')
+            end_date_extension = form_data.get('end_date_extension')
+            justification = form_data.get('justification')
+            change_request_status_obj = AllocationChangeStatusChoice.objects.get(
+                name='Pending')
 
-        change_request_status_obj = AllocationChangeStatusChoice.objects.get(
-            name='Pending')
-
-        allocation_change_request_obj = AllocationChangeRequest.objects.create(
-            allocation=allocation_obj,
-            end_date_extension=end_date_extension,
-            justification=justification,
-            status=change_request_status_obj
-            )
-
-        if allocation_attributes_to_change:
-
-            for attribute in attribute_changes_to_make:
-                attribute_change_request_obj = AllocationAttributeChangeRequest.objects.create(
-                    allocation_change_request=allocation_change_request_obj,
-                    allocation_attribute=attribute[0],
-                    new_value=attribute[1]
-                    )
+            allocation_change_request_obj = AllocationChangeRequest.objects.create(
+                allocation=allocation_obj,
+                end_date_extension=end_date_extension,
+                justification=justification,
+                status=change_request_status_obj
+                )
 
         messages.success(
             request, 'Allocation change request successfully submitted.')
 
         pi_name = '{} {} ({})'.format(allocation_obj.project.pi.first_name,
-                                    allocation_obj.project.pi.last_name, allocation_obj.project.pi.username)
+                allocation_obj.project.pi.last_name, allocation_obj.project.pi.username)
         resource_name = allocation_obj.get_parent_resource
         domain_url = get_domain_url(self.request)
         url = '{}{}'.format(domain_url, reverse('allocation-change-list'))
@@ -2288,7 +2262,6 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             send_allocation_admin_email(pi_name, resource_name, url, title, template)
 
         return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
-
 
 
 class AllocationChangeActivateView(LoginRequiredMixin, UserPassesTestMixin, View):

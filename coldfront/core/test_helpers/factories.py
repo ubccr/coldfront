@@ -1,10 +1,8 @@
-# from factory import (
-#     DjangoModelFactory,
-#     SubFactory,
-#     )
+
 from django.contrib.auth import get_user_model
 from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.resource.models import ResourceType
+from coldfront.core.department.models import Department
 from coldfront.core.project.models import Project, ProjectStatusChoice
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.grant.models import GrantFundingAgency, GrantStatusChoice
@@ -30,6 +28,9 @@ class FieldOfScienceFactory(DjangoModelFactory):
     class Meta:
         model = FieldOfScience
 
+class DepartmentFactory(DjangoModelFactory):
+    class Meta:
+        model = Department
 
 class GrantFundingAgencyFactory(DjangoModelFactory):
     class Meta:
