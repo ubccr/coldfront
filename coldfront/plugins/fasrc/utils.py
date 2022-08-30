@@ -43,11 +43,17 @@ class AllTheThingsConn:
         self.headers = generate_headers(self.token)
 
 
-    def pull_quota_data(self):
+    def pull_quota_data(self, volumes=None):
         """Produce JSON file of quota data for LFS and Isilon from AlltheThings.
+        Parameters
+        ----------
+        volumes : List of volume names to collect. Optional, default None.
         """
         result_file = 'coldfront/plugins/fasrc/data/allthethings_output.json'
-        volumes = "|".join([r.name.split("/")[0] for r in Resource.objects.all()])
+        if volumes:
+            volumes = "|".join(volumes)
+        else:
+            volumes = "|".join([r.name.split("/")[0] for r in Resource.objects.all()])
         logger.debug("volumes: %s", volumes)
 
         quota = {"match": "[:HasQuota]-(e:Quota)",
