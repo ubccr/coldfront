@@ -51,12 +51,36 @@ API_LOG_PATH = '{{ log_path }}/{{ api_log_file }}'
 # A list of admin email addresses to CC when certain requests are approved.
 REQUEST_APPROVAL_CC_LIST = {{ request_approval_cc_list }}
 
+#------------------------------------------------------------------------------
+# Billing settings
+#------------------------------------------------------------------------------
+
+{% if (flag_lrc_enabled | bool) and oracle_billing_db_dsn|length %}
+# The class to use for validating billing IDs.
+BILLING_VALIDATOR_BACKEND = 'coldfront.core.billing.utils.validation.backends.oracle.OracleValidatorBackend'
+
+# Credentials for the Oracle billing database.
+ORACLE_BILLING_DB = {
+    'dsn': '{{ oracle_billing_db_dsn }}',
+    'user': '{{ oracle_billing_db_user }}',
+    'password': '{{ oracle_billing_db_passwd }}',
+}
+{% endif %}
+
+#------------------------------------------------------------------------------
+# SSL settings
+#------------------------------------------------------------------------------
+
 # Use a secure cookie for the session cookie (HTTPS only).
 {% if ssl_enabled | bool %}
 SESSION_COOKIE_SECURE = True
 {% else %}
 SESSION_COOKIE_SECURE = False
 {% endif %}
+
+#------------------------------------------------------------------------------
+# Sentry settings
+#------------------------------------------------------------------------------
 
 # Configure Sentry.
 import sentry_sdk

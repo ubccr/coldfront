@@ -69,6 +69,12 @@ program_name_long: "Berkeley Research Computing"
 program_name_short: "BRC"
 primary_cluster_name: "Savio"
 
+# LRC Oracle billing database settings.
+# TODO: For LRC deployments with access to Oracle, set these.
+oracle_billing_db_dsn: ""
+oracle_billing_db_user: ""
+oracle_billing_db_passwd: ""
+
 # The URL of the Sentry instance to send errors to.
 sentry_dsn: ""
 
