@@ -522,20 +522,19 @@ class AllocationListView(LoginRequiredMixin, ListView):
         allocation_search_form = AllocationSearchForm(self.request.GET)
 
         if allocation_search_form.is_valid():
-            context['allocation_search_form'] = allocation_search_form
             data = allocation_search_form.cleaned_data
             filter_parameters = ''
             for key, value in data.items():
                 if value:
                     if isinstance(value, QuerySet):
-                        filter_parameters = ''.join([f'{key}={ele.pk}&' for ele in value])
+                        filter_parameters += ''.join([f'{key}={ele.pk}&' for ele in value])
                     elif hasattr(value, 'pk'):
-                        filter_parameters = '{}={}&'.format(key, value.pk)
+                        filter_parameters += '{}={}&'.format(key, value.pk)
                     else:
-                        filter_parameters = '{}={}&'.format(key, value)
+                        filter_parameters += '{}={}&'.format(key, value)
             context['allocation_search_form'] = allocation_search_form
         else:
-            filter_parameters = ''
+            filter_parameters = None
             context['allocation_search_form'] = AllocationSearchForm()
 
         order_by = self.request.GET.get('order_by')
