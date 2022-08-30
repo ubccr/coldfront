@@ -1,7 +1,7 @@
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.billing.forms import BillingIDValidationForm
-from coldfront.core.billing.models import BillingActivity
+from coldfront.core.billing.utils.queries import get_or_create_billing_activity_from_full_id
 from coldfront.core.project.forms_.new_project_forms.request_forms import ComputingAllowanceForm
 from coldfront.core.project.forms_.new_project_forms.request_forms import SavioProjectAllocationPeriodForm
 from coldfront.core.project.forms_.new_project_forms.request_forms import SavioProjectDetailsForm
@@ -39,6 +39,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.db import IntegrityError
+from django.db import transaction
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.urls import reverse
@@ -240,44 +241,47 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
             computing_allowance_wrapper = ComputingAllowance(
                 computing_allowance)
 
-            allocation_period = self.__get_allocation_period(form_data)
-            pi = self.__handle_pi_data(form_data)
+            with transaction.atomic():
+                allocation_period = self.__get_allocation_period(form_data)
+                pi = self.__handle_pi_data(form_data)
 
-            if computing_allowance_wrapper.is_instructional():
-                self.__handle_ica_allowance(
-                    form_data, computing_allowance_wrapper, request_kwargs)
-            elif computing_allowance_wrapper.is_recharge():
-                self.__handle_recharge_allowance(
-                    form_data, computing_allowance_wrapper, request_kwargs)
+                if computing_allowance_wrapper.is_instructional():
+                    self.__handle_ica_allowance(
+                        form_data, computing_allowance_wrapper, request_kwargs)
+                elif computing_allowance_wrapper.is_recharge():
+                    self.__handle_recharge_allowance(
+                        form_data, computing_allowance_wrapper, request_kwargs)
 
-            pooling_requested = self.__get_pooling_requested(form_data)
-            if pooling_requested:
-                project = self.__handle_pool_with_existing_project(form_data)
-            else:
-                project = self.__handle_create_new_project(form_data)
-                if self.__billing_id_required():
-                    self.__handle_billing_activity(form_data, request_kwargs)
+                pooling_requested = self.__get_pooling_requested(form_data)
+                if pooling_requested:
+                    project = self.__handle_pool_with_existing_project(
+                        form_data)
+                else:
+                    project = self.__handle_create_new_project(form_data)
+                    if self.__billing_id_required():
+                        self.__handle_billing_id(form_data, request_kwargs)
 
-            survey_data = self.__get_survey_data(form_data)
+                survey_data = self.__get_survey_data(form_data)
 
-            # Store transformed form data in a request.
-            # TODO: allocation_type will eventually be removed from the model.
-            computing_allowance_interface = ComputingAllowanceInterface()
-            request_kwargs['allocation_type'] = \
-                computing_allowance_interface.name_short_from_name(
-                    computing_allowance_wrapper.get_name())
-            request_kwargs['computing_allowance'] = computing_allowance
-            request_kwargs['allocation_period'] = allocation_period
-            request_kwargs['pi'] = pi
-            request_kwargs['project'] = project
-            request_kwargs['pool'] = pooling_requested
-            request_kwargs['survey_answers'] = survey_data
-            request_kwargs['status'] = \
-                ProjectAllocationRequestStatusChoice.objects.get(
-                    name='Under Review')
-            request_kwargs['request_time'] = utc_now_offset_aware()
-            request = SavioProjectAllocationRequest.objects.create(
-                **request_kwargs)
+                # Store transformed form data in a request.
+                # TODO: allocation_type will eventually be removed from the
+                # TODO: model.
+                computing_allowance_interface = ComputingAllowanceInterface()
+                request_kwargs['allocation_type'] = \
+                    computing_allowance_interface.name_short_from_name(
+                        computing_allowance_wrapper.get_name())
+                request_kwargs['computing_allowance'] = computing_allowance
+                request_kwargs['allocation_period'] = allocation_period
+                request_kwargs['pi'] = pi
+                request_kwargs['project'] = project
+                request_kwargs['pool'] = pooling_requested
+                request_kwargs['survey_answers'] = survey_data
+                request_kwargs['status'] = \
+                    ProjectAllocationRequestStatusChoice.objects.get(
+                        name='Under Review')
+                request_kwargs['request_time'] = utc_now_offset_aware()
+                request = SavioProjectAllocationRequest.objects.create(
+                    **request_kwargs)
 
             # Send a notification email to admins.
             try:
@@ -423,14 +427,14 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
         step_number = self.step_numbers_by_form_name['survey']
         return form_data[step_number]
 
-    def __handle_billing_activity(self, form_data, request_kwargs):
-        """Store the User-provided BillingActivity in the given
-        dictionary to be used during request creation."""
+    def __handle_billing_id(self, form_data, request_kwargs):
+        """Store the User-provided billing ID in the given dictionary to
+        be used during request creation."""
         step_number = self.step_numbers_by_form_name['billing_id']
         data = form_data[step_number]
-        billing_activity = data['billing_id']
-        assert isinstance(billing_activity, BillingActivity)
-        request_kwargs['billing_activity'] = billing_activity
+        billing_id = data['billing_id']
+        request_kwargs['billing_activity'] = \
+            get_or_create_billing_activity_from_full_id(billing_id)
 
     def __handle_ica_allowance(self, form_data, computing_allowance_wrapper,
                                request_kwargs):
