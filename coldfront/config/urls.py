@@ -8,8 +8,8 @@ from django.views.generic import TemplateView
 
 import coldfront.core.portal.views as portal_views
 
-admin.site.site_header = 'ColdFront Administration'
-admin.site.site_title = 'ColdFront Administration'
+admin.site.site_header = 'RT Projects Administration'
+admin.site.site_title = 'RT Projects Administration'
 
 urlpatterns = [
     path('admin/', admin.site.urls),
