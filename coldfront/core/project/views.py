@@ -720,7 +720,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         else:
             user = User.objects.filter(username=form.instance.pi_username).first()
             if user is None:
-                messages.error(self.request, 'This username does not exist in ColdFront')
+                messages.error(self.request, 'This username does not exist in RT Projects')
                 return super().form_invalid(form)
             user_profile = UserProfile.objects.get(user=user)
             if user_profile.title not in ['Faculty', 'Staff', ]:
