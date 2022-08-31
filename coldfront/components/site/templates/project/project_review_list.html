@@ -39,7 +39,7 @@ Project Review List
               <a href="{% url 'project-activate-request' project_request.pk %}" class="btn btn-success mr-1">Activate</a>
               <a href="{% url 'project-deny-request' project_request.pk %}" class="btn btn-danger mr-1">Deny</a>
               {% if EMAIL_ENABLED %}
-                <a href="{% url 'project-request-email' project_request.pk %}" class="btn btn-info mr-1">Email</a>
+                <!-- <a href="{% url 'project-request-email' project_request.pk %}" class="btn btn-info mr-1">Email</a> -->
               {% endif %}
             </td>
           </tr>
@@ -91,7 +91,7 @@ Project Review List
               <a href="{% url 'project-review-deny' project_review.pk %}" class="btn btn-danger mr-1">Deny</a>
               <a href="{% url 'project-review-info' project_review.pk %}" class="btn btn-info mr-1">Info</a>
               {% if EMAIL_ENABLED %}
-                <a href="{% url 'project-review-email' project_review.pk %}" class="btn btn-info mr-1">Email</a>
+                <!-- <a href="{% url 'project-review-email' project_review.pk %}" class="btn btn-info mr-1">Email</a> -->
               {% endif %}
             </td>
           </tr>
