@@ -55,7 +55,7 @@ REQUEST_APPROVAL_CC_LIST = {{ request_approval_cc_list }}
 # Billing settings
 #------------------------------------------------------------------------------
 
-{% if (flag_lrc_enabled | bool) and oracle_billing_db_dsn|length %}
+{% if (flag_lrc_enabled | bool) and (install_billing_validation_package | bool) and oracle_billing_db_dsn|length %}
 # The class to use for validating billing IDs.
 BILLING_VALIDATOR_BACKEND = 'coldfront.core.billing.utils.validation.backends.oracle.OracleValidatorBackend'
 
