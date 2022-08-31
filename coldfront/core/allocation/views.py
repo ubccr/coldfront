@@ -1974,6 +1974,7 @@ class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
                     'template': 'email/allocation_carbonate_gpu_activated.txt',
                     'template_context': {
                         'help_url': 'radl@iu.edu',
+                        'slurm_account_name': allocation_obj.get_attribute('slurm_account_name')
                     },
                 },
             }
