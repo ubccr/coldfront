@@ -59,9 +59,9 @@ Project Detail
       {% if not project.status.name in 'Archived, Denied, Expired' %}
         <a class="btn btn-success" href="{% url 'project-add-users-search' project.pk %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
         {% if project.type.name != 'Class' %}
-          <a class="btn btn-success" href="{% url 'grant-create' project.id %}" role="button"><i class="fas fa-trophy" aria-hidden="true"></i> Add Grant</a>
+          <!-- <a class="btn btn-success" href="{% url 'grant-create' project.id %}" role="button"><i class="fas fa-trophy" aria-hidden="true"></i> Add Grant</a>
           <a class="btn btn-success" href="{% url 'publication-search' project.pk %}" role="button"><i class="fas fa-newspaper" aria-hidden="true"></i> Add Publication</a>
-          <a class="btn btn-success" href="{% url 'add-research-output' project.pk %}" role="button"><i class="far fa-newspaper" aria-hidden="true"></i> Add Research Output</a>
+          <a class="btn btn-success" href="{% url 'add-research-output' project.pk %}" role="button"><i class="far fa-newspaper" aria-hidden="true"></i> Add Research Output</a> -->
         {% endif %}
       {% endif %}
     </div>
@@ -411,7 +411,7 @@ Project Detail
 
 {% if project.type.name != 'Class' %}
   <!-- Start Project Grants -->
-  <div class="card mb-3">
+  <!-- <div class="card mb-3">
     <div class="card-header">
       <h3 class="d-inline" id="grants"><i class="fas fa-trophy" aria-hidden="true"></i> Grants</h3> <span class="badge badge-secondary">{{grants.count}}</span>
       <div class="float-right">
@@ -460,12 +460,12 @@ Project Detail
         <div class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i> There are no grants to display.</div>
       {% endif %}
     </div>
-  </div>
+  </div> -->
   <!-- End Project Grants -->
 
 
   <!-- Start Project Publications -->
-  <div class="card mb-3">
+  <!-- <div class="card mb-3">
     <div class="card-header">
       <h3 class="d-inline" id="publications"><i class="fas fa-newspaper" aria-hidden="true"></i> Publications</h3> <span class="badge badge-secondary">{{publications.count}}</span>
       <div class="float-right">
@@ -512,12 +512,12 @@ Project Detail
         <div class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i> There are no publications to display.</div>
       {% endif %}
     </div>
-  </div>
+  </div> -->
   <!-- End Project Publications -->
 
 
   <!-- Start Project ResearchOutputs -->
-  <div class="card mb-3">
+  <!-- <div class="card mb-3">
     <div class="card-header">
       <h3 class="d-inline" id="research_outputs"><i class="far fa-newspaper" aria-hidden="true"></i> Research Outputs</h3> <span class="badge badge-secondary">{{ research_outputs.count}}</span>
       <div class="float-right">
@@ -553,7 +553,7 @@ Project Detail
         <div class="alert alert-info" role="alert"><i class="fas fa-info-circle"></i> There are no research outputs to display.</div>
       {% endif %}
     </div>
-  </div>
+  </div> -->
   <!-- End Project ResearchOutputs -->
 {% endif %}
 
