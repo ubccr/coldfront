@@ -69,6 +69,10 @@ program_name_long: "Berkeley Research Computing"
 program_name_short: "BRC"
 primary_cluster_name: "Savio"
 
+# API settings.
+# If true, bypass all checks at job submission time.
+allow_all_jobs: false
+
 # The URL of the Sentry instance to send errors to.
 sentry_dsn: ""
 

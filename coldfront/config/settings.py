@@ -219,7 +219,7 @@ DECIMAL_MAX_PLACES = 2
 ALLOCATION_MIN = Decimal('0.00')
 ALLOCATION_MAX = Decimal('100000000.00')
 
-# Whether or not to allow all jobs, bypassing all checks.
+# Whether to allow all jobs, bypassing all checks at job submission time.
 ALLOW_ALL_JOBS = False
 
 # ------------------------------------------------------------------------------
