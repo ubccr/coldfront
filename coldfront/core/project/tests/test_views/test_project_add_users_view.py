@@ -79,6 +79,7 @@ class TestLRCProjectAddUsersView(TestProjectAddUsersViewMixin, TestBase):
             allocation=self.allocation0,
             value=str(self.billing_activity0.pk))
 
+    @enable_deployment('LRC')
     def test_post_disallowed_if_project_missing_billing_activity(self):
         """Test that, if the Project does not have a default billing ID,
         POST requests are disallowed."""
