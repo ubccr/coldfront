@@ -803,7 +803,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
                 'email/new_project_request.txt',
                 template_context,
                 EMAIL_SENDER,
-                [EMAIL_DIRECTOR_EMAIL_ADDRESS, ],
+                [EMAIL_TICKET_SYSTEM_ADDRESS, ],
             )
 
             if form.instance.pi != form.instance.requestor:
@@ -823,7 +823,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
                     'PI For Project Request',
                     'email/pi_project_request.txt',
                     template_context,
-                    EMAIL_SENDER,
+                    EMAIL_TICKET_SYSTEM_ADDRESS,
                     [project_user_pi_user.user.email, ]
                 )
 
@@ -1811,11 +1811,11 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
             if EMAIL_ENABLED:
                 send_email_template(
-                    'New project review has been submitted',
-                    'email/new_project_review.txt',
+                    'New project renewal has been submitted',
+                    'email/new_project_renewal.txt',
                     {'url': url},
                     EMAIL_SENDER,
-                    [EMAIL_DIRECTOR_EMAIL_ADDRESS, ]
+                    [EMAIL_TICKET_SYSTEM_ADDRESS, ]
                 )
 
             messages.success(request, 'Project review submitted.')
@@ -1906,7 +1906,7 @@ class ProjectActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
                 'Your Project Request Was Approved',
                 'email/project_request_approved.txt',
                 template_context,
-                EMAIL_SENDER,
+                EMAIL_TICKET_SYSTEM_ADDRESS,
                 email_receiver_list
             )
 
@@ -1969,11 +1969,12 @@ class ProjectDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
                 if project_obj.projectuser_set.get(user=project_user.user).enable_notifications:
                     email_receiver_list.append(project_user.user.email)
 
+            # TODO - Change receiver list to only managers
             send_email_template(
                 'Your Project Request Was Denied',
                 'email/project_request_denied.txt',
                 template_context,
-                EMAIL_SENDER,
+                EMAIL_TICKET_SYSTEM_ADDRESS,
                 email_receiver_list
             )
 
@@ -2082,10 +2083,10 @@ class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
                     email_receiver_list.append(project_user.user.email)
 
             send_email_template(
-                'Your Project Review Was Approved',
-                'email/project_review_approved.txt',
+                'Your Project Renewal Was Approved',
+                'email/project_renewal_approved.txt',
                 template_context,
-                EMAIL_SENDER,
+                EMAIL_TICKET_SYSTEM_ADDRESS,
                 email_receiver_list
             )
 
@@ -2153,11 +2154,12 @@ class ProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin, View):
                 if project_obj.projectuser_set.get(user=project_user.user).enable_notifications:
                     email_receiver_list.append(project_user.user.email)
 
+            # TODO - Change receiver list to only managers
             send_email_template(
-                'Your Project Review Was Denied',
-                'email/project_review_denied.txt',
+                'Your Project Renewal Was Denied',
+                'email/project_renewal_denied.txt',
                 template_context,
-                EMAIL_SENDER,
+                EMAIL_TICKET_SYSTEM_ADDRESS,
                 email_receiver_list
             )
 
@@ -2405,7 +2407,7 @@ class ProjectRequestAccessEmailView(LoginRequiredMixin, View):
                     'project_url': project_url,
                     'help_email': 'radl@iu.edu'
                 },
-                EMAIL_SENDER,
+                EMAIL_TICKET_SYSTEM_ADDRESS,
                 [project_obj.pi.email]
             )
             logger.info(

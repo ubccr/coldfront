@@ -333,7 +333,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                         'Allocation Activated',
                         'email/allocation_activated.txt',
                         template_context,
-                        EMAIL_SENDER,
+                        EMAIL_TICKET_SYSTEM_ADDRESS,
                         email_receiver_list
                     )
 
@@ -360,11 +360,12 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                             email_receiver_list.append(
                                 allocation_user.user.email)
 
+                    # TODO - change receiver list to only be managers
                     send_email_template(
                         'Allocation Denied',
                         'email/allocation_denied.txt',
                         template_context,
-                        EMAIL_SENDER,
+                        EMAIL_TICKET_SYSTEM_ADDRESS,
                         email_receiver_list
                     )
 
@@ -1988,7 +1989,7 @@ class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
                 'Allocation Activated',
                 email_template,
                 template_context,
-                EMAIL_SENDER,
+                EMAIL_TICKET_SYSTEM_ADDRESS,
                 email_receiver_list
             )
 
@@ -2079,11 +2080,12 @@ class AllocationDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
                 if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
                     email_receiver_list.append(allocation_user.user.email)
 
+            # TODO - Change receiver list to only managers
             send_email_template(
                 'Allocation Denied',
                 'email/allocation_denied.txt',
                 template_context,
-                EMAIL_SENDER,
+                EMAIL_TICKET_SYSTEM_ADDRESS,
                 email_receiver_list
             )
         if 'request-list' in request.path:
@@ -3443,6 +3445,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                         allocation_change_obj.allocation.save()
 
                         allocation_change_obj.save()
+                        # Add slate-project logic hear if needed.
 
                         for entry in formset:
                             formset_data = entry.cleaned_data
@@ -3495,7 +3498,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                                 'Allocation Change Approved',
                                 'email/allocation_change_approved.txt',
                                 template_context,
-                                EMAIL_SENDER,
+                                EMAIL_TICKET_SYSTEM_ADDRESS,
                                 email_receiver_list
                             )
 
@@ -3557,7 +3560,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                                     'Allocation Change Approved',
                                     'email/allocation_change_approved.txt',
                                     template_context,
-                                    EMAIL_SENDER,
+                                    EMAIL_TICKET_SYSTEM_ADDRESS,
                                     email_receiver_list
                                 )
 
@@ -3620,11 +3623,12 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                         if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
                             email_receiver_list.append(allocation_user.user.email)
 
+                    # TODO - Change receiver list to only managers
                     send_email_template(
                         'Allocation Change Denied',
                         'email/allocation_change_denied.txt',
                         template_context,
-                        EMAIL_SENDER,
+                        EMAIL_TICKET_SYSTEM_ADDRESS,
                         email_receiver_list
                     )
                 return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
@@ -4050,6 +4054,23 @@ class AllocationChangeActivateView(LoginRequiredMixin, UserPassesTestMixin, View
             attribute_change.allocation_attribute.value = attribute_change.new_value
             attribute_change.allocation_attribute.save()
 
+        # If the resource requires payment set the allocations status to payment pending.
+        # allocation_obj = allocation_change_obj.allocation
+        # resource_obj = allocation_obj.get_parent_resource
+        # print('activated')
+        # if resource_obj.requires_payment:
+        #     print('requires payment')
+        #     if resource_obj.name == 'Slate-Project':
+        #         allocation_attribute_obj = AllocationAttribute.get(
+        #             allocation_attribute_type__name='Storage Quota(TB)'
+        #         )
+        #         print('Slate-project')
+        #         if allocation_attribute_obj.value > 15:
+        #             allocation_obj.status = AllocationStatusChoice.objects.get(
+        #                 name='Payment Pending'
+        #             )
+        #             print('payment pending')
+
         messages.success(request, 'Allocation change request to {} has been APPROVED for {} {} ({})'.format(
             allocation_change_obj.allocation.get_parent_resource,
             allocation_change_obj.allocation.project.pi.first_name,
@@ -4086,7 +4107,7 @@ class AllocationChangeActivateView(LoginRequiredMixin, UserPassesTestMixin, View
                 'Allocation Change Approved',
                 'email/allocation_change_approved.txt',
                 template_context,
-                EMAIL_SENDER,
+                EMAIL_TICKET_SYSTEM_ADDRESS,
                 email_receiver_list
             )
 
@@ -4165,11 +4186,12 @@ class AllocationChangeDenyView(LoginRequiredMixin, UserPassesTestMixin, View):
                 if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
                     email_receiver_list.append(allocation_user.user.email)
 
+            # TODO - Change receiver list to managers only
             send_email_template(
                 'Allocation Change Denied',
                 'email/allocation_change_denied.txt',
                 template_context,
-                EMAIL_SENDER,
+                EMAIL_TICKET_SYSTEM_ADDRESS,
                 email_receiver_list
             )
         return HttpResponseRedirect(reverse('allocation-change-list'))
