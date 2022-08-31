@@ -40,7 +40,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
             <th scope="row">Email:</th>
             <td>{{viewed_user.email}}</td>
           </tr>
-          <tr>
+          <!-- <tr>
             <th scope="row">PI Status:</th>
             <td>
               {% if viewed_user.userprofile.is_pi %}
@@ -59,7 +59,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
                 </form>
               {% endif %}
             </td>
-          </tr>
+          </tr> -->
           {% if statistics.slate_quota > 0 %}
             <tr>
               <th scope="row">Slate-Project Allocated Storage Quota:</th>
