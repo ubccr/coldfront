@@ -796,7 +796,8 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
             project_review_url = reverse('project-review-list')
             template_context = {
                 'url': '{}{}'.format(domain_url, project_review_url),
-                'signature': EMAIL_SIGNATURE
+                'project_title': project_obj.title,
+                'project_id': project_obj.pk
             }
             send_email_template(
                 'New Project Request',
@@ -1813,7 +1814,11 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 send_email_template(
                     'New project renewal has been submitted',
                     'email/new_project_renewal.txt',
-                    {'url': url},
+                    {
+                        'url': url,
+                        'project_title': project_obj.title,
+                        'project_id': project_obj.pk
+                    },
                     EMAIL_SENDER,
                     [EMAIL_TICKET_SYSTEM_ADDRESS, ]
                 )

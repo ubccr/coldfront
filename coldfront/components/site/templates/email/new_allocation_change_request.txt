@@ -1,0 +1,2 @@
+An allocation change request in project "{{project_title}}" with id {{project_id}} has been made for {{pi}} - {{resource}}. Please review the change request:
+{{url}}

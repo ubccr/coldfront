@@ -7,9 +7,9 @@ Allocations not renewed:
 {{ url }}
 {% endfor %}
 {% endif %}
-If you have any questions please email us at {{ help_email }}
+We will be in touch to follow up with you about this, if we haven't already. 
 
-This is an unmonitored email, replies to this email will not be seen.
+If you have any questions please email us at {{ help_email }}
 
 Thank you,
 {{signature}}

@@ -1,0 +1,8 @@
+Dear {{center_name}} user,
+
+Your allocation change request for {{resource}} has been denied.
+
+We will be in touch to follow up with you about this, if we haven't already.
+
+Thank you,
+{{signature}}

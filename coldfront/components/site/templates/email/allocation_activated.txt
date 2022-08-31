@@ -1,0 +1,8 @@
+Dear {{center_name}} user,
+
+Your allocation request for {{resource}} has been activated. You now have access to this resource.
+
+To view your allocations information, please go to {{allocation_url}}
+
+Thank you,
+{{signature}}

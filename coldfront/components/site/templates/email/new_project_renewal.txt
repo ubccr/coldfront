@@ -1,2 +1,2 @@
-A new project review has been submitted.  Please review at your earliest convenience:
+Project "{{project_title}}" with id {{project_id}} has a new renewal request.  Please review at your earliest convenience:
 {{url}}

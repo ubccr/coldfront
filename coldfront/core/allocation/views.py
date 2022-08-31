@@ -1194,6 +1194,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         if EMAIL_ENABLED:
             template_context = {
+                'project_title': project_obj.title,
+                'project_id': project_obj.pk,
                 'pi': pi_name,
                 'resource': resource_name,
                 'url': url
@@ -2258,8 +2260,12 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
             url = '{}{}'.format(domain_url, reverse(
                 'allocation-request-list'))
 
+            project_obj = allocation_obj.project
+
             if EMAIL_ENABLED:
                 template_context = {
+                    'project_title': project_obj.title,
+                    'project_id': project_obj.pk,
                     'pi': pi_name,
                     'resource': resource_name,
                     'url': url
@@ -3904,8 +3910,12 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                     domain_url = get_domain_url(self.request)
                     url = '{}{}'.format(domain_url, reverse('allocation-change-list'))
 
+                    project_obj = allocation_obj.project
+
                     if EMAIL_ENABLED:
                         template_context = {
+                            'project_title': project_obj.title,
+                            'project_id': project_obj.pk,
                             'pi': pi_name,
                             'resource': resource_name,
                             'url': url

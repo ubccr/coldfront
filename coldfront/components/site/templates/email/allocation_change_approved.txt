@@ -1,0 +1,8 @@
+Dear {{center_name}} user,
+
+Your allocation change request for {{resource}} has been approved. The requested changes are now active.
+
+To view your allocation's information, please go to {{allocation_url}}
+
+Thank you,
+{{signature}}
