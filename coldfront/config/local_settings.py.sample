@@ -51,10 +51,10 @@ LBL_BILLING_ID_REGEX = "^\d{6}-\d{3}$"
 #------------------------------------------------------------------------------
 # General Center Information
 #------------------------------------------------------------------------------
-CENTER_NAME = 'BRC HPC Resources'
-CENTER_USER_GUIDE = 'https://docs-research-it.berkeley.edu/services/high-performance-computing/user-guide/'
-CENTER_LOGIN_GUIDE = 'https://docs-research-it.berkeley.edu/services/high-performance-computing/user-guide/logging-brc-clusters/#Logging-in'
-CENTER_HELP_EMAIL = 'brc-hpc-help@berkeley.edu'
+CENTER_NAME = 'HPC Resources'
+CENTER_USER_GUIDE = ''
+CENTER_LOGIN_GUIDE = ''
+CENTER_HELP_EMAIL = ''
 
 CENTER_BASE_URL = 'https://localhost'
 CENTER_HELP_URL = CENTER_BASE_URL + '/help'

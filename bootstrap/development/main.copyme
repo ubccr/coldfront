@@ -68,6 +68,12 @@ portal_name: "MyBRC"
 program_name_long: "Berkeley Research Computing"
 program_name_short: "BRC"
 primary_cluster_name: "Savio"
+# TODO: For MyLRC, use "https://it.lbl.gov/resource/hpc/for-users/".
+center_user_guide: "https://docs-research-it.berkeley.edu/services/high-performance-computing/user-guide/"
+# TODO: For MyLRC, use "https://it.lbl.gov/resource/hpc/for-users/getting-started/".
+center_login_guide: "https://docs-research-it.berkeley.edu/services/high-performance-computing/user-guide/logging-brc-clusters/#Logging-in"
+# TODO: For MyLRC, use "hpcshelp@lbl.gov".
+center_help_email: "brc-hpc-help@berkeley.edu"
 
 # The URL of the Sentry instance to send errors to.
 sentry_dsn: ""
