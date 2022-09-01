@@ -57,7 +57,8 @@ class Command(BaseCommand):
             orgs_added_to_departments.append(org.id)
             # connect department to subdepartment or to project
             if child_id in orgs_added_to_departments:
-                child_dept = Department.objects.get(pk=child_id)
+                child_org = Organization.objects.get(pk=child_id) 
+                child_dept = Department.objects.get(name=child_org.name)
                 child_dept.parent = department
                 child_dept.save()
             else:
