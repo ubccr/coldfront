@@ -63,7 +63,8 @@ from coldfront.core.allocation.signals import (allocation_activate,
                                                allocation_remove_user,
                                                allocation_change_approved,)
 from coldfront.core.project.models import (Project, ProjectUser,
-                                           ProjectUserStatusChoice)
+                                           ProjectUserStatusChoice,
+                                           ProjectUserRoleChoice)
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email_template, get_email_recipient_from_groups
@@ -355,12 +356,20 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                     }
 
                     email_receiver_list = []
-                    for allocation_user in allocation_users:
-                        if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
-                            email_receiver_list.append(
-                                allocation_user.user.email)
+                    project_managers = allocation_obj.project.projectuser_set.filter(
+                        role=ProjectUserRoleChoice.objects.get(name='Manager')
+                    ).exclude(status__name__in=['Removed', 'Denied'])
+                    for project_manager in project_managers:
+                        for allocation_user in allocation_users:
+                            if project_manager.user == allocation_user.user:
+                                email_receiver_list.append(allocation_user.user.email)
+                                break
 
-                    # TODO - change receiver list to only be managers
+                    # for allocation_user in allocation_users:
+                    #     if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
+                    #         email_receiver_list.append(
+                    #             allocation_user.user.email)
+
                     send_email_template(
                         'Allocation Denied',
                         'email/allocation_denied.txt',
@@ -2079,11 +2088,19 @@ class AllocationDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
             }
 
             email_receiver_list = []
-            for allocation_user in allocation_users:
-                if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
-                    email_receiver_list.append(allocation_user.user.email)
+            project_managers = allocation_obj.project.projectuser_set.filter(
+                role=ProjectUserRoleChoice.objects.get(name='Manager')
+            ).exclude(status__name__in=['Removed', 'Denied'])
+            for project_manager in project_managers:
+                for allocation_user in allocation_users:
+                    if project_manager.user == allocation_user.user:
+                        email_receiver_list.append(allocation_user.user.email)
+                        break
 
-            # TODO - Change receiver list to only managers
+            # for allocation_user in allocation_users:
+            #     if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
+            #         email_receiver_list.append(allocation_user.user.email)
+
             send_email_template(
                 'Allocation Denied',
                 'email/allocation_denied.txt',
@@ -3624,13 +3641,21 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                     }
 
                     email_receiver_list = []
-                    for allocation_user in allocation_change_obj.allocation.allocationuser_set.exclude(status__name__in=['Removed', 'Error']):
-                        allocation_remove_user.send(
-                                    sender=self.__class__, allocation_user_pk=allocation_user.pk)
-                        if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
-                            email_receiver_list.append(allocation_user.user.email)
+                    project_managers = allocation_obj.project.projectuser_set.filter(
+                        role=ProjectUserRoleChoice.objects.get(name='Manager')
+                    ).exclude(status__name__in=['Removed', 'Denied'])
+                    for project_manager in project_managers:
+                        for allocation_user in allocation_change_obj.allocation.allocationuser_set.exclude(status__name__in=['Removed', 'Error']):
+                            if project_manager.user == allocation_user.user:
+                                email_receiver_list.append(allocation_user.user.email)
+                                break
 
-                    # TODO - Change receiver list to only managers
+                    # for allocation_user in allocation_change_obj.allocation.allocationuser_set.exclude(status__name__in=['Removed', 'Error']):
+                    #     allocation_remove_user.send(
+                    #                 sender=self.__class__, allocation_user_pk=allocation_user.pk)
+                    #     if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
+                    #         email_receiver_list.append(allocation_user.user.email)
+
                     send_email_template(
                         'Allocation Change Denied',
                         'email/allocation_change_denied.txt',
@@ -4191,13 +4216,21 @@ class AllocationChangeDenyView(LoginRequiredMixin, UserPassesTestMixin, View):
             }
 
             email_receiver_list = []
-            for allocation_user in allocation_change_obj.allocation.allocationuser_set.exclude(status__name__in=['Removed', 'Error']):
-                allocation_remove_user.send(
-                            sender=self.__class__, allocation_user_pk=allocation_user.pk)
-                if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
-                    email_receiver_list.append(allocation_user.user.email)
+            project_managers = allocation_change_obj.allocation.project.projectuser_set.filter(
+                role=ProjectUserRoleChoice.objects.get(name='Manager')
+            ).exclude(status__name__in=['Removed', 'Denied'])
+            for project_manager in project_managers:
+                for allocation_user in allocation_change_obj.allocation.allocationuser_set.exclude(status__name__in=['Removed', 'Error']):
+                    if project_manager.user == allocation_user.user:
+                        email_receiver_list.append(allocation_user.user.email)
+                        break
 
-            # TODO - Change receiver list to managers only
+            # for allocation_user in allocation_change_obj.allocation.allocationuser_set.exclude(status__name__in=['Removed', 'Error']):
+            #     allocation_remove_user.send(
+            #                 sender=self.__class__, allocation_user_pk=allocation_user.pk)
+            #     if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
+            #         email_receiver_list.append(allocation_user.user.email)
+
             send_email_template(
                 'Allocation Change Denied',
                 'email/allocation_change_denied.txt',

@@ -1970,11 +1970,16 @@ class ProjectDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
             }
 
             email_receiver_list = []
-            for project_user in project_obj.projectuser_set.exclude(status__name__in=['Removed', 'Denied']):
-                if project_obj.projectuser_set.get(user=project_user.user).enable_notifications:
-                    email_receiver_list.append(project_user.user.email)
+            project_managers = project_obj.projectuser_set.filter(
+                role=ProjectUserRoleChoice.objects.get(name='Manager')
+            ).exclude(status__name__in=['Removed', 'Denied'])
+            for project_manager in project_managers:
+                email_receiver_list.append(project_manager.user.email)
 
-            # TODO - Change receiver list to only managers
+            # for project_user in project_obj.projectuser_set.exclude(status__name__in=['Removed', 'Denied']):
+            #     if project_obj.projectuser_set.get(user=project_user.user).enable_notifications:
+            #         email_receiver_list.append(project_user.user.email)
+
             send_email_template(
                 'Your Project Request Was Denied',
                 'email/project_request_denied.txt',
@@ -2155,11 +2160,16 @@ class ProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin, View):
             }
 
             email_receiver_list = []
-            for project_user in project_obj.projectuser_set.exclude(status__name__in=['Removed', 'Denied']):
-                if project_obj.projectuser_set.get(user=project_user.user).enable_notifications:
-                    email_receiver_list.append(project_user.user.email)
+            project_managers = project_obj.projectuser_set.filter(
+                role=ProjectUserRoleChoice.objects.get(name='Manager')
+            ).exclude(status__name__in=['Removed', 'Denied'])
+            for project_manager in project_managers:
+                email_receiver_list.append(project_manager.user.email)
 
-            # TODO - Change receiver list to only managers
+            # for project_user in project_obj.projectuser_set.exclude(status__name__in=['Removed', 'Denied']):
+            #     if project_obj.projectuser_set.get(user=project_user.user).enable_notifications:
+            #         email_receiver_list.append(project_user.user.email)
+
             send_email_template(
                 'Your Project Renewal Was Denied',
                 'email/project_renewal_denied.txt',
