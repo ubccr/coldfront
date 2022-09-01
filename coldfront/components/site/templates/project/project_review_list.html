@@ -22,7 +22,7 @@ Project Review List
           <th scope="col">PI</th>
           <th scope="col">Requestor</th>
           <th scope="col">Type</th>
-          <th scope="col">Private</th>
+          <!-- <th scope="col">Private</th> -->
           <th scope="col">Project Review Actions</th>
         </tr>
       </thead>
@@ -34,7 +34,7 @@ Project Review List
             <td>{{ project_request.pi.first_name }} {{project_request.pi.last_name}} ({{ project_request.pi.username }})</td>
             <td>{{ project_request.requestor.first_name }} {{ project_request.requestor.last_name }} ({{ project_request.requestor.username }})</td>
             <td>{{ project_request.type.name }}</td>
-            <td>{{ project_request.private }}</td>
+            <!-- <td>{{ project_request.private }}</td> -->
             <td class="no-textwrap">
               <a href="{% url 'project-activate-request' project_request.pk %}" class="btn btn-success mr-1">Activate</a>
               <a href="{% url 'project-deny-request' project_request.pk %}" class="btn btn-danger mr-1">Deny</a>
