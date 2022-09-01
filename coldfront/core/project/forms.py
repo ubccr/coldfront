@@ -138,6 +138,7 @@ class ProjectAttributeAddForm(forms.ModelForm):
 class ProjectAttributeDeleteForm(forms.Form):
     pk = forms.IntegerField(required=False, disabled=True)
     name = forms.CharField(max_length=150, required=False, disabled=True)
+    attr_type = forms.CharField(max_length=150, required=False, disabled=True)
     value = forms.CharField(max_length=150, required=False, disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
 
@@ -164,21 +165,6 @@ class ProjectAttributeDeleteForm(forms.Form):
 #             proj_attr.clean()
 
 
-# class ProjectAttributeUpdateForm(forms.Form):
-#     change_pk = forms.IntegerField(required=False, disabled=True)
-#     attribute_pk = forms.IntegerField(required=False, disabled=True)
-#     name = forms.CharField(max_length=150, required=False, disabled=True)
-#     value = forms.CharField(max_length=150, required=False, disabled=True)
-#     new_value = forms.CharField(max_length=150, required=False, disabled=False)
-
-#     def __init__(self, *args, **kwargs):
-#         super().__init__(*args, **kwargs)
-#         self.fields['change_pk'].widget = forms.HiddenInput()
-#         self.fields['attribute_pk'].widget = forms.HiddenInput()
-
-#     def clean(self):
-#         cleaned_data = super().clean()
-#         proj_attr = ProjectAttribute.objects.get(pk=cleaned_data.get('attribute_pk'))
-
-#         proj_attr.value = cleaned_data.get('new_value')
-#         proj_attr.clean()
+class ProjectAttributeUpdateForm(forms.Form):
+    new_value = forms.CharField(max_length=150, required=False, disabled=False)
+    

@@ -151,67 +151,6 @@ Project Detail
 </div>
 <!-- End Project Users -->
 
-<!-- Start Project Attributes -->
-<div class="card mb-3">
-  <div class="card-header">
-    <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Attributes</h3> <span class="badge badge-secondary">{{attributes.count}}</span>
-    <div class="float-right">
-      {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
-        <a class="btn btn-success" href="{% url 'project-attribute-create' project.pk %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add Attribute</a>
-        {% if attributes %}
-          <a class="btn btn-danger" href="{% url 'project-attribute-delete' project.pk %}" role="button"><i class="fas fa-minus" aria-hidden="true"></i> Delete Attributes</a>
-        {% endif %}
-      {% endif %}
-    </div>
-  </div>
-  <div class="card-body">
-    {% if attributes %}
-      <div class="table-responsive">
-        <table id="attribute_table" class="table table-hover">
-          <thead>
-            <tr>
-              <th scope="col">Attribute Type</th>
-              <th scope="col">Attribute Value</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for attribute in attributes %}
-                {% if attribute.proj_attr_type.is_private %}
-                  <tr style="background-color:#eee">
-                    <td><i class="fas fa-lock" aria-hidden="true"></i> {{attribute}}</td>
-                    <td>{{attribute.value}}</td>
-                  </tr>
-                {% else %}
-                  <tr>
-                    <td>{{attribute}}</td>
-                    <td>
-                      {{attribute.value}}
-                    </td>
-                  </tr>
-                {% endif %}
-              {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      {% if attributes_with_usage %}
-      <hr>
-      {% for attribute in attributes_with_usage %}
-        <div class="card mb-3 mr-1">
-          <div class="card-body">
-            <h4 class="card-title">{{attribute}}</h4>
-            <div id="gauge-{{forloop.counter0}}"></div>
-          </div>
-        </div>
-      {% endfor %}
-      {% endif %}
-    {% else %}
-      <div class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i> There are no attributes to display.</div>
-    {% endif %}
-  </div>
-</div>
-
-<!-- End Project Attributes -->
-
 <!-- Start Project Allocations -->
 <div class="card mb-3">
   <div class="card-header">
@@ -282,6 +221,71 @@ Project Detail
   </div>
 </div>
 <!-- End Project Allocations -->
+
+
+<!-- Start Project Attributes -->
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Attributes</h3> <span class="badge badge-secondary">{{attributes.count}}</span>
+    <div class="float-right">
+      {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
+        <a class="btn btn-success" href="{% url 'project-attribute-create' project.pk %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add Attribute</a>
+        {% if attributes %}
+          <a class="btn btn-danger" href="{% url 'project-attribute-delete' project.pk %}" role="button"><i class="fas fa-minus" aria-hidden="true"></i> Delete Attributes</a>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+  <div class="card-body">
+    {% if attributes %}
+      <div class="table-responsive">
+        <table id="attribute_table" class="table table-hover">
+          <thead>
+            <tr>
+              <th scope="col">Attribute Type</th>
+              <th scope="col">Attribute Value</th>
+              <th scope="col" class="nosort">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for attribute in attributes %}
+                {% if attribute.proj_attr_type.is_private %}
+                  <tr style="background-color:#eee">
+                    <td><i class="fas fa-lock" aria-hidden="true"></i> {{attribute}}</td>
+                    <td>{{attribute.value}}</td>
+                    <td><a href="{% url 'project-attribute-update' project.pk attribute.pk %}"><i class="far fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
+                  </tr>
+                {% else %}
+                  <tr>
+                    <td>{{attribute}}</td>
+                    <td>
+                      {{attribute.value}}
+                    </td>
+                    <td><a href="{% url 'project-attribute-update' project.pk attribute.pk %}"><i class="far fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
+                  </tr>
+                {% endif %}
+              {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if attributes_with_usage %}
+      <hr>
+      {% for attribute in attributes_with_usage %}
+        <div class="card mb-3 mr-1">
+          <div class="card-body">
+            <h4 class="card-title">{{attribute}}</h4>
+            <div id="gauge-{{forloop.counter0}}"></div>
+          </div>
+        </div>
+      {% endfor %}
+      {% endif %}
+    {% else %}
+      <div class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i> There are no attributes to display.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- End Project Attributes -->
 
 
 <!-- Start Project Grants -->

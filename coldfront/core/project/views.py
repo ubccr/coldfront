@@ -42,7 +42,8 @@ from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectReviewEmailForm,
                                           ProjectReviewForm,
                                           ProjectSearchForm,
-                                          ProjectUserUpdateForm)
+                                          ProjectUserUpdateForm,
+                                          ProjectAttributeUpdateForm)
 from coldfront.core.project.models import (Project,
                                            ProjectAttribute,
                                            ProjectReview,
@@ -113,7 +114,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         pk = self.kwargs.get('pk')
         project_obj = get_object_or_404(Project, pk=pk)
 
-        if self.request.user.is_superuser or project_user.role.name == 'Manager':
+        if self.request.user.is_superuser:
             attributes_with_usage = [attribute for attribute in project_obj.projectattribute_set.all(
             ).order_by('proj_attr_type__name') if hasattr(attribute, 'projectattributeusage')]
 
@@ -1329,6 +1330,7 @@ class ProjectAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Templa
 
                     proj_attr = ProjectAttribute.objects.get(
                         pk=form_data['pk'])
+
                     proj_attr.delete()
 
             messages.success(request, 'Deleted {} attributes from project.'.format(
@@ -1338,3 +1340,66 @@ class ProjectAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Templa
                 messages.error(request, error)
 
         return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': pk}))
+
+class ProjectAttributeUpdateView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name = 'project/project_attribute_update.html'
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+
+        if self.request.user.is_superuser:
+            return True
+
+        if project_obj.pi == self.request.user:
+            return True
+
+        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+            return True
+
+    def get(self, request, *args, **kwargs):
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+        project_attribute_pk = self.kwargs.get('project_attribute_pk')
+       
+
+        if project_obj.projectattribute_set.filter(pk=project_attribute_pk).exists():
+            project_attribute_obj = project_obj.projectattribute_set.get(
+                pk=project_attribute_pk)
+
+            project_attribute_update_form = ProjectAttributeUpdateForm(
+                initial={'name': project_attribute_obj, 'value': project_attribute_obj.value, 'type' : project_attribute_obj.proj_attr_type})
+
+            context = {}
+            context['project_obj'] = project_obj
+            context['project_attribute_update_form'] = project_attribute_update_form
+            context['project_attribute_obj'] = project_attribute_obj
+
+            return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+        project_attribute_pk = self.kwargs.get('project_attribute_pk')
+
+        if project_obj.projectattribute_set.filter(pk=project_attribute_pk).exists():
+            project_attribute_obj = project_obj.projectattribute_set.get(
+                pk=project_attribute_pk)
+
+            if project_obj.status.name not in ['Active', 'New', ]:
+                messages.error(
+                    request, 'You cannot update an attribute in an archived project.')
+                return HttpResponseRedirect(reverse('project-attribute-update', kwargs={'pk': project_obj.pk, 'project_attribute_pk': project_attribute_obj.pk}))
+
+            project_attribute_update_form = ProjectAttributeUpdateForm(request.POST, initial={'new_value': project_attribute_obj.value,})
+
+            if project_attribute_update_form.is_valid():
+                form_data = project_attribute_update_form.cleaned_data
+                old_value =project_attribute_obj.value
+                project_attribute_obj.value = form_data.get(
+                    'new_value')
+                project_attribute_obj.clean()
+                project_attribute_obj.save()
+
+                
+
+                messages.success(request, 'Attribute Updated.')
+                return HttpResponseRedirect(reverse('project-attribute-update', kwargs={'pk': project_obj.pk, 'project_attribute_pk': project_attribute_obj.pk}))

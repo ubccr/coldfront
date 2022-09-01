@@ -18,6 +18,7 @@ urlpatterns = [
     path('<int:pk>/review/', project_views.ProjectReviewView.as_view(), name='project-review'),
     path('<int:pk>/project-attribute-create/', project_views.ProjectAttributeCreateView.as_view(), name='project-attribute-create'),
     path('<int:pk>/project-attribute-delete/', project_views.ProjectAttributeDeleteView.as_view(), name='project-attribute-delete'),
+    path('<int:pk>/project-attribute-update/<int:project_attribute_pk>', project_views.ProjectAttributeUpdateView.as_view(), name='project-attribute-update'),
     path('project-review-list', project_views.ProjectReviewListView.as_view(),name='project-review-list'),
     path('project-review-complete/<int:project_review_pk>/', project_views.ProjectReviewCompleteView.as_view(),
          name='project-review-complete'),
