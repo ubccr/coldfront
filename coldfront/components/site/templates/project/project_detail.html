@@ -167,7 +167,7 @@ Project Detail
               </a>
             </th>
             <th scope="col">Status</th>
-            <th scope="col"><input type="checkbox" class="check" id="selectAll" style="margin-right: 5px;"> Enable Notifications <a href="#" title="Enable Notifications" data-toggle="popover" data-trigger="hover" data-content="When disabled, user will not receive notifications for allocation requests and expirations or cloud usage (if applicable)."><i class="fas fa-info-circle" aria-hidden="true"></i><span class="sr-only">When disabled, user will not receive notifications for allocation requests and expirations or cloud usage (if applicable).</span></a></th>
+            <!-- <th scope="col"><input type="checkbox" class="check" id="selectAll" style="margin-right: 5px;"> Enable Notifications <a href="#" title="Enable Notifications" data-toggle="popover" data-trigger="hover" data-content="When disabled, user will not receive notifications for allocation requests and expirations or cloud usage (if applicable)."><i class="fas fa-info-circle" aria-hidden="true"></i><span class="sr-only">When disabled, user will not receive notifications for allocation requests and expirations or cloud usage (if applicable).</span></a></th> -->
             <th scope="col">Actions</th>
           </tr>
         </thead>
@@ -183,7 +183,7 @@ Project Detail
               {% else %}
                 <td class="text-info">{{ user.status.name }}</td>
               {% endif %}
-              <td>
+              <!-- <td>
                 {% if is_allowed_to_update_project %}
                   <input type="checkbox"
                   id="email_notifications_for_user_id_{{user.id}}"
@@ -206,7 +206,7 @@ Project Detail
                   {% if user.enable_notifications %} checked {% endif %}
                   disabled>
                 {% endif %}
-              </td>
+              </td> -->
               <td>
                 {% if is_allowed_to_update_project %}
                   <a href="{% url 'project-user-detail' project.pk user.id %}"><i class="fas fa-user-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a>

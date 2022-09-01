@@ -56,19 +56,19 @@ Project User Detail
                 {{project_user_obj.role}}
               </td>
             </tr>
-            <tr>
+            <!-- <tr>
               <th scope="row">Notifications Enabled:</th>
               <td>{{project_user_obj.enable_notifications|yesno:"Yes,No"}}</td>
-            </tr>
+            </tr> -->
           {% else %}
             <tr>
               <th scope="row">Role:</th>
               <td>{{project_user_update_form.role}}</td>
             </tr>
-            <tr>
+            <!-- <tr>
               <th scope="row">Enable Notifications:</th>
               <td>{{project_user_update_form.enable_notifications}}</td>
-            </tr>
+            </tr> -->
           {% endif %}
         </table>
       </div>
