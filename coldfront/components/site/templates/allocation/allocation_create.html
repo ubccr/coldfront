@@ -16,9 +16,7 @@ Request New Allocation
 <p class="text-justify">The following {% settings_value 'CENTER_NAME' %}
   resources are available to request for this project. If you need access to
   more than one of these, please submit a separate allocation request for each
-  resource. For each request you must fill out all required the fields and  
-  provide the justification for how you intend to use the resource to further 
-  the research goals of your project.</p>
+  resource. For each request you must fill out all required the fields.</p>
 
 <form method="post" class="bootstrap">
   {% crispy form %}
@@ -88,6 +86,8 @@ Request New Allocation
 
   $(document).ready(function () {
     moveRadioSelectErrors();
+
+    $('#div_id_justification').hide();
 
     $('#id_data_manager').change(function () {
       checkDataManager();

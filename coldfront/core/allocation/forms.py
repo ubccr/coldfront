@@ -154,6 +154,7 @@ class AllocationForm(forms.Form):
             self.fields['allocation_account'].widget = forms.HiddenInput()
 
         self.fields['justification'].help_text = '<br/>Justification for requesting this allocation.'
+        self.fields['justification'].initial = 'No additional information needed at this time.'
         self.fields['start_date'].help_text = 'Format: mm/dd/yyyy'
         self.fields['end_date'].help_text = 'Format: mm/dd/yyyy'
         self.fields['account_number'].help_text = 'Format: 00-000-00'
