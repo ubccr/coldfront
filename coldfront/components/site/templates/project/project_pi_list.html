@@ -8,7 +8,6 @@
     {% for project in pi_projects %}
       <li class="list-group-item">
         <p><strong>Title:</strong> {{ project.title }}</p>
-        <p><strong>Description:</strong> {{ project.description }}</p>
         <p>
           <strong>Principal Investigator:</strong> {{ project.pi.first_name }} {{ project.pi.last_name }} ({{ project.pi.username }})
         </p>
