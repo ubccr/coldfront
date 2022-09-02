@@ -5,7 +5,7 @@ from django.test import TestCase, Client
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth import get_user_model
 
-from coldfront.core.test_helpers import test_utils
+from coldfront.core.test_helpers import utils
 from coldfront.core.allocation.models import (Allocation,
                                 AllocationAttribute,
                                 AllocationChangeRequest)
@@ -45,7 +45,7 @@ class AllocationListViewTest(TestCase):
         """Confirm that allocation-list renders correctly
         """
         # no login means redirect
-        test_utils.test_redirect_to_login(self, "/allocation/")
+        utils.test_redirect_to_login(self, "/allocation/")
 
         response = self.client.get("/allocation/")
         self.client.force_login(self.user2, backend="django.contrib.auth.backends.ModelBackend")
@@ -120,7 +120,7 @@ class AllocationDetailViewTest(TestCase):
         self.c.force_login(user, backend="django.contrib.auth.backends.ModelBackend")
 
     def test_allocation_detail_access(self):
-        test_utils.test_redirect_to_login(self, "/allocation/1/")
+        utils.test_redirect_to_login(self, "/allocation/1/")
 
     def test_allocation_detail_template_value_render(self):
         """Confirm that quota_tb and usage_tb are correctly rendered in the generated

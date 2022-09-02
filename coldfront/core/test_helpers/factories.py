@@ -2,8 +2,8 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
 
-from factory.django import DjangoModelFactory
 from factory import SubFactory
+from factory.django import DjangoModelFactory
 
 from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.resource.models import ResourceType

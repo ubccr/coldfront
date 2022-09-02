@@ -166,13 +166,13 @@ Project Detail
           <!-- where is project_users coming from?
           it's coming from views.py under class ProjectDetailView; rendered project_user object -->
           <!-- project_user is giving out userid -->
-          {% for user in project_users %} 
+          {% for user in project_users %}
             <tr>
               <td>{{ user.user.username }}</td>
               <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
               <td>{{ user.user.email }}</td>
               <td>{{ user.role.name }}</td>
-              
+
 
               {% if user.status.name == 'Active' %}
                 <td class="text-success">{{ user.status.name }}</td>
@@ -180,7 +180,7 @@ Project Detail
                 <td class="text-info">{{ user.status.name }}</td>
               {% endif %}
 
-            
+
 
               <td>
                 {% if is_allowed_to_update_project %}

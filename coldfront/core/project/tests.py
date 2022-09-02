@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.test import TestCase, Client
 
-from coldfront.core.test_helpers import test_utils
+from coldfront.core.test_helpers import utils
 from coldfront.core.test_helpers.factories import (
     FieldOfScienceFactory,
     ProjectStatusChoiceFactory,
@@ -32,10 +32,10 @@ class ProjectListViewTest(TestCase):
     def test_project_list_access(self):
         """Test project list access controls."""
         # If not logged in, can't see page; redirect to login page.
-        test_utils.test_redirect_to_login(self, "/project/")
+        utils.test_redirect_to_login(self, "/project/")
 
         # after login, user and admin can access list page
-        test_utils.test_user_can_access(self, self.admin_user, "/project/")
+        utils.test_user_can_access(self, self.admin_user, "/project/")
 
 
     def test_project_list_search_pagination(self):
