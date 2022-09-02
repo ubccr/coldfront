@@ -78,6 +78,7 @@ INSTALLED_APPS += [
     'coldfront.core.publication',
     'coldfront.core.research_output',
     'coldfront.plugins.ifx',
+    'coldfront.core.test_helpers'
 ]
 
 #------------------------------------------------------------------------------
