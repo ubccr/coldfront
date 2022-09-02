@@ -159,6 +159,7 @@ def send_expiry_emails():
         template_context = {
             'center_name': CENTER_NAME,
             'allocation_type': resource_name,
+            'allocation_renew_url': allocation_renew_url,
             'project_renewal_help_url': CENTER_PROJECT_RENEWAL_HELP_URL,
             'project_url': project_url,
             'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL,
