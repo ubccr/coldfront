@@ -149,7 +149,8 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['mailto'] = 'mailto:' + \
             ','.join([user.user.email for user in project_users])
 
-        if self.request.user.is_superuser or self.request.user.has_perm('allocation.can_view_all_allocations'):
+        is_pi = self.request.user == self.object.pi
+        if self.request.user.is_superuser or is_pi or self.request.user.has_perm('allocation.can_view_all_allocations'):
             free_allocations = Allocation.objects.prefetch_related(
                 'resources'
             ).filter(
