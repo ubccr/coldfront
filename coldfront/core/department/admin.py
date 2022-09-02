@@ -2,29 +2,18 @@
 from django.contrib import admin
 from simple_history.admin import SimpleHistoryAdmin
 
-from coldfront.core.department.models import (
-                                            Department,
-                                            DepartmentRank,
-                                            DepartmentMember,
-                                            DepartmentMemberRole,
-                                            DepartmentMemberStatus,
-                                            DepartmentProject,
-                                                )
+from coldfront.core.department.models import Department, DepartmentMember, DepartmentProject
 
 
-class DepartmentProjectInline(admin.TabularInline):
-    model = DepartmentProject
-    extra = 0
-    fields = ('project',)
-
+MEMBER_FIELD = 'user'
+DEPARTMENT_FIELD = 'organization'
+STATUS_FIELD = 'active'
 
 @admin.register(Department)
 class DepartmentAdmin(SimpleHistoryAdmin):
     readonly_fields_change = ('created', 'modified')
-    fields_change = ('name', 'rank', 'biller', 'created', 'modified')#, 'projects')
-    list_display = ('pk', 'name', 'rank', 'biller', 'created', 'modified' )
-    inlines = [#DepartmentMemberInline,
-               DepartmentProjectInline]
+    fields_change = ('name', 'rank', 'biller')
+    list_display = ('pk', 'name', 'rank', 'biller' )
     search_fields = ('name', 'rank', 'biller')
 
 
@@ -44,36 +33,15 @@ class DepartmentAdmin(SimpleHistoryAdmin):
         return super().get_inline_instances(request)
 
 
-@admin.register(DepartmentRank)
-class DepartmentRankAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'name')
-
-
-@admin.register(DepartmentMemberRole)
-class DepartmentMemberRoleAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'name')
-
-
-@admin.register(DepartmentMemberStatus)
-class DepartmentMemberStatusAdmin(admin.ModelAdmin):
-    list_display = ('name',)
-
 
 @admin.register(DepartmentMember)
 class DepartmentMemberAdmin(SimpleHistoryAdmin):
     readonly_fields_change = ('created', 'modified')
-    fields_change = ('member', 'department', 'role', 'status', 'enable_notifications',
-                                                        'created', 'modified')
-    list_display = ('pk', 'member', 'department', 'status', 'enable_notifications',
-                    'created', 'modified')
-    list_filter = ('department__name', 'status', 'enable_notifications')
-    search_fields = (
-        'member__first_name',
-        'member__last_name',
-        'member__username',
-        'department__name'
-    )
-    raw_id_fields = ('department', 'member', )
+    fields_change = ( MEMBER_FIELD, DEPARTMENT_FIELD, 'role', STATUS_FIELD)
+    list_display = ('pk',  MEMBER_FIELD,  DEPARTMENT_FIELD,  STATUS_FIELD)
+    list_filter = ( DEPARTMENT_FIELD, STATUS_FIELD)
+    search_fields = ( MEMBER_FIELD, DEPARTMENT_FIELD)
+    raw_id_fields = ( DEPARTMENT_FIELD, MEMBER_FIELD, )
 
     def get_fields(self, request, obj):
         if obj is None:
@@ -95,6 +63,5 @@ class DepartmentMemberAdmin(SimpleHistoryAdmin):
 @admin.register(DepartmentProject)
 class DepartmentProjectAdmin(SimpleHistoryAdmin):
     readonly_fields_change = ('created', 'modified')
-    # fields_change = ('department', 'project')
-    list_display = ('department', 'project', 'created', 'modified')
-    list_filter = ('department', )
+    list_display = ( DEPARTMENT_FIELD, 'project')
+    list_filter = ( DEPARTMENT_FIELD, )

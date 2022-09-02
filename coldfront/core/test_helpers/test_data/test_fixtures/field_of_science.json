@@ -40,6 +40,19 @@
     "fos_nsf_abbrev": "",
     "directorate_fos_id": 1
   }
+},
+{
+  "model": "field_of_science.fieldofscience",
+  "pk": 4,
+  "fields": {
+    "created": "2022-02-22T16:06:36.340Z",
+    "modified": "2022-02-22T16:06:36.346Z",
+    "parent_id": 1,
+    "is_selectable": true,
+    "description": "Computational Chemistry",
+    "fos_nsf_id": 4,
+    "fos_nsf_abbrev": "",
+    "directorate_fos_id": 1
+  }
 }
 ]
-
