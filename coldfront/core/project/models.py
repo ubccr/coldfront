@@ -1,6 +1,4 @@
 import datetime
-import textwrap
-
 
 from django.core.exceptions import ValidationError
 from django.core.validators import MinLengthValidator

@@ -1,0 +1,91 @@
+[
+   {
+      "model":"ifxuser.ifxuser",
+      "pk":20,
+      "fields":{
+         "password":"commons",
+         "last_login":null,
+         "is_superuser":false,
+         "ifxid":"",
+         "full_name":"Elinor Ostrom",
+         "hkeymail":null,
+         "primary_affiliation":10,
+         "username":"eostrom",
+         "first_name":"Elinor",
+         "last_name":"Ostrom",
+         "email":"",
+         "is_staff":false,
+         "is_active":true,
+         "date_joined":"2022-02-23T19:16:15.865Z",
+         "last_update":"2022-02-23T19:16:15.881Z",
+         "groups":[
+
+         ],
+         "user_permissions":[
+
+         ]
+      }
+   },
+   {
+      "model":"ifxuser.organization",
+      "pk":3,
+      "fields":{
+         "name":"School of Maths and Sciences",
+         "rank":"school",
+         "org_tree": "Harvard"
+      }
+   },
+   {
+      "model":"ifxuser.organization",
+      "pk":4,
+      "fields":{
+         "name":"Computational Chemistry",
+         "rank":"department",
+         "org_tree": "Harvard"
+      }
+   },
+   {
+      "model":"ifxuser.orgrelation",
+      "pk":1,
+      "fields":{
+         "parent":3,
+         "child":1
+      }
+   },
+   {
+      "model":"ifxuser.orgrelation",
+      "pk":2,
+      "fields":{
+         "parent":3,
+         "child":2
+      }
+   },
+   {
+      "model":"ifxuser.orgrelation",
+      "pk":3,
+      "fields":{
+         "parent":4,
+         "child": 58
+      }
+   },
+   {
+      "model":"ifxuser.useraffiliation",
+      "pk":31,
+      "fields":{
+         "user":20,
+         "organization":3,
+         "role":"approver",
+         "active": true
+      }
+   },
+   {
+      "model":"ifxuser.useraffiliation",
+      "pk":32,
+      "fields":{
+         "user":3,
+         "organization":3,
+         "role":"user",
+         "active": true
+      }
+   }
+]

@@ -1,6 +1,8 @@
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from django.test import TestCase
+from django.test import TestCase, Client
 
+from coldfront.core.test_helpers import utils
 from coldfront.core.test_helpers.factories import (
     FieldOfScienceFactory,
     ProjectStatusChoiceFactory,
@@ -8,6 +10,43 @@ from coldfront.core.test_helpers.factories import (
 )
 
 from coldfront.core.project.models import Project
+
+FIXTURES = [
+            "coldfront/core/test_helpers/test_data/test_fixtures/resources.json",
+            "coldfront/core/test_helpers/test_data/test_fixtures/poisson_fixtures.json",
+            "coldfront/core/test_helpers/test_data/test_fixtures/admin_fixtures.json",
+            "coldfront/core/test_helpers/test_data/test_fixtures/all_res_choices.json",
+            "coldfront/core/test_helpers/test_data/test_fixtures/field_of_science.json",
+            "coldfront/core/test_helpers/test_data/test_fixtures/project_choices.json",
+            ]
+
+class ProjectListViewTest(TestCase):
+    """tests for projectlist view"""
+    fixtures = FIXTURES
+
+    def setUp(self):
+        self.admin_user = get_user_model().objects.get(username='gvanrossum')
+        self.client = Client()
+
+
+    def test_project_list_access(self):
+        """Test project list access controls."""
+        # If not logged in, can't see page; redirect to login page.
+        utils.test_redirect_to_login(self, "/project/")
+
+        # after login, user and admin can access list page
+        utils.test_user_can_access(self, self.admin_user, "/project/")
+
+
+    def test_project_list_search_pagination(self):
+        """confirm that navigation to next page of search works as expected"""
+        self.client.force_login(self.admin_user, backend="django.contrib.auth.backends.ModelBackend")
+        response = self.client.get("/project/?last_name=&username=&field_of_science=SEAS&show_all_projects=on")
+        # print(response.context)
+
+
+
+
 
 class TestProject(TestCase):
     class Data:
@@ -30,9 +69,9 @@ class TestProject(TestCase):
                 'status': status,
                 'force_review': True
             }
-            
+
             self.unsaved_object = Project(**self.initial_fields)
-    
+
     def setUp(self):
         self.data = self.Data()
 
@@ -52,7 +91,7 @@ class TestProject(TestCase):
                 saved_value = getattr(retrieved_project, field)
                 self.assertEqual(initial_value, saved_value)
         self.assertEqual(project_obj, retrieved_project)
-    
+
     def test_title_maxlength(self):
         expected_maximum_length = 255
         maximum_title = 'x' * expected_maximum_length
@@ -141,4 +180,3 @@ class TestProject(TestCase):
         with self.assertRaises(Project.DoesNotExist):
             Project.objects.get(pk=project_obj.pk)
         self.assertEqual(0, len(Project.objects.all()))
-

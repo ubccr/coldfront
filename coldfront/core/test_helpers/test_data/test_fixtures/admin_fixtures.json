@@ -23,6 +23,29 @@
     }
   },
   {
+    "model": "ifxuser.ifxuser",
+    "pk": 11,
+    "fields": {
+      "password": "clojure",
+      "last_login": null,
+      "is_superuser": true,
+      "ifxid": "",
+      "full_name": "Rich Hickey",
+      "hkeymail": null,
+      "primary_affiliation": 10,
+      "username": "rhickey",
+      "first_name": "Rich",
+      "last_name": "Hickey",
+      "email": "",
+      "is_staff": true,
+      "is_active": true,
+      "date_joined": "2022-02-23T19:16:15.865Z",
+      "last_update": "2022-02-23T19:16:15.881Z",
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
     "model": "ifxuser.organization",
     "pk": 10,
     "fields": {
