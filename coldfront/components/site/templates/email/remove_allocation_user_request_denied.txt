@@ -1,10 +1,8 @@
-Hello,
+Dear {{center_name}} user,
 
 Your request to remove user {{ user }} from allocation {{ allocation }} in project {{ project }} was denied.
 Allocation URL:
 {{ url }}
-
-This is an unmonitored email, replies to this email will not be seen.
 
 Thank you
 {{ signature }}

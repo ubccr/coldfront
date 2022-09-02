@@ -1,14 +1,14 @@
+Dear {{ center_name }} user,
+
 User {{user.first_name}} {{user.last_name}} ({{user.email}}) has requested to join
 your project {{project_title}} at {{project_url}}. If you would like to add them
 then please visit your project's page, click on 'add users', and type their username
 into the text box.
 
 This user was able to send this request by searching for projects you are a PI in
-via your username. If you do not want this please edit your project info at
-{{project_edit_url}} and update your project to 'private' status.
+via your username.
 
 If you have any questions please email us at {{help_email}}.
 
-This is an unmonitored email, replies to this email will not be seen.
-
-Thank you
+Thank you,
+{{signature}}

@@ -69,7 +69,7 @@ def send_expiry_emails():
                 'expring_in_days': days_remaining,
                 'allocation_renew_url': allocation_renew_url,
                 'project_renewal_help_url': CENTER_PROJECT_RENEWAL_HELP_URL,
-                'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL,
+                'help_email': EMAIL_TICKET_SYSTEM_ADDRESS,
                 'signature': EMAIL_SIGNATURE
 
             }
@@ -114,7 +114,7 @@ def send_expiry_emails():
             'expring_in_days': days_remaining,
             'allocation_renew_url': allocation_renew_url,
             'project_renewal_help_url': CENTER_PROJECT_RENEWAL_HELP_URL,
-            'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL,
+            'help_email': EMAIL_TICKET_SYSTEM_ADDRESS,
             'signature': EMAIL_SIGNATURE
 
         }
@@ -163,7 +163,7 @@ def send_expiry_emails():
             'allocation_renew_url': allocation_renew_url,
             'project_renewal_help_url': CENTER_PROJECT_RENEWAL_HELP_URL,
             'project_url': project_url,
-            'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL,
+            'help_email': EMAIL_TICKET_SYSTEM_ADDRESS,
             'signature': EMAIL_SIGNATURE
         }
 

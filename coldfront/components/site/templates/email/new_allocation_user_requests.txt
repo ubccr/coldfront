@@ -1,11 +1,4 @@
-Hello,
-
 There are new allocation user requests for a {{ resource }} resource:
 {% for user in users %}{{ user }}
 {% endfor %}
 Please visit {{ url }} at your earliest convenience.
-
-This is an unmonitored email, replies to this email will not be seen.
-
-Thank you
-{{ signature }}

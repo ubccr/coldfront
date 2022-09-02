@@ -816,7 +816,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
                     'requestor_last_name': form.instance.requestor.last_name,
                     'requestor_username': form.instance.requestor.username,
                     'project_url': '{}{}'.format(domain_url, project_url),
-                    'help_email': 'radl@iu.edu',
+                    'help_email': EMAIL_TICKET_SYSTEM_ADDRESS,
                     'signature': EMAIL_SIGNATURE
                 }
 
@@ -1898,8 +1898,7 @@ class ProjectActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
                 'project_url': project_url,
                 'signature': EMAIL_SIGNATURE,
                 'help_email': EMAIL_TICKET_SYSTEM_ADDRESS,
-                'center_name': EMAIL_CENTER_NAME,
-                'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL
+                'center_name': EMAIL_CENTER_NAME
             }
 
             email_receiver_list = []
@@ -2083,8 +2082,7 @@ class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
                 'signature': EMAIL_SIGNATURE,
                 'help_email': EMAIL_TICKET_SYSTEM_ADDRESS,
                 'center_name': EMAIL_CENTER_NAME,
-                'renewed_allocation_urls': renewed_allocation_urls,
-                'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL
+                'renewed_allocation_urls': renewed_allocation_urls
             }
 
             email_receiver_list = []
@@ -2156,7 +2154,8 @@ class ProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin, View):
                 'signature': EMAIL_SIGNATURE,
                 'help_email': EMAIL_TICKET_SYSTEM_ADDRESS,
                 'center_name': EMAIL_CENTER_NAME,
-                'not_renewed_allocation_urls': not_renewed_allocation_urls
+                'not_renewed_allocation_urls': not_renewed_allocation_urls,
+                'signature': EMAIL_SIGNATURE
             }
 
             email_receiver_list = []
@@ -2409,7 +2408,6 @@ class ProjectRequestAccessEmailView(LoginRequiredMixin, View):
 
         domain_url = get_domain_url(self.request)
         project_url = '{}{}'.format(domain_url, reverse('project-detail', kwargs={'pk': project_obj.pk}))
-        project_edit_url = '{}{}'.format(domain_url, reverse('project-update', kwargs={'pk': project_obj.pk}))
 
         if EMAIL_ENABLED:
             send_email_template(
@@ -2418,9 +2416,9 @@ class ProjectRequestAccessEmailView(LoginRequiredMixin, View):
                 {
                     'user': request.user,
                     'project_title': project_obj.title,
-                    'project_edit_url': project_edit_url,
                     'project_url': project_url,
-                    'help_email': 'radl@iu.edu'
+                    'help_email': EMAIL_TICKET_SYSTEM_ADDRESS,
+                    'signature': EMAIL_SIGNATURE
                 },
                 EMAIL_TICKET_SYSTEM_ADDRESS,
                 [project_obj.pi.email]

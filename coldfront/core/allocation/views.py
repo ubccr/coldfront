@@ -320,8 +320,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                         'center_name': EMAIL_CENTER_NAME,
                         'resource': resource_name,
                         'allocation_url': allocation_url,
-                        'signature': EMAIL_SIGNATURE,
-                        'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL
+                        'signature': EMAIL_SIGNATURE
                     }
 
                     email_receiver_list = []
@@ -351,8 +350,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                         'center_name': EMAIL_CENTER_NAME,
                         'resource': resource_name,
                         'allocation_url': allocation_url,
-                        'signature': EMAIL_SIGNATURE,
-                        'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL
+                        'signature': EMAIL_SIGNATURE
                     }
 
                     email_receiver_list = []
@@ -1968,21 +1966,14 @@ class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
                 'center_name': EMAIL_CENTER_NAME,
                 'resource': resource_name,
                 'allocation_url': allocation_url,
-                'signature': EMAIL_SIGNATURE,
-                'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL
+                'signature': EMAIL_SIGNATURE
             }
 
             resource_email_template_lookup_table = {
-                'Carbonate DL': {
-                    'template': 'email/allocation_carbonate_dl_activated.txt',
-                    'template_context': {
-                        'help_url': 'radl@iu.edu',
-                    },
-                },
                 'Carbonate GPU': {
                     'template': 'email/allocation_carbonate_gpu_activated.txt',
                     'template_context': {
-                        'help_url': 'radl@iu.edu',
+                        'help_url': EMAIL_TICKET_SYSTEM_ADDRESS,
                         'slurm_account_name': allocation_obj.get_attribute('slurm_account_name')
                     },
                 },
@@ -2083,8 +2074,7 @@ class AllocationDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
                 'center_name': EMAIL_CENTER_NAME,
                 'resource': resource_name,
                 'allocation_url': allocation_url,
-                'signature': EMAIL_SIGNATURE,
-                'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL
+                'signature': EMAIL_SIGNATURE
             }
 
             email_receiver_list = []
@@ -3150,10 +3140,12 @@ class AllocationUserApproveRequestView(LoginRequiredMixin, UserPassesTestMixin, 
                 'allocation-detail', kwargs={'pk': allocation_user.allocation.pk})
             )
             template_context = {
+                'center_name': EMAIL_CENTER_NAME,
                 'user': allocation_user.user.username,
                 'project': allocation_user.allocation.project.title,
                 'allocation': allocation_user.allocation.get_parent_resource,
                 'url': url,
+                'signature': EMAIL_SIGNATURE
             }
 
             if action == 'Add':
@@ -3166,7 +3158,7 @@ class AllocationUserApproveRequestView(LoginRequiredMixin, UserPassesTestMixin, 
                     'Add User Request Approved',
                     'email/add_allocation_user_request_approved.txt',
                     template_context,
-                    EMAIL_SENDER,
+                    EMAIL_TICKET_SYSTEM_ADDRESS,
                     email_receiver_list
                 )
             else:
@@ -3178,7 +3170,7 @@ class AllocationUserApproveRequestView(LoginRequiredMixin, UserPassesTestMixin, 
                     'Remove User Request Approved',
                     'email/remove_allocation_user_request_approved.txt',
                     template_context,
-                    EMAIL_SENDER,
+                    EMAIL_TICKET_SYSTEM_ADDRESS,
                     email_receiver_list
                 )
 
@@ -3246,10 +3238,12 @@ class AllocationUserDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
                 'allocation-detail', kwargs={'pk': allocation_user.allocation.pk})
             )
             template_context = {
+                'center_name': EMAIL_CENTER_NAME,
                 'user': allocation_user.user.username,
                 'project': allocation_user.allocation.project.title,
                 'allocation': allocation_user.allocation.get_parent_resource,
                 'url': url,
+                'signature': EMAIL_SIGNATURE
             }
 
             if action == 'Add':
@@ -3261,7 +3255,7 @@ class AllocationUserDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
                     'Add User Request Denied',
                     'email/add_allocation_user_request_denied.txt',
                     template_context,
-                    EMAIL_SENDER,
+                    EMAIL_TICKET_SYSTEM_ADDRESS,
                     email_receiver_list
                 )
             else:
@@ -3273,7 +3267,7 @@ class AllocationUserDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
                     'Remove User Request Denied',
                     'email/remove_allocation_user_request_denied.txt',
                     template_context,
-                    EMAIL_SENDER,
+                    EMAIL_TICKET_SYSTEM_ADDRESS,
                     email_receiver_list
                 )
 
@@ -3510,7 +3504,6 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                                 'resource': resource_name,
                                 'allocation_url': allocation_url,
                                 'signature': EMAIL_SIGNATURE,
-                                'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL
                             }
 
                             email_receiver_list = []
@@ -3571,8 +3564,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                                     'center_name': EMAIL_CENTER_NAME,
                                     'resource': resource_name,
                                     'allocation_url': allocation_url,
-                                    'signature': EMAIL_SIGNATURE,
-                                    'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL
+                                    'signature': EMAIL_SIGNATURE
                                 }
 
                                 email_receiver_list = []
@@ -3636,8 +3628,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                         'center_name': EMAIL_CENTER_NAME,
                         'resource': resource_name,
                         'allocation_url': allocation_url,
-                        'signature': EMAIL_SIGNATURE,
-                        'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL
+                        'signature': EMAIL_SIGNATURE
                     }
 
                     email_receiver_list = []
@@ -4003,6 +3994,8 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
                     if EMAIL_ENABLED:
                         template_context = {
+                            'project_title': project_obj.title,
+                            'project_id': project_obj.pk,
                             'pi': pi_name,
                             'resource': resource_name,
                             'url': url
@@ -4129,8 +4122,7 @@ class AllocationChangeActivateView(LoginRequiredMixin, UserPassesTestMixin, View
                 'center_name': EMAIL_CENTER_NAME,
                 'resource': resource_name,
                 'allocation_url': allocation_url,
-                'signature': EMAIL_SIGNATURE,
-                'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL
+                'signature': EMAIL_SIGNATURE
             }
 
             email_receiver_list = []
@@ -4211,8 +4203,7 @@ class AllocationChangeDenyView(LoginRequiredMixin, UserPassesTestMixin, View):
                 'center_name': EMAIL_CENTER_NAME,
                 'resource': resource_name,
                 'allocation_url': allocation_url,
-                'signature': EMAIL_SIGNATURE,
-                'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL
+                'signature': EMAIL_SIGNATURE
             }
 
             email_receiver_list = []
