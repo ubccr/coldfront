@@ -9,12 +9,9 @@ its resource.
 Only project PIs and managers are able to submit a project review. For more information about project reviews,
 visit our knowledge base: {{ project_renewal_help_url }}
 
-If you are a student or collaborator under this project, you are receiving this notice as a courtesy. If you would like
-to opt out of future notifications, instructions can be found here: {{ opt_out_instruction_url }}
+If you are a student or collaborator under this project, you are receiving this notice as a courtesy.
 
 If you have any questions please email us at {{ help_email }}
-
-This is an unmonitored email, replies to this email will not be seen.
 
 Thank you,
 {{ signature }}
