@@ -1367,7 +1367,7 @@ class ProjectAttributeUpdateView(LoginRequiredMixin, UserPassesTestMixin, Templa
                 pk=project_attribute_pk)
 
             project_attribute_update_form = ProjectAttributeUpdateForm(
-                initial={'name': project_attribute_obj, 'value': project_attribute_obj.value, 'type' : project_attribute_obj.proj_attr_type})
+                initial={'pk': self.kwargs.get('project_attribute_pk'),'name': project_attribute_obj, 'value': project_attribute_obj.value, 'type' : project_attribute_obj.proj_attr_type})
 
             context = {}
             context['project_obj'] = project_obj
@@ -1389,17 +1389,13 @@ class ProjectAttributeUpdateView(LoginRequiredMixin, UserPassesTestMixin, Templa
                     request, 'You cannot update an attribute in an archived project.')
                 return HttpResponseRedirect(reverse('project-attribute-update', kwargs={'pk': project_obj.pk, 'project_attribute_pk': project_attribute_obj.pk}))
 
-            project_attribute_update_form = ProjectAttributeUpdateForm(request.POST, initial={'new_value': project_attribute_obj.value,})
+            project_attribute_update_form = ProjectAttributeUpdateForm(request.POST, initial={'pk': self.kwargs.get('project_attribute_pk'),})
 
             if project_attribute_update_form.is_valid():
                 form_data = project_attribute_update_form.cleaned_data
-                old_value =project_attribute_obj.value
                 project_attribute_obj.value = form_data.get(
-                    'new_value')
-                project_attribute_obj.clean()
+                     'new_value')
                 project_attribute_obj.save()
-
-                
 
                 messages.success(request, 'Attribute Updated.')
                 return HttpResponseRedirect(reverse('project-attribute-update', kwargs={'pk': project_obj.pk, 'project_attribute_pk': project_attribute_obj.pk}))

@@ -166,5 +166,18 @@ class ProjectAttributeDeleteForm(forms.Form):
 
 
 class ProjectAttributeUpdateForm(forms.Form):
+    pk = forms.IntegerField(required=False, disabled=True)
     new_value = forms.CharField(max_length=150, required=False, disabled=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['pk'].widget = forms.HiddenInput()
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        if cleaned_data.get('new_value') != "":
+            proj_attr = ProjectAttribute.objects.get(pk=cleaned_data.get('pk'))
+            proj_attr.value = cleaned_data.get('new_value')
+            proj_attr.clean()
     
