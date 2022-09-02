@@ -21,6 +21,7 @@ EMAIL_OPT_OUT_INSTRUCTION_URL = import_from_settings(
 EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
 EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS = import_from_settings(
     'EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS', [7, ])
+EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
 
 
 def update_statuses():
@@ -85,7 +86,7 @@ def send_expiry_emails():
             send_email_template('Allocation to {} expiring in {} days'.format(resource_name, days_remaining),
                                 'email/allocation_expiring.txt',
                                 template_context,
-                                EMAIL_SENDER,
+                                EMAIL_TICKET_SYSTEM_ADDRESS,
                                 email_receiver_list
                                 )
 
@@ -130,7 +131,7 @@ def send_expiry_emails():
         send_email_template('Allocation to {} expiring in {} days'.format(resource_name, days_remaining),
                             'email/allocation_expiring.txt',
                             template_context,
-                            EMAIL_SENDER,
+                            EMAIL_TICKET_SYSTEM_ADDRESS,
                             email_receiver_list
                             )
 
@@ -178,7 +179,7 @@ def send_expiry_emails():
         send_email_template('Allocation to {} has expired'.format(resource_name),
                             'email/allocation_expired.txt',
                             template_context,
-                            EMAIL_SENDER,
+                            EMAIL_TICKET_SYSTEM_ADDRESS,
                             email_receiver_list
                             )
 

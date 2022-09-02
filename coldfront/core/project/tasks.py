@@ -21,6 +21,7 @@ if EMAIL_ENABLED:
     EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
     EMAIL_PROJECT_EXPIRING_NOTIFICATION_DAYS = import_from_settings(
         'EMAIL_PROJECT_EXPIRING_NOTIFICATION_DAYS', [7, ])
+    EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
 
 
 def update_statuses():
@@ -66,7 +67,7 @@ def send_expiry_emails():
                     'Project {} Expiring In {} Days'.format(project_obj.title, days_remaining),
                     'email/project_expiring.txt',
                     template_context,
-                    EMAIL_SENDER,
+                    EMAIL_TICKET_SYSTEM_ADDRESS,
                     email_receiver_list
                 )
 
@@ -100,7 +101,7 @@ def send_expiry_emails():
                 'Project {} Expires Today'.format(project_obj.title),
                 'email/project_expires_today.txt',
                 template_context,
-                EMAIL_SENDER,
+                EMAIL_TICKET_SYSTEM_ADDRESS,
                 email_receiver_list
             )
 
