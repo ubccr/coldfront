@@ -1,4 +1,7 @@
 """Functions for testing the same basic principle across different applications"""
+def login_and_get_page(client, user, page):
+    client.force_login(user, backend="django.contrib.auth.backends.ModelBackend")
+    return client.get(page)
 
 def test_redirect_to_login(test_case, page):
     """
@@ -30,9 +33,5 @@ def test_user_can_access(test_case, user, page):
     page : str
         must begin and end with a slash.
     """
-    test_case.client.force_login(
-                            user,
-                            backend="django.contrib.auth.backends.ModelBackend"
-                            )
-    response = test_case.client.get(page)
+    response = login_and_get_page(test_case.client, user, page)
     test_case.assertEqual(response.status_code, 200)

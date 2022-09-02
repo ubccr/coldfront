@@ -51,6 +51,14 @@
     }
   },
   {
+     "model":"ifx.projectorganization",
+     "pk":2,
+     "fields":{
+        "organization":2,
+        "project":2
+     }
+  },
+  {
     "model": "allocation.allocation",
     "pk": 2,
     "fields": {

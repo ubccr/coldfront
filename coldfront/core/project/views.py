@@ -234,7 +234,6 @@ class ProjectListView(LoginRequiredMixin, ListView):
 
         project_search_form = ProjectSearchForm(self.request.GET)
         if project_search_form.is_valid():
-            context['project_search_form'] = project_search_form
             data = project_search_form.cleaned_data
             filter_parameters = ''
             for key, value in data.items():

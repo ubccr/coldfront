@@ -82,6 +82,14 @@
     }
   },
   {
+     "model":"ifx.projectorganization",
+     "pk":1,
+     "fields":{
+        "organization":1,
+        "project":1
+     }
+  },
+  {
     "model": "project.projectuser",
     "pk": 1,
     "fields": {
@@ -208,4 +216,3 @@
     }
   }
 ]
-
