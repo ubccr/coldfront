@@ -10,7 +10,6 @@ from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.conf import settings
 from ifxuser.models import Organization, OrgRelation, UserAffiliation
-from coldfront.plugins.ifx.models import ProjectOrganization
 from coldfront.core.utils.fasrc import get_resource_rate
 from coldfront.core.allocation.models import (Allocation, AllocationUser,
                                             AllocationAttribute)
@@ -250,8 +249,6 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     def post(self, request, *args, **kwargs):
         """activated if the Department is updated"""
         pk = self.kwargs.get('pk')
-        department = get_object_or_404(Department, pk=pk)
-
         # initial_data = {
         #     'status': self.department.status,
         # }

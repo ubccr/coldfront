@@ -1,0 +1,163 @@
+[
+  {
+    "model": "ifxuser.ifxuser",
+    "pk": 6,
+    "fields": {
+      "password": "",
+      "last_login": null,
+      "is_superuser": false,
+      "ifxid": "",
+      "full_name": "Walter Kohn",
+      "hkeymail": null,
+      "primary_affiliation": 58,
+      "username": "wkohn",
+      "first_name": "Walter",
+      "last_name": "Kohn",
+      "email": "",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2022-02-23T19:16:15.865Z",
+      "last_update": "2022-02-23T19:16:15.881Z",
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "ifxuser.ifxuser",
+    "pk": 7,
+    "fields": {
+      "password": "",
+      "last_login": null,
+      "is_superuser": false,
+      "ifxid": "",
+      "full_name": "John Pople",
+      "hkeymail": null,
+      "primary_affiliation": 58,
+      "username": "jpople",
+      "first_name": "John",
+      "last_name": "Pople",
+      "email": "",
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2022-02-23T19:16:15.865Z",
+      "last_update": "2022-02-23T19:16:15.881Z",
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "ifxuser.organization",
+    "pk": 58,
+    "fields": {
+      "ifxorg": "uppo",
+      "name": "Kohn Lab",
+      "rank": "lab",
+      "org_tree": "Harvard",
+      "slug": "Kohn Lab (not a Harvard Laboratory)",
+      "code": null,
+      "application_key": null
+    }
+  },
+  {
+     "model":"ifx.projectorganization",
+     "pk": 8,
+     "fields":{
+        "organization": 58,
+        "project": 58
+     }
+  },
+  {
+    "model": "project.project",
+    "pk": 58,
+    "fields": {
+      "created": "2021-04-01T14:00:00Z",
+      "modified": "2021-08-20T22:01:15.213Z",
+      "title": "kohn_lab",
+      "pi": 2,
+      "description": "Storage allocation for kohn_lab",
+      "field_of_science": 3,
+      "status": 1,
+      "force_review": false,
+      "requires_review": true
+    }
+  },
+  {
+    "model": "project.projectuser",
+    "pk": 100,
+    "fields": {
+      "created": "2022-02-22T16:09:16.835Z",
+      "modified": "2021-12-07T16:50:52.364Z",
+      "user": 6,
+      "project": 58,
+      "role": 2,
+      "status": 1,
+      "enable_notifications": false
+    }
+  },
+  {
+    "model": "project.projectuser",
+    "pk": 101,
+    "fields": {
+      "created": "2022-02-22T16:09:16.835Z",
+      "modified": "2021-12-07T16:50:52.364Z",
+      "user": 7,
+      "project": 58,
+      "role": 1,
+      "status": 1,
+      "enable_notifications": false
+    }
+  },
+  {
+    "model": "allocation.allocation",
+    "pk": 58,
+    "fields": {
+      "created": "2021-07-23T18:05:14.342Z",
+      "modified": "2021-10-05T14:38:53.103Z",
+      "project": 58,
+      "status": 1,
+      "quantity": 1,
+      "start_date": "2021-07-23",
+      "end_date": "2022-07-23",
+      "justification": "Allocation Information for kohn_lab",
+      "description": null,
+      "is_locked": false,
+      "resources": [
+        1
+      ]
+    }
+  },
+  {
+    "model": "allocation.allocationuser",
+    "pk": 58,
+    "fields": {
+      "created": "2021-07-23T18:05:15.731Z",
+      "modified": "2022-02-09T22:02:38.321Z",
+      "allocation": 58,
+      "user": 6,
+      "status": 1,
+      "usage": 222.0,
+      "unit":"Kb",
+      "allocation_group_quota": 2199023255552
+    }
+  },
+  {
+    "model": "allocation.allocationattribute",
+    "pk": 9,
+    "fields": {
+      "created": "2021-07-23T18:05:15.731Z",
+      "modified": "2022-02-09T22:02:38.321Z",
+      "allocation_attribute_type": 1,
+      "allocation": 58,
+      "value": 100
+    }
+  },
+  {
+    "model": "allocation.allocationattributeusage",
+    "pk": 9,
+    "fields": {
+      "created": "2021-07-23T18:05:15.731Z",
+      "modified": "2022-02-09T22:02:38.321Z",
+      "value": 10
+    }
+  }
+]

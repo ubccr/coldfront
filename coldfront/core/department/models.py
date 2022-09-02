@@ -1,7 +1,4 @@
 from django.db import models
-
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import User
 from ifxuser.models import Organization, OrgRelation, UserAffiliation
 
 from coldfront.core.project.models import Project
@@ -11,14 +8,14 @@ from coldfront.plugins.ifx.models import ProjectOrganization
 class DepartmentSelector(models.Manager):
     def get_queryset(self):
         """
-        collect non-lab organizations that are directly or indirectly linked
+        collect non-lab Organization objects that are directly or indirectly linked
         to labs that are Coldfront projects.
         """
         # get organization ids for all projects
         child_id_search_list = set(ProjectOrganization.objects.all().values_list('organization_id'))
         child_parent_ids = {}
         while True:
-            # collect all parent organizations that are parent to those organizations in the database
+            # collect all parents of organizations in child_id_search_list
             orgrelations = OrgRelation.objects.filter(child_id__in=child_id_search_list)
             # collect parent and child ids
             if orgrelations:
@@ -29,7 +26,7 @@ class DepartmentSelector(models.Manager):
             else:
                 break
         dept_ids = set(parent_id for parent_id in child_parent_ids.values())
-        return super(DepartmentSelector, self).get_queryset().filter(id__in=dept_ids)
+        return super().get_queryset().filter(id__in=dept_ids)
 
 
 class Department(Organization):
@@ -70,14 +67,9 @@ class Department(Organization):
     def members(self):
         return UserAffiliation.objects.filter(organization=self)
 
-
     @property
     def projects(self):
         return self.get_projects()
-
-    @property
-    def child_departments(self):
-        return Organization.objects.filter(parent_org=department_obj.id)
 
     @property
     def project_count(self):
@@ -97,13 +89,13 @@ class DepartmentProjectManager(models.Manager):
                 children_links = OrgRelation.objects.filter(parent_id__in=parent_search_ids)
                 if children_links:
                     parent_search_ids = [link.child_id for link in children_links]
-                    lab_search_ids.extend(list(children_links.filter(child__rank="lab").values_list(
-                                                                'child_id', flat=True)))
+                    lab_search_ids.extend(list(children_links.filter(
+                            child__rank="lab").values_list('child_id', flat=True)))
                 else:
                     project_org_links.extend(ProjectOrganization.objects.filter(
                         organization_id__in=lab_search_ids).values_list("project_id", flat=True))
                     break
-        return super(DepartmentProjectManager, self).get_queryset().filter(pk__in=project_org_links)
+        return super().get_queryset().filter(pk__in=project_org_links)
 
 
 class DepartmentProject(ProjectOrganization):
@@ -121,14 +113,11 @@ class DepartmentMemberManager(models.Manager):
     def get_queryset(self):
         """collect department members using Department and UserAffiliation"""
         departments = Department.objects.all()
-        # department_members = UserAffiliation.objects.filter(organization__in=departments
-        #                 )
-        return super(DepartmentMemberManager, self).get_queryset().filter(
-                    organization__in=departments)
+        return super().get_queryset().filter(organization__in=departments)
 
 
 class DepartmentMember(UserAffiliation):
-    """connect User records with Department records, specify relationship qualities.
+    """subset of UserAffiliation records that are related to Department records.
     """
     objects = DepartmentMemberManager()
 

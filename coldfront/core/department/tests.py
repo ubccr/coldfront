@@ -1,11 +1,9 @@
 import logging
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
 from django.test import TestCase, Client
 
 from coldfront.core.test_helpers import test_utils
 from coldfront.core.department.models import Department, DepartmentMember
-
 
 FIXTURES = [
             "coldfront/core/test_helpers/test_data/test_fixtures/resources.json",
@@ -18,6 +16,7 @@ FIXTURES = [
             "coldfront/core/test_helpers/test_data/test_fixtures/field_of_science.json",
             "coldfront/core/test_helpers/test_data/test_fixtures/project_choices.json",
             ]
+
 logging.disable(logging.ERROR)
 
 class DepartmentListViewTest(TestCase):
