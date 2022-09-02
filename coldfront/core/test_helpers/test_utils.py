@@ -1,4 +1,5 @@
 """Functions for testing the same basic principle across different applications"""
+
 def login_and_get_page(client, user, page):
     client.force_login(user, backend="django.contrib.auth.backends.ModelBackend")
     return client.get(page)
