@@ -112,7 +112,7 @@ class AllTheThingsConn:
         for entry in resp_json_formatted:
             if (entry['storage_type'] == 'Quota' and entry['tb_usage'] in [None]) or\
             (entry['storage_type'] == 'Isilon' and entry['tb_allocation'] in [0, None]):
-                logger.debug(f"removed: {entry}")
+                logger.debug(f"removed: %s", entry)
                 continue
             resp_json_by_lab[entry['lab']].append(entry)
         # logger.debug(resp_json_by_lab)
