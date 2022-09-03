@@ -954,9 +954,14 @@ class AllocationAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Cre
         form.fields['allocation'].widget = forms.HiddenInput()
         return form
 
-    def get_success_url(self):
+    def get_success_url(self, form_class=None):
+        # form = super().get_form(form_class)
+        # print(form)
+        # valid = form.validate()
+        # if valid == None:
         return reverse('allocation-detail', kwargs={'pk': self.kwargs.get('pk')})
-
+        # else:
+        #     messages.error(self.request, valid)
 
 class AllocationAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'allocation/allocation_allocationattribute_delete.html'
