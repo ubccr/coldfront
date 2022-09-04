@@ -3,6 +3,10 @@
   background: #E2E2E2;
 }
 
+.container {
+  width: 75%;
+}
+
 /*.navbar-custom {
   background-color: #FFFFFF;
   font-weight: bold;
