@@ -303,7 +303,7 @@ class AllocationAttribute(TimeStampedModel):
         if self.allocation_attribute_type.is_unique and self.allocation.allocationattribute_set.filter(allocation_attribute_type=self.allocation_attribute_type).exists():
             raise ValidationError("'{}' attribute already exists for this allocation.".format(
                 self.allocation_attribute_type))
-
+        print(isinstance(literal_eval(self.value), int))
         expected_value_type = self.allocation_attribute_type.attribute_type.name.strip()
 
         if expected_value_type == "Int" and not isinstance(literal_eval(self.value), int):

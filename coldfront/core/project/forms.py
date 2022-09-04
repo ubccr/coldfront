@@ -175,7 +175,7 @@ class ProjectAttributeUpdateForm(forms.Form):
 
     def clean(self):
         cleaned_data = super().clean()
-
+        
         if cleaned_data.get('new_value') != "":
             proj_attr = ProjectAttribute.objects.get(pk=cleaned_data.get('pk'))
             proj_attr.value = cleaned_data.get('new_value')

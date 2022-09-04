@@ -243,11 +243,11 @@ class ProjectAttribute(TimeStampedModel):
                 self.proj_attr_type))
 
         expected_value_type = self.proj_attr_type.attribute_type.name.strip()
-
-        if expected_value_type == "Int" and not isinstance(literal_eval(self.value), int):
+        
+        if expected_value_type == "Int" and not isinstance(int(literal_eval(f'\"{self.value}\"')), int):
             raise ValidationError(
                 'Invalid Value "%s" for "%s". Value must be an integer.' % (self.value, self.proj_attr_type.name))
-        elif expected_value_type == "Float" and not (isinstance(literal_eval(self.value), float) or isinstance(literal_eval(self.value), int)):
+        elif expected_value_type == "Float" and not (isinstance(float(literal_eval(f'\"{self.value}\"')), float) or isinstance(int(literal_eval(f'\"{self.value}\"')), int)):
             raise ValidationError(
                 'Invalid Value "%s" for "%s". Value must be a float.' % (self.value, self.proj_attr_type.name))
         elif expected_value_type == "Yes/No" and self.value not in ["Yes", "No"]:
