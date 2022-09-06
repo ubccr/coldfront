@@ -55,6 +55,10 @@ if EMAIL_ENABLED:
         'EMAIL_DIRECTOR_EMAIL_ADDRESS')
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
 
+def produce_filter_parameter(key, value):
+    if isinstance(value, list):
+        return "".join([f'{key}={ele}&' for ele in value])
+    return f'{key}={value}&'
 
 class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     model = Project
@@ -238,11 +242,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
             filter_parameters = ''
             for key, value in data.items():
                 if value:
-                    if isinstance(value, list):
-                        for ele in value:
-                            filter_parameters += '{}={}&'.format(key, ele)
-                    else:
-                        filter_parameters += '{}={}&'.format(key, value)
+                    filter_parameters += produce_filter_parameter(key, value)
             context['project_search_form'] = project_search_form
         else:
             filter_parameters = None
@@ -290,10 +290,7 @@ class ProjectArchivedListView(LoginRequiredMixin, ListView):
         order_by = self.request.GET.get('order_by')
         if order_by:
             direction = self.request.GET.get('direction')
-            if direction == 'asc':
-                direction = ''
-            else:
-                direction = '-'
+            direction = '' if direction == 'asc' else '-'
             order_by = direction + order_by
         else:
             order_by = 'id'
@@ -351,11 +348,7 @@ class ProjectArchivedListView(LoginRequiredMixin, ListView):
             filter_parameters = ''
             for key, value in data.items():
                 if value:
-                    if isinstance(value, list):
-                        for ele in value:
-                            filter_parameters += '{}={}&'.format(key, ele)
-                    else:
-                        filter_parameters += '{}={}&'.format(key, value)
+                    filter_parameters += produce_filter_parameter(key, value)
             context['project_search_form'] = project_search_form
         else:
             filter_parameters = None
@@ -451,9 +444,9 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         form.instance.pi = self.request.user
         form.instance.status = ProjectStatusChoice.objects.get(name='New')
         project_obj.save()
-        self.object = project_obj
+        # self.object = project_obj
 
-        project_user_obj = ProjectUser.objects.create(
+        ProjectUser.objects.create(
             user=self.request.user,
             project=project_obj,
             role=ProjectUserRoleChoice.objects.get(name='Manager'),
@@ -622,8 +615,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             messages.error(
                 request, 'You cannot add users to an archived project.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
-        else:
-            return super().dispatch(request, *args, **kwargs)
+        return super().dispatch(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
         user_search_string = request.POST.get('q')
@@ -876,9 +868,9 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_user_pk}))
 
             project_user_update_form = ProjectUserUpdateForm(request.POST,
-                                                             initial={'role': project_user_obj.role.name,
-                                                                      'enable_notifications': project_user_obj.enable_notifications}
-                                                             )
+                     initial={'role': project_user_obj.role.name,
+                              'enable_notifications': project_user_obj.enable_notifications}
+                     )
 
             if project_user_update_form.is_valid():
                 form_data = project_user_update_form.cleaned_data
@@ -895,43 +887,40 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 @login_required
 def project_update_email_notification(request):
 
-    if request.method == "POST":
-        data = request.POST
-        project_user_obj = get_object_or_404(
-            ProjectUser, pk=data.get('user_project_id'))
-
-
-        project_obj = project_user_obj.project
-
-        allowed = False
-        if project_obj.pi == request.user:
-            allowed = True
-
-        if project_obj.projectuser_set.filter(user=request.user, role__name='Manager', status__name='Active').exists():
-            allowed = True
-
-        if project_user_obj.user == request.user:
-            allowed = True
-
-        if request.user.is_superuser:
-            allowed = True
-
-        if allowed == False:
-             return HttpResponse('not allowed', status=403)
-        else:
-            checked = data.get('checked')
-            if checked == 'true':
-                project_user_obj.enable_notifications = True
-                project_user_obj.save()
-                return HttpResponse('checked', status=200)
-            elif checked == 'false':
-                project_user_obj.enable_notifications = False
-                project_user_obj.save()
-                return HttpResponse('unchecked', status=200)
-            else:
-                return HttpResponse('no checked', status=400)
-    else:
+    if request.method != "POST":
         return HttpResponse('no POST', status=400)
+    data = request.POST
+    project_user_obj = get_object_or_404(
+        ProjectUser, pk=data.get('user_project_id'))
+
+
+    project_obj = project_user_obj.project
+
+    allowed = False
+    if project_obj.pi == request.user:
+        allowed = True
+
+    if project_obj.projectuser_set.filter(user=request.user, role__name='Manager', status__name='Active').exists():
+        allowed = True
+
+    if project_user_obj.user == request.user:
+        allowed = True
+
+    if request.user.is_superuser:
+        allowed = True
+
+    if allowed is False:
+        return HttpResponse('not allowed', status=403)
+    checked = data.get('checked')
+    if checked == 'true':
+        project_user_obj.enable_notifications = True
+        project_user_obj.save()
+        return HttpResponse('checked', status=200)
+    if checked == 'false':
+        project_user_obj.enable_notifications = False
+        project_user_obj.save()
+        return HttpResponse('unchecked', status=200)
+    return HttpResponse('no checked', status=400)
 
 
 class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -996,7 +985,7 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             messages.error(request, 'There was an error in processing  your project review.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
         form_data = project_review_form.cleaned_data
-        project_review_obj = ProjectReview.objects.create(
+        ProjectReview.objects.create(
             project=project_obj,
             reason_for_not_updating_project=form_data.get('reason'),
             status=project_review_status_choice)
