@@ -55,7 +55,9 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
 from coldfront.core.allocation.utils import (compute_prorated_amount,
                                              generate_guauge_data_from_usage,
                                              get_user_resources,
-                                             send_allocation_user_request_email)
+                                             send_allocation_user_request_email,
+                                             send_added_user_email,
+                                             send_removed_user_email)
 from coldfront.core.utils.common import Echo
 from coldfront.core.allocation.signals import (allocation_activate,
                                                allocation_activate_user,
@@ -1227,6 +1229,27 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 send_allocation_user_request_email(
                     self.request, new_user_requests, resource_name, email_recipient
                 )
+            else:
+                users.remove(self.request.user)
+                if project_obj.pi in users:
+                    users.remove(project_obj.pi)
+
+                if users:
+                    allocations_added_users = []
+                    allocations_added_users_emails = []
+                    for user in users:
+                        allocations_added_users.append(user.username)
+                        if project_obj.projectuser_set.get(user=user).enable_notifications:
+                            allocations_added_users_emails.append(user.email)
+
+                    allocations_added_users_emails.append(project_obj.pi.email)
+
+                    send_added_user_email(
+                        self.request,
+                        allocation_obj,
+                        allocations_added_users,
+                        allocations_added_users_emails
+                    )
 
         return super().form_valid(form)
 
@@ -1357,6 +1380,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                           prefix='userform')
 
         added_users = []
+        added_users_objs = []
         denied_users = []
         if formset.is_valid():
             if allocation_user_limit is not None:
@@ -1392,6 +1416,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                     username = user_obj.username
                     if allocation_obj.check_user_account_exists_on_resource(username):
                         added_users.append(username)
+                        added_users_objs.append(user_obj)
                     else:
                         denied_users.append(username)
                         continue
@@ -1405,7 +1430,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                         allocation_user_obj = AllocationUser.objects.create(
                             allocation=allocation_obj, user=user_obj, status=allocation_user_status_choice)
 
-                    allocation_obj.create_user_request(
+                    allocation_user_request_obj = allocation_obj.create_user_request(
                         requestor_user=requestor_user,
                         allocation_user=allocation_user_obj,
                         allocation_user_status=allocation_user_status_choice
@@ -1430,6 +1455,17 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                         'Pending addition of user(s) {} to allocation.'.format(', '.join(added_users))
                     )
                 else:
+                    if EMAIL_ENABLED:
+                        allocation_added_users_emails = []
+                        for user_obj in added_users_objs:
+                            notifications_enabled = allocation_obj.project.projectuser_set.get(
+                                user=user_obj
+                            ).enable_notifications
+                            if notifications_enabled:
+                                allocation_added_users_emails.append(user_obj.email)
+
+                        send_added_user_email(request, allocation_obj, added_users, allocation_added_users_emails)
+
                     messages.success(
                         request,
                         'Added user(s) {} to allocation.'.format(', '.join(added_users))
@@ -1608,6 +1644,7 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
                 allocation_user_status_choice = allocation_user_pending_remove_status_choice
 
             removed_users = []
+            removed_users_objs = []
             requestor_user = User.objects.get(username=request.user)
             for form in formset:
                 user_form_data = form.cleaned_data
@@ -1621,6 +1658,7 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
                         continue
 
                     removed_users.append(user_obj.username)
+                    removed_users_objs.append(user_obj)
 
                     allocation_user_obj = allocation_obj.allocationuser_set.get(
                         user=user_obj)
@@ -1629,7 +1667,7 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
                     allocation_remove_user.send(sender=self.__class__,
                                                 allocation_user_pk=allocation_user_obj.pk)
 
-                    allocation_obj.create_user_request(
+                    allocation_user_request_obj = allocation_obj.create_user_request(
                         requestor_user=requestor_user,
                         allocation_user=allocation_user_obj,
                         allocation_user_status=allocation_user_status_choice
@@ -1650,6 +1688,16 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
                         request, 'Pending removal of user(s) {} from allocation.'.format(', '.join(removed_users))
                     )
                 else:
+                    if EMAIL_ENABLED:
+                        allocation_removed_users_emails = []
+                        for user_obj in removed_users_objs:
+                            notifications_enabled = allocation_obj.project.projectuser_set.get(
+                                user=user_obj
+                            ).enable_notifications
+                            if notifications_enabled:
+                                allocation_removed_users_emails.append(user_obj.email)
+
+                        send_removed_user_email(allocation_obj, removed_users, allocation_removed_users_emails)
                     messages.success(
                         request, 'Removed user(s) {} from allocation.'.format(', '.join(removed_users))
                     )

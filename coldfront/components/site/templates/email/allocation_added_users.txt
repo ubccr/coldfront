@@ -1,0 +1,10 @@
+Dear {{ center_name }} user,
+
+These users have been added to an allocation for {{ resource }} in project "{{ project_title }}".
+{% for user in users %}{{ user }}
+{% endfor %}
+They can view the allocation here:
+{{ url }}
+
+Thank you,
+{{ signature }}

@@ -54,6 +54,7 @@ from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email, send_email_template
 from coldfront.core.project.utils import get_new_end_date_from_list
+from coldfront.core.allocation.utils import send_added_user_email
 
 logger = logging.getLogger(__name__)
 
@@ -1180,6 +1181,9 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
         )
 
         added_users_count = 0
+        added_users_emails = []
+        added_users = []
+        allocations_added_to = {}
         display_warning = False
         if formset.is_valid() and allocation_formset.is_valid():
             project_user_active_status_choice = ProjectUserStatusChoice.objects.get(
@@ -1229,12 +1233,21 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                         project_user_obj.enable_notifications = False
                         project_user_obj.save()
 
+                    if project_user_obj.enable_notifications:
+                        added_users_emails.append(user_obj.email)
+
+                    added_users.append(user_obj.username)
+
                     username = user_form_data.get('username')
                     no_accounts[username] = []
                     for allocation in allocation_formset:
                         cleaned_data = allocation.cleaned_data
                         if cleaned_data['selected']:
                             allocation = allocations.get(pk=cleaned_data['pk'])
+                            if allocations_added_to.get(allocation) is None:
+                                # First list is users added, second list is users added emails
+                                allocations_added_to[allocation] = [[], []]
+
                             resource_name = allocation.get_parent_resource.name
                             # If the user does not have an account on the resource in the allocation then do not add them to it.
                             if not allocation.check_user_account_exists_on_resource(username):
@@ -1272,12 +1285,17 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                                 'requires_user_request'
                             )
 
-                            allocation.create_user_request(
+                            allocation_user_request_obj = allocation.create_user_request(
                                 requestor_user=requestor_user,
                                 allocation_user=allocation_user_obj,
                                 allocation_user_status=allocation_user_status_choice
 
                             )
+
+                            if allocation_user_request_obj is None:
+                                allocations_added_to[allocation][0].append(user_obj.username)
+                                if project_user_obj.enable_notifications:
+                                    allocations_added_to[allocation][1].append(user_obj.email)
 
             if display_warning:
                 warning_message = 'The following users were not added to the selected resources due to missing accounts:<ul>'
@@ -1293,6 +1311,44 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                     messages.warning(
                         request, format_html(warning_message)
                     )
+
+            if EMAIL_ENABLED and added_users:
+                added_users_emails.append(project_obj.pi.email)
+
+                domain_url = get_domain_url(self.request)
+                project_url = '{}{}'.format(domain_url, reverse(
+                    'project-detail', kwargs={'pk': project_obj.pk}))
+
+                template_context = {
+                    'center_name': EMAIL_CENTER_NAME,
+                    'project_title': project_obj.title,
+                    'users': added_users,
+                    'url': project_url,
+                    'signature': EMAIL_SIGNATURE
+                }
+                send_email_template(
+                    'Added to Project',
+                    'email/project_added_users.txt',
+                    template_context,
+                    EMAIL_TICKET_SYSTEM_ADDRESS,
+                    added_users_emails
+                )
+
+                if allocations_added_to:
+                    for allocation, values in allocations_added_to.items():
+                        allocations_added_users = values[0]
+                        allocations_added_users_emails = values[1]
+                        if allocations_added_users:
+                            if project_obj.pi.email not in allocations_added_users_emails:
+                                allocations_added_users_emails.append(project_obj.pi.email)
+
+                        send_added_user_email(
+                            request,
+                            allocation,
+                            allocations_added_users,
+                            allocations_added_users_emails
+                        )
+
 
             messages.success(
                 request, 'Added {} users to project.'.format(added_users_count))
@@ -1425,7 +1481,8 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         )
 
         remove_users_count = 0
-
+        removed_users_emails = []
+        removed_users = []
         if formset.is_valid():
             project_user_removed_status_choice = ProjectUserStatusChoice.objects.get(
                 name='Removed')
@@ -1477,13 +1534,35 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                         project_user_obj.status = project_user_removed_status_choice
                         project_user_obj.save()
 
+                        if project_user_obj.enable_notifications:
+                            removed_users_emails.append(user_obj.email)
+
+                        removed_users.append(user_obj.username)
+
             if remove_users_count:
-              if remove_users_count == 1:
-                  messages.success(
-                      request, 'Removed {} user from project.'.format(remove_users_count))
-              else:
-                  messages.success(
-                      request, 'Removed {} users from project.'.format(remove_users_count))
+                if EMAIL_ENABLED:
+                    removed_users_emails.append(project_obj.pi.email)
+
+                    template_context = {
+                        'center_name': EMAIL_CENTER_NAME,
+                        'project_title': project_obj.title,
+                        'users': removed_users,
+                        'signature': EMAIL_SIGNATURE
+                    }
+                    send_email_template(
+                        'Removed From Project',
+                        'email/project_removed_users.txt',
+                        template_context,
+                        EMAIL_TICKET_SYSTEM_ADDRESS,
+                        removed_users_emails
+                    )
+
+                if remove_users_count == 1:
+                    messages.success(
+                        request, 'Removed {} user from project.'.format(remove_users_count))
+                else:
+                    messages.success(
+                        request, 'Removed {} users from project.'.format(remove_users_count))
 
             for resource_name, users in resources_requiring_user_request.items():
                 messages.warning(

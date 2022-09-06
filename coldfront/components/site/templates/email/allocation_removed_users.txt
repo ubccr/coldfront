@@ -1,0 +1,9 @@
+Dear {{ center_name }} user,
+
+These users have been removed from an allocation for {{ resource }} in project "{{ project_title }}".
+{% for user in users %}{{ user }}
+{% endfor %}
+They no longer have access to the resource in this allocation.
+
+Thank you,
+{{ signature }}
