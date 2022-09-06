@@ -184,7 +184,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                     Q(allocationuser__status__name__in=['Active', ])
                 ).distinct().order_by('-end_date')
             else:
-                free_allocations = Allocation.objects.filter(
+                free_allocations = Allocation.objects.prefetch_related(
                     'resources'
                 ).filter(
                     project=self.object,
