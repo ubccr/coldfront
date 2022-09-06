@@ -107,3 +107,44 @@ def send_allocation_user_request_email(request, usernames, parent_resource_name,
             EMAIL_SENDER,
             email_receiver_list
         )
+
+
+def send_added_user_email(request, allocation_obj, users, users_emails):
+    if EMAIL_ENABLED:
+        domain_url = get_domain_url(request)
+        url = '{}{}'.format(domain_url, reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
+        template_context = {
+            'center_name': EMAIL_CENTER_NAME,
+            'resource': allocation_obj.get_parent_resource.name,
+            'users': users,
+            'project_title': allocation_obj.project.title,
+            'url': url,
+            'signature': EMAIL_SIGNATURE
+        }
+
+        send_email_template(
+            'Added to Allocation',
+            'email/allocation_added_users.txt',
+            template_context,
+            EMAIL_TICKET_SYSTEM_ADDRESS,
+            [users_emails]
+        )
+
+
+def send_removed_user_email(allocation_obj, users, users_emails):
+    if EMAIL_ENABLED:
+        template_context = {
+            'center_name': EMAIL_CENTER_NAME,
+            'resource': allocation_obj.get_parent_resource.name,
+            'users': users,
+            'project_title': allocation_obj.project.title,
+            'signature': EMAIL_SIGNATURE
+        }
+
+        send_email_template(
+            'Removed From Allocation',
+            'email/allocation_removed_users.txt',
+            template_context,
+            EMAIL_TICKET_SYSTEM_ADDRESS,
+            [users_emails]
+        )
