@@ -14,6 +14,7 @@ def settings_value(name):
         'CENTER_NAME',
         'CENTER_HELP_URL',
         'EMAIL_PROJECT_REVIEW_CONTACT',
+        'EMAIL_TICKET_SYSTEM_ADDRESS',
     ]
     return mark_safe(getattr(settings, name, '') if name in allowed_names else '')
 
