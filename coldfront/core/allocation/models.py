@@ -124,12 +124,12 @@ class Allocation(TimeStampedModel):
                                     float(attribute.value) * 10000) / 100
                 except ValueError:
                     percent = 'Invalid Value'
-                    logger.error("Allocation attribute '%s' is not an int but has a usage",
-                                 attribute.allocation_attribute_type.name)
+                    logger.error("Allocation attribute '%s' for allocation id %s is not an int but has a usage",
+                                 attribute.allocation_attribute_type.name, self.pk)
                 except ZeroDivisionError:
                     percent = 100
-                    logger.error("Allocation attribute '%s' == 0 but has a usage",
-                                 attribute.allocation_attribute_type.name)
+                    logger.error("Allocation attribute '%s' for allocation id %s == 0 but has a usage",
+                                 attribute.allocation_attribute_type.name, self.pk)
 
                 # string = '{} : {}/{} ({} %) <br>'.format(
                 string = '{}: {}/{} ({} %) <br>'.format(
