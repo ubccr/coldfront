@@ -40,8 +40,7 @@ def home(request):
         template_name = 'portal/authorized_home.html'
         project_list = Project.objects.filter(
             (
-                (Q(pi=request.user) |
-                 Q(requestor=request.user)) &
+                Q(pi=request.user) &
                 Q(
                     status__name__in=[
                         'New',
