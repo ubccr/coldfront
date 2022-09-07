@@ -12,8 +12,7 @@ from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
 from coldfront.core.allocation.models import   (Allocation,
                                                 AllocationAttribute,
-                                                AllocationAttributeType,
-                                                AllocationAttributeUsage)
+                                                AllocationAttributeType)
 
 today = datetime.today().strftime("%Y%m%d")
 
@@ -112,13 +111,13 @@ class AllTheThingsConn:
         for entry in resp_json_formatted:
             if (entry['storage_type'] == 'Quota' and entry['tb_usage'] in [None]) or\
             (entry['storage_type'] == 'Isilon' and entry['tb_allocation'] in [0, None]):
-                logger.debug(f"removed: %s", entry)
+                logger.debug("removed: %s", entry)
                 continue
             resp_json_by_lab[entry['lab']].append(entry)
         # logger.debug(resp_json_by_lab)
         resp_json_by_lab_cleaned = {k:v for k, v in resp_json_by_lab.items() if v}
-        with open(result_file, 'w') as f:
-            f.write(json.dumps(resp_json_by_lab_cleaned, indent=2))
+        with open(result_file, 'w') as file:
+            file.write(json.dumps(resp_json_by_lab_cleaned, indent=2))
         return result_file
 
 
@@ -139,7 +138,8 @@ class AllTheThingsConn:
         # produce set of server values for which to locate matching resources
         resource_set = {a['server'] for l in result_json.values() for a in l}
         # get resource model
-        res_models = Resource.objects.filter(reduce(operator.or_, (Q(name__contains=x) for x in resource_set)))
+        res_models = Resource.objects.filter(reduce(operator.or_,
+                                    (Q(name__contains=x) for x in resource_set)))
         res_names = [str(r.name).split("/")[0] for r in res_models]
         missing_res = log_missing("resource", res_names, resource_set)
         counts['proj_err'] = len(missing_res)
@@ -191,7 +191,8 @@ class AllTheThingsConn:
                 allocation_values = { 'Storage Quota (TB)':
                             [allocation['tb_allocation'],allocation['tb_usage']]  }
                 if allocation['byte_allocation'] != None:
-                    allocation_values['Quota_In_Bytes'] = [allocation['byte_allocation'], allocation['byte_usage']]
+                    allocation_values['Quota_In_Bytes'] = [ allocation['byte_allocation'],
+                                                            allocation['byte_usage']]
 
                 for k, v in allocation_values.items():
                     allocation_attribute_type_obj = AllocationAttributeType.objects.get(
@@ -235,7 +236,7 @@ def log_missing(modelname,
                 fpath_pref="./coldfront/plugins/fasrc/data/",
                 pattern = "I,D"):
     fpath = f'{fpath_pref}missing_{modelname}s.csv'
-    missing = [i for i in search_list if i not in [i for i in model_attr_list]]
+    missing = [i for i in search_list if i not in list(model_attr_list)]
     if missing:
         datestr = datetime.today().strftime("%Y%m%d")
         patterns = [pattern.replace("I", i).replace("D", datestr).replace("G", group) for i in missing]
@@ -253,12 +254,12 @@ def find_or_add_file_line(filepath, patterns):
     patterns : list
         list of lines to find or append to file.
     """
-    with open(filepath, 'a+') as f:
-        f.seek(0)
-        lines = f.readlines()
-        for p in patterns:
-            if not any(p == line.rstrip('\r\n') for line in lines):
-                f.write(p + '\n')
+    with open(filepath, 'a+') as file:
+        file.seek(0)
+        lines = file.readlines()
+        for pattern in patterns:
+            if not any(pattern == line.rstrip('\r\n') for line in lines):
+                file.write(pattern + '\n')
 
 
 def generate_headers(token):
