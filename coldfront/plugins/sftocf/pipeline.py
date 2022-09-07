@@ -22,7 +22,7 @@ datestr = datetime.today().strftime("%Y%m%d")
 logger = logging.getLogger(__name__)
 logger.propagate = False
 logger.setLevel(logging.DEBUG)
-filehandler = logging.FileHandler(f'coldfront/plugins/sftocf/data/logs/sfc{datestr}.log', 'w')
+filehandler = logging.FileHandler(f'logs/starfish_to_coldfront_{datestr}.log', 'w')
 logger.addHandler(filehandler)
 
 

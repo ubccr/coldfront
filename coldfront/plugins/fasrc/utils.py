@@ -19,7 +19,7 @@ today = datetime.today().strftime("%Y%m%d")
 logger = logging.getLogger(__name__)
 logger.propagate = False
 logger.setLevel(logging.DEBUG)
-filehandler = logging.FileHandler(f'coldfront/plugins/fasrc/data/logs/{today}.log', 'w')
+filehandler = logging.FileHandler(f'coldfront/logs/{today}.log', 'w')
 logger.addHandler(filehandler)
 
 

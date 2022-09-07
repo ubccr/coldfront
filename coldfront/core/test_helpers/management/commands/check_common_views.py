@@ -11,7 +11,7 @@ datestr = datetime.today().strftime("%Y%m%d")
 logger = logging.getLogger(__name__)
 logger.propagate = False
 logger.setLevel(logging.DEBUG)
-filehandler = logging.FileHandler(f'coldfront/core/test_helpers/view_check_{datestr}.log', 'w')
+filehandler = logging.FileHandler(f'logs/check_common_views_{datestr}.log', 'w')
 logger.addHandler(filehandler)
 
 
