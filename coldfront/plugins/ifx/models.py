@@ -114,8 +114,9 @@ def allocation_user_to_allocation_product_usage(allocation_user, product, overwr
     if not product_usage_data['quantity']:
         product_usage_data['quantity'] = 0
     product_usage_data['units'] = 'b'
-    tb_quantity = Decimal(product_usage_data['quantity'] / 1024**4).quantize(Decimal("100.00"))
-    product_usage_data['description'] = f"{tb_quantity} TB of {allocation_user.allocation.get_attribute('Storage Quota (TB)')} TB allocation of {product_usage_data['product']} for {product_usage_data['product_user']} on {product_usage_data['start_date']}"
+    tb_quantity = Decimal(product_usage_data['quantity'] / 1024**4).quantize(Decimal("100.0000"))
+    product_usage_data['decimal_quantity'] = tb_quantity
+    product_usage_data['description'] = f"{tb_quantity.quantize(Decimal('0.00'))} TB of {allocation_user.allocation.get_attribute('Storage Quota (TB)')} TB allocation of {product_usage_data['product']} for {product_usage_data['product_user']} on {product_usage_data['start_date']}"
     product_usage, created = ProductUsage.objects.get_or_create(**product_usage_data)
     aupu = AllocationUserProductUsage.objects.create(allocation_user=allocation_user.history.first(), product_usage=product_usage)
     return aupu
