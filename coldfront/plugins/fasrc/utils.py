@@ -167,10 +167,9 @@ class AllTheThingsConn:
                 if a.count() == 1:
                     a = a.first()
                 elif a.count() < 1:
-                    res_str = allocation['server']
                     logger.warning("ERROR: No Allocation for project %s, resource %s",
                                                 proj_query.title, resource.name)
-                    log_missing("allocation", [], [res_str],
+                    log_missing("allocation", [], [resource.name],
                                             group=proj_query.title,
                                             pattern="G,I,D")
                     counts['all_err'] += 1
