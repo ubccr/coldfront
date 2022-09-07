@@ -73,7 +73,7 @@ def home(request):
         ).distinct().order_by('-created')
 
         allocations_for_slurm_accounts = allocation_list.all().exclude(
-            project__status__name__in=['New', ]
+            status__name__in=['New', ]
         )
 
         allocation_list = allocation_list[:5]
