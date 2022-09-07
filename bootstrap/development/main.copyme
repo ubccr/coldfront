@@ -69,6 +69,22 @@ program_name_long: "Berkeley Research Computing"
 program_name_short: "BRC"
 primary_cluster_name: "Savio"
 
+# LRC billing validation package settings (for Pip installation).
+# TODO: For LRC deployments with access to the package for billing validation
+# TODO: (e.g., production and staging), set these.
+install_billing_validation_package: false
+# Example: "gitlab.com/user/repo_name.git"
+billing_validation_repo_host: ""
+# Create or request a deploy token.
+billing_validation_repo_username: ""
+billing_validation_repo_token: ""
+
+# LRC Oracle billing database settings.
+# TODO: For LRC deployments with access to Oracle, set these.
+oracle_billing_db_dsn: ""
+oracle_billing_db_user: ""
+oracle_billing_db_passwd: ""
+
 # The URL of the Sentry instance to send errors to.
 sentry_dsn: ""
 

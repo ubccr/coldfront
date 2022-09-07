@@ -374,6 +374,13 @@ REST_FRAMEWORK = {
 TOKEN_EXPIRATION_HOURS = 24
 
 #------------------------------------------------------------------------------
+# Billing settings
+#------------------------------------------------------------------------------
+
+# The class to use for validating billing IDs.
+BILLING_VALIDATOR_BACKEND = 'coldfront.core.billing.utils.validation.backends.dummy.DummyValidatorBackend'
+
+#------------------------------------------------------------------------------
 # Multiple Email Address settings
 #------------------------------------------------------------------------------
 
