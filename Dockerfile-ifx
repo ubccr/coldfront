@@ -39,5 +39,5 @@ RUN pip install reportlab==3.6.6
 EXPOSE 80
 EXPOSE 25
 
-CMD ["python", "manage.py", "runserver", "0.0.0.0:80", "--insecure"]
+CMD ["python", "manage.py", "runserver", "0.0.0.0:80"]
 RUN ./manage.py qcluster &
