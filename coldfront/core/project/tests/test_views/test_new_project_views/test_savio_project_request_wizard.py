@@ -78,7 +78,6 @@ class TestSavioProjectRequestWizard(TestBase):
         for i, data in enumerate(form_data):
             response = self.client.post(url, data)
             if i == len(form_data) - 1:
-                print(i, data)
                 self.assertRedirects(response, reverse('home'))
             else:
                 self.assertEqual(response.status_code, HTTPStatus.OK)
