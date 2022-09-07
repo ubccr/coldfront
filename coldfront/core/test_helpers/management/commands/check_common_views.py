@@ -11,7 +11,7 @@ datestr = datetime.today().strftime("%Y%m%d")
 logger = logging.getLogger(__name__)
 logger.propagate = False
 logger.setLevel(logging.DEBUG)
-filehandler = logging.FileHandler(f'logs/check_common_views_{datestr}.log', 'w')
+filehandler = logging.FileHandler(f'coldfront/core/test_helpers/view_check_{datestr}.log', 'w')
 logger.addHandler(filehandler)
 
 
@@ -52,7 +52,7 @@ class Command(BaseCommand):
                 logger.warning("no user_pct_dict for %s.", obj_id)
                 stat_counter["no_users"] += 1
             elif pct_sum > 101:
-                logger.warning("ALLOCATION %s: pct_sum > 100. Total: %s.\n%s", obj_id, pct_sum, user_pct_dict)
+                logger.warning("ALLOCATION %s: pct_sum > 101. Total: %s.\n%s", obj_id, pct_sum, user_pct_dict)
                 stat_counter["pct_101"] += 1
             elif sum(user_pct_dict.values()) < 99:
                 logger.warning("ALLOCATION %s: pct_sum < 99. Total: %s.\n%s", obj_id, pct_sum, user_pct_dict)

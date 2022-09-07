@@ -1,8 +1,7 @@
 import datetime
-import os
 
 from django.conf import settings
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.utils import timezone
 from django_q.models import Schedule
 from django_q.tasks import schedule
@@ -26,9 +25,9 @@ class Command(BaseCommand):
         #          next_run=date)
 
         # if plugins are installed, add their tasks
-        kwargs = {  "repeats":-1,
-}
-        if 'coldfront.plugins.sftocf' in settings.INSTALLED_APPS:
+        kwargs = {  "repeats":-1, }
+        plugins = ['fasrc', 'sftocf']
+        if all(f'coldfront.plugins.{plugin}' in settings.INSTALLED_APPS for plugin in plugins):
             import json
             with open("coldfront/plugins/sftocf/servers.json", "r") as myfile:
                 svp = json.loads(myfile.read())
@@ -41,9 +40,9 @@ class Command(BaseCommand):
                     next_run=vol_date,
                     schedule_type=Schedule.WEEKLY,
                     **kwargs)
-        
-        if 'coldfront.plugins.fasrc' in settings.INSTALLED_APPS:
-            schedule('coldfront.plugins.fasrc.tasks.import_quotas',
-                    schedule_type=Schedule.DAILY,
-                    next_run=date,
-                    **kwargs)
+                schedule('coldfront.plugins.fasrc.tasks.import_quotas',
+                    volume,
+                    next_run=vol_date + datetime.timedelta(hours=1),
+                    schedule_type=Schedule.WEEKLY,
+                    **kwargs
+                )
