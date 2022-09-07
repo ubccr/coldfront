@@ -91,6 +91,10 @@ oracle_billing_db_dsn: ""
 oracle_billing_db_user: ""
 oracle_billing_db_passwd: ""
 
+# API settings.
+# If true, bypass all checks at job submission time.
+allow_all_jobs: false
+
 # The URL of the Sentry instance to send errors to.
 sentry_dsn: ""
 
