@@ -309,8 +309,8 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context = self.get_context_data()
         context['form'] = form
         context['allocation'] = allocation_obj
-
-        return render(request, self.template_name, context)
+        return self.render_to_response(context)
+        # return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
