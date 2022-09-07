@@ -15,7 +15,6 @@ class BillingProject(TimeStampedModel):
             RegexValidator(
                 r'^[0-9]{6}$', message='Identifier must contain 6 numbers.')
         ])
-    description = models.CharField(max_length=255)
     history = HistoricalRecords()
 
     class Meta:
@@ -35,8 +34,6 @@ class BillingActivity(TimeStampedModel):
             RegexValidator(
                 r'^[0-9]{3}$', message='Identifier must contain 3 numbers.')
         ])
-    description = models.CharField(max_length=255)
-    is_valid = models.BooleanField(default=False)
     history = HistoricalRecords()
 
     class Meta:
@@ -48,3 +45,12 @@ class BillingActivity(TimeStampedModel):
         """Return a string representing the fully-formed billing ID
         represented by the instance."""
         return f'{self.billing_project.identifier}-{self.identifier}'
+
+    @classmethod
+    def get_from_full_id(cls, full_id):
+        """Return the BillingActivity representing the given
+        fully-formed billing ID, which is assumed to be well-formed."""
+        project_identifier, activity_identifier = full_id.split('-')
+        return BillingActivity.objects.get(
+            billing_project__identifier=project_identifier,
+            identifier=activity_identifier)

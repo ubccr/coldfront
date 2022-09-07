@@ -48,7 +48,7 @@ class TestProjectDetailView(TestBase):
         # Unauthenticated user.
         self.client.logout()
         response = self.client.get(url)
-        self.assertRedirects(response, f'{reverse("login")}?next={url}')
+        self.assert_redirects_to_login(response, next_url=url)
 
         # Project member user.
         self.client.login(username=self.user.username, password=self.password)

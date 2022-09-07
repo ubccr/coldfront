@@ -1,0 +1,16 @@
+{% extends "socialaccount/base.html" %}
+
+{% block title %}
+Login Cancelled
+{% endblock %}
+
+{% block content %}
+<h1>Login Cancelled</h1>
+<hr>
+
+<div class="alert alert-warning" role="alert">
+  You decided to cancel logging in using one of your existing accounts. If this
+  was a mistake, please proceed to <a href="{% url 'home' %}">log in</a>.
+</div>
+
+{% endblock %}

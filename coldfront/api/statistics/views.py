@@ -32,6 +32,7 @@ from coldfront.core.allocation.models import AllocationUserAttributeUsage
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
+from coldfront.core.resource.utils import get_computing_allowance_project_prefixes
 from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.statistics.models import Job
@@ -216,13 +217,13 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
                 raise serializers.ValidationError(
                     f'Invalid ending timestamp {start_time}. Details: {e}')
 
-            # Filter on submitdate, keeping those that end between the given
+            # Filter on startdate, keeping those that end between the given
             # times, inclusive.
             jobs = jobs.filter(
-                submitdate__gte=start_time, submitdate__lte=end_time)
+                startdate__gte=start_time, startdate__lte=end_time)
 
-        # Return filtered jobs in ascending submitdate order.
-        return jobs.order_by('submitdate')
+        # Return filtered jobs in ascending startdate order.
+        return jobs.order_by('startdate')
 
     @swagger_auto_schema(
         manual_parameters=[authorization_parameter],
@@ -700,6 +701,13 @@ def can_submit_job(request, job_cost, user_id, account_id):
     except Project.DoesNotExist:
         message = f'No account exists with account_id {account_id}.'
         return client_error(message)
+
+    # Allow all jobs for accounts that are not intended to have
+    # computing allowances (e.g., departmental cluster-specific accounts).
+    computing_allowance_project_prefixes = \
+        get_computing_allowance_project_prefixes()
+    if not account.name.startswith(computing_allowance_project_prefixes):
+        return affirmative
 
     # Validate that needed accounting objects exist.
     try:

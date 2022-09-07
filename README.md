@@ -2,15 +2,16 @@
 
 [![Documentation Status](https://readthedocs.org/projects/coldfront/badge/?version=latest)](https://coldfront.readthedocs.io/en/latest/?badge=latest)
 
-The MyBRC User Portal is an access management system for Berkeley Research
-Computing. It enables users to create or join projects, gain access to the
-clusters managed by BRC, view the statuses of their requests and access, view
-their allocation quotas and usages, and update personal information. It enables
-administrators to handle these requests and manage users and projects. The
-portal is built on top of ColdFront.
+The MyBRC User Portal is an access management system for UC Berkeley Research
+IT's Berkeley Research Computing program. It enables users to create or join
+projects, gain access to the clusters managed by BRC, view the statuses of
+their requests and access, view their allocation quotas and usages, and update
+personal information. It enables administrators to handle these requests and
+manage users and projects. The portal is built on top of ColdFront.
 
 The MyLRC User Portal is an upcoming second instance of the same system,
-developed for Lawrencium Research Computing.
+developed for Lawrence Berkeley National Laboratory's Laboratory Research
+Computing program.
 
 ColdFront is an open source resource allocation system designed to provide a
 central portal for administration, reporting, and measuring scientific impact

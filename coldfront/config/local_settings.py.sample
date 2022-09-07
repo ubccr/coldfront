@@ -45,6 +45,9 @@ SAVIO_PROJECT_FOR_VECTOR_USERS = "co_rosalind"
 # A list of admin email addresses to CC when certain requests are approved.
 REQUEST_APPROVAL_CC_LIST = []
 
+# The regex for a valid LBL billing ID (six digits, a hyphen, three digits.)
+LBL_BILLING_ID_REGEX = "^\d{6}-\d{3}$"
+
 #------------------------------------------------------------------------------
 # General Center Information
 #------------------------------------------------------------------------------
@@ -382,6 +385,37 @@ EXTRA_AUTHENTICATION_BACKENDS += [
 EMAIL_VERIFICATION_TIMEOUT = 24 * 60 * 60
 
 #------------------------------------------------------------------------------
+# Django All-Auth settings
+#------------------------------------------------------------------------------
+
+EXTRA_AUTHENTICATION_BACKENDS += [
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+# Use a custom adapter to handle email differently.
+ACCOUNT_ADAPTER = 'coldfront.core.account.adapter.AccountAdapter'
+
+# Use a custom adapter to handle logins with CILogon differently.
+SOCIALACCOUNT_ADAPTER = (
+    'coldfront.core.socialaccount.adapter.CILogonAccountAdapter')
+
+CILOGON_APP_CLIENT_ID = ''
+CILOGON_APP_SECRET = ''
+SOCIALACCOUNT_PROVIDERS = {
+    'cilogon': {
+        'APP': {
+            'client_id': CILOGON_APP_CLIENT_ID,
+            'secret': CILOGON_APP_SECRET,
+        },
+        # Interpret all email addresses provided by the provider as 'verified'.
+        'VERIFIED_EMAIL': True,
+    },
+}
+
+# Always request the 'email' scope.
+SOCIALACCOUNT_QUERY_EMAIL = True
+
+#------------------------------------------------------------------------------
 # Data import settings
 #------------------------------------------------------------------------------
 
@@ -421,6 +455,9 @@ except ImportError:
             pass
 
 # Update logging settings based on potentially-updated variables.
-
 LOGGING['handlers']['file']['filename'] = LOG_PATH
 LOGGING['handlers']['api_file']['filename'] = API_LOG_PATH
+
+# Update allauth settings based on potentially-updated variables.
+SOCIALACCOUNT_PROVIDERS['cilogon']['APP']['client_id'] = CILOGON_APP_CLIENT_ID
+SOCIALACCOUNT_PROVIDERS['cilogon']['APP']['secret'] = CILOGON_APP_SECRET

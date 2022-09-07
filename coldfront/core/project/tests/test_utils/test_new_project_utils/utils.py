@@ -10,7 +10,7 @@ class TestRunnerMixinBase(object):
     """A base mixin for testing runners."""
 
     def setUp(self):
-        """Set up tests data."""
+        """Set up test data."""
         super().setUp()
         self.allocation_period = get_current_allowance_year_period()
 

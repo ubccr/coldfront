@@ -10,6 +10,7 @@ from django.utils import timezone
 from model_utils.models import TimeStampedModel
 from phonenumber_field.modelfields import PhoneNumberField
 from rest_framework.authtoken.models import Token
+from simple_history.models import HistoricalRecords
 
 
 class UserProfile(models.Model):
@@ -37,11 +38,15 @@ class UserProfile(models.Model):
         BillingActivity, blank=True, null=True, on_delete=models.SET_NULL)
 
     host_user = models.ForeignKey(
-        User, related_name='host_user', blank=True, null=True, on_delete=models.SET_NULL)
+        User, related_name='host_user', blank=True, null=True,
+        on_delete=models.SET_NULL)
+
+    history = HistoricalRecords()
 
 
 class EmailAddress(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='emailaddress_user')
     email = models.EmailField(
         'email address',
         unique=True,
