@@ -102,7 +102,7 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
         '''
         Generate a ProductUsage and a BillingRecord for the offer letter, if it exists.
         Return BillingRecord (may be None) and remaining allocation size (Decimal TB).  If
-        no BillingRecord is generated, the remaining size is the full size.
+        no BillingRecord is generated, the remaining size is the full allocation size.
         '''
         offer_letter_br = None
         offer_letter_product = self.get_offer_letter_product(allocation)
@@ -112,6 +112,8 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
 
         # Account for offer letter code
         offer_letter_acct = self.get_offer_letter_account(allocation)
+
+        remaining_tb = allocation_tb
 
         if offer_letter_tb:
             if not offer_letter_acct:
@@ -166,9 +168,8 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
             charge = decimal_price * offer_letter_tb
 
             # Transaction and rate description
-            offer_letter_percentage  = Decimal(offer_letter_tb / allocation_tb * 100).quantize(Decimal('0'))
             rate_desc = self.get_rate_description(storage_product_rate)
-            description = f'${charge.quantize(Decimal("0.00"))} for {offer_letter_percentage}% of {allocation_tb} TB ({offer_letter_tb} TB) at ${rate_desc}'
+            description = f'Faculty commitment of ${charge.quantize(Decimal("0.00"))} for {offer_letter_tb} TB of {offer_letter_product.product_name} at ${rate_desc}'
 
             transactions_data = [
                 {
@@ -184,6 +185,7 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
             offer_letter_br = self.create_billing_record(year, month, offer_letter_usage, offer_letter_acct, transactions_data, 100, rate_desc, description)
 
             remaining_tb = allocation_tb - offer_letter_tb
+
         return offer_letter_br, remaining_tb
 
     def get_offer_letter_product(self, allocation):
@@ -470,11 +472,14 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
         # Set the decimal_quantity to TB percentage of allocation
         product_usage = self.set_product_usage_decimal_quantity(product_usage, allocation_percentage, allocation_tb)
         brs = self.generate_billing_records_for_usage(year, month, product_usage, allocation_percentage=allocation_percentage, allocation_tb=allocation_tb, remaining_tb=remaining_tb)
+
+        # Remove zero dollar billing records
         result = []
         for br in brs:
             if not self.billing_record_is_zero_charge(br):
                 result.append(br)
             else:
+                br.delete()
                 if self.verbosity > 0:
                     logger.info(f'Charge for {product_usage} was essentially zero and therefore discarded.')
         return result
@@ -509,25 +514,36 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
         dollar_price = rate.decimal_price
 
         user = product_usage.product_user
+        allocation_tb = kwargs.get('allocation_tb')
+        if allocation_tb is None:
+            raise Exception(f'Allocation TB was not set for {product_usage}')
+
+        # Remaining TB after offer letter.  If no offer letter, should be the same as allocation_tb.
+        # In case it isn't set (it should be), use allocation_tb
         remaining_tb = kwargs.get('remaining_tb')
-        adjustment = Decimal('1')
-        if remaining_tb is not None:
-            adjustment = Decimal(remaining_tb / allocation_tb)
+        if remaining_tb is None:
+            raise Exception(f'Remaining TB not set for {product_usage}')
+
         # Decimal charge rounded to 4 decimal places
-        decimal_charge = Decimal(rate.decimal_price * adjustment * product_usage.decimal_quantity * Decimal(percent / 100)).quantize(Decimal('0.0001'))
+        allocation_fraction = kwargs.get('allocation_percentage')
+        decimal_charge = Decimal(rate.decimal_price * allocation_fraction * remaining_tb * Decimal(percent / 100)).quantize(Decimal('0.0001'))
 
         # Round to dollars
         dollar_charge = decimal_charge.quantize(Decimal('0.01'))
 
-        allocation_fraction = kwargs.get('allocation_percentage')
         allocation_tb = kwargs.get('allocation_tb')
         if allocation_fraction is None or not allocation_tb:
             raise Exception(f'Allocation percentage {allocation_fraction} / Allocation TB {allocation_tb} not passed to calculate_charges')
 
+        # If there is an offer letter, then need to add to description
+        remaining_space_str = ''
+        if allocation_tb != remaining_tb:
+            offer_letter_tb = allocation_tb - remaining_tb
+            remaining_space_str = f' remaining after faculty commitment of {offer_letter_tb} TB'
         allocation_percent = Decimal(allocation_fraction * 100).quantize(Decimal('0.01'))
-        allocation_string = f'{allocation_percent}% of {allocation_tb} TB'
+        allocation_string = f'{allocation_percent}% of {remaining_tb} TB of {product_usage.product.product_name}{remaining_space_str}'
 
-        description = f'${dollar_charge} for {percent_str}{allocation_string} ({product_usage.decimal_quantity} TB) at ${dollar_price.quantize(Decimal(".01"))} per TB'
+        description = f'${dollar_charge} for {percent_str}{allocation_string} at ${dollar_price.quantize(Decimal(".01"))} per TB'
 
         transactions_data.append(
             {
