@@ -38,6 +38,11 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
         Returns a dict that includes a list of successfully created :class:`~ifxbilling.models.BillingRecord` objects
         ("successes") and a list of error messages ("errors")
 
+        :class:`~ifxbilling.models.BillingRecord` objects with a decimal_charge equivalent to Decimal('0.00') are
+        not retained.
+
+        If there are no users for an Allocation, the PI is set to the user
+
         :param year: Year that will be assigned to :class:`~ifxbilling.models.BillingRecord` objects
         :type year: int
 
