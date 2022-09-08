@@ -20,7 +20,6 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
     '''
     New one
     '''
-    OFFER_LETTER_PRODUCT_NAME = 'Offer Letter Storage'
     OFFER_LETTER_TB_ATTRIBUTE = 'Offer Letter'
     OFFER_LETTER_CODE_ATTRIBUTE = 'Offer Letter Code'
     STORAGE_QUOTA_ATTRIBUTE = 'Storage Quota (TB)'
@@ -38,6 +37,11 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
 
         Returns a dict that includes a list of successfully created :class:`~ifxbilling.models.BillingRecord` objects
         ("successes") and a list of error messages ("errors")
+
+        :class:`~ifxbilling.models.BillingRecord` objects with a decimal_charge equivalent to Decimal('0.00') are
+        not retained.
+
+        If there are no users for an Allocation, the PI is set to the user
 
         :param year: Year that will be assigned to :class:`~ifxbilling.models.BillingRecord` objects
         :type year: int
@@ -66,10 +70,11 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
             for project in projects:
                 for allocation in project.allocation_set.filter(status=active):
                     try:
-                        with transaction.atomic():
-                            offer_letter_br, remaining_allocation_tb = self.process_offer_letter(year, month, organization, allocation, recalculate)
-                            if offer_letter_br:
-                                successes.append(offer_letter_br)
+                        allocation_tb = self.get_allocation_tb(allocation)
+                        offer_letter_br, remaining_tb = self.process_offer_letter(year, month, organization, allocation, allocation_tb, recalculate)
+                        if offer_letter_br:
+                            successes.append(offer_letter_br)
+                        if remaining_tb > Decimal('0'):
                             user_allocation_percentages = self.get_user_allocation_percentages(year, month, allocation)
                             for user_id, allocation_percentage_data in user_allocation_percentages.items():
                                 try:
@@ -83,8 +88,9 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
                                     organization,
                                     allocation,
                                     allocation_percentage_data['fraction'],
-                                    remaining_allocation_tb,
+                                    allocation_tb,
                                     recalculate,
+                                    remaining_tb,
                                 )
                                 if brs:
                                     successes.extend(brs)
@@ -97,14 +103,13 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
 
         return (successes, errors)
 
-    def process_offer_letter(self, year, month, organization, allocation, recalculate):
+    def process_offer_letter(self, year, month, organization, allocation, allocation_tb, recalculate):
         '''
         Generate a ProductUsage and a BillingRecord for the offer letter, if it exists.
         Return BillingRecord (may be None) and remaining allocation size (Decimal TB).  If
-        no BillingRecord is generated, the remaining size is the full size.
+        no BillingRecord is generated, the remaining size is the full allocation size.
         '''
         offer_letter_br = None
-        remaining_allocation_tb = self.get_allocation_tb(allocation)
         offer_letter_product = self.get_offer_letter_product(allocation)
 
         # Decimal quantity in TB
@@ -113,6 +118,8 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
         # Account for offer letter code
         offer_letter_acct = self.get_offer_letter_account(allocation)
 
+        remaining_tb = allocation_tb
+
         if offer_letter_tb:
             if not offer_letter_acct:
                 raise Exception(f'Project {allocation.project.title} allocation {allocation.get_resources_as_string()} has an offer letter, but no code.')
@@ -120,36 +127,41 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
             # Offer letter product user (the PI)
             product_user = self.get_offer_letter_product_user(allocation)
 
-            # Create the offer letter product usage.  If it already exists and there is a billing record, do the recalculate check
+            # Does the billing record exist?  If so and recalculate is true, delete it and product usage.  Otherwise, exception
             try:
-                offer_letter_usage = ProductUsage.objects.get(
+                old_br = BillingRecord.objects.get(
+                    product_usage__product=offer_letter_product,
+                    year=year,
+                    month=month,
+                    product_usage__organization=organization,
+                    account=offer_letter_acct,
+                )
+                if recalculate:
+                    old_pu = old_br.product_usage
+                    old_pu.billingrecord_set.all().delete()
+                    old_pu.delete()
+                else:
+                    raise Exception(f'Offer letter billing record exists for {year}-{month} product {offer_letter_product} and organization {organization}')
+            except BillingRecord.DoesNotExist:
+                pass
+
+
+            # Create the offer letter product usage.
+            try:
+                offer_letter_usage = ProductUsage.objects.create(
                     product=offer_letter_product,
                     year=year,
                     month=month,
+                    start_date=timezone.now(),
                     product_user=product_user,
+                    logged_by=product_user,
                     organization=organization,
+                    quantity=offer_letter_tb,
+                    decimal_quantity=offer_letter_tb,
+                    units='TB'
                 )
-                if offer_letter_usage.billingrecord_set.count():
-                    if recalculate:
-                        offer_letter_usage.billingrecord_set.all().delete()
-                    else:
-                        raise Exception(f'Billing record exists for product usage {offer_letter_usage} and recalculate is not set.')
-            except ProductUsage.DoesNotExist:
-                try:
-                    offer_letter_usage = ProductUsage.objects.create(
-                        product=offer_letter_product,
-                        year=year,
-                        month=month,
-                        start_date=timezone.now(),
-                        product_user=product_user,
-                        logged_by=product_user,
-                        organization=organization,
-                        quantity=offer_letter_tb,
-                        decimal_quantity=offer_letter_tb,
-                        units='TB'
-                    )
-                except Exception as e:
-                    raise Exception(f'Unable to create Offer Letter Usage: {e}') from e
+            except Exception as e:
+                raise Exception(f'Unable to create Offer Letter Usage: {e}') from e
 
             # Get the allocation resource product rate for calculating charges
             storage_product_rate = self.get_allocation_resource_product_rate(allocation)
@@ -162,7 +174,7 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
 
             # Transaction and rate description
             rate_desc = self.get_rate_description(storage_product_rate)
-            description = f'{offer_letter_usage.decimal_quantity} {offer_letter_usage.units} at {rate_desc}'
+            description = f'Faculty commitment of ${charge.quantize(Decimal("0.00"))} for {offer_letter_tb} TB of {offer_letter_product.product_name} at ${rate_desc}'
 
             transactions_data = [
                 {
@@ -173,11 +185,13 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
                     'rate': rate_desc,
                 }
             ]
-            logger.info('Setting up offer letter charge of %s against %s', str(charge), str(offer_letter_acct))
+            if self.verbosity > 0:
+                logger.info('Setting up offer letter charge of %s against %s', str(charge), str(offer_letter_acct))
             offer_letter_br = self.create_billing_record(year, month, offer_letter_usage, offer_letter_acct, transactions_data, 100, rate_desc, description)
-            remaining_allocation_tb = remaining_allocation_tb - offer_letter_tb
 
-        return offer_letter_br, remaining_allocation_tb
+            remaining_tb = allocation_tb - offer_letter_tb
+
+        return offer_letter_br, remaining_tb
 
     def get_offer_letter_product(self, allocation):
         '''
@@ -189,7 +203,19 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
         :return: Product for Offer Letters
         :rtype: `~ifxbilling.models.Product`
         '''
-        return Product.objects.get(product_name=self.OFFER_LETTER_PRODUCT_NAME)
+        resources = allocation.resources.all()
+        if not resources:
+            raise Exception(f'Allocation {allocation} has no resources')
+        if len(resources) > 1:
+            raise Exception(f'Allocation {allocation} has more than one resource')
+        resource = resources[0]
+        product_resources = resource.productresource_set.all()
+        if not product_resources:
+            raise Exception(f'Resource {resource} has no product')
+        if len(product_resources) > 1:
+            raise Exception(f'Resource {resource} has multiple products')
+
+        return product_resources[0].product
 
     def get_offer_letter_product_user(self, allocation):
         '''
@@ -302,6 +328,25 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
 
         return rate
 
+    def get_rate_description(self, rate, **kwargs):
+        '''
+        Text description of rate for use in txn rate and description.
+        Empty string is returned if rate.price or rate.units is None.
+
+        Description is <price> per <units>
+
+        :param rate: The :class:`~ifxbilling.models.Rate` for the :class:`~ifxbilling.models.Product`
+            from the :class:`~ifxbilling.models.ProductUsage`
+        :type rate: :class:`~ifxbilling.models.Rate`
+
+        :return: Text description of the rate
+        :rtype: str
+        '''
+        desc = ''
+        if rate.decimal_price is not None and rate.units is not None:
+            desc = f'{rate.decimal_price.quantize(Decimal("0.00"))} per {rate.units}'
+        return desc
+
     def get_user_allocation_percentages(self, year, month, allocation):
         '''
         Return a dictionary of user and their percentage of the total allocation
@@ -399,7 +444,8 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
                 'quantity': 1,
                 'fraction': 1,
             }
-            logger.info(f'Allocation {allocation} has no users at all. Setting PI {pi} as user.')
+            if self.verbosity > 0:
+                logger.info(f'Allocation {allocation} has no users at all. Setting PI {pi} as user.')
 
         for uid in allocation_user_fractions.keys():
             # For the situation where there is an allocation, and the PI is an allocation user, but no data is used
@@ -408,11 +454,9 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
                 allocation_user_fractions[uid]['fraction'] = Decimal(1)
             else:
                 allocation_user_fractions[uid]['fraction'] = Decimal(allocation_user_fractions[uid]['quantity']) / Decimal(total)
-        if allocation.id == 19:
-            logger.error('Allocation user fractions %s', str(allocation_user_fractions))
         return allocation_user_fractions
 
-    def generate_billing_records_for_allocation_user(self, year, month, user, organization, allocation, allocation_percentage, allocation_tb, recalculate=False):
+    def generate_billing_records_for_allocation_user(self, year, month, user, organization, allocation, allocation_percentage, allocation_tb, recalculate=False, remaining_tb=None):
         '''
         Make the BillingRecords for the given user from their allocation percentage and the allocation size.
 
@@ -432,7 +476,25 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
 
         # Set the decimal_quantity to TB percentage of allocation
         product_usage = self.set_product_usage_decimal_quantity(product_usage, allocation_percentage, allocation_tb)
-        return self.generate_billing_records_for_usage(year, month, product_usage, allocation_percentage=allocation_percentage, allocation_tb=allocation_tb)
+        brs = self.generate_billing_records_for_usage(year, month, product_usage, allocation_percentage=allocation_percentage, allocation_tb=allocation_tb, remaining_tb=remaining_tb)
+
+        # Remove zero dollar billing records
+        result = []
+        for br in brs:
+            if not self.billing_record_is_zero_charge(br):
+                result.append(br)
+            else:
+                br.delete()
+                if self.verbosity > 0:
+                    logger.info(f'Charge for {product_usage} was essentially zero and therefore discarded.')
+        return result
+
+    def billing_record_is_zero_charge(self, billing_record):
+        '''
+        Billing record is zero charge if transactions are all zero
+        '''
+        zero_dollars = Decimal('0.00')
+        return all([txn.decimal_charge.quantize(zero_dollars) == zero_dollars for txn in billing_record.transaction_set.all()])
 
     def calculate_charges(self, product_usage, percent, **kwargs):
         '''
@@ -457,25 +519,36 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
         dollar_price = rate.decimal_price
 
         user = product_usage.product_user
+        allocation_tb = kwargs.get('allocation_tb')
+        if allocation_tb is None:
+            raise Exception(f'Allocation TB was not set for {product_usage}')
+
+        # Remaining TB after offer letter.  If no offer letter, should be the same as allocation_tb.
+        # In case it isn't set (it should be), use allocation_tb
+        remaining_tb = kwargs.get('remaining_tb')
+        if remaining_tb is None:
+            raise Exception(f'Remaining TB not set for {product_usage}')
 
         # Decimal charge rounded to 4 decimal places
-        decimal_charge = Decimal(rate.decimal_price * product_usage.decimal_quantity * Decimal(percent / 100)).quantize(Decimal('0.0001'))
-
-        if decimal_charge == Decimal('0'):
-            raise Exception('No billing record for $0 charges')
+        allocation_fraction = kwargs.get('allocation_percentage')
+        decimal_charge = Decimal(rate.decimal_price * allocation_fraction * remaining_tb * Decimal(percent / 100)).quantize(Decimal('0.0001'))
 
         # Round to dollars
         dollar_charge = decimal_charge.quantize(Decimal('0.01'))
 
-        allocation_fraction = kwargs.get('allocation_percentage')
         allocation_tb = kwargs.get('allocation_tb')
-        if not allocation_fraction or not allocation_tb:
-            raise Exception(f'Allocation percent / Allocation TB was not passed to calculate_charges')
+        if allocation_fraction is None or not allocation_tb:
+            raise Exception(f'Allocation percentage {allocation_fraction} / Allocation TB {allocation_tb} not passed to calculate_charges')
 
+        # If there is an offer letter, then need to add to description
+        remaining_space_str = ''
+        if allocation_tb != remaining_tb:
+            offer_letter_tb = allocation_tb - remaining_tb
+            remaining_space_str = f' remaining after faculty commitment of {offer_letter_tb} TB'
         allocation_percent = Decimal(allocation_fraction * 100).quantize(Decimal('0.01'))
-        allocation_string = f'{allocation_percent}% of {allocation_tb} TB'
+        allocation_string = f'{allocation_percent}% of {remaining_tb} TB of {product_usage.product.product_name}{remaining_space_str}'
 
-        description = f'${dollar_charge} for {percent_str}{allocation_string} ({product_usage.decimal_quantity} TB) at ${dollar_price.quantize(Decimal(".01"))} per TB'
+        description = f'${dollar_charge} for {percent_str}{allocation_string} at ${dollar_price.quantize(Decimal(".01"))} per TB'
 
         transactions_data.append(
             {
