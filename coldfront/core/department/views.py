@@ -205,24 +205,10 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                                 ~Q(usage_bytes__isnull=True))
 
         for p in project_objs:
-            p.allocs = p.allocation_set.all().\
-                    filter(allocationattribute__allocation_attribute_type_id=1).\
-                    values('resources__name', 'resources','allocationattribute__value','id').\
-                    annotate(size=Sum('allocationattribute__value', filter=(
-                        Q(allocationattribute__allocation_attribute_type_id=1))))
-            for allocation in p.allocs:
-                allocation['price'] = get_resource_rate(allocation['resources__name'])
-                allocation['cost'] = allocation['price'] * int(allocation['size']) if allocation['size'] else 0
-                allocation['user_count'] = Allocation.objects.get(pk=allocation['id']
-                            ).allocationuser_set.filter(allocationuser_filter).count()
-                attr_filter = ( Q(allocation_id=allocation['id']) &
-                                Q(allocation_attribute_type_id=8))
-                if AllocationAttribute.objects.filter(attr_filter):
-                    allocation['path'] = AllocationAttribute.objects.get(attr_filter).value
-                else:
-                    allocation['path'] = ""
+            p.allocs = p.allocation_set.all().filter(
+                            allocationattribute__allocation_attribute_type_id=1)
 
-            p.total_price = sum(float(a['cost']) for a in p.allocs)
+            p.total_price = sum(float(a.cost) for a in p.allocs.all())
 
         context['full_price'] = sum(p.total_price for p in project_objs)
         context['projects'] = project_objs
@@ -244,23 +230,3 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         except AttributeError:
             pass
         return context
-
-
-    def post(self, request, *args, **kwargs):
-        """activated if the Department is updated"""
-        pk = self.kwargs.get('pk')
-        # initial_data = {
-        #     'status': self.department.status,
-        # }
-        # form = AllocationInvoiceUpdateForm(
-        #     request.POST, initial=initial_data)
-        #
-        # if form.is_valid():
-        #     form_data = form.cleaned_data
-        #     allocation_obj.status = form_data.get('status')
-        #     allocation_obj.save()
-        #     messages.success(request, 'Department updated!')
-        # else:
-        #     for error in form.errors:
-        #         messages.error(request, error)
-        return HttpResponseRedirect(reverse('department-detail', kwargs={'pk': pk}))

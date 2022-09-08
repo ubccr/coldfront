@@ -193,10 +193,10 @@
                 <tr style="background-color:#FFFFFF">
                   <td></td>
                   <td><a href="{% url 'allocation-detail' allocation.id %}">{{allocation.id}}</a></td>
-                  <td>{{allocation.user_count}}</td>
-                  <td>{{allocation.resources__name}}</td>
-                  <td>{{allocation.path}}</td>
-                  <td>{{allocation.size|floatformat:1}}</td>
+                  <td>{{ allocation.allocation_users.count }}</td>
+                  <td>{{ allocation.resources__name }}</td>
+                  <td>{{ allocation.path }}</td>
+                  <td>{{ allocation.size|floatformat:1 }}</td>
                   <td>${{ allocation.cost|floatformat:2 }}</td>
                   <td></td>
                 </tr>
