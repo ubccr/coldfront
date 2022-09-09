@@ -1594,57 +1594,6 @@ class AllocationAddInvoiceNoteView(LoginRequiredMixin, UserPassesTestMixin, Crea
         context = super().get_context_data(**kwargs)
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
-        allocation_users = allocation_obj.allocationuser_set.exclude(
-            status__name__in=['Removed']).order_by('user__username')
-
-        # set visible usage attributes
-
-        alloc_attr_set = return_alloc_attr_set(allocation_obj,
-                                                self.request.user.is_superuser)
-
-        attributes_with_usage = [a for a in alloc_attr_set if hasattr(a, 'allocationattributeusage')]
-        attributes = list(alloc_attr_set)
-
-        guage_data = []
-        invalid_attributes = []
-        for attribute in attributes_with_usage:
-            try:
-                guage_data.append(generate_guauge_data_from_usage(
-                            attribute.allocation_attribute_type.name,
-                            float(attribute.value),
-                            float(attribute.allocationattributeusage.value)))
-            except ValueError:
-                logger.error("Allocation attribute '%s' is not an int but has a usage",
-                             attribute.allocation_attribute_type.name)
-                invalid_attributes.append(attribute)
-
-        for a in invalid_attributes:
-            attributes_with_usage.remove(a)
-
-        context['guage_data'] = guage_data
-        context['attributes_with_usage'] = attributes_with_usage
-        context['attributes'] = attributes
-
-        # Can the user update the project?
-        context['is_allowed_to_update_project'] = set_proj_update_permissions(
-                                                    allocation_obj, self.request.user)
-
-        context['allocation_users'] = allocation_users
-
-        if self.request.user.is_superuser:
-            notes = allocation_obj.allocationusernote_set.all()
-        else:
-            notes = allocation_obj.allocationusernote_set.filter(is_private=False)
-
-        context['notes'] = notes
-        context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
-        return context
-
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        pk = self.kwargs.get('pk')
-        allocation_obj = get_object_or_404(Allocation, pk=pk)
         context['allocation'] = allocation_obj
         return context
 
