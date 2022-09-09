@@ -173,8 +173,8 @@
                   </div>
                 </div>
               </div>
-              <p><strong>Add to Interactive Job Commands:</strong> srun &lt;commands&gt; --account {{ project.slurm_account_name }}</p>
-              <p><strong>Add to Batch Job Scripts:</strong> #SBATCH --account {{ project.slurm_account_name }}</p>
+              <p><strong>Add to Interactive Job Commands:</strong> srun -A {{ project.slurm_account_name }} &lt;commands&gt;</p>
+              <p><strong>Add to Batch Job Scripts:</strong> #SBATCH -A {{ project.slurm_account_name }}</p>
             </li>
         {% endfor %}
       </ul>
