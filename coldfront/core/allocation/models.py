@@ -6,6 +6,7 @@ from ast import literal_eval
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Q
 from django.utils.html import mark_safe
 from django.utils.module_loading import import_string
 from model_utils.models import TimeStampedModel
@@ -15,6 +16,8 @@ from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core import attribute_expansion
+from coldfront.core.utils.fasrc import get_resource_rate
+
 
 logger = logging.getLogger(__name__)
 
@@ -98,10 +101,22 @@ class Allocation(TimeStampedModel):
 
 
     @property
+    def size(self):
+        return self.allocationattribute_set.get(allocation_attribute_type_id=1).value
+
+    @property
+    def usage(self):
+        return self.allocationattribute_set.get(allocation_attribute_type_id=1).allocationattributeusage.value
+
+    @property
     def expires_in(self):
         return (self.end_date - datetime.date.today()).days
 
     @property
+    def cost(self):
+        price = float(get_resource_rate(self.resources.first().name))
+        size = self.allocationattribute_set.get(allocation_attribute_type_id=1).value
+        return 0 if not size else price * float(size)
 
     def get_information(self, public_only=True):
         html_string = ''
@@ -124,12 +139,12 @@ class Allocation(TimeStampedModel):
                                     float(attribute.value) * 10000) / 100
                 except ValueError:
                     percent = 'Invalid Value'
-                    logger.error("Allocation attribute '%s' is not an int but has a usage",
-                                 attribute.allocation_attribute_type.name)
+                    logger.error("Allocation attribute '%s' for allocation id %s is not an int but has a usage",
+                                 attribute.allocation_attribute_type.name, self.pk)
                 except ZeroDivisionError:
                     percent = 100
-                    logger.error("Allocation attribute '%s' == 0 but has a usage",
-                                 attribute.allocation_attribute_type.name)
+                    logger.error("Allocation attribute '%s' for allocation id %s == 0 but has a usage",
+                                 attribute.allocation_attribute_type.name, self.pk)
 
                 # string = '{} : {}/{} ({} %) <br>'.format(
                 string = '{}: {}/{} ({} %) <br>'.format(
@@ -150,8 +165,22 @@ class Allocation(TimeStampedModel):
             *ALLOCATION_RESOURCE_ORDERING)])
 
     @property
+    def path(self):
+        attr_filter = ( Q(allocation_id=self.id) &
+                        Q(allocation_attribute_type_id=8))
+        if AllocationAttribute.objects.filter(attr_filter):
+            return AllocationAttribute.objects.get(attr_filter).value
+        return ""
+
+    @property
     def get_resources_as_list(self):
         return list(self.resources.all().order_by('-is_allocatable'))
+
+    @property
+    def allocation_users(self):
+        # allocationuser_filter = (Q(status__name='Active') #&
+        #                         #~Q(usage_bytes__isnull=True))
+        return self.allocationuser_set.filter(status__name='Active')
 
     @property
     def get_parent_resource(self):

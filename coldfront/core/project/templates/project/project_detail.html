@@ -73,67 +73,72 @@ Project Detail
   </div>
 </div>
 <!-- End Project Heading -->
-<!-- Start Project Allocations -->
+
+<!-- Start Project Invoice/Allocations -->
+<div class="html2pdf__page-break"></div>
+
 <div class="card mb-3">
   <div class="card-header">
-    <h3 class="d-inline"><i class="fas fa-server" aria-hidden="true"></i> Allocations</h3> <span class="badge badge-secondary">{{allocations.count}}</span>
-    <div class="float-right">
-      {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
-        <a class="btn btn-success" href="{% url 'allocation-create' project.pk %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Request Resource Allocation</a>
-      {% endif %}
-    </div>
+    <h3 class="d-inline"><i class="fas fa-file-invoice-dollar" aria-hidden="true"></i> Project Invoice</h3>
+    <span class="badge badge-secondary">{{allocations|length}}</span>
   </div>
   <div class="card-body">
-    {% if allocations %}
-      <div class="table-responsive">
-        <table id="allocation_table" class="table table-hover">
-          <thead>
-            <tr>
-              <th scope="col">Resource Name</th>
-              <th scope="col">Resource Type</th>
-              <th scope="col">Information</th>
-              <th scope="col">Status</th>
-              <th scope="col" class="nosort">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for allocation in allocations %}
-            <tr>
-              <td>{{ allocation.get_parent_resource.name }}</td>
-              <td>{{ allocation.get_parent_resource.resource_type.name }}</td>
-              <td class="text-nowrap">{{allocation.get_information}}</td>
-              {% if allocation.status.name == 'Active' %}
-                <td class="text-success">{{ allocation.status.name }}</td>
-              {% elif  allocation.status.name == 'Expired' or allocation.status.name == 'Denied' %}
-                <td class="text-danger">{{ allocation.status.name }}</td>
-              {% else %}
-                <td class="text-info">{{ allocation.status.name }}</td>
+    <div class="table-responsive">
+        <table id="invoice_table" class="table table-hover">
+        <thead>
+          <tr>
+            <th scope="col">Resource Name</th>
+            <th scope="col">Resource Type</th>
+            <th scope="col">Location</th>
+            <th scope="col">User Count</th>
+            <th scope="col">Total Space (TB)</th>
+            <th scope="col">Monthly Cost</th>
+            <th scope="col" class="nosort">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for allocation in allocations %}
+          <tr style="background-color:#FFFFFF">
+            <td>{{ allocation.get_parent_resource.name }}</td>
+            <td>{{ allocation.get_parent_resource.resource_type.name }}</td>
+            <td>{{ allocation.path }}</td>
+            <td>{{ allocation.allocation_users.count }}</td>
+            <td>{{ allocation.size|floatformat:1 }}</td>
+            <td>${{allocation.cost|floatformat:2 }}</td>
+            <td>
+              <a href="{% url 'allocation-detail' allocation.pk %}">View Details</a>
+              {% if is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %}
+                <a href="{% url 'allocation-renew' allocation.pk %}">
+                <span class="badge badge-warning"><i class="fas fa-redo-alt" aria-hidden="true"></i>
+                Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} <br> Click to renew
+                </span>
+                </a>
               {% endif %}
-              <td>
-                <a href="{% url 'allocation-detail' allocation.pk %}">View Details</a>
-                {% if is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %}
-                  <a href="{% url 'allocation-renew' allocation.pk %}">
-                  <span class="badge badge-warning"><i class="fas fa-redo-alt" aria-hidden="true"></i>
-                  Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} <br> Click to renew
-                  </span>
-                  </a>
-                {% endif %}
-                {% if allocation.get_parent_resource.get_ondemand_status == 'Yes' and ondemand_url %}
-                <a href = "{{ ondemand_url }}" target="_blank"> <img src="/static/core/portal/imgs/ondemand.png" alt="ondemand cta" width="25" height="25"></a>
-              {% endif %}
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    {% else %}
-      <div class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i> There are no allocations to display.</div>
-    {% endif %}
+              {% if allocation.get_parent_resource.get_ondemand_status == 'Yes' and ondemand_url %}
+              <a href = "{{ ondemand_url }}" target="_blank"> <img src="/static/core/portal/imgs/ondemand.png" alt="ondemand cta" width="25" height="25"></a>
+            {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr style="background-color:#C2C2C2;font-weight:bold">
+            <td>Total</td>
+            <td>{{ allocation_total.resources.first.name}}</td>
+            <td>{{ allocation_total.path}}</td>
+            <td>{{ allocation_total.allocation_user_count}}</td>
+            <td>{{ allocation_total.size|floatformat:1}}</td>
+            <td>${{allocation_total.cost|floatformat:2 }}</td>
+            <td></td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
   </div>
 </div>
-<!-- End Project Allocations -->
-
+<!-- End Project Invoice/Allocations -->
 
 <!-- Start Project Users -->
 <div class="card mb-3">
@@ -155,10 +160,19 @@ Project Detail
             <th scope="col">Username</th>
             <th scope="col">Name</th>
             <th scope="col">Email</th>
-            <th scope="col">Role <a href="#" data-toggle="popover" title="Role" data-trigger="hover" data-content="Manager role grants user access to add/remove users, allocations, grants, and publications to the project."><i class="fas fa-info-circle" aria-hidden="true"></i><span class="sr-only">Manager role grants user access to add/remove users, allocations, grants, and publications to the project.</span></a></th>
+            <th scope="col">Role <a href="#" data-toggle="popover" title="Role" data-trigger="hover" data-content="Manager role grants user access to add/remove users, allocations, grants, and publications to the project.">
+              <i class="fas fa-info-circle" aria-hidden="true"></i>
+              <span class="sr-only">Manager role grants user access to add/remove users, allocations, grants, and publications to the project.</span></a>
+            </th>
             <th scope="col">Status</th>
             <!-- This is what I want to add - a usage column; -->
-           <th scope="col"><input type="checkbox" class="check" id="selectAll" style="margin-right: 5px;">Enable Notifications <a href="#" title="Enable Notifications" data-toggle="popover" data-trigger="hover" data-content="When disabled, user will not receive notifications for allocation requests and expirations or cloud usage (if applicable)."><i class="fas fa-info-circle" aria-hidden="true"></i><span class="sr-only">When disabled, user will not receive notifications for allocation requests and expirations or cloud usage (if applicable).</span></a></th>
+           <th scope="col">
+             <input type="checkbox" class="check" id="selectAll" style="margin-right: 5px;">Enable Notifications
+               <a href="#" title="Enable Notifications" data-toggle="popover" data-trigger="hover" data-content="When disabled, user will not receive notifications for allocation requests and expirations or cloud usage (if applicable).">
+                 <i class="fas fa-info-circle" aria-hidden="true"></i>
+                 <span class="sr-only">When disabled, user will not receive notifications for allocation requests and expirations or cloud usage (if applicable).</span>
+               </a>
+             </th>
             <th scope="col">Actions</th>
           </tr>
         </thead>
@@ -448,7 +462,7 @@ Project Detail
       "order": [[ 1, "desc" ]]
     });
 
-    $('#allocation_table').DataTable({
+    $('#invoice_table').DataTable({
       'aoColumnDefs': [{
         'bSortable': false,
         'aTargets': ['nosort']
