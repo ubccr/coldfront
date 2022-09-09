@@ -178,10 +178,9 @@ class Allocation(TimeStampedModel):
 
     @property
     def allocation_users(self):
-        allocationuser_filter = (Q(status__name='Active') &
-                                ~Q(status__name__in=['Removed']) &
-                                ~Q(usage_bytes__isnull=True))
-        return self.allocationuser_set.filter(allocationuser_filter)
+        # allocationuser_filter = (Q(status__name='Active') #&
+        #                         #~Q(usage_bytes__isnull=True))
+        return self.allocationuser_set.filter(status__name='Active')
 
     @property
     def get_parent_resource(self):

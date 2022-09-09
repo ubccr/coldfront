@@ -223,9 +223,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context = super().get_context_data(**kwargs)
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
-        allocation_users = allocation_obj.allocationuser_set.exclude(
-            status__name__in=['Removed']).exclude(usage_bytes__isnull=True).order_by('user__username')
-
+        allocation_users = allocation_obj.allocationusers.exclude(usage_bytes__isnull=True)
         # set visible usage attributes
         alloc_attr_set = return_alloc_attr_set(allocation_obj,
                                                 self.request.user.is_superuser)
@@ -251,14 +249,14 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         for a in invalid_attributes:
             attributes_with_usage.remove(a)
 
-        allocation_quota_bytes, allocation_usage_bytes = return_allocation_bytes_values(attributes_with_usage, allocation_users)
+        allocation_quota_bytes, allocation_usage_bytes = return_allocation_bytes_values(attributes_with_usage, allocation_obj.allocation_users)
 
 
         allocation_quota_tb = next((a for a in attributes_with_usage if \
             a.allocation_attribute_type.name == "Storage Quota (TB)"), "None")
 
         allocation_usage_tb = float(allocation_quota_tb.allocationattributeusage.value)
-        allocation_quota_bytes, allocation_usage_bytes = return_allocation_bytes_values(attributes_with_usage, allocation_users)
+        allocation_quota_bytes, allocation_usage_bytes = return_allocation_bytes_values(attributes_with_usage, allocation_obj.allocation_users)
         context['allocation_quota_bytes'] = allocation_quota_bytes
         context['allocation_usage_bytes'] = allocation_usage_bytes
         context['allocation_quota_tb'] = 0 if not allocation_quota_bytes else allocation_quota_bytes/1099511627776

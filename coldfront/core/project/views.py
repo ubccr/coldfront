@@ -123,6 +123,12 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 allocations = Allocation.objects.prefetch_related(
                     'resources').filter(project=self.object)
 
+        allocation_total = {"allocation_user_count": 0, "size": 0, "cost": 0}
+        for allocation in allocations:
+            allocation_total['cost'] += allocation.cost
+            allocation_total['allocation_user_count'] += int(allocation.allocation_users.count())
+            allocation_total['size'] += float(allocation.size)
+
         context['publications'] = Publication.objects.filter(
             project=self.object, status='Active').order_by('-year')
         context['research_outputs'] = ResearchOutput.objects.filter(
@@ -130,6 +136,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['grants'] = Grant.objects.filter(
             project=self.object, status__name__in=['Active', 'Pending', 'Archived'])
         context['allocations'] = allocations
+        context['allocation_total'] = allocation_total
         context['project_users'] = project_users # context dictionary; key is project_users; project_users is a variable name
         # print(type(project_users))
         # print(type(project_users[0]))
