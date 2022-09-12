@@ -8,7 +8,7 @@
 <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
 <meta http-equiv="Content-Language" content="en-us" />
 
-<title>fiine</title>
+<title>Coldfront</title>
 
 <meta name="MSSmartTagsPreventParsing" content="true" />
 <style>
@@ -30,8 +30,8 @@ p { -pdf-keep-with-next: true;}
 p.seperator { -pdf-keep-with-next: false;}
 .action_title{width:500pt; text-align:left; padding:10pt;margin:10pt 0px; font-size:14pt; color:#006699;}
 .headertbl{padding:0; margin:0;}
-.sumtbl1{border:.5pt solid #666; padding:0; margin:0;}
-.sumtbl1 td{font-size:10pt;text-align:left; padding:3pt; }
+.sumtbl1{padding:0; margin:0;}
+.sumtbl1 td{font-size:10pt;text-align:left; padding:3pt; border: 0.5px solid #aaa;}
 .sumtbl1 thead td{font-weight:bold; font-size:10pt;text-align:center; padding:3pt; }
 .sumtbl1 td.rtdr{text-align:right;}
 
@@ -75,31 +75,31 @@ p.seperator { -pdf-keep-with-next: false;}
 
 </style>
 {% block main_content %}
-<br /><h3>Line Items</h3>
-<table cellspacing="0" cellpadding="0" class="sumtbl1" repeat="1">
+<table cellspacing="0" cellpadding="0" class="sumtbl1">
     <thead>
         <tr>
             <td class="rtdb">&nbsp;</td>
-            <td>Storage Product</td>
+            <td>Usage Date</td>
             <td>User</td>
+            <td>Storage Product</td>
             <td>Account</td>
             <td>Description</td>
-            <td>Total Charges</td>
+            <td>Charge</td>
         </tr>
     </thead>
-    {% for line_item, txn_rate_descriptions in line_item_data %}
+    {% for br in billing_records %}
         <tr>
             <td class="w20 rtdr">{{ forloop.counter }}</td>
-            <td class="w100">{{ line_item.line_item_product_usage.product }}</td>
-            <td class="w100">{{ line_item.line_item_person.full_name }}</td>
-            <td class="waccount">
-                {{ line_item.line_item_account.name }}<br/>
-                {{ line_item.line_item_account.code }}
-            </td>
+            <td class="w100">{{ br.start_date|date:"m / Y" }}</td>
+            <td class="w100">{{ br.user }}</td>
+            <td>{{ br.product }}</td>
+            <td style="white-space: nowrap;">{{ br.account }}</td>
             <td>
-                {{ txn_rate_descriptions }}
+                {% for txn in br.transaction_descriptions %}
+                    {{txn}}<br/>
+                {% endfor %}
             </td>
-            <td class="wcharge rtdr">{{ line_item.decimal_charge|just_dollars|intcomma }}</td>
+            <td class="wcharge rtdr">{{ br.decimal_charge|just_dollars|intcomma }}</td>
         </tr>
     {% endfor %}
        </table>
@@ -107,5 +107,4 @@ p.seperator { -pdf-keep-with-next: false;}
 <p>
 Note: If you have any further questions or concerns please contact RC (rchelp@fas.harvard.edu).
 </p>
-<div id="footer_content"><pdf:pagenumber> of <pdf:pagecount> </div>
 {% endblock %}
