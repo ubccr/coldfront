@@ -40,8 +40,12 @@ DEFAULT_FROM_EMAIL = EMAIL_FROM
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': 'cf_brc_db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'cf_brc_db',
+        'USER': 'test',
+        'PASSWORD': 'test',
+        'HOST': 'localhost',
+        'PORT': '5432',
     },
 }
 
