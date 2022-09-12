@@ -90,7 +90,7 @@ p.seperator { -pdf-keep-with-next: false;}
     {% for br in billing_records %}
         <tr>
             <td class="w20 rtdr">{{ forloop.counter }}</td>
-            <td class="w100">{{ br.start_date|date:"m / Y" }}</td>
+            <td class="w100">{{ br.start_date|date:"m/Y" }}</td>
             <td class="w100">{{ br.user }}</td>
             <td>{{ br.product }}</td>
             <td style="white-space: nowrap;">{{ br.account }}</td>
