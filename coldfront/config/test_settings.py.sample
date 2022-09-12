@@ -1,0 +1,138 @@
+import os
+
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = True
+
+ALLOWED_HOSTS = ['0.0.0.0', 'localhost', 'localhost']
+
+PORTAL_NAME = 'MyBRC'
+PROGRAM_NAME_LONG = 'Berkeley Research Computing'
+PROGRAM_NAME_SHORT = 'BRC'
+PRIMARY_CLUSTER_NAME = 'Savio'
+
+CENTER_NAME = PROGRAM_NAME_SHORT + ' HPC Resources'
+CENTER_USER_GUIDE = 'https://docs-research-it.berkeley.edu/services/high-performance-computing/user-guide/'
+CENTER_LOGIN_GUIDE = 'https://docs-research-it.berkeley.edu/services/high-performance-computing/user-guide/logging-brc-clusters/#Logging-in'
+CENTER_HELP_EMAIL = 'brc-hpc-help@berkeley.edu'
+
+CENTER_BASE_URL = 'http://localhost:8880'
+CENTER_HELP_URL = CENTER_BASE_URL + '/help'
+CENTER_PROJECT_RENEWAL_HELP_URL = CENTER_BASE_URL + '/help'
+
+EMAIL_PORT = 1025
+EMAIL_SUBJECT_PREFIX = '[MyBRC-User-Portal]'
+EMAIL_ADMIN_LIST = ['admin@localhost']
+EMAIL_SENDER = 'test@test.test'
+EMAIL_TICKET_SYSTEM_ADDRESS = 'help@localhost'
+EMAIL_DIRECTOR_EMAIL_ADDRESS = 'director@localhost'
+EMAIL_PROJECT_REVIEW_CONTACT = 'review@localhost'
+EMAIL_DEVELOPMENT_EMAIL_LIST = ['dev1@localhost', 'dev2@localhost']
+EMAIL_OPT_OUT_INSTRUCTION_URL = CENTER_BASE_URL + '/optout'
+EMAIL_SIGNATURE = """
+MyBRC User Portal team
+http://localhost:8880
+Email : test@test.test
+"""
+
+EMAIL_FROM = 'test@test.test'
+EMAIL_ADMIN = 'test@test.test'
+DEFAULT_FROM_EMAIL = EMAIL_FROM
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': 'cf_brc_db.sqlite3',
+    },
+}
+
+LOG_PATH = '/var/log/user_portals/cf_mybrc/cf_mybrc_portal.log'
+API_LOG_PATH = '/var/log/user_portals/cf_mybrc/cf_mybrc_api.log'
+
+# A list of admin email addresses to CC when certain requests are approved.
+REQUEST_APPROVAL_CC_LIST = ['test@test.test']
+
+
+#------------------------------------------------------------------------------
+# Billing settings
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# SSL settings
+#------------------------------------------------------------------------------
+
+# Use a secure cookie for the session cookie (HTTPS only).
+SESSION_COOKIE_SECURE = False
+
+#------------------------------------------------------------------------------
+# Sentry settings
+#------------------------------------------------------------------------------
+
+# Configure Sentry.
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.logging import ignore_logger
+
+
+SENTRY_DSN = ''
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        traces_sample_rate=0.01,
+        send_default_pii=True)
+    # Ignore noisy loggers.
+    ignore_logger('coldfront.api')
+    ignore_logger('coldfront.core.utils.middleware')
+
+#------------------------------------------------------------------------------
+# Django All-Auth settings
+#------------------------------------------------------------------------------
+
+CILOGON_APP_CLIENT_ID = ''
+CILOGON_APP_SECRET = ''
+
+#------------------------------------------------------------------------------
+# django-flags settings
+#------------------------------------------------------------------------------
+
+FLAGS = {
+    'ALLOCATION_RENEWAL_FOR_NEXT_PERIOD_REQUESTABLE': [
+        {'condition': 'during month', 'value': '5'},
+    ],
+    'BASIC_AUTH_ENABLED': [{'condition': 'boolean', 'value': True}],
+    'BRC_ONLY': [{'condition': 'boolean', 'value': True}],
+    'LRC_ONLY': [{'condition': 'boolean', 'value': False}],
+    'SECURE_DIRS_REQUESTABLE': [{'condition': 'boolean', 'value': True}],
+    'SERVICE_UNITS_PURCHASABLE': [{'condition': 'boolean', 'value': True}],
+    'SSO_ENABLED': [{'condition': 'boolean', 'value': False}],
+}
+
+#------------------------------------------------------------------------------
+# django-flags settings
+#------------------------------------------------------------------------------
+
+FLAGS = {
+    'ALLOCATION_RENEWAL_FOR_NEXT_PERIOD_REQUESTABLE': [
+        {'condition': 'during month', 'value': '5'},
+    ],
+    'BASIC_AUTH_ENABLED': [{'condition': 'boolean', 'value': True}],
+    'BRC_ONLY': [{'condition': 'boolean', 'value': True}],
+    'LRC_ONLY': [{'condition': 'boolean', 'value': False}],
+    'SECURE_DIRS_REQUESTABLE': [{'condition': 'boolean', 'value': True}],
+    'SERVICE_UNITS_PURCHASABLE': [{'condition': 'boolean', 'value': True}],
+    'SSO_ENABLED': [{'condition': 'boolean', 'value': False}],
+}
+
+#------------------------------------------------------------------------------
+# django-q settings
+#------------------------------------------------------------------------------
+
+Q_CLUSTER = {
+    'redis': {
+        'host': '127.0.0.1',
+        'port': 6379,
+        'db': 0,
+        'password': 'test',
+    }
+}

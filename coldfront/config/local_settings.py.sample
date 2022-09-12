@@ -459,7 +459,10 @@ except ImportError:
         try:
             from .dev_settings import *
         except ImportError:
-            pass
+            try:
+                from .test_settings import *
+            except ImportError:
+                pass
 
 # Update logging settings based on potentially-updated variables.
 LOGGING['handlers']['file']['filename'] = LOG_PATH
