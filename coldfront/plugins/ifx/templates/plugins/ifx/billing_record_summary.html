@@ -1,0 +1,111 @@
+{% load humanize %}
+{% load static %}
+{% load coldfront %}
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+<meta http-equiv="Content-Language" content="en-us" />
+
+<title>fiine</title>
+
+<meta name="MSSmartTagsPreventParsing" content="true" />
+<style>
+@page {
+  size: letter landscape;
+  @frame page_one {
+    left 50pt; width: 700pt; top:50pt; height: 500pt;
+  }
+  @frame footer_frame {
+    -pdf-frame-content: footer_content;
+    left 50pt; width: 700pt; top:742pt; height: 20pt;
+  }
+}
+
+body, div, td, p, a {font-size:10pt;}
+h3{padding:0; margin:15pt 0 0 0;}
+tr { page-break-inside: avoid }
+p { -pdf-keep-with-next: true;}
+p.seperator { -pdf-keep-with-next: false;}
+.action_title{width:500pt; text-align:left; padding:10pt;margin:10pt 0px; font-size:14pt; color:#006699;}
+.headertbl{padding:0; margin:0;}
+.sumtbl1{border:.5pt solid #666; padding:0; margin:0;}
+.sumtbl1 td{font-size:10pt;text-align:left; padding:3pt; }
+.sumtbl1 thead td{font-weight:bold; font-size:10pt;text-align:center; padding:3pt; }
+.sumtbl1 td.rtdr{text-align:right;}
+
+.w20 {width:20pt;}
+.w30 {width:30pt;}
+.w60 {width:60pt;}
+.w70 {width:70pt;}
+.w90 {width:90pt;}
+.w100 {width:100pt;}
+.w200 {width:200pt;}
+.w300 {width:300pt;}
+.w400 {width:400pt;}
+.wcharge {width:60pt;}
+.waccount {width:220pt;}
+.wdescription {width:150pt;}
+
+.vtop{vertical-align:top;}
+.dos{padding-left:16pt; font-size:20pt;color:#333; }
+
+.innertbl {
+    border-collapse: collapse;
+    margin: 0;
+    padding: 0;
+}
+.innertbl td {
+    border: 1px solid grey;
+}
+.innertbl tr:first-child td {
+    border-top: 0;
+}
+.innertbl tr td:first-child {
+    border-left: 0;
+}
+.innertbl tr:last-child td {
+    border-bottom: 0;
+}
+.innertbl tr td:last-child {
+    border-right: 0;
+}
+
+
+</style>
+{% block main_content %}
+<br /><h3>Line Items</h3>
+<table cellspacing="0" cellpadding="0" class="sumtbl1" repeat="1">
+    <thead>
+        <tr>
+            <td class="rtdb">&nbsp;</td>
+            <td>Storage Product</td>
+            <td>User</td>
+            <td>Account</td>
+            <td>Description</td>
+            <td>Total Charges</td>
+        </tr>
+    </thead>
+    {% for line_item, txn_rate_descriptions in line_item_data %}
+        <tr>
+            <td class="w20 rtdr">{{ forloop.counter }}</td>
+            <td class="w100">{{ line_item.line_item_product_usage.product }}</td>
+            <td class="w100">{{ line_item.line_item_person.full_name }}</td>
+            <td class="waccount">
+                {{ line_item.line_item_account.name }}<br/>
+                {{ line_item.line_item_account.code }}
+            </td>
+            <td>
+                {{ txn_rate_descriptions }}
+            </td>
+            <td class="wcharge rtdr">{{ line_item.decimal_charge|just_dollars|intcomma }}</td>
+        </tr>
+    {% endfor %}
+       </table>
+<hr />
+<p>
+Note: If you have any further questions or concerns please contact RC (rchelp@fas.harvard.edu).
+</p>
+<div id="footer_content"><pdf:pagenumber> of <pdf:pagecount> </div>
+{% endblock %}

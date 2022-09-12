@@ -91,6 +91,7 @@ def allocation_user_to_allocation_product_usage(allocation_user, product, overwr
         product_usage__month=month,
         product_usage__year=year,
         product_usage__organization=organization,
+        allocation_user__allocation=allocation_user.allocation, # Going by allocation because 1. user may be part of multiple and 2. this is a history value
     )
     if len(aupus) > 0:
         if overwrite:
