@@ -63,11 +63,6 @@ SETTINGS_EXPORT += [
 ADMIN_COMMENTS_SHOW_EMPTY = ENV.bool('ADMIN_COMMENTS_SHOW_EMPTY', default=True)
 
 #------------------------------------------------------------------------------
-# TIcket system related
-#------------------------------------------------------------------------------
-NEW_TICKET_URL = ENV.str('NEW_TICKET_URL', default=None)
-
-#------------------------------------------------------------------------------
 # List of Allocation Attributes to display on view page
 #------------------------------------------------------------------------------
 ALLOCATION_ATTRIBUTE_VIEW_LIST = ENV.list('ALLOCATION_ATTRIBUTE_VIEW_LIST', default=['slurm_account_name', 'freeipa_group', 'Cloud Account Name', ])
