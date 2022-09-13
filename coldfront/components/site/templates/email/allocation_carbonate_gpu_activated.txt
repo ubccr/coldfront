@@ -4,7 +4,7 @@ Your allocation request for {{ resource }} has been activated.
 
 To view your allocations information, please go to {{ allocation_url }}
 
-It may take up to 2 hours for these changes to propagate through the system. There are a few things to keep in mind about this system.
+It may take up to 24 hours for these changes to propagate through the system. There are a few things to keep in mind about this system.
 -- The system consists of 24 nodes with four V100 GPUs per node.
 -- The system is managed via the Slurm scheduler. You can log into a Carbonate login node and submit jobs to one of the available partitions. The two partitions are gpu (containing 22x V100 nodes), and gpu-debug (containing two V100 nodes).
 -- You will need to specify the required GPU resource for each job using the gpus tag. For example to request 2 GPUs per requested node: #SBATCH --gpus-per-node=2
