@@ -30,7 +30,7 @@ PROJECT_END_DATE_CARRYOVER_DAYS = ENV.int('PROJECT_END_DATE_CARRYOVER_DAYS', def
 #------------------------------------------------------------------------------
 # Allocation related
 #------------------------------------------------------------------------------
-ALLOCATION_ENABLE_CHANGE_REQUESTS_BY_DEFAULT = ENV.bool('ALLOCATION_ENABLE_CHANGE_REQUESTS', default=True)
+ALLOCATION_ENABLE_CHANGE_REQUESTS_BY_DEFAULT = ENV.bool('ALLOCATION_ENABLE_CHANGE_REQUESTS_BY_DEFAULT', default=True)
 ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS = ENV.list('ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS', cast=int, default=[30, 60, 90])
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = ENV.bool('ALLOCATION_ENABLE_ALLOCATION_RENEWAL', default=True)
 ALLOCATION_FUNCS_ON_EXPIRE = ['coldfront.core.allocation.utils.test_allocation_function', ]
@@ -61,6 +61,11 @@ SETTINGS_EXPORT += [
 ]
 
 ADMIN_COMMENTS_SHOW_EMPTY = ENV.bool('ADMIN_COMMENTS_SHOW_EMPTY', default=True)
+
+#------------------------------------------------------------------------------
+# TIcket system related
+#------------------------------------------------------------------------------
+NEW_TICKET_URL = ENV.str('NEW_TICKET_URL', default=None)
 
 #------------------------------------------------------------------------------
 # List of Allocation Attributes to display on view page
