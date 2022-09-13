@@ -21,10 +21,10 @@ from coldfront.core.resource.models import Resource
 from coldfront.core.resource.utils import get_compute_resource_names
 from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
-from coldfront.core.user.models import EmailAddress
 from coldfront.core.user.models import UserProfile
 from coldfront.core.user.utils_.host_user_utils import is_lbl_employee
 
+from allauth.account.models import EmailAddress
 from collections import defaultdict
 from decimal import Decimal
 from django.conf import settings
