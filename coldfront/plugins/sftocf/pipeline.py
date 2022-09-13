@@ -223,6 +223,10 @@ class ColdFrontDB:
         '''
         filepaths = []
         to_collect = []
+        # remove any servers not currently in servers.json
+        volumes = [vol for k, v in svp.items() for vol in v.keys()]
+        for l, r in lr.items():
+            lr[l] = [res for res in r if res[0] in volumes]
         labs_resources = [(l, res[0], res[1]) for l, r in lr.items() for res in r]
         logger.debug("labs_resources:%s", labs_resources)
 
