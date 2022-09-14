@@ -69,6 +69,7 @@ class Command(BaseCommand):
             type=str)
         parser.add_argument(
             '--process',
+            action='store_true',
             help=(
                 'Run processing on valid requests. If this argument is not '
                 'provided, each request will be marked as "Complete" without '
@@ -406,12 +407,12 @@ class Command(BaseCommand):
         full_name = full_name.strip().split()
         if not full_name:
             return names
-        names['first'] = full_name[0]
+        names['first'] = full_name[0].title()
         if len(full_name) == 2:
-            names['last'] = full_name[-1]
+            names['last'] = full_name[-1].title()
         else:
-            names['middle'] = ' '.join(full_name[1:-1])
-            names['last'] = full_name[-1]
+            names['middle'] = ' '.join(full_name[1:-1]).title()
+            names['last'] = full_name[-1].title()
         return names
 
     def _get_user_with_email(self, email):
