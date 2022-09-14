@@ -30,6 +30,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from django.core.management import call_command
 from django.core.management.base import BaseCommand
 from coldfront.core.utils.common import utc_now_offset_aware
 from django.core.validators import validate_email
@@ -92,6 +93,12 @@ class Command(BaseCommand):
             help='Load IDs to be used for monthly billing from a file.')
         add_file_argument(billing_ids_parser, 'billing_file')
 
+        email_addresses_parser = subparsers.add_parser(
+            'email_addresses',
+            help=(
+                'Create a primary, verified EmailAddress for each User with '
+                'zero associated EmailAddress objects.'))
+
         host_users_parser = subparsers.add_parser(
             'host_users',
             help=(
@@ -134,6 +141,7 @@ class Command(BaseCommand):
             'allocations',
             'billing_ids',
             'host_users',
+            'email_addresses',
         ]
         for subcommand in ordered_subcommands:
             handler = getattr(self, f'handle_{subcommand}')
@@ -305,6 +313,12 @@ class Command(BaseCommand):
             self.logger.info(
                 f'Set Project {project_name}\'s default billing ID to '
                 f'{default_billing_id}.')
+
+    @staticmethod
+    def handle_email_addresses(*args, **options):
+        """Handle the 'email_addresses' subcommand."""
+        cmd_args = ['create_email_addresses', 'allauth.account.models']
+        call_command(*cmd_args)
 
     def handle_host_users(self, *args, **options):
         """Handle the 'host_users' subcommand."""
