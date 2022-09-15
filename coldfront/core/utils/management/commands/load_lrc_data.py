@@ -178,19 +178,11 @@ class Command(BaseCommand):
         bp_by_identifier = {}
         ba_by_identifier_pair = {}
 
-        bp_defaults = {
-            'description': 'Unknown, invalid project.',
-        }
-        ba_defaults = {
-            'description': 'Unknown, invalid activity.',
-            'is_valid': False,
-        }
-
         for username, billing_id in user_account_fee_ids.items():
             bp_identifier, ba_identifier = billing_id.split('-')
             billing_project, created = get_or_create_with_cache(
                 BillingProject, bp_identifier, bp_by_identifier,
-                identifier=bp_identifier, defaults=bp_defaults)
+                identifier=bp_identifier)
             if created:
                 self.logger.info(
                     f'Invalid, unknown BillingProject {bp_identifier} was '
@@ -199,8 +191,7 @@ class Command(BaseCommand):
             pair = (bp_identifier, ba_identifier)
             billing_activity, created = get_or_create_with_cache(
                 BillingActivity, pair, ba_by_identifier_pair,
-                billing_project=billing_project, identifier=ba_identifier,
-                defaults=ba_defaults)
+                billing_project=billing_project, identifier=ba_identifier)
             if created:
                 self.logger.info(
                     f'Invalid, unknown BillingActivity {billing_id} was '
@@ -245,7 +236,7 @@ class Command(BaseCommand):
                 bp_identifier, ba_identifier = billing_id.split('-')
                 billing_project, created = get_or_create_with_cache(
                     BillingProject, bp_identifier, bp_by_identifier,
-                    identifier=bp_identifier, defaults=bp_defaults)
+                    identifier=bp_identifier)
                 if created:
                     self.logger.info(
                         f'Invalid, unknown BillingProject {bp_identifier} was '
@@ -254,8 +245,7 @@ class Command(BaseCommand):
                 pair = (bp_identifier, ba_identifier)
                 billing_activity, created = get_or_create_with_cache(
                     BillingActivity, pair, ba_by_identifier_pair,
-                    billing_project=billing_project, identifier=ba_identifier,
-                    defaults=ba_defaults)
+                    billing_project=billing_project, identifier=ba_identifier)
                 if created:
                     self.logger.info(
                         f'Invalid, unknown BillingActivity {billing_id} was '
