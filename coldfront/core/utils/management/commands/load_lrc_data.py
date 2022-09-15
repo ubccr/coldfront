@@ -879,10 +879,10 @@ class Command(BaseCommand):
         allocation_kwargs = {
             'start_date': start_date,
             'end_date': None,
-            'num_service_units': None,
+            'num_service_units': settings.ALLOCATION_MAX,
         }
         allocation_user_kwargs = {
-            'num_service_units': None,
+            'num_service_units': settings.ALLOCATION_MAX,
         }
 
         departmental_cluster_names = self.get_departmental_cluster_names()
