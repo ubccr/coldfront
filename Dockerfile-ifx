@@ -30,14 +30,13 @@ RUN --mount=type=ssh pip install --upgrade pip && \
     pip install git+ssh://git@gitlab-int.rc.fas.harvard.edu/informatics/ifxbilling.git@${IFXBILLING_COMMIT} && \
     pip install ldap3 django_auth_ldap && \
     pip install -r requirements.txt
+
 COPY . .
 
-RUN pip install reportlab==3.6.6
-# RUN python3 ./manage.py initial_setup
-# RUN python3 ./manage.py load_test_data
+RUN pip install django-redis reportlab==3.6.6
 
 EXPOSE 80
 EXPOSE 25
 
-CMD ["python", "manage.py", "runserver", "0.0.0.0:80"]
-RUN ./manage.py qcluster &
+CMD ["/bin/bash", "./container_startup.sh"]
+# CMD ["python", "manage.py", "runserver", "0.0.0.0:80", "--insecure"]
