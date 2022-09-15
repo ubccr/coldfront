@@ -5,6 +5,7 @@ from coldfront.core.allocation.models import AllocationAttributeUsage
 from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.models import AllocationUser
+from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.allocation.models import AllocationUserAttributeUsage
 from coldfront.core.allocation.utils import get_or_create_active_allocation_user
 from coldfront.core.allocation.utils import get_project_compute_allocation
@@ -991,14 +992,16 @@ class Command(BaseCommand):
         allocation_attribute_defaults = {
             'value': str(num_service_units),
         }
-        allocation_attribute, _ = AllocationAttribute.objects.update_or_create(
-            allocation_attribute_type=allocation_attribute_type,
-            allocation=allocation, defaults=allocation_attribute_defaults)
+        allocation_attribute, created = \
+            AllocationAttribute.objects.update_or_create(
+                allocation_attribute_type=allocation_attribute_type,
+                allocation=allocation, defaults=allocation_attribute_defaults)
 
-        ProjectTransaction.objects.create(
-            project=project,
-            date_time=utc_now_offset_aware(),
-            allocation=num_service_units)
+        if created:
+            ProjectTransaction.objects.create(
+                project=project,
+                date_time=utc_now_offset_aware(),
+                allocation=num_service_units)
 
         # A usage should have been created for the attribute.
         try:
@@ -1034,14 +1037,23 @@ class Command(BaseCommand):
         if not isinstance(num_service_units, Decimal):
             return allocation_user
 
-        allocation_user_attribute = set_allocation_user_attribute_value(
-            allocation_user, 'Service Units', str(num_service_units))
-        allocation_user.refresh_from_db()
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Service Units')
+        allocation_user_attribute_defaults = {
+            'value': str(num_service_units),
+        }
+        allocation_user_attribute, created = \
+            AllocationUserAttribute.objects.get_or_create(
+                allocation_attribute_type=allocation_attribute_type,
+                allocation=allocation_user.allocation,
+                allocation_user=allocation_user,
+                defaults=allocation_user_attribute_defaults)
 
-        ProjectUserTransaction.objects.create(
-            project_user=project_user,
-            date_time=utc_now_offset_aware(),
-            allocation=num_service_units)
+        if created:
+            ProjectUserTransaction.objects.create(
+                project_user=project_user,
+                date_time=utc_now_offset_aware(),
+                allocation=num_service_units)
 
         # A usage should have been created for the attribute.
         try:
@@ -1053,4 +1065,5 @@ class Command(BaseCommand):
                 f'exists for AllocationUserAttribute '
                 f'{allocation_user_attribute.pk}.')
 
+        allocation_user.refresh_from_db()
         return allocation_user
