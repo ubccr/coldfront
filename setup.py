@@ -53,6 +53,7 @@ setup(
         'six==1.16.0',
         'urllib3==1.26.8',
         'wcwidth==0.2.5',
+        'formencode==2.0.1',
     ],
     entry_points={
         'console_scripts': [

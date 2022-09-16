@@ -1,14 +1,16 @@
 import datetime
 import importlib
 import logging
+import re 
 from ast import literal_eval
 
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.html import mark_safe
 from django.utils.module_loading import import_string
+from coldfront.core.utils.validate import AttributeValidator
+from django.core.exceptions import ValidationError
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
@@ -306,21 +308,16 @@ class AllocationAttribute(TimeStampedModel):
 
         expected_value_type = self.allocation_attribute_type.attribute_type.name.strip()
 
-        if expected_value_type == "Int" and not isinstance(int(literal_eval(f'\"{self.value}\"')), int):
-            raise ValidationError(
-                'Invalid Value "%s" for "%s". Value must be an integer.' % (self.value, self.allocation_attribute_type.name))
-        elif expected_value_type == "Float" and not (isinstance(literal_eval(f'\"{self.value}\"'), float) or isinstance(literal_eval(f'\"{self.value}\"'), int)):
-            raise ValidationError(
-                'Invalid Value "%s" for "%s". Value must be a float.' % (self.value, self.allocation_attribute_type.name))
-        elif expected_value_type == "Yes/No" and self.value not in ["Yes", "No"]:
-            raise ValidationError(
-                'Invalid Value "%s" for "%s". Allowed inputs are "Yes" or "No".' % (self.value, self.allocation_attribute_type.name))
+        validator = AttributeValidator(self.value)
+
+        if expected_value_type == "Int":
+            validator.validate_int()
+        elif expected_value_type == "Float":
+            validator.validate_float()
+        elif expected_value_type == "Yes/No":
+            validator.validate_yes_no()
         elif expected_value_type == "Date":
-            try:
-                datetime.datetime.strptime(self.value.strip(), "%Y-%m-%d")
-            except ValueError:
-                raise ValidationError(
-                    'Invalid Value "%s" for "%s". Date must be in format YYYY-MM-DD' % (self.value, self.allocation_attribute_type.name))
+            validator.validate_date()
 
     def __str__(self):
         return '%s' % (self.allocation_attribute_type.name)

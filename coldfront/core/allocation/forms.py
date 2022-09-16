@@ -10,7 +10,6 @@ from coldfront.core.allocation.utils import get_user_resources
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource, ResourceType
 from coldfront.core.utils.common import import_from_settings
-from coldfront.core.utils.validate import validator
 
 ALLOCATION_ACCOUNT_ENABLED = import_from_settings(
     'ALLOCATION_ACCOUNT_ENABLED', False)
@@ -261,8 +260,3 @@ class AllocationAttributeCreateForm(forms.ModelForm):
         super(AllocationAttributeCreateForm, self).__init__(*args, **kwargs) 
         self.fields['allocation_attribute_type'].queryset = self.fields['allocation_attribute_type'].queryset.order_by(Lower('name'))
     
-    # def validate(self):
-    #     data = self.cleaned_data
-    #     allocation_attribute_type_obj = data['allocation_attribute_type']
-    #     allocation_attribute_value = data['value']
-    #     validator(allocation_attribute_type_obj.attribute_type.name, allocation_attribute_value)
