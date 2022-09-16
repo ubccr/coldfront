@@ -866,9 +866,8 @@ class Command(BaseCommand):
         set the 'Cluster Account Status' attribute to 'Active'.
 
         Do not set Service Units, since they are not relevant."""
-        start_date = utc_now_offset_aware()
         allocation_kwargs = {
-            'start_date': start_date,
+            'start_date': None,
             'end_date': None,
             'num_service_units': settings.ALLOCATION_MAX,
         }
@@ -909,9 +908,8 @@ class Command(BaseCommand):
             - PCA projects receive 0, since they will be renewed later.
             - Recharge projects receive the maximum amount, since they
             are charged monthly for however much they use."""
-        start_date = utc_now_offset_aware()
         allocation_kwargs = {
-            'start_date': start_date,
+            'start_date': None,
             'end_date': None,
             'num_service_units': None,
         }
