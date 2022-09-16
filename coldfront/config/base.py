@@ -59,6 +59,7 @@ INSTALLED_APPS += [
     'django_q',
     'simple_history',
     'mathfilters',
+    'debug_toolbar',
     # 'ifxuser',
     # 'author',
     # 'ifxbilling',
@@ -81,12 +82,8 @@ INSTALLED_APPS += [
     'coldfront.core.test_helpers'
 ]
 
-#------------------------------------------------------------------------------
-# Django Middleware
-#------------------------------------------------------------------------------
-MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
