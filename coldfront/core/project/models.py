@@ -5,6 +5,7 @@ import textwrap
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.validators import MinLengthValidator
+from coldfront.core.utils.validate import AttributeValidator
 from django.db import models
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
@@ -244,21 +245,16 @@ class ProjectAttribute(TimeStampedModel):
 
         expected_value_type = self.proj_attr_type.attribute_type.name.strip()
         
-        if expected_value_type == "Int" and not isinstance(int(literal_eval(f'\"{self.value}\"')), int):
-            raise ValidationError(
-                'Invalid Value "%s" for "%s". Value must be an integer.' % (self.value, self.proj_attr_type.name))
-        elif expected_value_type == "Float" and not (isinstance(float(literal_eval(f'\"{self.value}\"')), float) or isinstance(int(literal_eval(f'\"{self.value}\"')), int)):
-            raise ValidationError(
-                'Invalid Value "%s" for "%s". Value must be a float.' % (self.value, self.proj_attr_type.name))
-        elif expected_value_type == "Yes/No" and self.value not in ["Yes", "No"]:
-            raise ValidationError(
-                'Invalid Value "%s" for "%s". Allowed inputs are "Yes" or "No".' % (self.value, self.proj_attr_type.name))
+        validator = AttributeValidator(self.value)
+
+        if expected_value_type == "Int":
+            validator.validate_int()
+        elif expected_value_type == "Float":
+            validator.validate_float()
+        elif expected_value_type == "Yes/No":
+            validator.validate_yes_no()
         elif expected_value_type == "Date":
-            try:
-                datetime.datetime.strptime(self.value.strip(), "%Y-%m-%d")
-            except ValueError:
-                raise ValidationError(
-                    'Invalid Value "%s" for "%s". Date must be in format YYYY-MM-DD' % (self.value, self.proj_attr_type.name))
+            validator.validate_date()
 
     def __str__(self):
         return '%s' % (self.proj_attr_type.name)

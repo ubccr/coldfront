@@ -11,13 +11,12 @@ Project Attribute Details
 {% block content %}
 <h2>Project Attribute Update Form</h2>
 
-<h3>Attribute: {{attribute}}</h3>
 <hr>
 
 <form action="{% url 'project-attribute-update' project_obj.pk project_attribute_obj.pk %}" method="post">
   {% csrf_token %}
   <div class="card">
-    <div class="card-header"><i class="fas fa-user" aria-hidden="true"></i> Attribute Details </div>
+    <div class="card-header"><i class="fas fa-edit" aria-hidden="true"></i> Attribute Details </div>
     <div class="card-body">
       <div class="table-responsive">
         <table class="table">

@@ -1,7 +1,7 @@
 from ast import Constant
 from cProfile import label
 import datetime
-
+from django.db.models.functions import Lower
 from django import forms
 from django.shortcuts import get_object_or_404
 
@@ -132,8 +132,12 @@ class ProjectAttributeAddForm(forms.ModelForm):
         fields = '__all__'
         model = ProjectAttribute
         labels = {
-            'proj_attr_type' : "Attribute Type",
+            'proj_attr_type' : "Project Attribute Type",
         }
+    
+    def __init__(self, *args, **kwargs):
+        super(ProjectAttributeAddForm, self).__init__(*args, **kwargs) 
+        self.fields['proj_attr_type'].queryset = self.fields['proj_attr_type'].queryset.order_by(Lower('name'))
 
 class ProjectAttributeDeleteForm(forms.Form):
     pk = forms.IntegerField(required=False, disabled=True)
@@ -167,7 +171,7 @@ class ProjectAttributeDeleteForm(forms.Form):
 
 class ProjectAttributeUpdateForm(forms.Form):
     pk = forms.IntegerField(required=False, disabled=True)
-    new_value = forms.CharField(max_length=150, required=False, disabled=False)
+    new_value = forms.CharField(max_length=150, required=True, disabled=False)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

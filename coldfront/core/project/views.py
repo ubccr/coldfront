@@ -1398,4 +1398,9 @@ class ProjectAttributeUpdateView(LoginRequiredMixin, UserPassesTestMixin, Templa
                 project_attribute_obj.save()
 
                 messages.success(request, 'Attribute Updated.')
+                return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
+            else:
+                for error in project_attribute_update_form.errors.values():
+                    messages.error(request, error)
                 return HttpResponseRedirect(reverse('project-attribute-update', kwargs={'pk': project_obj.pk, 'project_attribute_pk': project_attribute_obj.pk}))
+            
