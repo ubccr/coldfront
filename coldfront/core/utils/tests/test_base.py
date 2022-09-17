@@ -11,8 +11,12 @@ from django.core.management import call_command
 from django.test import Client
 from django.test import override_settings
 from django.test import TestCase
+from django.test.utils import TestContextDecorator
+from django.urls import reverse
 
+from flags.state import disable_flag
 from flags.state import enable_flag
+from flags.state import flag_enabled
 
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectStatusChoice
@@ -61,6 +65,18 @@ class TestBase(TestCase):
                 self.assertIn(message, actual_messages)
         self.assertEqual(response.status_code, status_code)
         self.client.logout()
+
+    def assert_redirects_to_login(self, response, next_url=None,
+                                  target_status_code=301):
+        """Assert that the response involves being redirected to the
+        login view."""
+        # Remove the trailing slash.
+        login_url = reverse('login')
+        if next_url:
+            login_url = login_url[:-1] + f'?next={next_url}'
+        self.assertRedirects(
+            response, login_url, status_code=302,
+            target_status_code=target_status_code)
 
     @staticmethod
     def call_setup_commands():
@@ -141,3 +157,60 @@ class TestBase(TestCase):
         user_profile = user.userprofile
         user_profile.access_agreement_signed_date = utc_now_offset_aware()
         user_profile.save()
+
+
+class enable_deployment(TestContextDecorator):
+    """A class that enables the deployment with the given name and
+    disables the other, and then reverts to the previous states when
+    done. It may be used as a context manager or as a decorator.
+
+    Modeled after django.test.utils.override_settings.
+
+    WARNING: Decorating a class does not produce the expected results.
+    """
+
+    def __init__(self, deployment_name):
+        assert deployment_name in ('BRC', 'LRC')
+        self._deployment_name = deployment_name
+        super().__init__()
+
+        if self._deployment_name == 'BRC':
+            self._flag_to_enable = 'BRC_ONLY'
+            self._flag_to_disable = 'LRC_ONLY'
+        else:
+            self._flag_to_enable = 'LRC_ONLY'
+            self._flag_to_disable = 'BRC_ONLY'
+
+        self._pre_states = {
+            flag_name: flag_enabled(flag_name) or False
+            for flag_name in ('BRC_ONLY', 'LRC_ONLY')}
+
+        self._override_settings_cm = None
+
+    def enable(self):
+        flags_copy = deepcopy(settings.FLAGS)
+        flags_copy[self._flag_to_enable] = {
+            'condition': 'boolean', 'value': True}
+        flags_copy[self._flag_to_disable] = {
+            'condition': 'boolean', 'value': False}
+
+        self._override_settings_cm = override_settings(FLAGS=flags_copy)
+        self._override_settings_cm.__enter__()
+
+        enable_flag(self._flag_to_enable)
+        disable_flag(self._flag_to_disable)
+        assert flag_enabled(self._flag_to_enable)
+        assert not flag_enabled(self._flag_to_disable)
+
+    def disable(self):
+        for flag_name, pre_state in self._pre_states.items():
+            if pre_state:
+                enable_flag(flag_name)
+            else:
+                disable_flag(flag_name)
+
+        if self._override_settings_cm is not None:
+            self._override_settings_cm.__exit__(None, None, None)
+
+        for flag_name in self._pre_states:
+            assert flag_enabled(flag_name) == self._pre_states[flag_name]

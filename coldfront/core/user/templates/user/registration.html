@@ -19,6 +19,12 @@ Register
       Register
     </div>
     <div class="card-body">
+      <div class="alert alert-info" role="alert">
+        <i class="fas fa-info-circle" aria-hidden="true"></i>
+        Hint: If you are an existing BRC cluster user and this is your first
+        time visiting the portal, you should already have a portal account.
+        Please <a href="{% url 'password-reset' %}">set your password</a>.
+      </div>
       {% include "user/registration_form.html" %}
     </div>
     <div class="text-center">

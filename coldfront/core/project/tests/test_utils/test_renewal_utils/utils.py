@@ -19,6 +19,7 @@ from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.models import AllocationUser
 from coldfront.core.allocation.models import AllocationUserStatusChoice
+from coldfront.core.allocation.utils_.cluster_access_utils import ClusterAccessRequestRunner
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
 from coldfront.core.project.models import ProjectStatusChoice
@@ -26,7 +27,6 @@ from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
-from coldfront.core.project.utils import ProjectClusterAccessRequestRunner
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.resource.models import Resource
 from coldfront.core.resource.utils import get_primary_compute_resource
@@ -150,15 +150,14 @@ class TestRunnerMixinBase(object):
                     allocation=allocation,
                     user=pi_user,
                     status=active_allocation_user_status)
-            # For the requesters only, also create cluster access requests and
-            # approve them.
-            project_user_obj = ProjectUser.objects.get(
-                project=project, user=self.requester)
-            request_runner = ProjectClusterAccessRequestRunner(
-                project_user_obj)
-            runner_result = request_runner.run()
+            # For the requesters only, also create cluster access requests.
+            allocation_user_obj = AllocationUser.objects.create(
+                allocation=allocation,
+                user=self.requester,
+                status=active_allocation_user_status)
+            request_runner = ClusterAccessRequestRunner(allocation_user_obj)
+            request_runner.run()
 
-            self.assertTrue(runner_result.success)
         # Clear the mail outbox.
         mail.outbox = []
 

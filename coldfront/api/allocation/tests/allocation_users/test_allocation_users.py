@@ -9,7 +9,8 @@ from http import HTTPStatus
 """A test suite for the /allocation_users/ endpoints, divided by
 method."""
 
-SERIALIZER_FIELDS = ('id', 'allocation', 'user', 'project', 'status',)
+SERIALIZER_FIELDS = (
+    'id', 'allocation', 'user', 'user_id', 'project', 'status',)
 
 
 class TestListAllocationUsers(TestAllocationBase):
@@ -106,7 +107,7 @@ class TestListAllocationUsers(TestAllocationBase):
         }
         response = self.client.get(url, query_parameters)
         json = response.json()
-        self.assertEqual(json['count'], 2)
+        self.assertEqual(json['count'], 4)
         result = json['results'][0]
         self.assertEqual(result['project'], project)
 
@@ -132,16 +133,19 @@ class TestListAllocationUsers(TestAllocationBase):
 
         first = allocation.pk
         second = Allocation.objects.get(project=self.project1).pk
-        allocation_ids_iterator = iter([first, first, second, second])
+        allocation_ids_iterator = iter([first, first, first, first,
+                                        second, second, second, second])
 
         resource_name = get_primary_compute_resource_name()
         url = self.endpoint_url()
         query_parameters = {
             'resources': resource_name,
         }
+
         response = self.client.get(url, query_parameters)
         json = response.json()
-        self.assertEqual(json['count'], 4)
+
+        self.assertEqual(json['count'], 8)
         for result in json['results']:
             self.assertEqual(
                 next(allocation_ids_iterator), result['allocation'])
@@ -154,7 +158,7 @@ class TestListAllocationUsers(TestAllocationBase):
         }
         response = self.client.get(url, query_parameters)
         json = response.json()
-        self.assertEqual(json['count'], 2)
+        self.assertEqual(json['count'], 4)
         for result in json['results']:
             self.assertEqual(allocation.id, result['allocation'])
             self.assertTrue(

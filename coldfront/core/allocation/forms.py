@@ -13,7 +13,8 @@ from flags.state import flag_enabled
 from coldfront.core.allocation.models import (AllocationAccount,
                                               AllocationAttributeType,
                                               AllocationStatusChoice,
-                                              AllocationUserAttribute)
+                                              AllocationUserAttribute,
+                                              ClusterAccessRequest)
 from coldfront.core.allocation.utils import get_user_resources
 from coldfront.core.allocation.utils import prorated_allocation_amount
 from coldfront.core.project.models import Project
@@ -251,11 +252,11 @@ class AllocationClusterAccountRequestActivationForm(forms.Form):
                 regex=r'^[0-9]+$', message='Cluster UID must be numeric.'),
         ])
 
-    def __init__(self, user, allocation_user_attribute_pk, *args, **kwargs):
+    def __init__(self, user, cluster_access_request_pk, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.user = user
-        self.allocation_user_attribute_obj = get_object_or_404(
-            AllocationUserAttribute, pk=allocation_user_attribute_pk)
+        self.cluster_access_request = get_object_or_404(
+            ClusterAccessRequest, pk=cluster_access_request_pk)
 
     def clean_username(self):
         username = self.cleaned_data['username']

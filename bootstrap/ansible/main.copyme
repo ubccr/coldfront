@@ -36,7 +36,15 @@ wsgi_conf_file_name: cf_mybrc_wsgi.conf
 # TODO: For LRC, use the substring 'cf_lrc'.
 wsgi_conf_log_prefix: cf_brc
 
+# CILogon client settings.
+# TODO: Set these, needed only if SSO should be enabled.
+cilogon_app_client_id: ""
+cilogon_app_secret: ""
+
 # Django Flags settings.
+# TODO: For LRC, disable basic auth. and enable SSO.
+flag_basic_auth_enabled: True
+flag_sso_enabled: False
 # TODO: For LRC, disable BRC and enable LRC.
 flag_brc_enabled: True
 flag_lrc_enabled: False

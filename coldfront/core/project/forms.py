@@ -1,13 +1,13 @@
 import datetime
 
 from django import forms
-from django.contrib.auth.models import User
 from django.core.validators import MinLengthValidator
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
 
 from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserRoleChoice)
+from coldfront.core.user.utils_.host_user_utils import eligible_host_project_users
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.resource.utils import get_compute_resource_names
 
@@ -252,6 +252,7 @@ class JoinRequestSearchForm(forms.Form):
 
 
 class ProjectSelectHostUserForm(forms.Form):
+
     host_user = forms.ChoiceField(
         label='Host User',
         choices=[],
@@ -263,13 +264,12 @@ class ProjectSelectHostUserForm(forms.Form):
         super().__init__(*args, **kwargs)
         if project_name:
             project = Project.objects.get(name=project_name)
-
-            eligible_PIs = project.projectuser_set.filter(
-                role__name='Principal Investigator',
-                status__name='Active')
-
-            choices = \
-                [('', 'Select a host user.')] + \
-                [(projuser.user, f'{projuser.user.first_name} {projuser.user.last_name} ({projuser.user.username})') for projuser in eligible_PIs]
-
+            eligible_hosts = eligible_host_project_users(project)
+            choices = [('', 'Select a host user.')]
+            for project_user in eligible_hosts:
+                user = project_user.user
+                choices.append((
+                    user,
+                    f'{user.first_name} {user.last_name} ({user.username})'
+                ))
             self.fields['host_user'].choices = choices
