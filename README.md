@@ -109,7 +109,7 @@ which can be done with:
   ```
   cd /vagrant/coldfront_app/coldfront
   # Assert that there is a properly-configured main.yml in the current directory.
-  ansible-playbook bootstrap/development/playbook.yml
+  ansible-playbook bootstrap/ansible/playbook.yml
   ```
   - Note that to skip initial provisioning tasks you can use the
 `--tags common` or `--skip-tags provisioning` arguments to `ansible-playbook`:
@@ -430,7 +430,7 @@ captured in the Ansible playbook.
 
 Also note that on production environments you must install necessary Ansible
 collections using
-`ansible-galaxy collection install -r bootstrap/development/requirements.yml`
+`ansible-galaxy collection install -r bootstrap/ansible/requirements.yml`
 before initially running the playbook.
 
 1. Create `main.yml`.
