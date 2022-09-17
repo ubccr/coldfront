@@ -5,11 +5,23 @@ from flags.state import flag_enabled
 from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.utils import get_project_compute_allocation
 from coldfront.core.billing.models import BillingActivity
+from coldfront.core.billing.models import BillingProject
 from coldfront.core.project.models import Project
 from coldfront.core.resource.utils import get_computing_allowance_project_prefixes
 
 
 logger = logging.getLogger(__name__)
+
+
+def get_or_create_billing_activity_from_full_id(full_id):
+    """Given a fully-formed billing ID, get or create a matching
+    BillingActivity, creating a BillingProject as needed."""
+    project_identifier, activity_identifier = full_id.split('-')
+    billing_project, _ = BillingProject.objects.get_or_create(
+        identifier=project_identifier)
+    billing_activity, _ = BillingActivity.objects.get_or_create(
+        billing_project=billing_project, identifier=activity_identifier)
+    return billing_activity
 
 
 def is_project_billing_id_required_and_missing(project_obj):

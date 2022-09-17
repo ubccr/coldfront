@@ -150,12 +150,9 @@ class Command(BaseCommand):
         one, along with other fields. Return the request and whether it
         was just created."""
         allocation_user = historical_allocation_user_attribute.allocation_user
-        user_profile = allocation_user.user.userprofile
 
         defaults = {
             'status': status,
-            'host_user': user_profile.host_user,
-            'billing_activity': user_profile.billing_activity,
         }
         if isinstance(completion_time, datetime):
             defaults['completion_time'] = completion_time

@@ -221,6 +221,14 @@
             executable: "{{ git_prefix }}/venv/bin/pip3"
           become_user: "{{ djangooperator }}"
 
+        # TODO: If this raises an error, the token is exposed in stderr.
+        - name: Install the Python package for validating LBL billing IDs
+          pip:
+            name: 'git+https://{{ billing_validation_repo_username }}:{{ billing_validation_repo_token }}@{{ billing_validation_repo_host }}'
+            executable: '{{ git_prefix }}/venv/bin/pip3'
+          when: install_billing_validation_package
+          no_log: true
+
         # Create a PostgreSQL database and a user for the Django application.
 
         - name: Create a new PostgreSQL database

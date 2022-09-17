@@ -1,9 +1,9 @@
-from coldfront.core.billing.models import BillingActivity
-
 from django import forms
 from django.conf import settings
 from django.core.validators import MinLengthValidator
 from django.core.validators import RegexValidator
+
+from coldfront.core.billing.utils.validation import is_billing_id_valid
 
 
 # TODO: Replace this module with a directory as needed.
@@ -39,13 +39,7 @@ class BillingIDValidationForm(forms.Form):
         if it exists, and optionally, is valid. Otherwise, raise a
         ValidationError."""
         billing_id = self.cleaned_data['billing_id']
-        try:
-            billing_activity = BillingActivity.get_from_full_id(billing_id)
-        except BillingActivity.DoesNotExist:
+        if self.enforce_validity and not is_billing_id_valid(billing_id):
             raise forms.ValidationError(
-                f'Project ID {billing_id} does not currently exist.')
-        # TODO: Enforce validity. BillingActivity no longer has is_valid.
-        # if self.enforce_validity and not billing_activity.is_valid:
-        #     raise forms.ValidationError(
-        #         f'Project ID {billing_id} is not currently valid.')
-        return billing_activity
+                f'Project ID {billing_id} is not currently valid.')
+        return billing_id

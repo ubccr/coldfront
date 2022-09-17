@@ -6,6 +6,7 @@ from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.utils_.renewal_utils import has_non_denied_renewal_request
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.user.models import EmailAddress
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.common import validate_num_service_units
@@ -34,11 +35,13 @@ class Command(BaseCommand):
             'json',
             help=(
                 'The path to the JSON file containing a list of lists, where '
-                'each inner list is a pair containing a PI\'s name and the '
-                'name of the Project their allowance was renewed under.'),
+                'each inner list contains a PI\'s name, the name of the '
+                'Project their allowance was renewed under, the time the '
+                'request was made, and the number of service units '
+                'requested.'),
             type=self.existent_file)
         parser.add_argument(
-            'alloacation_period_name',
+            'allocation_period_name',
             help='The name of the AllocationPeriod the renewals are under.',
             type=str)
         parser.add_argument(
@@ -165,6 +168,7 @@ class Command(BaseCommand):
 
         If dry_run is True, write the triple to stdout without creating
         the request."""
+        interface = ComputingAllowanceInterface()
         complete_renewal_status = \
             AllocationRenewalRequestStatusChoice.objects.get(name='Complete')
         for pi_user, project, requester_user, request_time, num_sus in valid:
@@ -183,18 +187,22 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.WARNING(message))
                 continue
             try:
+                now = utc_now_offset_aware()
                 request = AllocationRenewalRequest.objects.create(
                     requester=requester_user,
                     pi=pi_user,
+                    computing_allowance=interface.allowance_from_code(
+                        project.name[:3]),
                     allocation_period=allocation_period,
                     status=complete_renewal_status,
                     pre_project=project,
                     post_project=project,
                     num_service_units=num_sus,
-                    request_time=request_time)
+                    request_time=request_time,
+                    approval_time=now,
+                    completion_time=now)
                 request.state['eligibility']['status'] = 'Approved'
-                request.state['eligibility']['timestamp'] = \
-                    utc_now_offset_aware().isoformat()
+                request.state['eligibility']['timestamp'] = now.isoformat()
                 request.save()
             except Exception as e:
                 message = (

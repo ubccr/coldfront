@@ -11,6 +11,10 @@ PROGRAM_NAME_SHORT = '{{ program_name_short }}'
 PRIMARY_CLUSTER_NAME = '{{ primary_cluster_name }}'
 
 CENTER_NAME = PROGRAM_NAME_SHORT + ' HPC Resources'
+CENTER_USER_GUIDE = '{{ center_user_guide }}'
+CENTER_LOGIN_GUIDE = '{{ center_login_guide }}'
+CENTER_HELP_EMAIL = '{{ center_help_email }}'
+
 CENTER_BASE_URL = '{{ full_host_path }}'
 CENTER_HELP_URL = CENTER_BASE_URL + '/help'
 CENTER_PROJECT_RENEWAL_HELP_URL = CENTER_BASE_URL + '/help'
@@ -51,12 +55,41 @@ API_LOG_PATH = '{{ log_path }}/{{ api_log_file }}'
 # A list of admin email addresses to CC when certain requests are approved.
 REQUEST_APPROVAL_CC_LIST = {{ request_approval_cc_list }}
 
+{% if allow_all_jobs | bool %}
+# Allow all jobs, bypassing all checks at job submission time.
+ALLOW_ALL_JOBS = True
+{% endif %}
+
+#------------------------------------------------------------------------------
+# Billing settings
+#------------------------------------------------------------------------------
+
+{% if (flag_lrc_enabled | bool) and (install_billing_validation_package | bool) and oracle_billing_db_dsn|length %}
+# The class to use for validating billing IDs.
+BILLING_VALIDATOR_BACKEND = 'coldfront.core.billing.utils.validation.backends.oracle.OracleValidatorBackend'
+
+# Credentials for the Oracle billing database.
+ORACLE_BILLING_DB = {
+    'dsn': '{{ oracle_billing_db_dsn }}',
+    'user': '{{ oracle_billing_db_user }}',
+    'password': '{{ oracle_billing_db_passwd }}',
+}
+{% endif %}
+
+#------------------------------------------------------------------------------
+# SSL settings
+#------------------------------------------------------------------------------
+
 # Use a secure cookie for the session cookie (HTTPS only).
 {% if ssl_enabled | bool %}
 SESSION_COOKIE_SECURE = True
 {% else %}
 SESSION_COOKIE_SECURE = False
 {% endif %}
+
+#------------------------------------------------------------------------------
+# Sentry settings
+#------------------------------------------------------------------------------
 
 # Configure Sentry.
 import sentry_sdk

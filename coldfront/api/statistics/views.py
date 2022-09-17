@@ -217,13 +217,13 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
                 raise serializers.ValidationError(
                     f'Invalid ending timestamp {start_time}. Details: {e}')
 
-            # Filter on submitdate, keeping those that end between the given
+            # Filter on startdate, keeping those that end between the given
             # times, inclusive.
             jobs = jobs.filter(
-                submitdate__gte=start_time, submitdate__lte=end_time)
+                startdate__gte=start_time, startdate__lte=end_time)
 
-        # Return filtered jobs in ascending submitdate order.
-        return jobs.order_by('submitdate')
+        # Return filtered jobs in ascending startdate order.
+        return jobs.order_by('startdate')
 
     @swagger_auto_schema(
         manual_parameters=[authorization_parameter],
