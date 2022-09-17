@@ -44,9 +44,9 @@ used in production.
 6. Create a `main.yml` file in the top-level of the repository. This is a file
 of variables used by Ansible to configure the system.
    ```
-   cp bootstrap/development/main.copyme main.yml
+   cp bootstrap/ansible/main.copyme main.yml
    ```
-7. Customize `main.yml`. In particular, fill in the below variables. Note
+7. Customize `main.yml`. In particular, uncomment everything under the `dev_settings` section, and fill in the below variables. Note
 that quotes need not be provided, except in the list variable.
    ```
    db_admin_passwd: password_here
