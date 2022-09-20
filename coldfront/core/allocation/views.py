@@ -223,7 +223,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context = super().get_context_data(**kwargs)
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
-        allocation_users = allocation_obj.allocationusers.exclude(usage_bytes__isnull=True)
+        allocation_users = allocation_obj.allocation_users.exclude(usage_bytes__isnull=True)
         # set visible usage attributes
         alloc_attr_set = return_alloc_attr_set(allocation_obj,
                                                 self.request.user.is_superuser)
