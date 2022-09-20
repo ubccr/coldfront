@@ -410,7 +410,7 @@ def collect_starfish_usage(server, volume, volumepath, projects):
         p = t[0]
         tier = t[2]
         filepath = t[3]
-        lab_volpath = volumepath[1] if "_l3" in p else volumepath[0]
+        lab_volpath = volumepath[0] if "_l3" not in p else volumepath[1]
         logger.debug("filepath: %s lab: %s volpath: %s", filepath, p, lab_volpath)
         usage_query = server.create_query(
             f"type=f groupname={p}", "username, groupname", f"{volume}:{lab_volpath}"
