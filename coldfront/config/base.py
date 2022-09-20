@@ -82,6 +82,12 @@ INSTALLED_APPS += [
     'coldfront.core.test_helpers'
 ]
 
+
+#------------------------------------------------------------------------------
+# Django Middleware
+#------------------------------------------------------------------------------
+
+MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.common.CommonMiddleware',
