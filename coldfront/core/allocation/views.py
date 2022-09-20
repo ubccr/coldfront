@@ -223,7 +223,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context = super().get_context_data(**kwargs)
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
-        allocation_users = allocation_obj.allocationusers.exclude(usage_bytes__isnull=True)
+        allocation_users = allocation_obj.allocation_users.exclude(usage_bytes__isnull=True)
         # set visible usage attributes
         alloc_attr_set = return_alloc_attr_set(allocation_obj,
                                                 self.request.user.is_superuser)
@@ -1123,7 +1123,7 @@ class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templat
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         allocation_list = Allocation.objects.filter(
-            status__name__in=['New', 'Renewal Requested', 'Paid', 'Approved',])
+            status__name__in=['New', 'Renewal Requested', 'Approved',])
         context['allocation_list'] = allocation_list
         context['PROJECT_ENABLE_PROJECT_REVIEW'] = PROJECT_ENABLE_PROJECT_REVIEW
         context['ALLOCATION_DEFAULT_ALLOCATION_LENGTH'] = ALLOCATION_DEFAULT_ALLOCATION_LENGTH
@@ -1376,7 +1376,7 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
 
                     elif user_status == 'remove_from_project':
                         for active_allocation in allocation_obj.project.allocation_set.filter(status__name__in=(
-                            'Active', 'New', 'Paid', 'Payment Requested', )):
+                            'Active', 'New', )):
 
                             allocation_user_obj = active_allocation.allocationuser_set.get(
                                 user=user_obj)
@@ -1430,11 +1430,7 @@ class AllocationInvoiceListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
         return False
 
     def get_queryset(self):
-
-        # allocations = Allocation.objects.filter(
-        #     status__name__in=['Paid', 'Payment Pending', 'Payment Requested' ])
-        allocations = Allocation.objects.filter(
-            status__name__in=['Active', 'Payment Pending',  ])
+        allocations = Allocation.objects.filter(status__name__in=['Active', ])
         return allocations
 
 class AllocationInvoicePaidView(LoginRequiredMixin, UserPassesTestMixin, ListView):
@@ -1456,8 +1452,6 @@ class AllocationInvoicePaidView(LoginRequiredMixin, UserPassesTestMixin, ListVie
 
     def get_queryset(self):
 
-        # allocations = Allocation.objects.filter(
-        #     status__name__in=['Paid', 'Payment Pending', 'Payment Requested' ])
         allocations = Allocation.objects.filter(
             status__name__in=['Paid',  ])
         return allocations
@@ -1511,7 +1505,7 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
         allocation_quota_tb = next((a for a in attributes_with_usage if \
             a.allocation_attribute_type.name == "Storage Quota (TB)"), "None")
 
-        allocation_usage_tb = float(allocation_quota_tb.allocationattributeusage.value)
+        # allocation_usage_tb = float(allocation_quota_tb.allocationattributeusage.value)
         allocation_quota_bytes, allocation_usage_bytes = return_allocation_bytes_values(attributes_with_usage, allocation_users)
         context['allocation_quota_bytes'] = allocation_quota_bytes
         context['allocation_usage_bytes'] = allocation_usage_bytes
@@ -2080,7 +2074,7 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 request, 'You cannot request a change to a locked allocation.')
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
-        if allocation_obj.status.name not in ['Active', 'Renewal Requested', 'Payment Pending', 'Payment Requested', 'Paid']:
+        if allocation_obj.status.name not in ['Active', ]:
             messages.error(request, 'You cannot request a change to an allocation with status "{}".'.format(
                 allocation_obj.status.name))
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
