@@ -276,6 +276,9 @@
         ## LRC-only
         - name: LRC-only Production Tasks
           block:
+
+            # Send logs to LBL.
+
             - name: Update syslog config to send logs to LBL central server
               blockinfile:
                 state: present
@@ -291,7 +294,27 @@
                 state: restarted
                 enabled: yes
 
-            # TODO: Firewall tasks
+            # Configure the firewall.
+
+            - name: Start and enable firewalld service
+              service:
+                name: firewalld
+                state: started
+                enabled: yes
+
+            - name: Permit http traffic in public zone
+              ansible.posix.firewalld:
+                zone: public
+                service: http
+                permanent: yes
+                state: enabled
+
+            - name: Permit https traffic in public zone
+              ansible.posix.firewalld:
+                zone: public
+                service: https
+                permanent: yes
+                state: enabled
 
           when: flag_lrc_enabled
 
