@@ -302,19 +302,46 @@
                 state: started
                 enabled: yes
 
-            - name: Permit http traffic in public zone
+            - name: Permit http and https traffic in public zone
               ansible.posix.firewalld:
                 zone: public
-                service: http
-                permanent: yes
+                service: "{{ item }}"
                 state: enabled
+                permanent: yes
+              loop:
+                - http
+                - https
 
-            - name: Permit https traffic in public zone
+            # Prevent 443/tcp access from within the Lab network.
+            # Source: https://commons.lbl.gov/pages/viewpage.action?spaceKey=cpp&title=Cloudflare+IP+ranges
+
+            - name: Create firewalld zone for LBLnet
               ansible.posix.firewalld:
-                zone: public
-                service: https
+                zone: lblnet
+                state: present
                 permanent: yes
+
+            - name: Add LBLnet IP addresses to LBLnet zone
+              ansible.posix.firewalld:
+                zone: lblnet
+                source: "{{ item }}"
                 state: enabled
+                permanent: yes
+              loop:
+                - 128.3.0.0/16
+                - 131.243.0.0/16
+
+            - name: Deny 443/tcp traffic in LBLnet zone
+              ansible.posix.firewalld:
+                zone: lblnet
+                port: 443/tcp
+                state: disabled
+                permanent: yes
+
+            - name: Reload firewalld service
+              service:
+                name: firewalld
+                state: reloaded
 
           when: flag_lrc_enabled
 
