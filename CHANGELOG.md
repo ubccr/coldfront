@@ -1,5 +1,13 @@
 # ColdFront Changelog
 
+## [1.1.4] - 
+
+- Fix bug in slurm plugin include allocations in 'pending renewal' status [#176](https://github.com/ubccr/coldfront/issues/176)
+- Datepicker changed to flatpickr. Remove jquery-ui [#443](https://github.com/ubccr/coldfront/pull/443)
+- Combined email expiry notifications [#413](https://github.com/ubccr/coldfront/pull/413)
+- Remove obsolete arguments in signal defs [#422](https://github.com/ubccr/coldfront/pull/422)
+- Fix bug in freeipa plugin [#416](https://github.com/ubccr/coldfront/issues/416)  
+
 ## [1.1.3] - 2022-07-07
 
 - Fix erronous allocation change request error message [#428](https://github.com/ubccr/coldfront/issues/428)
