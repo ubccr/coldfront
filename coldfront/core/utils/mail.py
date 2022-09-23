@@ -97,10 +97,11 @@ def send_allocation_admin_email(allocation_obj, subject, template_name, url_path
 
     url = build_link(url_path, domain_url=domain_url)
     pi_name = f'{allocation_obj.project.pi.first_name} {allocation_obj.project.pi.last_name} ({allocation_obj.project.pi.username})'
+    resource_name = allocation_obj.get_parent_resource
 
     ctx = email_template_context()
     ctx['pi'] = pi_name
-    ctx['resource'] = allocation_obj.get_parent_resource
+    ctx['resource'] = resource_name
     ctx['url'] = url
 
     send_admin_email_template(
