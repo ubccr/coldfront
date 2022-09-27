@@ -715,7 +715,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         project_obj = form.save(commit=False)
         if not form.instance.pi_username:
             user_profile = UserProfile.objects.get(user=self.request.user)
-            if user_profile.title not in ['Faculty', 'Staff', ]:
+            if user_profile.title not in ['Faculty', 'Staff', 'Academic (ACNP)',]:
                 messages.error(self.request, 'Only faculty and staff can be the PI')
                 return super().form_invalid(form)
             form.instance.pi = self.request.user
@@ -725,7 +725,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
                 messages.error(self.request, 'This username does not exist in RT Projects')
                 return super().form_invalid(form)
             user_profile = UserProfile.objects.get(user=user)
-            if user_profile.title not in ['Faculty', 'Staff', ]:
+            if user_profile.title not in ['Faculty', 'Staff', 'Academic (ACNP)',]:
                 messages.error(self.request, 'Only faculty and staff can be the PI')
                 return super().form_invalid(form)
             form.instance.pi = user
