@@ -1,16 +1,6 @@
 {% load humanize %}
 {% load static %}
 {% load coldfront %}
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-<head>
-<meta http-equiv="Content-type" content="text/html; charset=utf-8" />
-<meta http-equiv="Content-Language" content="en-us" />
-
-<title>Coldfront</title>
-
-<meta name="MSSmartTagsPreventParsing" content="true" />
 <style>
 @page {
   size: letter landscape;
@@ -30,9 +20,9 @@ p { -pdf-keep-with-next: true;}
 p.seperator { -pdf-keep-with-next: false;}
 .action_title{width:500pt; text-align:left; padding:10pt;margin:10pt 0px; font-size:14pt; color:#006699;}
 .headertbl{padding:0; margin:0;}
-.sumtbl1{padding:0; margin:0;}
-.sumtbl1 td{font-size:8pt;text-align:left; padding:3pt; border: 0.5px solid #aaa;}
-.sumtbl1 thead td{font-weight:bold; font-size:8pt;text-align:center; padding:3pt; }
+.sumtbl1{padding:0; margin:0; border-collapse: collapse;}
+.sumtbl1 td{font-size:8pt; text-align:left; padding: 10px; border: 2px solid #aaa;}
+.sumtbl1 thead td{font-weight:bold; font-size:8pt; text-align:center; padding: 10px; }
 .sumtbl1 td.rtdr{text-align:right;}
 
 .w20 {width:20pt;}
@@ -75,7 +65,7 @@ p.seperator { -pdf-keep-with-next: false;}
 
 </style>
 {% block main_content %}
-<table cellspacing="0" cellpadding="0" class="sumtbl1">
+<table class="sumtbl1">
     <thead>
         <tr>
             <td class="rtdb">&nbsp;</td>
