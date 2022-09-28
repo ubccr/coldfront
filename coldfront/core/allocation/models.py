@@ -12,7 +12,7 @@ from django.utils.module_loading import import_string
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
-from coldfront.core.project.models import Project
+from coldfront.core.project.models import Project, ProjectPermission
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core import attribute_expansion
@@ -29,6 +29,9 @@ ALLOCATION_RESOURCE_ORDERING = import_from_settings(
     'ALLOCATION_RESOURCE_ORDERING',
     ['-is_allocatable', 'name'])
 
+class AllocationPermission(Enum):
+    USER = 'USER'
+    MANAGER = 'MANAGER'
 
 class AllocationStatusChoice(TimeStampedModel):
     name = models.CharField(max_length=64)
@@ -227,6 +230,42 @@ class Allocation(TimeStampedModel):
                 return attr.typed_value()
             return attr.value
         return None
+
+
+    def get_attribute_set(self, user):
+        """Returns the set of allocation attributes the user is allowed to view.
+           1. super users can see all allocation attributes
+           2. all other users can only see non-private ones
+        """
+        if user.is_superuser:
+            return self.allocationattribute_set.all().order_by('allocation_attribute_type__name')
+
+        return self.allocationattribute_set.filter(allocation_attribute_type__is_private=False).order_by('allocation_attribute_type__name')
+
+    def user_permissions(self, user):
+        """Return list of a user's permissions for the allocation
+        """
+        if user.is_superuser:
+            return list(AllocationPermission)
+
+        project_perms = self.project.user_permissions(user)
+
+        if ProjectPermission.USER not in project_perms:
+            return []
+
+        if ProjectPermission.PI in project_perms or ProjectPermission.MANAGER in project_perms:
+            return [AllocationPermission.USER, AllocationPermission.MANAGER]
+
+        if self.allocationuser_set.filter(user=user, status__name__in=['Active', 'New', ]).exists():
+            return [AllocationPermission.USER]
+
+        return []
+
+    def has_perm(self, user, perm):
+        """Return true if user has permission for the allocation
+        """
+        perms = self.user_permissions(user)
+        return perm in perms
 
     def set_usage(self, name, value):
         attr = self.allocationattribute_set.filter(
