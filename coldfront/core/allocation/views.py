@@ -87,7 +87,7 @@ logger = logging.getLogger(__name__)
 
 def return_allocation_bytes_values(attributes_with_usage, allocation_users):
     # usage_bytes_list written the way it should work
-    usage_bytes_list = [u.usage_bytes for u in allocation_users]
+    usage_bytes_list = [u.usage_bytes for u in allocation_users if u.usage_bytes != None]
     user_usage_sum = sum(usage_bytes_list)
     allocation_quota_bytes = next((a for a in attributes_with_usage if \
             a.allocation_attribute_type.name == "Quota_in_bytes"), "None")
