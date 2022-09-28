@@ -586,6 +586,8 @@ response_400 = openapi.Response(
         200: response_200,
         400: response_400
     })
+# Note: This endpoint should require authentication. Currently, it is
+# enforced by REST_FRAMEWORK['DEFAULT_PERMISSION_CLASSES'].
 @api_view(['GET'])
 @transaction.atomic
 def can_submit_job(request, job_cost, user_id, account_id):
