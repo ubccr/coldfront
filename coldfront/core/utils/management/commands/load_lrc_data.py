@@ -5,6 +5,7 @@ from coldfront.core.allocation.models import AllocationAttributeUsage
 from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.models import AllocationUser
+from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.allocation.models import AllocationUserAttributeUsage
 from coldfront.core.allocation.utils import get_or_create_active_allocation_user
 from coldfront.core.allocation.utils import get_project_compute_allocation
@@ -21,15 +22,16 @@ from coldfront.core.resource.models import Resource
 from coldfront.core.resource.utils import get_compute_resource_names
 from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
-from coldfront.core.user.models import EmailAddress
 from coldfront.core.user.models import UserProfile
 from coldfront.core.user.utils_.host_user_utils import is_lbl_employee
 
+from allauth.account.models import EmailAddress
 from collections import defaultdict
 from decimal import Decimal
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from django.core.management import call_command
 from django.core.management.base import BaseCommand
 from coldfront.core.utils.common import utc_now_offset_aware
 from django.core.validators import validate_email
@@ -92,6 +94,12 @@ class Command(BaseCommand):
             help='Load IDs to be used for monthly billing from a file.')
         add_file_argument(billing_ids_parser, 'billing_file')
 
+        email_addresses_parser = subparsers.add_parser(
+            'email_addresses',
+            help=(
+                'Create a primary, verified EmailAddress for each User with '
+                'zero associated EmailAddress objects.'))
+
         host_users_parser = subparsers.add_parser(
             'host_users',
             help=(
@@ -134,6 +142,7 @@ class Command(BaseCommand):
             'allocations',
             'billing_ids',
             'host_users',
+            'email_addresses',
         ]
         for subcommand in ordered_subcommands:
             handler = getattr(self, f'handle_{subcommand}')
@@ -170,19 +179,11 @@ class Command(BaseCommand):
         bp_by_identifier = {}
         ba_by_identifier_pair = {}
 
-        bp_defaults = {
-            'description': 'Unknown, invalid project.',
-        }
-        ba_defaults = {
-            'description': 'Unknown, invalid activity.',
-            'is_valid': False,
-        }
-
         for username, billing_id in user_account_fee_ids.items():
             bp_identifier, ba_identifier = billing_id.split('-')
             billing_project, created = get_or_create_with_cache(
                 BillingProject, bp_identifier, bp_by_identifier,
-                identifier=bp_identifier, defaults=bp_defaults)
+                identifier=bp_identifier)
             if created:
                 self.logger.info(
                     f'Invalid, unknown BillingProject {bp_identifier} was '
@@ -191,8 +192,7 @@ class Command(BaseCommand):
             pair = (bp_identifier, ba_identifier)
             billing_activity, created = get_or_create_with_cache(
                 BillingActivity, pair, ba_by_identifier_pair,
-                billing_project=billing_project, identifier=ba_identifier,
-                defaults=ba_defaults)
+                billing_project=billing_project, identifier=ba_identifier)
             if created:
                 self.logger.info(
                     f'Invalid, unknown BillingActivity {billing_id} was '
@@ -237,7 +237,7 @@ class Command(BaseCommand):
                 bp_identifier, ba_identifier = billing_id.split('-')
                 billing_project, created = get_or_create_with_cache(
                     BillingProject, bp_identifier, bp_by_identifier,
-                    identifier=bp_identifier, defaults=bp_defaults)
+                    identifier=bp_identifier)
                 if created:
                     self.logger.info(
                         f'Invalid, unknown BillingProject {bp_identifier} was '
@@ -246,8 +246,7 @@ class Command(BaseCommand):
                 pair = (bp_identifier, ba_identifier)
                 billing_activity, created = get_or_create_with_cache(
                     BillingActivity, pair, ba_by_identifier_pair,
-                    billing_project=billing_project, identifier=ba_identifier,
-                    defaults=ba_defaults)
+                    billing_project=billing_project, identifier=ba_identifier)
                 if created:
                     self.logger.info(
                         f'Invalid, unknown BillingActivity {billing_id} was '
@@ -305,6 +304,12 @@ class Command(BaseCommand):
             self.logger.info(
                 f'Set Project {project_name}\'s default billing ID to '
                 f'{default_billing_id}.')
+
+    @staticmethod
+    def handle_email_addresses(*args, **options):
+        """Handle the 'email_addresses' subcommand."""
+        cmd_args = ['create_email_addresses', 'allauth.account.models']
+        call_command(*cmd_args)
 
     def handle_host_users(self, *args, **options):
         """Handle the 'host_users' subcommand."""
@@ -861,14 +866,13 @@ class Command(BaseCommand):
         set the 'Cluster Account Status' attribute to 'Active'.
 
         Do not set Service Units, since they are not relevant."""
-        start_date = utc_now_offset_aware()
         allocation_kwargs = {
-            'start_date': start_date,
+            'start_date': None,
             'end_date': None,
-            'num_service_units': None,
+            'num_service_units': settings.ALLOCATION_MAX,
         }
         allocation_user_kwargs = {
-            'num_service_units': None,
+            'num_service_units': settings.ALLOCATION_MAX,
         }
 
         departmental_cluster_names = self.get_departmental_cluster_names()
@@ -904,9 +908,8 @@ class Command(BaseCommand):
             - PCA projects receive 0, since they will be renewed later.
             - Recharge projects receive the maximum amount, since they
             are charged monthly for however much they use."""
-        start_date = utc_now_offset_aware()
         allocation_kwargs = {
-            'start_date': start_date,
+            'start_date': None,
             'end_date': None,
             'num_service_units': None,
         }
@@ -987,14 +990,16 @@ class Command(BaseCommand):
         allocation_attribute_defaults = {
             'value': str(num_service_units),
         }
-        allocation_attribute, _ = AllocationAttribute.objects.update_or_create(
-            allocation_attribute_type=allocation_attribute_type,
-            allocation=allocation, defaults=allocation_attribute_defaults)
+        allocation_attribute, created = \
+            AllocationAttribute.objects.update_or_create(
+                allocation_attribute_type=allocation_attribute_type,
+                allocation=allocation, defaults=allocation_attribute_defaults)
 
-        ProjectTransaction.objects.create(
-            project=project,
-            date_time=utc_now_offset_aware(),
-            allocation=num_service_units)
+        if created:
+            ProjectTransaction.objects.create(
+                project=project,
+                date_time=utc_now_offset_aware(),
+                allocation=num_service_units)
 
         # A usage should have been created for the attribute.
         try:
@@ -1030,14 +1035,23 @@ class Command(BaseCommand):
         if not isinstance(num_service_units, Decimal):
             return allocation_user
 
-        allocation_user_attribute = set_allocation_user_attribute_value(
-            allocation_user, 'Service Units', str(num_service_units))
-        allocation_user.refresh_from_db()
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Service Units')
+        allocation_user_attribute_defaults = {
+            'value': str(num_service_units),
+        }
+        allocation_user_attribute, created = \
+            AllocationUserAttribute.objects.get_or_create(
+                allocation_attribute_type=allocation_attribute_type,
+                allocation=allocation_user.allocation,
+                allocation_user=allocation_user,
+                defaults=allocation_user_attribute_defaults)
 
-        ProjectUserTransaction.objects.create(
-            project_user=project_user,
-            date_time=utc_now_offset_aware(),
-            allocation=num_service_units)
+        if created:
+            ProjectUserTransaction.objects.create(
+                project_user=project_user,
+                date_time=utc_now_offset_aware(),
+                allocation=num_service_units)
 
         # A usage should have been created for the attribute.
         try:
@@ -1049,4 +1063,5 @@ class Command(BaseCommand):
                 f'exists for AllocationUserAttribute '
                 f'{allocation_user_attribute.pk}.')
 
+        allocation_user.refresh_from_db()
         return allocation_user
