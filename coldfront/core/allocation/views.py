@@ -989,7 +989,7 @@ class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templat
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         allocation_list = Allocation.objects.filter(
-            status__name__in=['New', 'Renewal Requested', 'Paid', 'Approved',])
+            status__name__in=['New', 'Renewal Requested', 'Approved',])
         context['allocation_list'] = allocation_list
         context['PROJECT_ENABLE_PROJECT_REVIEW'] = PROJECT_ENABLE_PROJECT_REVIEW
         context['ALLOCATION_DEFAULT_ALLOCATION_LENGTH'] = ALLOCATION_DEFAULT_ALLOCATION_LENGTH
@@ -1218,7 +1218,7 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
 
                     elif user_status == 'remove_from_project':
                         for active_allocation in allocation_obj.project.allocation_set.filter(status__name__in=(
-                            'Active', 'New', 'Paid', 'Payment Requested', )):
+                            'Active', 'New', )):
 
                             allocation_user_obj = active_allocation.allocationuser_set.get(
                                 user=user_obj)
@@ -1280,7 +1280,6 @@ class AllocationInvoicePaidView(LoginRequiredMixin, UserPassesTestMixin, ListVie
         return False
 
     def get_queryset(self):
-
         # allocations = Allocation.objects.filter(
         #     status__name__in=['Paid', 'Payment Pending', 'Payment Requested' ])
         allocations = Allocation.objects.filter(status__name__in=['Paid',  ])
@@ -1333,7 +1332,7 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
         allocation_quota_tb = next((a for a in attributes_with_usage if \
             a.allocation_attribute_type.name == "Storage Quota (TB)"), "None")
 
-        allocation_usage_tb = float(allocation_quota_tb.allocationattributeusage.value)
+        # allocation_usage_tb = float(allocation_quota_tb.allocationattributeusage.value)
         allocation_quota_bytes, allocation_usage_bytes = return_allocation_bytes_values(attributes_with_usage, allocation_users)
         context['allocation_quota_bytes'] = allocation_quota_bytes
         context['allocation_usage_bytes'] = allocation_usage_bytes
