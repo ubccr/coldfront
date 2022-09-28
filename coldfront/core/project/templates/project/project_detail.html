@@ -41,13 +41,13 @@ Project Detail
         {% endif %}
       </div>
     </div>
-    <div style="display:none" class="card-body">
-      {% if project.status.name != 'Archived' %}
+    <div class="card-body">
         <a class="btn btn-success" href="{% url 'project-add-users-search' project.pk %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
+{% comment %}.
         <a class="btn btn-success" href="{% url 'grant-create' project.id %}" role="button"><i class="fas fa-trophy" aria-hidden="true"></i> Add Grant</a>
         <a class="btn btn-success" href="{% url 'publication-search' project.pk %}" role="button"><i class="fas fa-newspaper" aria-hidden="true"></i> Add Publication</a>
         <a class="btn btn-success" href="{% url 'add-research-output' project.pk %}" role="button"><i class="far fa-newspaper" aria-hidden="true"></i> Add Research Output</a>
-      {% endif %}
+{% endcomment %}
     </div>
   </div>
 {% endif %}

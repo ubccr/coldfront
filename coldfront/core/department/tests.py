@@ -103,7 +103,7 @@ class DepartmentDetailViewTest(TestCase):
 
         # department members who are not administrators cannot update department details
         # or review bills
-        response = utils.login_and_get_page(self.client, self.dept_user, url)
+        response = utils.login_and_get_page(self.client, self.dept_member_user, url)
         # print("response USER:", response.context, "\n\n")
         # confirm that only the user's projects are visible
         self.assertEqual(len(response.context['projects']), 1)
