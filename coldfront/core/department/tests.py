@@ -91,7 +91,6 @@ class DepartmentDetailViewTest(TestCase):
         self.assertEqual(response.status_code, 403)
 
 
-
     def test_department_detail_content(self):
         """Check content of department detail pages.
         """
