@@ -168,7 +168,8 @@ common_tasks: True
 # ssl_certificate_key_file: /etc/ssl/ssl_certificate_key.file
 # ssl_certificate_chain_file: /etc/ssl/ssl_certification_chain.file
 
-# # An IP range, in CIDR notation, to which the REST API is accessible.
+# # One or more space-separated IP ranges, in CIDR notation, to which the REST
+# # API is accessible.
 # ip_range_with_api_access: 10.0.0.0/8
 
 # # Email settings.
