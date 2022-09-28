@@ -269,43 +269,16 @@
         ## BRC-only
         - name: BRC-only Production Tasks
           block:
-            - name: Handle firewall configuration
-              service:
-                name: firewalld
-                state: started
-                enabled: yes
-
-            - name: Create firewalld zone for BRC HPC infrastructure
-              ansible.posix.firewalld:
-                zone: brc_hpc
-                state: present
-                permanent: yes
-
-            - name: Add BRC HPC IP addresses to zone
-              ansible.posix.firewalld:
-                zone: brc_hpc
-                source: 10.0.0.0/8
-                permanent: yes
-                state: enabled
-
-            - name: Permit http traffic in BRC HPC zone
-              ansible.posix.firewalld:
-                zone: brc_hpc
-                service: http
-                permanent: yes
-                state: enabled
-
-            - name: Permit ssh access in BRC HPC zone
-              ansible.posix.firewalld:
-                zone: brc_hpc
-                service: ssh
-                permanent: yes
-                state: enabled
+            # Don't do anything as there aren't any provisioning-specific tasks yet.
+            - meta: noop
           when: flag_brc_enabled
 
         ## LRC-only
         - name: LRC-only Production Tasks
           block:
+
+            # Send logs to LBL.
+
             - name: Update syslog config to send logs to LBL central server
               blockinfile:
                 state: present
@@ -321,7 +294,23 @@
                 state: restarted
                 enabled: yes
 
-            # TODO: Firewall tasks
+            # Configure the firewall.
+
+            - name: Start and enable firewalld service
+              service:
+                name: firewalld
+                state: started
+                enabled: yes
+
+            - name: Permit http and https traffic in public zone
+              ansible.posix.firewalld:
+                zone: public
+                service: "{{ item }}"
+                state: enabled
+                permanent: yes
+              loop:
+                - http
+                - https
 
           when: flag_lrc_enabled
 
