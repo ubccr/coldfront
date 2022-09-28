@@ -154,9 +154,12 @@ common_tasks: True
 # git_prefix: /var/www/coldfront_app
 
 # # Host settings.
+# # TODO: For LRC, use mylrc.lbl.gov.
 # hostname: mybrc.brc.berkeley.edu
+# # TODO: For LRC, use 128.3.7.213.
 # host_ip: 136.152.224.34
-# app_port: 8000
+# app_port: 80
+# # TODO: For LRC, use https://mylrc.lbl.gov.
 # full_host_path: https://mybrc.brc.berkeley.edu
 
 # # SSL settings.
