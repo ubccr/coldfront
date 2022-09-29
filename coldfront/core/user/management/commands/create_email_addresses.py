@@ -49,6 +49,10 @@ class Command(BaseCommand):
                 verified_field: True,
                 primary_field: True,
             }
+            if not email:
+                message = f'User {user.pk} email is empty.'
+                self.stderr.write(self.style.ERROR(message))
+                continue
             try:
                 email_address = EmailAddress.objects.create(**kwargs)
             except Exception as e:
