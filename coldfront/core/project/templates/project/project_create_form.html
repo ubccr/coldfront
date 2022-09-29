@@ -1,4 +1,4 @@
-{% extends "common/base.html" %} 
+{% extends "common/base.html" %}
 {% load crispy_forms_tags %}
 {% load static %}
 
@@ -9,6 +9,7 @@ Create Project
 
 
 {% block content %}
+{% comment %}
  <form method="post">
   {% csrf_token %}
   {{ form|crispy }}
@@ -21,4 +22,5 @@ Create Project
     $('#id_field_of_science').select2();
   });
 </script>
+{% endcomment %}
 {% endblock %}
