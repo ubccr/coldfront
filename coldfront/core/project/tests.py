@@ -14,6 +14,7 @@ from coldfront.core.project.models import Project
 FIXTURES = [
             "coldfront/core/test_helpers/test_data/test_fixtures/resources.json",
             "coldfront/core/test_helpers/test_data/test_fixtures/poisson_fixtures.json",
+            "coldfront/core/test_helpers/test_data/test_fixtures/kohn_fixtures.json",
             "coldfront/core/test_helpers/test_data/test_fixtures/admin_fixtures.json",
             "coldfront/core/test_helpers/test_data/test_fixtures/all_res_choices.json",
             "coldfront/core/test_helpers/test_data/test_fixtures/field_of_science.json",
@@ -45,6 +46,53 @@ class ProjectListViewTest(TestCase):
         # print(response.context)
 
 
+class ProjectDetailViewTest(TestCase):
+    """tests for projectdetail view"""
+    fixtures = FIXTURES
+
+    def setUp(self):
+        self.project = Project.objects.get(pk=1)
+        self.admin_user = get_user_model().objects.get(username='gvanrossum')
+        self.pi_user = get_user_model().objects.get(username='sdpoisson')
+        self.project_user = get_user_model().objects.get(username='ljbortkiewicz')
+        self.nonproject_user = get_user_model().objects.get(username='wkohn')
+        self.client = Client()
+
+    def test_project_detail_access(self):
+        """Test project detail page access
+        """
+        url = f"/project/{self.project.pk}/"
+        # If not logged in, can't see page; redirect to login page.
+        utils.test_redirect_to_login(self, url)
+
+        # admin can access
+        utils.test_user_can_access(self, self.admin_user, url)
+        # pi user can access
+        utils.test_user_can_access(self, self.pi_user, url)
+        # non-manager user belonging to project can access
+        utils.test_user_can_access(self, self.project_user, url)
+
+        # user not belonging to project cannot access
+        response = utils.login_and_get_page(self.client, self.nonproject_user, url)
+        self.assertEqual(response.status_code, 403)
+
+
+    def test_project_detail_permissions(self):
+        """Test project detail permissions
+        """
+        url = f"/project/{self.project.pk}/"
+
+        # admin has is_allowed_to_update_project set to True
+        response = utils.login_and_get_page(self.client, self.admin_user, url)
+        self.assertEqual(response.context['is_allowed_to_update_project'], True)
+
+        # pi has is_allowed_to_update_project set to True
+        response = utils.login_and_get_page(self.client, self.pi_user, url)
+        self.assertEqual(response.context['is_allowed_to_update_project'], True)
+
+        # non-manager user has is_allowed_to_update_project set to False
+        response = utils.login_and_get_page(self.client, self.project_user, url)
+        self.assertEqual(response.context['is_allowed_to_update_project'], False)
 
 
 

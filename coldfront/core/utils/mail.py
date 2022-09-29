@@ -10,15 +10,18 @@ from coldfront.core.utils.common import import_from_settings
 
 logger = logging.getLogger(__name__)
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
-if EMAIL_ENABLED:
-    EMAIL_SUBJECT_PREFIX = import_from_settings('EMAIL_SUBJECT_PREFIX')
-    EMAIL_DEVELOPMENT_EMAIL_LIST = import_from_settings(
-        'EMAIL_DEVELOPMENT_EMAIL_LIST')
-    EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
-    EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
-    EMAIL_OPT_OUT_INSTRUCTION_URL = import_from_settings('EMAIL_OPT_OUT_INSTRUCTION_URL')
-    EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
-    EMAIL_CENTER_NAME = import_from_settings('CENTER_NAME')
+
+EMAIL_SUBJECT_PREFIX = import_from_settings('EMAIL_SUBJECT_PREFIX')
+EMAIL_DEVELOPMENT_EMAIL_LIST = import_from_settings(
+    'EMAIL_DEVELOPMENT_EMAIL_LIST')
+EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
+    'EMAIL_DIRECTOR_EMAIL_ADDRESS')
+EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
+EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
+EMAIL_OPT_OUT_INSTRUCTION_URL = import_from_settings('EMAIL_OPT_OUT_INSTRUCTION_URL')
+EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
+EMAIL_CENTER_NAME = import_from_settings('CENTER_NAME')
+
 CENTER_BASE_URL = import_from_settings('CENTER_BASE_URL')
 
 def send_email(subject, body, sender, receiver_list, cc=[]):
@@ -90,18 +93,7 @@ def build_link(url_path, domain_url=''):
 def send_admin_email_template(subject, template_name, template_context):
     """Helper function for sending admin emails using a template
     """
-    send_email_template(subject, template_name, template_context, EMAIL_SENDER, [EMAIL_TICKET_SYSTEM_ADDRESS, ])
-
-
-def generate_allocation_customer_template(resource_name, allocation_url):
-    template_context = {
-        'center_name': EMAIL_CENTER_NAME,
-        'resource': resource_name,
-        'allocation_url': allocation_url,
-        'signature': EMAIL_SIGNATURE,
-        'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL
-    }
-    return template_context
+    send_email_template(subject, template_name, template_context, EMAIL_SENDER, [EMAIL_TICKET_SYSTEM_ADDRESS,])
 
 
 def send_allocation_admin_email(allocation_obj, subject, template_name, url_path='', domain_url=''):

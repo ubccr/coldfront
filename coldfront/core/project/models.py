@@ -129,7 +129,7 @@ We do not have information about your research. Please provide a detailed descri
         if self.projectuser_set.filter(user_conditions & models.Q(project__pi_id=user.id)).exists():
             permissions.append(ProjectPermission.PI)
 
-        if ProjectPermission.MANAGER in permissions or ProjectPermission.MANAGER in permissions:
+        if ProjectPermission.MANAGER in permissions or ProjectPermission.PI in permissions:
             permissions.append(ProjectPermission.UPDATE)
 
         return permissions
