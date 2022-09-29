@@ -1,3 +1,5 @@
+![ColdFront](docs/pages/images/logo-lg.png)
+
 # ColdFront - Resource Allocation System
 
 [![Documentation Status](https://readthedocs.org/projects/coldfront/badge/?version=latest)](https://coldfront.readthedocs.io/en/latest/?badge=latest)
@@ -22,7 +24,7 @@ Python and released under the GPLv3 license.
 
 - [OpenStack Plugin](https://github.com/nerc-project/coldfront-plugin-openstack)
 - [Keycloak User Search](https://github.com/nerc-project/coldfront-plugin-keycloak)
-- [Starfish Plugin](https://github.com/fasrc/coldfront/tree/master/coldfront/plugins/sftocf)
+- [Starfish Plugin](https://github.com/fasrc/sftocf)
 
 _Submit a PR to add your plugin to the list above._
 

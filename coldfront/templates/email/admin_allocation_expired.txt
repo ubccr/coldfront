@@ -1,0 +1,12 @@
+Dear System Administrator,
+
+Allocations to your system resources have expired. You should confirm access to these resources has been removed for all users on the allocations.  
+Below is a list of the allocations that expired today:
+
+    Expired Allocation(s):{% for project_key, project_url in project_dict.items %}
+    {% spaceless %} {% for allocation_key, allocation_value in allocation_dict.items %}{% if allocation_key == project_url.0 %}{% for allocation in allocation_value %}{% for allocation_url, resource_name in allocation.items %}
+        {{ resource_name }} : {{ allocation_url }}{% endfor %}{% endfor %}{% endif %}{% endfor %}{% endspaceless %}
+{% endfor %}
+
+Thank you,
+{{ signature }}

@@ -12,7 +12,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
 
-        for attribute_type in ('Date', 'Float', 'Int', 'Text', 'Yes/No',
+        for attribute_type in ('Date', 'Float', 'Int', 'Text', 'Yes/No', 'No',
             'Attribute Expanded Text'):
             AttributeType.objects.get_or_create(name=attribute_type)
 
