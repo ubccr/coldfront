@@ -66,9 +66,6 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-        if self.request.user.is_superuser:
-            return True
-
         if self.request.user.has_perm('project.can_view_all_projects'):
             return True
 
@@ -83,9 +80,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         # Can the user update the project?
-        if self.request.user.is_superuser:
-            context['is_allowed_to_update_project'] = True
-        elif self.object.has_perm(self.request.user, ProjectPermission.MANAGER):
+        if self.object.has_perm(self.request.user, ProjectPermission.MANAGER):
             context['is_allowed_to_update_project'] = True
         else:
             context['is_allowed_to_update_project'] = False
@@ -356,9 +351,6 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-        if self.request.user.is_superuser:
-            return True
-
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
             return True
@@ -430,10 +422,7 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-        if self.request.user.is_superuser:
-            return True
-
-        project_obj = self.get_object()
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
             return True
         return False
@@ -454,9 +443,6 @@ class ProjectAddUsersSearchView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-        if self.request.user.is_superuser:
-            return True
-
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
             return True
@@ -483,9 +469,6 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-        if self.request.user.is_superuser:
-            return True
-
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
             return True
@@ -509,10 +492,10 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
         users_to_exclude = [ele.user.username for ele in project_obj.projectuser_set.filter(
             status__name='Active')]
 
-        cobmined_user_search_obj = CombinedUserSearch(
+        combined_user_search_obj = CombinedUserSearch(
             user_search_string, search_by, users_to_exclude)
 
-        context = cobmined_user_search_obj.search()
+        context = combined_user_search_obj.search()
 
         matches = context.get('matches')
         for match in matches:
@@ -552,9 +535,6 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-        if self.request.user.is_superuser:
-            return True
-
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
             return True
@@ -578,10 +558,10 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
         users_to_exclude = [ele.user.username for ele in project_obj.projectuser_set.filter(
             status__name='Active')]
 
-        cobmined_user_search_obj = CombinedUserSearch(
+        combined_user_search_obj = CombinedUserSearch(
             user_search_string, search_by, users_to_exclude)
 
-        context = cobmined_user_search_obj.search()
+        context = combined_user_search_obj.search()
 
         matches = context.get('matches')
         for match in matches:
@@ -661,9 +641,6 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-        if self.request.user.is_superuser:
-            return True
-
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
             return True
@@ -768,9 +745,6 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-        if self.request.user.is_superuser:
-            return True
-
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
             return True
@@ -838,24 +812,19 @@ def project_update_email_notification(request):
     project_user_obj = get_object_or_404(
         ProjectUser, pk=data.get('user_project_id'))
 
-
     project_obj = project_user_obj.project
 
     allowed = False
-    if project_obj.pi == request.user:
-        allowed = True
 
-    if project_obj.projectuser_set.filter(user=request.user, role__name='Manager', status__name='Active').exists():
+    if project_obj.has_perm(request.user, ProjectPermission.UPDATE):
         allowed = True
 
     if project_user_obj.user == request.user:
         allowed = True
 
-    if request.user.is_superuser:
-        allowed = True
-
     if allowed is False:
         return HttpResponse('not allowed', status=403)
+
     checked = data.get('checked')
     if checked == 'true':
         project_user_obj.enable_notifications = True
@@ -874,14 +843,11 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-        if self.request.user.is_superuser:
-            return True
-
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
             return True
-        messages.error(
-        self.request, 'You do not have permissions to review this project.')
+        messages.error(self.request,
+                        'You do not have permissions to review this project.')
         return False
 
 
@@ -892,17 +858,20 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             messages.error(request, 'You do not need to review this project.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
-        if 'Auto-Import Project'.lower() in project_obj.title.lower():
-            messages.error(
-                request, 'You must update the project title before reviewing your project. You cannot have "Auto-Import Project" in the title.')
-            return HttpResponseRedirect(reverse('project-update', kwargs={'pk': project_obj.pk}))
+        message = None
+        default_text = 'We do not have information about your research. Please provide a detailed description of your work and update your field of science. Thank you!'
 
-        if 'We do not have information about your research. Please provide a detailed description of your work and update your field of science. Thank you!' in project_obj.description:
-            messages.error(
-                request, 'You must update the project description before reviewing your project.')
+        if 'Auto-Import Project'.lower() in project_obj.title.lower():
+            message = 'You must update the project title before reviewing your project. You cannot have "Auto-Import Project" in the title.'
+        elif default_text in project_obj.description:
+            message = 'You must update the project description before reviewing your project.'
+
+        if message:
+            messages.error(request, message)
             return HttpResponseRedirect(reverse('project-update', kwargs={'pk': project_obj.pk}))
 
         return super().dispatch(request, *args, **kwargs)
+
 
     def get(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
@@ -912,7 +881,8 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         context['project'] = project_obj
         context['project_review_form'] = project_review_form
         context['project_users'] = ', '.join(['{} {}'.format(ele.user.first_name, ele.user.last_name)
-                                              for ele in project_obj.projectuser_set.filter(status__name='Active').order_by('user__last_name')])
+                for ele in project_obj.projectuser_set.filter(status__name='Active'
+                ).order_by('user__last_name')])
 
         return render(request, self.template_name, context)
 
@@ -969,8 +939,8 @@ class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
         if self.request.user.has_perm('project.can_review_pending_project_reviews'):
             return True
 
-        messages.error(
-            self.request, 'You do not have permission to review pending project reviews.')
+        messages.error(self.request,
+            'You do not have permission to review pending project reviews.')
         return False
 
 
@@ -986,8 +956,8 @@ class ProjectReviewCompleteView(LoginRequiredMixin, UserPassesTestMixin, View):
         if self.request.user.has_perm('project.can_review_pending_project_reviews'):
             return True
 
-        messages.error(
-            self.request, 'You do not have permission to mark a pending project review as completed.')
+        messages.error(self.request,
+            'You do not have permission to mark a pending project review as completed.')
         return False
 
     def get(self, request, project_review_pk):
@@ -1077,7 +1047,6 @@ class ProjectNoteCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView)
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-
         if self.request.user.is_superuser:
             return True
         messages.error(

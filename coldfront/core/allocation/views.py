@@ -389,15 +389,13 @@ class AllocationListView(LoginRequiredMixin, ListView):
 
             # Active from now until date
             if data.get('active_from_now_until_date'):
-                allocations = allocations.filter(
-                    end_date__gte=date.today())
+                allocations = allocations.filter(end_date__gte=date.today())
                 allocations = allocations.filter(end_date__lt=data.get(
                     'active_from_now_until_date'), status__name='Active').order_by('end_date')
 
             # Status
             if data.get('status'):
-                allocations = allocations.filter(
-                    status__in=data.get('status'))
+                allocations = allocations.filter(status__in=data.get('status'))
 
         else:
             allocations = allocations.filter(
@@ -465,8 +463,6 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-        if self.request.user.is_superuser:
-            return True
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
         if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
             return True
@@ -592,7 +588,10 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         for user in users:
             AllocationUser.objects.create(allocation=allocation_obj, user=user,
                                             status=allocation_user_active_status)
-        send_allocation_admin_email(allocation_obj, 'New Allocation Request', 'email/new_allocation_request.txt', domain_url=get_domain_url(self.request))
+        send_allocation_admin_email(allocation_obj,
+                                    'New Allocation Request',
+                                    'email/new_allocation_request.txt',
+                                    domain_url=get_domain_url(self.request))
 
         return super().form_valid(form)
 
@@ -733,7 +732,7 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
         if allocation_obj.is_locked and not self.request.user.is_superuser:
             message = 'You cannot modify this allocation because it is locked! Contact support for details.'
         elif allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', ]:
-            message = f'You cannot remove users from a allocation with status {allocation_obj.status.name}.'
+            message = f'You cannot remove users from an allocation with status {allocation_obj.status.name}.'
         if message:
             messages.error(request, message)
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
@@ -1104,9 +1103,6 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-        if self.request.user.is_superuser:
-            return True
-
         allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
         if allocation_obj.has_perm(self.request.user, AllocationPermission.MANAGER):
             return True
@@ -1575,15 +1571,14 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-        view_perm = self.request.user.has_perm('allocation.can_view_all_allocations')
-        if self.request.user.is_superuser or view_perm:
+        if self.request.user.has_perm('allocation.can_view_all_allocations'):
             return True
 
-        allocation_change_obj = get_object_or_404(
-            AllocationChangeRequest, pk=self.kwargs.get('pk'))
-
-        if allocation_change_obj.allocation.has_perm(self.request.user, AllocationPermission.MANAGER):
+        allocation_change_obj = get_object_or_404(AllocationChangeRequest, pk=self.kwargs.get('pk'))
+        if allocation_change_obj.allocation.has_perm(self.request.user,
+                                                AllocationPermission.MANAGER):
             return True
+
         return False
 
 
@@ -1814,9 +1809,6 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-        if self.request.user.is_superuser:
-            return True
-
         allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
         if allocation_obj.has_perm(self.request.user, AllocationPermission.MANAGER):
             return True
@@ -1824,6 +1816,7 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         messages.error(self.request,
             'You do not have permission to request changes to this allocation.')
         return False
+
 
     def dispatch(self, request, *args, **kwargs):
         allocation_obj = get_object_or_404(
