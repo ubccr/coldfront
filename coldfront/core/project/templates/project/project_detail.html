@@ -30,6 +30,7 @@ Project Detail
   <hr>
 </div>
 
+{% comment %}
 {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
   <div class="card mb-3 bg-light">
     <div class="card-header">
@@ -43,14 +44,13 @@ Project Detail
     </div>
     <div class="card-body">
         <a class="btn btn-success" href="{% url 'project-add-users-search' project.pk %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
-{% comment %}.
         <a class="btn btn-success" href="{% url 'grant-create' project.id %}" role="button"><i class="fas fa-trophy" aria-hidden="true"></i> Add Grant</a>
         <a class="btn btn-success" href="{% url 'publication-search' project.pk %}" role="button"><i class="fas fa-newspaper" aria-hidden="true"></i> Add Publication</a>
         <a class="btn btn-success" href="{% url 'add-research-output' project.pk %}" role="button"><i class="far fa-newspaper" aria-hidden="true"></i> Add Research Output</a>
-{% endcomment %}
     </div>
   </div>
 {% endif %}
+{% endcomment %}
 
 <!-- Start Project Heading -->
 <div class="card mb-3">
@@ -145,11 +145,13 @@ Project Detail
   <div class="card-header">
     <h3 class="d-inline" id="users"><i class="fas fa-users" aria-hidden="true"></i> Users</h3> <span class="badge badge-secondary">{{project_users.count}}</span>
     <div class="float-right">
+      {% comment %}
       {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
         <a style="visibility: hidden" class="btn btn-primary" href="{{mailto}}" role="button"><i class="far fa-envelope" aria-hidden="true"></i> Email Project Users</a>
         <a style="visibility: hidden" class="btn btn-success" href="{% url 'project-add-users-search' project.id %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
         <a style="visibility: hidden" class="btn btn-danger" href="{% url 'project-remove-users' project.id %}" role="button"><i class="fas fa-user-times" aria-hidden="true"></i> Remove Users</a>
       {% endif %}
+      {% endcomment %}
     </div>
   </div>
   <div class="card-body">
@@ -243,12 +245,16 @@ Project Detail
       {% if project.latest_grant.modified %}
         <span class="badge badge-info">Last Updated: {{project.latest_grant.modified|date:"M. d, Y"}}</span>
       {% endif %}
+
+      {% comment %}
       {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
         <a class="btn btn-success" href="{% url 'grant-create' project.id %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add Grant</a>
         {% if grants %}
           <a class="btn btn-danger" href="{% url 'grant-delete-grants' project.pk %}" role="button"><i class="fas fa-minus" aria-hidden="true"></i> Delete Grants</a>
         {% endif %}
       {% endif %}
+      {% endcomment %}
+
     </div>
   </div>
   <div class="card-body">
