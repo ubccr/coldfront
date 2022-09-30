@@ -30,9 +30,11 @@ ALLOCATION_RESOURCE_ORDERING = import_from_settings(
     'ALLOCATION_RESOURCE_ORDERING',
     ['-is_allocatable', 'name'])
 
+
 class AllocationPermission(Enum):
     USER = 'USER'
     MANAGER = 'MANAGER'
+
 
 class AllocationStatusChoice(TimeStampedModel):
     name = models.CharField(max_length=64)
