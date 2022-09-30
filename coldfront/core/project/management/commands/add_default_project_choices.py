@@ -4,7 +4,8 @@ from coldfront.core.project.models import (ProjectReviewStatusChoice,
                                            ProjectStatusChoice,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice,
-                                           ProjectTypeChoice)
+                                           ProjectTypeChoice,
+                                           ProjectAdminActionChoice)
 
 
 class Command(BaseCommand):
@@ -30,3 +31,12 @@ class Command(BaseCommand):
         ProjectTypeChoice.objects.all().delete()
         for choice in ['Research', 'Class', ]:
             ProjectTypeChoice.objects.get_or_create(name=choice)
+
+        ProjectAdminActionChoice.objects.all().delete()
+        for choice in [
+            'Approved project request',
+            'Denied project request',
+            'Approved project review',
+            'Denied project review'
+        ]:
+            ProjectAdminActionChoice.objects.get_or_create(name=choice)
