@@ -123,6 +123,14 @@ class StarFishServer:
         userdict = {u["uid"]: u["name"] for u in users}
         return userdict
 
+    @record_process
+    def get_starfish_groups(self):
+        url = f"{self.api_url}mapping/group_membership"
+        group_dict = return_get_json(url, self.headers)
+        group_set = set([g['name'] for g in group_dict])
+        return group_set
+
+
 
 class StarFishQuery:
     def __init__(self, headers, api_url, query, group_by, volpath, sec=3):
@@ -406,6 +414,8 @@ def collect_starfish_usage(server, volume, volumepath, projects):
     datestr = datetime.today().strftime("%Y%m%d")
     locate_or_create_dirpath("./coldfront/plugins/sftocf/data/")
     logger.debug("projects: %s", projects)
+    server_groups = server.get_starfish_groups()
+    print("groups missing from volume:", [g[0] for g in projects if g not in server_groups])
     for t in projects:
         p = t[0]
         tier = t[2]
