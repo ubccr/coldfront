@@ -922,6 +922,23 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         allocation_account = form_data.get('allocation_account', None)
         license_term = form_data.get('license_term', None)
 
+        allocation_limit = resource_obj.get_attribute('allocation_limit')
+        if allocation_limit is not None:
+            num_allocations = 0
+            active_allocations = project_obj.allocation_set.filter(
+                status=AllocationStatusChoice.objects.get(name="Active")
+            )
+            for allocation in active_allocations:
+                if allocation.get_parent_resource == resource_obj:
+                    num_allocations += 1
+
+            if num_allocations >= allocation_limit:
+                form.add_error(
+                    None,
+                    'Your project has reached the max allocations it can have with this resource.'
+                )
+                return self.form_invalid(form)
+
         total_cost = None
         cost = resource_obj.get_attribute('cost')
         prorated_cost_label = resource_obj.get_attribute('prorated_cost_label')
