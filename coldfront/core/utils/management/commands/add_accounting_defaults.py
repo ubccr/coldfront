@@ -36,7 +36,7 @@ class Command(BaseCommand):
                 ('CATAMOUNT Compute', 'CATAMOUNT cluster compute access'),
                 ('COSMIC Compute', 'COSMIC cluster compute access'),
                 ('CUMULUS Compute', 'CUMULUS cluster compute access'),
-                ('DIRAC Compute', 'DIRAC cluster compute access'),
+                ('DIRAC1 Compute', 'DIRAC1 cluster compute access'),
                 ('ETNA Compute', 'ETNA cluster compute access'),
                 ('EXPLORER Compute', 'EXPLORER cluster compute access'),
                 ('HBAR Compute', 'HBAR cluster compute access'),
