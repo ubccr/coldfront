@@ -89,6 +89,9 @@ PROJECT_END_DATE_CARRYOVER_DAYS = import_from_settings(
 PROJECT_DAYS_TO_REVIEW_BEFORE_EXPIRING = import_from_settings(
     'PROJECT_DAYS_TO_REVIEW_BEFORE_EXPIRING', 30
 )
+PROJECT_TYPE_LIMIT_MAPPING = import_from_settings(
+    'PROJECT_TYPE_LIMIT_MAPPING', {}
+)
 
 if EMAIL_ENABLED:
     EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
@@ -711,12 +714,33 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
         return letter + string
 
+    def check_max_project_type_count_reached(self, project_type_obj, pi_obj):
+        limit = PROJECT_TYPE_LIMIT_MAPPING.get(project_type_obj.name)
+        if limit is not None:
+            limit = int(limit)
+            pi_projects_count = pi_obj.project_set.filter(
+                type=project_type_obj,
+                status__in=[
+                    ProjectStatusChoice.objects.get(name='Active'),
+                    ProjectStatusChoice.objects.get(name='Waiting For Admin Approval'),
+                    ProjectStatusChoice.objects.get(name='Review Pending')
+                ]).count()
+            return pi_projects_count >= limit
+
+        return False
+
     def form_valid(self, form):
         project_obj = form.save(commit=False)
         if not form.instance.pi_username:
             user_profile = UserProfile.objects.get(user=self.request.user)
             if user_profile.title not in ['Faculty', 'Staff', 'Academic (ACNP)',]:
                 messages.error(self.request, 'Only faculty and staff can be the PI')
+                return super().form_invalid(form)
+            if self.check_max_project_type_count_reached(form.instance.type, self.request.user):
+                messages.error(
+                    self.request,
+                    'You have reached the max projects you can have of this type.'
+                )
                 return super().form_invalid(form)
             form.instance.pi = self.request.user
         else:
@@ -727,6 +751,12 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
             user_profile = UserProfile.objects.get(user=user)
             if user_profile.title not in ['Faculty', 'Staff', 'Academic (ACNP)',]:
                 messages.error(self.request, 'Only faculty and staff can be the PI')
+                return super().form_invalid(form)
+            if self.check_max_project_type_count_reached(form.instance.type, user):
+                messages.error(
+                    self.request,
+                    'This PI has reached the max projects they can have of this type.'
+                )
                 return super().form_invalid(form)
             form.instance.pi = user
 
