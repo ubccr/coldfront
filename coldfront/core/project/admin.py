@@ -88,6 +88,13 @@ class ProjectUserMessageInline(admin.TabularInline):
     readonly_fields = ('author', 'created')
 
 
+class ProjectReviewInline(admin.TabularInline):
+    model = ProjectReview
+    fields = ['status', 'project_updates', 'allocation_renewals', 'created', ]
+    readonly_fields = ['status', 'project_updates', 'allocation_renewals', 'created', ]
+    extra = 0
+
+
 @admin.register(Project)
 class ProjectAdmin(SimpleHistoryAdmin):
     fields_change = ('title', 'pi', 'requestor', 'description', 'slurm_account_name', 'private', 'type', 'status',
