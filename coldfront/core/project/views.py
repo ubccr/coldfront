@@ -39,13 +39,15 @@ from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectReviewForm, ProjectSearchForm,
                                           ProjectPISearchForm,
                                           ProjectUserUpdateForm,
-                                          ProjectReviewAllocationForm)
+                                          ProjectReviewAllocationForm,)
 from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectReviewStatusChoice,
                                            ProjectStatusChoice, ProjectUser,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice,
-                                           ProjectUserMessage)
+                                           ProjectUserMessage,
+                                           ProjectAdminAction,
+                                           ProjectAdminActionChoice)
 from coldfront.core.publication.models import Publication
 from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.user.forms import UserSearchForm
@@ -1997,6 +1999,12 @@ class ProjectActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
         messages.success(request, 'Project request for {} has been APPROVED'.format(
             project_obj.title))
 
+        project_admin_action = ProjectAdminAction.objects.create(
+            project=project_obj,
+            user=request.user,
+            action=ProjectAdminActionChoice.objects.get(name='Approved project request')
+        )
+
         if EMAIL_ENABLED:
             domain_url = get_domain_url(self.request)
             project_url = '{}{}'.format(domain_url, reverse(
@@ -2063,6 +2071,12 @@ class ProjectDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
 
         messages.success(request, 'Project request for {} has been DENIED'.format(
             project_obj.title))
+
+        project_admin_action = ProjectAdminAction.objects.create(
+            project=project_obj,
+            user=request.user,
+            action=ProjectAdminActionChoice.objects.get(name='Denied project request')
+        )
 
         if EMAIL_ENABLED:
             domain_url = get_domain_url(self.request)
@@ -2173,6 +2187,12 @@ class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
             project_review_obj.project.title)
         )
 
+        project_admin_action = ProjectAdminAction.objects.create(
+            project=project_obj,
+            user=request.user,
+            action=ProjectAdminActionChoice.objects.get(name='Approved project review')
+        )
+
         if EMAIL_ENABLED:
             domain_url = get_domain_url(self.request)
             project_url = '{}{}'.format(domain_url, reverse(
@@ -2243,6 +2263,12 @@ class ProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin, View):
 
         messages.success(request, 'Project review for {} has been DENIED'.format(
             project_review_obj.project.title)
+        )
+
+        project_admin_action = ProjectAdminAction.objects.create(
+            project=project_obj,
+            user=request.user,
+            action=ProjectAdminActionChoice.objects.get(name='Denied project review')
         )
 
         if EMAIL_ENABLED:

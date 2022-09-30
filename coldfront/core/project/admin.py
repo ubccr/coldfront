@@ -9,7 +9,9 @@ from coldfront.core.project.models import (Project, ProjectAdminComment,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice,
                                            ProjectTypeChoice,
-                                           ProjectReviewStatusChoice)
+                                           ProjectReviewStatusChoice,
+                                           ProjectAdminAction,
+                                           ProjectAdminActionChoice)
 
 
 @admin.register(ProjectStatusChoice)
@@ -95,6 +97,14 @@ class ProjectReviewInline(admin.TabularInline):
     extra = 0
 
 
+class ProjectAdminActionInline(admin.TabularInline):
+    model = ProjectAdminAction
+    fields = ['user', 'action', 'created', ]
+    readonly_fields = ['user', 'action', 'created']
+    can_delete = False
+    extra = 0
+
+
 @admin.register(Project)
 class ProjectAdmin(SimpleHistoryAdmin):
     fields_change = ('title', 'pi', 'requestor', 'description', 'slurm_account_name', 'private', 'type', 'status',
@@ -104,7 +114,8 @@ class ProjectAdmin(SimpleHistoryAdmin):
     search_fields = ['pi__username', 'projectuser__user__username',
                      'projectuser__user__last_name', 'projectuser__user__last_name', 'title']
     list_filter = ('status', 'force_review', 'type')
-    inlines = [ProjectUserInline, ProjectAdminCommentInline, ProjectUserMessageInline]
+    inlines = [ProjectUserInline, ProjectReviewInline, ProjectAdminCommentInline,
+               ProjectUserMessageInline, ProjectAdminActionInline]
     raw_id_fields = ['pi', 'requestor', ]
 
     def PI(self, obj):
@@ -158,3 +169,15 @@ class ProjectTypeChoiceAdmin(admin.ModelAdmin):
 @admin.register(ProjectReviewStatusChoice)
 class ProjectReviewStatusChoiceAdmin(admin.ModelAdmin):
     list_display = ('name',)
+
+
+@admin.register(ProjectAdminAction)
+class ProjectAdminActionAdmin(admin.ModelAdmin):
+    list_display = ('pk', 'user', 'project', 'action', 'created', )
+    readonly_fields = ('user', 'project', 'action', 'created', )
+    list_filter = ('action', )
+
+
+@admin.register(ProjectAdminActionChoice)
+class ProjectAdminActionChoiceAdmin(admin.ModelAdmin):
+    list_display = ('name', )
