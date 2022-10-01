@@ -43,6 +43,7 @@ class Command(BaseCommand):
                 ('JBEI Compute', 'JBEI cluster compute access'),
                 ('JCAP Compute', 'JCAP cluster compute access'),
                 ('JGI Compute', 'JGI cluster compute access'),
+                ('JGICLOUD Compute', 'JGICLOUD cluster compute access'),
                 ('LAWRENCIUM Compute', 'LAWRENCIUM cluster compute access'),
                 ('MHG Compute', 'MHG cluster compute access'),
                 ('MUSIGNY Compute', 'MUSIGNY cluster compute access'),
