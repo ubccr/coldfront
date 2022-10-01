@@ -256,11 +256,12 @@ class Command(BaseCommand):
             pi_str = (
                 f'{pi_name_parts["first"]} {pi_name_parts["last"]} '
                 f'({pi_email})')
+            pre_project_name = pre_project.name if pre_project else 'None'
             if dry_run:
                 message = (
                     f'Would create pre-completed AllocationRenewalRequest for '
                     f'PI {pi_str}, requester {requester_str}, pre-Project '
-                    f'{pre_project.name}, post-Project {post_project.name}, '
+                    f'{pre_project_name}, post-Project {post_project.name}, '
                     f'and AllocationPeriod {allocation_period.name}, with '
                     f'request_time {request_time} and {num_sus} service '
                     f'units.')
@@ -324,7 +325,7 @@ class Command(BaseCommand):
                 message = (
                     f'Failed to create AllocationRenewalRequest for PI '
                     f'{pi_str}, requester {requester_str}, pre-Project '
-                    f'{pre_project.name}, and post-Project '
+                    f'{pre_project_name}, and post-Project '
                     f'{post_project.name}.')
                 self.stderr.write(self.style.ERROR(message))
                 self.logger.exception(e)
@@ -332,7 +333,7 @@ class Command(BaseCommand):
                 message = (
                     f'Created pre-completed AllocationRenewalRequest '
                     f'{request.pk} for PI {pi_str}, requester '
-                    f'{requester_str}, pre-Project {pre_project.name}, '
+                    f'{requester_str}, pre-Project {pre_project_name}, '
                     f'post-Project {post_project.name}, and AllocationPeriod '
                     f'{allocation_period.name}, with request_time '
                     f'{request_time} and {num_sus} service units.')

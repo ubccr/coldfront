@@ -933,7 +933,7 @@ class Command(BaseCommand):
                 end_date = None
                 num_service_units = settings.ALLOCATION_MAX
             elif project.name.startswith('pc_'):
-                end_date = current_allowance_year_period.end_date
+                end_date = None
                 num_service_units = settings.ALLOCATION_MIN
             else:
                 continue

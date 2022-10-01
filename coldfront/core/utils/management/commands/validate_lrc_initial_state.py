@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
@@ -131,9 +133,9 @@ class Command(BaseCommand):
         computing_allowance_interface = ComputingAllowanceInterface()
         prefix = computing_allowance_interface.code_from_name(
             'PI Computing Allowance')
-        num_service_units = \
+        num_service_units = Decimal(
             computing_allowance_interface.service_units_from_name(
-                computing_allowance.name)
+                computing_allowance.name))
 
         for project in Project.objects.filter(
                 name__startswith=prefix).iterator():
