@@ -169,8 +169,14 @@ class Command(BaseCommand):
             # The Allocation should have a start date greater than or equal to
             # the start of the AllocationPeriod. It should have an end date of
             # the end of the AllocationPeriod if it was renewed, else None.
-            self._assert_allocation_gte(
-                allocation, allocation_period.start_date)
+            if allocation.start_date is None:
+                message = (
+                    f'Allocation {allocation.pk} unexpectedly has no '
+                    f'start_date.')
+                self._write_error(message)
+            else:
+                self._assert_allocation_start_date_gte(
+                    allocation, allocation_period.start_date)
             self._assert_allocation_end_date(
                 allocation,
                 allocation_period.end_date if was_renewed else None)
@@ -278,7 +284,7 @@ class Command(BaseCommand):
                 f'{actual_start_date} instead of {expected_start_date}.')
             self._write_error(message)
 
-    def _assert_allocation_gte(self, allocation, min_start_date):
+    def _assert_allocation_start_date_gte(self, allocation, min_start_date):
         actual_start_date = allocation.start_date
         if actual_start_date < min_start_date:
             message = (
