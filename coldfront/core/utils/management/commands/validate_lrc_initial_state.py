@@ -15,6 +15,7 @@ from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.resource.models import Resource
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
+from coldfront.core.user.utils_.host_user_utils import is_lbl_employee
 
 
 class Command(BaseCommand):
@@ -25,6 +26,7 @@ class Command(BaseCommand):
         self.assert_projects_have_pis()
         self.assert_user_profile_is_pi_consistent_with_project_pis()
         self.assert_pis_renewed_at_most_one_pca()
+        self.assert_pis_are_lbl_employees()
         self.assert_pca_project_allocation_values()
         self.assert_condo_and_recharge_project_allocation_values()
         self.assert_departmental_project_allocation_values()
@@ -121,6 +123,17 @@ class Command(BaseCommand):
                 # Units as the Allocation.
                 self._assert_allocation_user_num_service_units(
                     allocation_user, settings.ALLOCATION_MAX)
+
+    def assert_pis_are_lbl_employees(self):
+        for project_user in ProjectUser.objects.filter(
+                role__name='Principal Investigator').iterator():
+            user = project_user.user
+            if not is_lbl_employee(user):
+                message = (
+                    f'User {user.username} ({user.pk}) is a PI of Project '
+                    f'{project_user.project.name}, but is not an LBL '
+                    f'employee.')
+                self._write_error(message)
 
     def assert_pca_project_allocation_values(self):
         lawrencium_compute_resource = Resource.objects.get(
