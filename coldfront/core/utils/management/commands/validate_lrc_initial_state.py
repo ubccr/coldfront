@@ -321,6 +321,7 @@ class Command(BaseCommand):
                 f'AllocationUser {allocation_user.pk} has no "Service Units" '
                 f'attribute.')
             self._write_error(message)
+            return
         actual_num_service_units = allocation_user_attribute.value
         if actual_num_service_units != str(expected_num_service_units):
             message = (
