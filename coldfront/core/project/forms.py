@@ -24,7 +24,7 @@ class ProjectSearchForm(forms.Form):
     """
     LAST_NAME = 'Last Name (PI)'
     USERNAME = 'Username (PI)'
-    FIELD_OF_SCIENCE = 'UCB Campus Division or Department'
+    FIELD_OF_SCIENCE = 'Division or Department'
     PROJECT_TITLE = 'Project Title'
     PROJECT_NAME = 'Project Name'
     CLUSTER_NAME = 'Cluster Name'
