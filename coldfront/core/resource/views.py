@@ -106,26 +106,18 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                     if service_day >= 0 and service_day <= days_remaining:
                         child_expiry[resource['object']][1] = days_remaining
 
-        if (attribute_warranty_day != -1 and attribute_service_day != -1):
-                messages.warning(self.request, f'{resource_obj.name}: Warranty is expiring within {attribute_warranty_day} day(s)' +
-                                                f' and Service expiring within {attribute_service_day} day(s)')
-        else:
-            if (attribute_warranty_day != -1):
-                messages.warning(self.request, f'{resource_obj.name}: Warranty is expiring within {attribute_warranty_day} day(s)')
+        if (attribute_warranty_day != -1):
+            messages.warning(self.request, f'{resource_obj.name}: Warranty is expiring within {attribute_warranty_day} day(s)')
 
-            if (attribute_service_day != -1):
-                messages.warning(self.request, f'{resource_obj.name}: Service is expiring within {attribute_service_day} day(s)')  
+        if (attribute_service_day != -1):
+            messages.warning(self.request, f'{resource_obj.name}: Service is expiring within {attribute_service_day} day(s)')  
 
         for resource_key, resource_value in child_expiry.items():
-            if (resource_value[0] != -1 and resource_value[1] != -1):
-                messages.warning(self.request, f'{resource_key}: Warranty is expiring within {resource_value[0]} day(s)' +
-                                                f' and Service expiring within {resource_value[1]} day(s)')
-            else:
-                if (resource_value[0] != -1):
-                    messages.warning(self.request, f'{resource_key}: Warranty is expiring within {resource_value[0]} day(s)')
+            if (resource_value[0] != -1):
+                messages.warning(self.request, f'{resource_key}: Warranty is expiring within {resource_value[0]} day(s)')
 
-                if (resource_value[1] != -1):
-                    messages.warning(self.request, f'{resource_key}: Service is expiring within {resource_value[1]} day(s)')
+            if (resource_value[1] != -1):
+                messages.warning(self.request, f'{resource_key}: Service is expiring within {resource_value[1]} day(s)')
 
         return context
 
