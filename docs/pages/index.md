@@ -1,5 +1,7 @@
 # What is ColdFront?
 
+![Diagram](images/logo-lg.png)
+
 ColdFront is an open source resource allocation management system designed to provide a
 central portal for administration, reporting, and measuring scientific impact
 of HPC resources. ColdFront was created to help HPC centers manage access to a

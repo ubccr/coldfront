@@ -148,16 +148,14 @@ class ProjectListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
 
-        order_by = self.request.GET.get('order_by')
-        if order_by:
-            direction = self.request.GET.get('direction')
+        order_by = self.request.GET.get('order_by', 'id')
+        direction = self.request.GET.get('direction', 'asc')
+        if order_by != "name":
             if direction == 'asc':
                 direction = ''
-            else:
+            if direction == 'des':
                 direction = '-'
             order_by = direction + order_by
-        else:
-            order_by = 'id'
 
         project_search_form = ProjectSearchForm(self.request.GET)
 
@@ -262,16 +260,12 @@ class ProjectArchivedListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
 
-        order_by = self.request.GET.get('order_by')
-        if order_by:
-            direction = self.request.GET.get('direction')
-            if direction == 'asc':
-                direction = ''
-            else:
+        order_by = self.request.GET.get('order_by', 'id')
+        direction = self.request.GET.get('direction', '')
+        if order_by != "name":
+            if direction == 'des':
                 direction = '-'
             order_by = direction + order_by
-        else:
-            order_by = 'id'
 
         project_search_form = ProjectSearchForm(self.request.GET)
 
@@ -791,8 +785,12 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                             allocation_remove_user.send(sender=self.__class__,
                                                         allocation_user_pk=allocation_user_obj.pk)
 
-            messages.success(
-                request, 'Removed {} users from project.'.format(remove_users_count))
+            if remove_users_count == 1:
+                messages.success(
+                    request, 'Removed {} user from project.'.format(remove_users_count))
+            else:
+                messages.success(
+                    request, 'Removed {} users from project.'.format(remove_users_count))
         else:
             for error in formset.errors:
                 messages.error(request, error)

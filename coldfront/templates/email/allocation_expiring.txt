@@ -1,13 +1,21 @@
 Dear {{center_name}} user,
 
-Your allocation for access to {{ allocation_type }} is expiring in {{ expring_in_days }} days.
-Failure to renew the allocation before expiration will result in removal of access to this resource for all accounts
-under this project.
-To renew, login to ColdFront and complete the short process: {{ allocation_renew_url }}.
+Your access to {{center_name}}'s resources is expiring soon. Failure to renew the expiring allocation(s) on time will terminate access to the resource 
+for all users on the allocation. To renew, login to ColdFront and complete the short renewal process for each expiring allocation.  Below is a list of links to 
+your project(s) containing at least one expiring allocation: 
+{% for project_key, project_url in project_dict.items %}
+Project Title: {{project_key}}
+Project URL: {{ project_url.0 }}
+Project PI: {{ project_url.1 }}
 
+    {% spaceless %}{% for days_key, days_value in expiration_dict.items %}
+    Allocation(s) expiring in {{days_key}} days:{% for allocations in days_value %}{% if allocations.0 == project_url.0 %}  
+        {% spaceless %}{{ allocations.2 }}{% endspaceless %}{% endif %}{% endfor %}
+        {% endfor %}{% endspaceless %}
+{% endfor %}
 The group owner responsible for this project is required to renew it on a yearly basis. If you have not done so in the
 last year, you will be required to before renewing the allocation.
-For more information about the yearly renewal, visit our knowledge base: {{ project_renewal_help_url }}.
+For more information about the yearly renewal, visit our knowledge base: {{ project_renewal_help_url }}
 
 If you are a student or collaborator under this project, you are receiving this notice as a courtesy. If you would like
 to opt out of future notifications, instructions can be found here: {{ opt_out_instruction_url }}
