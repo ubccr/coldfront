@@ -10,8 +10,7 @@ from coldfront.core.project.models import (Project, ProjectAdminComment,
                                            ProjectUserStatusChoice,
                                            ProjectTypeChoice,
                                            ProjectReviewStatusChoice,
-                                           ProjectAdminAction,
-                                           ProjectAdminActionChoice)
+                                           ProjectAdminAction)
 
 
 @admin.register(ProjectStatusChoice)
@@ -179,8 +178,3 @@ class ProjectAdminActionAdmin(admin.ModelAdmin):
 
     def project_pk(self, obj):
         return obj.project.pk
-
-
-@admin.register(ProjectAdminActionChoice)
-class ProjectAdminActionChoiceAdmin(admin.ModelAdmin):
-    list_display = ('name', )

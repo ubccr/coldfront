@@ -45,9 +45,7 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectStatusChoice, ProjectUser,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice,
-                                           ProjectUserMessage,
-                                           ProjectAdminAction,
-                                           ProjectAdminActionChoice)
+                                           ProjectUserMessage)
 from coldfront.core.publication.models import Publication
 from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.user.forms import UserSearchForm
@@ -55,7 +53,7 @@ from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email, send_email_template
-from coldfront.core.project.utils import get_new_end_date_from_list
+from coldfront.core.project.utils import get_new_end_date_from_list, create_admin_action
 from coldfront.core.allocation.utils import send_added_user_email
 
 logger = logging.getLogger(__name__)
@@ -388,7 +386,6 @@ class ProjectPISearchView(LoginRequiredMixin, ListView):
     template_name = 'project/project_pi_list.html'
 
     def post(self, request, *args, **kwargs):
-        username = request.user.username
         pi_username = request.POST.get('pi_username')
         context = {}
         context["pi_username"] = pi_username
@@ -1993,17 +1990,14 @@ class ProjectActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
     def get(self, request, pk):
         project_obj = get_object_or_404(Project, pk=pk)
         project_status_obj = ProjectStatusChoice.objects.get(name="Active")
+
+        create_admin_action(request.user, {'status': project_status_obj}, project_obj)
+
         project_obj.status = project_status_obj
         project_obj.save()
 
         messages.success(request, 'Project request for {} has been APPROVED'.format(
             project_obj.title))
-
-        project_admin_action = ProjectAdminAction.objects.create(
-            project=project_obj,
-            user=request.user,
-            action=ProjectAdminActionChoice.objects.get(name='Approved project request')
-        )
 
         if EMAIL_ENABLED:
             domain_url = get_domain_url(self.request)
@@ -2053,6 +2047,9 @@ class ProjectDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
     def get(self, request, pk):
         project_obj = get_object_or_404(Project, pk=pk)
         project_status_obj = ProjectStatusChoice.objects.get(name="Denied")
+
+        create_admin_action(request.user, {'status': project_status_obj}, project_obj)
+
         project_obj.status = project_status_obj
 
         free_allocation_obj_list = project_obj.allocation_set.filter(status__name__in=['Active', 'New', 'Renewal Requested'])
@@ -2071,12 +2068,6 @@ class ProjectDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
 
         messages.success(request, 'Project request for {} has been DENIED'.format(
             project_obj.title))
-
-        project_admin_action = ProjectAdminAction.objects.create(
-            project=project_obj,
-            user=request.user,
-            action=ProjectAdminActionChoice.objects.get(name='Denied project request')
-        )
 
         if EMAIL_ENABLED:
             domain_url = get_domain_url(self.request)
@@ -2168,6 +2159,8 @@ class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
             )
             project_obj.end_date = end_date
 
+        create_admin_action(request.user, {'status': project_status_obj}, project_obj)
+
         project_review_obj.status = project_review_status_obj
         project_obj.status = project_status_obj
 
@@ -2185,12 +2178,6 @@ class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
 
         messages.success(request, 'Project review for {} has been APPROVED'.format(
             project_review_obj.project.title)
-        )
-
-        project_admin_action = ProjectAdminAction.objects.create(
-            project=project_obj,
-            user=request.user,
-            action=ProjectAdminActionChoice.objects.get(name='Approved project review')
         )
 
         if EMAIL_ENABLED:
@@ -2248,6 +2235,8 @@ class ProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin, View):
         project_obj = project_review_obj.project
         project_status_obj = ProjectStatusChoice.objects.get(name="Denied")
 
+        create_admin_action(request.user, {'status': project_status_obj}, project_obj)
+
         project_review_obj.status = project_review_status_obj
         project_obj.status = project_status_obj
 
@@ -2263,12 +2252,6 @@ class ProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin, View):
 
         messages.success(request, 'Project review for {} has been DENIED'.format(
             project_review_obj.project.title)
-        )
-
-        project_admin_action = ProjectAdminAction.objects.create(
-            project=project_obj,
-            user=request.user,
-            action=ProjectAdminActionChoice.objects.get(name='Denied project review')
         )
 
         if EMAIL_ENABLED:
