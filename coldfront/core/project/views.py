@@ -2569,7 +2569,7 @@ class ProjectNoteCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView)
             return True
         else:
             messages.error(
-                self.request, 'You do not have permission to add allocation notes.')
+                self.request, 'You do not have permission to add project notes.')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
