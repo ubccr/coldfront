@@ -1,9 +1,12 @@
 from datetime import datetime
 from django.db.models import Q
 from django.urls import reverse
+from django.forms.models import model_to_dict
 
 from coldfront.core.allocation.models import (AllocationUser,
-                                              AllocationUserStatusChoice)
+                                              AllocationUserStatusChoice,
+                                              AllocationStatusChoice,
+                                              AllocationAdminAction)
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email_template
@@ -148,3 +151,19 @@ def send_removed_user_email(allocation_obj, users, users_emails):
             EMAIL_TICKET_SYSTEM_ADDRESS,
             users_emails
         )
+
+
+def create_admin_action(user, fields_to_check, allocation):
+    allocation_dict = model_to_dict(allocation)
+    for key, value in fields_to_check.items():
+        allocation_value = allocation_dict.get(key)
+        if type(value) is not type(allocation_value):
+            if key == 'status':
+                allocation_value = AllocationStatusChoice.objects.get(pk=allocation_value).name
+                value = value.name
+        if value != allocation_value:
+            AllocationAdminAction.objects.create(
+                user=user,
+                allocation=allocation,
+                action=f'Changed "{key}" from "{allocation_value}" to "{value}"'
+            )

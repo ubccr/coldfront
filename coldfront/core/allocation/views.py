@@ -57,7 +57,8 @@ from coldfront.core.allocation.utils import (compute_prorated_amount,
                                              get_user_resources,
                                              send_allocation_user_request_email,
                                              send_added_user_email,
-                                             send_removed_user_email)
+                                             send_removed_user_email,
+                                             create_admin_action)
 from coldfront.core.utils.common import Echo
 from coldfront.core.allocation.signals import (allocation_activate,
                                                allocation_activate_user,
@@ -286,6 +287,8 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
             old_status = allocation_obj.status.name
             new_status = status.name
+
+            create_admin_action(request.user, form_data, allocation_obj)
 
             allocation_obj.description = description
             allocation_obj.is_locked = is_locked
@@ -2002,6 +2005,8 @@ class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
             name='Active')
         start_date = datetime.datetime.now()
 
+        create_admin_action(request.user, {'status': allocation_status_active_obj}, allocation_obj)
+
         allocation_obj.status = allocation_status_active_obj
         if not allocation_obj.start_date:
             allocation_obj.start_date = start_date
@@ -2117,6 +2122,8 @@ class AllocationDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
 
         allocation_status_denied_obj = AllocationStatusChoice.objects.get(
             name='Denied')
+
+        create_admin_action(request.user, {'status': allocation_status_denied_obj}, allocation_obj)
 
         allocation_obj.status = allocation_status_denied_obj
         allocation_obj.start_date = None
@@ -2294,6 +2301,12 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
             name='Removed')
         project_user_remove_status_choice = ProjectUserStatusChoice.objects.get(
             name='Removed')
+
+        create_admin_action(
+            request.user,
+            {'status', allocation_renewal_requested_status_choice},
+            allocation_obj
+        )
 
         allocation_obj.status = allocation_renewal_requested_status_choice
         allocation_obj.save()
@@ -2479,6 +2492,12 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
                     sub_account_number=allocation_obj.sub_account_number,
                     status=status
                 )
+
+            create_admin_action(
+                request.user,
+                {'status', status},
+                allocation_obj
+            )
 
             allocation_obj.status = status
             allocation_obj.save()
@@ -3207,6 +3226,8 @@ class AllocationUserApproveRequestView(LoginRequiredMixin, UserPassesTestMixin, 
         allocation_user_request.status = allocation_user_request_status_choice
         allocation_user_request.save()
 
+        # TODO - Create admin actio for allocation user approval
+
         if EMAIL_ENABLED:
             domain_url = get_domain_url(request)
             url = '{}{}'.format(domain_url, reverse(
@@ -3304,6 +3325,8 @@ class AllocationUserDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
 
         allocation_user_request.status = allocation_user_request_status_choice
         allocation_user_request.save()
+
+        # TODO - Create admin actio for allocation user approval
 
         if EMAIL_ENABLED:
             domain_url = get_domain_url(request)
@@ -3499,6 +3522,8 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
 
         note_form = AllocationChangeNoteForm(
             request.POST, initial={'notes': allocation_change_obj.notes})
+
+        # TODO - add admin action
 
         if note_form.is_valid():
             notes = note_form.cleaned_data.get('notes')
@@ -4147,6 +4172,8 @@ class AllocationChangeActivateView(LoginRequiredMixin, UserPassesTestMixin, View
 
             allocation_change_obj.allocation.end_date = new_end_date
 
+        # TODO - add admin action
+
         allocation_change_obj.allocation.save()
         allocation_change_obj.save()
 
@@ -4256,6 +4283,8 @@ class AllocationChangeDenyView(LoginRequiredMixin, UserPassesTestMixin, View):
         allocation_change_status_denied_obj = AllocationChangeStatusChoice.objects.get(
             name='Denied')
 
+        # TODO - add admin action
+
         allocation_change_obj.status = allocation_change_status_denied_obj
         allocation_change_obj.save()
 
@@ -4323,6 +4352,8 @@ class AllocationChangeDeleteAttributeView(LoginRequiredMixin, UserPassesTestMixi
     def get(self, request, pk):
         allocation_attribute_change_obj = get_object_or_404(AllocationAttributeChangeRequest, pk=pk)
         allocation_change_pk = allocation_attribute_change_obj.allocation_change_request.pk
+
+        # TODO - add admin action
 
         allocation_attribute_change_obj.delete()
 

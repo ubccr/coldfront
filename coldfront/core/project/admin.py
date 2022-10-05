@@ -173,9 +173,12 @@ class ProjectReviewStatusChoiceAdmin(admin.ModelAdmin):
 
 @admin.register(ProjectAdminAction)
 class ProjectAdminActionAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'user', 'project', 'action', 'created', )
-    readonly_fields = ('user', 'project', 'action', 'created', )
+    list_display = ('pk', 'user', 'project_pk', 'project', 'action', 'created', )
+    readonly_fields = ('user', 'project_pk', 'project', 'action', 'created', )
     list_filter = ('action', )
+
+    def project_pk(self, obj):
+        return obj.project.pk
 
 
 @admin.register(ProjectAdminActionChoice)
