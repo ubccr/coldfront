@@ -390,14 +390,22 @@ class ProjectPISearchView(LoginRequiredMixin, ListView):
         context = {}
         context["pi_username"] = pi_username
         projects = Project.objects.prefetch_related('pi', 'status',).filter(
-            Q(pi__username=pi_username) &
-            Q(projectuser__status__name='Active') &
-            Q(status__name__in=['New', 'Active', ]) &
-            Q(private=False)
-        ).exclude(
-            projectuser__user__username=username,
+            pi__username=pi_username,
+            projectuser__status__name='Active',
+            status__name__in=['New', 'Active', ],
+            private=False
         ).distinct()
-        context["pi_projects"] = projects
+
+        new_project_list = []
+        for project in projects:
+            project_user = project.projectuser_set.filter(user=request.user)
+            if project_user.exists():
+                if project_user[0].status.name == 'Removed':
+                    new_project_list.append(project)
+            else:
+                new_project_list.append(project)
+
+        context["pi_projects"] = new_project_list
         context['EMAIL_ENABLED'] = EMAIL_ENABLED
         return render(request, self.template_name, context)
 
