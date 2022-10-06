@@ -32,6 +32,7 @@ class Command(BaseCommand):
             ('Cloud Account Name', 'Text', False, False),
             ('CLOUD_USAGE_NOTIFICATION', 'Yes/No', False, True),
             ('Core Usage (Hours)', 'Int', True, False),
+            ('Accelerator Usage (Hours)', 'Int', True, False),            
             ('Cloud Storage Quota (TB)', 'Float', True, False),
             ('EXPIRE NOTIFICATION', 'Yes/No', False, True),
             ('freeipa_group', 'Text', False, False),
