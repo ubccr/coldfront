@@ -704,13 +704,6 @@ def can_submit_job(request, job_cost, user_id, account_id):
         message = f'No account exists with account_id {account_id}.'
         return client_error(message)
 
-    # Allow all jobs for accounts that are not intended to have
-    # computing allowances (e.g., departmental cluster-specific accounts).
-    computing_allowance_project_prefixes = \
-        get_computing_allowance_project_prefixes()
-    if not account.name.startswith(computing_allowance_project_prefixes):
-        return affirmative
-
     # Validate that needed accounting objects exist.
     try:
         allocation_objects = get_accounting_allocation_objects(
@@ -742,6 +735,13 @@ def can_submit_job(request, job_cost, user_id, account_id):
     except TypeError as e:
         logger.error(f'Incorrect input type. Details: {e}')
         return server_error
+
+    # Allow all jobs for accounts that are not intended to have
+    # computing allowances (e.g., departmental cluster-specific accounts).
+    computing_allowance_project_prefixes = \
+        get_computing_allowance_project_prefixes()
+    if not account.name.startswith(computing_allowance_project_prefixes):
+        return affirmative
 
     # Retrieve compute allocation values.
     account_allocation = Decimal(allocation_objects.allocation_attribute.value)
