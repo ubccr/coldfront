@@ -121,7 +121,8 @@ class TestCanSubmitJobView(TestJobBase):
                 job_cost, '0', self.project.name, 200, result, message)
 
         example_exempt_project_names = (
-            'abc', 'alsacc', 'etna', 'nano', 'vector_project', 'vulcan')
+            'abc', 'alice', 'alsacc', 'etna', 'nano', 'vector_project',
+            'vulcan')
         for project_name in example_exempt_project_names:
             self.project.name = project_name
             self.project.save()

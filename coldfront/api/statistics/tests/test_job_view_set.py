@@ -4,6 +4,7 @@ from decimal import Decimal
 
 import pytz
 
+from coldfront.api.statistics.serializers import JobSerializer
 from coldfront.api.statistics.tests.test_job_base import TestJobBase
 from coldfront.api.statistics.utils import convert_utc_datetime_to_unix_timestamp
 from coldfront.api.statistics.utils import get_accounting_allocation_objects
@@ -20,13 +21,17 @@ from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
+from coldfront.core.resource.models import Resource
+from coldfront.core.resource.models import ResourceType
 from coldfront.core.resource.utils import get_primary_compute_resource
 from coldfront.core.statistics.models import Job
 from coldfront.core.user.models import ExpiringToken
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import utc_datetime_to_display_time_zone_date
+from coldfront.core.utils.tests.test_base import enable_deployment
 
 from django.contrib.auth.models import User
+from django.core.management import call_command
 from django.db.models import Sum
 
 from rest_framework.test import APIClient
@@ -568,13 +573,71 @@ class TestJobSerializer(TestJobBase):
             name='Expired')
         self.allocation.save()
         self.assert_error_message(self.data, message)
-        # The allocation is active, but is not to the primary compute resource.
+        # The allocation is active, and is to the expected resource.
         self.allocation.status = AllocationStatusChoice.objects.get(
             name='Active')
+        self.allocation.save()
+        serializer = JobSerializer(data=self.data)
+        self.assertTrue(serializer.is_valid())
+        # The allocation is active, but is not to any resource.
         resource = get_primary_compute_resource()
         self.allocation.resources.remove(resource)
         self.assert_error_message(self.data, message)
+        # The allocation is active, but is to an unexpected resource.
+        resource = Resource.objects.get(name='Vector Compute')
+        self.allocation.resources.add(resource)
+        self.assert_error_message(self.data, message)
         # The allocation does not exist.
+        self.allocation.delete()
+        self.assert_error_message(self.data, message)
+
+    @enable_deployment('LRC')
+    def test_no_active_compute_allocation_lrc_departmental(self):
+        """Test that requests wherein the account is for an LRC
+        departmental cluster and has no active compute allocation
+        fail."""
+        resource_type = ResourceType.objects.get(name='Cluster')
+        cluster_names = ('ALICE', 'ALSACC', 'BALDUR', 'ETNA', 'NANO', 'VULCAN')
+        for cluster_name in cluster_names:
+            Resource.objects.create(
+                name=f'{cluster_name} Compute', resource_type=resource_type)
+
+        self.allocation.resources.clear()
+
+        departmental_project_names = (
+            'alice', 'alsacc', 'etna', 'nano', 'vulcan')
+        other_resource = Resource.objects.get(name='BALDUR Compute')
+        for project_name in departmental_project_names:
+            message = (
+                f'Account {project_name} has no active compute allocation.')
+            self.project.name = project_name
+            self.project.save()
+            self.data['accountid'] = project_name
+            resource = Resource.objects.get(
+                name=f'{project_name.upper()} Compute')
+            self.allocation.resources.add(resource)
+            # The allocation is expired.
+            self.allocation.status = AllocationStatusChoice.objects.get(
+                name='Expired')
+            self.allocation.save()
+            self.assert_error_message(self.data, message)
+            # The allocation is active, and is to the expected resource.
+            self.allocation.status = AllocationStatusChoice.objects.get(
+                name='Active')
+            self.allocation.save()
+            serializer = JobSerializer(data=self.data)
+            self.assertTrue(serializer.is_valid())
+            # The Allocation is active, but is not to any resource.
+            self.allocation.resources.clear()
+            self.assert_error_message(self.data, message)
+            # The allocation is active, but is to an unexpected resource.
+            self.allocation.resources.add(other_resource)
+            self.assert_error_message(self.data, message)
+            self.allocation.resources.clear()
+        # The allocation does not exist.
+        message = (
+            f'Account {departmental_project_names[-1]} has no active compute '
+            f'allocation.')
         self.allocation.delete()
         self.assert_error_message(self.data, message)
 

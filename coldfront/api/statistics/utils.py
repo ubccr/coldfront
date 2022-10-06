@@ -7,6 +7,7 @@ from coldfront.core.allocation.models import AllocationUser
 from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.allocation.models import AllocationUserAttributeUsage
 from coldfront.core.allocation.models import AllocationUserStatusChoice
+from coldfront.core.allocation.utils import get_project_compute_resource_name
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserStatusChoice
@@ -195,7 +196,7 @@ def get_accounting_allocation_objects(project, user=None,
 
     allocation_kwargs = {
         'project': project,
-        'resources__name': get_primary_compute_resource_name(),
+        'resources__name': get_project_compute_resource_name(project),
     }
     if enforce_allocation_active:
         # Check that the project has an active Allocation to the
