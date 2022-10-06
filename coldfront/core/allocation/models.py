@@ -660,7 +660,7 @@ class AllocationChangeRequest(TimeStampedModel):
             return self.allocation.resources.filter(is_allocatable=True).first()
 
     def __str__(self):
-        return "%s (%s)" % (self.get_parent_resource.name, self.allocation.project.pi)
+        return "%s (%s) Change Request" % (self.get_parent_resource.name, self.allocation.project.pi)
 
 
 class AllocationAttributeChangeRequest(TimeStampedModel):

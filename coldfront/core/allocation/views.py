@@ -58,7 +58,8 @@ from coldfront.core.allocation.utils import (compute_prorated_amount,
                                              send_allocation_user_request_email,
                                              send_added_user_email,
                                              send_removed_user_email,
-                                             create_admin_action)
+                                             create_admin_action,
+                                             create_admin_action_for_deletion)
 from coldfront.core.utils.common import Echo
 from coldfront.core.allocation.signals import (allocation_activate,
                                                allocation_activate_user,
@@ -3529,9 +3530,8 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
             notes = note_form.cleaned_data.get('notes')
 
             if request.POST.get('choice') == 'approve':
+                allocation_obj = allocation_change_obj.allocation
                 if not request.user.is_superuser:
-                    allocation_obj = allocation_change_obj.allocation
-
                     review_groups = allocation_obj.get_parent_resource.review_groups.all()
                     if set(request.user.groups.all()).isdisjoint(set(review_groups)):
                         messages.error(
@@ -3542,16 +3542,35 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
 
                 if allocation_attributes_to_change:
                     if allocation_change_form.is_valid() and formset.is_valid():
+                        create_admin_action(
+                            request.user,
+                            {'notes': notes},
+                            allocation_obj,
+                            allocation_change_obj
+                        )
                         allocation_change_obj.notes = notes
 
                         allocation_change_status_active_obj = AllocationChangeStatusChoice.objects.get(
                             name='Approved')
+
+                        create_admin_action(
+                            request.user,
+                            {'status': allocation_change_status_active_obj},
+                            allocation_obj,
+                            allocation_change_obj
+                        )
 
                         allocation_change_obj.status = allocation_change_status_active_obj
 
                         form_data = allocation_change_form.cleaned_data
 
                         if form_data.get('end_date_extension') != allocation_change_obj.end_date_extension:
+                            create_admin_action(
+                                request.user,
+                                {'end_date_extension': form_data.get('end_date_extension')},
+                                allocation_obj,
+                                allocation_change_obj
+                            )
                             allocation_change_obj.end_date_extension = form_data.get('end_date_extension')
 
                         new_end_date = allocation_change_obj.allocation.end_date + relativedelta(
@@ -3570,6 +3589,12 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                             attribute_change = AllocationAttributeChangeRequest.objects.get(pk=formset_data.get('change_pk'))
 
                             if new_value != attribute_change.new_value:
+                                create_admin_action(
+                                    request.user,
+                                    {'new_value': new_value},
+                                    allocation_obj,
+                                    attribute_change
+                                )
                                 attribute_change.new_value = new_value
                                 attribute_change.save()
 
@@ -3624,13 +3649,31 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                         selected_extension = form_data.get('end_date_extension')
 
                         if selected_extension != 0:
+                            create_admin_action(
+                                request.user,
+                                {'notes': notes},
+                                allocation_obj,
+                                allocation_change_obj
+                            )
                             allocation_change_obj.notes = notes
 
                             allocation_change_status_active_obj = AllocationChangeStatusChoice.objects.get(
                                 name='Approved')
+                            create_admin_action(
+                                request.user,
+                                {'status': allocation_change_status_active_obj},
+                                allocation_obj,
+                                allocation_change_obj
+                            )
                             allocation_change_obj.status = allocation_change_status_active_obj
 
                             if selected_extension != allocation_change_obj.end_date_extension:
+                                create_admin_action(
+                                    request.user,
+                                    {'end_date_extension': selected_extension},
+                                    allocation_obj,
+                                    allocation_change_obj
+                                )
                                 allocation_change_obj.end_date_extension = selected_extension
 
                             new_end_date = allocation_change_obj.allocation.end_date + relativedelta(
@@ -3700,11 +3743,22 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                         )
                         return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': allocation_change_obj.pk}))
 
+                create_admin_action(
+                    request.user,
+                    {'notes': notes},
+                    allocation_obj,
+                    allocation_change_obj
+                )
                 allocation_change_obj.notes = notes
 
                 allocation_change_status_denied_obj = AllocationChangeStatusChoice.objects.get(
                     name='Denied')
-
+                create_admin_action(
+                    request.user,
+                    {'status': allocation_change_status_denied_obj},
+                    allocation_obj,
+                    allocation_change_obj
+                )
                 allocation_change_obj.status = allocation_change_status_denied_obj
                 allocation_change_obj.save()
 
@@ -3754,9 +3808,8 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                 return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
 
             if request.POST.get('choice') == 'update':
+                allocation_obj = allocation_change_obj.allocation
                 if not request.user.is_superuser:
-                    allocation_obj = allocation_change_obj.allocation
-
                     review_groups = allocation_obj.get_parent_resource.review_groups.all()
                     if set(request.user.groups.all()).isdisjoint(set(review_groups)):
                         messages.error(
@@ -3766,6 +3819,12 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                         return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': allocation_change_obj.pk}))
 
                 if allocation_change_obj.status.name != 'Pending':
+                    create_admin_action(
+                        request.user,
+                        {'notes': notes},
+                        allocation_obj,
+                        allocation_change_obj
+                    )
                     allocation_change_obj.notes = notes
                     allocation_change_obj.save()
 
@@ -3775,11 +3834,23 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                 else:
                     if allocation_attributes_to_change:
                         if allocation_change_form.is_valid() and formset.is_valid():
+                            create_admin_action(
+                                request.user,
+                                {'notes': notes},
+                                allocation_obj,
+                                allocation_change_obj
+                            )
                             allocation_change_obj.notes = notes
 
                             form_data = allocation_change_form.cleaned_data
 
                             if form_data.get('end_date_extension') != allocation_change_obj.end_date_extension:
+                                create_admin_action(
+                                    request.user,
+                                    {'end_date_extension': form_data.get('end_date_extension')},
+                                    allocation_obj,
+                                    allocation_change_obj
+                                )
                                 allocation_change_obj.end_date_extension = form_data.get('end_date_extension')
 
                             for entry in formset:
@@ -3789,6 +3860,12 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                                 attribute_change = AllocationAttributeChangeRequest.objects.get(pk=formset_data.get('change_pk'))
 
                                 if new_value != attribute_change.new_value:
+                                    create_admin_action(
+                                        request.user,
+                                        {'new_value': new_value},
+                                        allocation_obj,
+                                        attribute_change
+                                    )
                                     attribute_change.new_value = new_value
                                     attribute_change.save()
 
@@ -3811,9 +3888,21 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                             selected_extension = form_data.get('end_date_extension')
 
                             if selected_extension != 0:
+                                create_admin_action(
+                                    request.user,
+                                    {'notes': notes},
+                                    allocation_obj,
+                                    allocation_change_obj
+                                )
                                 allocation_change_obj.notes = notes
 
                                 if selected_extension != allocation_change_obj.end_date_extension:
+                                    create_admin_action(
+                                        request.user,
+                                        {'end_date_extension': selected_extension},
+                                        allocation_obj,
+                                        allocation_change_obj
+                                    )
                                     allocation_change_obj.end_date_extension = selected_extension
 
                                 allocation_change_obj.save()
@@ -4171,7 +4260,12 @@ class AllocationChangeActivateView(LoginRequiredMixin, UserPassesTestMixin, View
 
             allocation_change_obj.allocation.end_date = new_end_date
 
-        # TODO - add admin action
+        create_admin_action(
+            request.user,
+            {'status': allocation_change_status_active_obj},
+            allocation_change_obj.allocation,
+            allocation_change_obj
+        )
 
         allocation_change_obj.allocation.save()
         allocation_change_obj.save()
@@ -4282,7 +4376,12 @@ class AllocationChangeDenyView(LoginRequiredMixin, UserPassesTestMixin, View):
         allocation_change_status_denied_obj = AllocationChangeStatusChoice.objects.get(
             name='Denied')
 
-        # TODO - add admin action
+        create_admin_action(
+            request.user,
+            {'status': allocation_change_status_denied_obj},
+            allocation_change_obj.allocation,
+            allocation_change_obj
+        )
 
         allocation_change_obj.status = allocation_change_status_denied_obj
         allocation_change_obj.save()
@@ -4352,7 +4451,12 @@ class AllocationChangeDeleteAttributeView(LoginRequiredMixin, UserPassesTestMixi
         allocation_attribute_change_obj = get_object_or_404(AllocationAttributeChangeRequest, pk=pk)
         allocation_change_pk = allocation_attribute_change_obj.allocation_change_request.pk
 
-        # TODO - add admin action
+        create_admin_action_for_deletion(
+            request.user,
+            allocation_attribute_change_obj,
+            allocation_attribute_change_obj.allocation_change_request.allocation,
+            allocation_attribute_change_obj.allocation_change_request
+        )
 
         allocation_attribute_change_obj.delete()
 

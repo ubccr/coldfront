@@ -153,17 +153,36 @@ def send_removed_user_email(allocation_obj, users, users_emails):
         )
 
 
-def create_admin_action(user, fields_to_check, allocation):
-    allocation_dict = model_to_dict(allocation)
+def create_admin_action(user, fields_to_check, allocation, base_model=None):
+    if base_model is None:
+        base_model = allocation
+    base_model_dict = model_to_dict(base_model)
+
     for key, value in fields_to_check.items():
-        allocation_value = allocation_dict.get(key)
-        if type(value) is not type(allocation_value):
+        base_model_value = base_model_dict.get(key)
+        if type(value) is not type(base_model_value):
             if key == 'status':
-                allocation_value = AllocationStatusChoice.objects.get(pk=allocation_value).name
+                status_class = base_model._meta.get_field('status').remote_field.model
+                base_model_value = status_class.objects.get(pk=base_model_value).name
                 value = value.name
-        if value != allocation_value:
+        if value != base_model_value:
             AllocationAdminAction.objects.create(
                 user=user,
                 allocation=allocation,
-                action=f'Changed "{key}" from "{allocation_value}" to "{value}"'
+                action=f'Changed "{key}" from "{base_model_value}" to "{value}" for "{base_model}"'
             )
+
+
+def create_admin_action_for_deletion(user, deleted_obj, allocation, base_model=None):
+    if base_model:
+        AllocationAdminAction.objects.create(
+            user=user,
+            allocation=allocation,
+            action=f'Deleted "{deleted_obj}" from "{base_model}" in "{allocation}"'
+        )
+    else:
+        AllocationAdminAction.objects.create(
+            user=user,
+            allocation=allocation,
+            action=f'Deleted "{deleted_obj}" from "{allocation}"'
+        )
