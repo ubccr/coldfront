@@ -3690,9 +3690,8 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                         return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
 
             if request.POST.get('choice') == 'deny':
+                allocation_obj = allocation_change_obj.allocation
                 if not request.user.is_superuser:
-                    allocation_obj = allocation_change_obj.allocation
-
                     review_groups = allocation_obj.get_parent_resource.review_groups.all()
                     if set(request.user.groups.all()).isdisjoint(set(review_groups)):
                         messages.error(
