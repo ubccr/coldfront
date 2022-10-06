@@ -3221,13 +3221,18 @@ class AllocationUserApproveRequestView(LoginRequiredMixin, UserPassesTestMixin, 
             name='Approved'
         )
 
+        create_admin_action(
+            request.user,
+            {'status': allocation_user_request_status_choice},
+            allocation_user.allocation,
+            allocation_user_request
+        )
+
         allocation_user.status = allocation_user_status_choice
         allocation_user.save()
 
         allocation_user_request.status = allocation_user_request_status_choice
         allocation_user_request.save()
-
-        # TODO - Create admin actio for allocation user approval
 
         if EMAIL_ENABLED:
             domain_url = get_domain_url(request)
@@ -3321,13 +3326,18 @@ class AllocationUserDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
             name='Denied'
         )
 
+        create_admin_action(
+            request.user,
+            {'status': allocation_user_request_status_choice},
+            allocation_user.allocation,
+            allocation_user_request
+        )
+
         allocation_user.status = allocation_user_status_choice
         allocation_user.save()
 
         allocation_user_request.status = allocation_user_request_status_choice
         allocation_user_request.save()
-
-        # TODO - Create admin actio for allocation user approval
 
         if EMAIL_ENABLED:
             domain_url = get_domain_url(request)
