@@ -165,6 +165,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                 allocation_attribute_type__is_private=False)]
 
         allocation_changes = allocation_obj.allocationchangerequest_set.all().order_by('-pk')
+        allocation_changes_enabled = allocation_obj.is_changeable
 
         guage_data = []
         invalid_attributes = []
