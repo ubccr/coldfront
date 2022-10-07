@@ -185,6 +185,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context['attributes_with_usage'] = attributes_with_usage
         context['attributes'] = attributes
         context['allocation_changes'] = allocation_changes
+        context['allocation_changes_enabled'] = allocation_changes_enabled
 
         # Can the user update the project?
         context['is_allowed_to_update_project'] = False
