@@ -1,5 +1,5 @@
-from coldfront.plugins.sftocf.pipeline import ColdFrontDB
 from django.core.management.base import BaseCommand, CommandError
+from coldfront.plugins.sftocf.utils import ColdFrontDB
 import logging
 
 

@@ -14,6 +14,131 @@ Center Summary
 <h2>{% settings_value 'CENTER_NAME' %} Scientific Impact</h2>
 <hr>
 
+<div class="card mb-3 bg-light">
+  <div class="card-body">
+    <h2>All Resources</h2>
+  </div>
+</div>
+
+<!-- Start Resource/Allocation Charts -->
+<div class="card mb-3 border-primary">
+  <div class="card-header bg-primary text-white">
+    <i class="fas fa-trophy"></i> Resources and Allocations Summary
+  </div>
+  <div id="allocation-summary" class="card-body">
+    <div class="text-center">
+      <button type="button" class="btn btn-primary"><i class="fas fa-sync fa-spin fa-fw" aria-hidden="true"></i> Getting Data <span
+          class="sr-only">...</span></button>
+    </div>
+  </div>
+</div>
+<!-- End Resource/Allocation Charts -->
+
+
+
+<hr>
+<div class="card mb-3 bg-light">
+  <div class="card-body">
+    <h2>Storage Overview</h2>
+  </div>
+</div>
+
+
+<!-- Start Resources -->
+<div class="card mb-3 border-primary">
+  <div class="card-header bg-primary text-white">
+    <i class="fas fa-newspaper" aria-hidden="true"></i> Cumulative Storage Stats
+  </div>
+  <div class="card-body">
+    <div id="chartResourcesBar"></div>
+  </div>
+</div>
+<!-- End Resources -->
+
+
+<!-- Start Storage by Volume -->
+<div class="card mb-3 border-primary">
+  <div class="card-header bg-primary text-white">
+    <i class="fas fa-trophy" aria-hidden="true"></i> Storage by Volume
+  </div
+  <div class="card-body">
+    <div id="chartVolumes"></div>
+      <div class="card-body">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Capacity (TB)</th>
+            <th scope="col">Used (TB)</th>
+            <th scope="col">Warranty expires</th>
+            <th scope="col">File count</th>
+            <th scope="col">User count</th>
+            <th scope="col">Lab count</th>
+            <th scope="col">Avg. Allocation</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for volume in volumes %}
+            <tr>
+              <td>{{ volume.name }}</td>
+              <td>{{ volume.quota_TB|floatformat:2 }}</td>
+              <td>{{ volume.used_TB|floatformat:2 }}</td>
+              <td>{{ volume.expiry }}</td>
+              <td>{{ volume.regular_files }}</td>
+              <td>{{ volume.usercount }}</td>
+              <td>{{ volume.labcount }}</td>
+              <td>{{ volume.avgsize }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<!-- End Storage by Volume -->
+
+{% comment %}
+<!-- Start Storage by Tier -->
+<div class="card mb-3 border-primary">
+  <div class="card-header bg-primary text-white">
+    <i class="fas fa-trophy" aria-hidden="true"></i> Storage by Tier
+  </div
+  <div class="card-body">
+    <div id="chartVolumes"></div>
+      <div class="card-body">
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th scope="col">Tier</th>
+            <th scope="col">Capacity (TB)</th>
+            <th scope="col">Used (TB)</th>
+            <th scope="col">File count</th>
+            <th scope="col">User count</th>
+            <th scope="col">Lab count</th>
+            <th scope="col">Average Allocation size</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for volume in volumes %}
+            <tr>
+              <td>{{ volume.name }}</td>
+              <td>{{ volume.quota_TB }}</td>
+              <td>{{ volume.used_TB }}</td>
+              <td>{{ volume.regular_files }}</td>
+              <td>{{ volume.usercount }}</td>
+              <td>{{ volume.labcount }}</td>
+              <td>{{ volume.avgsize }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<!-- End Storage by Tier -->
+
+
+
 <!-- Start  Publications -->
 <div class="card mb-3 border-primary">
   <div class="card-header bg-primary text-white">
@@ -25,33 +150,6 @@ Center Summary
   </div>
 </div>
 <!-- End Publications -->
-
-<!-- Start  Research Outputs -->
-<div class="card mb-3 border-primary">
-  <div class="card-header bg-primary text-white">
-    <i class="far fa-newspaper" aria-hidden="true"></i> User Entered Research Outputs
-  </div>
-  <div class="card-body">
-    <strong>Total Publications:</strong> {{total_research_outputs_count}}
-  </div>
-</div>
-<!-- End Research Outputs -->
-
-<!-- Start  Grants -->
-<div class="card mb-3 border-primary">
-  <div class="card-header bg-primary text-white">
-    <i class="fas fa-trophy" aria-hidden="true"></i> User Grants Summary
-  </div>
-  <div class="card-body">
-    <div id="chartGrants"></div>
-    <hr>
-    <strong> Grants Total:</strong> ${{grants_total}} <br>
-    <strong> Grants Total PI Only:</strong> ${{grants_total_pi_only}} <br>
-    <strong> Grants Total CoPI Only:</strong> ${{grants_total_copi_only}} <br>
-    <strong> Grants Total Senior Personnel Only:</strong> ${{grants_total_sp_only}}
-  </div>
-</div>
-<!-- End Grants -->
 
 <!-- Start Allocation by Field of Science -->
 <div class="card mb-3 border-primary">
@@ -66,20 +164,7 @@ Center Summary
   </div>
 </div>
 <!-- End Allocation by Field of Science -->
-
-<!-- Start Allocation Charts -->
-<div class="card mb-3 border-primary">
-  <div class="card-header bg-primary text-white">
-    <i class="fas fa-trophy"></i> Resources and Allocations Summary
-  </div>
-  <div id="allocation-summary" class="card-body">
-    <div class="text-center">
-      <button type="button" class="btn btn-primary"><i class="fas fa-sync fa-spin fa-fw" aria-hidden="true"></i> Getting Data <span
-          class="sr-only">...</span></button>
-    </div>
-  </div>
-</div>
-<!-- End Allocation Charts -->
+{% endcomment %}
 
 <script>
   $("#navbar-main > ul > li.active").removeClass("active")
@@ -95,10 +180,120 @@ Center Summary
     });
 
     drawPublications();
-    drawGrantsByAgency();
+    drawResources();
+    drawVolumes();
     get_allocation_by_fos()
     get_allocation_summary();
   });
+
+    function stackedBarTooltipAdjustment(d, titleFormat, valueFormat, color) {
+      var dc = d.map (function (dd) {
+          return {value: dd.value, x: dd.x, id: dd.id, name: dd.name, index: dd.index};
+        });
+      dc[1].value += dc[0].value;
+      return this.getTooltipContent(dc, titleFormat, valueFormat, color);
+    }
+
+
+    function drawVolumes() {
+      if (storage_data_columns.length != 0) {
+        var chart = c3.generate({
+          bindto: '#chartVolumes',
+          data: {
+                  "x": "names",
+                  "columns": storage_data_columns,
+                  "type": "bar",
+                  "order": "null",
+                  "groups": [[
+                          'usage (TB)',
+                          'quota (TB)',
+                          ]],
+                  "colors":
+                  {
+                      "quota (TB)": '#1a1a1a',
+                      "usage (TB)":  function (d) {
+                        total = storage_data_columns[1][d.index+1] + d.value
+                        if (d.value/total >= .8) return "red"
+                        else if (d.value/total >= .6) return 'yellow';
+                        return "green";
+                          // return d.index && d.index === 2 ? "#dd0" : color;
+                      }
+                  }
+              },
+          legend: {
+            show: false,
+            item: {
+              onclick: function (id) { }
+            }
+          },
+          tooltip: {
+            contents: function (d, defaultTitleFormat, defaultValueFormat, color) {
+                      var dc = d.map (function (dd) {
+                          return {value: dd.value, x: dd.x, id: dd.id, name: dd.name, index: dd.index};
+                        });
+                      dc[1].value += dc[0].value;
+                  return this.getTooltipContent(dc, defaultTitleFormat, defaultValueFormat, color);
+            }
+        },
+          axis: {
+            x: {
+              type: 'category',
+              categories: storage_data_columns[0],
+              label: {
+                text: 'Volumes',
+                position: 'outer-center'
+              }
+            },
+            y: {
+              label: {
+                text: 'TB',
+                position: 'inner-center'
+              }
+            }
+          }
+        });
+      };
+    }
+
+  function drawResources() {
+    if (resource_chart_data['columns'].length != 0) {
+      var chart = c3.generate({
+        bindto: '#chartResourcesBar',
+        data: resource_chart_data,
+        legend: {
+          show: false,
+          item: {
+            onclick: function (id) { }
+          }
+        },
+        tooltip: {
+          contents: function (d, defaultTitleFormat, defaultValueFormat, color) {
+                    var dc = d.map (function (dd) {
+                        return {value: dd.value, x: dd.x, id: dd.id, name: dd.name, index: dd.index};
+                      });
+                    dc[1].value += dc[0].value;
+                return this.getTooltipContent(dc, defaultTitleFormat, defaultValueFormat, color);
+          }
+      },
+        axis: {
+          x: {
+            type: 'category',
+            categories: resource_chart_data['columns'][0],
+            label: {
+              text: 'Storage',
+              position: 'outer-middle'
+            },
+          },
+          rotated: true,
+          y: {
+            label: 'TB',
+            position: 'outer-middle'
+          }
+        }
+      });
+    };
+  }
+
 
   function drawPublications() {
     if (publication_by_year_bar_chart_data['columns'].length != 0) {
@@ -127,25 +322,9 @@ Center Summary
     };
   }
 
-  function drawGrantsByAgency() {
-    if (grants_agency_chart_data['columns'].length != 0) {
-      var chart = c3.generate({
-        bindto: '#chartGrants',
-        data: grants_agency_chart_data,
-        donut: {
-          title: "Grants"
-        },
-        legend: {
-          item: {
-            onclick: function (id) { }
-          }
-        }
-      });
-    }
-  }
-
-  var grants_agency_chart_data = {{ grants_agency_chart_data | safe }}
   var publication_by_year_bar_chart_data = {{ publication_by_year_bar_chart_data | safe }}
+  var storage_data_columns = {{ storage_data_columns | safe }}
+  var resource_chart_data = {{ resource_chart_data | safe}}
 
   function get_allocation_summary() {
     $.ajax({

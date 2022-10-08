@@ -6,13 +6,9 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import DetailView, ListView
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.shortcuts import get_object_or_404, render
-from django.http import HttpResponseRedirect
-from django.urls import reverse
 from django.conf import settings
-from ifxuser.models import Organization, OrgRelation, UserAffiliation
 from coldfront.core.utils.fasrc import get_resource_rate
-from coldfront.core.allocation.models import (Allocation, AllocationUser,
-                                            AllocationAttribute)
+from coldfront.core.allocation.models import Allocation, AllocationUser
 from coldfront.core.department.forms import DepartmentSearchForm
 from coldfront.core.department.models import Department, DepartmentMember
 
