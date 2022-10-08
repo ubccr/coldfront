@@ -31,6 +31,87 @@ def generate_publication_by_year_chart_data(publications_by_year):
 
     return data
 
+def generate_bar_graph():
+    pass
+
+def generate_resource_bar_graph(resource_data):
+
+    if resource_data:
+        years, storage = zip(*resource_data)
+        years = list(years)
+        storage = list(storage)
+        years.insert(0, "Year")
+        storage.insert(0, "Publications")
+
+        data = {
+            "x": "Year",
+            "columns": [
+                years,
+                storage
+            ],
+            "type": "bar",
+            "colors": {
+                "Publications": '#17a2b8'
+            }
+        }
+    else:
+        data = {
+            "columns": [],
+            "type": 'bar'
+        }
+    return data
+
+def set_conditional_color(usage, free):
+    total = [sum(x) for x in zip(usage, free)]
+    perc_used = [x[1]/x[0] for x in zip(total, usage)]
+    colors = ["#000"]
+    for perc in perc_used:
+        if perc > 80:
+            colors.append("#17a2b8")
+        elif perc > 50:
+            colors.append("#4a4a4a")
+        else:
+            colors.append("#17a2b8")
+    return colors
+
+
+def generate_volume_bar_graph(storage_data):
+
+    if storage_data:
+        storage_data['names'].insert(0, "names")
+        storage_data['usage_TBs'].insert(0, "usage_TBs")
+        storage_data['quota_TBs'].insert(0, "quota_TBs")
+
+        data = {
+            "x": "names",
+            "columns": [
+                storage_data['usage_TBs'],
+                storage_data['quota_TBs'],
+                storage_data['names'],
+            ],
+            "type": "bar",
+            "order": "null",
+            "groups": [[
+                    'usage_TBs',
+                    'quota_TBs',
+                    ]],
+            "colors": {
+                "quota_TBs": '#4a4a4a',
+                # "usage_TBs": '#17a2b8',
+            },
+            "classes": {
+                "usage_TBs": "reactive-usage-bar",
+
+            }
+        }
+    else:
+        data = {
+            "columns": [],
+            "type": 'bar'
+        }
+
+    return data
+
 
 def generate_total_grants_by_agency_chart_data(total_grants_by_agency):
 
@@ -70,8 +151,8 @@ def generate_resources_chart_data(allocations_count_by_resource_type):
         }
     else:
         resource_plot_data = {
+            "columns": [],
             "type": 'donut',
-            "columns": []
         }
 
     return resource_plot_data

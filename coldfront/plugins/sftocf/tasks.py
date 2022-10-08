@@ -1,7 +1,7 @@
 import logging
 import os
 
-from coldfront.plugins.sftocf.pipeline import ColdFrontDB
+from coldfront.plugins.sftocf.utils import ColdFrontDB
 
 logger = logging.getLogger(__name__)
 
