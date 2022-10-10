@@ -4,7 +4,8 @@ from coldfront.core.project.models import (ProjectReviewStatusChoice,
                                            ProjectStatusChoice,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice,
-                                           ProjectTypeChoice)
+                                           ProjectTypeChoice,
+                                           ProjectAdminActionChoice)
 
 
 class Command(BaseCommand):

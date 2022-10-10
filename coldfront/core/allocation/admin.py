@@ -19,7 +19,8 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationUserRequestStatusChoice,
                                               AllocationUserRequest,
                                               AllocationInvoice,
-                                              AttributeType)
+                                              AllocationAdminAction,
+                                              AttributeType,)
 
 
 @admin.register(AllocationStatusChoice)
@@ -52,6 +53,14 @@ class AllocationUserNoteInline(admin.TabularInline):
     extra = 0
     fields = ('note', 'author', 'created'),
     readonly_fields = ('author', 'created')
+
+
+class AllocationAdminActionInline(admin.TabularInline):
+    model = AllocationAdminAction
+    fields = ['user', 'action', 'created', ]
+    readonly_fields = ['user', 'action', 'created']
+    can_delete = False
+    extra = 0
 
 
 @admin.register(Allocation)
@@ -156,7 +165,8 @@ class AllocationAdmin(SimpleHistoryAdmin):
     inlines = [AllocationUserInline,
                AllocationAttributeInline,
                AllocationAdminNoteInline,
-               AllocationUserNoteInline]
+               AllocationUserNoteInline,
+               AllocationAdminActionInline]
     list_filter = ('resources__resource_type__name',
                    'status', 'resources__name', 'is_locked')
     search_fields = ['project__pi__username', 'project__pi__first_name', 'project__pi__last_name', 'resources__name',
@@ -540,3 +550,12 @@ class AllocationInvoice(SimpleHistoryAdmin):
 
     def resource(self, obj):
         return obj.allocation.get_parent_resource.name
+
+
+@admin.register(AllocationAdminAction)
+class AllocationAdminActionAdmin(admin.ModelAdmin):
+    list_display = ('pk', 'user', 'allocation_pk', 'allocation', 'action', 'created', )
+    readonly_fields = ('user', 'allocation', 'action', 'created', )
+
+    def allocation_pk(self, obj):
+        return obj.allocation.pk

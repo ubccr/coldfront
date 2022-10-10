@@ -39,7 +39,7 @@ from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectReviewForm, ProjectSearchForm,
                                           ProjectPISearchForm,
                                           ProjectUserUpdateForm,
-                                          ProjectReviewAllocationForm)
+                                          ProjectReviewAllocationForm,)
 from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectReviewStatusChoice,
                                            ProjectStatusChoice, ProjectUser,
@@ -53,7 +53,7 @@ from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email, send_email_template
-from coldfront.core.project.utils import get_new_end_date_from_list
+from coldfront.core.project.utils import get_new_end_date_from_list, create_admin_action
 from coldfront.core.allocation.utils import send_added_user_email
 
 logger = logging.getLogger(__name__)
@@ -88,6 +88,9 @@ PROJECT_END_DATE_CARRYOVER_DAYS = import_from_settings(
 )
 PROJECT_DAYS_TO_REVIEW_BEFORE_EXPIRING = import_from_settings(
     'PROJECT_DAYS_TO_REVIEW_BEFORE_EXPIRING', 30
+)
+PROJECT_TYPE_LIMIT_MAPPING = import_from_settings(
+    'PROJECT_TYPE_LIMIT_MAPPING', {}
 )
 
 if EMAIL_ENABLED:
@@ -383,19 +386,26 @@ class ProjectPISearchView(LoginRequiredMixin, ListView):
     template_name = 'project/project_pi_list.html'
 
     def post(self, request, *args, **kwargs):
-        username = request.user.username
         pi_username = request.POST.get('pi_username')
         context = {}
         context["pi_username"] = pi_username
         projects = Project.objects.prefetch_related('pi', 'status',).filter(
-            Q(pi__username=pi_username) &
-            Q(projectuser__status__name='Active') &
-            Q(status__name__in=['New', 'Active', ]) &
-            Q(private=False)
-        ).exclude(
-            projectuser__user__username=username,
+            pi__username=pi_username,
+            projectuser__status__name='Active',
+            status__name__in=['New', 'Active', ],
+            private=False
         ).distinct()
-        context["pi_projects"] = projects
+
+        new_project_list = []
+        for project in projects:
+            project_user = project.projectuser_set.filter(user=request.user)
+            if project_user.exists():
+                if project_user[0].status.name == 'Removed':
+                    new_project_list.append(project)
+            else:
+                new_project_list.append(project)
+
+        context["pi_projects"] = new_project_list
         context['EMAIL_ENABLED'] = EMAIL_ENABLED
         return render(request, self.template_name, context)
 
@@ -711,12 +721,39 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
         return letter + string
 
+    def check_max_project_type_count_reached(self, project_type_obj, pi_obj):
+        limit = PROJECT_TYPE_LIMIT_MAPPING.get(project_type_obj.name)
+        user_profile = UserProfile.objects.get(user=pi_obj)
+        if project_type_obj.name == 'Research' and user_profile.max_research_projects_override > -1:
+            limit = user_profile.max_research_projects_override
+        elif project_type_obj.name == 'Class' and user_profile.max_class_projects_override > -1:
+            limit = user_profile.max_class_projects_override
+
+        if limit is not None:
+            limit = int(limit)
+            pi_projects_count = pi_obj.project_set.filter(
+                type=project_type_obj,
+                status__in=[
+                    ProjectStatusChoice.objects.get(name='Active'),
+                    ProjectStatusChoice.objects.get(name='Waiting For Admin Approval'),
+                    ProjectStatusChoice.objects.get(name='Review Pending')
+                ]).count()
+            return pi_projects_count >= limit
+
+        return False
+
     def form_valid(self, form):
         project_obj = form.save(commit=False)
         if not form.instance.pi_username:
             user_profile = UserProfile.objects.get(user=self.request.user)
             if user_profile.title not in ['Faculty', 'Staff', 'Academic (ACNP)',]:
                 messages.error(self.request, 'Only faculty and staff can be the PI')
+                return super().form_invalid(form)
+            if self.check_max_project_type_count_reached(form.instance.type, self.request.user):
+                messages.error(
+                    self.request,
+                    'You have reached the max projects you can have of this type.'
+                )
                 return super().form_invalid(form)
             form.instance.pi = self.request.user
         else:
@@ -727,6 +764,12 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
             user_profile = UserProfile.objects.get(user=user)
             if user_profile.title not in ['Faculty', 'Staff', 'Academic (ACNP)',]:
                 messages.error(self.request, 'Only faculty and staff can be the PI')
+                return super().form_invalid(form)
+            if self.check_max_project_type_count_reached(form.instance.type, user):
+                messages.error(
+                    self.request,
+                    'This PI has reached the max projects they can have of this type.'
+                )
                 return super().form_invalid(form)
             form.instance.pi = user
 
@@ -1961,6 +2004,9 @@ class ProjectActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
     def get(self, request, pk):
         project_obj = get_object_or_404(Project, pk=pk)
         project_status_obj = ProjectStatusChoice.objects.get(name="Active")
+
+        create_admin_action(request.user, {'status': project_status_obj}, project_obj)
+
         project_obj.status = project_status_obj
         project_obj.save()
 
@@ -2015,6 +2061,9 @@ class ProjectDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
     def get(self, request, pk):
         project_obj = get_object_or_404(Project, pk=pk)
         project_status_obj = ProjectStatusChoice.objects.get(name="Denied")
+
+        create_admin_action(request.user, {'status': project_status_obj}, project_obj)
+
         project_obj.status = project_status_obj
 
         free_allocation_obj_list = project_obj.allocation_set.filter(status__name__in=['Active', 'New', 'Renewal Requested'])
@@ -2124,6 +2173,8 @@ class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
             )
             project_obj.end_date = end_date
 
+        create_admin_action(request.user, {'status': project_status_obj}, project_obj)
+
         project_review_obj.status = project_review_status_obj
         project_obj.status = project_status_obj
 
@@ -2197,6 +2248,8 @@ class ProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin, View):
         project_review_status_obj = ProjectReviewStatusChoice.objects.get(name="Denied")
         project_obj = project_review_obj.project
         project_status_obj = ProjectStatusChoice.objects.get(name="Denied")
+
+        create_admin_action(request.user, {'status': project_status_obj}, project_obj)
 
         project_review_obj.status = project_review_status_obj
         project_obj.status = project_status_obj
@@ -2530,7 +2583,7 @@ class ProjectNoteCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView)
             return True
         else:
             messages.error(
-                self.request, 'You do not have permission to add allocation notes.')
+                self.request, 'You do not have permission to add project notes.')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

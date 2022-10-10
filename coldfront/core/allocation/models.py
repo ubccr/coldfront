@@ -660,7 +660,7 @@ class AllocationChangeRequest(TimeStampedModel):
             return self.allocation.resources.filter(is_allocatable=True).first()
 
     def __str__(self):
-        return "%s (%s)" % (self.get_parent_resource.name, self.allocation.project.pi)
+        return "%s (%s) Change Request" % (self.get_parent_resource.name, self.allocation.project.pi)
 
 
 class AllocationAttributeChangeRequest(TimeStampedModel):
@@ -672,3 +672,8 @@ class AllocationAttributeChangeRequest(TimeStampedModel):
     def __str__(self):
         return '%s' % (self.allocation_attribute.allocation_attribute_type.name)
 
+
+class AllocationAdminAction(TimeStampedModel):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE)
+    action = models.CharField(max_length=64)

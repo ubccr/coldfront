@@ -259,3 +259,9 @@ class ProjectUser(TimeStampedModel):
     class Meta:
         unique_together = ('user', 'project')
         verbose_name_plural = "Project User Status"
+
+
+class ProjectAdminAction(TimeStampedModel):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    action = models.CharField(max_length=64)

@@ -1,5 +1,9 @@
 import datetime
 
+from django.forms.models import model_to_dict
+
+from coldfront.core.project.models import ProjectAdminAction, ProjectStatusChoice
+
 
 def add_project_status_choices(apps, schema_editor):
     ProjectStatusChoice = apps.get_model('project', 'ProjectStatusChoice')
@@ -56,3 +60,19 @@ def get_new_end_date_from_list(expire_dates, check_date=None, buffer_days=0):
             end_date = expire_date.replace(expire_date.year + 1)
 
     return end_date
+
+
+def create_admin_action(user, fields_to_check, project):
+    Project_dict = model_to_dict(project)
+    for key, value in fields_to_check.items():
+        project_value = Project_dict.get(key)
+        if type(value) is not type(project_value):
+            if key == 'status':
+                project_value = ProjectStatusChoice.objects.get(pk=project_value).name
+                value = value.name
+        if value != project_value:
+            ProjectAdminAction.objects.create(
+                user=user,
+                project=project,
+                action=f'Changed "{key}" from "{project_value}" to "{value}"'
+            )
