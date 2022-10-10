@@ -676,4 +676,4 @@ class AllocationAttributeChangeRequest(TimeStampedModel):
 class AllocationAdminAction(TimeStampedModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE)
-    action = models.CharField(max_length=64)
+    action = models.CharField(max_length=128)
