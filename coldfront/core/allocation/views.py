@@ -931,10 +931,17 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         allocation_limit = resource_obj.get_attribute('allocation_limit')
         if allocation_limit is not None:
             num_allocations = 0
-            active_allocations = project_obj.allocation_set.filter(
-                status=AllocationStatusChoice.objects.get(name="Active")
+            allocations = project_obj.allocation_set.filter(
+                status__in=[
+                    AllocationStatusChoice.objects.get(name="Active"),
+                    AllocationStatusChoice.objects.get(name="New"),
+                    AllocationStatusChoice.objects.get(name="Renewal Requested"),
+                    AllocationStatusChoice.objects.get(name="Paid"),
+                    AllocationStatusChoice.objects.get(name="Payment Pending"),
+                    AllocationStatusChoice.objects.get(name="Payment Requested")
+                ]
             )
-            for allocation in active_allocations:
+            for allocation in allocations:
                 if allocation.get_parent_resource == resource_obj:
                     num_allocations += 1
 
