@@ -723,6 +723,12 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
     def check_max_project_type_count_reached(self, project_type_obj, pi_obj):
         limit = PROJECT_TYPE_LIMIT_MAPPING.get(project_type_obj.name)
+        user_profile = UserProfile.objects.get(user=pi_obj)
+        if project_type_obj.name == 'Research' and user_profile.max_research_projects_override > -1:
+            limit = user_profile.max_research_projects_override
+        elif project_type_obj.name == 'Class' and user_profile.max_class_projects_override > -1:
+            limit = user_profile.max_class_projects_override
+
         if limit is not None:
             limit = int(limit)
             pi_projects_count = pi_obj.project_set.filter(
