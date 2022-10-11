@@ -61,6 +61,11 @@ cloudflare_ip_ranges: [
     197.234.240.0/22,
     198.41.128.0/17
 ]
+# The name of the server, which should differ from the name of the website.
+# Source: See Open Web Server Requirements link above.
+# TODO: Set this to e.g., mylrc-local.lbl.gov for mylrc.lbl.gov if Cloudflare
+# TODO: is enabled.
+cloudflare_local_server_name:
 
 # CILogon client settings.
 # TODO: Set these, needed only if SSO should be enabled.

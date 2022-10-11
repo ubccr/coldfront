@@ -9,8 +9,13 @@ WSGIPassAuthorization On
 
 <VirtualHost 0.0.0.0:443>
 
+    {% if cloudflare_enabled | bool %}
+    ServerName {{ cloudflare_local_server_name }}
+    ServerAlias {{ cloudflare_local_server_name }}
+    {% else %}
     ServerName {{ hostname }}
     ServerAlias {{ hostname }}
+    {% endif %}
 
     {% if cloudflare_enabled | bool %}
     # Source: https://support.cloudflare.com/hc/en-us/articles/200170786-Restoring-original-visitor-IPs#C5XWe97z77b3XZV
@@ -57,7 +62,12 @@ WSGIPassAuthorization On
 
 <VirtualHost {{ host_ip }}:80>
 
+    {% if cloudflare_enabled | bool %}
+    ServerName {{ cloudflare_local_server_name }}
+    Redirect permanent "/" "https://{{ cloudflare_local_server_name }}"
+    {% else %}
     ServerName {{ hostname }}
     Redirect permanent "/" "{{ full_host_path }}"
+    {% endif %}
 
 </VirtualHost>
