@@ -1,5 +1,6 @@
 import datetime
 import textwrap
+from enum import Enum
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
@@ -12,6 +13,12 @@ from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.utils.common import import_from_settings
 
 PROJECT_ENABLE_PROJECT_REVIEW = import_from_settings('PROJECT_ENABLE_PROJECT_REVIEW', False)
+
+class ProjectPermission(Enum):
+    USER = 'user'
+    MANAGER = 'manager'
+    PI = 'pi'
+    UPDATE = 'update'
 
 class ProjectStatusChoice(TimeStampedModel):
     name = models.CharField(max_length=64)
@@ -107,6 +114,35 @@ We do not have information about your research. Please provide a detailed descri
             return True
 
         return False
+
+    def user_permissions(self, user):
+        """Return list of a user's permissions for the project
+        """
+        if user.is_superuser:
+            return list(ProjectPermission)
+
+        user_conditions = (models.Q(status__name__in=('Active', 'New')) & models.Q(user=user))
+        if not self.projectuser_set.filter(user_conditions).exists():
+            return []
+
+        permissions = [ProjectPermission.USER]
+
+        if self.projectuser_set.filter(user_conditions & models.Q(role__name='Manager')).exists():
+            permissions.append(ProjectPermission.MANAGER)
+
+        if self.projectuser_set.filter(user_conditions & models.Q(project__pi_id=user.id)).exists():
+            permissions.append(ProjectPermission.PI)
+
+        if ProjectPermission.MANAGER in permissions or ProjectPermission.MANAGER in permissions:
+            permissions.append(ProjectPermission.UPDATE)
+
+        return permissions
+
+    def has_perm(self, user, perm):
+        """Return true if user has permission for the project
+        """
+        perms = self.user_permissions(user)
+        return perm in perms
 
     def __str__(self):
         return self.title

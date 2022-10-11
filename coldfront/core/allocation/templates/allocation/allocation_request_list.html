@@ -54,7 +54,7 @@ Allocation Review New and Pending Requests
             <td>{{allocation.status}}</td>
             <td class="text-nowrap">
               {% if allocation.get_information == '' %}
-                <a href="{% url 'allocation-activate-request' allocation.pk %}" class="btn btn-success mr-1 confirm-activate" aria-disabled="true">Approve</a>
+                <a href="{% url 'allocation-activate-request' allocation.pk %}" class="btn btn-success mr-1 confirm-activate" aria-disabled="true">Activate</a>
                 <a href="{% url 'allocation-detail' allocation.pk %}" class="btn btn-primary mr-1">Details</a>
               {% else %}
                   <a href="{% url 'allocation-activate-request' allocation.pk %}" class="btn btn-success mr-1">Activate</a>

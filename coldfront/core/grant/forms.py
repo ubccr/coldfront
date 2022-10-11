@@ -21,6 +21,10 @@ class GrantForm(ModelForm):
             'direct_funding': 'Funds budgeted specifically for {} services, hardware, software, and/or personnel'.format(CENTER_NAME)
         }
 
+    def __init__(self, *args, **kwargs):
+        super(GrantForm, self).__init__(*args, **kwargs) 
+        self.fields['funding_agency'].queryset = self.fields['funding_agency'].queryset.order_by('name')
+
 
 class GrantDeleteForm(forms.Form):
     title = forms.CharField(max_length=255, disabled=True)
