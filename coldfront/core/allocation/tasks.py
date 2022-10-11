@@ -2,14 +2,7 @@ import datetime
 # import the logging library
 import logging
 
-<<<<<<< HEAD
-from django.conf import settings
-from django.core.exceptions import ImproperlyConfigured
-from coldfront.core.user.models import User
-from coldfront.core.allocation.models import (Allocation, AllocationAttribute,
-=======
 from coldfront.core.allocation.models import (Allocation,
->>>>>>> master
                                               AllocationStatusChoice)
 from coldfront.core.user.models import User
 from coldfront.core.utils.common import import_from_settings
@@ -29,15 +22,12 @@ EMAIL_OPT_OUT_INSTRUCTION_URL = import_from_settings(
 EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
 EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS = import_from_settings(
     'EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS', [7, ])
-<<<<<<< HEAD
 EMAIL_RESOURCE_NOTIFICATIONS_ENABLED = import_from_settings('EMAIL_RESOURCE_NOTIFICATIONS_ENABLED', False)
 EMAIL_RESOURCE_EXPIRING_NOTIFICATION_DAYS = import_from_settings(
     'EMAIL_RESOURCE_EXPIRING_NOTIFICATION_DAYS', [7, ])
-=======
 
 EMAIL_ADMINS_ON_ALLOCATION_EXPIRE = import_from_settings('EMAIL_ADMINS_ON_ALLOCATION_EXPIRE')
 EMAIL_ADMIN_LIST = import_from_settings('EMAIL_ADMIN_LIST')
->>>>>>> master
 
 def update_statuses():
 
@@ -208,36 +198,28 @@ def send_expiry_emails():
 
         if admin_projectdict:
 
-<<<<<<< HEAD
-        email_receiver_list = []
-        for allocation_user in allocation_obj.project.projectuser_set.all():
-            if (allocation_user.enable_notifications and
-                allocation_obj.allocationuser_set.filter(
-                    user=allocation_user.user, status__name='Active')
-                    and allocation_user.user.email not in email_receiver_list):
-
-                email_receiver_list.append(allocation_user.user.email)
-
-        send_email_template('Allocation to {} has expired'.format(resource_name),
-                            'email/allocation_expired.txt',
-                            template_context,
-                            EMAIL_SENDER,
-                            email_receiver_list
-                            )
-
-        logger.info('Allocation to {} expired email sent to PI {}.'.format(
-            resource_name, allocation_obj.project.pi.username))
-
+            admin_template_context = {
+                'project_dict': admin_projectdict,
+                'allocation_dict': admin_allocationdict,
+                'signature': EMAIL_SIGNATURE
+            }  
+            
+            send_email_template('Allocation(s) have expired',
+                                'email/admin_allocation_expired.txt',
+                                admin_template_context,
+                                EMAIL_SENDER,
+                                [EMAIL_ADMIN_LIST,]
+                                )
+                                
     #Expiring Resources
     if EMAIL_RESOURCE_NOTIFICATIONS_ENABLED:
         for user in User.objects.all():
             resource_dict = {}
             email_receiver_list = []
-
             for allocationuser in user.allocationuser_set.all():
                 allocation = allocationuser.allocation
                 resource_list = allocation.get_resources_as_list
-
+                
                 for resource in resource_list:
 
                     for days_remaining in sorted(set(EMAIL_RESOURCE_EXPIRING_NOTIFICATION_DAYS)):
@@ -276,25 +258,13 @@ def send_expiry_emails():
                 'signature': EMAIL_SIGNATURE
             }
 
-            send_email_template(f'{user.email},Resource(s) are expiring soon',
-                            'email/resource_expiring.txt',
-                            template_context,
-                            EMAIL_SENDER,
-                            email_receiver_list
-                        )
-
-            logger.debug(f'Resource expiring soon email sent to PI(s) {email_receiver_list}.')
-=======
-            admin_template_context = {
-                'project_dict': admin_projectdict,
-                'allocation_dict': admin_allocationdict,
-                'signature': EMAIL_SIGNATURE
-            }  
-            
-            send_email_template('Allocation(s) have expired',
-                                'email/admin_allocation_expired.txt',
-                                admin_template_context,
+            if email_receiver_list:
+                send_email_template(f'{user.email},Resource(s) are expiring soon',
+                                'email/resource_expiring.txt',
+                                template_context,
                                 EMAIL_SENDER,
-                                [EMAIL_ADMIN_LIST,]
-                                )
->>>>>>> master
+                                email_receiver_list
+                            )
+
+                logger.debug(f'Resource expiring soon email sent to PI {email_receiver_list}.')
+                
