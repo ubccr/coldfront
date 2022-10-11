@@ -10,6 +10,7 @@ from coldfront.core.utils.common import import_from_settings
 
 logger = logging.getLogger(__name__)
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
+EMAIL_ADDED_PROJECT_USERS = import_from_settings('EMAIL_ADDED_PROJECT_USERS', False)
 EMAIL_SUBJECT_PREFIX = import_from_settings('EMAIL_SUBJECT_PREFIX')
 EMAIL_DEVELOPMENT_EMAIL_LIST = import_from_settings('EMAIL_DEVELOPMENT_EMAIL_LIST')
 EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
@@ -135,3 +136,23 @@ def send_allocation_customer_email(allocation_obj, subject, template_name, url_p
         EMAIL_SENDER,
         email_receiver_list
     )
+
+def send_project_user_email(project_obj, subject, template_name, receiver, url_path='', domain_url=''):
+    """Send project user email when added to project, can expand to more uses
+    """
+    if EMAIL_ADDED_PROJECT_USERS:
+        if not url_path:
+            url_path = reverse('project-detail', kwargs={'pk': project_obj.pk})
+        
+        url = build_link(url_path, domain_url)
+        ctx = email_template_context()
+        ctx['project'] = project_obj
+        ctx['project_url'] = url
+
+        send_email_template(
+            subject,
+            template_name,
+            ctx,
+            EMAIL_SENDER,
+            receiver
+        )
