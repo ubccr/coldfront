@@ -467,7 +467,7 @@ def collect_starfish_usage(server, volume, volumepath, projects):
     locate_or_create_dirpath("./coldfront/plugins/sftocf/data/")
     logger.debug("projects: %s", projects)
     server_groups = server.get_starfish_groups()
-    print([g for g in server_groups if g not in [t[0] for t in projects]])
+    print("groups missing from volume:", [g[0] for g in projects if g not in server_groups])
     for t in projects:
         p = t[0]
         tier = t[2]
