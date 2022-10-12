@@ -165,21 +165,6 @@ def get_redash_vol_stats():
     return all_results
 
 
-  # 'capacity (GiB)': 67061.51,
-  # 'used physical (GiB)': 36909.74,
-  # 'used logical (GiB)': 36914.65,
-  # 'free (GiB)': 30151.76,
-  # 'used %': 55.0,
-  # 'regular files': 573155,
-  # 'symbolic links': 1,
-  # 'max file size (GiB)': 131.74,
-  # 'median file size (bytes)': 568491,
-  # 'average file size (bytes)': 69155410,
-  # 'directories': 62263,
-  # 'directories with subdirectories only': 2276,
-  # 'empty directories': 1389,
-  # 'max dir size (GiB)': 620.67},
-
 class StarFishQuery:
     def __init__(self, headers, api_url, query, group_by, volpath, sec=3):
         self.api_url = api_url
@@ -467,7 +452,7 @@ def collect_starfish_usage(server, volume, volumepath, projects):
     locate_or_create_dirpath("./coldfront/plugins/sftocf/data/")
     logger.debug("projects: %s", projects)
     server_groups = server.get_starfish_groups()
-    print("groups missing from volume:", [g[0] for g in projects if g not in server_groups])
+    print([g for g in server_groups if g not in [t[0] for t in projects]])
     for t in projects:
         p = t[0]
         tier = t[2]
