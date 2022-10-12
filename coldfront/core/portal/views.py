@@ -85,6 +85,22 @@ def center_summary(request):
         }
         for vol in volumes
     ]
+    # collect user and lab counts, allocation sizes for each volume
+
+    for volume in volumes:
+        resource = Resource.objects.get(name__contains=volume['name'])
+
+        resource_allocation = Allocation.objects.filter(status__name="Active", resources=resource)
+
+        allocation_sizes = [float(allocation.size) for allocation in resource_allocation]
+        # volume['avgsize'] = allocation_sizes
+        volume['avgsize'] = round(sum(allocation_sizes)/len(allocation_sizes), 2)
+
+        project_ids = set(resource_allocation.values_list("project"))
+        volume['lab_count'] = len(project_ids)
+        user_ids = {user.pk for allocation in resource_allocation for user in allocation.allocation_users}
+        volume['user_count'] = len(user_ids)
+
     context['volumes'] = volumes
 
 
@@ -105,23 +121,23 @@ def center_summary(request):
     # Combined Resource Stats
 
     names = [vol['name'] for vol in volumes]
-    quota_tb = [vol['free_TB'] for vol in volumes]
+    free_tb = [vol['free_TB'] for vol in volumes]
     usage_tb = [vol['used_TB'] for vol in volumes]
 
     names.insert(0, "names")
     usage_tb.insert(0, "usage (TB)")
-    quota_tb.insert(0, "quota (TB)")
+    free_tb.insert(0, "quota (TB)")
 
-    storage_data_columns = [ usage_tb, quota_tb,names, ]
+    storage_data_columns = [ usage_tb, free_tb,names, ]
 
     context['storage_data_columns'] = storage_data_columns
 
     resource_chart_data = {
         "x": "Resource Type",
         "columns": [
-            ['Resource Type', 'Volume'],
+            ['Resource Type', 'Storage'],
             ['Used', round(sum(usage_tb[1:]), 2)],
-            ['Capacity', round(sum(quota_tb[1:]), 2)],
+            ['Capacity', round(sum(free_tb[1:]), 2)],
         ],
         "type": "bar",
         "order":"null",

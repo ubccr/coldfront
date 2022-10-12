@@ -20,10 +20,22 @@ Center Summary
   </div>
 </div>
 
+
+<!-- Start Resources -->
+<div class="card mb-3 border-primary">
+  <div class="card-header bg-primary text-white">
+    <i class="fas fa-server" aria-hidden="true"></i> Resources
+  </div>
+  <div class="card-body">
+    <div id="chartResourcesBar"></div>
+  </div>
+</div>
+<!-- End Resources -->
+
 <!-- Start Resource/Allocation Charts -->
 <div class="card mb-3 border-primary">
   <div class="card-header bg-primary text-white">
-    <i class="fas fa-trophy"></i> Resources and Allocations Summary
+    <i class="fas fa-th-list"></i> Resource Allocations
   </div>
   <div id="allocation-summary" class="card-body">
     <div class="text-center">
@@ -44,22 +56,10 @@ Center Summary
 </div>
 
 
-<!-- Start Resources -->
-<div class="card mb-3 border-primary">
-  <div class="card-header bg-primary text-white">
-    <i class="fas fa-newspaper" aria-hidden="true"></i> Cumulative Storage Stats
-  </div>
-  <div class="card-body">
-    <div id="chartResourcesBar"></div>
-  </div>
-</div>
-<!-- End Resources -->
-
-
 <!-- Start Storage by Volume -->
 <div class="card mb-3 border-primary">
   <div class="card-header bg-primary text-white">
-    <i class="fas fa-trophy" aria-hidden="true"></i> Storage by Volume
+    <i class="fas fa-hdd" aria-hidden="true"></i> Storage by Volume
   </div
   <div class="card-body">
     <div id="chartVolumes"></div>
@@ -70,11 +70,13 @@ Center Summary
             <th scope="col">Name</th>
             <th scope="col">Capacity (TB)</th>
             <th scope="col">Used (TB)</th>
+            {% comment %}
             <th scope="col">Warranty expires</th>
+            {% endcomment %}
             <th scope="col">File count</th>
             <th scope="col">User count</th>
             <th scope="col">Lab count</th>
-            <th scope="col">Avg. Allocation</th>
+            <th scope="col">Avg. Allocation Size (TB)</th>
           </tr>
         </thead>
         <tbody>
@@ -83,10 +85,12 @@ Center Summary
               <td>{{ volume.name }}</td>
               <td>{{ volume.quota_TB|floatformat:2 }}</td>
               <td>{{ volume.used_TB|floatformat:2 }}</td>
+              {% comment %}
               <td>{{ volume.expiry }}</td>
+              {% endcomment %}
               <td>{{ volume.regular_files }}</td>
-              <td>{{ volume.usercount }}</td>
-              <td>{{ volume.labcount }}</td>
+              <td>{{ volume.user_count }}</td>
+              <td>{{ volume.lab_count }}</td>
               <td>{{ volume.avgsize }}</td>
             </tr>
           {% endfor %}
@@ -101,7 +105,7 @@ Center Summary
 <!-- Start Storage by Tier -->
 <div class="card mb-3 border-primary">
   <div class="card-header bg-primary text-white">
-    <i class="fas fa-trophy" aria-hidden="true"></i> Storage by Tier
+    <i class="fas fa-server" aria-hidden="true"></i> Storage by Tier
   </div
   <div class="card-body">
     <div id="chartVolumes"></div>
@@ -280,7 +284,7 @@ Center Summary
             type: 'category',
             categories: resource_chart_data['columns'][0],
             label: {
-              text: 'Storage',
+              text: 'Resource',
               position: 'outer-middle'
             },
           },
