@@ -154,7 +154,10 @@ class ProjectListView(LoginRequiredMixin, ListView):
         order_by = self.request.GET.get('order_by')
         if order_by:
             direction = self.request.GET.get('direction')
-            direction = '' if direction == 'asc' else '-'
+            if direction == 'asc':
+                direction = ''
+            elif direction == 'des':
+                direction = '-'
             order_by = direction + order_by
         else:
             order_by = 'id'
@@ -292,7 +295,7 @@ class ProjectArchivedListView(LoginRequiredMixin, ListView):
             direction = self.request.GET.get('direction')
             if direction == 'asc':
                 direction = ''
-            else:
+            elif direction == 'des':
                 direction = '-'
             order_by = direction + order_by
         else:
