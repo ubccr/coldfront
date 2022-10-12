@@ -136,6 +136,7 @@ class StarFishServer:
 
     @record_process
     def get_starfish_groups(self):
+<<<<<<< HEAD:coldfront/plugins/sftocf/utils.py
         url = f'{self.api_url}mapping/user_membership'
         group_dict = return_get_json(url, self.headers)
         group_list = [g['name'] for g in group_dict]
@@ -179,6 +180,14 @@ def get_redash_vol_stats():
   # 'directories with subdirectories only': 2276,
   # 'empty directories': 1389,
   # 'max dir size (GiB)': 620.67},
+=======
+        url = f"{self.api_url}mapping/group_membership"
+        group_dict = return_get_json(url, self.headers)
+        group_set = set([g['name'] for g in group_dict])
+        return group_set
+
+
+>>>>>>> 93a158fc180e2401b3ecc86d9b4c016cb68c800e:coldfront/plugins/sftocf/pipeline.py
 
 class StarFishQuery:
     def __init__(self, headers, api_url, query, group_by, volpath, sec=3):
@@ -463,7 +472,11 @@ def collect_starfish_usage(server, volume, volumepath, projects):
     locate_or_create_dirpath("./coldfront/plugins/sftocf/data/")
     logger.debug("projects: %s", projects)
     server_groups = server.get_starfish_groups()
+<<<<<<< HEAD:coldfront/plugins/sftocf/utils.py
     print([g for g in server_groups if g not in [t[0] for t in projects]])
+=======
+    print("groups missing from volume:", [g[0] for g in projects if g not in server_groups])
+>>>>>>> 93a158fc180e2401b3ecc86d9b4c016cb68c800e:coldfront/plugins/sftocf/pipeline.py
     for t in projects:
         p = t[0]
         tier = t[2]
