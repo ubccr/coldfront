@@ -2505,7 +2505,7 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
 
             create_admin_action(
                 request.user,
-                {'status', status},
+                {'status': status},
                 allocation_obj
             )
 
