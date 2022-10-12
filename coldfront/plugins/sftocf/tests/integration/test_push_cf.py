@@ -3,7 +3,7 @@ import unittest
 
 from django.test import TestCase
 
-from coldfront.plugins.sftocf.pipeline import *
+from coldfront.plugins.sftocf.utils import *
 
 class UploadTests(TestCase):
     """Catch issues that may cause database not to upload properly."""
