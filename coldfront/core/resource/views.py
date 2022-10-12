@@ -4,7 +4,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
 from django.forms import formset_factory
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.views.generic import TemplateView, ListView
@@ -24,8 +24,7 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         return True
 
     def get_child_resources(self, resource_obj):
-        child_resources = [resource for resource in resource_obj.resource_set.all(
-        ).order_by('name')]
+        child_resources = list(resource_obj.resource_set.all().order_by('name'))
 
         child_resources = [
 
@@ -34,7 +33,7 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
              'ServiceEnd': resource.get_attribute('ServiceEnd'),
              'Vendor': resource.get_attribute('Vendor'),
              'SerialNumber': resource.get_attribute('SerialNumber'),
-             'Model': resource.get_attribute('Model'),            
+             'Model': resource.get_attribute('Model'),
              }
 
             for resource in child_resources
@@ -47,8 +46,8 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         pk = self.kwargs.get('pk')
         resource_obj = get_object_or_404(Resource, pk=pk)
 
-        attributes = [attribute for attribute in resource_obj.resourceattribute_set.all(
-        ).order_by('resource_attribute_type__name')]
+        attributes = list(resource_obj.resourceattribute_set.all().order_by(
+                                        'resource_attribute_type__name'))
 
         child_resources = self.get_child_resources(resource_obj)
 
@@ -68,9 +67,8 @@ class ResourceAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Creat
 
         if self.request.user.is_superuser:
             return True
-        else:
-            messages.error(
-                self.request, 'You do not have permission to add resource attributes.')
+        messages.error(
+            self.request, 'You do not have permission to add resource attributes.')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -103,9 +101,8 @@ class ResourceAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Templ
         """ UserPassesTestMixin Tests"""
         if self.request.user.is_superuser:
             return True
-        else:
-            messages.error(
-                self.request, 'You do not have permission to delete resource attributes.')
+        messages.error(
+            self.request, 'You do not have permission to delete resource attributes.')
 
     def get_resource_attributes_to_delete(self, resource_obj):
 
@@ -289,4 +286,3 @@ class ResourceListView(LoginRequiredMixin, ListView):
         except EmptyPage:
             resource_list = paginator.page(paginator.num_pages)
         return context
-

@@ -6,7 +6,7 @@ from django.conf import settings
 from django.db import models
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
-import coldfront.core.attribute_expansion as attribute_expansion
+from coldfront.core import attribute_expansion
 
 class AttributeType(TimeStampedModel):
     name = models.CharField(max_length=128, unique=True)
@@ -93,7 +93,16 @@ class Resource(TimeStampedModel):
     def status(self):
         return ResourceAttribute.objects.get(resource=self, resource_attribute_type__attribute="Status").value
 
-    def get_attribute(self, name, expand=True, typed=True, 
+    # @property
+    # def status(self):
+    #     return ResourceAttribute.objects.get(resource=self, resource_attribute_type__attribute="Status").value
+
+    @property
+    def expiry(self):
+        return self.get_attribute('WarrantyExpirationDate')
+
+
+    def get_attribute(self, name, expand=True, typed=True,
         extra_allocations=[]):
         """Return the value of the first attribute found with specified name
 
@@ -122,11 +131,9 @@ class Resource(TimeStampedModel):
             if expand:
                 return attr.expanded_value(
                     typed=typed, extra_allocations=extra_allocations)
-            else:
-                if typed:
-                    return attr.typed_value()
-                else:
-                    return attr.value
+            if typed:
+                return attr.typed_value()
+            return attr.value
         return None
 
     def get_attribute_list(self, name, expand=True, typed=True,
@@ -138,8 +145,8 @@ class Resource(TimeStampedModel):
 
         If expand is True (the default), we will return the result of the
         expanded_value() method for each attribute, which will expand
-        attributes/parameters in the attribute value for attributes with a base 
-        type of 'Attribute Expanded Text'.  If the attribute is not of that 
+        attributes/parameters in the attribute value for attributes with a base
+        type of 'Attribute Expanded Text'.  If the attribute is not of that
         type, or expand is false, returns the value attribute/data member (i.e.
          the raw, unexpanded value).
 
@@ -157,11 +164,9 @@ class Resource(TimeStampedModel):
         if expand:
             return [a.expanded_value(extra_allocations=extra_allocations,
                 typed=typed) for a in attr]
-        else:
-            if typed:
-                return [a.typed_value() for a in attr]
-            else:
-                return [a.value for a in attr]
+        if typed:
+            return [a.typed_value() for a in attr]
+        return [a.value for a in attr]
 
     def get_ondemand_status(self):
         ondemand = self.resourceattribute_set.filter(
@@ -191,13 +196,13 @@ class ResourceAttribute(TimeStampedModel):
         if expected_value_type == "Int" and not self.value.isdigit():
             raise ValidationError(
                 'Invalid Value "%s". Value must be an integer.' % (self.value))
-        elif expected_value_type == "Active/Inactive" and self.value not in ["Active", "Inactive"]:
+        if expected_value_type == "Active/Inactive" and self.value not in ["Active", "Inactive"]:
             raise ValidationError(
                 'Invalid Value "%s". Allowed inputs are "Active" or "Inactive".' % (self.value))
-        elif expected_value_type == "Public/Private" and self.value not in ["Public", "Private"]:
+        if expected_value_type == "Public/Private" and self.value not in ["Public", "Private"]:
             raise ValidationError(
                 'Invalid Value "%s". Allowed inputs are "Public" or "Private".' % (self.value))
-        elif expected_value_type == "Date":
+        if expected_value_type == "Date":
             try:
                 datetime.strptime(self.value.strip(), "%m/%d/%Y")
             except ValueError:
@@ -232,7 +237,7 @@ class ResourceAttribute(TimeStampedModel):
         attribute).
         If the attriblist attribute is found, we use
         it to generate a dictionary to use to expand the attribute value,
-        and the expanded value is returned.  
+        and the expanded value is returned.
 
         If extra_allocations is given, it should be a list of Allocations, and
         the attributes of these allocations will be available for referencing
@@ -272,7 +277,7 @@ class ResourceAttribute(TimeStampedModel):
             return raw_value
 
         expanded = attribute_expansion.expand_attribute(
-            raw_value = raw_value, 
+            raw_value = raw_value,
             attribute_name = attrib_name,
             attriblist_string = attriblist,
             resources = resources,

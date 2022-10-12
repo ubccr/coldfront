@@ -326,8 +326,11 @@ class AllocationListView(LoginRequiredMixin, ListView):
         order_by = self.request.GET.get('order_by')
         if order_by:
             direction = self.request.GET.get('direction')
-            dir_dict = {'asc':'', 'des':'-'}
-            order_by = dir_dict[direction] + order_by
+            if direction == 'asc':
+                direction = ''
+            elif direction == 'des':
+                direction = '-'
+            order_by = direction + order_by
         else:
             order_by = 'id'
 
@@ -338,7 +341,8 @@ class AllocationListView(LoginRequiredMixin, ListView):
         if allocation_search_form.is_valid():
             data = allocation_search_form.cleaned_data
 
-            if data.get('show_all_allocations') and (self.request.user.is_superuser or self.request.user.has_perm('allocation.can_view_all_allocations')):
+            if data.get('show_all_allocations') and (self.request.user.is_superuser or self.request.user.has_perm(
+                                        'allocation.can_view_all_allocations')):
                 allocations = allocations.order_by(order_by)
             else:
                 allocations = allocations.filter(
@@ -474,14 +478,14 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
 
+        message = None
         if project_obj.needs_review:
-            messages.error(request,
-                'You cannot request a new allocation because you have to review your project first.')
-            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
+            message = 'You cannot request a new allocation because you have to review your project first.'
+        elif project_obj.status.name not in ['Active', 'New', ]:
+            message = 'You cannot request a new allocation to an archived project.'
 
-        if project_obj.status.name not in ['Active', 'New', ]:
-            messages.error(request,
-                'You cannot request a new allocation to an archived project.')
+        if message:
+            messages.error(request, message)
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
         return super().dispatch(request, *args, **kwargs)
@@ -619,7 +623,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         if allocation_obj.is_locked and not self.request.user.is_superuser:
             message = 'You cannot modify this allocation because it is locked! Contact support for details.'
         elif allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested']:
-            message = f'You cannot remove users from a allocation with status {allocation_obj.status.name}.'
+            message = f'You cannot remove users from an allocation with status {allocation_obj.status.name}.'
         if message:
             messages.error(request, message)
             return HttpResponseRedirect(reverse('allocation-detail',
@@ -736,6 +740,7 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
         if message:
             messages.error(request, message)
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
+
         return super().dispatch(request, *args, **kwargs)
 
 
@@ -942,6 +947,7 @@ class AllocationNoteCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateVi
             return True
         messages.error(
             self.request, 'You do not have permission to add allocation notes.')
+        return False
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -1115,25 +1121,22 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
         allocation_obj = get_object_or_404(
             Allocation, pk=self.kwargs.get('pk'))
 
+        message = None
         if not ALLOCATION_ENABLE_ALLOCATION_RENEWAL:
-            messages.error(
-                request, 'Allocation renewal is disabled. Request a new allocation to this resource if you want to continue using it after the active until date.')
-            return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
+            message = 'Allocation renewal is disabled. Request a new allocation to this resource if you want to continue using it after the active until date.'
+        elif allocation_obj.status.name not in ['Active', ]:
+            message = f'You cannot renew an allocation with status {allocation_obj.status.name}.'
+        elif allocation_obj.expires_in > 60:
+            message = 'It is too soon to review your allocation.'
 
-        if allocation_obj.status.name not in ['Active', ]:
-            messages.error(request,
-                f'You cannot renew an allocation with status {allocation_obj.status.name}.')
+        if message:
+            messages.error(request, message)
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
         if allocation_obj.project.needs_review:
             messages.error(
                 request, 'You cannot renew your allocation because you have to review your project first.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': allocation_obj.project.pk}))
-
-        if allocation_obj.expires_in > 60:
-            messages.error(
-                request, 'It is too soon to review your allocation.')
-            return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
         return super().dispatch(request, *args, **kwargs)
 
@@ -1230,7 +1233,8 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
                         project_user_obj.status = project_user_remove_status_choice
                         project_user_obj.save()
 
-            send_allocation_admin_email(allocation_obj, 'Allocation Renewed', 'email/allocation_renewed.txt', domain_url=get_domain_url(self.request))
+            send_allocation_admin_email(allocation_obj, 'Allocation Renewed',
+                    'email/allocation_renewed.txt', domain_url=get_domain_url(self.request))
 
             messages.success(request, 'Allocation renewed successfully')
         else:
@@ -1822,23 +1826,18 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         allocation_obj = get_object_or_404(
             Allocation, pk=self.kwargs.get('pk'))
 
+        message = None
         if allocation_obj.project.needs_review:
-            messages.error(request,
-                'You cannot request a change to this allocation because you have to review your project first.')
-            return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
+            message = 'You cannot request a change to this allocation because you have to review your project first.'
+        elif allocation_obj.project.status.name not in ['Active', 'New', ]:
+            message = 'You cannot request a change to an allocation in an archived project.'
+        elif allocation_obj.is_locked:
+            message = 'You cannot request a change to a locked allocation.'
+        elif allocation_obj.status.name not in ['Active', 'Renewal Requested', 'Payment Pending', 'Payment Requested', 'Paid']:
+            message = f'You cannot request a change to an allocation with status "{allocation_obj.status.name}"'
 
-        if allocation_obj.project.status.name not in ['Active', 'New', ]:
-            messages.error(
-                request, 'You cannot request a change to an allocation in an archived project.')
-            return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
-
-        if allocation_obj.is_locked:
-            messages.error(
-                request, 'You cannot request a change to a locked allocation.')
-            return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
-
-        if allocation_obj.status.name not in ['Active', 'Renewal Requested', 'Payment Pending', 'Payment Requested', 'Paid']:
-            messages.error(request, f'You cannot request a change to an allocation with status "{allocation_obj.status.name}"')
+        if message:
+            messages.error(request, message)
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
         return super().dispatch(request, *args, **kwargs)

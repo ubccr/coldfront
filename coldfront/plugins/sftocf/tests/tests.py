@@ -1,7 +1,7 @@
 import os
 import unittest
 
-from coldfront.plugins.sftocf.pipeline import *
+from coldfront.plugins.sftocf.utils import *
 
 class PipelineTests(unittest.TestCase):
 
