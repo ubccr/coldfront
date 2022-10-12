@@ -8,6 +8,7 @@ from coldfront.core.project.models import (Project, ProjectAdminComment,
                                             ProjectUser, ProjectUserMessage,
                                             ProjectUserRoleChoice,
                                             ProjectUserStatusChoice)
+from coldfront.core.organization.admin import OrganizationProjectInline
 
 
 @admin.register(ProjectStatusChoice)
@@ -85,7 +86,6 @@ class ProjectUserMessageInline(admin.TabularInline):
     fields = ('message', 'author', 'created'),
     readonly_fields = ('author', 'created')
 
-
 @admin.register(Project)
 class ProjectAdmin(SimpleHistoryAdmin):
     fields_change = ('title', 'pi', 'description', 'status', 'requires_review', 'force_review', 'created', 'modified', )
@@ -94,7 +94,12 @@ class ProjectAdmin(SimpleHistoryAdmin):
     search_fields = ['pi__username', 'projectuser__user__username',
                      'projectuser__user__last_name', 'projectuser__user__last_name', 'title']
     list_filter = ('status', 'force_review')
-    inlines = [ProjectUserInline, ProjectAdminCommentInline, ProjectUserMessageInline]
+    inlines = [
+            ProjectUserInline, 
+            ProjectAdminCommentInline, 
+            ProjectUserMessageInline,
+            OrganizationProjectInline,
+        ]
     raw_id_fields = ['pi', ]
 
     def PI(self, obj):
