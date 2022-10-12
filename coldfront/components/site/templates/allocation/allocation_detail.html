@@ -396,7 +396,7 @@ Allocation Detail
 {% endif %}
 
 <!-- Start Allocation Change Requests -->
-{% if allocation_changes %}
+{% if allocation_changes or allocation_changes_enabled %}
   <div class="card mb-3">
     <div class="card-header">
       <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Allocation Change Requests</h3> <span class="badge badge-secondary">{{allocation_changes.count}}</span>
