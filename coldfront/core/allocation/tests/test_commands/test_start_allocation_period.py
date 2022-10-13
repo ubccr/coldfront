@@ -280,7 +280,7 @@ class TestStartAllocationPeriod(TestBase):
         # Remove newlines and ANSI color codes from the output.
         ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
         output_lines = [
-            ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+            ansi_escape.sub('', line.strip()) for line in output.split('\n') if line.strip()]
         self.assertEqual(expected_num_lines, len(output_lines))
 
         num_new_project_requests = len(num_sus_by_new_project_request_id)
