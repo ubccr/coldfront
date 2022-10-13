@@ -2229,17 +2229,17 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 messages.error(request, 'You must request a change.')
                 return HttpResponseRedirect(reverse('allocation-change', kwargs={'pk': pk}))
 
-            end_date_extension = form_data.get('end_date_extension')
-            justification = form_data.get('justification')
-            change_request_status_obj = AllocationChangeStatusChoice.objects.get(
-                name='Pending')
+        end_date_extension = form_data.get('end_date_extension')
+        justification = form_data.get('justification')
+        change_request_status_obj = AllocationChangeStatusChoice.objects.get(
+            name='Pending')
 
-            allocation_change_request_obj = AllocationChangeRequest.objects.create(
-                allocation=allocation_obj,
-                end_date_extension=end_date_extension,
-                justification=justification,
-                status=change_request_status_obj
-                )
+        allocation_change_request_obj = AllocationChangeRequest.objects.create(
+            allocation=allocation_obj,
+            end_date_extension=end_date_extension,
+            justification=justification,
+            status=change_request_status_obj
+            )
 
         messages.success(
             request, 'Allocation change request successfully submitted.')
