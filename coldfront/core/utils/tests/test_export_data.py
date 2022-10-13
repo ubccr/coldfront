@@ -322,7 +322,7 @@ class TestNewClusterAccounts(TestBaseExportData):
                                           '--format=csv')
         output = self.convert_output(output, 'csv')
 
-        post_time = utc_now_offset_aware().replace(tzinfo=None, microsecond=0)
+        post_time = utc_now_offset_aware().replace(tzinfo=None, microsecond=999999)
         for index, item in enumerate(output):
             if index == 0:
                 self.assertEqual(item, ['username', 'date_created'])
