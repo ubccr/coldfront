@@ -64,9 +64,14 @@ class UserProfileSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     """A serializer for the User model."""
 
-    profile = UserProfileSerializer(source='userprofile', read_only=True)
+    profile = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = (
             'id', 'username', 'first_name', 'last_name', 'email', 'profile')
+
+    @staticmethod
+    def get_profile(obj):
+        """Return the serialized profile of the user."""
+        return UserProfileSerializer(obj.userprofile).data
