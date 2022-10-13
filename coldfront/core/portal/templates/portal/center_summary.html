@@ -64,38 +64,40 @@ Center Summary
   <div class="card-body">
     <div id="chartVolumes"></div>
       <div class="card-body">
-      <table class="table table-hover">
-        <thead>
-          <tr>
-            <th scope="col">Name</th>
-            <th scope="col">Capacity (TB)</th>
-            <th scope="col">Used (TB)</th>
-            {% comment %}
-            <th scope="col">Warranty expires</th>
-            {% endcomment %}
-            <th scope="col">File count</th>
-            <th scope="col">User count</th>
-            <th scope="col">Lab count</th>
-            <th scope="col">Avg. Allocation Size (TB)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for volume in volumes %}
+        <div class="table-responsive">
+        <table id="volume-table" class="table table-hover">
+          <thead>
             <tr>
-              <td>{{ volume.name }}</td>
-              <td>{{ volume.quota_TB|floatformat:2 }}</td>
-              <td>{{ volume.used_TB|floatformat:2 }}</td>
+              <th scope="col">Name</th>
+              <th scope="col">Capacity (TB)</th>
+              <th scope="col">Used (TB)</th>
               {% comment %}
-              <td>{{ volume.expiry }}</td>
+              <th scope="col">Warranty expires</th>
               {% endcomment %}
-              <td>{{ volume.regular_files }}</td>
-              <td>{{ volume.user_count }}</td>
-              <td>{{ volume.lab_count }}</td>
-              <td>{{ volume.avgsize }}</td>
+              <th scope="col">File count</th>
+              <th scope="col">User count</th>
+              <th scope="col">Lab count</th>
+              <th scope="col">Avg. Allocation Size (TB)</th>
             </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {% for volume in volumes %}
+              <tr>
+                <td>{{ volume.name }}</td>
+                <td>{{ volume.quota_TB|floatformat:2 }}</td>
+                <td>{{ volume.used_TB|floatformat:2 }}</td>
+                {% comment %}
+                <td>{{ volume.expiry }}</td>
+                {% endcomment %}
+                <td>{{ volume.regular_files }}</td>
+                <td>{{ volume.user_count }}</td>
+                <td>{{ volume.lab_count }}</td>
+                <td>{{ volume.avgsize }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>
@@ -181,6 +183,13 @@ Center Summary
       "order": [
         [1, "desc"]
       ]
+    });
+
+    $('#volume-table').DataTable({
+      'aoColumnDefs': [{
+        'bSortable': false,
+        'aTargets': ['nosort']
+      }]
     });
 
     drawPublications();
