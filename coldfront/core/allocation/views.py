@@ -59,7 +59,8 @@ from coldfront.core.allocation.utils import (compute_prorated_amount,
                                              send_added_user_email,
                                              send_removed_user_email,
                                              create_admin_action,
-                                             create_admin_action_for_deletion)
+                                             create_admin_action_for_deletion,
+                                             create_admin_action_for_creation)
 from coldfront.core.utils.common import Echo
 from coldfront.core.allocation.signals import (allocation_activate,
                                                allocation_activate_user,
@@ -1832,6 +1833,11 @@ class AllocationAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Cre
         return form
 
     def get_success_url(self):
+        create_admin_action_for_creation(
+            self.request.user,
+            self.object,
+            Allocation.objects.get(pk=self.kwargs.get('pk'))
+        )
         return reverse('allocation-detail', kwargs={'pk': self.kwargs.get('pk')})
 
 
@@ -1919,6 +1925,13 @@ class AllocationAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Tem
 
                     allocation_attribute = AllocationAttribute.objects.get(
                         pk=form_data['pk'])
+
+                    create_admin_action_for_deletion(
+                        request.user,
+                        allocation_attribute,
+                        allocation_attribute.allocation
+                    )
+
                     allocation_attribute.delete()
 
             messages.success(request, 'Deleted {} attributes from allocation.'.format(
