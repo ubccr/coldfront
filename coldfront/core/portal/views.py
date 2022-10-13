@@ -1,4 +1,3 @@
-import operator
 from collections import Counter
 
 from django.conf import settings
@@ -8,14 +7,14 @@ from django.shortcuts import render
 from django.views.decorators.cache import cache_page
 
 from coldfront.core.allocation.models import Allocation, AllocationUser
-from coldfront.core.grant.models import Grant
 from coldfront.core.portal.utils import (generate_allocations_chart_data,
                                          generate_publication_by_year_chart_data,
                                          generate_resources_chart_data,
-                                         generate_total_grants_by_agency_chart_data)
+                                         generate_volume_bar_graph)
 from coldfront.core.project.models import Project
 from coldfront.core.publication.models import Publication
-from coldfront.core.research_output.models import ResearchOutput
+from coldfront.core.resource.models import Resource
+from coldfront.plugins.sftocf.utils import get_redash_vol_stats
 
 
 def home(request):
@@ -34,7 +33,7 @@ def home(request):
             Q(status__name__in=['Active', 'New', 'Renewal Requested', ]) &
             Q(project__status__name__in=['Active', 'New']) &
             Q(project__projectuser__user=request.user) &
-            Q(project__projectuser__status__name__in=['Active', ]) &  
+            Q(project__projectuser__status__name__in=['Active', ]) &
                 (Q(project__projectuser__role_id=1) |
                 Q(allocationuser__user=request.user) &
                 Q(allocationuser__status__name='Active'))
@@ -61,8 +60,9 @@ def center_summary(request):
     context = {}
 
     # Publications Card
-    publications_by_year = list(Publication.objects.filter(year__gte=1999).values(
-        'unique_id', 'year').distinct().values('year').annotate(num_pub=Count('year')).order_by('-year'))
+    publications = Publication.objects.filter(year__gte=1999).values('unique_id', 'year')
+    publications_by_year = list(publications.distinct().values('year').annotate(
+                                    num_pub=Count('year')).order_by('-year'))
 
     publications_by_year = [(ele['year'], ele['num_pub'])
                             for ele in publications_by_year]
@@ -70,43 +70,89 @@ def center_summary(request):
     publication_by_year_bar_chart_data = generate_publication_by_year_chart_data(
         publications_by_year)
     context['publication_by_year_bar_chart_data'] = publication_by_year_bar_chart_data
-    context['total_publications_count'] = Publication.objects.filter(
-        year__gte=1999).values('unique_id', 'year').distinct().count()
+    context['total_publications_count'] = publications.distinct().count()
 
-    # Research Outputs card
-    context['total_research_outputs_count'] = ResearchOutput.objects.all().distinct().count()
 
-    # Grants Card
-    total_grants_by_agency_sum = list(Grant.objects.values(
-        'funding_agency__name').annotate(total_amount=Sum('total_amount_awarded')))
+    # Storage Card
+    volumes = get_redash_vol_stats()
+    volumes = [
+        {
+            "name": vol['volume_name'],
+            "quota_TB": vol['capacity_TB'],
+            'free_TB': vol['free_TB'],
+            'used_TB': vol['used_physical_TB'],
+            'regular_files': vol['regular_files'],
+        }
+        for vol in volumes
+    ]
+    # collect user and lab counts, allocation sizes for each volume
 
-    total_grants_by_agency_count = list(Grant.objects.values(
-        'funding_agency__name').annotate(count=Count('total_amount_awarded')))
+    for volume in volumes:
+        resource = Resource.objects.get(name__contains=volume['name'])
 
-    total_grants_by_agency_count = {
-        ele['funding_agency__name']: ele['count'] for ele in total_grants_by_agency_count}
+        resource_allocation = Allocation.objects.filter(status__name="Active", resources=resource)
 
-    total_grants_by_agency = [['{}: ${} ({})'.format(
-        ele['funding_agency__name'],
-        intcomma(int(ele['total_amount'])),
-        total_grants_by_agency_count[ele['funding_agency__name']]
-    ), ele['total_amount']] for ele in total_grants_by_agency_sum]
+        allocation_sizes = [float(allocation.size) for allocation in resource_allocation]
+        # volume['avgsize'] = allocation_sizes
+        volume['avgsize'] = round(sum(allocation_sizes)/len(allocation_sizes), 2)
 
-    total_grants_by_agency = sorted(
-        total_grants_by_agency, key=operator.itemgetter(1), reverse=True)
-    grants_agency_chart_data = generate_total_grants_by_agency_chart_data(
-        total_grants_by_agency)
-    context['grants_agency_chart_data'] = grants_agency_chart_data
-    context['grants_total'] = intcomma(
-        int(sum(list(Grant.objects.values_list('total_amount_awarded', flat=True)))))
-    context['grants_total_pi_only'] = intcomma(
-        int(sum(list(Grant.objects.filter(role='PI').values_list('total_amount_awarded', flat=True)))))
-    context['grants_total_copi_only'] = intcomma(
-        int(sum(list(Grant.objects.filter(role='CoPI').values_list('total_amount_awarded', flat=True)))))
-    context['grants_total_sp_only'] = intcomma(
-        int(sum(list(Grant.objects.filter(role='SP').values_list('total_amount_awarded', flat=True)))))
+        project_ids = set(resource_allocation.values_list("project"))
+        volume['lab_count'] = len(project_ids)
+        user_ids = {user.pk for allocation in resource_allocation for user in allocation.allocation_users}
+        volume['user_count'] = len(user_ids)
+
+    context['volumes'] = volumes
+
+
+
+
+    # # Tier Stats
+    #
+    # resource_names = Resource.objects.values("name")
+    # new = []
+    # for n in [vol['name'] for vol in volumes]:
+    #     match = next(r.split("/")[1] for r in resource_names if n in r)
+    #     new.append(match)
+    # # storage_stats['names'] = new
+
+
+
+
+    # Combined Resource Stats
+
+    names = [vol['name'] for vol in volumes]
+    free_tb = [vol['free_TB'] for vol in volumes]
+    usage_tb = [vol['used_TB'] for vol in volumes]
+
+    names.insert(0, "names")
+    usage_tb.insert(0, "usage (TB)")
+    free_tb.insert(0, "quota (TB)")
+
+    storage_data_columns = [ usage_tb, free_tb,names, ]
+
+    context['storage_data_columns'] = storage_data_columns
+
+    resource_chart_data = {
+        "x": "Resource Type",
+        "columns": [
+            ['Resource Type', 'Storage'],
+            ['Used', round(sum(usage_tb[1:]), 2)],
+            ['Capacity', round(sum(free_tb[1:]), 2)],
+        ],
+        "type": "bar",
+        "order":"null",
+        "groups": [['Used', 'Capacity',]],
+        "colors": {
+            "Capacity": '#000'
+        }
+    }
+    context['resource_chart_data'] = resource_chart_data
+
 
     return render(request, 'portal/center_summary.html', context)
+
+
+
 
 
 @cache_page(60 * 15)

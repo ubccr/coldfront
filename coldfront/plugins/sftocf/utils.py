@@ -13,6 +13,7 @@ from django.contrib.auth import get_user_model
 
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.project.models import Project
+from coldfront.core.resource.models import Resource
 from coldfront.core.allocation.models import (Allocation,
                                             AllocationUser,
                                             AllocationAttribute,
@@ -39,13 +40,14 @@ def record_process(func):
         return result
     return call
 
+
 class StarFishServer:
     """Class for interacting with StarFish API.
     """
 
     def __init__(self, server):
         self.name = server
-        self.api_url = f"https://{server}.rc.fas.harvard.edu/api/"
+        self.api_url = f'https://{server}.rc.fas.harvard.edu/api/'
         self.token = self.get_auth_token()
         self.headers = generate_headers(self.token)
         self.volumes = self.get_volume_names()
@@ -56,8 +58,8 @@ class StarFishServer:
         """
         username = import_from_settings('SFUSER')
         password = import_from_settings('SFPASS')
-        auth_url = self.api_url + "auth/"
-        todo = {"username": username, "password": password}
+        auth_url = self.api_url + 'auth/'
+        todo = {'username': username, 'password': password}
         response = requests.post(auth_url, json=todo)
         # response.status_code
         response_json = response.json()
@@ -70,26 +72,35 @@ class StarFishServer:
     def get_volume_names(self):
         """ Generate a list of the volumes available on the server.
         """
-        stor_url = self.api_url + "storage/"
+        stor_url = self.api_url + 'storage/'
         response = return_get_json(stor_url, self.headers)
-        volnames = [i["name"] for i in response["items"]]
+        volnames = [i['name'] for i in response['items']]
         return volnames
+
+    def get_volume_attributes(self):
+        url = self.api_url + 'volume/'
+        response = return_get_json(url, self.headers)
+        print(response)
+        return response
+
 
     @record_process
     def get_subpaths(self, volpath):
         """Generate list of directories in top layer of designated volpath.
+
         Parameters
         ----------
         volpath : string
             The volume and path.
+
         Returns
         -------
         subpaths : list of strings
         """
-        getsubpaths_url = self.api_url + "storage/" + volpath
+        getsubpaths_url = self.api_url + 'storage/' + volpath
         request = return_get_json(getsubpaths_url, self.headers)
-        pathdicts = request["items"]
-        subpaths = [i["Basename"] for i in pathdicts]
+        pathdicts = request['items']
+        subpaths = [i['Basename'] for i in pathdicts]
         return subpaths
 
     def create_query(self, query, group_by, volpath, sec=3):
@@ -111,8 +122,8 @@ class StarFishServer:
         return query
 
     @record_process
-    def get_vol_membership(self, volume, type):
-        url = self.api_url + f"mapping/{type}_membership?volume_name=" + volume
+    def get_vol_membership(self, volume, voltype):
+        url = self.api_url + f'mapping/{voltype}_membership?volume_name=' + volume
         member_list = return_get_json(url, self.headers)
         return member_list
 
@@ -122,6 +133,36 @@ class StarFishServer:
         users = return_get_json(usermap_url, self.headers)
         userdict = {u["uid"]: u["name"] for u in users}
         return userdict
+
+    @record_process
+    def get_starfish_groups(self):
+        url = f'{self.api_url}mapping/user_membership'
+        group_dict = return_get_json(url, self.headers)
+        group_list = [g['name'] for g in group_dict]
+        return group_list
+
+
+
+# class StarFishRedash:
+#     """Class for interacting with Starfish analytics API.
+#     """
+#     def __init__(self, server):
+#         self.api_url = f'https://{server}.rc.fas.harvard.edu/redash/api/'
+#         self.query_keys = import_from_settings('REDASH_API_KEYS')[server]
+
+def get_redash_vol_stats():
+    all_results = []
+    for server, queries in import_from_settings('REDASH_API_KEYS').items():
+        base_url = f'https://{server}.rc.fas.harvard.edu/redash/api/'
+        for query_id, query_key in queries.items():
+            query_url = f'{base_url}queries/{query_id}/results?api_key={query_key}'
+            result = return_get_json(query_url, headers={})
+            all_results.extend(result['query_result']['data']['rows'])
+    all_results = [{k.replace(' ', '_').replace('(','').replace(')','') : v for k, v in d.items()} for d in all_results]
+    resource_names = [re.sub(r'\/.+','',n) for n in Resource.objects.values_list('name', flat=True)]
+    print(resource_names)
+    all_results = [r for r in all_results if r['volume_name'] in resource_names]
+    return all_results
 
 
 class StarFishQuery:
@@ -382,7 +423,7 @@ def save_json(file, contents):
         json.dump(contents, fp, sort_keys=True, indent=4)
 
 def read_json(filepath):
-    logger.debug(f"read_json for {filepath}")
+    logger.debug('read_json for %s', filepath)
     with open(filepath, "r") as json_file:
         data = json.loads(json_file.read())
     return data
@@ -410,6 +451,8 @@ def collect_starfish_usage(server, volume, volumepath, projects):
     datestr = datetime.today().strftime("%Y%m%d")
     locate_or_create_dirpath("./coldfront/plugins/sftocf/data/")
     logger.debug("projects: %s", projects)
+    server_groups = server.get_starfish_groups()
+    print([g for g in server_groups if g not in [t[0] for t in projects]])
     for t in projects:
         p = t[0]
         tier = t[2]
@@ -417,7 +460,7 @@ def collect_starfish_usage(server, volume, volumepath, projects):
         lab_volpath = volumepath[1] if "_l3" in p else volumepath[0]
         logger.debug("filepath: %s lab: %s volpath: %s", filepath, p, lab_volpath)
         usage_query = server.create_query(
-            f"type=f groupname={p}", "username, groupname", f"{volume}:{lab_volpath}"
+            f"type=f groupname={p}*", "username, groupname", f"{volume}:{lab_volpath}"
         )
         data = usage_query.result
         logger.debug("usage_query.result: %s", data)

@@ -7,13 +7,12 @@ from django.http import HttpResponseRedirect, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.views import View
-from django.views.generic import DetailView, FormView, ListView, TemplateView
-from django.views.generic.edit import CreateView, UpdateView
+from django.views.generic import FormView, ListView, TemplateView
+from django.views.generic.edit import UpdateView
 
 from coldfront.core.utils.common import Echo
 from coldfront.core.grant.forms import GrantDeleteForm, GrantDownloadForm, GrantForm
-from coldfront.core.grant.models import (Grant, GrantFundingAgency,
-                                         GrantStatusChoice)
+from coldfront.core.grant.models import Grant
 from coldfront.core.project.models import Project
 
 
@@ -41,8 +40,7 @@ class GrantCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         if project_obj.status.name not in ['Active', 'New', ]:
             messages.error(request, 'You cannot add grants to an archived project.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
-        else:
-            return super().dispatch(request, *args, **kwargs)
+        return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
         form_data = form.cleaned_data
@@ -94,8 +92,9 @@ class GrantUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
 
     model = Grant
     template_name_suffix = '_update_form'
-    fields = ['title', 'grant_number', 'role', 'grant_pi_full_name', 'funding_agency', 'other_funding_agency',
-              'other_award_number', 'grant_start', 'grant_end', 'percent_credit', 'direct_funding', 'total_amount_awarded', 'status', ]
+    fields = ['title', 'grant_number', 'role', 'grant_pi_full_name', 'funding_agency',
+              'other_funding_agency', 'other_award_number', 'grant_start', 'grant_end',
+              'percent_credit', 'direct_funding', 'total_amount_awarded', 'status', ]
 
     def get_success_url(self):
         return reverse('project-detail', kwargs={'pk': self.object.project.id})
@@ -302,10 +301,9 @@ class GrantReportView(LoginRequiredMixin, UserPassesTestMixin, ListView):
                                             content_type="text/csv")
             response['Content-Disposition'] = 'attachment; filename="grants.csv"'
             return response
-        else:
-            for error in formset.errors:
-                messages.error(request, error)
-            return HttpResponseRedirect(reverse('grant-report'))
+        for error in formset.errors:
+            messages.error(request, error)
+        return HttpResponseRedirect(reverse('grant-report'))
 
 
 class GrantDownloadView(LoginRequiredMixin, UserPassesTestMixin, View):
