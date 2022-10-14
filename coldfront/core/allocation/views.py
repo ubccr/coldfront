@@ -1843,8 +1843,8 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_allocation_attributes_to_change(self, allocation_obj):
-        attributes_to_change = allocation_obj.allocationattribute_set.filter(
-            allocation_attribute_type__is_changeable=True)
+        attributes_to_change = allocation_obj.allocationattribute_set.all()#filter(
+        #    allocation_attribute_type__is_changeable=True)
         attributes_to_change = [
             {
                 'pk': attribute.pk,
@@ -1933,24 +1933,24 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 messages.error(request, 'You must request a change.')
                 return HttpResponseRedirect(reverse('allocation-change', kwargs={'pk': pk}))
 
-            end_date_extension = form_data.get('end_date_extension')
-            justification = form_data.get('justification')
-            change_request_status_obj = AllocationChangeStatusChoice.objects.get(
-                name='Pending')
+        end_date_extension = form_data.get('end_date_extension')
+        justification = form_data.get('justification')
+        change_request_status_obj = AllocationChangeStatusChoice.objects.get(
+            name='Pending')
 
-            allocation_change_request_obj = AllocationChangeRequest.objects.create(
-                allocation=allocation_obj,
-                end_date_extension=end_date_extension,
-                justification=justification,
-                status=change_request_status_obj
+        allocation_change_request_obj = AllocationChangeRequest.objects.create(
+            allocation=allocation_obj,
+            end_date_extension=end_date_extension,
+            justification=justification,
+            status=change_request_status_obj
+            )
+
+        for attribute in attribute_changes_to_make:
+            AllocationAttributeChangeRequest.objects.create(
+                allocation_change_request=allocation_change_request_obj,
+                allocation_attribute=attribute[0],
+                new_value=attribute[1]
                 )
-
-            for attribute in attribute_changes_to_make:
-                AllocationAttributeChangeRequest.objects.create(
-                    allocation_change_request=allocation_change_request_obj,
-                    allocation_attribute=attribute[0],
-                    new_value=attribute[1]
-                    )
 
         messages.success(
             request, 'Allocation change request successfully submitted.')

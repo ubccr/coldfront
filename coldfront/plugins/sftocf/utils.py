@@ -448,7 +448,7 @@ def collect_starfish_usage(server, volume, volumepath, projects):
     locate_or_create_dirpath("./coldfront/plugins/sftocf/data/")
     logger.debug("projects: %s", projects)
     server_groups = server.get_starfish_groups()
-    print([g for g in server_groups if g not in [t[0] for t in projects]])
+    logger.debug("groups not in Coldfront:\n %s", [g for g in server_groups if g not in [t[0] for t in projects]])
     for t in projects:
         p = t[0]
         tier = t[2]
@@ -456,12 +456,13 @@ def collect_starfish_usage(server, volume, volumepath, projects):
         lab_volpath = volumepath[0] if "_l3" not in p else volumepath[1]
         logger.debug("filepath: %s lab: %s volpath: %s", filepath, p, lab_volpath)
         usage_query = server.create_query(
-            f"type=f groupname={p}*", "username, groupname", f"{volume}:{lab_volpath}"
+            f"type=f groupname={p}", "username, groupname", f"{volume}:{lab_volpath}"
         )
         data = usage_query.result
         logger.debug("usage_query.result: %s", data)
         if not data:
             logger.warning("No starfish result for lab %s", p)
+                
         elif type(data) is dict and "error" in data:
             logger.warning("Error in starfish result for lab %s:\n%s", p, data)
         else:
