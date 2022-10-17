@@ -186,3 +186,18 @@ def create_admin_action_for_deletion(user, deleted_obj, allocation, base_model=N
             allocation=allocation,
             action=f'Deleted "{deleted_obj}" from "{allocation}"'
         )
+
+
+def create_admin_action_for_creation(user, created_obj, allocation, base_model=None):
+    if base_model:
+        AllocationAdminAction.objects.create(
+            user=user,
+            allocation=allocation,
+            action=f'Created "{created_obj}" in "{base_model}" in "{allocation}"'
+        )
+    else:
+        AllocationAdminAction.objects.create(
+            user=user,
+            allocation=allocation,
+            action=f'Created "{created_obj}" in "{allocation}"'
+        )

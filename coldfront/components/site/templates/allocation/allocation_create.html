@@ -527,7 +527,7 @@ Request New Allocation
         }
         $('#div_' + id).show();
         if (field_key === 'end_date'){
-          if (resource_name === 'Geode-Projects') {
+          if (resource_name === 'Geode-Projects' || resource_name === 'SDA Group Account') {
             $('#div_id_use_indefinitely').show()
             if ($('input[type=checkbox][name=use_indefinitely]:checked').val()) {
               $('#id_end_date').prop('disabled', true);

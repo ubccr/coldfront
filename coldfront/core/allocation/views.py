@@ -59,7 +59,8 @@ from coldfront.core.allocation.utils import (compute_prorated_amount,
                                              send_added_user_email,
                                              send_removed_user_email,
                                              create_admin_action,
-                                             create_admin_action_for_deletion)
+                                             create_admin_action_for_deletion,
+                                             create_admin_action_for_creation)
 from coldfront.core.utils.common import Echo
 from coldfront.core.allocation.signals import (allocation_activate,
                                                allocation_activate_user,
@@ -775,6 +776,31 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 'quantity_label': {},
                 'type': 'int',
             },
+            {
+                'phone_number': {},
+                'phone_number_label': {},
+                'type': 'text'
+            },
+            {
+                'group_account_name': {},
+                'group_account_name_label': {},
+                'type': 'text',
+            },
+            {
+                'group_account_name_exists': {},
+                'group_account_name_exists_label': {},
+                'type': 'checkbox',
+            },
+            {
+                'terms_of_service': {},
+                'terms_of_service_label': {},
+                'type': 'checkbox',
+            },
+            {
+                'data_management_responsibilities': {},
+                'data_management_responsibilities_label': {},
+                'type': 'checkbox',
+            },
         ]
 
         resource_special_attributes = [
@@ -927,6 +953,11 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         data_manager = form_data.get('data_manager')
         allocation_account = form_data.get('allocation_account', None)
         license_term = form_data.get('license_term', None)
+        phone_number = form_data.get('phone_number')
+        group_account_name = form_data.get('group_account_name')
+        group_account_name_exists = form_data.get('group_account_name_exists')
+        terms_of_service = form_data.get('terms_of_service')
+        data_management_responsibilities = form_data.get('data_management_responsibilities')
 
         allocation_limit = resource_obj.get_attribute('allocation_limit')
         if allocation_limit is not None:
@@ -1099,6 +1130,11 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             faculty_email=faculty_email,
             store_ephi=store_ephi,
             data_manager=data_manager,
+            phone_number=phone_number,
+            group_account_name=group_account_name,
+            group_account_name_exists=group_account_name_exists,
+            terms_of_service=terms_of_service,
+            data_management_responsibilities=data_management_responsibilities,
             status=allocation_status_obj
         )
 
@@ -1797,6 +1833,11 @@ class AllocationAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Cre
         return form
 
     def get_success_url(self):
+        create_admin_action_for_creation(
+            self.request.user,
+            self.object,
+            Allocation.objects.get(pk=self.kwargs.get('pk'))
+        )
         return reverse('allocation-detail', kwargs={'pk': self.kwargs.get('pk')})
 
 
@@ -1884,6 +1925,13 @@ class AllocationAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Tem
 
                     allocation_attribute = AllocationAttribute.objects.get(
                         pk=form_data['pk'])
+
+                    create_admin_action_for_deletion(
+                        request.user,
+                        allocation_attribute,
+                        allocation_attribute.allocation
+                    )
+
                     allocation_attribute.delete()
 
             messages.success(request, 'Deleted {} attributes from allocation.'.format(

@@ -120,6 +120,11 @@ class AllocationForm(forms.Form):
     total_cost = forms.IntegerField(disabled=True, required=False)
     confirm_understanding = forms.BooleanField(required=False)
     data_manager = forms.CharField(max_length=50, required=False)
+    phone_number = forms.CharField(max_length=13, required=False)
+    group_account_name = forms.CharField(max_length=20, required=False)
+    group_account_name_exists = forms.BooleanField(required=False)
+    terms_of_service = forms.BooleanField(required=False)
+    data_management_responsibilities = forms.BooleanField(required=False)
 
     users = forms.MultipleChoiceField(
         widget=forms.CheckboxSelectMultiple, required=False)
@@ -162,6 +167,8 @@ class AllocationForm(forms.Form):
         self.fields['it_pros'].help_text = 'Format: name1,name2,name3,etc'
         self.fields['project_directory_name'].help_text = 'Must be alphanumeric and not exceed 10 characters in length'
         self.fields['data_manager'].help_text = 'Must be a project Manager. Only this user can add and remove users from this resource. They will automatically be added to the resource.'
+        self.fields['group_account_name_exists'].help_text = 'Does this IU group username already exist?'
+        self.fields['group_account_name'].help_text = 'e.g. Enter IU group account username'
 
         user_profile = UserProfile.objects.get(user=request_user)
         self.fields['department_full_name'].initial = user_profile.department
@@ -181,8 +188,9 @@ class AllocationForm(forms.Form):
             'justification',
             'first_name',
             'last_name',
-            'campus_affiliation',
             'email',
+            'phone_number',
+            'campus_affiliation',
             'url',
             'project_directory_name',
             'quantity',
@@ -206,6 +214,8 @@ class AllocationForm(forms.Form):
             'data_manager',
             'department_full_name',
             'department_short_name',
+            'group_account_name',
+            'group_account_name_exists',
             'fiscal_officer',
             Field('account_number', placeholder='00-000-00'),
             'sub_account_number',
@@ -219,6 +229,8 @@ class AllocationForm(forms.Form):
             PrependedText('cost', '$'),
             PrependedText('total_cost', '$'),
             'confirm_understanding',
+            'terms_of_service',
+            'data_management_responsibilities',
             'users',
             'allocation_account',
             FormActions(
@@ -287,6 +299,17 @@ class AllocationForm(forms.Form):
                 'grand_challenge_program': cleaned_data.get('grand_challenge_program'),
                 'end_date': cleaned_data.get('end_date'),
             },
+            'SDA Group Account': {
+                'first_name': cleaned_data.get('first_name'),
+                'last_name': cleaned_data.get('last_name'),
+                'email': cleaned_data.get('email'),
+                'department_full_name': cleaned_data.get('department_full_name'),
+                'group_account_name': cleaned_data.get('group_account_name'),
+                'data_management_plan': cleaned_data.get('data_management_plan'),
+                'terms_of_service': cleaned_data.get('terms_of_service'),
+                'data_management_responsibilities': cleaned_data.get('data_management_responsibilities'),
+                'use_indefinitely': cleaned_data.get('use_indefinitely')
+            }
         }
         resource = resources.get(resource_obj.name)
         if resource is None:
@@ -305,7 +328,7 @@ class AllocationForm(forms.Form):
             # First check if the required field was filled in.
             if value is None or value == '' or value is False:
                 # Handle special cases for missing required fields here before continuing.
-                if resource_name == 'Geode-Projects':
+                if resource_name in ['Geode-Projects', 'SDA Group Account', ]:
                     if key == 'end_date' and resources[resource_name]['use_indefinitely']:
                         continue
                     elif key == 'use_indefinitely':
