@@ -801,6 +801,16 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 'data_management_responsibilities_label': {},
                 'type': 'checkbox',
             },
+            {
+                'admin_ads_group': {},
+                'admin_ads_group_label': {},
+                'type': 'text',
+            },
+            {
+                'user_ads_group': {},
+                'user_ads_group_label': {},
+                'type': 'text',
+            }
         ]
 
         resource_special_attributes = [
@@ -958,6 +968,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         group_account_name_exists = form_data.get('group_account_name_exists')
         terms_of_service = form_data.get('terms_of_service')
         data_management_responsibilities = form_data.get('data_management_responsibilities')
+        admin_ads_group = form_data.get('admin_ads_group')
+        user_ads_group = form_data.get('user_ads_group')
 
         allocation_limit = resource_obj.get_attribute('allocation_limit')
         if allocation_limit is not None:
@@ -1008,6 +1020,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         if resource_obj.name == 'Slate-Project':
             storage_space_unit = 'TB'
         elif resource_obj.name == 'Geode-Projects':
+            storage_space_unit = 'GB'
             if use_indefinitely:
                 end_date = None
         elif resource_obj.name == 'Priority Boost':
@@ -1135,6 +1148,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             group_account_name_exists=group_account_name_exists,
             terms_of_service=terms_of_service,
             data_management_responsibilities=data_management_responsibilities,
+            admin_ads_group=admin_ads_group,
+            user_ads_group=user_ads_group,
             status=allocation_status_obj
         )
 
@@ -1171,9 +1186,14 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 )
 
         if storage_space:
-            storage_quota_attribute_type = AllocationAttributeType.objects.get(
-                name='Storage Quota (TB)'
-            )
+            if storage_space_unit == 'TB':
+                storage_quota_attribute_type = AllocationAttributeType.objects.get(
+                    name='Storage Quota (TB)'
+                )
+            else:
+                storage_quota_attribute_type = AllocationAttributeType.objects.get(
+                    name='Storage Quota (GB)'
+                )
             AllocationAttribute.objects.create(
                 allocation_attribute_type=storage_quota_attribute_type,
                 allocation=allocation_obj,

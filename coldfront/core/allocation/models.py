@@ -170,6 +170,8 @@ class Allocation(TimeStampedModel):
     group_account_name_exists = models.BooleanField(blank=True, null=True)
     terms_of_service = models.BooleanField(blank=True, null=True)
     data_management_responsibilities = models.BooleanField(blank=True, null=True)
+    admin_ads_group = models.CharField(max_length=64, blank=True, null=True)
+    user_ads_group = models.CharField(max_length=64, blank=True, null=True)
     data_manager = models.CharField(max_length=50, blank=True, null=True)
     justification = models.TextField()
     description = models.CharField(max_length=512, blank=True, null=True)

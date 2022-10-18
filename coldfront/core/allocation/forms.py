@@ -125,6 +125,8 @@ class AllocationForm(forms.Form):
     group_account_name_exists = forms.BooleanField(required=False)
     terms_of_service = forms.BooleanField(required=False)
     data_management_responsibilities = forms.BooleanField(required=False)
+    admin_ads_group = forms.CharField(max_length=64, required=False)
+    user_ads_group = forms.CharField(max_length=64, required=False)
 
     users = forms.MultipleChoiceField(
         widget=forms.CheckboxSelectMultiple, required=False)
@@ -160,15 +162,21 @@ class AllocationForm(forms.Form):
 
         self.fields['justification'].help_text = '<br/>Justification for requesting this allocation.'
         self.fields['justification'].initial = 'No additional information needed at this time.'
-        self.fields['start_date'].help_text = 'Format: mm/dd/yyyy'
-        self.fields['end_date'].help_text = 'Format: mm/dd/yyyy'
-        self.fields['account_number'].help_text = 'Format: 00-000-00'
-        self.fields['applications_list'].help_text = 'Format: tensorflow,pytorch,etc'
-        self.fields['it_pros'].help_text = 'Format: name1,name2,name3,etc'
         self.fields['project_directory_name'].help_text = 'Must be alphanumeric and not exceed 10 characters in length'
         self.fields['data_manager'].help_text = 'Must be a project Manager. Only this user can add and remove users from this resource. They will automatically be added to the resource.'
         self.fields['group_account_name_exists'].help_text = 'Does this IU group username already exist?'
         self.fields['group_account_name'].help_text = 'e.g. Enter IU group account username'
+        self.fields['admin_ads_group'].help_text = 'This ADS group will be used to identify user(s) who will have the \
+            storage allocation "admin" role. This role can create directories at the allocation top-level directory and assign \
+            permissions. Geode-Project allocations are a closed-first model. Users in the "admin" role will need to create a \
+            directory and assign permissions to users and groups in the "user" role ADS group (below). This must be an ADS group\
+            you or your IT Pro creates/maintains.'
+        self.fields['user_ads_group'].help_text = 'This ADS group will be used to identify user(s)/group(s) who will have \
+            the storage allocation "user" role. This role will not be able to create directories at the allocation top-level \
+            directory nor assign permissions. Geode-Project allocations are a closed-first model. Users in the "admin" role \
+            will need to create a directory and assign permissions to users and groups in this "user" role ADS group. The \
+            type of access a "user" role has depends upon what permissions an "admin" grants. This must be an ADS group you \
+            or your IT Pro creates/maintains.'
 
         user_profile = UserProfile.objects.get(user=request_user)
         self.fields['department_full_name'].initial = user_profile.department
@@ -190,44 +198,46 @@ class AllocationForm(forms.Form):
             'last_name',
             'email',
             'phone_number',
-            'campus_affiliation',
             'url',
-            'project_directory_name',
+            'primary_contact',
+            'secondary_contact',
+            'it_pros',
+            'department_full_name',
+            'department_short_name',
+            'campus_affiliation',
             'quantity',
             'storage_space',
             InlineRadios('storage_space_unit'),
+            'group_account_name',
+            'group_account_name_exists',
+            Field('start_date', placeholder='mm/dd/yyyy'),
+            Field('end_date', placeholder='mm/dd/yyyy'),
+            'use_indefinitely',
+            'project_directory_name',
+            'data_management_plan',
+            'admin_ads_group',
+            'user_ads_group',
+            'fiscal_officer',
+            Field('account_number', placeholder='00-000-00'),
+            'sub_account_number',
+            'license_term',
+            PrependedText('prorated_cost', '$'),
+            PrependedText('cost', '$'),
+            PrependedText('total_cost', '$'),
+            'data_manager',
             InlineRadios('leverage_multiple_gpus'),
             InlineRadios('dl_workflow'),
-            'applications_list',
+            Field('applications_list', placeholder='tensorflow,pytorch,etc'),
             'training_or_inference',
             InlineRadios('for_coursework'),
             InlineRadios('system'),
             'is_grand_challenge',
             'grand_challenge_program',
-            'start_date',
-            'end_date',
-            'use_indefinitely',
             InlineRadios('phi_association'),
             InlineRadios('access_level'),
-            'primary_contact',
-            'secondary_contact',
-            'data_manager',
-            'department_full_name',
-            'department_short_name',
-            'group_account_name',
-            'group_account_name_exists',
-            'fiscal_officer',
-            Field('account_number', placeholder='00-000-00'),
-            'sub_account_number',
-            'license_term',
             'faculty_email',
             InlineRadios('store_ephi'),
-            'it_pros',
             'devices_ip_addresses',
-            'data_management_plan',
-            PrependedText('prorated_cost', '$'),
-            PrependedText('cost', '$'),
-            PrependedText('total_cost', '$'),
             'confirm_understanding',
             'terms_of_service',
             'data_management_responsibilities',
@@ -252,6 +262,7 @@ class AllocationForm(forms.Form):
             },
             'Carbonate GPU': {
                 'dl_workflow': cleaned_data.get('dl_workflow'),
+                'applications_list': cleaned_data.get('applications_list'),
             },
             'Carbonate PHI Nodes': {
                 'phi_association': cleaned_data.get('phi_association'),
@@ -267,19 +278,12 @@ class AllocationForm(forms.Form):
             },
             'Geode-Projects': {
                 'storage_space': cleaned_data.get('storage_space'),
-                'storage_space_unit': cleaned_data.get('storage_space_unit'),
-                'start_date': cleaned_data.get('start_date'),
-                'primary_contact': cleaned_data.get('primary_contact'),
-                'secondary_contact': cleaned_data.get('secondary_contact'),
                 'department_full_name': cleaned_data.get('department_full_name'),
-                'department_short_name': cleaned_data.get('department_short_name'),
                 'fiscal_officer': cleaned_data.get('fiscal_officer'),
                 'account_number': cleaned_data.get('account_number'),
-                'it_pros': cleaned_data.get('it_pros'),
-                'devices_ip_addresses': cleaned_data.get('devices_ip_addresses'),
                 'data_management_plan': cleaned_data.get('data_management_plan'),
-                'use_indefinitely': cleaned_data.get('use_indefinitely'),
-                'end_date': cleaned_data.get('end_date'),
+                'terms_of_service': cleaned_data.get('terms_of_service'),
+                'data_management_responsibilities': cleaned_data.get('data_management_responsibilities'),
             },
             'Slate-Project': {
                 'first_name': cleaned_data.get('first_name'),
@@ -308,7 +312,6 @@ class AllocationForm(forms.Form):
                 'data_management_plan': cleaned_data.get('data_management_plan'),
                 'terms_of_service': cleaned_data.get('terms_of_service'),
                 'data_management_responsibilities': cleaned_data.get('data_management_responsibilities'),
-                'use_indefinitely': cleaned_data.get('use_indefinitely')
             }
         }
         resource = resources.get(resource_obj.name)
@@ -413,13 +416,7 @@ class AllocationForm(forms.Form):
 
             # Value checks for a specific resource's required fields should go here.
             if resource_name == 'Geode-Projects':
-                if key == 'storage_space':
-                    unit = resources[resource_name]['storage_space_unit']
-                    if value <= 0 and unit == 'TB' or value < 200 and unit == 'GB':
-                        raise_error = True
-                        self.add_error(key, 'Please enter a storage amount greater than or equal to 200GB')
-                        continue
-                elif key in ['primary_contact', 'secondary_contact', 'fiscal_officer']:
+                if key in ['primary_contact', 'secondary_contact', 'fiscal_officer']:
                     user_exists = True
                     if ldap_user_info_enabled:
                         user_exists = check_if_user_exists(value)

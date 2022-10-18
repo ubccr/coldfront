@@ -181,6 +181,25 @@ Request New Allocation
       further questions, please contact us.</p>'
     )
 
+    $('#id_users').before(
+      '\
+      <div id="div_id_sda_information" aria-live="polite" tabindex="0" class="">\
+        <p>To keep up to date with the features, functions, and best practices of the SDA, please review these IU Knowledge Base Articles:</p>\
+        <ul>\
+        <li>About the SDA:  <a href="https://kb.iu.edu/d/aiyi" target="_blank" rel="noopener noreferrer">https://kb.iu.edu/d/aiyi</a></li>\
+        <li>About data stored on the SDA:  <a href="https://kb.iu.edu/d/aiyk" target="_blank" rel="noopener noreferrer">https://kb.iu.edu/d/aiyk</a></li>\
+        <li>Access the SDA at IU:  <a href="https://kb.iu.edu/d/aiyr" target="_blank" rel="noopener noreferrer">https://kb.iu.edu/d/aiyr</a></li>\
+        <li>Best Uses for an IU SDA account:  https://kb.iu.edu/d/ahyi</li>\
+        <li>Types of sensitive institutional data appropriate for the SDA:  <a href="https://kb.iu.edu/d/bcpd" target="_blank" rel="noopener noreferrer">https://kb.iu.edu/d/bcpd</a></li>\
+        <li>About Protected Health Information:  https://kb.iu.edu/d/bdtx</li>\
+        <li>Your Responsibilities for Protecting PHI:  <a href="https://kb.iu.edu/d/ayzm" target="_blank" rel="noopener noreferrer">https://kb.iu.edu/d/ayzm</a></li>\
+        <li>Recommended tools for encrypting data:  <a href="https://kb.iu.edu/d/ayzi" target="_blank" rel="noopener noreferrer">https://kb.iu.edu/d/ayzi</a></li>\
+        </ul>\
+      </div>\
+      '
+    );
+    $('div_id_sad_information').show();
+
     if ($('input[type=radio][name=store_ephi]:checked').val() === 'Yes') {
       $('#id_ephi_info').show();
     } else {
@@ -405,6 +424,13 @@ Request New Allocation
 
     var description = $('#id_resource_description');
     description.html(resource_descriptions[resource_id])
+
+    if (resource_name === 'SDA Group Account' || resource_name === 'Geode-Projects')
+    {
+      $('#div_id_sda_information').show()
+    } else {
+      $('#div_id_sda_information').hide()
+    }
 
     if (resource_name === 'Slate-Project') {
       checkDataManager();
