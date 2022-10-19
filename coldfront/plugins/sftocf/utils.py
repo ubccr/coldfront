@@ -43,6 +43,25 @@ def record_process(func):
 
 class StarFishServer:
     """Class for interacting with StarFish API.
+
+    Attributes
+    ----------
+    api_url
+    headers
+    name
+    token
+    volumes
+
+    Methods
+    -------
+    get_auth_token
+    get_volume_names
+    get_volume_attributes
+    get_subpaths
+    create_query
+    get_vol_membership
+    get_vol_user_name_ids
+    get_starfish_groups
     """
 
     def __init__(self, server):
@@ -54,23 +73,21 @@ class StarFishServer:
 
     @record_process
     def get_auth_token(self):
-        """Obtain a token through the auth endpoint.
+        """Using credentials imported from settings, obtain a token through the auth endpoint.
         """
         username = import_from_settings('SFUSER')
         password = import_from_settings('SFPASS')
         auth_url = self.api_url + 'auth/'
         todo = {'username': username, 'password': password}
         response = requests.post(auth_url, json=todo)
-        # response.status_code
         response_json = response.json()
         token = response_json["token"]
         return token
 
 
-    # 2A. Generate list of volumes to search, along with top-level paths
     @record_process
     def get_volume_names(self):
-        """ Generate a list of the volumes available on the server.
+        """Get names of all volumes scanned by the starfish server.
         """
         stor_url = self.api_url + 'storage/'
         response = return_get_json(stor_url, self.headers)
@@ -80,7 +97,6 @@ class StarFishServer:
     def get_volume_attributes(self):
         url = self.api_url + 'volume/'
         response = return_get_json(url, self.headers)
-        print(response)
         return response
 
 
@@ -104,7 +120,8 @@ class StarFishServer:
         return subpaths
 
     def create_query(self, query, group_by, volpath, sec=3):
-        """Produce a Query class object.
+        """Produce a StarFishQuery object.
+
         Parameters
         ----------
         query : string
@@ -123,49 +140,44 @@ class StarFishServer:
 
     @record_process
     def get_vol_membership(self, volume, voltype):
-        url = self.api_url + f'mapping/{voltype}_membership?volume_name=' + volume
+        url = f'{self.api_url}mapping/{voltype}_membership?volume_name={volume}'
         member_list = return_get_json(url, self.headers)
         return member_list
 
     @record_process
     def get_vol_user_name_ids(self, volume):
-        usermap_url = self.api_url + "mapping/user?volume_name=" + volume
+        usermap_url = f'{self.api_url}mapping/user?volume_name={volume}'
         users = return_get_json(usermap_url, self.headers)
         userdict = {u["uid"]: u["name"] for u in users}
         return userdict
 
     @record_process
     def get_starfish_groups(self):
+        """get names of all user groups on the server.
+        """
         url = f'{self.api_url}mapping/user_membership'
         group_dict = return_get_json(url, self.headers)
         group_list = [g['name'] for g in group_dict]
         return group_list
 
 
-
-# class StarFishRedash:
-#     """Class for interacting with Starfish analytics API.
-#     """
-#     def __init__(self, server):
-#         self.api_url = f'https://{server}.rc.fas.harvard.edu/redash/api/'
-#         self.query_keys = import_from_settings('REDASH_API_KEYS')[server]
-
-def get_redash_vol_stats():
-    all_results = []
-    for server, queries in import_from_settings('REDASH_API_KEYS').items():
-        base_url = f'https://{server}.rc.fas.harvard.edu/redash/api/'
-        for query_id, query_key in queries.items():
-            query_url = f'{base_url}queries/{query_id}/results?api_key={query_key}'
-            result = return_get_json(query_url, headers={})
-            all_results.extend(result['query_result']['data']['rows'])
-    all_results = [{k.replace(' ', '_').replace('(','').replace(')','') : v for k, v in d.items()} for d in all_results]
-    resource_names = [re.sub(r'\/.+','',n) for n in Resource.objects.values_list('name', flat=True)]
-    print(resource_names)
-    all_results = [r for r in all_results if r['volume_name'] in resource_names]
-    return all_results
-
-
 class StarFishQuery:
+    """StarFish API query class object.
+
+    Attributes
+    ----------
+    api_url
+    headers
+    query_id
+    result
+
+    Methods
+    -------
+    post_async_query
+    return_results_once_prepared
+    return_query_result
+    """
+
     def __init__(self, headers, api_url, query, group_by, volpath, sec=3):
         self.api_url = api_url
         self.headers = headers
@@ -174,6 +186,8 @@ class StarFishQuery:
 
     @record_process
     def post_async_query(self, query, group_by, volpath):
+        """post an asynchronous query via the Starfish API.
+        """
         query_url = self.api_url + "async/query/"
 
         params = {
@@ -199,15 +213,20 @@ class StarFishQuery:
 
     @record_process
     def return_results_once_prepared(self, sec=3):
+        """Periodically check status of result after specified number of seconds.
+        Return result when ready.
+        """
         while True:
             query_check_url = self.api_url + "async/query/" + self.query_id
             response = return_get_json(query_check_url, self.headers)
-            if response["is_done"] == True:
+            if response["is_done"] is True:
                 result = self.return_query_result()
                 return result
             time.sleep(sec)
 
     def return_query_result(self):
+        """Return query object result JSON data.
+        """
         query_result_url = self.api_url + "async/query_result/" + self.query_id
         response = return_get_json(query_result_url, self.headers)
         return response
@@ -217,7 +236,8 @@ class ColdFrontDB:
 
     @record_process
     def produce_lab_dict(self, vol):
-        """Create dict of labs to collect and the volumes/tiers associated with them.
+        """Create dict of labs to collect and their associated volumes/tiers.
+
         Parameters
         ----------
         vol : string
@@ -248,7 +268,7 @@ class ColdFrontDB:
         '''
         for each lab-resource combination in parameter lr, check existence of corresponding
         file in data path. If a file for that lab-resource combination that is <2 days old
-        exists, mark it as collected. If not, slate lab-resource combination for collection.
+        exists, mark it as collected. If not, add lab-resource combination to to_collect.
 
         Parameters
         ----------
@@ -293,13 +313,15 @@ class ColdFrontDB:
         """Query Starfish to produce json files of lab usage data.
         Return a set of produced filepaths.
         """
-        # 1. produce dict of all labs to be collected and the volumes on which their data is located
+        # 1. produce dict of all labs to be collected with associated volumes/tiers
         lr = self.produce_lab_dict(volume)
-        # 2. produce list of files that have been collected and list of lab/volume/filename tuples to collect
+        # 2. produce list of collected JSON files and list of lab/volume/filename tuples to collect
         filepaths, to_collect = self.check_volume_collection(lr)
         # 3. produce set of all volumes to be queried
         vol_set = {i[1] for i in to_collect}
-        servers_vols = [(k, vol) for k, v in svp.items() for vol in vol_set if vol in v.keys()]
+        # 4. produce server-volume tuples
+        servers_vols = [(serv, vol) for serv, v in svp.items() for vol in vol_set if vol in v.keys()]
+        # 5. for each server-volume pairing, create server object and collect any uncollected usage data
         for server_vol in servers_vols:
             s = server_vol[0]
             vol = server_vol[1]
@@ -313,9 +335,11 @@ class ColdFrontDB:
 
 
     def push_cf(self, filepaths, clean):
-        for f in filepaths:
+        """Push data from collected JSON into database
+        """
+        for file in filepaths:
             errors = False
-            content = read_json(f)
+            content = read_json(file)
             usernames = [d['username'] for d in content['contents']]
             resource = content['volume'] + "/" + content['tier']
 
@@ -331,21 +355,11 @@ class ColdFrontDB:
                 logger.debug("Too many allocations for project id %s; choosing one with 'Allocation Information' in justification.",
                                                                 project.id)
 
-                # try:
                 allocation = Allocation.objects.get(
                     project=project,
                     resources__name=resource,
                     justification__icontains='Allocation Information',
                     justification__endswith=project.title)
-                # except Allocation.MultipleObjectsReturned:
-                #     logger.warning("Too many allocations for project id {project.id}, matching justifications; choosing the first. Fix this duplication.")
-                #     allocations = Allocation.objects.filter(
-                #         project_id=project.id,
-                #         justification__icontains='Allocation Information',
-                #         justification__endswith=project.title)
-                #     for a in allocations:
-                #         logger.warning(f"Duplicate item:{a}")
-                #     allocation = allocations.first()
             logger.debug("%s\n usernames: %s\n user_models: %s",
                     project.title, usernames, [u.username for u in user_models])
 
@@ -358,7 +372,7 @@ class ColdFrontDB:
                     logger.warning("EXCEPTION FOR ENTRY: %s", e, exc_info=True)
                     errors = True
             if not errors and clean:
-                os.remove(f)
+                os.remove(file)
         logger.debug("push_cf complete")
 
 
@@ -390,6 +404,21 @@ class ColdFrontDB:
 
 
 
+def get_redash_vol_stats():
+    all_results = []
+    for server, queries in import_from_settings('REDASH_API_KEYS').items():
+        base_url = f'https://{server}.rc.fas.harvard.edu/redash/api/'
+        for query_id, query_key in queries.items():
+            query_url = f'{base_url}queries/{query_id}/results?api_key={query_key}'
+            result = return_get_json(query_url, headers={})
+            all_results.extend(result['query_result']['data']['rows'])
+    all_results = [{k.replace(' ', '_').replace('(','').replace(')','') : v for k, v in d.items()} for d in all_results]
+    resource_names = [re.sub(r'\/.+','',n) for n in Resource.objects.values_list('name', flat=True)]
+    print(resource_names)
+    all_results = [r for r in all_results if r['volume_name'] in resource_names]
+    return all_results
+
+
 def clean_data_dir(homepath):
     """Remove json from data folder that's more than a week old
     """
@@ -419,13 +448,13 @@ def return_get_json(url, headers):
     return response.json()
 
 def save_json(file, contents):
-    with open(file, "w") as fp:
-        json.dump(contents, fp, sort_keys=True, indent=4)
+    with open(file, "w") as data:
+        json.dump(contents, data, sort_keys=True, indent=4)
 
-def read_json(filepath):
-    logger.debug('read_json for %s', filepath)
-    with open(filepath, "r") as json_file:
-        data = json.loads(json_file.read())
+def read_json(file):
+    logger.debug('read_json for %s', file)
+    with open(file, "r") as json_data:
+        data = json.loads(json_data.read())
     return data
 
 def locate_or_create_dirpath(dpath):
@@ -466,7 +495,7 @@ def collect_starfish_usage(server, volume, volumepath, projects):
         logger.debug("usage_query.result: %s", data)
         if not data:
             logger.warning("No starfish result for lab %s", p)
-        elif type(data) is dict and "error" in data:
+        elif isinstance(data, dict) and "error" in data:
             logger.warning("Error in starfish result for lab %s:\n%s", p, data)
         else:
             data = usage_query.result
