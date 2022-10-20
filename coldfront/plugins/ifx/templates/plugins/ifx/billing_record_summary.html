@@ -65,11 +65,16 @@ p.seperator { -pdf-keep-with-next: false;}
 
 </style>
 {% block main_content %}
+<p>
+    <strong>Total monthly charge {{ decimal_total|just_dollars|intcomma }}</strong>
+</p>
+<p>
+    Total charge is distributed across users that own files proportional to their usage as shown below.
+</p>
 <table class="sumtbl1">
     <thead>
         <tr>
             <td class="rtdb">&nbsp;</td>
-            <td>Usage Date</td>
             <td>User</td>
             <td>Storage Product</td>
             <td>Account</td>
@@ -80,7 +85,6 @@ p.seperator { -pdf-keep-with-next: false;}
     {% for br in billing_records %}
         <tr>
             <td class="w20 rtdr">{{ forloop.counter }}</td>
-            <td class="w100">{{ br.start_date|date:"m/Y" }}</td>
             <td class="w100">{{ br.user }}</td>
             <td>{{ br.product }}</td>
             <td style="white-space: nowrap;">{{ br.account }}</td>
@@ -92,13 +96,6 @@ p.seperator { -pdf-keep-with-next: false;}
             <td class="wcharge rtdr">{{ br.decimal_charge|just_dollars|intcomma }}</td>
         </tr>
     {% endfor %}
-        <tr>
-            <td colspan="6" class="rtdr" style="font-weight: bold;">Total</td>
-            <td class="rtdr">{{ decimal_total|just_dollars|intcomma }}</td>
-        </tr>
        </table>
 <hr />
-<p>
-Note: If you have any further questions or concerns please contact RC (billing@rc.fas.harvard.edu).
-</p>
 {% endblock %}
