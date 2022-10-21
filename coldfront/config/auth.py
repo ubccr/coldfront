@@ -15,7 +15,7 @@ LOGOUT_REDIRECT_URL = ENV.str('LOGOUT_REDIRECT_URL', LOGIN_URL)
 SU_LOGIN_CALLBACK = "coldfront.core.utils.common.su_login_callback"
 SU_LOGOUT_REDIRECT_URL = "/su/login/"
 
-SESSION_COOKIE_AGE = 60 * 15
+SESSION_COOKIE_AGE = 60 * 30
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_COOKIE_SAMESITE  = 'Strict'
 ## Need to test with True
