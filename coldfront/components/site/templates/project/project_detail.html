@@ -117,14 +117,14 @@ Project Detail
     <p class="card-text text-justify"><strong>Project Status: </strong>
     {% if project.status.name == 'Active' %}
       {% if project.can_be_reviewed or project.needs_review%}
-        <span class="text-warning">{{ project.status.name }}</span>
+        <span class="text-warning"><strong>{{ project.status.name }}</strong></span>
       {% else %}
-        <span class="text-success">{{ project.status.name}}</span>
+        <span class="text-success"><strong>{{ project.status.name}}</strong></span>
       {% endif %}
     {% elif project.status.name in 'Archived, Denied, Expired' %}
-      <span class="text-danger">{{ project.status.name }}</span>
+      <span class="text-danger"><strong>{{ project.status.name }}</strong></span>
     {% else %}
-      <span class="text-info">{{ project.status.name }}</span>
+      <span class="text-info"><strong>{{ project.status.name }}</strong></span>
     {% endif %}
     </p>
     <p class="card-text text-justify"><strong>Max Permitted Managers: </strong>{{ project.max_managers }}</p>
@@ -160,10 +160,10 @@ Project Detail
                href="#"
                data-toggle="popover"
                title="Role" data-trigger="hover"
-               data-content="Manager role grants user access to add/remove users and allocations to the project. Max permitted Managers: {{ project.max_managers }}"
+               data-content="Manager role grants user access to add/remove users and allocations in the project. Max permitted Managers: {{ project.max_managers }}"
               >
                 <i class="fas fa-info-circle" aria-hidden="true"></i>
-                <span class="sr-only">Manager role grants user access to add/remove users and allocations to the project. Max permitted Managers: {{ project.max_managers }}</span>
+                <span class="sr-only">Manager role grants user access to add/remove users and allocations in the project. Max permitted Managers: {{ project.max_managers }}</span>
               </a>
             </th>
             <th scope="col">Status</th>
@@ -179,9 +179,9 @@ Project Detail
               <td>{{ user.user.email }}</td>
               <td>{{ user.role.name }}</td>
               {% if user.status.name == 'Active' %}
-                <td class="text-success">{{ user.status.name }}</td>
+                <td class="text-success"><strong>{{ user.status.name }}</strong></td>
               {% else %}
-                <td class="text-info">{{ user.status.name }}</td>
+                <td class="text-info"><strong>{{ user.status.name }}</strong></td>
               {% endif %}
               <!-- <td>
                 {% if is_allowed_to_update_project %}
@@ -257,11 +257,11 @@ Project Detail
               <td>{{ allocation.get_parent_resource.resource_type.name }}</td>
               <td class="text-nowrap">{{allocation.get_information}}</td>
               {% if allocation.status.name == 'Active' %}
-                <td class="text-success">{{ allocation.status.name }}</td>
+                <td class="text-success"><strong>{{ allocation.status.name }}</strong></td>
               {% elif  allocation.status.name == 'Expired' or allocation.status.name == 'Denied' %}
-                <td class="text-danger">{{ allocation.status.name }}</td>
+                <td class="text-danger"><strong>{{ allocation.status.name }}</strong></td>
               {% else %}
-                <td class="text-info">{{ allocation.status.name }}</td>
+                <td class="text-info"><strong>{{ allocation.status.name }}</strong></td>
               {% endif %}
               <td>{{allocation.end_date|date:"Y-m-d"}}</td>
               <td class="text-nowrap">
@@ -342,13 +342,13 @@ Project Detail
             <tr>
               <td>{{ allocation.get_parent_resource.name }}</td>
               <td>{{ allocation.get_parent_resource.resource_type.name }}</td>
-              <td class="text-nowrap">{{ allocation.get_information }}</td>
+              <td class="text-nowrap"><strong>{{ allocation.get_information }}</strong></td>
               {% if allocation.status.name == 'Active' %}
-                <td class="text-success">{{ allocation.status.name }}</td>
+                <td class="text-success"><strong>{{ allocation.status.name }}</strong></td>
               {% elif allocation.status.name in 'Expired, Denied' %}
-                <td class="text-danger">{{ allocation.status.name }}</td>
+                <td class="text-danger"><strong>{{ allocation.status.name }}</strong></td>
               {% else %}
-                <td class="text-info">{{ allocation.status.name }}</td>
+                <td class="text-info"><strong>{{ allocation.status.name }}</strong></td>
               {% endif %}
               <td>{{ allocation.end_date|date:"Y-m-d" }}</td>
               <td class="text-nowrap">
