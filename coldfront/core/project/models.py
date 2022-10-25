@@ -59,7 +59,7 @@ put the approximate class size.
         blank=True,
         help_text="""
 Required if you will not be the PI of this project. Only faculty and staff can be the PI. They are
-required to have logged onto the site at least once before they can be added.
+required to log onto the site at least once before they can be added.
 """
     )
     requestor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='requestor_user')
