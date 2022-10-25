@@ -95,7 +95,7 @@ Project Detail
             <th scope="col">Username</th>
             <th scope="col">Name</th>
             <th scope="col">Email</th>
-            <th scope="col">Role <a href="#" data-toggle="popover" title="Role" data-trigger="hover" data-content="Manager role grants user access to add/remove users, allocations, attributes, grants, and publications to the project."><i class="fas fa-info-circle" aria-hidden="true"></i><span class="sr-only">Manager role grants user access to add/remove users, allocations, attributes, grants, and publications to the project.</span></a></th>
+            <th scope="col">Role <a href="#" data-toggle="popover" title="Role" data-trigger="hover" data-content="Manager role grants user access to add & remove users, attributes, publications, grants, & research output to the project and request/renew allocations."><i class="fas fa-info-circle" aria-hidden="true"></i><span class="sr-only">Manager role grants user access to add & remove users, attributes, publications, grants, & research output to the project and request/renew allocations.</span></a></th>
             <th scope="col">Status</th>
             <th scope="col"><input type="checkbox" class="check" id="selectAll" style="margin-right: 5px;">Enable Notifications <a href="#" title="Enable Notifications" data-toggle="popover" data-trigger="hover" data-content="When disabled, user will not receive notifications for allocation requests and expirations or cloud usage (if applicable)."><i class="fas fa-info-circle" aria-hidden="true"></i><span class="sr-only">When disabled, user will not receive notifications for allocation requests and expirations or cloud usage (if applicable).</span></a></th>
             <th scope="col">Actions</th>
@@ -244,12 +244,14 @@ Project Detail
             <tr>
               <th scope="col">Attribute Type</th>
               <th scope="col">Attribute Value</th>
+              {% if is_allowed_to_update_project %}
               <th scope="col" class="nosort">Actions</th>
+              {% endif %}
             </tr>
           </thead>
           <tbody>
             {% for attribute in attributes %}
-                {% if attribute.proj_attr_type.is_private %}
+                {% if attribute.proj_attr_type.is_private and is_allowed_to_update_project %}
                   <tr style="background-color:#eee">
                     <td><i class="fas fa-lock" aria-hidden="true"></i> {{attribute}}</td>
                     <td>{{attribute.value}}</td>
@@ -261,8 +263,10 @@ Project Detail
                     <td>
                       {{attribute.value}}
                     </td>
+                    {% if is_allowed_to_update_project %}
                     <td><a href="{% url 'project-attribute-update' project.pk attribute.pk %}"><i class="far fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
-                  </tr>
+                    {% endif %}
+                  </tr>                
                 {% endif %}
               {% endfor %}
           </tbody>

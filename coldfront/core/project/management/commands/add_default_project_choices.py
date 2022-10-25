@@ -34,8 +34,8 @@ class Command(BaseCommand):
             AttributeType.objects.get_or_create(name=attribute_type)
 
         for name, attribute_type, has_usage, is_private in (
-            ('Project ID', 'Int', True, False),
-            ('Account Number', 'Int', True, False),
+            ('Project ID', 'Text', False, False),
+            ('Account Number', 'Int', False, True),
         ):
             ProjectAttributeType.objects.get_or_create(name=name, attribute_type=AttributeType.objects.get(
                 name=attribute_type), has_usage=has_usage, is_private=is_private)

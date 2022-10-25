@@ -1227,6 +1227,7 @@ class ProjectAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Create
         initial = super().get_initial()
         pk = self.kwargs.get('pk')
         initial['project'] = get_object_or_404(Project, pk=pk)
+        initial['user'] = self.request.user
         return initial
 
     def get_form(self, form_class=None):
@@ -1268,7 +1269,10 @@ class ProjectAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Templa
             self.request, 'You do not have permission to add project attributes.')
 
     def get_avail_attrs(self, project_obj):
-        avail_attrs = ProjectAttribute.objects.filter(project=project_obj)
+        if not self.request.user.is_superuser:
+            avail_attrs = ProjectAttribute.objects.filter(project=project_obj, proj_attr_type__is_private=False)
+        else:
+            avail_attrs = ProjectAttribute.objects.filter(project=project_obj)
         avail_attrs_dicts = [
             {
                 'pk' : attr.pk,
