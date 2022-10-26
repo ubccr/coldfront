@@ -7,60 +7,102 @@
 }
 
 .btn-primary {
-  background-color: #0051A8;
-  border-color: #004186;
+  background-color: #006298;
+  border-color: #006298;
 }
 
 .btn-primary:hover {
-  background-color: #003f83;
-  border-color: #003772;
+  background-color: #01426A;
+  border-color: #01426A;
 }
 
 .btn-info {
-  background-color: #006170;
-  border-color: #005a68;
+  background-color: #006161;
+  border-color: #006161;
 }
 
 .btn-info:hover {
-  background-color: #00525f;
-  border-color: #004550;
+  background-color: #004d4d;
+  border-color: #004d4d;
 }
 
 .btn-success {
-  background-color: #006618;
-  border-color: #005a15;
+  background-color: #00610A;
+  border-color: #00610A;
 }
 
 .btn-success:hover {
-  background-color: #005514;
-  border-color: #004b12;
+  background-color: #004d08;
+  border-color: #004d08;
+}
+
+.btn-danger {
+  background-color: #990000;
+  border-color: #990000;
+}
+
+.btn-danger:hover {
+  background-color: #7c0000;
+  border-color: #7c0000;
 }
 
 .text-info {
-  color: #0C5D6A !important;
+  color: #004d4d !important;
 }
 
 .text-success {
-  color: #145222 !important;
+  color: #00610A !important;
 }
 
 .text-warning {
-  color: #664D00 !important;
+  color: #5F5B1B !important;
 }
 
 .text-danger {
-  color: #A01C2A !important;
+  color: #990000 !important;
 }
 
 .page-link {
-  color: #0051A8;
+  color: #006298;
+}
+
+.page-link:hover {
+  color: #01426A;
 }
 
 .page-item.active .page-link {
-  background-color: #0051A8;
-  border-color: #0051A8;
+  background-color: #006298;
+  border-color: #01426A;
+}
+
+.alert-warning {
+  color: black;
+  background-color: #FDF7E7;
+  border-color: #F5BB17;
+}
+
+.alert-info {
+  color: black;
+  background-color: #E9F6FC;
+  border-color: #49AFC7;
+}
+
+.alert-success {
+  color: black;
+  background-color: #DDF4EA;
+  border-color: #009933;
+}
+
+.alert-danger {
+  color: black;
+  background-color: #FDEEE8;
+  border-color: #F25B19;
 }
 
 a {
-  color: #0051A8;
+  color: #006298;
+}
+
+a:hover {
+  color: #01426A;
 }
