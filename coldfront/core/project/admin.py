@@ -139,3 +139,5 @@ class ProjectReviewAdmin(SimpleHistoryAdmin):
     def PI(self, obj):
         return '{} {} ({})'.format(obj.project.pi.first_name, obj.project.pi.last_name, obj.project.pi.username)
 
+
+    

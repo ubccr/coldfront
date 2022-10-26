@@ -227,3 +227,4 @@ class ProjectUser(TimeStampedModel):
     class Meta:
         unique_together = ('user', 'project')
         verbose_name_plural = "Project User Status"
+

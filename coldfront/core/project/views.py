@@ -46,7 +46,7 @@ from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.utils.common import get_domain_url, import_from_settings
-from coldfront.core.utils.mail import send_email, send_email_template
+from coldfront.core.utils.mail import send_email, send_email_template, send_project_user_email
 
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
@@ -58,6 +58,11 @@ if EMAIL_ENABLED:
     EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
         'EMAIL_DIRECTOR_EMAIL_ADDRESS')
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
+    EMAIL_ADDED_PROJECT_USERS = import_from_settings('EMAIL_ADDED_PROJECT_USERS', False)
+    CENTER_NAME = import_from_settings('CENTER_NAME')
+    CENTER_BASE_URL = import_from_settings('CENTER_BASE_URL')
+    EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
+
 
 
 class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
@@ -668,8 +673,10 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                                 user=user_obj,
                                 status=allocation_user_active_status_choice)
                         allocation_activate_user.send(sender=self.__class__,
-                                                      allocation_user_pk=allocation_user_obj.pk)
+                                                      allocation_user_pk=allocation_user_obj.pk)                
 
+                    send_project_user_email(project_obj=project_obj, subject='You have been added to a project', template_name='email/project_add_user.txt', receiver=user_obj.email)
+                        
             messages.success(
                 request, 'Added {} users to project.'.format(added_users_count))
         else:

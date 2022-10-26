@@ -1,0 +1,8 @@
+Dear {{center_name}} user,
+
+You have been added to a project: {{ project.title }}.
+
+You can view the project at: {{ project_url }}
+
+Thank you,
+{{ signature }}
