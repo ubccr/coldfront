@@ -60,7 +60,7 @@ portal_name: "MyBRC"
 program_name_long: "Berkeley Research Computing"
 program_name_short: "BRC"
 primary_cluster_name: "Savio"
-# TODO: For MyLRC, use "https://it.lbl.gov/resource/hpc/for-users/".
+# TODO: For MyLRC, use "https://it.lbl.gov/service/scienceit/high-performance-computing/lrc/".
 center_user_guide: "https://docs-research-it.berkeley.edu/services/high-performance-computing/user-guide/"
 # TODO: For MyLRC, use "https://it.lbl.gov/resource/hpc/for-users/getting-started/".
 center_login_guide: "https://docs-research-it.berkeley.edu/services/high-performance-computing/user-guide/logging-brc-clusters/#Logging-in"
