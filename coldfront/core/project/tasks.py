@@ -27,7 +27,9 @@ if EMAIL_ENABLED:
 def update_statuses():
     expired_status_choice = ProjectStatusChoice.objects.get(name='Expired')
     projects_to_expire = Project.objects.filter(
-        status__name='Active', end_date__lt=datetime.datetime.now().date()
+        status__name='Active',
+        end_date__lt=datetime.datetime.now().date(),
+        requires_review=True
     )
     for project in projects_to_expire:
         project.status = expired_status_choice
@@ -42,7 +44,12 @@ def send_expiry_emails():
         for days_remaining in sorted(set(EMAIL_PROJECT_EXPIRING_NOTIFICATION_DAYS)):
             expiring_in_days = datetime.datetime.today() + datetime.timedelta(days=days_remaining)
 
-            for project_obj in Project.objects.filter(status__name='Active', end_date=expiring_in_days):
+            projects_expiring_soon = Project.objects.filter(
+                status__name='Active',
+                end_date=expiring_in_days,
+                requires_review=True
+            )
+            for project_obj in projects_expiring_soon:
                 project_review_url = '{}/{}/{}/{}'.format(
                     CENTER_BASE_URL.strip('/'), 'project', project_obj.pk, 'review'
                 )
@@ -76,7 +83,7 @@ def send_expiry_emails():
 
         # Projects expiring today
         today = datetime.datetime.today()
-        for project_obj in Project.objects.filter(end_date=today):
+        for project_obj in Project.objects.filter(end_date=today, requires_review=True):
             project_review_url = '{}/{}/{}/{}'.format(
                 CENTER_BASE_URL.strip('/'), 'project', project_obj.pk, 'review'
             )

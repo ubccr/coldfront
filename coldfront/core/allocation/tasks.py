@@ -29,7 +29,10 @@ def update_statuses():
     expired_status_choice = AllocationStatusChoice.objects.get(
         name='Expired')
     allocations_to_expire = Allocation.objects.filter(
-        status__name__in=['Active','Payment Pending','Payment Requested', 'Unpaid',], end_date__lt=datetime.datetime.now().date())
+        status__name__in=['Active', 'Payment Pending', 'Payment Requested', 'Unpaid', ],
+        end_date__lt=datetime.datetime.now().date(),
+        project__requires_review=True
+    )
     for sub_obj in allocations_to_expire:
         sub_obj.status = expired_status_choice
         sub_obj.save()
@@ -45,7 +48,14 @@ def send_expiry_emails():
         expring_in_days = datetime.datetime.today(
         ) + datetime.timedelta(days=days_remaining)
 
-        for allocation_obj in Allocation.objects.filter(status__name='Active', end_date=expring_in_days):
+        allocations_expiring_soon = Allocation.objects.filter(
+            status__name='Active',
+            end_date=expring_in_days,
+            project__requires_review=True,
+        )
+        for allocation_obj in allocations_expiring_soon:
+            if not allocation_obj.project.requires_review:
+                return
 
             expire_notification = allocation_obj.allocationattribute_set.filter(
                 allocation_attribute_type__name='EXPIRE NOTIFICATION').first()
@@ -142,7 +152,7 @@ def send_expiry_emails():
 
     expring_in_days = datetime.datetime.today() + datetime.timedelta(days=-1)
 
-    for allocation_obj in Allocation.objects.filter(end_date=expring_in_days):
+    for allocation_obj in Allocation.objects.filter(end_date=expring_in_days, project__requires_review=True):
 
         expire_notification = allocation_obj.allocationattribute_set.filter(
             allocation_attribute_type__name='EXPIRE NOTIFICATION').first()
