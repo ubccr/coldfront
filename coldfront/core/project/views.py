@@ -371,6 +371,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
         context['PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING'] = PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING
 
         context['project_export_form'] = ProjectExportForm()
+        context['show_export_button'] = self.request.user.is_superuser or self.request.user.has_perm('project.can_view_all_projects')
 
         project_list = context.get('project_list')
         paginator = Paginator(project_list, self.paginate_by)
@@ -2625,7 +2626,7 @@ class ProjectExportView(LoginRequiredMixin, UserPassesTestMixin, View):
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.has_perm('allocation.can_view_all_projects'):
+        if self.request.user.has_perm('project.can_view_all_projects'):
             return True
 
         messages.error(self.request, 'You do not have permission to download projects.')

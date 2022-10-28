@@ -18,9 +18,11 @@ Project List
       <a class="btn btn-primary" href="{% url 'project-create' %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add a project</a>
     {% endif %}
     <div class="float-right">
-      <button type="button" class="btn btn-success align-right" data-toggle="modal" data-target="#id_export_csv">
-        Export Projects to CSV
-      </button>
+      {% if show_export_button %}
+        <button type="button" class="btn btn-success align-right" data-toggle="modal" data-target="#id_export_csv">
+          Export Projects to CSV
+        </button>
+      {% endif %}
       <a class="btn btn-primary" href="{% url 'project-denied-list' %}" role="button"><i class="fas fa-archive" aria-hidden="true"></i> View denied projects</a>
       <a class="btn btn-primary" href="{% url 'project-archived-list' %}" role="button"><i class="fas fa-archive" aria-hidden="true"></i> View archived projects</a>
     </div>
