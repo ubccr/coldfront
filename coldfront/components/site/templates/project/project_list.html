@@ -18,11 +18,33 @@ Project List
       <a class="btn btn-primary" href="{% url 'project-create' %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add a project</a>
     {% endif %}
     <div class="float-right">
+      <button type="button" class="btn btn-success align-right" data-toggle="modal" data-target="#id_export_csv">
+        Export Projects to CSV
+      </button>
       <a class="btn btn-primary" href="{% url 'project-denied-list' %}" role="button"><i class="fas fa-archive" aria-hidden="true"></i> View denied projects</a>
       <a class="btn btn-primary" href="{% url 'project-archived-list' %}" role="button"><i class="fas fa-archive" aria-hidden="true"></i> View archived projects</a>
     </div>
   </div>
 </div>
+
+<div class="modal fade" id="id_export_csv" tabindex="-1" role="dialog" aria-labelledby="id_export_csv_label" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="id_export_csv_label">Export to CSV</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="id_export_form" action="{% url 'project-export' %}" method="post">
+          {% crispy project_export_form %}
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div>
   {% if user.is_superuser or user.userprofile.is_pi %}
     <p>
@@ -225,6 +247,8 @@ Project List
   $("#navbar-main > ul > li.active").removeClass("active");
   $("#navbar-project-menu").addClass("active");
   $("#navbar-project").addClass("active");
+
+  $(".datepicker").datepicker();
 
   $(document).ready(function () {
     $('#search_results').hide()
