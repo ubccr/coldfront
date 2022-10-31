@@ -116,7 +116,7 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
         offer_letter_tb = self.get_offer_letter_tb(allocation)
 
         # Account for offer letter code
-        offer_letter_acct = self.get_offer_letter_account(allocation)
+        offer_letter_acct = self.get_offer_letter_account(allocation, organization)
 
         remaining_tb = allocation_tb
 
@@ -248,7 +248,7 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
             offer_letter_tb = Decimal(offer_letter_tb)
         return offer_letter_tb
 
-    def get_offer_letter_account(self, allocation):
+    def get_offer_letter_account(self, allocation, organization):
         '''
         Returns the relevant offer letter expense code or None if nothing is found
 
@@ -261,7 +261,7 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
         code = allocation.get_attribute(self.OFFER_LETTER_CODE_ATTRIBUTE)
         if code:
             try:
-                code = Account.objects.get(code=code)
+                code = Account.objects.get(code=code, organization=organization)
             except Account.DoesNotExist:
                 raise Exception(f'Cannot find offer letter code {code}')
         return code
