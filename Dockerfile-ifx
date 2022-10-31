@@ -10,6 +10,10 @@ RUN mkdir ~/.ssh && echo "Host git*\n\tStrictHostKeyChecking no\n" >> ~/.ssh/con
 WORKDIR /usr/src/app
 COPY requirements.txt ./
 
+ARG IPYTHON_STARTUP=/root/.ipython/profile_default/startup
+RUN mkdir -p ${IPYTHON_STARTUP}
+COPY etc/ipython_init.py ${IPYTHON_STARTUP}
+
 ARG IFXURLS_COMMIT=549af42dbe83d07b12dd37055a5ec6368d4b649
 ARG NANITES_CLIENT_COMMIT=1e67ce787e27c9c0e32a4c97a4967c297d30b7cf
 ARG IFXUSER_COMMIT=4fbf3ee574edf1c2599a059cbd7f05d37cd69c3f
