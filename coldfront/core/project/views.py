@@ -2683,6 +2683,7 @@ class ProjectExportView(LoginRequiredMixin, UserPassesTestMixin, View):
                 'Project ID',
                 'Project Status',
                 'Slurm Account Name',
+                'Creation Date',
                 'Username',
                 'Email',
                 'Role'
@@ -2700,6 +2701,7 @@ class ProjectExportView(LoginRequiredMixin, UserPassesTestMixin, View):
                         project.pk,
                         project.status.name,
                         project.slurm_account_name,
+                        project.created,
                         project_user.user.username,
                         project_user.user.email,
                         project_user.role.name
