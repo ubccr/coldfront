@@ -68,4 +68,5 @@ urlpatterns = [
          name='allocation-user-deny-request'),
     path('allocation-user/<int:pk>/info', allocation_views.AllocationUserRequestInfoView.as_view(),
          name='allocation-user-request-info'),
+    path('allocation-export/', allocation_views.AllocationExportView.as_view(), name='allocation-export')
 ]
