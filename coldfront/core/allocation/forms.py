@@ -10,14 +10,14 @@ from django.utils.html import format_html
 from coldfront.core.allocation.models import (AllocationAccount,
                                               AllocationAttributeType,
                                               AllocationAttribute,
-                                              AllocationStatusChoice)
+                                              AllocationStatusChoice,)
 from coldfront.core.allocation.utils import get_user_resources
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource, ResourceType
 from coldfront.core.utils.common import import_from_settings
 
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Field, Layout, Submit, HTML
+from crispy_forms.layout import Field, Layout, Submit, HTML, Row, Column, Fieldset, Reset
 from crispy_forms.bootstrap import InlineRadios, FormActions, PrependedText
 
 
@@ -712,3 +712,49 @@ class AllocationChangeNoteForm(forms.Form):
             widget=forms.Textarea,
             help_text="Leave any feedback about the allocation change request.")
 
+
+class AllocationExportForm(forms.Form):
+    file_name = forms.CharField(max_length=64, initial='allocations')
+    allocation_statuses = forms.ModelMultipleChoiceField(
+        queryset=AllocationStatusChoice.objects.all().order_by('name'),
+        help_text='Do not select any if you want all statuses',
+        required=False
+    )
+    allocation_resources = forms.ModelMultipleChoiceField(
+        queryset=Resource.objects.all().order_by('name'),
+        help_text='Do not select any if you want all resources',
+        required=False
+    )
+    allocation_creation_range_start = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'datepicker'}),
+        label='Start',
+        help_text='Includes start date',
+        required=False
+    )
+    allocation_creation_range_stop = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'datepicker'}),
+        label='Stop',
+        help_text='Does not include end date',
+        required=False
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            'file_name',
+            Row(
+                Column('allocation_statuses', css_class='col-md-6'),
+                Column('allocation_resources', css_class='col-md-6'),
+            ),
+            Fieldset(
+                'Allocation Creation Range',
+                Row(
+                    Column('allocation_creation_range_start', css_class='col-md-6'),
+                    Column('allocation_creation_range_stop', css_class='col-md-6'),
+                )
+            ),
+            Submit('submit', 'Export', css_class='btn-success'),
+            Reset('reset', 'Reset', css_class='btn-secondary')
+        )

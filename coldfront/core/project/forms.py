@@ -1,16 +1,17 @@
 import datetime
 
 from django import forms
-from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 from django.core.validators import MinLengthValidator
 
 from coldfront.core.project.models import (Project, ProjectReview,
-                                           ProjectUserRoleChoice)
+                                           ProjectUserRoleChoice,
+                                           ProjectStatusChoice,)
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.field_of_science.models import FieldOfScience
 from django.core.validators import MinLengthValidator
-from coldfront.core.utils.validators import IsAlpha
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import Layout, Submit, Fieldset, Reset, Row, Column
 
 EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL = import_from_settings(
     'EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL')
@@ -194,3 +195,50 @@ class ProjectUpdateForm(forms.Form):
 
         self.fields['title'].initial = project_obj.title
         self.fields['description'].initial = project_obj.description
+
+
+class ProjectExportForm(forms.Form):
+    file_name = forms.CharField(max_length=64, initial='projects')
+    project_statuses = forms.ModelMultipleChoiceField(
+        queryset=ProjectStatusChoice.objects.all().order_by('name'),
+        help_text='Do not select any if you want all statuses',
+        required=False
+    )
+    project_user_roles = forms.ModelMultipleChoiceField(
+        queryset=ProjectUserRoleChoice.objects.all().order_by('name'),
+        help_text='Do not select any if you want all roles',
+        required=False
+    )
+    project_creation_range_start = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'datepicker'}),
+        label='Start',
+        help_text='Includes start date',
+        required=False
+    )
+    project_creation_range_stop = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'datepicker'}),
+        label='Stop',
+        help_text='Does not include end date',
+        required=False
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            'file_name',
+            Row(
+                Column('project_statuses', css_class='col-md-6'),
+                Column('project_user_roles', css_class='col-md-6'),
+            ),
+            Fieldset(
+                'Project Creation Range',
+                Row(
+                    Column('project_creation_range_start', css_class='col-md-6'),
+                    Column('project_creation_range_stop', css_class='col-md-6'),
+                )
+            ),
+            Submit('submit', 'Export', css_class='btn-success'),
+            Reset('reset', 'Reset', css_class='btn-secondary')
+        )

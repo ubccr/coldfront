@@ -38,7 +38,8 @@ from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationReviewUserForm,
                                              AllocationSearchForm,
                                              AllocationUpdateForm,
-                                             AllocationInvoiceSearchForm)
+                                             AllocationInvoiceSearchForm,
+                                             AllocationExportForm)
 from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationAttribute,
                                               AllocationAttributeType,
@@ -530,6 +531,9 @@ class AllocationListView(LoginRequiredMixin, ListView):
             context['expand_accordion'] = 'show'
         context['filter_parameters'] = filter_parameters
         context['filter_parameters_with_order_by'] = filter_parameters_with_order_by
+
+        context['allocation_export_form'] = AllocationExportForm()
+        context['show_export_button'] = self.request.user.is_superuser or self.request.user.has_perm('allocation.can_view_all_allocations')
 
         allocation_list = context.get('allocation_list')
         paginator = Paginator(allocation_list, self.paginate_by)
@@ -4550,3 +4554,111 @@ class AllocationChangeDeleteAttributeView(LoginRequiredMixin, UserPassesTestMixi
         messages.success(
             request, 'Allocation attribute change request successfully deleted.')
         return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': allocation_change_pk}))
+
+
+class AllocationExportView(LoginRequiredMixin, UserPassesTestMixin, View):
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.has_perm('allocation.can_view_all_allocations'):
+            return True
+
+        messages.error(self.request, 'You do not have permission to download allocations.')
+
+    def post(self, request):
+        file_name = request.POST.get('file_name')
+        allocation_creation_range_start = request.POST.get('allocation_creation_range_start')
+        allocation_creation_range_stop = request.POST.get('allocation_creation_range_stop')
+        allocation_statuses = request.POST.get('allocation_statuses')
+        allocation_resources = request.POST.get('allocation_resources')
+
+        initial_data = {
+            'file_name': file_name,
+            'project_creation_range_start': allocation_creation_range_start,
+            'allocation_creation_range_stop': allocation_creation_range_stop,
+            'allocation_statuses': allocation_statuses,
+            'allocation_resources': allocation_resources
+        }
+
+        form = AllocationExportForm(
+            request.POST,
+            initial=initial_data
+        )
+
+        if form.is_valid():
+            data = form.cleaned_data
+            file_name = data.get('file_name')
+            allocation_creation_range_start = data.get('allocation_creation_range_start')
+            allocation_creation_range_stop = data.get('allocation_creation_range_stop')
+            allocation_statuses = data.get('allocation_statuses')
+            allocation_resources = data.get('allocation_resources')
+
+            if file_name[-4:] != ".csv":
+                file_name += ".csv"
+
+            if allocation_statuses:
+                allocations = Allocation.objects.filter(status__in=allocation_statuses).order_by('created')
+            else:
+                allocations = Allocation.objects.all().order_by('created')
+
+            if allocation_resources:
+                allocations = allocations.filter(resources__in=allocation_resources).order_by('created')
+
+            if allocation_creation_range_start:
+                allocations = allocations.filter(
+                    created__gte=allocation_creation_range_start
+                ).order_by('created')
+
+            if allocation_creation_range_stop:
+                allocations = allocations.filter(
+                    created__lte=allocation_creation_range_stop
+                ).order_by('created')
+
+            rows = []
+            header = [
+                'Allocation Name',
+                'Allocation ID',
+                'Allocation Status',
+                'Creation Date',
+                'Username',
+                'Email',
+                'Status'
+            ]
+
+            for allocation in allocations:
+                allocation_users = allocation.allocationuser_set.filter(status__name__in=['Active', ]).order_by('user__username')
+
+                for allocation_user in allocation_users:
+                    row = [
+                        allocation.get_parent_resource.name,
+                        allocation.pk,
+                        allocation.status.name,
+                        allocation.created,
+                        allocation_user.user.username,
+                        allocation_user.user.email,
+                        allocation_user.status.name
+                    ]
+
+                    rows.append(row)
+            rows.insert(0, header)
+
+            pseudo_buffer = Echo()
+            writer = csv.writer(pseudo_buffer)
+            response = StreamingHttpResponse(
+                (writer.writerow(row) for row in rows),
+                content_type='text/csv'
+            )
+            response['Content-Disposition'] = f'attachment; filename="{file_name}"'
+
+            logger.info(f'User {request.user.username} exported the allocation list')
+
+            return response
+        else:
+            messages.error(
+                request,
+                'Please correct the errors for the following fields: {}'
+                .format(' '.join(form.errors))
+            )
+            return HttpResponseRedirect(reverse('allocation-list'))

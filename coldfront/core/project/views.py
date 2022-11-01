@@ -1,6 +1,7 @@
 import datetime
 import urllib
 import logging
+import csv
 
 from django.conf import settings
 from django.contrib import messages
@@ -20,6 +21,7 @@ from django.views.generic import CreateView, DetailView, ListView
 from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
 from django.utils.html import format_html
+from django.http.response import StreamingHttpResponse
 
 from coldfront.core.allocation.models import (Allocation,
                                               AllocationStatusChoice,
@@ -39,7 +41,8 @@ from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectReviewForm, ProjectSearchForm,
                                           ProjectPISearchForm,
                                           ProjectUserUpdateForm,
-                                          ProjectReviewAllocationForm,)
+                                          ProjectReviewAllocationForm,
+                                          ProjectExportForm,)
 from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectReviewStatusChoice,
                                            ProjectStatusChoice, ProjectUser,
@@ -51,6 +54,7 @@ from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.user.models import UserProfile
+from coldfront.core.utils.common import Echo
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email, send_email_template
 from coldfront.core.project.utils import get_new_end_date_from_list, create_admin_action
@@ -365,6 +369,9 @@ class ProjectListView(LoginRequiredMixin, ListView):
         context['filter_parameters'] = filter_parameters
         context['filter_parameters_with_order_by'] = filter_parameters_with_order_by
         context['PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING'] = PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING
+
+        context['project_export_form'] = ProjectExportForm()
+        context['show_export_button'] = self.request.user.is_superuser or self.request.user.has_perm('project.can_view_all_projects')
 
         project_list = context.get('project_list')
         paginator = Paginator(project_list, self.paginate_by)
@@ -2611,3 +2618,113 @@ class ProjectNoteCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView)
 
     def get_success_url(self):
         return reverse('project-detail', kwargs={'pk': self.kwargs.get('pk')})
+
+
+class ProjectExportView(LoginRequiredMixin, UserPassesTestMixin, View):
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.has_perm('project.can_view_all_projects'):
+            return True
+
+        messages.error(self.request, 'You do not have permission to download projects.')
+
+    def post(self, request):
+        file_name = request.POST.get('file_name')
+        project_creation_range_start = request.POST.get('project_creation_range_start')
+        project_creation_range_stop = request.POST.get('project_creation_range_stop')
+        project_statuses = request.POST.get('project_statuses')
+        project_user_roles = request.POST.get('project_user_roles')
+
+        initial_data = {
+            'file_name': file_name,
+            'project_creation_range_start': project_creation_range_start,
+            'project_creation_range_stop': project_creation_range_stop,
+            'project_statuses': project_statuses,
+            'project_user_roles': project_user_roles
+        }
+
+        form = ProjectExportForm(
+            request.POST,
+            initial=initial_data
+        )
+
+        if form.is_valid():
+            data = form.cleaned_data
+            file_name = data.get('file_name')
+            project_creation_range_start = data.get('project_creation_range_start')
+            project_creation_range_stop = data.get('project_creation_range_stop')
+            project_statuses = data.get('project_statuses')
+            project_user_roles = data.get('project_user_roles')
+
+            if file_name[-4:] != ".csv":
+                file_name += ".csv"
+
+            if project_statuses:
+                projects = Project.objects.filter(status__in=project_statuses).order_by('-created')
+            else:
+                projects = Project.objects.all().order_by('-created')
+
+            if project_creation_range_start:
+                projects = projects.filter(
+                    created__gte=project_creation_range_start
+                ).order_by('-created')
+
+            if project_creation_range_stop:
+                projects = projects.filter(
+                    created__lte=project_creation_range_stop
+                ).order_by('-created')
+
+            rows = []
+            header = [
+                'Project Title',
+                'Project ID',
+                'Project Status',
+                'Slurm Account Name',
+                'Creation Date',
+                'Username',
+                'Email',
+                'Role'
+            ]
+
+            for project in projects:
+                if project_user_roles:
+                    project_users = project.projectuser_set.filter(role__in=project_user_roles).order_by('user__username')
+                else:
+                    project_users = project.projectuser_set.all().order_by('user__username')
+
+                for project_user in project_users:
+                    row = [
+                        project.title,
+                        project.pk,
+                        project.status.name,
+                        project.slurm_account_name,
+                        project.created,
+                        project_user.user.username,
+                        project_user.user.email,
+                        project_user.role.name
+                    ]
+
+                    rows.append(row)
+            rows.insert(0, header)
+
+            pseudo_buffer = Echo()
+            writer = csv.writer(pseudo_buffer)
+            response = StreamingHttpResponse(
+                (writer.writerow(row) for row in rows),
+                content_type='text/csv'
+            )
+            response['Content-Disposition'] = f'attachment; filename="{file_name}"'
+
+            logger.info(f'User {request.user.username} exported the project list')
+
+            return response
+        else:
+            messages.error(
+                request,
+                'Please correct the errors for the following fields: {}'
+                .format(' '.join(form.errors))
+            )
+            return HttpResponseRedirect(reverse('project-list'))
