@@ -122,8 +122,8 @@ allow_all_jobs: false
 sentry_dsn: ""
 
 # Types of Ansible tasks to run by default.
-provisioning_tasks: True
-common_tasks: True
+provisioning_tasks: true
+common_tasks: true
 
 ###############################################################################
 # staging_settings
