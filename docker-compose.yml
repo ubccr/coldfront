@@ -138,4 +138,98 @@ services:
       - PYTHONUNBUFFERED=1
     networks:
       main:
+  fiine-db:
+    image: mariadb
+    volumes:
+#      - fiine-prod-data:/var/lib/mysql
+      - fiine-test-data:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=fiine
+      - MYSQL_DATABASE=fiine
+      - MYSQL_USER=fiine
+      - MYSQL_PASSWORD=fiine
+    command: '--character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci'
+    networks:
+      main:
+  fiine-drf:
+    image: fiine-drf
+    depends_on:
+      - fiine-db
+      - nanites
+    volumes:
+      - ../../fiine:/app
+      - ../../fiine/history.sqlite:/root/.ipython/profile_default/history.sqlite
+    links:
+      - fiine-db
+      - testsmtp
+    ports:
+      - 9090:80
+    environment:
+      - FIINE_IFX_APP_TOKEN=1f8c484b9bfd85931db928ea96f86533b81c02d8
+      - FIINE_USERNAME=root
+      - FIINE_PASSWORD=fiine
+      - FIINE_DATABASE=fiine
+      - FIINE_HOSTNAME=fiine-db
+      - FIINE_LOGLEVEL=DEBUG
+      - FIINE_DEBUG=TRUE
+      - FIINE_DJANGO_KEY=anweijfnvwoejvniejnvfwvijnf
+      - FIINE_URL_BASE=http://localhost:9091/fiine
+      - SMTP_SERVER=testsmtp
+      - IFX_REMOTE_USER=a02b855b75ae1d77@harvard.edu
+      - NANITES_API_BASE=http://nanites/nanites/api
+      - IFXMAIL_API_BASE=http://ifxmail/ifxmail/api
+      - COLDFRONT_API_BASE=http://coldfront/ifx/api
+      - HERS_API_BASE=http://hers-drf/hers/api
+      - CBSN_API_BASE=http://cbsn-drf/cbsn/api
+      - IFXONBOARD_API_BASE=http://onboardapi/onboard/api
+      - IFXONBOARD_URL_BASE=http://localhost:8080/onboard
+      - PYTHONUNBUFFERED=1
+    networks:
+      main:
+  fiine-preq:
+    image: fiine-drf
+    depends_on:
+      - fiine-db
+      - nanites
+    volumes:
+      - ../../fiine:/app
+    links:
+      - fiine-db
+      - testsmtp
+    environment:
+      - FIINE_IFX_APP_TOKEN=1f8c484b9bfd85931db928ea96f86533b81c02d8
+      - FIINE_USERNAME=fiine
+      - FIINE_PASSWORD=fiine
+      - FIINE_DATABASE=fiine
+      - FIINE_HOSTNAME=fiine-db
+      - FIINE_LOGLEVEL=DEBUG
+      - FIINE_DEBUG=TRUE
+      - FIINE_DJANGO_KEY=anweijfnvwoejvniejnvfwvijnf
+      - FIINE_URL_BASE=http://localhost:9091/fiine
+      - SMTP_SERVER=testsmtp
+      - IFX_REMOTE_USER=veradmin
+      - NANITES_API_BASE=http://nanites/nanites/api
+      - IFXMAIL_API_BASE=http://ifxmail/ifxmail/api
+      - COLDFRONT_API_BASE=http://coldfront/ifx/api
+      - HERS_API_BASE=http://hers-drf/hers/api
+      - IFXONBOARD_API_BASE=http://onboardapi/onboard/api
+      - IFXONBOARD_URL_BASE=http://localhost:8080/onboard
+      - PYTHONUNBUFFERED=1
+    command: ./wait-for-it.sh -t 60 fiine-db:3306 -- ./manage.py preq
+    networks:
+      main:
 
+volumes:
+  nanites-test-data:
+  nanites-prod-data:
+  ifxmail-data:
+  fiine-prod-data:
+  fiine-test-data:
+  coldfront-data:
+
+networks:
+  main:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.9.0/16
