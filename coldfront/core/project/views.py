@@ -59,6 +59,7 @@ from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email, send_email_template
 from coldfront.core.project.utils import get_new_end_date_from_list, create_admin_action
 from coldfront.core.allocation.utils import send_added_user_email
+from coldfront.core.utils.slack import send_message
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +96,9 @@ PROJECT_DAYS_TO_REVIEW_BEFORE_EXPIRING = import_from_settings(
 )
 PROJECT_TYPE_LIMIT_MAPPING = import_from_settings(
     'PROJECT_TYPE_LIMIT_MAPPING', {}
+)
+SLACK_MESSAGING_ENABLED = import_from_settings(
+    'SLACK_MESSAGING_ENABLED', False
 )
 
 if EMAIL_ENABLED:
@@ -843,7 +847,13 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
                 status=ProjectUserStatusChoice.objects.get(name='Active')
             )
 
-        if EMAIL_ENABLED:
+        if SLACK_MESSAGING_ENABLED:
+            domain_url = get_domain_url(self.request)
+            project_review_url = reverse('project-review-list')
+            url = '{}{}'.format(domain_url, project_review_url)
+            text = f'A new request for project "{project_obj.title}" with id {project_obj.pk} has been submitted. You can view it here: {url}'
+            send_message(text)
+        elif EMAIL_ENABLED:
             domain_url = get_domain_url(self.request)
             project_review_url = reverse('project-review-list')
             template_context = {
