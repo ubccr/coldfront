@@ -2,7 +2,9 @@ WSGISocketPrefix /var/run/wsgi
 LoadModule auth_basic_module modules/mod_auth_basic.so
 LoadModule authz_user_module modules/mod_authz_user.so
 LoadModule headers_module modules/mod_headers.so
-{% if cloudflare_enabled | bool %}LoadModule remoteip_module modules/mod_remoteip.so{% endif %}
+{% if cloudflare_enabled | bool %}
+LoadModule remoteip_module modules/mod_remoteip.so
+{% endif %}
 LoadModule ssl_module modules/mod_ssl.so
 
 WSGIPassAuthorization On

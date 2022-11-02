@@ -160,7 +160,7 @@ sentry_dsn: ""
 
 # # Zero or more space-separated IP ranges, in CIDR notation, to which the REST
 # # API is accessible. If none are given, API access is not restricted.
-# ip_range_with_api_access: 0.0.0.0/24
+# ip_range_with_api_access:
 
 # # Email settings.
 # email_port: 25
@@ -253,7 +253,7 @@ sentry_dsn: ""
 
 # # Zero or more space-separated IP ranges, in CIDR notation, to which the REST
 # # API is accessible. If none are given, API access is not restricted.
-# ip_range_with_api_access: 0.0.0.0/24
+# ip_range_with_api_access:
 
 # # Email settings.
 # email_port: 1025
