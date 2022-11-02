@@ -1,4 +1,12 @@
 ###############################################################################
+# Ansible Settings
+###############################################################################
+
+# Types of Ansible tasks to run by default.
+provisioning_tasks: true
+common_tasks: true
+
+###############################################################################
 # General Settings
 ###############################################################################
 
@@ -120,10 +128,6 @@ allow_all_jobs: false
 
 # The URL of the Sentry instance to send errors to.
 sentry_dsn: ""
-
-# Types of Ansible tasks to run by default.
-provisioning_tasks: true
-common_tasks: true
 
 ###############################################################################
 # staging_settings
