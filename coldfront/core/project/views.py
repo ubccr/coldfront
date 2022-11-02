@@ -1855,6 +1855,8 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         initial_data = []
         if allocations:
             for allocation in allocations:
+                if allocation.end_date is None:
+                    continue
                 if allocation.expires_in < -ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING:
                     continue
 
