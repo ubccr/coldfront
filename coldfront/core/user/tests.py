@@ -5,6 +5,11 @@ from coldfront.core.test_helpers.factories import (
     UserFactory,
 )
 
+from django.test import TestCase
+
+from django.test import LiveServerTestCase
+from selenium import webdriver
+
 from coldfront.core.user.models import UserProfile
 
 class TestUserProfile(TestCase):
