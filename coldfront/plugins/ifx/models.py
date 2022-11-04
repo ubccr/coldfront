@@ -13,7 +13,7 @@ from coldfront.core.allocation.models import AllocationUser
 from coldfront.core.resource.models import Resource
 from coldfront.core.project.models import Project
 from ifxbilling.models import ProductUsage, Product, Facility
-from ifxbilling.fiine import createNewProduct
+from ifxbilling.fiine import create_new_product
 from ifxuser.models import Organization
 from fiine.client import API as FiineAPI
 
@@ -135,7 +135,7 @@ def resource_post_save(sender, instance, **kwargs):
             products = FiineAPI.listProducts(product_name=instance.name)
             if not products:
                 facility = Facility.objects.get(name='Research Computing Storage')
-                product = createNewProduct(product_name=instance.name, product_description=instance.name, facility=facility)
+                product = create_new_product(product_name=instance.name, product_description=instance.name, facility=facility)
             else:
                 fiine_product = products[0].to_dict()
                 fiine_product.pop('facility')
