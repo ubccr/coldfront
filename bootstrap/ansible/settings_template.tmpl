@@ -23,7 +23,7 @@ EMAIL_PORT = {{ email_port }}
 EMAIL_SUBJECT_PREFIX = '{{ email_subject_prefix }}'
 # A list of admin email addresses to be notified about new requests and other
 # events.
-EMAIL_ADMIN_LIST = {{ email_admin_list }}
+EMAIL_ADMIN_LIST = {{ email_admin_list }} or ['admin@{{ hostname }}']
 EMAIL_SENDER = '{{ from_email }}'
 EMAIL_TICKET_SYSTEM_ADDRESS = 'help@{{ hostname }}'
 EMAIL_DIRECTOR_EMAIL_ADDRESS = 'director@{{ hostname }}'
