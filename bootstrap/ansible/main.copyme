@@ -133,8 +133,12 @@ common_tasks: True
 # # TODO: For LRC, use the substring 'MyLRC'.
 # email_subject_prefix: '[MyBRC-User-Portal]'
 
+# # A list of admin email addresses to be notified about new requests and other
+# # events.
+# # TODO: Set these addresses to yours.
+# email_admin_list: []
 # # A list of email addresses to CC when certain requests are processed.
-# # TODO: Set this address to yours.
+# # TODO: Set these addresses to yours.
 # request_approval_cc_list: []
 
 ###############################################################################
@@ -180,9 +184,13 @@ common_tasks: True
 # # TODO: For LRC, use the substring 'MyLRC'.
 # email_subject_prefix: '[MyBRC-User-Portal]'
 
+# # A list of admin email addresses to be notified about new requests and other
+# # events.
+# # TODO: Set these addresses to yours.
+# email_admin_list: []
 # # A list of email addresses to CC when certain requests are processed.
-# # TODO: Set this address to yours.
-# request_approval_cc_list: ['wfeinstein@lbl.gov']
+# # TODO: Set these addresses to yours.
+# request_approval_cc_list: []
 
 ###############################################################################
 # dev_settings
@@ -223,6 +231,10 @@ common_tasks: True
 # # TODO: For LRC, use the substring 'MyLRC'.
 # email_subject_prefix: '[MyBRC-User-Portal]'
 
+# # A list of admin email addresses to be notified about new requests and other
+# # events.
+# # TODO: Set these addresses to yours.
+# email_admin_list: ['you@email.com']
 # # A list of email addresses to CC when certain requests are processed.
-# # TODO: Set this address to yours.
+# # TODO: Set these addresses to yours.
 # request_approval_cc_list: ['you@email.com']
