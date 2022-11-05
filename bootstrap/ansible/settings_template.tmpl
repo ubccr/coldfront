@@ -143,14 +143,12 @@ CONSTANCE_REDIS_CONNECTION = {
 # django debug toolbar settings
 #------------------------------------------------------------------------------
 
-{% if debug_toolbar_ips | length %}
-# IP addresses that can view the django debug toolbar
+# IP addresses other than 127.0.0.1 that can view the django debug toolbar
 EXTRA_INTERNAL_IPS = [
 {% for ip in debug_toolbar_ips %}
     "{{ ip }}",
 {% endfor %}
 ]
-{% endif %}
 
 #------------------------------------------------------------------------------
 # django-flags settings
