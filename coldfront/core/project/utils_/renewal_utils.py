@@ -5,15 +5,14 @@ from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.allocation.models import AllocationRenewalRequestStatusChoice
 from coldfront.core.allocation.models import AllocationStatusChoice
-from coldfront.core.allocation.utils import get_or_create_active_allocation_user
 from coldfront.core.allocation.utils import get_project_compute_allocation
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
 from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
-from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
+from coldfront.core.project.utils_.request_processing_utils import create_project_users
 from coldfront.core.resource.models import Resource
 from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
@@ -24,11 +23,13 @@ from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.common import project_detail_url
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.common import validate_num_service_units
+from coldfront.core.utils.email.email_strategy import validate_email_strategy_or_get_default
 from coldfront.core.utils.mail import send_email_template
 from collections import namedtuple
 from decimal import Decimal
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.db import transaction
 from django.db.models import Q
 from django.urls import reverse
 from urllib.parse import urljoin
@@ -611,81 +612,6 @@ class AllocationRenewalRunnerBase(object):
         message = f'The request must have status \'{expected_status}\'.'
         assert self.request_obj.status == expected_status, message
 
-    def create_allocation_users(self, allocation):
-        """Create active AllocationUsers for the requester and/or the
-        PI. Return the created objects (requester and then PI)."""
-        requester = self.request_obj.requester
-        pi = self.request_obj.pi
-        requester_allocation_user = None
-        if requester.pk != pi.pk:
-            requester_allocation_user = get_or_create_active_allocation_user(
-                allocation, requester)
-        pi_allocation_user = get_or_create_active_allocation_user(
-            allocation, pi)
-        return requester_allocation_user, pi_allocation_user
-
-    @staticmethod
-    def create_cluster_access_request_for_requester(allocation_user):
-        """Create a 'Cluster Account Status' for the given
-        AllocationUser corresponding to the request's requester."""
-        allocation_attribute_type = AllocationAttributeType.objects.get(
-            name='Cluster Account Status')
-        pending_add = 'Pending - Add'
-        # get_or_create's 'defaults' arguments are only considered if a create
-        # is required.
-        defaults = {
-            'value': pending_add,
-        }
-        allocation_user_attribute, created = \
-            allocation_user.allocationuserattribute_set.get_or_create(
-                allocation_attribute_type=allocation_attribute_type,
-                allocation=allocation_user.allocation,
-                defaults=defaults)
-        if not created:
-            if allocation_user_attribute.value == 'Active':
-                message = (
-                    f'AllocationUser {allocation_user.pk} for requester '
-                    f'{allocation_user.user.pk} unexpectedly already has '
-                    f'active cluster access status.')
-                logger.warning(message)
-            else:
-                allocation_user_attribute.value = pending_add
-                allocation_user_attribute.save()
-
-    def create_project_users(self):
-        """Create active ProjectUsers with the appropriate roles for the
-        requester and/or the PI. If the requester is already has the
-        'Principal Investigator' role, do not give it the 'Manager'
-        role."""
-        project = self.request_obj.post_project
-        requester = self.request_obj.requester
-        pi = self.request_obj.pi
-        status = ProjectUserStatusChoice.objects.get(name='Active')
-        pi_role = ProjectUserRoleChoice.objects.get(
-            name='Principal Investigator')
-
-        if requester.pk != pi.pk:
-            role = ProjectUserRoleChoice.objects.get(name='Manager')
-            if project.projectuser_set.filter(user=requester).exists():
-                requester_project_user = project.projectuser_set.get(
-                    user=requester)
-                if requester_project_user.role != pi_role:
-                    requester_project_user.role = role
-                requester_project_user.status = status
-                requester_project_user.save()
-            else:
-                ProjectUser.objects.create(
-                    project=project, user=requester, role=role, status=status)
-
-        if project.projectuser_set.filter(user=pi).exists():
-            pi_project_user = project.projectuser_set.get(user=pi)
-            pi_project_user.role = pi_role
-            pi_project_user.status = status
-            pi_project_user.save()
-        else:
-            ProjectUser.objects.create(
-                project=project, user=pi, role=pi_role, status=status)
-
     def handle_by_preference(self):
         request = self.request_obj
         pre_project = request.pre_project
@@ -759,7 +685,7 @@ class AllocationRenewalApprovalRunner(AllocationRenewalRunnerBase):
     """An object that performs necessary database changes when an
     AllocationRenewalRequest is approved."""
 
-    def __init__(self, request_obj, num_service_units, send_email=False):
+    def __init__(self, request_obj, num_service_units, email_strategy=None):
         super().__init__(request_obj)
         self.request_obj.allocation_period.assert_not_ended()
         expected_status = AllocationRenewalRequestStatusChoice.objects.get(
@@ -767,13 +693,13 @@ class AllocationRenewalApprovalRunner(AllocationRenewalRunnerBase):
         self.assert_request_status(expected_status)
         validate_num_service_units(num_service_units)
         self.num_service_units = num_service_units
-        # Note: send_email is already the name of a method.
-        self.can_send_email = bool(send_email)
+        self._email_strategy = validate_email_strategy_or_get_default(
+            email_strategy=email_strategy)
 
     def run(self):
-        self.approve_request()
-        if self.can_send_email:
-            self.send_email()
+        with transaction.atomic():
+            self.approve_request()
+        self.send_email()
 
     def approve_request(self):
         """Set the status of the request to 'Approved' and set its
@@ -816,11 +742,12 @@ class AllocationRenewalApprovalRunner(AllocationRenewalRunnerBase):
         """Send a notification email to the requester and PI."""
         request = self.request_obj
         try:
-            send_allocation_renewal_request_approval_email(
-                request, self.num_service_units)
+            email_method = send_allocation_renewal_request_approval_email
+            email_args = (request, self.num_service_units)
+            self._email_strategy.process_email(email_method, *email_args)
         except Exception as e:
-            logger.error('Failed to send notification email. Details:')
-            logger.exception(e)
+            logger.exception(
+                f'Failed to send notification email. Details:\n{e}')
 
 
 class AllocationRenewalDenialRunner(AllocationRenewalRunnerBase):
@@ -834,8 +761,9 @@ class AllocationRenewalDenialRunner(AllocationRenewalRunnerBase):
         self.assert_request_not_status(unexpected_status)
 
     def run(self):
-        self.handle_by_preference()
-        self.deny_request()
+        with transaction.atomic():
+            self.handle_by_preference()
+            self.deny_request()
         self.send_email()
 
     def deny_post_project(self):
@@ -886,15 +814,15 @@ class AllocationRenewalDenialRunner(AllocationRenewalRunnerBase):
         try:
             send_allocation_renewal_request_denial_email(request)
         except Exception as e:
-            logger.error('Failed to send notification email. Details:')
-            logger.exception(e)
+            logger.exception(
+                'Failed to send notification email. Details:\n{e}')
 
 
 class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
     """An object that performs necessary database changes when an
     AllocationRenewalRequest is processed."""
 
-    def __init__(self, request_obj, num_service_units):
+    def __init__(self, request_obj, num_service_units, email_strategy=None):
         super().__init__(request_obj)
         self.request_obj.allocation_period.assert_started()
         self.request_obj.allocation_period.assert_not_ended()
@@ -904,34 +832,29 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
         validate_num_service_units(num_service_units)
         self.num_service_units = num_service_units
 
+        self._email_strategy = validate_email_strategy_or_get_default(
+            email_strategy=email_strategy)
+
     def run(self):
         request = self.request_obj
         post_project = request.post_project
-
-        self.upgrade_pi_user()
         old_project_status = post_project.status
-        post_project = self.activate_project(post_project)
 
-        allocation, new_value = self.update_allocation(old_project_status)
-        self.update_existing_user_allocations(new_value)
+        with transaction.atomic():
+            self.upgrade_pi_user()
+            post_project = self.activate_project(post_project)
 
-        self.create_project_users()
-        requester_allocation_user, pi_allocation_user = \
-            self.create_allocation_users(allocation)
+            allocation, new_value = self.update_allocation(old_project_status)
+            self.update_existing_user_allocations(new_value)
 
-        # If the AllocationUser for the requester was not created, then the PI
-        # was the requester.
-        if requester_allocation_user is None:
-            self.create_cluster_access_request_for_requester(
-                pi_allocation_user)
-        else:
-            self.create_cluster_access_request_for_requester(
-                requester_allocation_user)
+            create_project_users(
+                post_project, request.requester, request.pi,
+                AllocationRenewalRequest, email_strategy=self._email_strategy)
 
-        self.update_pre_projects_of_future_period_requests()
+            self.update_pre_projects_of_future_period_requests()
 
-        self.handle_by_preference()
-        self.complete_request(self.num_service_units)
+            self.handle_by_preference()
+            self.complete_request(self.num_service_units)
         self.send_email()
 
         return post_project, allocation
@@ -1021,13 +944,13 @@ class AllocationRenewalProcessingRunner(AllocationRenewalRunnerBase):
 
     def send_email(self):
         """Send a notification email to the requester and PI."""
-        request = self.request_obj
         try:
-            send_allocation_renewal_request_processing_email(
-                request, self.num_service_units)
+            email_method = send_allocation_renewal_request_processing_email
+            email_args = (self.request_obj, self.num_service_units)
+            self._email_strategy.process_email(email_method, *email_args)
         except Exception as e:
-            logger.error('Failed to send notification email. Details:')
-            logger.exception(e)
+            logger.exception(
+                f'Failed to send notification email. Details:\n{e}')
 
     def update_allocation(self, old_project_status):
         """Perform allocation-related handling. Use the given

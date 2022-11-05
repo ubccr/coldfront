@@ -3,19 +3,14 @@ from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationStatusChoice
-from coldfront.core.allocation.utils import get_or_create_active_allocation_user
 from coldfront.core.allocation.utils import get_project_compute_allocation
-from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
 from coldfront.core.project.models import ProjectUser
-from coldfront.core.project.models import ProjectUserRoleChoice
-from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.models import VectorProjectAllocationRequest
 from coldfront.core.project.signals import new_project_request_denied
-from coldfront.core.project.utils import ProjectClusterAccessRequestRunner
-from coldfront.core.project.utils import send_added_to_project_notification_email
+from coldfront.core.project.utils_.request_processing_utils import create_project_users
 from coldfront.core.resource.models import Resource
 from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
@@ -27,14 +22,18 @@ from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.common import project_detail_url
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.common import validate_num_service_units
+from coldfront.core.utils.email.email_strategy import validate_email_strategy_or_get_default
 from coldfront.core.utils.mail import send_email_template
 
 from collections import namedtuple
 from decimal import Decimal
 
 from django.conf import settings
+from django.db import transaction
 from django.db.models import Q
 from django.urls import reverse
+
+from flags.state import flag_enabled
 
 from urllib.parse import urljoin
 
@@ -42,50 +41,6 @@ import logging
 
 
 logger = logging.getLogger(__name__)
-
-
-def add_vector_user_to_designated_savio_project(user_obj):
-    """Add the given User to the Savio project that all Vector users
-    also have access to.
-
-    This is intended for use after the user's request has been approved
-    and the user has been successfully added to a Vector project."""
-    project_name = settings.SAVIO_PROJECT_FOR_VECTOR_USERS
-    project_obj = Project.objects.get(name=project_name)
-
-    # Create a ProjectUser if needed; set its status to 'Active'.
-    user_role = ProjectUserRoleChoice.objects.get(name='User')
-    active_status = ProjectUserStatusChoice.objects.get(name='Active')
-    defaults = {
-        'role': user_role,
-        'status': active_status,
-        'enable_notifications': False,
-    }
-    project_user_obj, created = ProjectUser.objects.get_or_create(
-        project=project_obj, user=user_obj, defaults=defaults)
-    if created:
-        message = (
-            f'Created ProjectUser {project_user_obj.pk} between Project '
-            f'{project_obj.pk} and User {user_obj.pk}.')
-        logger.info(message)
-    else:
-        project_user_obj.status = active_status
-        project_user_obj.save()
-
-    # Send a notification email to the user if the user was not already a
-    # member of the project.
-    if created:
-        try:
-            send_added_to_project_notification_email(
-                project_obj, project_user_obj)
-        except Exception as e:
-            message = 'Failed to send notification email. Details:'
-            logger.error(message)
-            logger.exception(e)
-
-    # Request cluster access for the user.
-    request_runner = ProjectClusterAccessRequestRunner(project_user_obj)
-    request_runner.run()
 
 
 def non_denied_new_project_request_statuses():
@@ -158,32 +113,23 @@ def project_pi_pks(computing_allowance=None, project_status_names=[]):
         ).values_list('user__pk', flat=True))
 
 
-class ProjectApprovalRunner(object):
-    """An object that performs necessary database changes when a new
-    project request is approved."""
-
-    def __init__(self, request_obj, *args, **kwargs):
-        self.request_obj = request_obj
-
-    def run(self):
-        raise NotImplementedError('This method is not implemented.')
-
-
 class ProjectDenialRunner(object):
     """An object that performs necessary database changes when a new
     project request is denied."""
 
     def __init__(self, request_obj):
+        # TODO: Incorporate EmailStrategy.
         self.request_obj = request_obj
 
     def run(self):
-        # Only update the Project if pooling is not involved.
-        if (isinstance(self.request_obj, VectorProjectAllocationRequest) or
-                not self.request_obj.pool):
-            self.deny_project()
-        self.deny_request()
+        with transaction.atomic():
+            # Only update the Project if pooling is not involved.
+            if (isinstance(self.request_obj, VectorProjectAllocationRequest) or
+                    not self.request_obj.pool):
+                self.deny_project()
+            self.deny_request()
+            self.deny_associated_renewal_request_if_existent()
         self.send_email()
-        self.deny_associated_renewal_request_if_existent()
 
     def deny_associated_renewal_request_if_existent(self):
         """Send a signal to deny any AllocationRenewalRequest that
@@ -217,39 +163,29 @@ class ProjectProcessingRunner(object):
     """An object that performs necessary database changes when a new
     project request is processed."""
 
-    def __init__(self, request_obj):
+    def __init__(self, request_obj, email_strategy=None):
         self.request_obj = request_obj
-        # A list of messages to display to the user.
-        self.user_messages = []
+        self._email_strategy = validate_email_strategy_or_get_default(
+            email_strategy=email_strategy)
 
     def run(self):
-        self.upgrade_pi_user()
-        project = self.activate_project()
+        with transaction.atomic():
+            self.upgrade_pi_user()
+            project = self.activate_project()
 
-        allocation, new_value = self.update_allocation()
-        # In the pooling case, set the Service Units of the existing users to
-        # the updated value.
-        if (isinstance(self.request_obj, SavioProjectAllocationRequest) and
-                self.request_obj.pool):
-            self.update_existing_user_allocations(new_value)
+            allocation, new_value = self.update_allocation()
+            if self._should_update_existing_user_allocations():
+                self.update_existing_user_allocations(new_value)
 
-        self.create_project_users()
-        requester_allocation_user, pi_allocation_user = \
-            self.create_allocation_users(allocation)
+            if self._should_set_billing_activity():
+                self._set_billing_activity(allocation)
 
-        # If the AllocationUser for the requester was not created, then
-        # the PI was the requester.
-        if requester_allocation_user is None:
-            self.create_cluster_access_request_for_requester(
-                pi_allocation_user)
-        else:
-            self.create_cluster_access_request_for_requester(
-                requester_allocation_user)
+            create_project_users(
+                project, self.request_obj.requester, self.request_obj.pi,
+                type(self.request_obj), email_strategy=self._email_strategy)
 
-        self.complete_request()
+            self.complete_request()
         self.send_email()
-
-        self.run_extra_processing()
 
         return project, allocation
 
@@ -269,93 +205,42 @@ class ProjectProcessingRunner(object):
         self.request_obj.completion_time = utc_now_offset_aware()
         self.request_obj.save()
 
-    def create_allocation_users(self, allocation):
-        """Create active AllocationUsers for the requester and/or the
-        PI. Return the created objects (requester and then PI)."""
-        requester = self.request_obj.requester
-        pi = self.request_obj.pi
-        requester_allocation_user = None
-        if requester.pk != pi.pk:
-            requester_allocation_user = get_or_create_active_allocation_user(
-                allocation, requester)
-        pi_allocation_user = get_or_create_active_allocation_user(
-            allocation, pi)
-        return requester_allocation_user, pi_allocation_user
-
-    @staticmethod
-    def create_cluster_access_request_for_requester(allocation_user):
-        """Create a 'Cluster Account Status' for the given
-        AllocationUser corresponding to the request's requester."""
-        allocation_attribute_type = AllocationAttributeType.objects.get(
-            name='Cluster Account Status')
-        pending_add = 'Pending - Add'
-        # get_or_create's 'defaults' arguments are only considered if a create
-        # is required.
-        defaults = {
-            'value': pending_add,
-        }
-        allocation_user_attribute, created = \
-            allocation_user.allocationuserattribute_set.get_or_create(
-                allocation_attribute_type=allocation_attribute_type,
-                allocation=allocation_user.allocation,
-                defaults=defaults)
-        if not created:
-            if allocation_user_attribute.value == 'Active':
-                message = (
-                    f'AllocationUser {allocation_user.pk} for requester '
-                    f'{allocation_user.user.pk} unexpectedly already has '
-                    f'active cluster access status.')
-                logger.warning(message)
-            else:
-                allocation_user_attribute.value = pending_add
-                allocation_user_attribute.save()
-
-    def create_project_users(self):
-        """Create active ProjectUsers with the appropriate roles for the
-        requester and/or the PI."""
-        project = self.request_obj.project
-        requester = self.request_obj.requester
-        pi = self.request_obj.pi
-        status = ProjectUserStatusChoice.objects.get(name='Active')
-
-        if requester.pk != pi.pk:
-            role = ProjectUserRoleChoice.objects.get(name='Manager')
-            if project.projectuser_set.filter(user=requester).exists():
-                requester_project_user = project.projectuser_set.get(
-                    user=requester)
-                requester_project_user.role = role
-                requester_project_user.status = status
-                requester_project_user.save()
-            else:
-                ProjectUser.objects.create(
-                    project=project, user=requester, role=role, status=status)
-
-        role = ProjectUserRoleChoice.objects.get(
-            name='Principal Investigator')
-        if project.projectuser_set.filter(user=pi).exists():
-            pi_project_user = project.projectuser_set.get(user=pi)
-            pi_project_user.role = role
-            pi_project_user.status = status
-            pi_project_user.save()
-        else:
-            ProjectUser.objects.create(
-                project=project, user=pi, role=role, status=status)
-
-    def get_user_messages(self):
-        """A getter for this instance's user_messages."""
-        return self.user_messages
-
-    def run_extra_processing(self):
-        """Run additional subclass-specific processing."""
-        pass
-
     def send_email(self):
         """Send a notification email to the requester and PI."""
         try:
-            send_project_request_processing_email(self.request_obj)
+            email_method = send_project_request_processing_email
+            email_args = (self.request_obj,)
+            self._email_strategy.process_email(email_method, *email_args)
         except Exception as e:
-            logger.error('Failed to send notification email. Details:\n')
-            logger.exception(e)
+            logger.exception(
+                f'Failed to send notification email. Details:\n{e}')
+
+    def _set_billing_activity(self, allocation):
+        """Store the BillingActivity of the request in the given
+        Allocation's AllocationAttribute of type 'Billing Activity',
+        creating it if it does not exist, and updating it if it does."""
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Billing Activity')
+        value = str(self.request_obj.billing_activity.pk)
+        AllocationAttribute.objects.update_or_create(
+            allocation_attribute_type=allocation_attribute_type,
+            allocation=allocation,
+            defaults={'value': value})
+
+    def _should_set_billing_activity(self):
+        """Return whether a billing activity needs to be set."""
+        return (flag_enabled('LRC_ONLY') and
+                isinstance(self.request_obj, SavioProjectAllocationRequest) and
+                not self.request_obj.pool and
+                self.request_obj.billing_activity is not None)
+
+    def _should_update_existing_user_allocations(self):
+        """Return whether the Allocations of existing users on the
+        Project should be updated. Specifically, return whether the
+        request is a Savio request, and pooling is requested."""
+        return (
+            isinstance(self.request_obj, SavioProjectAllocationRequest) and
+            self.request_obj.pool)
 
     def update_allocation(self):
         """Perform allocation-related handling. This should be
@@ -375,23 +260,23 @@ class ProjectProcessingRunner(object):
         raise NotImplementedError('This method is not implemented.')
 
 
-class SavioProjectApprovalRunner(ProjectApprovalRunner):
+class SavioProjectApprovalRunner(object):
     """An object that performs necessary database changes when a new
     Savio project request is approved."""
 
-    def __init__(self, request_obj, num_service_units, send_email=False):
+    def __init__(self, request_obj, num_service_units, email_strategy=None):
+        self.request_obj = request_obj
         validate_num_service_units(num_service_units)
         self.num_service_units = num_service_units
-        super().__init__(request_obj)
         if self.request_obj.allocation_period:
             self.request_obj.allocation_period.assert_not_ended()
-        # Note: send_email is already the name of a method.
-        self.can_send_email = bool(send_email)
+        self._email_strategy = validate_email_strategy_or_get_default(
+            email_strategy=email_strategy)
 
     def run(self):
-        self.approve_request()
-        if self.can_send_email:
-            self.send_email()
+        with transaction.atomic():
+            self.approve_request()
+        self.send_email()
 
     def approve_request(self):
         """Set the status of the request to 'Approved - Scheduled' and
@@ -404,23 +289,23 @@ class SavioProjectApprovalRunner(ProjectApprovalRunner):
 
     def send_email(self):
         """Send a notification email to the requester and PI."""
-        request = self.request_obj
         try:
-            send_project_request_approval_email(
-                request, self.num_service_units)
+            email_method = send_project_request_approval_email
+            email_args = (self.request_obj, self.num_service_units)
+            self._email_strategy.process_email(email_method, *email_args)
         except Exception as e:
-            logger.error('Failed to send notification email. Details:\n')
-            logger.exception(e)
+            logger.exception(
+                f'Failed to send notification email. Details:\n{e}')
 
 
 class SavioProjectProcessingRunner(ProjectProcessingRunner):
     """An object that performs necessary database changes when a new
     Savio project request is processed."""
 
-    def __init__(self, request_obj, num_service_units):
+    def __init__(self, request_obj, num_service_units, email_strategy=None):
         validate_num_service_units(num_service_units)
         self.num_service_units = num_service_units
-        super().__init__(request_obj)
+        super().__init__(request_obj, email_strategy=email_strategy)
         if self.request_obj.allocation_period:
             self.request_obj.allocation_period.assert_started()
             self.request_obj.allocation_period.assert_not_ended()
@@ -782,12 +667,6 @@ class VectorProjectProcessingRunner(ProjectProcessingRunner):
     """An object that performs necessary database changes when a new
     Vector project request is processed."""
 
-    def run_extra_processing(self):
-        """Run additional subclass-specific processing."""
-        # Automatically provide the requester with access to the designated
-        # Savio project for Vector users.
-        self.__add_user_to_savio_project()
-
     def update_allocation(self):
         """Perform allocation-related handling."""
         project = self.request_obj.project
@@ -800,30 +679,6 @@ class VectorProjectProcessingRunner(ProjectProcessingRunner):
     def update_existing_user_allocations(self, value):
         """Perform user-allocation-related handling."""
         pass
-
-    def __add_user_to_savio_project(self):
-        user_obj = self.request_obj.requester
-        savio_project_name = settings.SAVIO_PROJECT_FOR_VECTOR_USERS
-        try:
-            add_vector_user_to_designated_savio_project(user_obj)
-        except Exception as e:
-            message = (
-                f'Encountered unexpected exception when automatically '
-                f'providing User {user_obj.pk} with access to Savio. Details:')
-            logger.error(message)
-            logger.exception(e)
-            user_message = (
-                f'A failure occurred when automatically adding User '
-                f'{user_obj.username} to Savio project {savio_project_name} '
-                f'and requesting cluster access. Please see the logs for more '
-                f'information.')
-        else:
-            user_message = (
-                f'User {user_obj.username} has automatically been added to '
-                f'Savio project {savio_project_name}. A cluster access '
-                f'request has automatically been made, assuming the user did '
-                f'not already pending or active status.')
-        self.user_messages.append(user_message)
 
 
 def vector_request_denial_reason(vector_request):

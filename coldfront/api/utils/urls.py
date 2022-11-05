@@ -10,7 +10,7 @@ schema_view = get_schema_view(
         default_version='v1',
         description='REST API for MyBRC'),
     public=True,
-    permission_classes=(permissions.AllowAny,))
+    permission_classes=(permissions.IsAuthenticated,))
 
 urlpatterns = [
     url(

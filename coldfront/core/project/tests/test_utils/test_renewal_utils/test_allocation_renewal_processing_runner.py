@@ -10,6 +10,7 @@ from coldfront.core.allocation.models import AllocationUser
 from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.allocation.models import AllocationUserAttributeUsage
 from coldfront.core.allocation.models import AllocationUserStatusChoice
+from coldfront.core.allocation.models import ClusterAccessRequest
 from coldfront.core.allocation.utils import get_project_compute_allocation
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectStatusChoice
@@ -42,19 +43,26 @@ TEST_PRIMARY_CLUSTER_NAME = 'Savio'
 class TestRunnerMixin(TestRunnerMixinBase):
     """A mixin for testing AllocationRenewalProcessingRunner."""
 
-    def test_cluster_access_requests_created(self):
+    def test_cluster_access_requests_created_if_project_user_not_active(self):
         """Test that the runner creates an AllocationUserAttribute with
-        type 'Cluster Account Status' for the requester if one does not
-        already exist."""
+        type 'Cluster Account Status' for the requester when the
+        associated ProjectUser does not have the 'Active' status."""
         request = self.request_obj
         project = request.post_project
         allocation = get_project_compute_allocation(project)
+
+        ClusterAccessRequest.objects.all().delete()
 
         # Delete all such attributes.
         allocation_attribute_type = AllocationAttributeType.objects.get(
             name='Cluster Account Status')
         AllocationUserAttribute.objects.filter(
             allocation_attribute_type=allocation_attribute_type).delete()
+
+        removed_project_user_status = ProjectUserStatusChoice.objects.get(
+            name='Removed')
+        ProjectUser.objects.filter(
+            project=project).update(status=removed_project_user_status)
 
         num_service_units = Decimal('1000.00')
         runner = AllocationRenewalProcessingRunner(request, num_service_units)
@@ -73,17 +81,32 @@ class TestRunnerMixin(TestRunnerMixinBase):
             if expected_num_attributes:
                 self.assertEqual(attributes.first().value, 'Pending - Add')
 
-    def test_cluster_access_requests_not_updated_if_active(self):
-        """Test that the runner does not update existent, 'Active'.
-        AllocationUserAttributes with type 'Cluster Account Status'."""
+            cluster_access_requests = ClusterAccessRequest.objects.filter(
+                allocation_user=allocation_user)
+            self.assertEqual(
+                expected_num_attributes, cluster_access_requests.count())
+            if expected_num_attributes:
+                self.assertEqual(
+                    cluster_access_requests.first().status.name,
+                    'Pending - Add')
+
+    def test_cluster_access_requests_not_updated_if_project_user_active(self):
+        """Test that the runner does not update existent
+        AllocationUserAttributes with type 'Cluster Account Status' when
+        the associated ProjectUser has the 'Active' status, even if the
+        attributes are non-'Active'."""
         request = self.request_obj
         project = request.post_project
         allocation = get_project_compute_allocation(project)
+
+        ClusterAccessRequest.objects.all().delete()
 
         # Only the requester should have one cluster access request. Set its
         # status to 'Active'.
         allocation_attribute_type = AllocationAttributeType.objects.get(
             name='Cluster Account Status')
+        active_user_project_status = ProjectUserStatusChoice.objects.get(
+            name='Active')
         queryset = allocation.allocationuser_set.all()
         for allocation_user in queryset:
             expected_num_attributes = int(
@@ -92,7 +115,11 @@ class TestRunnerMixin(TestRunnerMixinBase):
                 allocation_attribute_type=allocation_attribute_type)
             self.assertEqual(expected_num_attributes, attributes.count())
             if expected_num_attributes:
-                attributes.update(value='Active')
+                self.assertTrue(
+                    ProjectUser.objects.filter(
+                        project=project, user=allocation_user.user,
+                        status=active_user_project_status).exists())
+                attributes.update(value='Denied')
 
         num_service_units = Decimal('1000.00')
         runner = AllocationRenewalProcessingRunner(request, num_service_units)
@@ -109,19 +136,27 @@ class TestRunnerMixin(TestRunnerMixinBase):
                 allocation_attribute_type=allocation_attribute_type)
             self.assertEqual(expected_num_attributes, attributes.count())
             if expected_num_attributes:
-                self.assertEqual(attributes.first().value, 'Active')
+                self.assertEqual(attributes.first().value, 'Denied')
 
-    def test_cluster_access_requests_updated_if_not_active(self):
+        # No ClusterAccessRequests should have been created.
+        self.assertEqual(ClusterAccessRequest.objects.count(), 0)
+
+    def test_cluster_access_requests_updated_if_project_user_not_active(self):
         """Test that the runner updates existent, non-'Active'
-        AllocationUserAttributes with type 'Cluster Account Status'."""
+        AllocationUserAttributes with type 'Cluster Account Status' when
+        the associated ProjectUser does not have the 'Active' status."""
         request = self.request_obj
         project = request.post_project
         allocation = get_project_compute_allocation(project)
 
+        ClusterAccessRequest.objects.all().delete()
+
         # Only the requester should have one cluster access request. Set its
-        # status to 'Denied'.
+        # associated ProjectUser's status to 'Removed'.
         allocation_attribute_type = AllocationAttributeType.objects.get(
             name='Cluster Account Status')
+        removed_project_user_status = ProjectUserStatusChoice.objects.get(
+            name='Removed')
         queryset = allocation.allocationuser_set.all()
         for allocation_user in queryset:
             expected_num_attributes = int(
@@ -130,6 +165,9 @@ class TestRunnerMixin(TestRunnerMixinBase):
                 allocation_attribute_type=allocation_attribute_type)
             self.assertEqual(expected_num_attributes, attributes.count())
             if expected_num_attributes:
+                ProjectUser.objects.filter(
+                    project=project, user=allocation_user.user).update(
+                        status=removed_project_user_status)
                 attributes.update(value='Denied')
 
         num_service_units = Decimal('1000.00')
@@ -148,6 +186,15 @@ class TestRunnerMixin(TestRunnerMixinBase):
             self.assertEqual(expected_num_attributes, attributes.count())
             if expected_num_attributes:
                 self.assertEqual(attributes.first().value, 'Pending - Add')
+
+            cluster_access_requests = ClusterAccessRequest.objects.filter(
+                allocation_user=allocation_user)
+            self.assertEqual(
+                expected_num_attributes, cluster_access_requests.count())
+            if expected_num_attributes:
+                self.assertEqual(
+                    cluster_access_requests.first().status.name,
+                    'Pending - Add')
 
     def test_num_service_units_validated(self):
         """Test that the provided number of service units must be valid,
@@ -383,10 +430,11 @@ class TestRunnerMixin(TestRunnerMixinBase):
         project.refresh_from_db()
         self.assertEqual(project.status.name, 'Active')
 
-    def test_runner_creates_and_updates_allocation_users(self):
-        """Test that the runner creates new AllocationUsers and updates
-        existing AllocationUsers on the post_project's compute
-        Allocation."""
+    def test_runner_creates_and_updates_project_and_allocation_users(self):
+        """Test that the runner creates new ProjectUsers and updates
+        existing ProjectUsers, as well as creates new AllocationUsers
+        and updates existing AllocationUsers on the post_project's
+        compute Allocation."""
         request = self.request_obj
         project = request.post_project
         allocation = get_project_compute_allocation(project)
@@ -402,11 +450,17 @@ class TestRunnerMixin(TestRunnerMixinBase):
             b = queryset.get(user=request.pi)
         except AllocationUser.DoesNotExist:
             b = None
-        # Delete the requester's AllocationUser to test that it gets created.
+        # Delete the requester's ProjectUser and AllocationUser to test that
+        # it gets created.
+        ProjectUser.objects.filter(
+            project=project, user=request.requester).delete()
         a.delete()
         # Change the PI's AllocationUser's status if it exists to test that it
         # gets updated.
         if b:
+            ProjectUser.objects.filter(
+                project=project, user=request.pi).update(
+                    status=ProjectUserStatusChoice.objects.get(name='Removed'))
             b.status = AllocationUserStatusChoice.objects.get(name='Removed')
             b.save()
 

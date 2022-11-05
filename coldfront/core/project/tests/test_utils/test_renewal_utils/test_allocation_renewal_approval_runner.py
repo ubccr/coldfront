@@ -6,6 +6,7 @@ from coldfront.core.project.utils_.renewal_utils import AllocationRenewalApprova
 from coldfront.core.project.utils_.renewal_utils import get_next_allowance_year_period
 from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import utc_now_offset_aware
+from coldfront.core.utils.email.email_strategy import DropEmailStrategy
 from decimal import Decimal
 from django.conf import settings
 from django.core import mail
@@ -73,8 +74,8 @@ class TestRunnerMixin(TestRunnerMixinBase):
         REQUEST_APPROVAL_CC_LIST=['admin0@email.com', 'admin1@email.com'])
     def test_runner_sends_emails_conditionally(self):
         """Test that the runner sends a notification email to the
-        requester and the PI, CC'ing a designated list of admins, if
-        requested."""
+        requester and the PI, CC'ing a designated list of admins, unless
+        otherwise specified."""
         request = self.request_obj
         project = request.post_project
         requester = request.requester
@@ -82,7 +83,8 @@ class TestRunnerMixin(TestRunnerMixinBase):
 
         # If not requested, an email should not be sent.
         num_service_units = Decimal('0.00')
-        runner = AllocationRenewalApprovalRunner(request, num_service_units)
+        runner = AllocationRenewalApprovalRunner(
+            request, num_service_units, email_strategy=DropEmailStrategy())
         runner.run()
 
         self.assertEqual(len(mail.outbox), 0)
@@ -93,9 +95,8 @@ class TestRunnerMixin(TestRunnerMixinBase):
         request.approved_time = None
         request.save()
 
-        # If requested, an email should be sent.
-        runner = AllocationRenewalApprovalRunner(
-            request, num_service_units, send_email=True)
+        # If requested (by default), an email should be sent.
+        runner = AllocationRenewalApprovalRunner(request, num_service_units)
         runner.run()
 
         self.assertEqual(len(mail.outbox), 1)

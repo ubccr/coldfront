@@ -1,11 +1,21 @@
 {% load static %}
+{% load feature_flags %}
 <div class="bg-primary" id="brand">
   <div class="container">
     <div class="row">
       <div class="col">
         <h1 class="float-left" style="max-width: 500px;">{{ PORTAL_NAME }} - <small>{{ PROGRAM_NAME_LONG }} Access Management System</small></h1>
-        <img src="{% static 'core/portal/imgs/brc_logo.png' %}" alt="brc_logo" width="100;" style="margin: 10px;" class="float-right">
+        {% flag_enabled 'LRC_ONLY' as lrc_only %}
+        {% if lrc_only %}
+        <img src="{% static 'core/portal/imgs/white_berkeley_lab_logo.png' %}" alt="white_berkeley_lab_logo" height="100" style="margin: 10px;" class="float-right">
+        {% endif %}
+
+        {% flag_enabled 'BRC_ONLY' as brc_only %}
+        {% if brc_only %}
+        <img src="{% static 'core/portal/imgs/brc_logo.png' %}" alt="brc_logo" height="100" style="margin: 10px;" class="float-right">
+        {% endif %}
+
       </div>
     </div>
-  </div> 
+  </div>
 </div>

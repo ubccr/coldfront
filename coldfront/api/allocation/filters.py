@@ -1,4 +1,5 @@
-from coldfront.core.allocation.models import Allocation
+from coldfront.core.allocation.models import Allocation, \
+    ClusterAccessRequestStatusChoice, ClusterAccessRequest
 from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AllocationUser
@@ -67,3 +68,15 @@ class AllocationUserFilter(django_filters.FilterSet):
     class Meta:
         model = AllocationUser
         fields = ('project', 'resources',)
+
+
+class ClusterAccessRequestFilter(django_filters.FilterSet):
+    """A FilterSet for the ClusterAccessRequest model."""
+
+    status = django_filters.filters.ModelMultipleChoiceFilter(
+        field_name='status__name', to_field_name='name',
+        queryset=ClusterAccessRequestStatusChoice.objects.all())
+
+    class Meta:
+        model = ClusterAccessRequest
+        fields = ('status',)

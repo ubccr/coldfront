@@ -145,8 +145,9 @@ def session_wizard_all_form_data(submitted_forms_list, step_num_to_data,
     """
     data = iter([form.cleaned_data for form in submitted_forms_list])
     all_form_data = [{} for _ in range(total_num_forms)]
-    for step in sorted(step_num_to_data.keys()):
-        all_form_data[int(step)] = next(data)
+    step_nums = [int(step) for step in step_num_to_data.keys()]
+    for step in sorted(step_nums):
+        all_form_data[step] = next(data)
     return all_form_data
 
 

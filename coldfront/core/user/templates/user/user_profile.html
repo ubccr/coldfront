@@ -4,7 +4,7 @@
 
 
 {% block title %}
-User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif %}
+User Profile{% if not requester_is_viewed_user %}: {{ viewed_user.username }}{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -17,7 +17,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
 
   <div class="card ">
     <div class="card-header"><i class="fas fa-user" aria-hidden="true"></i>
-      User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif %}
+      User Profile{% if not requester_is_viewed_user %}: {{ viewed_user.username }}{% endif %}
       <div class="float-right">
         <a class="btn btn-primary" href="{% url 'user-projects-managers' viewed_user %}" role="button"><i class="far fa-user-circle" aria-hidden="true"></i> View user projects and managers</a>
       </div>
@@ -30,7 +30,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
         {% endif %}
         {{viewed_user.last_name}}
 
-        {% if request.user == viewed_user %}
+        {% if requester_is_viewed_user %}
         <a class="btn btn-sm" href="{% url 'user-profile-update' %}" role="button">
           <span class="accessibility-link-text">Update User Profile</span>
           <i class="far fa-edit" style="color: #4aa0b5;" aria-hidden="true"></i>
@@ -50,7 +50,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
           <td>
             <p>
               {{ viewed_user.email }}
-              {% if user == viewed_user %}
+              {% if primary_address_updatable %}
                 <a href="{% url 'update-primary-email-address' %}" class="btn btn-secondary float-right">
                   <i class="far fa-edit" aria-hidden="true"></i>
                   Update
@@ -87,7 +87,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
 <!--          <th scope="row">PI Status:</th>-->
 <!--          <td>  {% if viewed_user.userprofile.is_pi %}-->
 <!--                  <span class="badge badge-success"><i class="fas fa-check"></i></span>-->
-<!--                {% elif not user == viewed_user %}-->
+<!--                {% elif not requester_is_viewed_user %}-->
 <!--                  <span class="badge badge-danger"><i class="fas fa-times"></i></span>-->
 <!--                {% else %}-->
 <!--                  <form class="form-inline" method="post" action="{% url 'user-upgrade' %}">-->
@@ -142,7 +142,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
                 <i class="fas fa-check"></i>
                 Signed {{ viewed_user.userprofile.access_agreement_signed_date }}
               </span>
-              {% if user == viewed_user %}
+              {% if requester_is_viewed_user %}
                 <a href="{% url 'user-access-agreement' %}" class="btn btn-secondary float-right">
                   <i class="far fa-edit" aria-hidden="true"></i>
                   Review
@@ -153,7 +153,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
                 <i class="fas fa-times"></i>
                 Unsigned
               </span>
-              {% if user == viewed_user %}
+              {% if requester_is_viewed_user %}
                 <a href="{% url 'user-access-agreement' %}" class="btn btn-secondary float-right">
                   <i class="far fa-edit" aria-hidden="true"></i>
                   Review and Sign
@@ -162,7 +162,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
             {% endif %}
           </td>
         </tr>
-        {% if user == viewed_user %}
+        {% if change_password_enabled %}
           <tr>
             <th>Change Password:</th>
             <td>
@@ -185,11 +185,12 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
 
   <br>
 
+  {% if core_user_email_addresses_visible %}
   <div class="card">
     <div class="card-header">
       <i class="far fa-envelope"></i>
-      Other Email Addresses{% if not user == viewed_user %}: {{ viewed_user.username}}{% endif %}
-      {% if user == viewed_user %}
+      Other Email Addresses{% if not requester_is_viewed_user %}: {{ viewed_user.username }}{% endif %}
+      {% if core_user_email_addresses_updatable %}
         <div class="float-right">
           <a class="btn btn-success float-right" href="{% url 'add-email-address' %}" role="button">
             <i class="fas fa-plus" aria-hidden="true"></i>
@@ -220,7 +221,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
                   {% endif %}
                 </td>
                 <td>
-                  {% if user == viewed_user %}
+                  {% if core_user_email_addresses_updatable %}
                     {% if not email.is_verified %}
                       <form action="{% url 'send-email-verification-email' email.pk %}" method="post" style="display: inline;">
                         {% csrf_token %}
@@ -246,8 +247,52 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
       </div>
     </div>
   </div>
-
   <br>
+  {% endif %}
+
+  {% if allauth_email_addresses_visible %}
+  <div class="card">
+    <div class="card-header">
+      <i class="far fa-envelope"></i>
+      Other Email Addresses{% if not requester_is_viewed_user %}: {{ viewed_user.username }}{% endif %}
+      {% if allauth_email_addresses_updatable %}
+        <a class="btn btn-success float-right" href="{% url 'account_email' %}" id="manage-emails-button">
+          <i class="fas fa-edit"></i>
+          Manage Emails
+        </a>
+      {% endif %}
+    </div>
+    <div class="card-body">
+      <p>
+        You may manage the emails associated with your account.
+      </p>
+    </div>
+  </div>
+  <br>
+  {% endif %}
+
+  {% if third_party_accounts_visible %}
+  <div class="card">
+    <div class="card-header">
+      <i class="far fa-user-circle"></i>
+      Third-Party Accounts{% if not requester_is_viewed_user %}: {{ viewed_user.username }}{% endif %}
+      {% if third_party_accounts_updatable %}
+        <a class="btn btn-success float-right" href="{% url 'socialaccount_connections' %}" id="manage-third-party-accounts-button">
+          <i class="fas fa-edit"></i>
+          Manage Accounts
+        </a>
+      {% endif %}
+    </div>
+    <div class="card-body">
+      <p>
+        You may manage the third-party accounts used to sign in to your
+        account.
+      </p>
+    </div>
+  </div>
+  <br>
+  {% endif %}
+
   {% if not is_lbl_employee %}
     <div class="card">
       <div class="card-header">
@@ -274,9 +319,9 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
         <p>
           If you have an active cluster account, you may request a new invitation
           to link an external identity (e.g., your personal email account or
-          institutional account) to your cluster account, allowing you to manage
-          one-time password (OTP) tokens. Once requested, you will receive an
-          email containing instructions on how to link your accounts.
+          institutional account) to it, allowing you to manage one-time password
+          (OTP) tokens. Once requested, you will receive an email containing
+          instructions on how to link your accounts.
         </p>
         <p>
           Emails are sent periodically. If you have not received the email after
@@ -285,8 +330,8 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
         </p>
         {% if linking_request %}
           <p>
-            Below is your latest request. If it is pending, you cannot make a new
-            one until it has been processed.
+            Below is your latest request. If it is pending, you cannot make a
+            new one until it has been processed.
           </p>
           <div class="table-responsive">
             <table class="table table-sm">

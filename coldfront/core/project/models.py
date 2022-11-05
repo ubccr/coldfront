@@ -465,6 +465,10 @@ class SavioProjectAllocationRequest(TimeStampedModel):
 
     state = models.JSONField(default=savio_project_request_state_schema)
     extra_fields = models.JSONField(default=dict)
+    billing_activity = models.ForeignKey(
+        'billing.BillingActivity', blank=True, null=True,
+        on_delete=models.SET_NULL, related_name='billing_activity')
+
     history = HistoricalRecords()
 
     def denial_reason(self):

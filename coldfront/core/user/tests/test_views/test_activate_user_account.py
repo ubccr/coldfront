@@ -1,3 +1,5 @@
+from flags.state import enable_flag
+
 from coldfront.core.user.models import EmailAddress
 from coldfront.core.user.tests.utils import TestUserBase
 from coldfront.core.user.utils import account_activation_url
@@ -14,6 +16,7 @@ class TestActivateUserAccount(TestUserBase):
 
     def setUp(self):
         """Set up test data."""
+        enable_flag('BASIC_AUTH_ENABLED')
         super().setUp()
 
         self.user = User.objects.create(
@@ -47,7 +50,7 @@ class TestActivateUserAccount(TestUserBase):
         "email" field."""
         url = account_activation_url(self.user)
         response = self.client.get(url)
-        self.assertRedirects(response, reverse('login'))
+        self.assert_redirects_to_login(response, target_status_code=302)
         message = self.expected_success_message(self.user.email)
         self.assertEqual(message, self.get_message_strings(response)[0])
 
@@ -86,7 +89,7 @@ class TestActivateUserAccount(TestUserBase):
 
         url = account_activation_url(self.user)
         response = self.client.get(url)
-        self.assertRedirects(response, reverse('login'))
+        self.assert_redirects_to_login(response, target_status_code=302)
         message = self.expected_success_message(self.user.email)
         self.assertEqual(message, self.get_message_strings(response)[0])
 

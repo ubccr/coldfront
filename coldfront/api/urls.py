@@ -4,6 +4,7 @@ from django.urls import include
 
 urlpatterns = [
     url(r'^', include('coldfront.api.allocation.urls')),
+    url(r'^', include('coldfront.api.billing.urls')),
     url(r'^', include('coldfront.api.statistics.urls')),
     url(r'^', include('coldfront.api.project.urls')),
     url(r'^', include('coldfront.api.user.urls')),

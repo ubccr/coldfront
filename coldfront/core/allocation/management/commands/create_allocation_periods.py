@@ -156,6 +156,46 @@ class Command(BaseCommand):
                         "name": "Summer Sessions 2022 - Session F",
                         "start_date": "2022-07-05",
                         "end_date": "2022-07-22"
+                    },
+                    {
+                        "name": "Fall Semester 2022",
+                        "start_date": "2022-08-17",
+                        "end_date": "2022-12-16"
+                    },
+                    {
+                        "name": "Spring Semester 2023",
+                        "start_date": "2023-01-10",
+                        "end_date": "2023-05-12"
+                    },
+                    {
+                        "name": "Summer Sessions 2023 - Session A",
+                        "start_date": "2023-05-22",
+                        "end_date": "2023-06-30"
+                    },
+                    {
+                        "name": "Summer Sessions 2023 - Session B",
+                        "start_date": "2023-06-05",
+                        "end_date": "2023-08-11"
+                    },
+                    {
+                        "name": "Summer Sessions 2023 - Session C",
+                        "start_date": "2023-06-20",
+                        "end_date": "2023-08-11"
+                    },
+                    {
+                        "name": "Summer Sessions 2023 - Session D",
+                        "start_date": "2023-07-03",
+                        "end_date": "2023-08-11"
+                    },
+                    {
+                        "name": "Summer Sessions 2023 - Session E",
+                        "start_date": "2023-07-24",
+                        "end_date": "2023-08-11"
+                    },
+                    {
+                        "name": "Summer Sessions 2023 - Session F",
+                        "start_date": "2023-07-03",
+                        "end_date": "2023-07-21"
                     }
                 ]
             )

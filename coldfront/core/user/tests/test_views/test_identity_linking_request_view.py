@@ -43,7 +43,7 @@ class TestIdentityLinkingRequestView(TestBase):
         self.client = Client()
         url = self.identity_linking_request_url()
         response = self.client.get(url)
-        self.assertRedirects(response, reverse('login') + f'?next={url}')
+        self.assert_redirects_to_login(response, next_url=url)
 
     def test_post_creates_request(self):
         """Test that a POST request creates a pending

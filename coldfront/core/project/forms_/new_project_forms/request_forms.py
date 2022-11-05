@@ -12,7 +12,7 @@ from coldfront.core.resource.utils_.allowance_utils.computing_allowance import C
 from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
 from coldfront.core.resource.utils_.allowance_utils.constants import LRCAllowances
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
-from coldfront.core.user.utils import is_lbl_employee
+from coldfront.core.user.utils_.host_user_utils import is_lbl_employee
 from coldfront.core.utils.common import utc_now_offset_aware
 
 from django import forms

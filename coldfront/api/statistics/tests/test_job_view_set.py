@@ -117,6 +117,9 @@ class TestJobList(TestJobBase):
 
         # Reset the client object for testing.
         self.client = APIClient()
+        user = User.objects.get(username='user0')
+        token = ExpiringToken.objects.create(user=user)
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {token.key}')
 
     def assert_results(self, url, status_code, count):
         """Assert that making a GET request to the given URL results in
@@ -150,6 +153,17 @@ class TestJobList(TestJobBase):
                 [base_url, f'{parameter}={str(parameters[parameter])}'])
             separator = '&'
         return base_url
+
+    def test_unauthenticated_user(self):
+        """Test that unauthenticated users do not have access."""
+        self.client = APIClient()
+
+        url = TestJobList.get_url()
+        status_code, count = 401, None
+        errors = self.assert_results(url, status_code, count)['errors']
+        self.assertIn('detail', errors)
+        self.assertEqual(
+            errors['detail'], 'Authentication credentials were not provided.')
 
     def test_no_filters_default_used(self):
         """Test that, when no time filters are provided, only jobs

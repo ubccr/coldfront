@@ -7,6 +7,7 @@ from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
+from coldfront.core.utils.tests.test_base import TestBase
 from decimal import Decimal
 from django.core.management import call_command
 from django.test import TestCase
@@ -45,12 +46,7 @@ def grant_user_cluster_access_under_test_project(user):
         value='Active')
 
 
-class TestUserBase(TestCase):
+class TestUserBase(TestBase):
     """A base class for testing User-related functionality."""
 
-    def setUp(self):
-        """Set up test data."""
-        super().setUp()
-        sys.stdout = open(os.devnull, 'w')
-        call_command('create_staff_group')
-        sys.stdout = sys.__stdout__
+    pass

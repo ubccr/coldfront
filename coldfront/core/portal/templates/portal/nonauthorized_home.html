@@ -1,36 +1,70 @@
 {% extends "common/base.html" %}
+{% load feature_flags %}
+{% load socialaccount %}
 
 {% load common_tags %}
 
 {% block content %}
 
+<h1>Welcome to {{ PORTAL_NAME }}</h1>
+<p class="text-justify">
+  {{ PORTAL_NAME }} is a user portal for managing access to the clusters and
+  other resources provided by the {{ PROGRAM_NAME_LONG }}
+  ({{ PROGRAM_NAME_SHORT }}) program.
+</p>
+<ul>
+  <li>Join projects and gain access to {{ PRIMARY_CLUSTER_NAME }} and other clusters.</li>
+  <li>Create new projects and manage project users.</li>
+  <li>Request or purchase computing allowances.</li>
+  <li>View details of current and past jobs, and allowance usages.</li>
+  <li>And more!</li>
+</ul>
+<p>
+	For more information, refer to our
+	<a href="{% settings_value 'CENTER_USER_GUIDE' %}">documentation</a>.
+</p>
+<p>
+  {% flag_enabled 'BASIC_AUTH_ENABLED' as basic_auth_enabled %}
+  {% if basic_auth_enabled %}
+  <a class="btn btn-primary btn-lg" href="{% url 'login' %}" role="button">
+    <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
+    Log In
+  </a>
+  <a class="btn btn-secondary btn-lg" href="{% url 'register' %}" role="button">
+    Register
+  </a>
+  {% endif %}
+  {% flag_enabled 'SSO_ENABLED' as sso_enabled %}
+  {% if sso_enabled %}
+  <a class="btn btn-primary btn-lg" href="{% provider_login_url 'cilogon' process='login' auth_params='idphint=urn:mace:incommon:lbl.gov' %}" role="button">
+    <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
+    Berkeley Lab: Log In
+  </a>
+  <a class="btn btn-secondary btn-lg" href="{% url 'login' %}" role="button">
+    <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
+    Other: Log In
+  </a>
+  {% endif %}
+</p>
 
-<div class="row" style="margin-top:25px">
-    <div class="col mr-5">
-        <h2 class="text-center">Log In to {{ PORTAL_NAME }}</h2>
-        <hr>
-        <p><a class="btn btn-primary btn-block" href="{% url 'login' %}" role="button"><i class="fas fa-sign-in-alt" aria-hidden="true"></i> Log In</a></p>
-        <div class="card bg-light">
-            <div class="card-body">
-                <p class="card-title">
-                  <b>Do not have an Account?</b>
-                </p>
-                <p class="card-text" style="text-align: justify;text-justify: inter-word;">{% settings_value 'ACCOUNT_CREATION_TEXT' %}</p>
-            </div>
-        </div>
-    </div>
-    {% include "portal/extra_app_templates.html" %}
-</div>
 
+{% include "portal/extra_app_templates.html" %}
 
 
 {% endblock %}
 
 
 {% block javascript %}
-  {{ block.super }}
-  <script>
-    $("#navbar-main > ul > li.active").removeClass("active");
-    $("#navbar-home").addClass("active");
-  </script>
+{{ block.super }}
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-home").addClass("active");
+</script>
+
+<script>
+  $("#expand_button").click(function() {
+    $('#externalProviderCollapse').collapse();
+  });
+</script>
+
 {% endblock %}

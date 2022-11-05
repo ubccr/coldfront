@@ -1,0 +1,36 @@
+{% extends "account/base.html" %}
+{% load account %}
+{% load static %}
+
+
+{% block title %}
+Confirm Email Address
+{% endblock %}
+
+
+{% block content %}
+<h1>Confirm Email Address</h1>
+<hr>
+
+{% if confirmation %}
+  {% user_display confirmation.email_address.user as user_display %}
+  {% with email=confirmation.email_address.email %}
+    <p>
+      Please confirm that <a href="mailto:{{ email }}">{{ email }}</a> is an
+      email address for user {{ user_display }}.
+    </p>
+  {% endwith %}
+
+  <form method="post" action="{% url 'account_confirm_email' confirmation.key %}">
+    {% csrf_token %}
+    <button class="btn btn-primary" type="submit">Confirm</button>
+  </form>
+{% else %}
+  {% url 'account_email' as email_url %}
+  <p>
+    This email confirmation link expired or is invalid. Please
+    <a href="{{ email_url }}">issue a new email confirmation request</a>.
+  </p>
+{% endif %}
+
+{% endblock %}

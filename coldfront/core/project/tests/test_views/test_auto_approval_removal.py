@@ -1,8 +1,10 @@
+from decimal import Decimal
 from http import HTTPStatus
 
 from django.contrib.messages import get_messages
 from django.urls import reverse
 
+from coldfront.api.statistics.utils import create_project_allocation
 from coldfront.core.project.models import *
 from coldfront.core.user.models import UserProfile
 from django.contrib.auth.models import User
@@ -73,6 +75,7 @@ class TestBase(AllTestsBase):
         # Create Projects.
         self.fc_project1 = Project.objects.create(
             name='fc_project1', status=active_project_status)
+        create_project_allocation(self.fc_project1, Decimal('0.00'))
 
         # add pis
         for pi_user in [self.pi1, self.pi2]:

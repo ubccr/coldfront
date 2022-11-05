@@ -3,7 +3,10 @@ from coldfront.core.allocation.models import AllocationAttributeUsage
 from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.models import AllocationUserAttributeUsage
 from coldfront.core.allocation.models import AllocationUserStatusChoice
+from coldfront.core.resource.utils import get_computing_allowance_project_prefixes
 from coldfront.core.resource.utils import get_primary_compute_resource
+from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from decimal import ConversionSyntax
 from decimal import Decimal
 from django.conf import settings
@@ -85,6 +88,45 @@ class TestCanSubmitJobView(TestJobBase):
         self.project_user.delete()
         message = f'User user0 is not a member of account fc_project.'
         self.assert_result('1.00', '0', 'fc_project', 200, False, message)
+
+    def test_compute_allocation_not_expected_always_allowed(self):
+        """Test that requests wherein the account is not intended to
+        have a computing allowance always succeed."""
+        job_cost = str(settings.ALLOCATION_MAX)
+
+        failure_message = (
+            f'Adding job_cost {job_cost} to account balance 0.00 would exceed '
+            f'account allocation 1000.00.')
+        success_message = f'A job with job_cost {job_cost} can be submitted.'
+
+        computing_allowance_interface = ComputingAllowanceInterface()
+
+        prefixes_with_allowances = get_computing_allowance_project_prefixes()
+        self.assertGreater(len(prefixes_with_allowances), 0)
+        for prefix in prefixes_with_allowances:
+            self.project.name = f'{prefix}project'
+            self.project.save()
+            # Some allowances have infinite service units (e.g., Condo), so
+            # they would be allowed for a different reason.
+            allowance = ComputingAllowance(
+                computing_allowance_interface.allowance_from_project(
+                    self.project))
+            if allowance.has_infinite_service_units():
+                result = True
+                message = success_message
+            else:
+                result = False
+                message = failure_message
+            self.assert_result(
+                job_cost, '0', self.project.name, 200, result, message)
+
+        example_exempt_project_names = (
+            'abc', 'alsacc', 'etna', 'nano', 'vector_project', 'vulcan')
+        for project_name in example_exempt_project_names:
+            self.project.name = project_name
+            self.project.save()
+            self.assert_result(
+                job_cost, '0', self.project.name, 200, True, success_message)
 
     def test_no_active_compute_allocation(self):
         """Test that requests wherein the account has no active compute

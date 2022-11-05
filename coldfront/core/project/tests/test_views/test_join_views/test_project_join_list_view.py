@@ -1,16 +1,13 @@
-from copy import deepcopy
 from urllib.parse import urlencode
 
-from coldfront.core.project.models import Project, ProjectUser, \
-    ProjectUserStatusChoice, ProjectUserRoleChoice
+from django.contrib.auth.models import User
+from django.urls import reverse
+
+from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.user.models import UserProfile
+from coldfront.core.utils.tests.test_base import enable_deployment
 from coldfront.core.utils.tests.test_base import TestBase
-
-from django.contrib.auth.models import User
-from django.conf import settings
-from django.test import override_settings
-from django.urls import reverse
 
 
 class TestProjectJoinListView(TestBase):
@@ -80,19 +77,17 @@ class TestProjectJoinListView(TestBase):
 
         url = self.project_join_list_url()
 
-        # Setting LRC_ONLY to True and BRC_ONLY to False
-        flags_copy = deepcopy(settings.FLAGS)
-        flags_copy['LRC_ONLY'] = [{'condition': 'boolean', 'value': True}]
-        flags_copy['BRC_ONLY'] = [{'condition': 'boolean', 'value': False}]
-        with override_settings(FLAGS=flags_copy):
+        help_message = (
+            'not an LBL employee with a verified LBL email (@lbl.gov),')
+        host_user_form = (
+            '<div id="div_id_host_user" class="form-group"> '
+            '<label for="id_host_user" class=" requiredField">')
+
+        with enable_deployment('LRC'):
             # Help text and form should be available to non-LBL employees
             # with no host.
             response = self.client.get(url)
             html = response.content.decode('utf-8')
-
-            help_message = 'not an LBL employee with an LBL email (@lbl.gov),'
-            host_user_form = '<div id="div_id_host_user" class="form-group"> ' \
-                             '<label for="id_host_user" class=" requiredField">'
             self.assertIn(help_message, html)
             self.assertIn(host_user_form, html)
 
@@ -101,10 +96,6 @@ class TestProjectJoinListView(TestBase):
             self.user.save()
             response = self.client.get(url)
             html = response.content.decode('utf-8')
-
-            help_message = 'not an LBL employee with an LBL email (@lbl.gov),'
-            host_user_form = '<div id="div_id_host_user" class="form-group"> ' \
-                             '<label for="id_host_user" class=" requiredField">'
             self.assertNotIn(help_message, html)
             self.assertNotIn(host_user_form, html)
             self.user.email = 'user@email.com'
@@ -114,13 +105,8 @@ class TestProjectJoinListView(TestBase):
             user_profile = UserProfile.objects.get(user=self.user)
             user_profile.host_user = pi
             user_profile.save()
-
             response = self.client.get(url)
             html = response.content.decode('utf-8')
-
-            help_message = 'not an LBL employee with an LBL email (@lbl.gov),'
-            host_user_form = '<div id="div_id_host_user" class="form-group"> ' \
-                             '<label for="id_host_user" class=" requiredField">'
             self.assertNotIn(help_message, html)
             self.assertNotIn(host_user_form, html)
             user_profile.host_user = None
@@ -128,32 +114,19 @@ class TestProjectJoinListView(TestBase):
 
             # Help text and form not available if the user has a pending
             # join request.
-
             # Create join request.
             self.create_join_request(self.user, project0, host_user=pi)
-
             response = self.client.get(url)
             html = response.content.decode('utf-8')
-
-            help_message = 'not an LBL employee with an LBL email (@lbl.gov),'
-            host_user_form = '<div id="div_id_host_user" class="form-group"> ' \
-                             '<label for="id_host_user" class=" requiredField">'
             self.assertNotIn(help_message, html)
             self.assertNotIn(host_user_form, html)
             user_profile.host_user = None
             user_profile.save()
 
-        # Setting LRC_ONLY to False and BRC_ONLY to True
-        flags_copy['BRC_ONLY'] = [{'condition': 'boolean', 'value': True}]
-        flags_copy['LRC_ONLY'] = [{'condition': 'boolean', 'value': False}]
-        with override_settings(FLAGS=flags_copy):
+        with enable_deployment('BRC'):
             # Help text and form not available if LRC_ONLY flag set to false.
             response = self.client.get(url)
             html = response.content.decode('utf-8')
-
-            help_message = 'not an LBL employee with an LBL email (@lbl.gov),'
-            host_user_form = '<div id="div_id_host_user" class="form-group"> ' \
-                             '<label for="id_host_user" class=" requiredField">'
             self.assertNotIn(help_message, html)
             self.assertNotIn(host_user_form, html)
 

@@ -5,6 +5,7 @@ from coldfront.core.allocation.models import AllocationAttributeUsage
 from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.models import AllocationUser
+from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.allocation.models import AllocationUserAttributeUsage
 from coldfront.core.allocation.utils import get_or_create_active_allocation_user
 from coldfront.core.allocation.utils import get_project_compute_allocation
@@ -22,17 +23,21 @@ from coldfront.core.resource.utils import get_compute_resource_names
 from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.user.models import UserProfile
+from coldfront.core.user.utils_.host_user_utils import is_lbl_employee
 
+from allauth.account.models import EmailAddress
 from collections import defaultdict
 from decimal import Decimal
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from django.core.management import call_command
 from django.core.management.base import BaseCommand
 from coldfront.core.utils.common import utc_now_offset_aware
 from django.core.validators import validate_email
 
 import csv
+import json
 import logging
 import re
 
@@ -71,7 +76,9 @@ class Command(BaseCommand):
                 type=str)
 
         all_parser = subparsers.add_parser('all', help='Run all subcommands.')
-        file_names = ('passwd_file', 'project_users_file', 'billing_file')
+        file_names = (
+            'passwd_file', 'project_users_file', 'billing_file',
+            'employee_id_to_user_data_file')
         for file_name in file_names:
             add_file_argument(all_parser, file_name)
 
@@ -86,6 +93,21 @@ class Command(BaseCommand):
             'billing_ids',
             help='Load IDs to be used for monthly billing from a file.')
         add_file_argument(billing_ids_parser, 'billing_file')
+
+        email_addresses_parser = subparsers.add_parser(
+            'email_addresses',
+            help=(
+                'Create a primary, verified EmailAddress for each User with '
+                'zero associated EmailAddress objects.'))
+
+        host_users_parser = subparsers.add_parser(
+            'host_users',
+            help=(
+                'Load host users for users from two files: one associating '
+                'usernames with host employee IDs, and another mapping '
+                'employee IDs to user data.'))
+        add_file_argument(host_users_parser, 'billing_file')
+        add_file_argument(host_users_parser, 'employee_id_to_user_data_file')
 
         project_pis_and_managers_parser = subparsers.add_parser(
             'project_pis_and_managers',
@@ -119,6 +141,8 @@ class Command(BaseCommand):
             'project_pis_and_managers',
             'allocations',
             'billing_ids',
+            'host_users',
+            'email_addresses',
         ]
         for subcommand in ordered_subcommands:
             handler = getattr(self, f'handle_{subcommand}')
@@ -155,19 +179,11 @@ class Command(BaseCommand):
         bp_by_identifier = {}
         ba_by_identifier_pair = {}
 
-        bp_defaults = {
-            'description': 'Unknown, invalid project.',
-        }
-        ba_defaults = {
-            'description': 'Unknown, invalid activity.',
-            'is_valid': False,
-        }
-
         for username, billing_id in user_account_fee_ids.items():
             bp_identifier, ba_identifier = billing_id.split('-')
             billing_project, created = get_or_create_with_cache(
                 BillingProject, bp_identifier, bp_by_identifier,
-                identifier=bp_identifier, defaults=bp_defaults)
+                identifier=bp_identifier)
             if created:
                 self.logger.info(
                     f'Invalid, unknown BillingProject {bp_identifier} was '
@@ -176,8 +192,7 @@ class Command(BaseCommand):
             pair = (bp_identifier, ba_identifier)
             billing_activity, created = get_or_create_with_cache(
                 BillingActivity, pair, ba_by_identifier_pair,
-                billing_project=billing_project, identifier=ba_identifier,
-                defaults=ba_defaults)
+                billing_project=billing_project, identifier=ba_identifier)
             if created:
                 self.logger.info(
                     f'Invalid, unknown BillingActivity {billing_id} was '
@@ -222,7 +237,7 @@ class Command(BaseCommand):
                 bp_identifier, ba_identifier = billing_id.split('-')
                 billing_project, created = get_or_create_with_cache(
                     BillingProject, bp_identifier, bp_by_identifier,
-                    identifier=bp_identifier, defaults=bp_defaults)
+                    identifier=bp_identifier)
                 if created:
                     self.logger.info(
                         f'Invalid, unknown BillingProject {bp_identifier} was '
@@ -231,8 +246,7 @@ class Command(BaseCommand):
                 pair = (bp_identifier, ba_identifier)
                 billing_activity, created = get_or_create_with_cache(
                     BillingActivity, pair, ba_by_identifier_pair,
-                    billing_project=billing_project, identifier=ba_identifier,
-                    defaults=ba_defaults)
+                    billing_project=billing_project, identifier=ba_identifier)
                 if created:
                     self.logger.info(
                         f'Invalid, unknown BillingActivity {billing_id} was '
@@ -290,6 +304,71 @@ class Command(BaseCommand):
             self.logger.info(
                 f'Set Project {project_name}\'s default billing ID to '
                 f'{default_billing_id}.')
+
+    @staticmethod
+    def handle_email_addresses(*args, **options):
+        """Handle the 'email_addresses' subcommand."""
+        cmd_args = ['create_email_addresses', 'allauth.account.models']
+        call_command(*cmd_args)
+
+    def handle_host_users(self, *args, **options):
+        """Handle the 'host_users' subcommand."""
+        host_employee_ids_by_username = self.get_host_employee_ids_by_username(
+            options['billing_file'])
+        user_data_by_employee_id = self.get_user_data_by_employee_id(
+            options['employee_id_to_user_data_file'])
+
+        users = User.objects.order_by('id').select_related('userprofile')
+        for user in users.iterator():
+            username = user.username
+            user_profile = user.userprofile
+            new_host_user = None
+            if is_lbl_employee(user):
+                new_host_user = user
+            elif username in host_employee_ids_by_username:
+                employee_id = host_employee_ids_by_username[username]
+                if employee_id in user_data_by_employee_id:
+                    user_data = user_data_by_employee_id[employee_id]
+                    email = user_data['email'].lower()
+                    # First, attempt to find a matching User from User.email.
+                    matching_users = User.objects.filter(email__iexact=email)
+                    if matching_users.exists():
+                        new_host_user = matching_users.first()
+                    else:
+                        # Then, attempt to find a matching User from
+                        # EmailAddress.email.
+                        matching_email_addresses = EmailAddress.objects.filter(
+                            email__iexact=email)
+                        if matching_email_addresses.exists():
+                            new_host_user = \
+                                matching_email_addresses.first().user
+                        else:
+                            # If no matching User could be found, create a new
+                            # User object, setting its host_user to itself.
+                            new_host_user = User.objects.create(
+                                username=email,
+                                email=email,
+                                first_name=user_data['first_name'].title(),
+                                last_name=user_data['last_name'].title())
+                            self.logger.info(
+                                f'User {new_host_user.username} was created.')
+                            new_host_user_profile = UserProfile.objects.get(
+                                user=new_host_user)
+                            new_host_user_profile.middle_name = user_data[
+                                'middle_name'].title()
+                            new_host_user_profile.host_user = new_host_user
+                            new_host_user_profile.save()
+
+            if new_host_user is not None:
+                if new_host_user != user_profile.host_user:
+                    user_profile.host_user = new_host_user
+                    user_profile.save()
+                    self.logger.info(
+                        f'Updated the host user for User {user.pk} to User '
+                        f'{new_host_user.pk}.')
+            else:
+                self.logger.error(
+                    f'Could not determine a host user for User {user.pk}.')
 
     def handle_project_pis_and_managers(self, *args, **options):
         """Handle the 'project_pis_and_managers' subcommand."""
@@ -532,6 +611,52 @@ class Command(BaseCommand):
         all_names.discard('lawrencium')
         return all_names
 
+    def get_user_data_by_employee_id(self, employee_id_to_user_data_file):
+        """Given a path to a JSON file mapping employee IDs to a dict
+        with the keys 'email' and 'full_name', return a mapping from
+        employee ID to a dict with the keys 'email', 'first_name',
+        'middle_name', and 'last_name'."""
+        with open(employee_id_to_user_data_file, 'r') as f:
+            mapping = json.load(f)
+        for employee_id, user_data in mapping.items():
+            full_name = user_data.pop('full_name', '')
+            if not self.is_full_name_valid(full_name):
+                self.logger.warning(
+                    f'The user {user_data} with employee ID {employee_id} has '
+                    f'a malformed full name. Proceeding with empty names.')
+            names = self.get_first_middle_last_names(full_name)
+            user_data['first_name'] = names['first']
+            user_data['middle_name'] = names['middle']
+            user_data['last_name'] = names['last']
+        return mapping
+
+    def get_host_employee_ids_by_username(self, billing_file_path):
+        """Given a path to a file containing usernames and host employee
+        IDs, return a mapping from username to the employee ID.
+
+        Each line in the file is colon-separated and should have eight
+        entries. The first is a username, and the sixth is the host
+        employee ID."""
+        host_employee_ids_by_username = {}
+
+        with open(billing_file_path, 'r') as billing_file:
+            for line in billing_file:
+                fields = [
+                    field.strip() for field in line.rstrip().split(':')]
+                if len(fields) != 8:
+                    self.logger.error(
+                        f'The entry {fields} does not have 8 fields.')
+                    continue
+                user_username = fields[0].strip()
+                if not user_username:
+                    self.logger.error(
+                        f'The entry {fields} is missing a username.')
+                    continue
+                host_employee_id = fields[5].strip()
+                host_employee_ids_by_username[user_username] = host_employee_id
+
+        return host_employee_ids_by_username
+
     @staticmethod
     def get_first_middle_last_names(full_name):
         """Return the given full name split into first, middle, and last
@@ -741,14 +866,13 @@ class Command(BaseCommand):
         set the 'Cluster Account Status' attribute to 'Active'.
 
         Do not set Service Units, since they are not relevant."""
-        start_date = utc_now_offset_aware()
         allocation_kwargs = {
-            'start_date': start_date,
+            'start_date': None,
             'end_date': None,
-            'num_service_units': None,
+            'num_service_units': settings.ALLOCATION_MAX,
         }
         allocation_user_kwargs = {
-            'num_service_units': None,
+            'num_service_units': settings.ALLOCATION_MAX,
         }
 
         departmental_cluster_names = self.get_departmental_cluster_names()
@@ -784,9 +908,8 @@ class Command(BaseCommand):
             - PCA projects receive 0, since they will be renewed later.
             - Recharge projects receive the maximum amount, since they
             are charged monthly for however much they use."""
-        start_date = utc_now_offset_aware()
         allocation_kwargs = {
-            'start_date': start_date,
+            'start_date': None,
             'end_date': None,
             'num_service_units': None,
         }
@@ -810,7 +933,7 @@ class Command(BaseCommand):
                 end_date = None
                 num_service_units = settings.ALLOCATION_MAX
             elif project.name.startswith('pc_'):
-                end_date = current_allowance_year_period.end_date
+                end_date = None
                 num_service_units = settings.ALLOCATION_MIN
             else:
                 continue
@@ -867,14 +990,16 @@ class Command(BaseCommand):
         allocation_attribute_defaults = {
             'value': str(num_service_units),
         }
-        allocation_attribute, _ = AllocationAttribute.objects.update_or_create(
-            allocation_attribute_type=allocation_attribute_type,
-            allocation=allocation, defaults=allocation_attribute_defaults)
+        allocation_attribute, created = \
+            AllocationAttribute.objects.update_or_create(
+                allocation_attribute_type=allocation_attribute_type,
+                allocation=allocation, defaults=allocation_attribute_defaults)
 
-        ProjectTransaction.objects.create(
-            project=project,
-            date_time=utc_now_offset_aware(),
-            allocation=num_service_units)
+        if created:
+            ProjectTransaction.objects.create(
+                project=project,
+                date_time=utc_now_offset_aware(),
+                allocation=num_service_units)
 
         # A usage should have been created for the attribute.
         try:
@@ -910,14 +1035,23 @@ class Command(BaseCommand):
         if not isinstance(num_service_units, Decimal):
             return allocation_user
 
-        allocation_user_attribute = set_allocation_user_attribute_value(
-            allocation_user, 'Service Units', str(num_service_units))
-        allocation_user.refresh_from_db()
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Service Units')
+        allocation_user_attribute_defaults = {
+            'value': str(num_service_units),
+        }
+        allocation_user_attribute, created = \
+            AllocationUserAttribute.objects.get_or_create(
+                allocation_attribute_type=allocation_attribute_type,
+                allocation=allocation_user.allocation,
+                allocation_user=allocation_user,
+                defaults=allocation_user_attribute_defaults)
 
-        ProjectUserTransaction.objects.create(
-            project_user=project_user,
-            date_time=utc_now_offset_aware(),
-            allocation=num_service_units)
+        if created:
+            ProjectUserTransaction.objects.create(
+                project_user=project_user,
+                date_time=utc_now_offset_aware(),
+                allocation=num_service_units)
 
         # A usage should have been created for the attribute.
         try:
@@ -929,4 +1063,5 @@ class Command(BaseCommand):
                 f'exists for AllocationUserAttribute '
                 f'{allocation_user_attribute.pk}.')
 
+        allocation_user.refresh_from_db()
         return allocation_user

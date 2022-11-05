@@ -61,9 +61,9 @@ class TestSavioProjectRequestWizard(TestBase):
             current_step_key: '8',
         }
         survey_data = {
-            '9-scope_and_intent': 'b' * 20,
-            '9-computational_aspects': 'c' * 20,
-            current_step_key: '9',
+            '10-scope_and_intent': 'b' * 20,
+            '10-computational_aspects': 'c' * 20,
+            current_step_key: '10',
         }
         form_data = [
             computing_allowance_form_data,
@@ -103,10 +103,10 @@ class TestSavioProjectRequestWizard(TestBase):
         self.assertFalse(request.pool)
         self.assertEqual(
             request.survey_answers['scope_and_intent'],
-            survey_data['9-scope_and_intent'])
+            survey_data['10-scope_and_intent'])
         self.assertEqual(
             request.survey_answers['computational_aspects'],
-            survey_data['9-computational_aspects'])
+            survey_data['10-computational_aspects'])
         self.assertEqual(request.status.name, 'Under Review')
 
     # TODO

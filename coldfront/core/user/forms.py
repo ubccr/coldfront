@@ -17,6 +17,7 @@ from django.utils.translation import gettext_lazy as _
 
 from coldfront.core.user.utils import send_account_activation_email
 from coldfront.core.user.models import UserProfile, EmailAddress
+from coldfront.core.utils.mail import dummy_email_address
 
 from phonenumber_field.formfields import PhoneNumberField
 
@@ -329,12 +330,7 @@ class VerifiedEmailAddressPasswordResetForm(PasswordResetForm):
         if not settings.EMAIL_ENABLED:
             return
         if settings.DEBUG:
-            dev_email_list = settings.EMAIL_DEVELOPMENT_EMAIL_LIST
-            if not dev_email_list:
-                raise ImproperlyConfigured(
-                    'There should be at least one address in '
-                    'EMAIL_DEVELOPMENT_EMAIL_LIST.')
-            to_email = dev_email_list[0]
+            to_email = dummy_email_address()
         super().send_mail(
             subject_template_name, email_template_name, context, from_email,
             to_email, html_email_template_name=html_email_template_name)

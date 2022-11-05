@@ -6,6 +6,7 @@ from coldfront.core.resource.models import Resource
 from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import utc_now_offset_aware
+from coldfront.core.utils.email.email_strategy import DropEmailStrategy
 from coldfront.core.utils.tests.test_base import TestBase
 
 from datetime import timedelta
@@ -43,8 +44,8 @@ class TestSavioProjectApprovalRunner(TestRunnerMixinBase, TestBase):
         REQUEST_APPROVAL_CC_LIST=['admin0@email.com', 'admin1@email.com'])
     def test_runner_sends_emails_conditionally(self):
         """Test that the runner sends a notification email to the
-        requester and the PI, CC'ing a designated list of admins, if
-        requested."""
+        requester and the PI, CC'ing a designated list of admins, unless
+        otherwise specified."""
         request = self.request_obj
         project = request.project
         requester = request.requester
@@ -53,7 +54,8 @@ class TestSavioProjectApprovalRunner(TestRunnerMixinBase, TestBase):
         # If not requested, an email should not be sent.
         num_service_units = Decimal('0.00')
         runner = SavioProjectApprovalRunner(
-            self.request_obj, num_service_units)
+            self.request_obj, num_service_units,
+            email_strategy=DropEmailStrategy())
         runner.run()
 
         self.assertEqual(len(mail.outbox), 0)
@@ -64,9 +66,9 @@ class TestSavioProjectApprovalRunner(TestRunnerMixinBase, TestBase):
         request.approved_time = None
         request.save()
 
-        # If requested, an email should be sent.
+        # If requested (by default), an email should be sent.
         runner = SavioProjectApprovalRunner(
-            self.request_obj, num_service_units, send_email=True)
+            self.request_obj, num_service_units)
         runner.run()
 
         self.assertEqual(len(mail.outbox), 1)
@@ -109,7 +111,7 @@ class TestSavioProjectApprovalRunner(TestRunnerMixinBase, TestBase):
         request.save()
 
         runner = SavioProjectApprovalRunner(
-            self.request_obj, num_service_units, send_email=True)
+            self.request_obj, num_service_units)
         runner.run()
 
         self.assertEqual(len(mail.outbox), 2)

@@ -14,7 +14,8 @@ from coldfront.core.allocation.models import AllocationUserAttribute, \
     allocation_renewal_request_state_schema, \
     AllocationRenewalRequestStatusChoice, AllocationRenewalRequest, \
     allocation_addition_request_state_schema, \
-    AllocationAdditionRequestStatusChoice, AllocationAdditionRequest
+    AllocationAdditionRequestStatusChoice, AllocationAdditionRequest, \
+    ClusterAccessRequest, ClusterAccessRequestStatusChoice
 from coldfront.core.project.models import ProjectStatusChoice, \
     ProjectUserStatusChoice, ProjectUserRoleChoice, Project, ProjectUser, \
     ProjectUserRemovalRequestStatusChoice, ProjectUserRemovalRequest, \
@@ -200,7 +201,7 @@ class TestRequestHubView(TestBase):
                 soup.find(id=f'{section}_pending'))
             self.assertIn(str(pending_req.pk), pending_div)
             self.assertIn(pending_req.allocation_user.user.email, pending_div)
-            self.assertIn(pending_req.value, pending_div)
+            self.assertIn(pending_req.status.name, pending_div)
 
             # completed request is shown
             completed_div = str(
@@ -208,7 +209,7 @@ class TestRequestHubView(TestBase):
             self.assertIn(str(completed_req.pk), completed_div)
             self.assertIn(completed_req.allocation_user.user.email,
                           completed_div)
-            self.assertIn(completed_req.value, completed_div)
+            self.assertIn(completed_req.status.name, completed_div)
 
         # creating two cluster access requests for user0
         allocation_obj = \
@@ -216,20 +217,23 @@ class TestRequestHubView(TestBase):
         allocation_user_obj = \
             get_accounting_allocation_objects(self.project0, self.user0)
 
-        cluster_account_status = AllocationAttributeType.objects.get(
-            name='Cluster Account Status')
-
         kwargs = {
-            'allocation_attribute_type': cluster_account_status,
-            'allocation': allocation_obj.allocation,
             'allocation_user': allocation_user_obj.allocation_user,
+            'request_time': utc_now_offset_aware(),
         }
 
         pending_req = \
-            AllocationUserAttribute.objects.create(value='Processing', **kwargs)
+            ClusterAccessRequest.objects.create(
+                status=ClusterAccessRequestStatusChoice.objects.get(
+                    name='Processing'),
+                **kwargs)
 
         completed_req = \
-            AllocationUserAttribute.objects.create(value='Denied', **kwargs)
+            ClusterAccessRequest.objects.create(
+                status=ClusterAccessRequestStatusChoice.objects.get(
+                    name='Denied'),
+                completion_time=utc_now_offset_aware(),
+                **kwargs)
 
         # assert the correct requests are shown
         assert_request_shown(self.user0, self.url)

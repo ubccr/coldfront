@@ -2,15 +2,16 @@
 
 [![Documentation Status](https://readthedocs.org/projects/coldfront/badge/?version=latest)](https://coldfront.readthedocs.io/en/latest/?badge=latest)
 
-The MyBRC User Portal is an access management system for Berkeley Research
-Computing. It enables users to create or join projects, gain access to the
-clusters managed by BRC, view the statuses of their requests and access, view
-their allocation quotas and usages, and update personal information. It enables
-administrators to handle these requests and manage users and projects. The
-portal is built on top of ColdFront.
+The MyBRC User Portal is an access management system for UC Berkeley Research
+IT's Berkeley Research Computing program. It enables users to create or join
+projects, gain access to the clusters managed by BRC, view the statuses of
+their requests and access, view their allocation quotas and usages, and update
+personal information. It enables administrators to handle these requests and
+manage users and projects. The portal is built on top of ColdFront.
 
 The MyLRC User Portal is an upcoming second instance of the same system,
-developed for Lawrencium Research Computing.
+developed for Lawrence Berkeley National Laboratory's Laboratory Research
+Computing program.
 
 ColdFront is an open source resource allocation system designed to provide a
 central portal for administration, reporting, and measuring scientific impact
@@ -22,8 +23,8 @@ Python and released under the GPLv3 license.
 ## Vagrant VM Install (Recommended)
 
 The application may be installed within a Vagrant VM that is running on
-Scientific Linux 7. The VM is provisioned using an Ansible playbook similar to
-the one used in production.
+Scientific Linux 7. The VM is provisioned using the same Ansible playbook
+used in production.
 
 1. Install [VirtualBox](https://www.virtualbox.org/).
 2. Clone the repository.
@@ -43,9 +44,9 @@ the one used in production.
 6. Create a `main.yml` file in the top-level of the repository. This is a file
 of variables used by Ansible to configure the system.
    ```
-   cp bootstrap/development/main.copyme main.yml
+   cp bootstrap/ansible/main.copyme main.yml
    ```
-7. Customize `main.yml`. In particular, fill in the below variables. Note
+7. Customize `main.yml`. In particular, uncomment everything under the `dev_settings` section, and fill in the below variables. Note
 that quotes need not be provided, except in the list variable.
    ```
    db_admin_passwd: password_here
@@ -104,12 +105,16 @@ which can be done with:
   ```
   sudo service httpd restart
   ```
-- The Ansible playbook can be run manually with:
+- The Ansible playbook can be run manually as follows.
   ```
   cd /vagrant/coldfront_app/coldfront
   # Assert that there is a properly-configured main.yml in the current directory.
-  ansible-playbook bootstrap/development/playbook.yml
+  ansible-playbook bootstrap/ansible/playbook.yml
   ```
+  - Note that to skip initial provisioning tasks you can use the
+`--tags common` or `--skip-tags provisioning` arguments to `ansible-playbook`:
+  - Alternatively, you can set `provisioning_tasks` to `False` in `main.yml`
+
 - Any custom Django settings can be applied by modifying `dev_settings.py`.
 Note that running the Ansible playbook will overwrite these.
 - It may be convenient to add the following to `/home/vagrant/.bashrc`:
@@ -422,6 +427,11 @@ static files, creates WSGI files for Apache, and restarts Apache.
 
 Note that there are some additional server setup steps that are not currently
 captured in the Ansible playbook.
+
+Also note that on production environments you must install necessary Ansible
+collections using
+`ansible-galaxy collection install -r bootstrap/ansible/requirements.yml`
+before initially running the playbook.
 
 1. Create `main.yml`.
 

@@ -15,6 +15,8 @@ from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAl
 from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import format_date_month_name_day_year
 from coldfront.core.utils.common import utc_now_offset_aware
+from coldfront.core.utils.email.email_strategy import DropEmailStrategy
+from coldfront.core.utils.email.email_strategy import EnqueueEmailStrategy
 
 from decimal import Decimal
 
@@ -22,6 +24,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.mixins import UserPassesTestMixin
+from django.db import transaction
 from django.db.models import Q
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
@@ -224,28 +227,36 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
             message = 'Please complete the checklist before final activation.'
             messages.error(request, message)
             return HttpResponseRedirect(self.get_redirect_url(pk))
+
+        email_strategy = EnqueueEmailStrategy()
         try:
-            has_allocation_period_started = \
+            should_process_request = \
                 self.__has_request_allocation_period_started()
             num_service_units = self.get_service_units_to_allocate()
 
-            # Skip sending an approval email if a processing email will be sent
-            # immediately afterward.
-            approval_runner = AllocationRenewalApprovalRunner(
-                self.request_obj, num_service_units,
-                send_email=not has_allocation_period_started)
-            approval_runner.run()
+            with transaction.atomic():
+                # Approve the request. If the request will be processed
+                # immediately after, avoid sending an approval email.
+                if should_process_request:
+                    approval_email_strategy = DropEmailStrategy()
+                else:
+                    approval_email_strategy = email_strategy
+                approval_runner = AllocationRenewalApprovalRunner(
+                    self.request_obj, num_service_units,
+                    email_strategy=approval_email_strategy)
+                approval_runner.run()
 
-            if has_allocation_period_started:
-                self.request_obj.refresh_from_db()
-                processing_runner = AllocationRenewalProcessingRunner(
-                    self.request_obj, num_service_units)
-                processing_runner.run()
+                if should_process_request:
+                    self.request_obj.refresh_from_db()
+                    processing_runner = AllocationRenewalProcessingRunner(
+                        self.request_obj, num_service_units,
+                        email_strategy=email_strategy)
+                    processing_runner.run()
         except Exception as e:
             logger.exception(e)
             messages.error(self.request, self.error_message)
         else:
-            if not has_allocation_period_started:
+            if not should_process_request:
                 formatted_start_date = format_date_month_name_day_year(
                     self.request_obj.allocation_period.start_date)
                 phrase = f'is scheduled for renewal on {formatted_start_date}.'
@@ -255,6 +266,11 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
                 f'PI {self.request_obj.pi.username}\'s allocation {phrase}')
             messages.success(self.request, message)
             logger.info(message)
+
+        try:
+            email_strategy.send_queued_emails()
+        except Exception as e:
+            pass
 
         return HttpResponseRedirect(
             reverse_lazy('pi-allocation-renewal-pending-request-list'))

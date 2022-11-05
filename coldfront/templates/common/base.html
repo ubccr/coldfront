@@ -1,7 +1,12 @@
 {% load static %}
-
+{% load common_tags %}
 {% load tz %}
-{% timezone DISPLAY_TIME_ZONE %}
+
+<!-- TODO: This hard-coded time zone is used instead of DISPLAY_TIME_ZONE-->
+<!-- TODO: because the context processor does not appear to be recognized by-->
+<!-- TODO: allauth templates (templates in account and socialaccount).-->
+<!-- TODO: Come up with a better solution. -->
+{% timezone 'America/Los_Angeles' %}
 
 <!DOCTYPE html>
 <html lang="en">
