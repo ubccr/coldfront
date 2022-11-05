@@ -17,7 +17,6 @@ LRC only:
 
 '''
 
-import datetime
 from flags.state import flag_enabled
 
 from django.core.management.base import BaseCommand
@@ -31,7 +30,10 @@ from coldfront.core.project.models import Project, \
 from coldfront.core.user.models import UserProfile
 from coldfront.core.allocation.models import AllocationAttribute
 
-from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
+from coldfront.core.project.utils_.renewal_utils import \
+    get_current_allowance_year_period
+from coldfront.core.resource.utils_.allowance_utils.computing_allowance import \
+    ComputingAllowance
 from coldfront.core.utils.common import display_time_zone_current_date
 
 class Command(BaseCommand):
@@ -112,77 +114,68 @@ class Command(BaseCommand):
                             'project__status').prefetch_related('resources') \
             .filter(resources__name__endswith='Compute') \
             .order_by('resources__name', 'project__name',
-                      'project__status__name', 'start_date', 'end_date') \
-            .values('id', 'project__status__name',
-                   'project__name','start_date', 'end_date',
-                   'resources__name')
-
-        FCA_PCA_ALLOCATION_PERIOD = get_current_allowance_year_period()
-        ICA_ALLOCATION_PERIODS = AllocationPeriod.objects.filter(
+                      'project__status__name', 'start_date', 'end_date')
+        YEARLY_ALLOCATION_PERIOD = get_current_allowance_year_period()
+        INSTRUCTIONAL_ALLOCATION_PERIODS = AllocationPeriod.objects.filter(
                                     Q(end_date__gt=display_time_zone_current_date())
                                     & (Q(name__startswith='Fall Semester')
                                        | Q(name__startswith='Spring Semester')
                                        | Q(name__startswith='Summer Sessions') \
                                       )).all()
 
-        # TODO: Change these if lrc_enabled
-        FCA_PCA_PREFIXES = ('fc_', 'pc_')
-        ICA_PREFIX = 'ic_'
-        RECHARGE_CONDO_PREFIX = ('co_', 'ac_')
-
         for allocation in allocations:
-            id = allocation['id']
-            start_date = allocation['start_date']
-            end_date = allocation['end_date']
-            project_status = allocation['project__status__name']
-            project = allocation['project__name']
-            resource = allocation['resources__name']
+            id = allocation.id
+            start_date = allocation.start_date
+            end_date = allocation.end_date
+            project_status = allocation.project.status.name
+            project = allocation.project.name
+            try:
+                resource = allocation.resources.first()
+                resource_name = resource.name
+            except AttributeError as e:
+                self.stdout.write(self.style.ERROR(f'Allocation {id} has no '
+                                                    'resource'))
+                continue
 
             if end_date is not None and end_date < start_date:
-                self.stdout.write(self.style.ERROR(f'{resource} {id} '
+                self.stdout.write(self.style.ERROR(f'{resource_name} {id} '
                 f'for {project_status.lower()} project {project} has an end '
                 f'date before its start date.'))
 
-            if project.startswith(FCA_PCA_PREFIXES):
-                if project_status == 'Inactive' \
-                        and start_date != FCA_PCA_ALLOCATION_PERIOD.start_date:
-                    self.stdout.write(self.style.ERROR(f'{resource} {id} '
-                    f'for inactive FCA or PCA project {project} has a start '
-                    f'date of {start_date} that is different than its '
+            if ComputingAllowance(resource).is_yearly():
+                if start_date != YEARLY_ALLOCATION_PERIOD.start_date:
+                    self.stdout.write(self.style.ERROR(f'{resource_name} {id} '
+                    f'for {project_status.lower()} FCA or PCA project {project}'
+                    f' has a start date of {start_date} that is before its '
                     f'allocation period\'s '
-                    f'({FCA_PCA_ALLOCATION_PERIOD.start_date} for '
-                    f'{FCA_PCA_ALLOCATION_PERIOD}).'))
-                if project_status == 'Active':
-                    if start_date < FCA_PCA_ALLOCATION_PERIOD.start_date:
-                        self.stdout.write(self.style.ERROR(f'{resource} {id} '
-                        f'for active FCA or PCA project {project} has a '
-                        f'start date of {start_date} that is before '
-                        f'its allocation period\'s '
-                        f'({FCA_PCA_ALLOCATION_PERIOD.start_date} for '
-                        f'{FCA_PCA_ALLOCATION_PERIOD}).'))
-                    if end_date != FCA_PCA_ALLOCATION_PERIOD.end_date:
-                        self.stdout.write(self.style.ERROR(f'{resource} {id} '
+                    f'({YEARLY_ALLOCATION_PERIOD.start_date} for '
+                    f'{YEARLY_ALLOCATION_PERIOD}).'))
+                if project_status == 'Active' and \
+                    end_date != YEARLY_ALLOCATION_PERIOD.end_date:
+                        self.stdout.write(self.style.ERROR(f'{resource_name} {id} '
                         f'for active FCA or PCA project {project} has an end '
                         f'date of {end_date} that is different than '
                         f'its allocation period\'s '
-                        f'({FCA_PCA_ALLOCATION_PERIOD.end_date} for '
-                        f'{FCA_PCA_ALLOCATION_PERIOD}).'))
+                        f'({YEARLY_ALLOCATION_PERIOD.end_date} for '
+                        f'{YEARLY_ALLOCATION_PERIOD}).'))
 
-            elif project.startswith(ICA_PREFIX):
+            elif ComputingAllowance(resource).is_instructional():
                 if project_status == 'Inactive' and end_date is not None:
-                    self.stdout.write(self.style.ERROR(f'{resource} {id} '
+                    self.stdout.write(self.style.ERROR(f'{resource_name} {id} '
                     f'for inactive ICA project {project} has an end date '
                     f'(it shouldn\'t as it\'s inactive).'))
                 if project_status == 'Active' \
                         and not any(end_date != ica.end_date \
-                            for ica in ICA_ALLOCATION_PERIODS):
-                    self.stdout.write(self.style.ERROR(f'{resource} {id} '
+                            for ica in INSTRUCTIONAL_ALLOCATION_PERIODS):
+                    self.stdout.write(self.style.ERROR(f'{resource_name} {id} '
                     f'for {project_status.lower()} ICA project '
                     f'{project} has an end date that is different from all ICA '
                     f'allocation periods.'))
-            elif project.startswith(RECHARGE_CONDO_PREFIX):
+            # Condo or Recharge
+            elif ComputingAllowance(resource).is_recharge() or \
+                ComputingAllowance(resource).is_condo():
                 if end_date is not None:
-                    self.stdout.write(self.style.ERROR(f'{resource} {id} '
+                    self.stdout.write(self.style.ERROR(f'{resource_name} {id} '
                     f'for {project_status.lower()} Recharge or Condo '
                     f'allocation project {project} has an end date. '
                     f'(it shouldn\'t)'))
