@@ -6,6 +6,8 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.validators import MinLengthValidator
 from django.db import models
+from ast import literal_eval
+from coldfront.core.utils.validate import AttributeValidator
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
@@ -227,3 +229,79 @@ class ProjectUser(TimeStampedModel):
     class Meta:
         unique_together = ('user', 'project')
         verbose_name_plural = "Project User Status"
+
+
+class AttributeType(TimeStampedModel):
+    """ AttributeType. """
+    name = models.CharField(max_length=64)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name', ]
+
+
+class ProjectAttributeType(TimeStampedModel):
+    attribute_type = models.ForeignKey(AttributeType, on_delete=models.CASCADE)
+    name = models.CharField(max_length=50)
+    has_usage = models.BooleanField(default=False)
+    is_required = models.BooleanField(default=False)
+    is_unique = models.BooleanField(default=False)
+    is_private = models.BooleanField(default=True)
+    is_changeable = models.BooleanField(default=False)
+    history = HistoricalRecords()
+
+    def __str__(self):
+        return '%s (%s)' % (self.name, self.attribute_type.name)
+
+    def __repr__(self) -> str:
+        return str(self)
+
+    class Meta:
+        ordering = ['name', ]
+
+
+class ProjectAttribute(TimeStampedModel):
+    proj_attr_type = models.ForeignKey(ProjectAttributeType, on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+
+    value = models.CharField(max_length=128)
+    history = HistoricalRecords()
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if self.proj_attr_type.has_usage and not ProjectAttributeUsage.objects.filter(project_attribute=self).exists():
+            ProjectAttributeUsage.objects.create(
+                project_attribute=self)
+
+    def clean(self):
+        if self.proj_attr_type.is_unique and self.project.projectattribute_set.filter(proj_attr_type=self.proj_attr_type).exists():
+            raise ValidationError("'{}' attribute already exists for this project.".format(
+                self.proj_attr_type))
+
+        expected_value_type = self.proj_attr_type.attribute_type.name.strip()
+
+        validator = AttributeValidator(self.value)
+
+        if expected_value_type == "Int":
+            validator.validate_int()
+        elif expected_value_type == "Float":
+            validator.validate_float()
+        elif expected_value_type == "Yes/No":
+            validator.validate_yes_no()
+        elif expected_value_type == "Date":
+            validator.validate_date()
+
+    def __str__(self):
+        return '%s' % (self.proj_attr_type.name)
+
+class ProjectAttributeUsage(TimeStampedModel):
+    """ ProjectAttributeUsage. """
+    project_attribute = models.OneToOneField(
+        ProjectAttribute, on_delete=models.CASCADE, primary_key=True)
+    value = models.FloatField(default=0)
+    history = HistoricalRecords()
+
+    def __str__(self):
+        return '{}: {}'.format(self.project_attribute.proj_attr_type.name, self.value)
