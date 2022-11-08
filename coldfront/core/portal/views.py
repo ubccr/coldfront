@@ -12,7 +12,13 @@ from coldfront.core.grant.models import Grant
 from coldfront.core.portal.utils import (generate_allocations_chart_data,
                                          generate_publication_by_year_chart_data,
                                          generate_resources_chart_data,
-                                         generate_total_grants_by_agency_chart_data)
+                                         generate_total_grants_by_agency_chart_data,
+                                         generate_project_type_chart_data,
+                                         generate_project_status_chart_data,
+                                         generate_research_project_status_columns,
+                                         generate_class_project_status_columns,
+                                         generate_user_role_counts,
+                                         generate_user_counts)
 from coldfront.core.project.models import Project
 from coldfront.core.publication.models import Publication
 from coldfront.core.research_output.models import ResearchOutput
@@ -211,3 +217,30 @@ def allocation_summary(request):
     context['resources_chart_data'] = resources_chart_data
 
     return render(request, 'portal/allocation_summary.html', context)
+
+
+@cache_page(60 * 15)
+def project_summary(request):
+    project_status_chart_data = generate_project_status_chart_data()
+    research_project_status_columns = generate_research_project_status_columns()
+    class_project_status_columns = generate_class_project_status_columns()
+    project_status_chart_data['colors'].update(research_project_status_columns['colors'])
+    project_status_chart_data['colors'].update(class_project_status_columns['colors'])
+
+    context = {}
+    context['project_status_chart_data'] = project_status_chart_data
+    context['project_type_chart_data'] = generate_project_type_chart_data()
+    context['research_project_status_columns'] = research_project_status_columns
+    context['class_project_status_columns'] = class_project_status_columns
+
+    return render(request, 'portal/project_summary.html', context)
+
+
+
+@cache_page(60 * 15)
+def user_summary(request):
+    context = {}
+    context['user_role_counts'] = generate_user_role_counts()
+    context['user_counts'] = generate_user_counts()
+
+    return render(request, 'portal/user_summary.html', context)

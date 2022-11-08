@@ -9,3 +9,4 @@ Disallow: /publication/
 Disallow: /mokey_oidc/ 
 Disallow: /allocation-by-fos
 Disallow: /allocation-summary
+Disallow: /rt-projects-counts

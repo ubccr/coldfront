@@ -1,0 +1,104 @@
+{% load static %}
+<div class="row">
+  <div class="col">
+    <div id="projectTypes" style="min-height: 270px;"></div>
+  </div>
+  <div class="col">
+    <div id="projectStatuses" style="min-height: 270px;"></div>
+  </div>
+</div>
+
+<script>
+  var project_type_chart_data = {{ project_type_chart_data | safe }}
+  var project_status_chart_data = {{ project_status_chart_data | safe }}
+  var research_project_status_columns = {{ research_project_status_columns | safe }}
+  var class_project_status_columns = {{ class_project_status_columns | safe }}
+
+  var typeChart;
+  var statusesChart;
+  let currentlyLoadedProjectTypeColumns = [...project_type_chart_data['columns']]
+  let currentlyLoadedProjectStatusesColumns = [...project_status_chart_data['columns']]
+
+  $(document).ready(function () {
+    typeChart = drawProjectTypes();
+    statusesChart = drawProjectStatuses();
+  });
+
+  function resetProjectGraphs() {
+    typeChart.load({columns: project_type_chart_data['columns']});
+    currentlyLoadedProjectTypeColumns = [...project_type_chart_data['columns']];
+
+    var columnsToUnload = [];
+    for (var i = 0; i < currentlyLoadedProjectStatusesColumns.length; i++) {
+      columnsToUnload.push(currentlyLoadedProjectStatusesColumns[i][0]);
+    }
+    currentlyLoadedProjectStatusesColumns = [];
+    statusesChart.load({
+      unload: columnsToUnload,
+      columns: project_status_chart_data['columns']
+    });
+    currentlyLoadedProjectStatusesColumns = [...project_status_chart_data['columns']];
+  }
+
+  function drawProjectTypes() {
+    data = {
+      columns: project_type_chart_data['columns'],
+      type: project_type_chart_data['type'],
+      colors: project_type_chart_data['colors'],
+      onclick: function(obj) {
+        if (currentlyLoadedProjectTypeColumns.length === 1) {
+          resetProjectGraphs(currentlyLoadedProjectStatusesColumns, currentlyLoadedProjectStatusesColumns)
+          return;
+        }
+        var columnsToUnload = [];
+        for (var i = 0; i < currentlyLoadedProjectTypeColumns.length; i++) {
+          if (currentlyLoadedProjectTypeColumns[i][0] !== obj.id) {
+            columnsToUnload.push(currentlyLoadedProjectTypeColumns[i][0]);
+            currentlyLoadedProjectTypeColumns.splice(currentlyLoadedProjectTypeColumns.indexOf(currentlyLoadedProjectTypeColumns[i][0]));
+          }
+        }
+        typeChart.unload({ids: columnsToUnload})
+
+        var columnsToUnload = [];
+        for (var i = 0; i < currentlyLoadedProjectStatusesColumns.length; i++) {
+          columnsToUnload.push(currentlyLoadedProjectStatusesColumns[i][0]);
+        }
+        currentlyLoadedProjectStatusesColumns = [];
+        if (obj.id.split(':')[0] === 'Research') {
+          currentlyLoadedProjectStatusesColumns = [...research_project_status_columns['columns']];
+          statusesChart.load({
+            unload: columnsToUnload,
+            columns: research_project_status_columns['columns']
+          });
+        } else {
+          currentlyLoadedProjectStatusesColumns = [...class_project_status_columns['columns']];
+          statusesChart.load({
+            unload: columnsToUnload,
+            columns: class_project_status_columns['columns']
+          });
+        }
+      }
+    }
+    var chart = c3.generate({
+      bindto: '#projectTypes',
+      data: data,
+      donut: {
+        title: "Project Types"
+      },
+    });
+
+    return chart;
+  }
+
+  function drawProjectStatuses() {
+    var chart = c3.generate({
+      bindto: '#projectStatuses',
+      data: project_status_chart_data,
+      donut: {
+        title: "Project Statuses"
+      }
+    })
+
+    return chart;
+  }
+</script>
