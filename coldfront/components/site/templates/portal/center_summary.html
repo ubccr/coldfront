@@ -86,7 +86,37 @@ Center Summary
     </div>
   </div>
 </div>
- <!-- End Allocation Charts -->
+<!-- End Allocation Charts -->
+
+<!-- Start Project Charts -->
+<div class="card mb-3 border-primary">
+  <div class="card-header bg-primary text-white">
+    <i class="fas fa-trophy"></i> Project Summary
+  </div>
+  <div id="project-summary" class="card-body">
+    <div class="text-center">
+      <button type="button" class="btn btn-primary">
+        <i class="fas fa-sync fa-spin fa-fw" aria-hidden="true"></i> Getting Data <span class="sr-only">...</span>
+      </button>
+    </div>
+  </div>
+</div>
+<!-- End Project Charts -->
+
+<!-- Start User Charts-->
+<div class="card mb-3 border-primary">
+  <div class="card-header bg-primary text-white">
+    <i class="fas fa-trophy"></i> User Summary
+  </div>
+  <div id="user-summary" class="card-body">
+    <div class="text-center">
+      <button type="button" class="btn btn-primary">
+        <i class="fas fa-sync fa-spin fa-fw" aria-hidden="true"></i> Getting Data <span class="sr-only">...</span>
+      </button>
+    </div>
+  </div>
+</div>
+<!-- End User Charts -->
 
 <script>
   $("#navbar-main > ul > li.active").removeClass("active")
@@ -105,6 +135,8 @@ Center Summary
     drawGrantsByAgency();
     get_allocation_by_fos()
     get_allocation_summary();
+    get_project_summary();
+    get_user_summary();
   });
 
   function drawPublications() {
@@ -164,6 +196,28 @@ Center Summary
       }
     });
   };
+
+  function get_project_summary() {
+    $.ajax({
+      headers: { 'X-CSRFToken': getCookie('csrftoken') },
+      type: "GET",
+      url: "/project-summary",
+      success: function (data) {
+        $('#project-summary').html(data)
+      }
+    })
+  }
+
+  function get_user_summary() {
+    $.ajax({
+      headers: { 'X-CSRFToken': getCookie('csrftoken') },
+      type: "GET",
+      url: "/user-summary",
+      success: function (data) {
+        $("#user-summary").html(data);
+      }
+    })
+  }
 
   function get_allocation_by_fos() {
     $.ajax({

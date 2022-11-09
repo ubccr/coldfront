@@ -76,6 +76,12 @@ INVOICE_ENABLED = ENV.bool('INVOICE_ENABLED', default=True)
 INVOICE_DEFAULT_STATUS = ENV.str('INVOICE_DEFAULT_STATUS', default='New')
 
 #------------------------------------------------------------------------------
+# Slack messaging integration
+#------------------------------------------------------------------------------
+SLACK_MESSAGING_ENABLED = ENV.bool('SLACK_MESSAGING_ENABLED', default=False)
+SLACK_WEBHOOK_URL = ENV.str('SLACK_WEBHOOK_URL', default='')
+
+#------------------------------------------------------------------------------
 # Enable Open OnDemand integration
 #------------------------------------------------------------------------------
 ONDEMAND_URL = ENV.str('ONDEMAND_URL', default=None)

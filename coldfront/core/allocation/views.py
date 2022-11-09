@@ -74,6 +74,7 @@ from coldfront.core.project.models import (Project, ProjectUser,
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email_template, get_email_recipient_from_groups
+from coldfront.core.utils.slack import send_message
 
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
     'ALLOCATION_ENABLE_ALLOCATION_RENEWAL', True)
@@ -111,7 +112,9 @@ ALLOCATION_ACCOUNT_ENABLED = import_from_settings(
     'ALLOCATION_ACCOUNT_ENABLED', False)
 ALLOCATION_ACCOUNT_MAPPING = import_from_settings(
     'ALLOCATION_ACCOUNT_MAPPING', {})
-
+SLACK_MESSAGING_ENABLED = import_from_settings(
+    'SLACK_MESSAGING_ENABLED', False
+)
 
 logger = logging.getLogger(__name__)
 
@@ -1293,7 +1296,10 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         domain_url = get_domain_url(self.request)
         url = '{}{}'.format(domain_url, reverse('allocation-request-list'))
 
-        if EMAIL_ENABLED:
+        if SLACK_MESSAGING_ENABLED:
+            text = f'A new allocation in project "{project_obj.title}" with id {project_obj.pk} has been requested for {pi_name} - {resource_name}. Please review the allocation: {url}'
+            send_message(text)
+        elif EMAIL_ENABLED:
             template_context = {
                 'project_title': project_obj.title,
                 'project_id': project_obj.pk,
