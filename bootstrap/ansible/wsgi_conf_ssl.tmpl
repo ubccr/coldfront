@@ -2,14 +2,30 @@ WSGISocketPrefix /var/run/wsgi
 LoadModule auth_basic_module modules/mod_auth_basic.so
 LoadModule authz_user_module modules/mod_authz_user.so
 LoadModule headers_module modules/mod_headers.so
+{% if cloudflare_enabled | bool %}
+LoadModule remoteip_module modules/mod_remoteip.so
+{% endif %}
 LoadModule ssl_module modules/mod_ssl.so
 
 WSGIPassAuthorization On
 
 <VirtualHost 0.0.0.0:443>
 
+    {% if cloudflare_enabled | bool %}
+    ServerName {{ cloudflare_local_server_name }}
+    ServerAlias {{ cloudflare_local_server_name }}
+    {% else %}
     ServerName {{ hostname }}
     ServerAlias {{ hostname }}
+    {% endif %}
+
+    {% if cloudflare_enabled | bool %}
+    # Source: https://support.cloudflare.com/hc/en-us/articles/200170786-Restoring-original-visitor-IPs#C5XWe97z77b3XZV
+    RemoteIPHeader CF-Connecting-IP
+    {% for cloudflare_ip_range in cloudflare_ip_ranges %}
+    RemoteIPTrustedProxy {{ cloudflare_ip_range }}
+    {% endfor %}
+    {% endif %}
 
     Alias /static/ {{ git_prefix }}/{{ reponame }}/static_root/
     <Directory {{ git_prefix }}/{{ reponame }}/static_root/>
@@ -31,7 +47,9 @@ WSGIPassAuthorization On
     SSLProtocol all -SSLv2 -SSLv3
     SSLCertificateFile {{ ssl_certificate_file }}
     SSLCertificateKeyFile {{ ssl_certificate_key_file }}
+    {% if ssl_certificate_chain_file %}
     SSLCertificateChainFile {{ ssl_certificate_chain_file }}
+    {% endif %}
 
     ErrorLog /var/log/httpd/{{ wsgi_conf_log_prefix }}.error.log
     CustomLog /var/log/httpd/{{ wsgi_conf_log_prefix }}.custom.log combined
@@ -46,7 +64,12 @@ WSGIPassAuthorization On
 
 <VirtualHost {{ host_ip }}:80>
 
+    {% if cloudflare_enabled | bool %}
+    ServerName {{ cloudflare_local_server_name }}
+    Redirect permanent "/" "https://{{ cloudflare_local_server_name }}"
+    {% else %}
     ServerName {{ hostname }}
     Redirect permanent "/" "{{ full_host_path }}"
+    {% endif %}
 
 </VirtualHost>
