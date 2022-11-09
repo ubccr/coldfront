@@ -220,15 +220,16 @@ def generate_class_project_status_columns():
 
 
 def generate_user_role_counts():
+    project_statuses = ['Active', 'Waiting For Admin Approval', 'Review Pending', ]
     num_active_users = ProjectUser.objects.filter(
         status__name='Active',
         role__name='User',
-        project__status__name='Active'
+        project__status__name__in=project_statuses
     ).count()
     active_managers = ProjectUser.objects.filter(
         status__name='Active',
         role__name='Manager',
-        project__status__name='Active'
+        project__status__name__in=project_statuses
     )
     num_active_managers = 0
     num_active_pis = 0
@@ -258,9 +259,18 @@ def generate_user_role_counts():
 
 
 def generate_user_counts():
-    num_unique_active_users = len(set(ProjectUser.objects.filter(status__name='Active').values_list('user', flat=True)))
-    num_unique_active_pis = len({project.pi for project in Project.objects.all()})
-    num_active_users = ProjectUser.objects.filter(status__name='Active').count()
+    project_statuses = ['Active', 'Waiting For Admin Approval', 'Review Pending', ]
+    num_unique_active_users = len(set(ProjectUser.objects.filter(
+        status__name='Active',
+        project__status__name__in=project_statuses
+    ).values_list('user', flat=True)))
+    num_unique_active_pis = len({
+        project.pi for project in Project.objects.filter(status__name__in=project_statuses)
+    })
+    num_active_users = ProjectUser.objects.filter(
+        status__name='Active',
+        project__status__name__in=project_statuses
+    ).count()
 
     unique_user_label = f'Unique Active Users: {num_unique_active_users}'
     unique_pi_label = f'Unique Active PIs: {num_unique_active_pis}'
