@@ -125,7 +125,7 @@ common_tasks: True
 # # An IP range, in CIDR notation, to which the REST API is accessible.
 # ip_range_with_api_access: 0.0.0.0/24
 
-# # IP addresses other than 127.0.0.1 that can view the django debug toolbar
+# # IP addresses other than 127.0.0.1 that can view the django debug toolbar.
 # debug_toolbar_ips: []
 
 # # Email settings.
@@ -175,7 +175,7 @@ common_tasks: True
 # # API is accessible.
 # ip_range_with_api_access: 10.0.0.0/8
 
-# # IP addresses other than 127.0.0.1 that can view the django debug toolbar
+# # IP addresses other than 127.0.0.1 that can view the django debug toolbar.
 # debug_toolbar_ips: []
 
 # # Email settings.
@@ -221,8 +221,8 @@ common_tasks: True
 # # An IP range, in CIDR notation, to which the REST API is accessible.
 # ip_range_with_api_access: 0.0.0.0/0
 
-# # IP addresses other than 127.0.0.1 that can view the django debug toolbar
-# debug_toolbar_ips: ['10.0.2.2'] # 10.0.2.2 for vagrant host
+# # IP addresses other than 127.0.0.1 that can view the django debug toolbar.
+# debug_toolbar_ips: ['10.0.2.2']  # 10.0.2.2 is the vagrant host.
 
 # # Email settings.
 # email_port: 1025
