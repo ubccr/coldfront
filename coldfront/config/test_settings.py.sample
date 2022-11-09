@@ -73,7 +73,7 @@ CILOGON_APP_SECRET = ''
 # django debug toolbar settings
 #------------------------------------------------------------------------------
 
-# IP addresses other than 127.0.0.1 that can view the django debug toolbar
+# IP addresses other than 127.0.0.1 that can view the django debug toolbar.
 EXTRA_INTERNAL_IPS = []
 
 #------------------------------------------------------------------------------
