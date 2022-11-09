@@ -220,8 +220,16 @@ def generate_class_project_status_columns():
 
 
 def generate_user_role_counts():
-    num_active_users = ProjectUser.objects.filter(status__name='Active', role__name='User').count()
-    active_managers = ProjectUser.objects.filter(status__name='Active', role__name='Manager')
+    num_active_users = ProjectUser.objects.filter(
+        status__name='Active',
+        role__name='User',
+        project__status__name='Active'
+    ).count()
+    active_managers = ProjectUser.objects.filter(
+        status__name='Active',
+        role__name='Manager',
+        project__status__name='Active'
+    )
     num_active_managers = 0
     num_active_pis = 0
     for manager in active_managers:
