@@ -167,7 +167,7 @@ Project List
             {% if project.status.name == 'Active' %}
               {% if project.can_be_reviewed %}
                 <td class="text-warning">
-                  {{ project.status.name }}
+                  <strong>{{ project.status.name }}</strong>
                   {% if user.username in project.list_of_manager_usernames %}
                     <a href="{% url 'project-review' project.pk %}">
                       <span class="badge badge-warning">
@@ -180,7 +180,7 @@ Project List
                 </td>
               {% elif project.needs_review %}
                 <td class="text-warning">
-                  {{ project.status.name }}
+                  <strong>{{ project.status.name }}</strong>
                   {% if user.username in project.list_of_manager_usernames %}
                     <a href="{% url 'project-review' project.pk %}">
                       <span class="badge badge-warning">
@@ -191,11 +191,11 @@ Project List
                   {% endif %}
                 </td>
               {% else %}
-                <td class="text-success">{{ project.status.name}}</td>
+                <td class="text-success"><strong>{{ project.status.name }}</strong></td>
               {% endif %}
             {% elif project.status.name in 'Archived, Denied, Expired' %}
               <td class="text-danger">
-                {{ project.status.name }}
+                <strong>{{ project.status.name }}</strong>
                   {% if user.username in project.list_of_manager_usernames %}
                     {% if project.status.name == 'Expired' and project.can_be_reviewed %}
                       <a href="{% url 'project-review' project.pk %}">
@@ -208,7 +208,7 @@ Project List
                   {% endif %}
               </td>
             {% else %}
-              <td class="text-info">{{ project.status.name }}</td>
+              <td class="text-info"><strong>{{ project.status.name }}</strong></td>
             {% endif %}
             <td>{{ project.end_date }}</td>
             <td>

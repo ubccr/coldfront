@@ -49,23 +49,23 @@ Allocation Review New and Pending Requests
               {% if allocation.project.status.name == 'Active' %}
                 {% if allocation.project.can_be_reviewed %}
                   <td class="text-warning">
-                    {{ allocation.project.status.name }}
+                    <strong>{{ allocation.project.status.name }}</strong>
                     <span class="badge badge-warning">
                       Expires in {{ allocation.project.expires_in }} day{{ allocation.project.expires_in|pluralize }}
                     </span>
                   </td>
                 {% elif allocation.project.needs_review %}
                   <td class="text-warning">
-                    {{ allocation.project.status.name }}
+                    <strong>{{ allocation.project.status.name }}</strong>
                     <span class="badge badge-warning">Needs Review</span>
                   </td>
                 {% else %}
-                  <td class="text-success">{{ allocation.project.status.name}}</td>
+                  <td class="text-success"><strong>{{ allocation.project.status.name }}</strong></td>
                 {% endif %}
               {% elif allocation.project.status.name in 'Archived, Denied, Expired' %}
-                <td class="text-danger">{{ allocation.project.status.name }}</td>
+                <td class="text-danger"><strong>{{ allocation.project.status.name }}</strong></td>
               {% else %}
-                <td class="text-info">{{ allocation.project.status.name }}</td>
+                <td class="text-info"><strong>{{ allocation.project.status.name }}</strong></td>
               {% endif %}
             {% endif %}
             <td>{{allocation.get_parent_resource}}</td>
