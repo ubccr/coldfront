@@ -21,6 +21,8 @@ CENTER_PROJECT_RENEWAL_HELP_URL = CENTER_BASE_URL + '/help'
 
 EMAIL_PORT = 1025
 EMAIL_SUBJECT_PREFIX = '[MyBRC-User-Portal]'
+# A list of admin email addresses to be notified about new requests and other
+# events.
 EMAIL_ADMIN_LIST = ['admin@localhost']
 EMAIL_SENDER = 'test@test.test'
 EMAIL_TICKET_SYSTEM_ADDRESS = 'help@localhost'

@@ -53,6 +53,7 @@ that quotes need not be provided, except in the list variable.
    redis_passwd: password_here
    from_email: you@email.com
    admin_email: you@email.com
+   email_admin_list: ["you@email.com"]
    request_approval_cc_list: ["you@email.com"]
    ```
 8. Provision the VM. This should run the Ansible playbook. Expect this to take
