@@ -28,6 +28,8 @@ urlpatterns = [
     path('help', TemplateView.as_view(template_name='portal/help.html'), name='help'),
 ]
 
+if 'debug_toolbar' in settings.EXTRA_APPS:
+    urlpatterns.append(path('__debug__/', include('debug_toolbar.urls')))
 
 if 'coldfront.api' in settings.EXTRA_APPS:
     urlpatterns.append(path('api/', include('coldfront.api.urls')))
