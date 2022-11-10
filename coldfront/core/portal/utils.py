@@ -219,45 +219,6 @@ def generate_class_project_status_columns():
     return class_project_status_columns
 
 
-def generate_user_role_counts():
-    project_statuses = ['Active', 'Waiting For Admin Approval', 'Review Pending', ]
-    num_active_users = ProjectUser.objects.filter(
-        status__name='Active',
-        role__name='User',
-        project__status__name__in=project_statuses
-    ).count()
-    active_managers = ProjectUser.objects.filter(
-        status__name='Active',
-        role__name='Manager',
-        project__status__name__in=project_statuses
-    )
-    num_active_managers = 0
-    num_active_pis = 0
-    for manager in active_managers:
-        if manager.project.pi == manager.user:
-            num_active_pis += 1
-        else:
-            num_active_managers += 1
-
-    num_active_users += num_active_managers
-    user_label = f'Total Active Users: {num_active_users}'
-    pi_label = f'Total Active PIs: {num_active_pis}'
-
-    user_counts_chart_data = {
-        'columns': [
-            [user_label, num_active_users],
-            [pi_label, num_active_pis],
-        ],
-        'type': 'donut',
-        'colors': {
-            user_label: '#ffc72c',
-            pi_label: '#6da04b',
-        }
-    }
-
-    return user_counts_chart_data
-
-
 def generate_user_counts():
     project_statuses = ['Active', 'Waiting For Admin Approval', 'Review Pending', ]
     num_unique_active_users = len(set(ProjectUser.objects.filter(
@@ -267,26 +228,19 @@ def generate_user_counts():
     num_unique_active_pis = len({
         project.pi for project in Project.objects.filter(status__name__in=project_statuses)
     })
-    num_active_users = ProjectUser.objects.filter(
-        status__name='Active',
-        project__status__name__in=project_statuses
-    ).count()
 
     unique_user_label = f'Unique Active Users: {num_unique_active_users}'
     unique_pi_label = f'Unique Active PIs: {num_unique_active_pis}'
-    user_label = f'Total Active Users: {num_active_users}'
 
     user_counts_chart_data = {
         'columns': [
             [unique_user_label, num_unique_active_users],
             [unique_pi_label, num_unique_active_pis],
-            [user_label, num_active_users],
         ],
         'type': 'bar',
         'colors': {
-            user_label: '#673ab7',
-            unique_pi_label: '#285424',
-            unique_user_label: '#e27602'
+            unique_pi_label: '#2f9fd0',
+            unique_user_label: '#6da04b'
         }
     }
 

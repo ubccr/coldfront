@@ -17,7 +17,6 @@ from coldfront.core.portal.utils import (generate_allocations_chart_data,
                                          generate_project_status_chart_data,
                                          generate_research_project_status_columns,
                                          generate_class_project_status_columns,
-                                         generate_user_role_counts,
                                          generate_user_counts)
 from coldfront.core.project.models import Project
 from coldfront.core.publication.models import Publication
@@ -240,7 +239,6 @@ def project_summary(request):
 @cache_page(60 * 15)
 def user_summary(request):
     context = {}
-    context['user_role_counts'] = generate_user_role_counts()
     context['user_counts'] = generate_user_counts()
 
     return render(request, 'portal/user_summary.html', context)

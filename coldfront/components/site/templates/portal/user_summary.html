@@ -1,36 +1,28 @@
 {% load static %}
-<div class="row">
-  <div class="col">
-    <div id="userCount" style="min-height: 270px;"></div>
-  </div>
-  <div class="col">
-    <div id="userRoleCount" style="min-height: 270px;"></div>
-  </div>
-</div>
+<div id="userCount" style="min-height: 270px; max-width: 519px; margin: auto;"></div>
 
 <script>
   $(document).ready(function () {
-    drawUserRoleCount();
     drawUserCount();
   });
-
-  function drawUserRoleCount() {
-    var chart = c3.generate({
-      bindto: '#userRoleCount',
-      data: user_role_counts,
-      donut: {
-        title: "Active User Roles"
-      },
-    });
-  }
 
   function drawUserCount() {
     var chart = c3.generate({
       bindto: '#userCount',
       data: user_counts,
+      tooltip: {
+        show: false
+      },
+      axis: {
+        y: {
+          label: 'Total Unique Users'
+        },
+        x: {
+          show: false
+        }
+      }
     })
   }
 
   var user_counts = {{ user_counts | safe }}
-  var user_role_counts = {{ user_role_counts | safe }}
 </script>
