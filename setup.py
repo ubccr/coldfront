@@ -28,7 +28,7 @@ setup(
         'bibtexparser==1.2.0',
         'blessed==1.19.0',
         'chardet==4.0.0',
-        'Django==3.2.14',
+        'Django==3.2.15',
         'django-crispy-forms==1.13.0',
         'django-environ==0.8.1',
         'django-model-utils==4.2.0',
@@ -53,6 +53,7 @@ setup(
         'six==1.16.0',
         'urllib3==1.26.8',
         'wcwidth==0.2.5',
+        'formencode==2.0.1',
     ],
     entry_points={
         'console_scripts': [
