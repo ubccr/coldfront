@@ -8,7 +8,7 @@ base_dir = settings.BASE_DIR
 
 
 class Command(BaseCommand):
-    help = 'Run setup script to initialize Coldfront with testing data'
+    help = 'Run setup script to initialize the Coldfront database'
 
     def add_arguments(self, parser):
          parser.add_argument("-fo", "--force_overwrite", help="Force intial_setup script to run with no warning.")
