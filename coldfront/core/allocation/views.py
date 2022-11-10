@@ -1299,7 +1299,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         if SLACK_MESSAGING_ENABLED:
             text = f'A new allocation in project "{project_obj.title}" with id {project_obj.pk} has been requested for {pi_name} - {resource_name}. Please review the allocation: {url}'
             send_message(text)
-        elif EMAIL_ENABLED:
+        if EMAIL_ENABLED:
             template_context = {
                 'project_title': project_obj.title,
                 'project_id': project_obj.pk,

@@ -110,6 +110,7 @@ if EMAIL_ENABLED:
     EMAIL_CENTER_NAME = import_from_settings('CENTER_NAME')
     EMAIL_OPT_OUT_INSTRUCTION_URL = import_from_settings(
         'EMAIL_OPT_OUT_INSTRUCTION_URL')
+    EMAIL_ALERTS_EMAIL_ADDRESS = import_from_settings('EMAIL_ALERTS_EMAIL_ADDRESS')
 
 
 class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
@@ -853,7 +854,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
             url = '{}{}'.format(domain_url, project_review_url)
             text = f'A new request for project "{project_obj.title}" with id {project_obj.pk} has been submitted. You can view it here: {url}'
             send_message(text)
-        elif EMAIL_ENABLED:
+        if EMAIL_ENABLED:
             domain_url = get_domain_url(self.request)
             project_review_url = reverse('project-review-list')
             template_context = {
@@ -866,7 +867,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
                 'email/new_project_request.txt',
                 template_context,
                 EMAIL_SENDER,
-                [EMAIL_TICKET_SYSTEM_ADDRESS, ],
+                [EMAIL_ALERTS_EMAIL_ADDRESS, ],
             )
 
             if form.instance.pi != form.instance.requestor:
