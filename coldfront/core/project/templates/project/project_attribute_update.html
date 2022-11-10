@@ -1,0 +1,49 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Project Attribute Details
+{% endblock %}
+
+
+{% block content %}
+<h2>Project Attribute Update Form</h2>
+
+<hr>
+
+<form action="{% url 'project-attribute-update' project_obj.pk project_attribute_obj.pk %}" method="post">
+  {% csrf_token %}
+  <div class="card">
+    <div class="card-header"><i class="fas fa-edit" aria-hidden="true"></i> Attribute Details </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table">
+          <tr>
+            <th scope="row">Name:</th>
+            <td>{{project_attribute_obj}}</td>
+          </tr>
+          <tr>
+          <tr>
+            <th scope="row">Type:</th>
+            <td>{{project_attribute_obj.proj_attr_type.attribute_type}}</td>
+          </tr>
+          <tr>
+            <th scope="row">Value:</th>
+            <td>{{project_attribute_obj.value}}</td>
+          </tr>
+          <tr>
+            <th scope="row">New Value:</th>
+            <td>{{project_attribute_update_form.new_value}}</td>
+          </tr>
+        </table>
+      </div>
+    </div> 
+    <div class="card-footer">
+        <button type="submit" class="btn btn-primary">Update</button>
+      <a class="btn btn-secondary" href="{% url 'project-detail' project_obj.pk %}" role="button">Back to Project</a>
+    </div>
+  </div>
+</form>
+{% endblock%}
