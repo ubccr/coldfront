@@ -1,3 +1,4 @@
+from selenium.webdriver.common.keys import Keys
 from coldfront.core.test_helpers.factories import UserFactory
 from django.test import TestCase
 
@@ -11,6 +12,7 @@ from django.test import LiveServerTestCase
 from selenium import webdriver
 
 from coldfront.core.user.models import UserProfile
+import time
 
 class TestUserProfile(TestCase):
     class Data:
@@ -57,3 +59,49 @@ class TestUserProfile(TestCase):
         with self.assertRaises(UserProfile.DoesNotExist):
             UserProfile.objects.get(pk=profile_obj.pk)
         self.assertEqual(0, len(UserProfile.objects.all()))
+
+class LoginTest(LiveServerTestCase):
+
+    global driver
+    driver = webdriver.Chrome()
+    driver.get('http://127.0.0.1:8000/')
+
+
+    #tests simple login for pi
+    def testlogin(self):
+
+        assert 'Welcome to' in driver.title
+        driver.find_element_by_id("login_button").click()
+
+        username = driver.find_element_by_id("id_username")
+        password = driver.find_element_by_id("id_password")
+
+        username.send_keys("a")
+        password.send_keys("a")
+        driver.find_element_by_id("login").click()
+
+        username = driver.find_element_by_id("id_username")
+        password = driver.find_element_by_id("id_password")
+        username.send_keys(Keys.CONTROL + "a")
+        username.send_keys(Keys.DELETE)
+        username.send_keys("cgray")
+        password.send_keys("test1234")
+        driver.find_element_by_id("login").click()
+        assert driver.current_url == 'http://127.0.0.1:8000/'
+
+    #tests adding project for pi
+        if(driver.find_element_by_id("hamburger_icon").is_displayed()):
+            driver.find_element_by_id("hamburger_icon").click()
+        else:
+            driver.find_element_by_id("project_dropdown").click()
+            driver.find_element_by_id("navbar-project").click()
+            driver.find_element_by_id("add_project").click()
+
+        title = driver.find_element_by_id("id_title")
+        description = driver.find_element_by_id("id_description")
+
+        title.send_keys("Test Title")
+        description.clear()
+        description = driver.find_element_by_id("id_description")
+        description.send_keys("This is a test description > 10 characters.")
+        driver.find_element_by_id("save_button").click()
