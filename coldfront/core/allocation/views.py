@@ -817,6 +817,11 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 'user_ads_group': {},
                 'user_ads_group_label': {},
                 'type': 'text',
+            },
+            {
+                'confirm_best_practices': {},
+                'confirm_best_practices_label': {},
+                'type': 'checkbox',
             }
         ]
 
@@ -977,6 +982,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         data_management_responsibilities = form_data.get('data_management_responsibilities')
         admin_ads_group = form_data.get('admin_ads_group')
         user_ads_group = form_data.get('user_ads_group')
+        confirm_best_practices = form_data.get('confirm_best_practices')
 
         allocation_limit = resource_obj.get_attribute('allocation_limit')
         if allocation_limit is not None:
@@ -1157,6 +1163,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             data_management_responsibilities=data_management_responsibilities,
             admin_ads_group=admin_ads_group,
             user_ads_group=user_ads_group,
+            confirm_best_practices=confirm_best_practices,
             status=allocation_status_obj
         )
 

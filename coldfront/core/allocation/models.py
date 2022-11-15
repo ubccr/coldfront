@@ -136,6 +136,7 @@ class Allocation(TimeStampedModel):
         null=True
     )
     confirm_understanding = models.BooleanField(blank=True, null=True)
+    confirm_best_practices = models.BooleanField(blank=True, null=True)
     primary_contact = models.CharField(max_length=20, blank=True, null=True)
     secondary_contact = models.CharField(max_length=20, blank=True, null=True)
     department_full_name = models.CharField(max_length=30, blank=True, null=True)
