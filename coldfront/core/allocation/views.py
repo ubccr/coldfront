@@ -1036,6 +1036,9 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             storage_space_unit = 'GB'
             if use_indefinitely:
                 end_date = None
+        elif resource_obj.name == 'SDA Group Account':
+            if use_indefinitely:
+                end_date = None
         elif resource_obj.name == 'Priority Boost':
             if use_indefinitely:
                 end_date = None

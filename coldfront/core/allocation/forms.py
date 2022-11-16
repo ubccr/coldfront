@@ -318,6 +318,11 @@ class AllocationForm(forms.Form):
                 'data_management_plan': cleaned_data.get('data_management_plan'),
                 'terms_of_service': cleaned_data.get('terms_of_service'),
                 'data_management_responsibilities': cleaned_data.get('data_management_responsibilities'),
+                'primary_contact': cleaned_data.get('primary_contact'),  # Only check if username is given
+                'secondary_contact': cleaned_data.get('secondary_contact'),  # Only check if username is given
+                'it_pros': cleaned_data.get('it_pros'),  # Only check if username is given
+                'end_date': cleaned_data.get('end_date'),
+                'use_indefinitely': cleaned_data.get('use_indefinitely'),
             }
         }
         resource = resources.get(resource_obj.name)
@@ -421,7 +426,7 @@ class AllocationForm(forms.Form):
                     continue
 
             # Value checks for a specific resource's required fields should go here.
-            if resource_name == 'Geode-Projects':
+            if resource_name in ['Geode-Projects', 'SDA Group Account', ]:
                 if key in ['primary_contact', 'secondary_contact', 'fiscal_officer', 'it_pros']:
                     user_exists = True
                     if ldap_user_info_enabled:
