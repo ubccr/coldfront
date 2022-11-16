@@ -41,6 +41,7 @@ ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING = import_from_settings(
 def home(request):
 
     context = {}
+    next_url = ""
     if request.user.is_authenticated:
         template_name = 'portal/authorized_home.html'
         project_list = Project.objects.filter(
@@ -108,8 +109,9 @@ def home(request):
         except AttributeError:
             pass
     else:
+        next_url = request.get_full_path()[1:]
         template_name = 'portal/nonauthorized_home.html'
-
+    context['next'] = next_url
     context['EXTRA_APPS'] = settings.INSTALLED_APPS
 
     if 'coldfront.plugins.system_monitor' in settings.INSTALLED_APPS:
