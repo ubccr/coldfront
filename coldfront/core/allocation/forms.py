@@ -287,9 +287,11 @@ class AllocationForm(forms.Form):
                 'terms_of_service': cleaned_data.get('terms_of_service'),
                 'data_management_responsibilities': cleaned_data.get('data_management_responsibilities'),
                 'confirm_best_practices': cleaned_data.get('confirm_best_practices'),
-                'primary_contact': cleaned_data.get('primary_contact'), # Only check if username is given
-                'secondary_contact': cleaned_data.get('secondary_contact'), # Only check if username is given
-                'it_pros': cleaned_data.get('it_pros'), # Only check if username is given
+                'primary_contact': cleaned_data.get('primary_contact'),  # Only check if username is given
+                'secondary_contact': cleaned_data.get('secondary_contact'),  # Only check if username is given
+                'it_pros': cleaned_data.get('it_pros'),  # Only check if username is given
+                'end_date': cleaned_data.get('end_date'),
+                'use_indefinitely': cleaned_data.get('use_indefinitely'),
             },
             'Slate-Project': {
                 'first_name': cleaned_data.get('first_name'),
