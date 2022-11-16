@@ -94,7 +94,7 @@ Allocation Detail
             </tr>
           {% endif %}
           {% if allocation.get_resources_as_string == "cBioPortal" %}
-             <tr>
+            <tr>
               <th scope="row" class="text-nowrap">Is Associated With PHI:</th>
               <td>{{ allocation.phi_association }}</td>
             </tr>
@@ -115,10 +115,12 @@ Allocation Detail
             <tr>
               <th scope="row" class="text-nowrap">Secondary Contact:</th>
               <td>{{ allocation.secondary_contact }}</td>
-            </tr>
+            </tr>>
+            <tr>
               <th scope="row" class="text-nowrap">Fiscal Officer Username:</th>
               <td>{{ allocation.fiscal_officer }}</td>
             </tr>
+            <tr>
               <th scope="row" class="text-nowrap">IT Pro(s)'s Username:</th>
               <td>{{ allocation.it_pros }}</td>
             </tr>
@@ -140,9 +142,11 @@ Allocation Detail
             <th scope="row" class="text-nowrap">Secondary Contact:</th>
             <td>{{ allocation.secondary_contact }}</td>
           </tr>
+          <tr>
             <th scope="row" class="text-nowrap">Fiscal Officer Username:</th>
             <td>{{ allocation.fiscal_officer }}</td>
           </tr>
+          <tr>
             <th scope="row" class="text-nowrap">IT Pro(s)'s Username:</th>
             <td>{{ allocation.it_pros }}</td>
           </tr>
