@@ -78,7 +78,7 @@ class AllocationForm(forms.Form):
         ('current_and_next_year', 'Current license + next annual license')
     )
 
-    resource = forms.ModelChoiceField(queryset=None, empty_label=None)
+    resource = forms.ChoiceField(choices=())
     justification = forms.CharField(widget=forms.Textarea)
     first_name = forms.CharField(max_length=40, required=False)
     last_name = forms.CharField(max_length=40, required=False)
@@ -135,10 +135,15 @@ class AllocationForm(forms.Form):
 
     def __init__(self, request_user, project_pk,  *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        RESOURCE_CHOICES = [(None, 'Please select a resource...')]
+        for resource in get_user_resources(request_user):
+            RESOURCE_CHOICES.append((resource.pk, resource))
+
         project_obj = get_object_or_404(Project, pk=project_pk)
         self.project_obj = project_obj
         self.request_user = request_user
-        self.fields['resource'].queryset = get_user_resources(request_user)
+        self.fields['resource'].choices = RESOURCE_CHOICES
         user_query_set = project_obj.projectuser_set.select_related('user').filter(
             status__name__in=['Active', ]).order_by("user__username")
         user_query_set = user_query_set.exclude(user__in=[project_obj.pi, request_user])
@@ -254,7 +259,7 @@ class AllocationForm(forms.Form):
 
     def clean(self):
         cleaned_data = super().clean()
-        resource_obj = cleaned_data.get('resource')
+        resource_obj = Resource.objects.get(pk=cleaned_data.get('resource'))
         users = cleaned_data.get('users')
         resources = {
             'Carbonate DL': {

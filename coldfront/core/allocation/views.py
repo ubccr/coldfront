@@ -935,7 +935,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         form_data = form.cleaned_data
         project_obj = get_object_or_404(
             Project, pk=self.kwargs.get('project_pk'))
-        resource_obj = form_data.get('resource')
+        resource_obj = Resource.objects.get(pk=form_data.get('resource'))
         justification = form_data.get('justification')
         quantity = form_data.get('quantity', 1)
         storage_space = form_data.get('storage_space')
