@@ -3,6 +3,7 @@ import datetime
 import logging
 from ast import literal_eval
 from enum import Enum
+from django.utils import timezone
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -13,7 +14,10 @@ from django.utils.module_loading import import_string
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
-from coldfront.core.project.models import Project, ProjectPermission
+from coldfront.core.project.models import (Project,
+                                           ProjectUser,
+                                           ProjectPermission,
+                                           ProjectUserStatusChoice)
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core import attribute_expansion
@@ -531,14 +535,21 @@ class AllocationUser(TimeStampedModel): #allocation user and user are both datab
         verbose_name_plural = 'Allocation User Status'
         unique_together = ('user', 'allocation')
 
-
-    def save(self, *args, **kwargs):
-        project_user = Project.objects.filter(user=self.user, project=self.allocation.project)
-        if project_user:
-            super().save(*args, **kwargs)
-        else:
-            raise ValidationError(
+    def save(self, projectuser_create=True, *args, **kwargs):
+        project_user = ProjectUser.objects.filter(user=self.user, project=self.allocation.project)
+        if not project_user:
+            if projectuser_create:
+                ProjectUser.objects.create(
+                    project=self.allocation.project,
+                    created=timezone.now(),
+                    role_id=2,
+                    status=ProjectUserStatusChoice.objects.get(name='Active'),
+                    user=self.user
+                )
+            else:
+                raise ValidationError(
                 'Cannot save AllocationUser without a matching ProjectUser')
+        super().save(*args, **kwargs)
 
 
 class AllocationAccount(TimeStampedModel):
