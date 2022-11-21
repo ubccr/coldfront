@@ -81,7 +81,7 @@ class Command(BaseCommand):
                             user=user
                         )
                     else:
-                        print("allocation user missing:", lab, resource, userdict)
+                       logger.warning("allocation user missing: %s %s %s", lab, resource, userdict)
                         continue
                 size_sum = int(userdict['size_sum'])
                 usage, unit = determine_size_fmt(userdict['size_sum'])
