@@ -17,4 +17,5 @@ class Command(BaseCommand):
         call_command('add_resource_defaults')
         call_command('add_allocation_defaults')
         call_command('add_default_publication_sources')
+        call_command('qcluster')
         call_command('add_scheduled_tasks')
