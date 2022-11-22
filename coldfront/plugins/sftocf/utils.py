@@ -3,6 +3,7 @@ import re
 import json
 import time
 import logging
+from functools import reduce
 from pathlib import Path
 from datetime import datetime, timedelta
 
@@ -10,10 +11,11 @@ import requests
 from ifxbilling.models import Account, BillingRecord, ProductUsage
 from django.utils import timezone
 from django.contrib.auth import get_user_model
+from django.db.models import Q
 
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.fasrc import determine_size_fmt
-from coldfront.core.project.models import Project
+from coldfront.core.project.models import Project, ProjectUser, ProjectUserStatusChoice
 from coldfront.core.resource.models import Resource
 from coldfront.core.allocation.models import (Allocation,
                                             AllocationUser,
@@ -27,6 +29,7 @@ logger.setLevel(logging.DEBUG)
 filehandler = logging.FileHandler(f'logs/starfish_to_coldfront_{datestr}.log', 'w')
 logger.addHandler(filehandler)
 
+STARFISH_SERVER = "holysfdb01"
 
 with open('coldfront/plugins/sftocf/servers.json', 'r') as myfile:
     svp = json.loads(myfile.read())
@@ -200,7 +203,11 @@ class StarFishRedash:
         query_url = f'{self.base_url}queries/{query[0]}/results?api_key={query[1]}'
         result = return_get_json(query_url, headers={})
         # print(result)
-        data = result['query_result']['data']['rows']
+        if result['query_result']:
+            data = result['query_result']['data']['rows']
+        else:
+            print("no query_result value found:")
+            print(result)
         if volumes:
             result = [d for d in data if d['vol_name'] in volumes]
 
@@ -604,3 +611,80 @@ def generate_headers(token):
         'Authorization': 'Bearer {}'.format(token),
     }
     return headers
+
+def pull_sf_push_cf_redash():
+    '''
+    Query Starfish Redash API for user usage data and update Coldfront AllocationUser entries.
+
+    Only Projects that are already in Coldfront will get updated.
+
+    Assumptions this code relies on:
+    1. A project cannot have multiple allocations on the same storage resource.
+    '''
+
+    # 1. cross-reference CF Resources and SF volumes to produce list of all
+    #    volumes to be collected
+
+    resource_names = [re.sub(r'\/.+','',n) for n in Resource.objects.values_list('name', flat=True)]
+    # limit volumes to be collected to those ones present in the Starfish database
+    volume_names = StarFishServer(STARFISH_SERVER).volumes
+    vols_to_collect = [vol for vol in volume_names for res in resource_names if vol == res]
+    # 2. grab data from redash
+    redash_api = StarFishRedash(STARFISH_SERVER)
+    user_usage = redash_api.get_usage_stats(volumes=vols_to_collect)
+    queryset = []
+    # 3. iterate across all allocations
+
+    # User.objects.filter(
+        # reduce(
+        #     operator.and_, (
+        #         Q(first_name__contains=x) for x in ['x', 'y', 'z']
+        #         )))
+    vol_queries = [(Q(get_parent_resource__contains=vol)) for vol in vols_to_collect]
+    for allocation in Allocation.objects.filter(reduce(operator.or_, vol_queries)):
+        project = allocation.project
+        lab = project.title
+        resource = allocation.get_parent_resource
+        volume = resource.split('/')[0]
+
+        # select query rows that match allocation volume and lab
+        lab_data = [i for i in user_usage if i['group_name'] == lab and i['vol_name'] == volume]
+        if not lab_data:
+            print('No starfish result for', lab, resource)
+            logger.warning('WARNING: No starfish result for %s %s', lab, resource)
+            continue
+
+        usernames = [d['user_name'] for d in lab_data]
+
+        user_models = get_user_model().objects.filter(username__in=usernames)
+        log_missing_user_models(lab, user_models, usernames)
+        logger.debug('%s\n usernames: %s\n user_models: %s',
+                project.title, usernames, [u.username for u in user_models])
+
+        for user in user_models:
+            userdict = next(d for d in lab_data if d['user_name'].lower() == user.username.lower())
+            logger.debug('entering for user: %s', user.username)
+            try:
+                allocationuser = AllocationUser.objects.get(
+                    allocation=allocation, user=user
+                )
+            except AllocationUser.DoesNotExist:
+                if userdict['size_sum'] > 0:
+                    allocationuser = AllocationUser.objects.create(
+                        allocation=allocation,
+                        created=timezone.now(),
+                        status=AllocationUserStatusChoice.objects.get(name='Active'),
+                        user=user
+                    )
+                else:
+                    logger.warning("allocation user missing: %s %s %s", lab, resource, userdict)
+                    continue
+            size_sum = int(userdict['size_sum'])
+            usage, unit = determine_size_fmt(userdict['size_sum'])
+            allocationuser.usage_bytes = size_sum
+            allocationuser.usage = usage
+            allocationuser.unit = unit
+            queryset.append(allocationuser)
+            # automatically update 'modified' field & add old record to history
+            logger.debug("saving %s",userdict)
+    AllocationUser.objects.bulk_update(queryset, ['usage_bytes', 'usage', 'unit'])
