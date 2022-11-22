@@ -66,9 +66,7 @@ class LoginTest(LiveServerTestCase):
     driver = webdriver.Chrome()
     driver.get('http://127.0.0.1:8000/')
 
-
-    #tests simple login for pi
-    def testlogin(self):
+    def test_pi(self):
 
         assert 'Welcome to' in driver.title
         driver.find_element_by_id("login_button").click()
@@ -105,3 +103,16 @@ class LoginTest(LiveServerTestCase):
         description = driver.find_element_by_id("id_description")
         description.send_keys("This is a test description > 10 characters.")
         driver.find_element_by_id("save_button").click()
+
+        assert driver.current_url.__contains__("project")
+
+    #tests adding allocation request for pi
+        request_button = driver.find_element_by_id("resource_button")
+        request_button.click()
+
+        justification_box = driver.find_element_by_id("id_justification")
+        justification_box.send_keys("This is a test justification.")
+        submit_button = driver.find_element_by_id("submit_req")
+        submit_button.click()
+
+        assert driver.current_url.__contains__("project")
