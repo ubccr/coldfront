@@ -159,6 +159,45 @@ class LoginTest(LiveServerTestCase):
         
         assert driver.current_url.__contains__("project")
 
+    #tests adding/removing grant
+
+        # add_grant = driver.find_element_by_id("add_grant")
+        # add_grant.click()
+
+        # title = driver.find_element_by_id("id_title")
+        # title.send_keys("Test Title")
+        # grant_number = driver.find_element_by_id("id_grant_number")
+        # grant_number.send_keys("123")
+        # role = Select(driver.find_element_by_id("id_role"))
+        # role.select_by_value("PI")
+        # agency = Select(driver.find_element_by_id("id_funding_agency"))
+        # agency.select_by_value("11")
+        # start_date = driver.find_element_by_id("id_grant_start")
+        # start_date.send_keys("2022-11-01")
+        # end_date = driver.find_element_by_id("id_grant_end")
+        # end_date.send_keys("2025-11-01")
+        # credit = driver.find_element_by_id("id_percent_credit")
+        # credit.send_keys("10")
+        # funding = driver.find_element_by_id("id_direct_funding")
+        # funding.send_keys("1000")
+        # award = driver.find_element_by_id("id_total_amount_awarded")
+        # award.send_keys("10000")
+        # status = Select(driver.find_element_by_id("id_status"))
+        # status.select_by_value("1")
+        # submit_grant = driver.find_element_by_id("grant_save")
+        # submit_grant.click()
+        # print("\nGrant added successfully.")
+
+        # del_button = driver.find_element_by_id("delete_grant")
+        # del_button.click()
+        # all_grants = driver.find_element_by_id("selectAll")
+        # all_grants.click()
+        # submit_delete_g = driver.find_element_by_id("delete_grants")
+        # submit_delete_g.click()
+        # print("\nGrant deleted successfully.")
+        
+        # assert driver.current_url.__contains__("project")
+
     #tests reviewing project for pi
         driver.get('http://127.0.0.1:8000/project/1/review')
         if(driver.title.__contains__("Review")):
