@@ -10,10 +10,9 @@ from django.test import TestCase
 
 from django.test import LiveServerTestCase
 from selenium import webdriver
+from selenium.webdriver.support.ui import Select
 
 from coldfront.core.user.models import UserProfile
-import time
-
 class TestUserProfile(TestCase):
     class Data:
         """Collection of test data, separated for readability"""
@@ -68,6 +67,7 @@ class LoginTest(LiveServerTestCase):
 
     def test_pi(self):
 
+    #tests pi login
         assert 'Welcome to' in driver.title
         driver.find_element_by_id("login_button").click()
 
@@ -86,14 +86,16 @@ class LoginTest(LiveServerTestCase):
         password.send_keys("test1234")
         driver.find_element_by_id("login").click()
         assert driver.current_url == 'http://127.0.0.1:8000/'
+        print("\nLogged in successfully.")
 
     #tests adding project for pi
         if(driver.find_element_by_id("hamburger_icon").is_displayed()):
             driver.find_element_by_id("hamburger_icon").click()
-        else:
-            driver.find_element_by_id("project_dropdown").click()
-            driver.find_element_by_id("navbar-project").click()
-            driver.find_element_by_id("add_project").click()
+        
+        driver.find_element_by_id("project_dropdown").click()
+        driver.find_element_by_id("navbar-project").click()
+
+        driver.find_element_by_id("add_project").click()
 
         title = driver.find_element_by_id("id_title")
         description = driver.find_element_by_id("id_description")
@@ -103,8 +105,7 @@ class LoginTest(LiveServerTestCase):
         description = driver.find_element_by_id("id_description")
         description.send_keys("This is a test description > 10 characters.")
         driver.find_element_by_id("save_button").click()
-
-        assert driver.current_url.__contains__("project")
+        print("\nProject created successfully.")
 
     #tests adding allocation request for pi
         request_button = driver.find_element_by_id("resource_button")
@@ -114,5 +115,79 @@ class LoginTest(LiveServerTestCase):
         justification_box.send_keys("This is a test justification.")
         submit_button = driver.find_element_by_id("submit_req")
         submit_button.click()
+        print("\nAllocation request submitted successfully.")
 
         assert driver.current_url.__contains__("project")
+
+    #tests adding/removing publication
+
+        add_publication = driver.find_element_by_id("add_publication")
+        add_publication.click()
+
+        manually_add = driver.find_element_by_id("manual_add")
+        manually_add.click()
+
+        title = driver.find_element_by_id("id_title")
+        title.send_keys("Test Title")
+        author = driver.find_element_by_id("id_author")
+        author.send_keys("Test Author")
+        year = driver.find_element_by_id("id_year")
+        year.send_keys("2000")
+        journal = driver.find_element_by_id("id_journal")
+        journal.send_keys("Test Journal")
+        submit_publ = driver.find_element_by_id("submit_manually")
+        submit_publ.click()
+
+        # box = driver.find_element_by_id("id_search_id")
+        # box.send_keys("10.1038/nphys1170")
+        # search_button = driver.find_element_by_id("search-button")
+        # search_button.click()
+        # checkbox_for_publication = driver.find_element_by_id("selectAll")
+        # checkbox_for_publication.click()
+        # add_button = driver.find_element_by_id("add_publ")
+        # add_button.click()
+        print("\nPublication added successfully.")
+
+
+        del_button = driver.find_element_by_id("delete_publ")
+        del_button.click()
+        all_publications = driver.find_element_by_id("selectAll")
+        all_publications.click()
+        submit_delete = driver.find_element_by_id("delete")
+        submit_delete.click()
+        print("\nPublication deleted successfully.")
+        
+        assert driver.current_url.__contains__("project")
+
+    #tests reviewing project for pi
+        driver.get('http://127.0.0.1:8000/project/1/review')
+        if(driver.title.__contains__("Review")):
+            reason = driver.find_element_by_id("id_reason")
+            reason.send_keys("N/A")
+            acknowledgement = driver.find_element_by_id("id_acknowledgement")
+            acknowledgement.click()
+            submit = driver.find_element_by_id("submit_review")
+            submit.click()
+            print("\nProject reviewed successfully.")
+
+    #tests requesting allocation change for pi
+        if(driver.find_element_by_id("hamburger_icon").is_displayed()):
+            driver.find_element_by_id("hamburger_icon").click()
+        
+        driver.find_element_by_id("project_dropdown").click()
+        driver.find_element_by_id("navbar-allocation").click()
+
+        driver.get('http://127.0.0.1:8000/allocation/1')
+
+        change_button = driver.find_element_by_id("request_change")
+        change_button.click()
+
+        extension = Select(driver.find_element_by_id("id_end_date_extension"))
+        extension.select_by_value("30")
+        change_justification = driver.find_element_by_id("id_justification")
+        change_justification.send_keys("This is a test justification.")
+        submit_change = driver.find_element_by_id("submit_change")
+        submit_change.click()
+        print("\nAllocation change submitted successfully.")
+
+        assert driver.current_url.__contains__("allocation")
