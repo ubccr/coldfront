@@ -3,6 +3,7 @@ import re
 import json
 import time
 import logging
+import operator
 from functools import reduce
 from pathlib import Path
 from datetime import datetime, timedelta
