@@ -642,11 +642,11 @@ def pull_sf_push_cf_redash():
         #         Q(first_name__contains=x) for x in ['x', 'y', 'z']
         #         )))
     vol_queries = [(Q(get_parent_resource__contains=vol)) for vol in vols_to_collect]
-    for allocation in Allocation.objects.filter(reduce(operator.or_, vol_queries)):
+    for allocation in Allocation.objects.all():#filter(reduce(operator.or_, vol_queries)):
         project = allocation.project
         lab = project.title
         resource = allocation.get_parent_resource
-        volume = resource.split('/')[0]
+        volume = resource.name.split('/')[0]
 
         # select query rows that match allocation volume and lab
         lab_data = [i for i in user_usage if i['group_name'] == lab and i['vol_name'] == volume]
