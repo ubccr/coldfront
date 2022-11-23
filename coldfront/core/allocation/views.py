@@ -1,6 +1,7 @@
 import datetime
 import logging
 from datetime import date
+import json
 
 from dateutil.relativedelta import relativedelta
 from django import forms
@@ -209,10 +210,18 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
         if start_date and allocation_obj.start_date != start_date:
             allocation_obj.start_date = start_date
+            
 
         if end_date and allocation_obj.end_date != end_date:
             allocation_obj.end_date = end_date
+           
         allocation_obj.save()
+
+        if 'approved' in request.POST:
+            return HttpResponseRedirect(reverse('allocation-activate-request', kwargs={'pk': pk}))
+
+        if 'denied' in request.POST:
+            return HttpResponseRedirect(reverse('allocation-deny-request', kwargs={'pk': pk}))
 
         if old_status != 'Active' == new_status:
             if not start_date:
@@ -948,13 +957,23 @@ class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
 
         allocation_status_active_obj = AllocationStatusChoice.objects.get(
             name='Active')
-        start_date = datetime.datetime.now()
-        end_date = datetime.datetime.now(
-        ) + relativedelta(days=ALLOCATION_DEFAULT_ALLOCATION_LENGTH)
+        if allocation_obj.start_date == None and allocation_obj.end_date == None:
+            start_date = datetime.datetime.now()
+            end_date = datetime.datetime.now(
+                ) + relativedelta(days=ALLOCATION_DEFAULT_ALLOCATION_LENGTH)
+            allocation_obj.start_date = start_date
+            allocation_obj.end_date = end_date
+
+        if allocation_obj.start_date != None and allocation_obj.end_date == None:
+            end_date = allocation_obj.start_date + relativedelta(days=ALLOCATION_DEFAULT_ALLOCATION_LENGTH)
+            allocation_obj.end_date = end_date
+
+        if allocation_obj.start_date == None and allocation_obj.end_date != None:
+            if ((allocation_obj.end_date - relativedelta(days=ALLOCATION_DEFAULT_ALLOCATION_LENGTH)) >= datetime.datetime.now().date()):
+                start_date = allocation_obj.end_date - relativedelta(days=ALLOCATION_DEFAULT_ALLOCATION_LENGTH)
+                allocation_obj.start_date = start_date
 
         allocation_obj.status = allocation_status_active_obj
-        allocation_obj.start_date = start_date
-        allocation_obj.end_date = end_date
         allocation_obj.save()
 
         messages.success(request, 'Allocation to {} has been ACTIVATED for {} {} ({})'.format(

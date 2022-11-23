@@ -163,8 +163,8 @@ Allocation Detail
       {% if request.user.is_superuser %}
       <div class="float-right">
         {% if allocation.status.name == 'New' or allocation.status.name == 'Renewal Requested' %}
-          <a href="{% url 'allocation-activate-request' allocation.pk %}" class="btn btn-success mr-1 confirm-activate">Approve</a>
-          <a href="{% url 'allocation-deny-request' allocation.pk %}" class="btn btn-danger mr-1 confirm-deny">Deny</a>
+          <button name="approved" class="btn btn-success mr-1 confirm-activate">Approve</button>
+          <button name="denied" class="btn btn-danger mr-1 confirm-deny">Deny</button>
         {% endif %}
         <button type="submit" class="btn btn-primary"><i class="fas fa-sync" aria-hidden="true"></i> Update</button>
       {% endif %}
