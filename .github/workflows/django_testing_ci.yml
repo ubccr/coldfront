@@ -15,7 +15,7 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-latest # Default github actions environment for Linux
+    runs-on: ubuntu-20.04 # Default github actions environment for Linux
 
     services:
       postgres: # Set up a database container with the following specifications
