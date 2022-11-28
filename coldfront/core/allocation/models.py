@@ -535,20 +535,11 @@ class AllocationUser(TimeStampedModel): #allocation user and user are both datab
         verbose_name_plural = 'Allocation User Status'
         unique_together = ('user', 'allocation')
 
-    def save(self, projectuser_create=True, *args, **kwargs):
+    def save(self, *args, **kwargs):
         project_user = ProjectUser.objects.filter(user=self.user, project=self.allocation.project)
         if not project_user:
-            if projectuser_create:
-                ProjectUser.objects.create(
-                    project=self.allocation.project,
-                    created=timezone.now(),
-                    role_id=2,
-                    status=ProjectUserStatusChoice.objects.get(name='Active'),
-                    user=self.user
-                )
-            else:
-                raise ValidationError(
-                'Cannot save AllocationUser without a matching ProjectUser')
+            raise ValidationError(
+            'Cannot save AllocationUser without a matching ProjectUser')
         super().save(*args, **kwargs)
 
 

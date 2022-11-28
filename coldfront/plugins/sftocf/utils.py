@@ -13,6 +13,7 @@ from ifxbilling.models import Account, BillingRecord, ProductUsage
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.db.models import Q
+from django.core.exceptions import ValidationError
 
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.fasrc import determine_size_fmt
@@ -437,8 +438,14 @@ def update_usage(user, userdict, allocation):
     allocationuser.usage = usage
     allocationuser.unit = unit
     # automatically updates 'modified' field & adds old record to history
-    allocationuser.save()
-    logger.debug('successful entry: %s, %s', userdict['groupname'], userdict['username'])
+    try:
+        allocationuser.save()
+        logger.debug('successful entry: %s, %s', userdict['groupname'], userdict['username'])
+    except ValidationError:
+        logger.warning("no ProjectUser entry for %s %s", userdict['groupname'], userdict['username'])
+        fpath = './coldfront/plugins/sftocf/data/missing_projectusers.csv'
+        patterns = [f'{userdict["groupname"]},{userdict["username"]},{datestr}' for uname in missing_unames]
+        write_update_file_line(fpath, patterns)
 
 
 
@@ -562,7 +569,7 @@ def use_zone(project_name):
         allocation = Allocation.objects.get(justification__contains=project_name)
     except Allocation.MultipleObjectsReturned:
         logger.debug('Too many allocations for project %s; narrowing to the one that ends with project name',
-                                                                    project_name)
+                                                    project_name)
         allocation = Allocation.objects.get(
             justification__endswith=project_name)
         logger.debug('EXCEPT a_id:%s', allocation.id)
@@ -634,15 +641,13 @@ def pull_sf_push_cf_redash():
     redash_api = StarFishRedash(STARFISH_SERVER)
     user_usage = redash_api.get_usage_stats(volumes=vols_to_collect)
     queryset = []
-    # 3. iterate across all allocations
 
-    # User.objects.filter(
-        # reduce(
-        #     operator.and_, (
-        #         Q(first_name__contains=x) for x in ['x', 'y', 'z']
-        #         )))
-    vol_queries = [(Q(get_parent_resource__contains=vol)) for vol in vols_to_collect]
-    for allocation in Allocation.objects.all():#filter(reduce(operator.or_, vol_queries)):
+    # limit allocations to those in the volumes collected
+    searched_resources = [Resource.objects.get(name__contains=vol) for vol in vols_to_collect]
+    allocations = Allocation.objects.filter(resources__in=searched_resources)
+
+    # 3. iterate across allocations
+    for allocation in allocations:
         project = allocation.project
         lab = project.title
         resource = allocation.get_parent_resource
@@ -671,12 +676,19 @@ def pull_sf_push_cf_redash():
                 )
             except AllocationUser.DoesNotExist:
                 if userdict['size_sum'] > 0:
-                    allocationuser = AllocationUser.objects.create(
-                        allocation=allocation,
-                        created=timezone.now(),
-                        status=AllocationUserStatusChoice.objects.get(name='Active'),
-                        user=user
-                    )
+                    try:
+                        allocationuser = AllocationUser.objects.create(
+                            allocation=allocation,
+                            created=timezone.now(),
+                            status=AllocationUserStatusChoice.objects.get(name='Active'),
+                            user=user
+                        )
+                    except ValidationError:
+                        logger.warning("no ProjectUser entry for %s %s", userdict['group_name'], userdict['user_name'])
+                        fpath = './coldfront/plugins/sftocf/data/missing_projectusers.csv'
+                        pattern = f'{userdict["group_name"]},{userdict["user_name"]},{datestr}'
+                        write_update_file_line(fpath, pattern)
+                        continue
                 else:
                     logger.warning("allocation user missing: %s %s %s", lab, resource, userdict)
                     continue
