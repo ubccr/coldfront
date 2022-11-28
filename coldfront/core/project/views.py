@@ -142,6 +142,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         if allocation_submitted:
             context['display_modal'] = 'true'
 
+        is_manager = False
         # Can the user update the project?
         if self.request.user.is_superuser:
             context['is_allowed_to_update_project'] = True
@@ -149,6 +150,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             project_user = self.object.projectuser_set.get(
                 user=self.request.user)
             if project_user.role.name == 'Manager':
+                is_manager = True
                 context['is_allowed_to_update_project'] = True
             else:
                 context['is_allowed_to_update_project'] = False
@@ -162,8 +164,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['mailto'] = 'mailto:' + \
             ','.join([user.user.email for user in project_users])
 
-        is_pi = self.request.user == self.object.pi
-        if self.request.user.is_superuser or is_pi or self.request.user.has_perm('allocation.can_view_all_allocations'):
+        if self.request.user.is_superuser or is_manager or self.request.user.has_perm('allocation.can_view_all_allocations'):
             free_allocations = Allocation.objects.prefetch_related(
                 'resources'
             ).filter(

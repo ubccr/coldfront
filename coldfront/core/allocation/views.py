@@ -141,7 +141,8 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         user_can_access_allocation = allocation_obj.allocationuser_set.filter(
             user=self.request.user, status__name__in=['Active', 'Pending - Remove']).exists()
         if not user_can_access_allocation:
-            user_can_access_allocation = self.request.user == allocation_obj.project.pi
+            user_can_access_allocation = allocation_obj.project.projectuser_set.filter(
+                user=self.request.user, role__name='Manager').exists()
 
         if user_can_access_project and user_can_access_allocation:
             return True
@@ -225,6 +226,9 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
         if self.request.user.is_superuser:
             context['user_has_permissions'] = True
+
+        context['user_exists_in_allocation'] = allocation_obj.allocationuser_set.filter(
+            user=self.request.user, status__name__in=['Active', 'Pending - Remove']).exists()
 
         context['project'] = allocation_obj.project
         context['notes'] = notes
