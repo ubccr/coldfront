@@ -172,7 +172,7 @@ def get_redash_vol_stats():
 class StarFishRedash:
     def __init__(self, server_name):
         self.base_url = f'https://{server_name}.rc.fas.harvard.edu/redash/api/'
-        self.queries = import_from_settings('REDASH_API_KEYS')[server_name]
+        self.queries = import_from_settings('REDASH_API_KEYS')
 
 
     def get_vol_stats(self):
