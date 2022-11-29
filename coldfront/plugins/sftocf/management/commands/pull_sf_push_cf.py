@@ -1,10 +1,7 @@
-from django.core.management.base import BaseCommand, CommandError
-<<<<<<< HEAD
-from coldfront.plugins.sftocf.utils import pull_sf, push_cf
-=======
-from coldfront.plugins.sftocf.utils import ColdFrontDB
->>>>>>> master
 import logging
+
+from django.core.management.base import BaseCommand
+from coldfront.plugins.sftocf.utils import pull_sf, push_cf
 
 
 logger = logging.getLogger(__name__)
