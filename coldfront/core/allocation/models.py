@@ -126,6 +126,14 @@ class Allocation(TimeStampedModel):
         size = self.allocationattribute_set.get(allocation_attribute_type_id=1).value
         return 0 if not size else price * float(size)
 
+
+    @property
+    def allocation_users(self):
+        # allocationuser_filter = (Q(status__name='Active') #&
+        #                         #~Q(usage_bytes__isnull=True))
+        return self.allocationuser_set.filter(status__name='Active')
+
+    @property
     def get_information(self, public_only=True):
         html_string = ''
         if public_only:

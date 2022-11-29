@@ -183,6 +183,13 @@ Center Summary
       ]
     });
 
+    $('#volume-table').DataTable({
+      'aoColumnDefs': [{
+        'bSortable': false,
+        'aTargets': ['nosort']
+      }]
+    });
+
     drawPublications();
     drawResources();
     drawVolumes();

@@ -105,7 +105,6 @@ def center_summary(request):
 
 
 
-
     # # Tier Stats
     #
     # resource_names = Resource.objects.values("name")
