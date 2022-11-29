@@ -1,14 +1,13 @@
 
 {
-"holysfdb01": {
-    "holylfs04":["HDD/C/LABS"],
-    "holylfs05":["C/LABS", "F/LABS"],
-    "holystore01":["C/LABS","C/LABS"]
-    },
-"holysfdb02": {
+"server": "holysfdb01",
+"volumes": {
     "boslfs02":["LABS","LABS"],
     "bos-isilon":["rc_labs","rc_labs"],
     "holy-isilon":["rc_labs","rc_fasse_labs"],
-    "holylfs02":["LABS","LABS"]
-  }
+    "holylfs02":["LABS","LABS"],
+    "holylfs04":["HDD/C/LABS"],
+    "holylfs05":["C/LABS", "F/LABS"],
+    "holystore01":["C/LABS","C/LABS"]
+    }
 }

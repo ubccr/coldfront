@@ -372,9 +372,9 @@ Allocation Detail
 
               <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
               {% if user.usage_bytes == 0.0 %}
-              <td data-sort = "{{user.usage_bytes}}" name = "usage_bytes">{{ user.usage }} bytes</td>
+              <td data-sort = "{{user.usage_bytes}}" name = "usage_bytes"> 0 bytes</td>
               {% else %}
-              <td data-sort = "{{user.usage_bytes}}" name = "usage_bytes">{{ user.usage }}{{ user.unit }}</td>
+              <td data-sort = "{{user.usage_bytes}}" name = "usage_bytes">{{ user.usage|floatformat:1 }}{{ user.unit }}</td>
               {% endif %}
               {% if allocation_usage_bytes == None or allocation_usage_bytes == 0 %}
               <td>0</td>

@@ -19,6 +19,10 @@ LOGGING = {
         'console': {
             'class': 'logging.StreamHandler',
         },
+        'django-q': {
+            'class': 'logging.FileHandler',
+            'filename': 'django-q.log',
+        },
         # 'file': {
         #     'class': 'logging.FileHandler',
         #     'filename': '/tmp/debug.log',
@@ -33,6 +37,10 @@ LOGGING = {
         'django': {
             'handlers': ['console'],
             'level': 'INFO',
+        },
+        'django-q': {
+            'handlers': ['django-q'],
+            'level': 'DEBUG',
         },
         '': {
             'handlers': ['console'],

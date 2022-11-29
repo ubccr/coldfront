@@ -5,12 +5,15 @@ from ifxbilling.models import Product
 
 
 def determine_size_fmt(byte_num):
-    unit = "B"
-    for u in ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB"]:
+    '''Return the correct human-readable byte measurement.
+    '''
+    units = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB"]
+    for u in units:
+        unit = u
         if abs(byte_num) < 1024.0:
             return round(byte_num, 3), unit
         byte_num /= 1024.0
-        unit = u
+    return(round(byte_num, 3), unit)
 
 def convert_size_fmt(num, target_unit, source_unit="B"):
     units = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB"]

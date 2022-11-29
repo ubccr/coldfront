@@ -29,6 +29,20 @@ ALLOCATION_FUNCS_ON_EXPIRE = ['coldfront.core.allocation.utils.test_allocation_f
 # This is in days
 ALLOCATION_DEFAULT_ALLOCATION_LENGTH = ENV.int('ALLOCATION_DEFAULT_ALLOCATION_LENGTH', default=365)
 
+#------------------------------------------------------------------------------
+# DjangoQ settings
+#------------------------------------------------------------------------------
+Q_CLUSTER = {
+    'name': 'coldfront-redis',
+    'recycle': 400,
+    'retry': 10000,
+    'timeout': 9999,
+    'compress': True,
+    'log_level': 'DEBUG',
+    'save_limit': 250,
+    'cpu_affinity': 1,
+    'label': 'Django Q',
+}
 
 #------------------------------------------------------------------------------
 # Allow user to select account name for allocation

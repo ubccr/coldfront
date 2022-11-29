@@ -1,12 +1,8 @@
-import logging
-import os
+from coldfront.plugins.sftocf.utils import pull_sf, push_cf, pull_sf_push_cf_redash
 
-from coldfront.plugins.sftocf.utils import ColdFrontDB
-
-logger = logging.getLogger(__name__)
-
+def pullsf_pushcf_redash():
+    pull_sf_push_cf_redash()
 
 def pull_sf_push_cf(volume=None, clean=False):
-    cfdb = ColdFrontDB()
-    filepaths = cfdb.pull_sf(volume=volume)
-    cfdb.push_cf(filepaths, clean)
+    filepaths = pull_sf(volume=volume)
+    push_cf(filepaths, clean)
