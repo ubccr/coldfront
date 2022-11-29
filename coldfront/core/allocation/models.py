@@ -3,7 +3,6 @@ import datetime
 import logging
 from ast import literal_eval
 from enum import Enum
-from django.utils import timezone
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -16,8 +15,7 @@ from simple_history.models import HistoricalRecords
 
 from coldfront.core.project.models import (Project,
                                            ProjectUser,
-                                           ProjectPermission,
-                                           ProjectUserStatusChoice)
+                                           ProjectPermission)
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core import attribute_expansion

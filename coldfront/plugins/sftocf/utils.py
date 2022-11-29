@@ -3,8 +3,6 @@ import re
 import json
 import time
 import logging
-import operator
-from functools import reduce
 from pathlib import Path
 from datetime import datetime, timedelta
 
@@ -12,7 +10,6 @@ import requests
 from ifxbilling.models import Account, BillingRecord, ProductUsage
 from django.utils import timezone
 from django.contrib.auth import get_user_model
-from django.db.models import Q
 from django.core.exceptions import ValidationError
 
 from coldfront.core.utils.common import import_from_settings
@@ -21,7 +18,6 @@ from coldfront.core.project.models import Project, ProjectUser, ProjectUserStatu
 from coldfront.core.resource.models import Resource
 from coldfront.core.allocation.models import (Allocation,
                                             AllocationUser,
-                                            AllocationAttribute,
                                             AllocationUserStatusChoice)
 
 datestr = datetime.today().strftime('%Y%m%d')
@@ -159,15 +155,6 @@ class StarFishServer:
         return group_list
 
 
-
-# class StarFishRedash:
-#     '''Class for interacting with Starfish analytics API.
-#     '''
-#     def __init__(self, server):
-#         self.api_url = f'https://{server}.rc.fas.harvard.edu/redash/api/'
-#         self.query_keys = import_from_settings('REDASH_API_KEYS')[server]
-
-
 def get_redash_vol_stats():
     all_results = []
     for server, queries in import_from_settings('REDASH_API_KEYS').items():
@@ -213,9 +200,6 @@ class StarFishRedash:
         if volumes:
             result = [d for d in data if d['vol_name'] in volumes]
 
-        # resource_names = [re.sub(r'\/.+', '', n) for n in Resource.objects.values_list('name', flat=True)]
-        # result = [r for r in result if r['volume_name'] in resource_names]
-
         return data
 
 
@@ -226,10 +210,6 @@ class StarFishQuery:
         self.query_id = self.post_async_query(query, group_by, volpath)
         self.result = self.return_results_once_prepared(sec=sec)
 
-
-    # def post_query(self, query, group_by, volpath, format='parent_path +rec_aggrs'):
-    #     query_url = self.api_url + 'query/'
-    #     'type=d name=ginodomel'
 
     @record_process
     def post_async_query(self, query, group_by, volpath, q_format='parent_path +rec_aggrs'):
@@ -297,7 +277,6 @@ def produce_lab_dict(vol):
             pr_dict[proj_name].extend(resource_list)
     lr = pr_dict if not vol else {p:[i for i in r if vol in i] for p, r in pr_dict.items()}
     labs_resources = {p:[tuple(rs.split('/')) for rs in r] for p, r in lr.items()}
-    # logger.debug('labs_resources:%s', labs_resources)
     return labs_resources
 
 
@@ -322,7 +301,6 @@ def check_volume_collection(lr, homepath='./coldfront/plugins/sftocf/data/'):
     filepaths = []
     to_collect = []
     labs_resources = [(l, res[0], res[1]) for l, r in lr.items() for res in r]
-    # logger.debug('labs_resources:%s', labs_resources)
 
     yesterdaystr = (datetime.today()-timedelta(1)).strftime('%Y%m%d')
     dates = [yesterdaystr, datestr]
@@ -509,9 +487,6 @@ def collect_starfish_usage(server, volume, volumepath, projects):
     filepaths = []
     datestr = datetime.today().strftime('%Y%m%d')
     locate_or_create_dirpath('./coldfront/plugins/sftocf/data/')
-    # logger.debug('projects: %s', projects)
-    # server_groups = server.get_starfish_groups()
-    # logger.debug('groups not in Coldfront:\n %s', [g for g in server_groups if g not in [t[0] for t in projects]])
 
 
     ### OLD METHOD ###
@@ -524,8 +499,6 @@ def collect_starfish_usage(server, volume, volumepath, projects):
         logger.debug('filepath: %s lab: %s volpath: %s', filepath, p, lab_volpath)
         usage_query = server.create_query(
             f'groupname={p} type=d', 'volume,parent_path,username,groupname,rec_aggrs.size,fn', f'{volume}:{lab_volpath}'
-            # f'type=f groupname={p}', 'username, groupname', f'{volume}:{lab_volpath}'
-            # type=d groupname=chsi_museum
         )
         data = usage_query.result
         if not data:
@@ -536,7 +509,6 @@ def collect_starfish_usage(server, volume, volumepath, projects):
         else:
             data = usage_query.result
             data = clean_dirs_data(data)
-            # logger.debug(data)
             record = {
                 'server': server.name,
                 'volume': volume,
@@ -561,26 +533,6 @@ def log_missing_user_models(groupname, user_models, usernames):
         patterns = [f'{groupname},{uname},{datestr}' for uname in missing_unames]
         write_update_file_line(fpath, patterns)
         logger.warning('no IfxUser found for users: %s', missing_unames)
-
-
-def use_zone(project_name):
-    # attribute type ID will need to change to match the zone flag.
-    try:
-        allocation = Allocation.objects.get(justification__contains=project_name)
-    except Allocation.MultipleObjectsReturned:
-        logger.debug('Too many allocations for project %s; narrowing to the one that ends with project name',
-                                                    project_name)
-        allocation = Allocation.objects.get(
-            justification__endswith=project_name)
-        logger.debug('EXCEPT a_id:%s', allocation.id)
-    except Allocation.DoesNotExist:
-        return False
-    if allocation:
-        aa_entries = AllocationAttribute.objects.filter(allocation=allocation.id)
-        for aa in aa_entries:
-            if int(aa.allocation_attribute_type_id) == 747 and aa.value == 'True':
-                return True
-    return False
 
 
 def clean_dirs_data(data):
