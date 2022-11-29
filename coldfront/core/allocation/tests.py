@@ -37,9 +37,7 @@ class AllocationListViewTest(TestCase):
         self.admin_user = get_user_model().objects.get(username="gvanrossum")
         self.user2 = get_user_model().objects.get(username='snewcomb')
         self.client = Client()
-        # self.client.force_login(user, backend="django.contrib.auth.backends.ModelBackend")
-        # did_login_succeed = self.c.login(username='gvanrossum', password="python")
-        # self.assertTrue(did_login_succeed)
+        self.client.force_login(self.admin_user, backend="django.contrib.auth.backends.ModelBackend")
 
     def test_allocation_list_access(self):
         """Confirm that allocation-list renders correctly
@@ -106,6 +104,7 @@ class AllocationChangeViewTest(TestCase):
         """
         kwargs={'pk':1, }
         response = self.client.get('/allocation/1/change-request', kwargs=kwargs)
+        # print(response.__dict__)
         self.assertEqual(response.status_code, 200)
 
 

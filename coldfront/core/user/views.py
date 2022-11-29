@@ -54,7 +54,7 @@ class UserProfile(TemplateView):
         context = super().get_context_data(**kwargs)
 
         if viewed_username:
-            viewed_user = get_object_or_404(User, username=viewed_username)
+            viewed_user = get_object_or_404(get_user_model(), username=viewed_username)
         else:
             viewed_user = self.request.user
 

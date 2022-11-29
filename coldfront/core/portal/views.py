@@ -105,7 +105,6 @@ def center_summary(request):
 
 
 
-
     # # Tier Stats
     #
     # resource_names = Resource.objects.values("name")
@@ -152,6 +151,9 @@ def center_summary(request):
     return render(request, 'portal/center_summary.html', context)
 
 
+def help_page(request):
+    context = {}
+    return render(request, 'portal/help_page.html', context)
 
 
 

@@ -91,7 +91,6 @@ class DepartmentDetailViewTest(TestCase):
         self.assertEqual(response.status_code, 403)
 
 
-
     def test_department_detail_content(self):
         """Check content of department detail pages.
         """
@@ -103,7 +102,7 @@ class DepartmentDetailViewTest(TestCase):
 
         # department members who are not administrators cannot update department details
         # or review bills
-        response = utils.login_and_get_page(self.client, self.dept_user, url)
+        response = utils.login_and_get_page(self.client, self.dept_member_user, url)
         # print("response USER:", response.context, "\n\n")
         # confirm that only the user's projects are visible
         self.assertEqual(len(response.context['projects']), 1)

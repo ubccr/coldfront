@@ -1,6 +1,7 @@
-from django.core.management.base import BaseCommand, CommandError
-from coldfront.plugins.sftocf.utils import ColdFrontDB
 import logging
+
+from django.core.management.base import BaseCommand
+from coldfront.plugins.sftocf.utils import pull_sf, push_cf
 
 
 logger = logging.getLogger(__name__)
@@ -27,6 +28,5 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         volume = volume = kwargs['volume']
         clean = clean = kwargs['clean']
-        cfdb = ColdFrontDB()
-        filepaths = cfdb.pull_sf(volume=volume)
-        cfdb.push_cf(filepaths, clean)
+        filepaths = pull_sf(volume=volume)
+        push_cf(filepaths, clean)

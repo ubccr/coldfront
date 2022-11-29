@@ -21,7 +21,7 @@ def collect_all_ids_in_listpage(client, listpage):
             obj_ids.extend([o.id for o in response.context_data['object_list']])
     return obj_ids
 
-def confirm_loads(client, listpage):
+def confirm_loads(client, obj_ids, page_url):
     """Confirm that all pages linked to on a given list page return a 200 status
     code when accessed.
 
@@ -32,8 +32,6 @@ def confirm_loads(client, listpage):
         structure should be something like '/project/?show_all_projects=on'. No
         '/' character at the end.
     """
-    obj_ids = collect_all_ids_in_listpage(client, listpage)
-    page_url = listpage.split("?")[0]
     for obj_id in obj_ids:
         url = f"{page_url}{obj_id}/"
         try:

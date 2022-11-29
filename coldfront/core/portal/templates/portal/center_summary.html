@@ -64,40 +64,38 @@ Center Summary
   <div class="card-body">
     <div id="chartVolumes"></div>
       <div class="card-body">
-        <div class="table-responsive">
-        <table id="volume-table" class="table table-hover">
-          <thead>
+      <table class="table table-hover">
+        <thead>
+          <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Capacity (TB)</th>
+            <th scope="col">Used (TB)</th>
+            {% comment %}
+            <th scope="col">Warranty expires</th>
+            {% endcomment %}
+            <th scope="col">File count</th>
+            <th scope="col">User count</th>
+            <th scope="col">Lab count</th>
+            <th scope="col">Avg. Allocation Size (TB)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for volume in volumes %}
             <tr>
-              <th scope="col">Name</th>
-              <th scope="col">Capacity (TB)</th>
-              <th scope="col">Used (TB)</th>
+              <td>{{ volume.name }}</td>
+              <td>{{ volume.quota_TB|floatformat:2 }}</td>
+              <td>{{ volume.used_TB|floatformat:2 }}</td>
               {% comment %}
-              <th scope="col">Warranty expires</th>
+              <td>{{ volume.expiry }}</td>
               {% endcomment %}
-              <th scope="col">File count</th>
-              <th scope="col">User count</th>
-              <th scope="col">Lab count</th>
-              <th scope="col">Avg. Allocation Size (TB)</th>
+              <td>{{ volume.regular_files }}</td>
+              <td>{{ volume.user_count }}</td>
+              <td>{{ volume.lab_count }}</td>
+              <td>{{ volume.avgsize }}</td>
             </tr>
-          </thead>
-          <tbody>
-            {% for volume in volumes %}
-              <tr>
-                <td>{{ volume.name }}</td>
-                <td>{{ volume.quota_TB|floatformat:2 }}</td>
-                <td>{{ volume.used_TB|floatformat:2 }}</td>
-                {% comment %}
-                <td>{{ volume.expiry }}</td>
-                {% endcomment %}
-                <td>{{ volume.regular_files }}</td>
-                <td>{{ volume.user_count }}</td>
-                <td>{{ volume.lab_count }}</td>
-                <td>{{ volume.avgsize }}</td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
 </div>

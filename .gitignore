@@ -12,6 +12,7 @@ static_root/
 db.sqlite3
 local_data/
 site/
+logs/
 local_settings.py
 local_strings.py
 coldfront.db

@@ -28,7 +28,6 @@ class AllocationUserInline(admin.TabularInline):
     model = AllocationUser
     extra = 0
     fields = ('id', 'user', 'status', 'usage',)
-    # raw_id_fields = ('id', )
 
 
 class AllocationAttributeInline(admin.TabularInline):
@@ -40,14 +39,14 @@ class AllocationAttributeInline(admin.TabularInline):
 class AllocationAdminNoteInline(admin.TabularInline):
     model = AllocationAdminNote
     extra = 0
-    fields = ('note', 'author', 'created'),
+    fields = ('note', 'author', 'created')
     readonly_fields = ('author', 'created')
 
 
 class AllocationUserNoteInline(admin.TabularInline):
     model = AllocationUserNote
     extra = 0
-    fields = ('note', 'author', 'created'),
+    fields = ('note', 'author', 'created')
     readonly_fields = ('author', 'created')
 
 
@@ -55,8 +54,8 @@ class AllocationUserNoteInline(admin.TabularInline):
 class AllocationAdmin(SimpleHistoryAdmin):
     readonly_fields_change = (
         'project', 'justification', 'created', 'modified',)
-    fields_change = ('project', 'resources', 'quantity', 'justification',
-                     'status', 'start_date', 'end_date', 'description', 'created', 'modified', 'is_locked', 'is_changeable')
+    fields_change = ('project', 'resources', 'quantity', 'justification', 'status', 'start_date',
+                     'end_date', 'description', 'created', 'modified', 'is_locked', 'is_changeable')
     list_display = ('pk', 'project_title', 'project_pi', 'resource', 'quantity',
                     'justification', 'start_date', 'end_date', 'status', 'created', 'modified', )
     inlines = [AllocationUserInline,
@@ -113,7 +112,7 @@ class AttributeTypeAdmin(admin.ModelAdmin):
 
 @admin.register(AllocationAttributeType)
 class AllocationAttributeTypeAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'name', 'attribute_type', 'has_usage', 'is_private')
+    list_display = ('pk', 'name', 'attribute_type', 'has_usage', 'is_changeable','is_private',)
 
 
 class AllocationAttributeUsageInline(admin.TabularInline):
@@ -122,32 +121,22 @@ class AllocationAttributeUsageInline(admin.TabularInline):
 
 
 class UsageValueFilter(admin.SimpleListFilter):
-    title = _('value')
-
+    title = _('value',)
     parameter_name = 'value'
 
     def lookups(self, request, model_admin):
         return (
             ('>=0', _('Greater than or equal to 0')),
-            ('>10', _('Greater than 10')),
-            ('>100', _('Greater than 100')),
-            ('>1000', _('Greater than 1000')),
-            ('>10000', _('Greater than 10000')),
+            ('>=10', _('Greater than or equal to 10')),
+            ('>=100', _('Greater than or equal to 100')),
+            ('>=1000', _('Greater than or equal to 1000')),
+            ('>=10000', _('Greater than or equal to 10000')),
         )
 
     def queryset(self, request, queryset):
-
-        if self.value() == '>=0':
-            return queryset.filter(allocationattributeusage__value__gte=0)
-
-        if self.value() == '>10':
-            return queryset.filter(allocationattributeusage__value__gte=10)
-
-        if self.value() == '>100':
-            return queryset.filter(allocationattributeusage__value__gte=100)
-
-        if self.value() == '>1000':
-            return queryset.filter(allocationattributeusage__value__gte=1000)
+        if self.value():
+            limit_value = int(self.value().strip(">="))
+            return queryset.filter(allocationattributeusage__value__gte=limit_value)
 
 
 @admin.register(AllocationAttribute)
@@ -221,11 +210,7 @@ class AllocationUserAdmin(SimpleHistoryAdmin):
     list_display = ('pk', 'project', 'project_pi', 'resource', 'allocation_status',
                     'user_info', 'status', 'created', 'modified', 'usage')
     list_filter = ('status', 'allocation__status', 'allocation__resources',)
-    search_fields = (
-        'user__first_name',
-        'user__last_name',
-        'user__username',
-    )
+    search_fields = ( 'user__first_name', 'user__last_name', 'user__username', )
     raw_id_fields = ('allocation', 'user', )
     history_list_display = ['usage']
 
@@ -293,30 +278,20 @@ class AllocationUserAdmin(SimpleHistoryAdmin):
 
 class ValueFilter(admin.SimpleListFilter):
     title = _('value')
-
     parameter_name = 'value'
 
     def lookups(self, request, model_admin):
         return (
-            ('>0', _('Greater than > 0')),
-            ('>10', _('Greater than > 10')),
-            ('>100', _('Greater than > 100')),
-            ('>1000', _('Greater than > 1000')),
+            ('>0', _('Greater than or equal to 0')),
+            ('>10', _('Greater than or equal to 10')),
+            ('>100', _('Greater than or equal to 100')),
+            ('>1000', _('Greater than or equal to 1000')),
         )
 
     def queryset(self, request, queryset):
-
-        if self.value() == '>0':
-            return queryset.filter(value__gt=0)
-
-        if self.value() == '>10':
-            return queryset.filter(value__gt=10)
-
-        if self.value() == '>100':
-            return queryset.filter(value__gt=100)
-
-        if self.value() == '>1000':
-            return queryset.filter(value__gt=1000)
+        if self.value():
+            limit_value = int(self.value().strip(">="))
+            return queryset.filter(value__gte=limit_value)
 
 
 @admin.register(AllocationAttributeUsage)
@@ -354,5 +329,5 @@ class AllocationChangeRequestAdmin(admin.ModelAdmin):
 
 
 @admin.register(AllocationAttributeChangeRequest)
-class AllocationChangeStatusChoiceAdmin(admin.ModelAdmin):
+class AllocationAttributeChangeRequestAdmin(admin.ModelAdmin):
     list_display = ('pk', 'allocation_change_request', 'allocation_attribute', 'new_value', )

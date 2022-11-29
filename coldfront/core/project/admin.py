@@ -47,42 +47,40 @@ class ProjectUserAdmin(SimpleHistoryAdmin):
     def get_fields(self, request, obj):
         if obj is None:
             return super().get_fields(request)
-        else:
-            return self.fields_change
+        return self.fields_change
 
     def get_readonly_fields(self, request, obj):
         if obj is None:
             # We are adding an object
             return super().get_readonly_fields(request)
-        else:
-            return self.readonly_fields_change
+        return self.readonly_fields_change
 
     def get_inline_instances(self, request, obj=None):
         if obj is None:
             # We are adding an object
             return super().get_inline_instances(request)
-        else:
-            return [inline(self.model, self.admin_site) for inline in self.inlines]
+        return [inline(self.model, self.admin_site) for inline in self.inlines]
 
 
 class ProjectUserInline(admin.TabularInline):
     model = ProjectUser
     fields = ['user', 'project', 'role', 'status', 'enable_notifications', ]
-    readonly_fields = ['user', 'project', ]
+    readonly_fields = ['project', ]
     extra = 0
+
 
 
 class ProjectAdminCommentInline(admin.TabularInline):
     model = ProjectAdminComment
     extra = 0
-    fields = ('comment', 'author', 'created'),
+    fields = ('comment', 'author', 'created')
     readonly_fields = ('author', 'created')
 
 
 class ProjectUserMessageInline(admin.TabularInline):
     model = ProjectUserMessage
     extra = 0
-    fields = ('message', 'author', 'created'),
+    fields = ('message', 'author', 'created')
     readonly_fields = ('author', 'created')
 
 
@@ -103,22 +101,19 @@ class ProjectAdmin(SimpleHistoryAdmin):
     def get_fields(self, request, obj):
         if obj is None:
             return super().get_fields(request)
-        else:
-            return self.fields_change
+        return self.fields_change
 
     def get_readonly_fields(self, request, obj):
         if obj is None:
             # We are adding an object
             return super().get_readonly_fields(request)
-        else:
-            return self.readonly_fields_change
+        return self.readonly_fields_change
 
     def get_inline_instances(self, request, obj=None):
         if obj is None:
             # We are adding an object
             return []
-        else:
-            return super().get_inline_instances(request)
+        return super().get_inline_instances(request)
 
     def save_formset(self, request, form, formset, change):
         if formset.model in [ProjectAdminComment, ProjectUserMessage]:
@@ -138,4 +133,3 @@ class ProjectReviewAdmin(SimpleHistoryAdmin):
 
     def PI(self, obj):
         return '{} {} ({})'.format(obj.project.pi.first_name, obj.project.pi.last_name, obj.project.pi.username)
-

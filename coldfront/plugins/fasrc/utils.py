@@ -19,7 +19,7 @@ today = datetime.today().strftime("%Y%m%d")
 logger = logging.getLogger(__name__)
 logger.propagate = False
 logger.setLevel(logging.DEBUG)
-filehandler = logging.FileHandler(f'coldfront/plugins/fasrc/data/logs/{today}.log', 'w')
+filehandler = logging.FileHandler(f'logs/{today}.log', 'w')
 logger.addHandler(filehandler)
 
 
@@ -167,7 +167,8 @@ class AllTheThingsConn:
                 if a.count() == 1:
                     a = a.first()
                 elif a.count() < 1:
-                    logger.warning("ERROR: No Allocation for project %s, resource %s", proj_query.title, resource.name)
+                    logger.warning("ERROR: No Allocation for project %s, resource %s",
+                                                proj_query.title, resource.name)
                     log_missing("allocation", [], [resource.name],
                                             group=proj_query.title,
                                             pattern="G,I,D")
