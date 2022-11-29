@@ -157,12 +157,11 @@ class StarFishServer:
 
 def get_redash_vol_stats():
     all_results = []
-    for server, queries in import_from_settings('REDASH_API_KEYS').items():
-        base_url = f'https://{server}.rc.fas.harvard.edu/redash/api/'
-        for query_id, query_key in queries['volume_query'].items():
-            query_url = f'{base_url}queries/{query_id}/results?api_key={query_key}'
-            result = return_get_json(query_url, headers={})
-            all_results.extend(result['query_result']['data']['rows'])
+    redash = StarFishRedash()
+    for query_id, query_key in redash.queries['volume_query'].items():
+        query_url = f'{redash.base_url}queries/{query_id}/results?api_key={query_key}'
+        result = return_get_json(query_url, headers={})
+        all_results.extend(result['query_result']['data']['rows'])
     all_results = [{k.replace(' ', '_').replace('(','').replace(')','') : v for k, v in d.items()} for d in all_results]
     resource_names = [re.sub(r'\/.+','',n) for n in Resource.objects.values_list('name', flat=True)]
     all_results = [r for r in all_results if r['volume_name'] in resource_names]
@@ -171,7 +170,7 @@ def get_redash_vol_stats():
 
 class StarFishRedash:
     def __init__(self, server_name):
-        self.base_url = f'https://{server_name}.rc.fas.harvard.edu/redash/api/'
+        self.base_url = f'https://{server_name}.rc.fas.harvard.edu/redash/api/' 
         self.queries = import_from_settings('REDASH_API_KEYS')
 
 
