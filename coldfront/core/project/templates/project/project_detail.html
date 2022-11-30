@@ -411,9 +411,9 @@ Project Detail
     <h3 class="d-inline" id="research_outputs"><i class="far fa-newspaper" aria-hidden="true"></i> Research Outputs</h3> <span class="badge badge-secondary">{{ research_outputs.count}}</span>
     <div class="float-right">
       {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
-        <a class="btn btn-success" href="{% url 'add-research-output' project.pk %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add Research Output</a>
+        <a class="btn btn-success" href="{% url 'add-research-output' project.pk %}" role="button"><i class="fas fa-plus" aria-hidden="true" id="add_output"></i> Add Research Output</a>
         {% if research_outputs %}
-          <a class="btn btn-danger" href="{% url 'research-output-delete-research-outputs' project.pk %}" role="button"><i class="fas fa-minus" aria-hidden="true"></i> Delete Research Outputs</a>
+          <a class="btn btn-danger" href="{% url 'research-output-delete-research-outputs' project.pk %}" role="button"><i class="fas fa-minus" aria-hidden="true" id="delete_output"></i> Delete Research Outputs</a>
         {% endif %}
       {% endif %}
     </div>

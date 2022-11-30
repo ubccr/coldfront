@@ -121,6 +121,16 @@ class LoginTest(LiveServerTestCase):
 
     #tests adding/removing publication
 
+        # box = driver.find_element_by_id("id_search_id")
+        # box.send_keys("10.1038/nphys1170")
+        # search_button = driver.find_element_by_id("search-button")
+        # search_button.click()
+        # checkbox_for_publication = driver.find_element_by_xpath("//input[@type='checkbox']")
+        # checkbox_for_publication.click()
+        # add_button = driver.find_element_by_id("add_publ")
+        # add_button.click()
+        # print("\nPublication added successfully.")
+
         add_publication = driver.find_element_by_id("add_publication")
         add_publication.click()
 
@@ -138,17 +148,6 @@ class LoginTest(LiveServerTestCase):
         submit_publ = driver.find_element_by_id("submit_manually")
         submit_publ.click()
 
-        # box = driver.find_element_by_id("id_search_id")
-        # box.send_keys("10.1038/nphys1170")
-        # search_button = driver.find_element_by_id("search-button")
-        # search_button.click()
-        # checkbox_for_publication = driver.find_element_by_id("selectAll")
-        # checkbox_for_publication.click()
-        # add_button = driver.find_element_by_id("add_publ")
-        # add_button.click()
-        print("\nPublication added successfully.")
-
-
         del_button = driver.find_element_by_id("delete_publ")
         del_button.click()
         all_publications = driver.find_element_by_id("selectAll")
@@ -156,6 +155,30 @@ class LoginTest(LiveServerTestCase):
         submit_delete = driver.find_element_by_id("delete")
         submit_delete.click()
         print("\nPublication deleted successfully.")
+        
+        assert driver.current_url.__contains__("project")
+
+    #tests adding/removing output
+
+        add_output = driver.find_element_by_id("add_output")
+        add_output.click()
+
+        title_output = driver.find_element_by_id("id_title")
+        title_output.send_keys("Test Title")
+        desc = driver.find_element_by_id("id_description")
+        desc.send_keys("This is a test description.")
+        save_output = driver.find_element_by_id("save_output")
+        save_output.click()
+        print("\nResearch output added successfully.")
+
+        delete_output = driver.find_element_by_id("delete_output")
+        delete_output.click()
+        all_outputs = driver.find_elements_by_id("outputs")
+        for element in all_outputs:
+            element.click()
+        actually_delete = driver.find_element_by_id("delete_outputs")
+        actually_delete.click()
+        print("\nResearch output deleted successfully.")
         
         assert driver.current_url.__contains__("project")
 
@@ -191,7 +214,8 @@ class LoginTest(LiveServerTestCase):
         # del_button = driver.find_element_by_id("delete_grant")
         # del_button.click()
         # all_grants = driver.find_element_by_id("selectAll")
-        # all_grants.click()
+        # for element in all_grants:
+        #     element.click()
         # submit_delete_g = driver.find_element_by_id("delete_grants")
         # submit_delete_g.click()
         # print("\nGrant deleted successfully.")

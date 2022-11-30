@@ -29,7 +29,7 @@ Delete Research Outputs
                 {% for research_output in research_outputs %}
                   <tr>
                     <td>
-                      <input type="checkbox" name="{{ research_output.pk }}">
+                      <input type="checkbox" id="outputs" name="{{ research_output.pk }}">
                     </td>
                     <td title="Entered by {{ research_output.created_by }} on {{ research_output.created|date:"M. d, Y"}}">
                       {% if research_output.title %}
@@ -45,7 +45,7 @@ Delete Research Outputs
             </table>
           </div>
           <div>
-            <button type="submit" class="btn btn-danger"><i class="fas fa-minus" aria-hidden="true"></i> Delete Selected Research Outputs from Project</button>
+            <button type="submit" class="btn btn-danger"><i class="fas fa-minus" aria-hidden="true" id="delete_outputs"></i> Delete Selected Research Outputs from Project</button>
             <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a>
             <br>
           </div>
