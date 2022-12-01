@@ -73,6 +73,24 @@ Allocation Detail
               <td>{{ allocation.applications_list }}</td>
             </tr>
           {% endif %}
+          {% if allocation.get_resources_as_string == "Big Red 200" %}
+          <tr>
+            <th scope="col" class="text-nowrap">Applications To Be Used:</th>
+            <td>{{ allocation.applications_list }}</td>
+          </tr>
+          {% endif %}
+          {% if allocation.get_resources_as_string == "Big Red 3" %}
+          <tr>
+            <th scope="col" class="text-nowrap">Applications To Be Used:</th>
+            <td>{{ allocation.applications_list }}</td>
+          </tr>
+          {% endif %}
+          {% if allocation.get_resources_as_string == "Quartz" %}
+          <tr>
+            <th scope="col" class="text-nowrap">Applications To Be Used:</th>
+            <td>{{ allocation.applications_list }}</td>
+          </tr>
+          {% endif %}
           {% if allocation.get_resources_as_string == "Priority Boost" %}
             <tr>
               <th scope="row" class="text-nowrap">System:</th>

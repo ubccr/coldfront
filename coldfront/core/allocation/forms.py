@@ -271,6 +271,15 @@ class AllocationForm(forms.Form):
                 'dl_workflow': cleaned_data.get('dl_workflow'),
                 'applications_list': cleaned_data.get('applications_list'),
             },
+            'Quartz': {
+                'applications_list': cleaned_data.get('applications_list'),
+            },
+            'Big Red 3': {
+                'applications_list': cleaned_data.get('applications_list'),
+            },
+            'Big Red 200': {
+                'applications_list': cleaned_data.get('applications_list'),
+            },
             'Carbonate PHI Nodes': {
                 'phi_association': cleaned_data.get('phi_association'),
             },
