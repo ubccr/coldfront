@@ -37,6 +37,8 @@ def create_user_profile(sender, instance, created, **kwargs):
             is_pi = True
             # if title in ['Faculty', 'Staff', ]:
             #     is_pi = True
+            if title == 'group':
+                is_pi = False
 
             department = ''
             if attributes['department']:
