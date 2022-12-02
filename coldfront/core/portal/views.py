@@ -17,7 +17,8 @@ from coldfront.core.portal.utils import (generate_allocations_chart_data,
                                          generate_project_status_chart_data,
                                          generate_research_project_status_columns,
                                          generate_class_project_status_columns,
-                                         generate_user_counts)
+                                         generate_user_counts,
+                                         generate_user_timeline)
 from coldfront.core.project.models import Project
 from coldfront.core.publication.models import Publication
 from coldfront.core.research_output.models import ResearchOutput
@@ -242,5 +243,9 @@ def project_summary(request):
 def user_summary(request):
     context = {}
     context['user_counts'] = generate_user_counts()
+    user_timeline_chart_data, years_to_months_labels, years_to_months_values = generate_user_timeline()
+    context['user_timeline'] = user_timeline_chart_data
+    context['years_to_months_labels'] = years_to_months_labels
+    context['years_to_months_values'] = years_to_months_values
 
     return render(request, 'portal/user_summary.html', context)
