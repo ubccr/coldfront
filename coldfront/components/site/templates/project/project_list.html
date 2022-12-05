@@ -11,20 +11,29 @@ Project List
 
 {% block content %}
 <div class="card mb-3 bg-light">
-  <div class="card-body">
-    {% if user.is_superuser %}
-      <a class="btn btn-primary" href="{% url 'project-create' %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add a project</a>
-    {% elif user.userprofile.is_pi and project_requests_remaining > 0 %}
-      <a class="btn btn-primary" href="{% url 'project-create' %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add a project</a>
-    {% endif %}
-    <div class="float-right">
-      {% if show_export_button %}
-        <button type="button" class="btn btn-success align-right" data-toggle="modal" data-target="#id_export_csv">
-          Export Projects to CSV
-        </button>
-      {% endif %}
-      <a class="btn btn-primary" href="{% url 'project-denied-list' %}" role="button"><i class="fas fa-archive" aria-hidden="true"></i> View denied projects</a>
-      <a class="btn btn-primary" href="{% url 'project-archived-list' %}" role="button"><i class="fas fa-archive" aria-hidden="true"></i> View archived projects</a>
+  <div class="card-body d-inline">
+    <div class="row">
+      <div class="col-5 my-auto">
+        {% if user.is_superuser %}
+          <a class="btn btn-primary"a href="{% url 'project-create' %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add a project</a>
+        {% elif user.userprofile.is_pi and project_requests_remaining > 0 %}
+          <a class="btn btn-primary" href="{% url 'project-create' %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add a project</a>
+        {% endif %}
+        {% if not user.userprofile.is_pi and user.userprofile.title == 'group' %}
+          Group accounts cannot submit a project request
+        {% endif %}
+      </div>
+      <div class="col-7">
+        <div class="float-right">
+          {% if show_export_button %}
+            <button type="button" class="btn btn-success align-right" data-toggle="modal" data-target="#id_export_csv">
+              Export Projects to CSV
+            </button>
+          {% endif %}
+          <a class="btn btn-primary" href="{% url 'project-denied-list' %}" role="button"><i class="fas fa-archive" aria-hidden="true"></i> View denied projects</a>
+          <a class="btn btn-primary" href="{% url 'project-archived-list' %}" role="button"><i class="fas fa-archive" aria-hidden="true"></i> View archived projects</a>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -208,7 +217,7 @@ Project List
                   {% endif %}
               </td>
             {% else %}
-              <td class="text-info"><strong>{{ project.status.name }}</strong></td>
+              <td class="text-primary"><strong>{{ project.status.name }}</strong></td>
             {% endif %}
             <td>{{ project.end_date }}</td>
             <td>

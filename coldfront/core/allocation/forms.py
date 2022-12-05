@@ -78,7 +78,7 @@ class AllocationForm(forms.Form):
         ('current_and_next_year', 'Current license + next annual license')
     )
 
-    resource = forms.ModelChoiceField(queryset=None, empty_label=None)
+    resource = forms.ChoiceField(choices=())
     justification = forms.CharField(widget=forms.Textarea)
     first_name = forms.CharField(max_length=40, required=False)
     last_name = forms.CharField(max_length=40, required=False)
@@ -119,6 +119,7 @@ class AllocationForm(forms.Form):
     cost = forms.IntegerField(disabled=True, required=False)
     total_cost = forms.IntegerField(disabled=True, required=False)
     confirm_understanding = forms.BooleanField(required=False)
+    confirm_best_practices = forms.BooleanField(required=False)
     data_manager = forms.CharField(max_length=50, required=False)
     phone_number = forms.CharField(max_length=13, required=False)
     group_account_name = forms.CharField(max_length=20, required=False)
@@ -134,10 +135,15 @@ class AllocationForm(forms.Form):
 
     def __init__(self, request_user, project_pk,  *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        RESOURCE_CHOICES = [(None, 'Please select a resource...')]
+        for resource in get_user_resources(request_user):
+            RESOURCE_CHOICES.append((resource.pk, resource))
+
         project_obj = get_object_or_404(Project, pk=project_pk)
         self.project_obj = project_obj
         self.request_user = request_user
-        self.fields['resource'].queryset = get_user_resources(request_user)
+        self.fields['resource'].choices = RESOURCE_CHOICES
         user_query_set = project_obj.projectuser_set.select_related('user').filter(
             status__name__in=['Active', ]).order_by("user__username")
         user_query_set = user_query_set.exclude(user__in=[project_obj.pi, request_user])
@@ -239,6 +245,7 @@ class AllocationForm(forms.Form):
             InlineRadios('store_ephi'),
             'devices_ip_addresses',
             'confirm_understanding',
+            'confirm_best_practices',
             'terms_of_service',
             'data_management_responsibilities',
             'users',
@@ -252,7 +259,7 @@ class AllocationForm(forms.Form):
 
     def clean(self):
         cleaned_data = super().clean()
-        resource_obj = cleaned_data.get('resource')
+        resource_obj = Resource.objects.get(pk=cleaned_data.get('resource'))
         users = cleaned_data.get('users')
         resources = {
             'Carbonate DL': {
@@ -262,6 +269,15 @@ class AllocationForm(forms.Form):
             },
             'Carbonate GPU': {
                 'dl_workflow': cleaned_data.get('dl_workflow'),
+                'applications_list': cleaned_data.get('applications_list'),
+            },
+            'Quartz': {
+                'applications_list': cleaned_data.get('applications_list'),
+            },
+            'Big Red 3': {
+                'applications_list': cleaned_data.get('applications_list'),
+            },
+            'Big Red 200': {
                 'applications_list': cleaned_data.get('applications_list'),
             },
             'Carbonate PHI Nodes': {
@@ -284,6 +300,12 @@ class AllocationForm(forms.Form):
                 'data_management_plan': cleaned_data.get('data_management_plan'),
                 'terms_of_service': cleaned_data.get('terms_of_service'),
                 'data_management_responsibilities': cleaned_data.get('data_management_responsibilities'),
+                'confirm_best_practices': cleaned_data.get('confirm_best_practices'),
+                'primary_contact': cleaned_data.get('primary_contact'),  # Only check if username is given
+                'secondary_contact': cleaned_data.get('secondary_contact'),  # Only check if username is given
+                'it_pros': cleaned_data.get('it_pros'),  # Only check if username is given
+                'end_date': cleaned_data.get('end_date'),
+                'use_indefinitely': cleaned_data.get('use_indefinitely'),
             },
             'Slate-Project': {
                 'first_name': cleaned_data.get('first_name'),
@@ -312,6 +334,11 @@ class AllocationForm(forms.Form):
                 'data_management_plan': cleaned_data.get('data_management_plan'),
                 'terms_of_service': cleaned_data.get('terms_of_service'),
                 'data_management_responsibilities': cleaned_data.get('data_management_responsibilities'),
+                'primary_contact': cleaned_data.get('primary_contact'),  # Only check if username is given
+                'secondary_contact': cleaned_data.get('secondary_contact'),  # Only check if username is given
+                'it_pros': cleaned_data.get('it_pros'),  # Only check if username is given
+                'end_date': cleaned_data.get('end_date'),
+                'use_indefinitely': cleaned_data.get('use_indefinitely'),
             }
         }
         resource = resources.get(resource_obj.name)
@@ -334,7 +361,7 @@ class AllocationForm(forms.Form):
                 if resource_name in ['Geode-Projects', 'SDA Group Account', ]:
                     if key == 'end_date' and resources[resource_name]['use_indefinitely']:
                         continue
-                    elif key == 'use_indefinitely':
+                    elif key in ['use_indefinitely', 'primary_contact', 'secondary_contact', 'it_pros', ]:
                         continue
                 elif resource_name == 'Slate-Project':
                     if key == 'account_number' and resources[resource_name]['storage_space'] <= 15:
@@ -415,8 +442,8 @@ class AllocationForm(forms.Form):
                     continue
 
             # Value checks for a specific resource's required fields should go here.
-            if resource_name == 'Geode-Projects':
-                if key in ['primary_contact', 'secondary_contact', 'fiscal_officer']:
+            if resource_name in ['Geode-Projects', 'SDA Group Account', ]:
+                if key in ['primary_contact', 'secondary_contact', 'fiscal_officer', 'it_pros']:
                     user_exists = True
                     if ldap_user_info_enabled:
                         user_exists = check_if_user_exists(value)

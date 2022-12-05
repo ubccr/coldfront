@@ -1,5 +1,6 @@
 import datetime
 
+from django.contrib.auth.models import User
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.project.models import Project, ProjectUser
 
@@ -245,3 +246,82 @@ def generate_user_counts():
     }
 
     return user_counts_chart_data
+
+
+def create_months():
+    months = {
+        '1': 0,
+        '2': 0,
+        '3': 0,
+        '4': 0,
+        '5': 0,
+        '6': 0,
+        '7': 0,
+        '8': 0,
+        '9': 0,
+        '10': 0,
+        '11': 0,
+        '12': 0,
+    }
+
+    return months
+
+
+def create_years(start, stop):
+    years = {}
+    for year in range(start, stop + 1):
+        years[str(year)] = {
+            'months': create_months(),
+            'total_new_users': 0,
+        }
+
+    return years
+
+
+def generate_user_timeline():
+    unique_users = User.objects.all().order_by('date_joined')
+    start_year = unique_users[0].date_joined.year
+    stop_years = unique_users[unique_users.count() - 1].date_joined.year
+    years = create_years(start_year, stop_years)
+    for count, user in enumerate(unique_users, start=1):
+        date_joined = user.date_joined
+        year = str(date_joined.year)
+        month = str(date_joined.month)
+        years[year]['months'][month] = count
+        years[year]['total_new_users'] = count
+
+    year_list = [year + '-01-01' for year in years.keys()]
+    year_list = [f'{start_year - 1}-01-01'] + year_list
+    year_label = 'Years'
+    year_new_users_list = [values['total_new_users'] for values in years.values()]
+    year_new_users_list = [0] + year_new_users_list
+    year_new_users_label = 'Total Unique Users'
+
+    years_to_months_labels = {}
+    years_to_months_values = {}
+    total_users = 0
+    current_date = datetime.datetime.today()
+    current_month = current_date.month
+    current_year = current_date.year
+    for year, months_and_total in years.items():
+        months = months_and_total['months']
+        years_to_months_labels[year] = ['Months']
+        years_to_months_values[year] = [f'Total Unique Users ({year})']
+        for month, users in months.items():
+            if int(year) == current_year and int(month) > current_month:
+                continue
+            years_to_months_labels[year].append(year + '-' + month + '-01')
+            if users < 1:
+                users = total_users
+            years_to_months_values[year].append(users)
+            total_users = users
+
+    user_timeline_chart_data = {
+        'x': year_label,
+        'columns': [
+            [year_label] + year_list,
+            [year_new_users_label] + year_new_users_list,
+        ]
+    }
+
+    return user_timeline_chart_data, years_to_months_labels, years_to_months_values

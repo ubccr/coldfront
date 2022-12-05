@@ -9,9 +9,11 @@
     <h2><a href="{% url 'project-list' %}">Projects &raquo;</a></h2>
     <hr>
     <p>
-      If you are a faculty/staff member you can submit a <a href="{% url 'project-create' %}">project request</a>. Students must have a separate PI to submit a project request.
-      Once submitted you can add any additional users to your project and request a resource allocation. You can, however, search for your <a href="{% url 'project-list' %}">PI's username</a> and request access to a project
-      they already have.
+      If you are a faculty/staff member you can submit a 
+      {% if user.userprofile.title == 'group' %}project request{% else %}<a href="{% url 'project-create' %}">project request</a>{% endif %}. 
+      Students must have a separate PI to submit a project request. Once submitted you can add any additional users to 
+      your project and request a resource allocation. You can, however, search for your <a href="{% url 'project-list' %}">PI's username</a> 
+      and request access to a project they already have.
     </p>
     
 
@@ -72,7 +74,7 @@
                   {% endif %}
                 </td>
               {% else %}
-                <td class="text-info"><strong>{{ project.status.name }}</strong></td>
+                <td class="text-primary"><strong>{{ project.status.name }}</strong></td>
               {% endif %}
             </tr>
           {% endfor %}
@@ -122,7 +124,7 @@
                 </a>
               </td>
             {%  elif allocation.status.name == "Renewal Requested" %}
-            <td><a href="{% url 'allocation-detail' allocation.id %}" class="btn btn-info btn-block">Renewal
+            <td><a href="{% url 'allocation-detail' allocation.id %}" class="btn btn-primary btn-block">Renewal
                 Requested</a></td>
             {%  elif allocation.expires_in >= 0 and  allocation.expires_in <= 7 %}
             <td><a href="{% url 'allocation-detail' allocation.id %}" class="btn btn-danger btn-block">Expires in <span
@@ -134,13 +136,13 @@
             </td>
             {% elif allocation.status.name == "Pending" %}
             <td><a href="{% url 'allocation-detail' allocation.id %}"
-                class="btn btn-info btn-block">{{allocation.status}}</a></td>
+                class="btn btn-primary btn-block">{{allocation.status}}</a></td>
             {% elif allocation.status.name == "Active" %}
             <td><a href="{% url 'allocation-detail' allocation.id %}"
                 class="btn btn-success btn-block">{{allocation.status}}</a></td>
             {% else %}
             <td><a href="{% url 'allocation-detail' allocation.id %}"
-                class="btn btn-info btn-block">{{allocation.status}}</a></td>
+                class="btn btn-primary btn-block">{{allocation.status}}</a></td>
             {% endif %}
           </tr>
           {% endfor %}

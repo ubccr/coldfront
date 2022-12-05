@@ -17,7 +17,8 @@ from coldfront.core.portal.utils import (generate_allocations_chart_data,
                                          generate_project_status_chart_data,
                                          generate_research_project_status_columns,
                                          generate_class_project_status_columns,
-                                         generate_user_counts)
+                                         generate_user_counts,
+                                         generate_user_timeline)
 from coldfront.core.project.models import Project
 from coldfront.core.publication.models import Publication
 from coldfront.core.research_output.models import ResearchOutput
@@ -41,6 +42,7 @@ ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING = import_from_settings(
 def home(request):
 
     context = {}
+    next_url = ""
     if request.user.is_authenticated:
         template_name = 'portal/authorized_home.html'
         project_list = Project.objects.filter(
@@ -108,8 +110,9 @@ def home(request):
         except AttributeError:
             pass
     else:
+        next_url = request.get_full_path()[1:]
         template_name = 'portal/nonauthorized_home.html'
-
+    context['next'] = next_url
     context['EXTRA_APPS'] = settings.INSTALLED_APPS
 
     if 'coldfront.plugins.system_monitor' in settings.INSTALLED_APPS:
@@ -240,5 +243,9 @@ def project_summary(request):
 def user_summary(request):
     context = {}
     context['user_counts'] = generate_user_counts()
+    user_timeline_chart_data, years_to_months_labels, years_to_months_values = generate_user_timeline()
+    context['user_timeline'] = user_timeline_chart_data
+    context['years_to_months_labels'] = years_to_months_labels
+    context['years_to_months_values'] = years_to_months_values
 
     return render(request, 'portal/user_summary.html', context)

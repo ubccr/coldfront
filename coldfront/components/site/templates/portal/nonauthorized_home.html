@@ -8,7 +8,7 @@
     <h1 class="text-center">Welcome to RT Projects</h1>
     <br>
 
-    <p><a class="btn btn-primary btn-block" href="{% url 'login' %}?next={{request.get_full_path}}" role="button"><i class="fas fa-sign-in-alt" aria-hidden="true"></i> Log In</a></p>
+    <p><a class="btn btn-primary btn-block" href="{% url 'login' %}{{next}}" role="button"><i class="fas fa-sign-in-alt" aria-hidden="true"></i> Log In</a></p>
 
 
     <hr>

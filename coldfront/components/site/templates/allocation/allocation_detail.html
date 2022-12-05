@@ -16,6 +16,12 @@ Allocation Detail
   </div>
 {% endif %}
 
+{% if not user_exists_in_allocation %}
+  <div class="alert alert-warning" role="alert">
+    You have not been added to this allocation yet. You do not have access to its resource.
+  </div>
+{% endif %}
+
 <div class="mb-3">
   <h2>Allocation Detail</h2>
   <hr>
@@ -67,6 +73,24 @@ Allocation Detail
               <td>{{ allocation.applications_list }}</td>
             </tr>
           {% endif %}
+          {% if allocation.get_resources_as_string == "Big Red 200" %}
+          <tr>
+            <th scope="col" class="text-nowrap">Applications To Be Used:</th>
+            <td>{{ allocation.applications_list }}</td>
+          </tr>
+          {% endif %}
+          {% if allocation.get_resources_as_string == "Big Red 3" %}
+          <tr>
+            <th scope="col" class="text-nowrap">Applications To Be Used:</th>
+            <td>{{ allocation.applications_list }}</td>
+          </tr>
+          {% endif %}
+          {% if allocation.get_resources_as_string == "Quartz" %}
+          <tr>
+            <th scope="col" class="text-nowrap">Applications To Be Used:</th>
+            <td>{{ allocation.applications_list }}</td>
+          </tr>
+          {% endif %}
           {% if allocation.get_resources_as_string == "Priority Boost" %}
             <tr>
               <th scope="row" class="text-nowrap">System:</th>
@@ -94,7 +118,7 @@ Allocation Detail
             </tr>
           {% endif %}
           {% if allocation.get_resources_as_string == "cBioPortal" %}
-             <tr>
+            <tr>
               <th scope="row" class="text-nowrap">Is Associated With PHI:</th>
               <td>{{ allocation.phi_association }}</td>
             </tr>
@@ -115,25 +139,14 @@ Allocation Detail
             <tr>
               <th scope="row" class="text-nowrap">Secondary Contact:</th>
               <td>{{ allocation.secondary_contact }}</td>
-            </tr>
-            <tr>
-              <th scope="row" class="text-nowrap">Department Full Name:</th>
-              <td>{{ allocation.department_full_name }}</td>
-            </tr>
-            <tr>
-              <th scope="row" class="text-nowrap">Department Short Name:</th>
-              <td>{{ allocation.department_short_name }}</td>
-            </tr>
+            </tr>>
             <tr>
               <th scope="row" class="text-nowrap">Fiscal Officer Username:</th>
               <td>{{ allocation.fiscal_officer }}</td>
             </tr>
+            <tr>
               <th scope="row" class="text-nowrap">IT Pro(s)'s Username:</th>
               <td>{{ allocation.it_pros }}</td>
-            </tr>
-            <tr>
-              <th scope="row" class="text-nowrap">IP Addresses of Devices:</th>
-              <td>{{ allocation.devices_ip_addresses }}</td>
             </tr>
             <tr>
               <th scope="row" class="text-nowrap">Data Management Plan:</th>
@@ -143,6 +156,36 @@ Allocation Detail
               <th scope="row" class="text-nowrap">Use Indefinitely:</th>
               <td>{{ allocation.use_indefinitely }}</td>
             </tr>
+          {% endif %}
+          {% if allocation.get_resources_as_string == "SDA Group Account" %}
+          <tr>
+            <th scope="row" class="text-nowrap">Primary Contact:</th>
+            <td>{{ allocation.primary_contact }}</td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">Secondary Contact:</th>
+            <td>{{ allocation.secondary_contact }}</td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">Fiscal Officer Username:</th>
+            <td>{{ allocation.fiscal_officer }}</td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">IT Pro(s)'s Username:</th>
+            <td>{{ allocation.it_pros }}</td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">SDA Group Account Name:</th>
+            <td>{{ allocation.group_account_name}}</td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">Data Management Plan:</th>
+            <td>{{ allocation.data_management_plan }}</td>
+          </tr>
+          <tr>
+            <th scope="row" class="text-nowrap">Use Indefinitely:</th>
+            <td>{{ allocation.use_indefinitely }}</td>
+          </tr>
           {% endif %}
           {% if allocation.get_resources_as_string == "RStudio Connect"%}
             <tr>
@@ -425,7 +468,7 @@ Allocation Detail
                     {% elif change_request.status.name == 'Denied' %}
                       <td class="text-danger">{{ change_request.status.name }}</td>
                     {% else %}
-                      <td class="text-info">{{ change_request.status.name }}</td>
+                      <td class="text-primary">{{ change_request.status.name }}</td>
                     {% endif %}
                     </td>
                     {% if change_request.notes %}
@@ -507,7 +550,7 @@ Allocation Detail
   </div>
   <div class="card-body">
     <div class="table-responsive">
-      <table class="table table-hover">
+      <table id="user_table" class="table table-hover">
         <thead>
           <tr>
             <th scope="col">Username</th>
@@ -528,7 +571,7 @@ Allocation Detail
               {% elif user.status.name in 'Denied, Error, Expired' %}
                 <td class="text-danger"><strong>{{ user.status.name }}</strong></td>
               {% else %}
-                <td class="text-info"><strong>{{ user.status.name }}</strong></td>
+                <td class="text-primary"><strong>{{ user.status.name }}</strong></td>
               {% endif %}
               <td>{{ user.modified|date:"M. d, Y" }}</td>
             </tr>
@@ -595,6 +638,13 @@ Allocation Detail
   $(document).ready(function () {
     var guage_data = {{ guage_data | safe }};
     drawGauges(guage_data);
+  });
+
+  $('#user_table').DataTable({
+    'aoColumnDefs': [{
+      'bSortable': false,
+      'aTargets': ['nosort']
+    }]
   });
 
   $('#allocation_change_table').DataTable({

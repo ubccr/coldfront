@@ -141,7 +141,8 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         user_can_access_allocation = allocation_obj.allocationuser_set.filter(
             user=self.request.user, status__name__in=['Active', 'Pending - Remove']).exists()
         if not user_can_access_allocation:
-            user_can_access_allocation = self.request.user == allocation_obj.project.pi
+            user_can_access_allocation = allocation_obj.project.projectuser_set.filter(
+                user=self.request.user, role__name='Manager').exists()
 
         if user_can_access_project and user_can_access_allocation:
             return True
@@ -225,6 +226,9 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
         if self.request.user.is_superuser:
             context['user_has_permissions'] = True
+
+        context['user_exists_in_allocation'] = allocation_obj.allocationuser_set.filter(
+            user=self.request.user, status__name__in=['Active', 'Pending - Remove']).exists()
 
         context['project'] = allocation_obj.project
         context['notes'] = notes
@@ -817,6 +821,11 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 'user_ads_group': {},
                 'user_ads_group_label': {},
                 'type': 'text',
+            },
+            {
+                'confirm_best_practices': {},
+                'confirm_best_practices_label': {},
+                'type': 'checkbox',
             }
         ]
 
@@ -930,7 +939,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         form_data = form.cleaned_data
         project_obj = get_object_or_404(
             Project, pk=self.kwargs.get('project_pk'))
-        resource_obj = form_data.get('resource')
+        resource_obj = Resource.objects.get(pk=form_data.get('resource'))
         justification = form_data.get('justification')
         quantity = form_data.get('quantity', 1)
         storage_space = form_data.get('storage_space')
@@ -977,6 +986,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         data_management_responsibilities = form_data.get('data_management_responsibilities')
         admin_ads_group = form_data.get('admin_ads_group')
         user_ads_group = form_data.get('user_ads_group')
+        confirm_best_practices = form_data.get('confirm_best_practices')
 
         allocation_limit = resource_obj.get_attribute('allocation_limit')
         if allocation_limit is not None:
@@ -1028,6 +1038,9 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             storage_space_unit = 'TB'
         elif resource_obj.name == 'Geode-Projects':
             storage_space_unit = 'GB'
+            if use_indefinitely:
+                end_date = None
+        elif resource_obj.name == 'SDA Group Account':
             if use_indefinitely:
                 end_date = None
         elif resource_obj.name == 'Priority Boost':
@@ -1157,6 +1170,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             data_management_responsibilities=data_management_responsibilities,
             admin_ads_group=admin_ads_group,
             user_ads_group=user_ads_group,
+            confirm_best_practices=confirm_best_practices,
             status=allocation_status_obj
         )
 
