@@ -89,23 +89,25 @@ Project Detail
   </div>
   <div class="card-body">
     <div class="table-responsive">
-      <table class="table table-hover">
+      <table id="projectuser_table" class="table table-hover">
         <thead>
           <tr>
-            <th scope="col">Username</th>
-            <th scope="col">Name</th>
-            <th scope="col">Email</th>
-            <th scope="col">Role <a href="#" data-toggle="popover" title="Role" data-trigger="hover" data-content="Manager role grants user access to add & remove users, attributes, publications, grants, & research output to the project and request/renew allocations."><i class="fas fa-info-circle" aria-hidden="true"></i><span class="sr-only">Manager role grants user access to add & remove users, attributes, publications, grants, & research output to the project and request/renew allocations.</span></a></th>
-            <th scope="col">Status</th>
-            <th scope="col"><input type="checkbox" class="check" id="selectAll" style="margin-right: 5px;">Enable Notifications <a href="#" title="Enable Notifications" data-toggle="popover" data-trigger="hover" data-content="When disabled, user will not receive notifications for allocation requests and expirations or cloud usage (if applicable)."><i class="fas fa-info-circle" aria-hidden="true"></i><span class="sr-only">When disabled, user will not receive notifications for allocation requests and expirations or cloud usage (if applicable).</span></a></th>
-            <th scope="col">Actions</th>
+            <th scope="col" class="text-nowrap">Username</th>
+            <th scope="col" class="text-nowrap">First Name</th>
+            <th scope="col" class="text-nowrap">Last Name</th>
+            <th scope="col" class="text-nowrap">Email</th>
+            <th scope="col" class="text-nowrap">Role <a href="#" data-toggle="popover" title="Role" data-trigger="hover" data-content="Manager role grants user access to add/remove users, allocations, grants, and publications to the project."><i class="fas fa-info-circle" aria-hidden="true"></i><span class="sr-only">Manager role grants user access to add/remove users, allocations, grants, and publications to the project.</span></a></th>
+            <th scope="col" class="text-nowrap">Status</th>
+            <th scope="col" class="nosort"><input type="checkbox" class="check" id="selectAll" style="margin-right: 5px;">Enable Notifications <a href="#" title="Enable Notifications" data-toggle="popover" data-trigger="hover" data-content="When disabled, user will not receive notifications for allocation requests and expirations or cloud usage (if applicable)."><i class="fas fa-info-circle" aria-hidden="true"></i><span class="sr-only">When disabled, user will not receive notifications for allocation requests and expirations or cloud usage (if applicable).</span></a></th>
+            <th scope="col" class="nosort">Actions</th>
           </tr>
         </thead>
         <tbody>
           {% for user in project_users %}
             <tr>
               <td>{{ user.user.username }}</td>
-              <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
+              <td>{{ user.user.first_name }} </td>
+              <td>{{ user.user.last_name }}</td>
               <td>{{ user.user.email }}</td>
               <td>{{ user.role.name }}</td>
               {% if user.status.name == 'Active' %}
@@ -529,6 +531,13 @@ Project Detail
     });
 
     $('#grant_table').DataTable({
+      'aoColumnDefs': [{
+        'bSortable': false,
+        'aTargets': ['nosort']
+      }]
+    });
+
+    $('#projectuser_table').DataTable({
       'aoColumnDefs': [{
         'bSortable': false,
         'aTargets': ['nosort']
