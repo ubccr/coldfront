@@ -163,8 +163,8 @@ Allocation Detail
       {% if request.user.is_superuser %}
       <div class="float-right">
         {% if allocation.status.name == 'New' or allocation.status.name == 'Renewal Requested' %}
-          <a href="{% url 'allocation-activate-request' allocation.pk %}" class="btn btn-success mr-1 confirm-activate">Approve</a>
-          <a href="{% url 'allocation-deny-request' allocation.pk %}" class="btn btn-danger mr-1 confirm-deny">Deny</a>
+          <button name="approved" class="btn btn-success mr-1 confirm-activate">Approve</button>
+          <button name="denied" class="btn btn-danger mr-1 confirm-deny">Deny</button>
         {% endif %}
         <button type="submit" class="btn btn-primary"><i class="fas fa-sync" aria-hidden="true"></i> Update</button>
       {% endif %}
@@ -302,21 +302,23 @@ Allocation Detail
   </div>
   <div class="card-body">
     <div class="table-responsive">
-      <table class="table table-hover">
+      <table id="allocationuser_table" class="table table-hover">
         <thead>
           <tr>
-            <th scope="col">Username</th>
-            <th scope="col">Name</th>
-            <th scope="col">Email</th>
-            <th scope="col">Status</th>
-            <th scope="col">Last Modified</th>
+            <th scope="col" class="text-nowrap">Username</th>
+            <th scope="col" class="text-nowrap">First Name</th>
+            <th scope="col" class="text-nowrap">Last Name</th>
+            <th scope="col" class="text-nowrap">Email</th>
+            <th scope="col" class="text-nowrap" >Status</th>
+            <th scope="col" class="nosort">Last Modified</th>
           </tr>
         </thead>
         <tbody>
           {% for user in allocation_users %}
             <tr>
               <td>{{ user.user.username }}</td>
-              <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
+              <td>{{ user.user.first_name }}</td>
+              <td>{{ user.user.last_name }}</td>
               <td>{{ user.user.email }}</td>
               {% if user.status.name == 'Active' %}
                 <td class="text-success">{{ user.status.name }}</td>
@@ -388,6 +390,12 @@ Allocation Detail
       lengthMenu: [5, 10, 20, 50, 100],
       "pageLength": 5,
       "ordering": false,
+      'aoColumnDefs': [{
+        'bSortable': false,
+        'aTargets': ['nosort']
+      }]
+    });
+    $('#allocationuser_table').DataTable({
       'aoColumnDefs': [{
         'bSortable': false,
         'aTargets': ['nosort']
