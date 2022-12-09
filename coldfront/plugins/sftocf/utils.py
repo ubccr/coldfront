@@ -170,7 +170,7 @@ def get_redash_vol_stats():
 
 class StarFishRedash:
     def __init__(self, server_name):
-        self.base_url = f'https://{server_name}.rc.fas.harvard.edu/redash/api/' 
+        self.base_url = f'https://{server_name}.rc.fas.harvard.edu/redash/api/'
         self.queries = import_from_settings('REDASH_API_KEYS')
 
 
@@ -638,7 +638,7 @@ def pull_sf_push_cf_redash():
                         logger.warning("no ProjectUser entry for %s %s", userdict['group_name'], userdict['user_name'])
                         fpath = './coldfront/plugins/sftocf/data/missing_projectusers.csv'
                         pattern = f'{userdict["group_name"]},{userdict["user_name"]},{datestr}'
-                        write_update_file_line(fpath, pattern)
+                        write_update_file_line(fpath, [pattern])
                         continue
                 else:
                     logger.warning("allocation user missing: %s %s %s", lab, resource, userdict)
