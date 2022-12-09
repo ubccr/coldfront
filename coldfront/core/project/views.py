@@ -92,24 +92,24 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['mailto'] = 'mailto:' + \
             ','.join([user.user.email for user in project_users])
 
+        min_filters = ( Q(project=self.object) &
+                        Q(status__name__in=['Active', 'Paid', 'Ready for Review','Payment Requested', ]))
         if self.request.user.is_superuser or self.request.user.has_perm(
                                         'allocation.can_view_all_allocations'):
             allocations = Allocation.objects.prefetch_related(
-                'resources').filter(project=self.object).order_by('-end_date')
+                    'resources').filter(min_filters).order_by('-end_date')
         else:
             if self.object.status.name in ['Active', 'New', ]:
                 allocations = Allocation.objects.filter(
-                    Q(project=self.object) &
+                    min_filters &
                     Q(project__projectuser__user=self.request.user) &
                     Q(project__projectuser__status__name__in=['Active', ]) &
-                    Q(status__name__in=['Active', 'Inactive','Paid',
-                    'Ready for Review','Payment Requested', ]) &
                     Q(allocationuser__user=self.request.user) &
                     Q(allocationuser__status__name__in=['Active', ])
                 ).distinct().order_by('-end_date')
             else:
                 allocations = Allocation.objects.prefetch_related(
-                    'resources').filter(project=self.object)
+                    'resources').filter(min_filters).order_by('-end_date')
 
         allocation_total = {"allocation_user_count": 0, "size": 0, "cost": 0}
         for allocation in allocations:
