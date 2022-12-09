@@ -638,7 +638,7 @@ def pull_sf_push_cf_redash():
                         logger.warning("no ProjectUser entry for %s %s", userdict['group_name'], userdict['user_name'])
                         fpath = './coldfront/plugins/sftocf/data/missing_projectusers.csv'
                         pattern = f'{userdict["group_name"]},{userdict["user_name"]},{datestr}'
-                        write_update_file_line(fpath, pattern)
+                        write_update_file_line(fpath, [pattern])
                         continue
                 else:
                     logger.warning("allocation user missing: %s %s %s", lab, resource, userdict)
