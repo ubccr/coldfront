@@ -26,11 +26,11 @@ class Command(BaseCommand):
         kwargs = {  "repeats":-1, }
         plugins = ['fasrc', 'sftocf']
         if all(f'coldfront.plugins.{plugin}' in settings.INSTALLED_APPS for plugin in plugins):
-            schedule('coldfront.plugins.sftocf.tasks.pull_sf_push_cf_redash',
-                    next_run=date,
-                    schedule_type=Schedule.DAILY,
-                    **kwargs)
-            schedule('coldfront.plugins.fasrc.tasks.import_quotas',
-                    next_run=date,
-                    schedule_type=Schedule.DAILY,
-                    **kwargs)
+            scheduled = [task.func for task in Schedule.objects.all()]
+            for func in ('coldfront.plugins.sftocf.tasks.pull_sf_push_cf_redash',
+                        'coldfront.plugins.fasrc.tasks.import_quotas'):
+                if func not in scheduled:
+                    schedule(func,
+                        next_run=date,
+                        schedule_type=Schedule.DAILY,
+                        **kwargs)
