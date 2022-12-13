@@ -1,4 +1,5 @@
 import logging
+import re
 
 from flags.state import flag_enabled
 
@@ -13,6 +14,23 @@ from coldfront.core.resource.utils import get_computing_allowance_project_prefix
 logger = logging.getLogger(__name__)
 
 
+def get_billing_activity_from_full_id(full_id):
+    """Given a fully-formed billing ID, get the matching
+    BillingActivity, if it exists, or None."""
+    project_identifier, activity_identifier = full_id.split('-')
+    try:
+        billing_project = BillingProject.objects.get(
+            identifier=project_identifier)
+    except BillingProject.DoesNotExist:
+        return None
+    try:
+        billing_activity = BillingActivity.objects.get(
+            billing_project=billing_project, identifier=activity_identifier)
+    except BillingActivity.DoesNotExist:
+        return None
+    return billing_activity
+
+
 def get_or_create_billing_activity_from_full_id(full_id):
     """Given a fully-formed billing ID, get or create a matching
     BillingActivity, creating a BillingProject as needed."""
@@ -22,6 +40,13 @@ def get_or_create_billing_activity_from_full_id(full_id):
     billing_activity, _ = BillingActivity.objects.get_or_create(
         billing_project=billing_project, identifier=activity_identifier)
     return billing_activity
+
+
+def is_billing_id_well_formed(full_id):
+    """Given a fully-formed billing ID, return whether it conforms to
+    the expected format."""
+    regex = r'^\d{6}-\d{3}$'
+    return re.match(regex, full_id)
 
 
 def is_project_billing_id_required_and_missing(project_obj):
