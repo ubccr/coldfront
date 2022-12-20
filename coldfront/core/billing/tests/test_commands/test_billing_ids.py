@@ -1,61 +1,26 @@
-from decimal import Decimal
 from io import StringIO
 
-from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.core.management import CommandError
 
-from coldfront.core.allocation.models import Allocation
-from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.billing.models import BillingActivity
+from coldfront.core.billing.tests.test_billing_base import TestBillingBase
 from coldfront.core.billing.utils import ProjectBillingActivityManager
 from coldfront.core.billing.utils import ProjectUserBillingActivityManager
 from coldfront.core.billing.utils import UserBillingActivityManager
 from coldfront.core.billing.utils.queries import get_billing_activity_from_full_id
 from coldfront.core.billing.utils.queries import is_billing_id_well_formed
 from coldfront.core.billing.utils.validation import is_billing_id_valid
-from coldfront.core.project.models import ProjectUser
-from coldfront.core.project.tests.utils import create_project_and_request
-from coldfront.core.resource.models import Resource
-from coldfront.core.project.utils_.new_project_utils import SavioProjectProcessingRunner
-from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
-from coldfront.core.resource.utils import get_primary_compute_resource
-from coldfront.core.utils.email.email_strategy import DropEmailStrategy
 from coldfront.core.utils.tests.test_base import enable_deployment
-from coldfront.core.utils.tests.test_base import TestBase
 
 
-class TestBillingIds(TestBase):
+class TestBillingIds(TestBillingBase):
     """A class for testing the billing_ids management command."""
 
     @enable_deployment('LRC')
     def setUp(self):
         """Set up test data."""
         super().setUp()
-
-        self.username = 'user'
-        self.user = User.objects.create_user(
-            email='user@email.com', username=self.username)
-
-        computing_allowance = Resource.objects.get(name='Recharge Allocation')
-        allocation_period = get_current_allowance_year_period()
-        self.project_name = 'ac_project'
-        self.project, new_project_request = create_project_and_request(
-            self.project_name, 'New', computing_allowance, allocation_period,
-            self.user, self.user, 'Under Review')
-        allocation = Allocation.objects.create(
-            project=self.project,
-            status=AllocationStatusChoice.objects.get(name='New'))
-        allocation.resources.add(get_primary_compute_resource())
-
-        runner = SavioProjectProcessingRunner(
-            new_project_request, Decimal('300000.00'),
-            email_strategy=DropEmailStrategy())
-        runner.run()
-
-        self.project.refresh_from_db()
-        self.project_user = ProjectUser.objects.get(
-            project=self.project, user=self.user)
 
         self.command = BillingIdsCommand()
 
@@ -71,12 +36,9 @@ class TestBillingIds(TestBase):
         billing_activity = get_billing_activity_from_full_id(billing_id)
         self.assertTrue(isinstance(billing_activity, BillingActivity))
 
-        try:
+        with self.assertRaises(CommandError) as cm:
             self.command.create(billing_id)
-        except CommandError as e:
-            self.assertIn('already exists', str(e))
-        else:
-            self.fail('A CommandError should have been raised.')
+        self.assertIn('already exists', str(cm.exception))
 
     def test_create_dry_run(self):
         """Test that, when the --dry_run flag is given to the 'create'
@@ -98,12 +60,9 @@ class TestBillingIds(TestBase):
         self.assertIsNone(get_billing_activity_from_full_id(billing_id))
         self.assertFalse(is_billing_id_valid(billing_id))
 
-        try:
+        with self.assertRaises(CommandError) as cm:
             self.command.create(billing_id)
-        except CommandError as e:
-            self.assertIn('is invalid', str(e))
-        else:
-            self.fail('A CommandError should have been raised.')
+        self.assertIn('is invalid', str(cm.exception))
 
         output, error = self.command.create(billing_id, ignore_invalid=True)
         self.assertIn('is invalid', output)
@@ -121,12 +80,9 @@ class TestBillingIds(TestBase):
         self.assertIsNone(get_billing_activity_from_full_id(billing_id))
         self.assertFalse(is_billing_id_well_formed(billing_id))
 
-        try:
+        with self.assertRaises(CommandError) as cm:
             self.command.create(billing_id)
-        except CommandError as e:
-            self.assertIn('is malformed', str(e))
-        else:
-            self.fail('A CommandError should have been raised.')
+        self.assertIn('is malformed', str(cm.exception))
 
         self.assertIsNone(get_billing_activity_from_full_id(billing_id))
 
@@ -177,12 +133,9 @@ class TestBillingIds(TestBase):
             args = call['args']
 
             self.assertIsNone(manager.billing_activity)
-            try:
+            with self.assertRaises(CommandError) as cm:
                 command(*args)
-            except CommandError as e:
-                self.assertIn('is invalid', str(e))
-            else:
-                self.fail('A CommandError should have been raised.')
+            self.assertIn('is invalid', str(cm.exception))
             self.assertIsNone(manager.billing_activity)
 
             output, error = command(*args, ignore_invalid=True)
@@ -214,12 +167,9 @@ class TestBillingIds(TestBase):
             args = call['args']
 
             self.assertIsNone(manager.billing_activity)
-            try:
+            with self.assertRaises(CommandError) as cm:
                 command(*args)
-            except CommandError as e:
-                self.assertIn('is malformed', str(e))
-            else:
-                self.fail('A CommandError should have been raised.')
+            self.assertIn('is malformed', str(cm.exception))
             self.assertIsNone(manager.billing_activity)
 
     def test_set_billing_id_nonexistent(self):
@@ -254,12 +204,9 @@ class TestBillingIds(TestBase):
             args = call['args']
 
             self.assertIsNone(manager.billing_activity)
-            try:
+            with self.assertRaises(CommandError) as cm:
                 command(*args)
-            except CommandError as e:
-                self.assertIn('does not exist', str(e))
-            else:
-                self.fail('A CommandError should have been raised.')
+            self.assertIn('does not exist', str(cm.exception))
             self.assertIsNone(manager.billing_activity)
 
     def test_set_project_default_dry_run(self):
