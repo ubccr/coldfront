@@ -33,6 +33,8 @@ class BillingActivityManager(ABC):
     def billing_activity(self):
         """Return the BillingActivity object stored in the container, or
         None."""
+        if self._container is None:
+            self._container = self._get_container()
         if isinstance(self._container, self.container_type):
             self._refresh_container()
             return self._deserialize_billing_activity()
