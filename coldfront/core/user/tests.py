@@ -59,13 +59,14 @@ class TestUserProfile(TestCase):
             UserProfile.objects.get(pk=profile_obj.pk)
         self.assertEqual(0, len(UserProfile.objects.all()))
 
-class LoginTest(LiveServerTestCase):
+class PITests(LiveServerTestCase):
 
     global driver
     driver = webdriver.Chrome()
     driver.get('http://127.0.0.1:8000/')
 
     def test_pi(self):
+        print("Testing PI controls:")
 
     #tests pi login
         assert 'Welcome to' in driver.title
@@ -119,6 +120,25 @@ class LoginTest(LiveServerTestCase):
 
         assert driver.current_url.__contains__("project")
 
+    #tests adding/removing user to/from project
+
+        # add_button = driver.find_element_by_id("user_add")
+        # add_button.click()
+        # search_box = driver.find_element_by_id("id_q")
+        # search_box.send_keys("arivera")
+        # actually_submit_search = driver.find_element_by_id("search-button")
+        # actually_submit_search.click()
+        # all_users = driver.find_element_by_id("id_allocationform-allocation_0")
+        # all_users.click()
+        # print(all_users)
+        # add_add = driver.find_element_by_id("submit_user_add")
+        # add_add.click()
+        # print("\nUser added to project successfully.")
+
+        # remove_button = driver.find_element_by_id("user_remove")
+        # remove_button.click()
+        # print("\nUser removed from project successfully.")
+
     #tests adding/removing publication
 
         # box = driver.find_element_by_id("id_search_id")
@@ -147,6 +167,7 @@ class LoginTest(LiveServerTestCase):
         journal.send_keys("Test Journal")
         submit_publ = driver.find_element_by_id("submit_manually")
         submit_publ.click()
+        print("\nPublication added successfully.")
 
         del_button = driver.find_element_by_id("delete_publ")
         del_button.click()
@@ -254,3 +275,33 @@ class LoginTest(LiveServerTestCase):
         print("\nAllocation change submitted successfully.")
 
         assert driver.current_url.__contains__("allocation")
+
+# class AdminTests(LiveServerTestCase):
+
+#     global driver
+#     driver = webdriver.Chrome()
+#     driver.get('http://127.0.0.1:8000/')
+
+#     def test_admin(self):
+#         print("\nTesting admin controls:")
+    
+#     #tests admin login
+#         assert 'Welcome to' in driver.title
+#         driver.find_element_by_id("login_button").click()
+
+#         username = driver.find_element_by_id("id_username")
+#         password = driver.find_element_by_id("id_password")
+
+#         username.send_keys("a")
+#         password.send_keys("a")
+#         driver.find_element_by_id("login").click()
+
+#         username = driver.find_element_by_id("id_username")
+#         password = driver.find_element_by_id("id_password")
+#         username.send_keys(Keys.CONTROL + "a")
+#         username.send_keys(Keys.DELETE)
+#         username.send_keys("admin")
+#         password.send_keys("test1234")
+#         driver.find_element_by_id("login").click()
+#         assert driver.current_url == 'http://127.0.0.1:8000/'
+#         print("\nLogged in successfully.")
