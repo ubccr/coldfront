@@ -2,6 +2,7 @@ from abc import ABC
 from abc import abstractmethod
 
 from django.contrib.auth.models import User
+from django.core.exceptions import ObjectDoesNotExist
 
 from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationAttributeType
@@ -36,7 +37,10 @@ class BillingActivityManager(ABC):
         if self._container is None:
             self._container = self._get_container()
         if isinstance(self._container, self.container_type):
+            # Refreshing sets the container to None if the container object has
+            # been deleted.
             self._refresh_container()
+        if isinstance(self._container, self.container_type):
             return self._deserialize_billing_activity()
         return None
 
@@ -47,7 +51,10 @@ class BillingActivityManager(ABC):
         assert isinstance(billing_activity, BillingActivity)
         value = self._serialize_billing_activity(billing_activity)
         if isinstance(self._container, self.container_type):
+            # Refreshing sets the container to None if the container object has
+            # been deleted.
             self._refresh_container()
+        if isinstance(self._container, self.container_type):
             self._update_container_with_value(value)
         else:
             self._create_container_with_value(value)
@@ -78,9 +85,13 @@ class BillingActivityManager(ABC):
             return None
 
     def _refresh_container(self):
-        """Refresh the container from the database. This method should
-        be called before getting or updating a BillingActivity."""
-        self._container.refresh_from_db()
+        """Refresh the container from the database. If it no longer
+        exists, set it to None. This method should be called before
+        getting or updating a BillingActivity."""
+        try:
+            self._container.refresh_from_db()
+        except ObjectDoesNotExist:
+            self._container = None
 
     @abstractmethod
     def _serialize_billing_activity(self, billing_activity):
