@@ -153,6 +153,7 @@ class Command(BaseCommand):
         if dry_run:
             message = (
                 f'Would create a BillingActivity for billing ID {full_id}.')
+            self.stdout.write(self.style.WARNING(message))
         else:
             try:
                 billing_activity = get_or_create_billing_activity_from_full_id(
@@ -164,8 +165,7 @@ class Command(BaseCommand):
                 message = (
                     f'Created BillingActivity {billing_activity.pk} for '
                     f'billing ID {full_id}.')
-        self.stdout.write(self.style.SUCCESS(message))
-        if not dry_run:
+            self.stdout.write(self.style.SUCCESS(message))
             self.logger.info(message)
 
     def _handle_set(self, *args, **options):
@@ -243,8 +243,10 @@ class Command(BaseCommand):
 
         if dry_run:
             phrase = 'Would update'
+            style = self.style.WARNING
         else:
             phrase = 'Updated'
+            style = self.style.SUCCESS
             try:
                 manager.billing_activity = billing_activity
             except Exception as e:
@@ -253,7 +255,7 @@ class Command(BaseCommand):
         message = (
             f'{phrase} billing ID for {instance_str} from {previous_str} to '
             f'{new_str}.')
-        self.stdout.write(self.style.SUCCESS(message))
+        self.stdout.write(style(message))
         if not dry_run:
             self.logger.info(message)
 
