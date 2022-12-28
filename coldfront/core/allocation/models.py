@@ -300,7 +300,7 @@ class AllocationAttribute(TimeStampedModel):
                 allocation_attribute=self)
 
     def clean(self):
-        if self.allocation_attribute_type.is_unique and self.allocation.allocationattribute_set.filter(allocation_attribute_type=self.allocation_attribute_type).exists():
+        if self.allocation_attribute_type.is_unique and self.allocation.allocationattribute_set.filter(allocation_attribute_type=self.allocation_attribute_type).exclude(id=self.pk).exists():
             raise ValidationError("'{}' attribute already exists for this allocation.".format(
                 self.allocation_attribute_type))
 
