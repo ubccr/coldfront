@@ -121,9 +121,26 @@ class PITests(LiveServerTestCase):
 
         assert driver.current_url.__contains__("project")
 
-        #tests adding/removing user from allocation
+        #tests adding/removing user from allocation -- need to add case when there are users to remove
         allocation_open = driver.find_element_by_id("allocation_open")
         allocation_open.click()
+
+        add_user = driver.find_element_by_id("add_users_to_alloc")
+        add_user.click()
+
+        go_back = driver.find_element_by_id("back")
+        go_back.click()
+        print("\nNo users to add to allocation, but tested successfully.")
+
+        remove_user = driver.find_element_by_id("remove_users_from_alloc")
+        remove_user.click()
+
+        go_back_again = driver.find_element_by_id("done_removing")
+        go_back_again.click()
+        print("\nNo users to remove from allocation, but tested successfully.")
+
+        project_page = driver.find_element_by_id("project_name")
+        project_page.click()
 
         #tests adding/removing user to/from project -- checkboxes not working
 
@@ -155,6 +172,8 @@ class PITests(LiveServerTestCase):
         # add_button = driver.find_element_by_id("add_publ")
         # add_button.click()
         # print("\nPublication added successfully.")
+
+
 
         add_publication = driver.find_element_by_id("add_publication")
         add_publication.click()

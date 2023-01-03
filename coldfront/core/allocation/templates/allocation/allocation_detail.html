@@ -51,7 +51,7 @@ Allocation Detail
         <table class="table table-bordered table-sm">
           <tr>
             <th scope="row" class="text-nowrap">Project:</th>
-            <td><a href="{% url 'project-detail' allocation.project.pk %}">{{ allocation.project }}</a></td>
+            <td><a href="{% url 'project-detail' allocation.project.pk %}" id="project_name">{{ allocation.project }}</a></td>
           </tr>
           <tr>
             <th scope="row" class="text-nowrap">Resource{{ allocation.resources.all|pluralize }} in allocation:</th>
@@ -291,10 +291,10 @@ Allocation Detail
     <span class="badge badge-secondary">{{allocation_users.count}}</span>
     <div class="float-right">
       {% if allocation.project.status.name != 'Archived' and is_allowed_to_update_project and allocation.status.name in 'Active,New,Renewal Requested' %}
-        <a class="btn btn-success" href="{% url 'allocation-add-users' allocation.pk %}" role="button">
+        <a class="btn btn-success" href="{% url 'allocation-add-users' allocation.pk %}" role="button" id="add_users_to_alloc">
           <i class="fas fa-user-plus" aria-hidden="true"></i> Add Users
         </a>
-        <a class="btn btn-danger" href="{% url 'allocation-remove-users' allocation.pk %}" role="button">
+        <a class="btn btn-danger" href="{% url 'allocation-remove-users' allocation.pk %}" role="button" id="remove_users_from_alloc">
           <i class="fas fa-user-times" aria-hidden="true"></i> Remove Users
         </a>
       {% endif %}
