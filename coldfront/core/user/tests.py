@@ -1,3 +1,4 @@
+import pytest
 from selenium.webdriver.common.keys import Keys
 from coldfront.core.test_helpers.factories import UserFactory
 from django.test import TestCase
@@ -66,9 +67,9 @@ class PITests(LiveServerTestCase):
     driver.get('http://127.0.0.1:8000/')
 
     def test_pi(self):
-        print("Testing PI controls:")
+        print("\nTesting PI controls:")
 
-    #tests pi login
+        #tests pi login
         assert 'Welcome to' in driver.title
         driver.find_element_by_id("login_button").click()
 
@@ -89,7 +90,7 @@ class PITests(LiveServerTestCase):
         assert driver.current_url == 'http://127.0.0.1:8000/'
         print("\nLogged in successfully.")
 
-    #tests adding project for pi
+        #tests adding project for pi
         if(driver.find_element_by_id("hamburger_icon").is_displayed()):
             driver.find_element_by_id("hamburger_icon").click()
         
@@ -108,7 +109,7 @@ class PITests(LiveServerTestCase):
         driver.find_element_by_id("save_button").click()
         print("\nProject created successfully.")
 
-    #tests adding allocation request for pi
+        #tests adding allocation request for pi
         request_button = driver.find_element_by_id("resource_button")
         request_button.click()
 
@@ -120,7 +121,11 @@ class PITests(LiveServerTestCase):
 
         assert driver.current_url.__contains__("project")
 
-    #tests adding/removing user to/from project
+        #tests adding/removing user from allocation
+        allocation_open = driver.find_element_by_id("allocation_open")
+        allocation_open.click()
+
+        #tests adding/removing user to/from project -- checkboxes not working
 
         # add_button = driver.find_element_by_id("user_add")
         # add_button.click()
@@ -139,7 +144,7 @@ class PITests(LiveServerTestCase):
         # remove_button.click()
         # print("\nUser removed from project successfully.")
 
-    #tests adding/removing publication
+        #tests adding/removing publication -- checkboxes not working
 
         # box = driver.find_element_by_id("id_search_id")
         # box.send_keys("10.1038/nphys1170")
@@ -179,7 +184,7 @@ class PITests(LiveServerTestCase):
         
         assert driver.current_url.__contains__("project")
 
-    #tests adding/removing output
+        #tests adding/removing output
 
         add_output = driver.find_element_by_id("add_output")
         add_output.click()
@@ -203,7 +208,7 @@ class PITests(LiveServerTestCase):
         
         assert driver.current_url.__contains__("project")
 
-    #tests adding/removing grant
+        #tests adding/removing grant -- datepicking is not working
 
         # add_grant = driver.find_element_by_id("add_grant")
         # add_grant.click()
@@ -276,32 +281,4 @@ class PITests(LiveServerTestCase):
 
         assert driver.current_url.__contains__("allocation")
 
-# class AdminTests(LiveServerTestCase):
-
-#     global driver
-#     driver = webdriver.Chrome()
-#     driver.get('http://127.0.0.1:8000/')
-
-#     def test_admin(self):
-#         print("\nTesting admin controls:")
-    
-#     #tests admin login
-#         assert 'Welcome to' in driver.title
-#         driver.find_element_by_id("login_button").click()
-
-#         username = driver.find_element_by_id("id_username")
-#         password = driver.find_element_by_id("id_password")
-
-#         username.send_keys("a")
-#         password.send_keys("a")
-#         driver.find_element_by_id("login").click()
-
-#         username = driver.find_element_by_id("id_username")
-#         password = driver.find_element_by_id("id_password")
-#         username.send_keys(Keys.CONTROL + "a")
-#         username.send_keys(Keys.DELETE)
-#         username.send_keys("admin")
-#         password.send_keys("test1234")
-#         driver.find_element_by_id("login").click()
-#         assert driver.current_url == 'http://127.0.0.1:8000/'
-#         print("\nLogged in successfully.")
+        # driver.close()
