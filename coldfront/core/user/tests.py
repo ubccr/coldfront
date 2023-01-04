@@ -71,7 +71,7 @@ class PITests(LiveServerTestCase):
         driver = webdriver.Chrome()
         driver.get('http://127.0.0.1:8000/')
 
-        print("\nTesting PI controls:\n--------------------")
+        print("\n\nTesting PI controls:\n--------------------")
 
         # tests pi login
         assert 'Welcome to' in driver.title
@@ -147,7 +147,6 @@ class PITests(LiveServerTestCase):
         project_page.click()
 
         # tests adding/removing user to/from project -- checkboxes not working
-
         # add_button = driver.find_element_by_id("user_add")
         # add_button.click()
         # search_box = driver.find_element_by_id("id_q")
@@ -166,7 +165,6 @@ class PITests(LiveServerTestCase):
         # print("\nUser removed from project successfully.")
 
         # tests adding/removing publication -- checkboxes not working
-
         # box = driver.find_element_by_id("id_search_id")
         # box.send_keys("10.1038/nphys1170")
         # search_button = driver.find_element_by_id("search-button")
@@ -206,7 +204,6 @@ class PITests(LiveServerTestCase):
         assert driver.current_url.__contains__("project")
 
         # tests adding/removing output
-
         add_output = driver.find_element_by_id("add_output")
         add_output.click()
 
@@ -230,7 +227,6 @@ class PITests(LiveServerTestCase):
         assert driver.current_url.__contains__("project")
 
         # tests adding/removing grant -- datepicking is not working
-
         # add_grant = driver.find_element_by_id("add_grant")
         # add_grant.click()
 
@@ -269,7 +265,7 @@ class PITests(LiveServerTestCase):
 
         # assert driver.current_url.__contains__("project")
 
-    # tests reviewing project for pi
+        # tests reviewing project for pi
         driver.get('http://127.0.0.1:8000/project/1/review')
         if (driver.title.__contains__("Review")):
             reason = driver.find_element_by_id("id_reason")
@@ -280,7 +276,12 @@ class PITests(LiveServerTestCase):
             submit.click()
             print("\nProject reviewed successfully.")
 
-    # tests requesting allocation change for pi
+        #tests that pi is unable to change allocation blocked by admin
+        driver.get('http://127.0.0.1:8000/allocation/3')
+        assert(len(driver.find_elements_by_id("request_change")) <= 0)
+        print("\nPI is successfully unable to change allocation blocked by admin.")
+
+        # tests requesting allocation change for pi
         if (driver.find_element_by_id("hamburger_icon").is_displayed()):
             driver.find_element_by_id("hamburger_icon").click()
 
@@ -380,5 +381,23 @@ class AdminTests(LiveServerTestCase):
         deny_button.click()
 
         print("\nDenied allocation change request successfully.")
+
+        #tests blocking pi from requesting changes
+        if (driver.find_element_by_id("hamburger_icon").is_displayed()):
+            driver.find_element_by_id("hamburger_icon").click()
+
+        driver.find_element_by_id("admin_dropdown").click()
+        allocations = driver.find_element_by_id("allocs")
+        allocations.click()
+
+        list_of_allocation_ids = driver.find_elements_by_id("allocation_#")
+        list_of_allocation_ids[2].click()
+
+        change_checkbox = driver.find_element_by_id("id_is_changeable")
+        if(change_checkbox.is_selected()):
+            change_checkbox.click()
+
+        driver.find_element_by_id("update").click()
+        print("\nPI is unable to request changes on allocation #3.")
 
         driver.close()
