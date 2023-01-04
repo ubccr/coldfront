@@ -66,11 +66,11 @@ class TestUserProfile(TestCase):
 
 class PITests(LiveServerTestCase):
 
-    global driver
-    driver = webdriver.Chrome()
-    driver.get('http://127.0.0.1:8000/')
-
     def test_pi(self):
+        global driver
+        driver = webdriver.Chrome()
+        driver.get('http://127.0.0.1:8000/')
+
         print("\nTesting PI controls:\n--------------------")
 
         # tests pi login
@@ -308,11 +308,11 @@ class PITests(LiveServerTestCase):
 
 class AdminTests(LiveServerTestCase):
 
-    global driver
-    driver = webdriver.Chrome()
-    driver.get('http://127.0.0.1:8000/')
-
     def test_admin(self):
+        global driver
+        driver = webdriver.Chrome()
+        driver.get('http://127.0.0.1:8000/')
+    
         print("\nTesting admin controls:\n-----------------------")
 
         # tests pi login
