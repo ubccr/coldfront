@@ -7,7 +7,7 @@
       <strong>Found {{number_of_usernames_found}} of
       {{number_of_usernames_searched}} usernames searched.</strong>
     {% elif matches %}
-      <strong>Found {{matches|length}} match{{matches|length|pluralize}}.</strong>
+      <strong>Found {{matches|length}} match{{matches|pluralize:"es"}}.</strong>
     {% endif %}
     <br>
     {% if usernames_not_found %}
