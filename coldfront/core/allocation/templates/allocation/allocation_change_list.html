@@ -50,17 +50,17 @@ Allocation Review New and Pending Change Requests
             </td>
             <td class="text-nowrap">
               {% if change.allocationattributechangerequest_set.all %}
-                <a href="{% url 'allocation-activate-change' change.pk %}" class="btn btn-success mr-1" aria-disabled="true" 
+                <a href="{% url 'allocation-activate-change' change.pk %}" class="btn btn-success mr-1" aria-disabled="true" id="change_approve"
                 style="
                       cursor: not-allowed;
                       opacity: 0.6;
                       pointer-events: none;">
                       Approve
                 </a>
-                <a href="{% url 'allocation-change-detail' change.pk %}" class="btn btn-primary mr-1">Details</a>
+                <a href="{% url 'allocation-change-detail' change.pk %}" class="btn btn-primary mr-1" id="change_details">Details</a>
               {% else %}
-                <a href="{% url 'allocation-activate-change' change.pk %}" class="btn btn-success mr-1">Approve</a>
-                <a href="{% url 'allocation-change-detail' change.pk %}" class="btn btn-primary mr-1">Details</a>
+                <a href="{% url 'allocation-activate-change' change.pk %}" class="btn btn-success mr-1" id="change_approve">Approve</a>
+                <a href="{% url 'allocation-change-detail' change.pk %}" class="btn btn-primary mr-1" id="change_details">Details</a>
               {% endif %}
             </td>
           </tr>
