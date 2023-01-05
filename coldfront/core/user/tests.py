@@ -420,4 +420,19 @@ class AdminTests(LiveServerTestCase):
         send_button.click()
         print("\nEmail successfully sent for project review.")
 
+        #tests adding project attributes
+        driver.get("http://127.0.0.1:8000/allocation/8/")
+        add_button = driver.find_element_by_id("add_button")
+        add_button.click()
+
+        type = Select(driver.find_element_by_id("id_allocation_attribute_type"))
+        type.select_by_value("3")
+
+        value = driver.find_element_by_id("id_value")
+        value.send_keys("1")
+
+        add = driver.find_element_by_id("add")
+        add.click()
+        print("\nAllocation attribute (core usage) added successfully.")
+
         driver.close()

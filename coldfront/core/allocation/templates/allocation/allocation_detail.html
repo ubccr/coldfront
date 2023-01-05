@@ -179,7 +179,7 @@ Allocation Detail
       <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Allocation Attributes</h3>
       <div class="float-right">
         {% if request.user.is_superuser %}
-          <a class="btn btn-success" href="{% url 'allocation-attribute-add' allocation.pk %}" role="button">
+          <a class="btn btn-success" href="{% url 'allocation-attribute-add' allocation.pk %}" role="button" id="add_button">
             <i class="fas fa-plus" aria-hidden="true"></i> Add Allocation Attribute
           </a>
           <a class="btn btn-danger" href="{% url 'allocation-attribute-delete' allocation.pk %}" role="button">
