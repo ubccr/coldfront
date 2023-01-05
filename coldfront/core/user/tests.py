@@ -435,4 +435,15 @@ class AdminTests(LiveServerTestCase):
         add.click()
         print("\nAllocation attribute (core usage) added successfully.")
 
+        #tests deleting allocation attribute
+        delete = driver.find_element_by_id("delete_button")
+        delete.click()
+
+        all = driver.find_element_by_id("selectAll")
+        all.click()
+
+        actually_delete = driver.find_element_by_id("delete")
+        actually_delete.click()
+        print("\nAll allocation attributes deleted successfully.")
+
         driver.close()
