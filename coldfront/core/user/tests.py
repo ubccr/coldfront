@@ -398,6 +398,26 @@ class AdminTests(LiveServerTestCase):
             change_checkbox.click()
 
         driver.find_element_by_id("update").click()
-        print("\nPI is unable to request changes on allocation #3.")
+        print("\nPI is successfully unable to request changes on allocation #3.")
+
+        #tests email in project review (make sure emails are enabled on your server)
+        if (driver.find_element_by_id("hamburger_icon").is_displayed()):
+            driver.find_element_by_id("hamburger_icon").click()
+
+        driver.find_element_by_id("admin_dropdown").click()
+        reviews = driver.find_element_by_id("navbar-project-reviews")
+        reviews.click()
+
+        email_buttons = driver.find_elements_by_id("email_user")
+        email_buttons[0].click()
+
+        body = driver.find_element_by_id("id_email_body")
+        body.send_keys(Keys.CONTROL + "a")
+        body.send_keys(Keys.DELETE)
+        body.send_keys("This is a test email body.")
+
+        send_button = driver.find_element_by_id("send_email")
+        send_button.click()
+        print("\nEmail successfully sent for project review.")
 
         driver.close()
