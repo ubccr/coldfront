@@ -243,12 +243,13 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
             send_allocation_customer_email(allocation_obj, 'Allocation Activated', 'email/allocation_activated.txt', domain_url=get_domain_url(self.request))
 
-        elif old_status != new_status in ['Denied', 'New']:
+        elif old_status != new_status in ['Denied', 'New', 'Revoked']:
             allocation_obj.start_date = None
             allocation_obj.end_date = None
             allocation_obj.save()
 
-            if new_status == 'Denied':
+            if new_status in ['Denied', 'Revoked']:
+
                 allocation_disable.send(
                     sender=self.__class__, allocation_pk=allocation_obj.pk)
                 allocation_users = allocation_obj.allocationuser_set.exclude(
@@ -257,7 +258,11 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                     allocation_remove_user.send(
                         sender=self.__class__, allocation_user_pk=allocation_user.pk)
 
-                send_allocation_customer_email(allocation_obj, 'Allocation Denied', 'email/allocation_denied.txt', domain_url=get_domain_url(self.request))
+                if new_status == 'Denied':
+                    messages.warning("Denying an allocation that already exists.")
+                    send_allocation_customer_email(allocation_obj, 'Allocation Denied', 'email/allocation_denied.txt', domain_url=get_domain_url(self.request))
+                else:
+                    send_allocation_customer_email(allocation_obj, 'Allocation Revoked', 'email/allocation_revoked.txt', domain_url=get_domain_url(self.request))
 
         allocation_obj.refresh_from_db()
 
