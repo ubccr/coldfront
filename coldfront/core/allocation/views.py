@@ -80,6 +80,9 @@ ALLOCATION_ACCOUNT_ENABLED = import_from_settings(
 ALLOCATION_ACCOUNT_MAPPING = import_from_settings(
     'ALLOCATION_ACCOUNT_MAPPING', {})
 
+EMAIL_RESOURCE_EXPIRING_NOTIFICATION_DAYS = import_from_settings(
+    'EMAIL_RESOURCE_EXPIRING_NOTIFICATION_DAYS', [7, ])
+
 
 logger = logging.getLogger(__name__)
 
@@ -135,6 +138,35 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context['attributes'] = attributes
         context['allocation_changes'] = allocation_changes
 
+        # Resources 
+        resources = allocation_obj.resources.all()
+        warranty_expired = False
+        service_expired = False 
+        
+        for resource in resources:
+
+            attributes_warranty = resource.get_attribute('WarrantyExpirationDate')
+            attributes_service = resource.get_attribute('ServiceEnd')
+            
+            for days_remaining in sorted(set(EMAIL_RESOURCE_EXPIRING_NOTIFICATION_DAYS), reverse=True):
+
+                expring_in_days = datetime.datetime.today().date()
+
+                if attributes_warranty:
+                    warranty_day = (datetime.datetime.strptime(attributes_warranty, '%m/%d/%Y').date() - expring_in_days).days
+                    if warranty_day >= 0 and warranty_day <= days_remaining:
+                        context['warranty_days'] = days_remaining
+                        warranty_expired = True
+
+                if attributes_service:
+                    service_day = (datetime.datetime.strptime(attributes_service, '%m/%d/%Y').date() - expring_in_days).days
+                    if service_day >= 0 and service_day <= days_remaining:
+                        context['service_days'] = days_remaining
+                        service_expired = True
+
+
+        context['warranty'] = warranty_expired
+        context['service'] = service_expired
         # Can the user update the project?
         context['is_allowed_to_update_project'] = allocation_obj.project.has_perm(self.request.user, ProjectPermission.UPDATE)
 
@@ -1420,6 +1452,7 @@ class AllocationDeleteInvoiceNoteView(LoginRequiredMixin, UserPassesTestMixin, T
         """ UserPassesTestMixin Tests"""
         if self.request.user.is_superuser:
             return True
+
 
         if self.request.user.has_perm('allocation.can_manage_invoice'):
             return True
