@@ -44,13 +44,11 @@ class Command(BaseCommand):
                     print("creating allocation: " + lab_name)
                     if project_obj != "":
                         start_date = datetime.datetime.now()
-                        end_date = datetime.datetime.now() + relativedelta(days=365)
                             # import allocations
-                        allocation_obj, _ = Allocation.objects.get_or_create(
+                        allocation_obj = Allocation.objects.create(
                             project=project_obj,
                             status=AllocationStatusChoice.objects.get(name='Active'),
                             start_date=start_date,
-                            end_date=end_date,
                             justification='Allocation Information for ' + lab_name
                         )
                         allocation_obj.resources.add(
