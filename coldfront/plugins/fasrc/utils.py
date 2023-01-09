@@ -137,6 +137,7 @@ class AllTheThingsConn:
 
         # produce set of server values for which to locate matching resources
         resource_set = {a['server'] for l in result_json.values() for a in l}
+        logger.debug("coldfront resource_set: %s", resource_set)
         # get resource model
         res_models = Resource.objects.filter(reduce(operator.or_,
                                     (Q(name__contains=x) for x in resource_set)))
@@ -235,7 +236,9 @@ def log_missing(modelname,
                 search_list,
                 group="",
                 fpath_pref="./coldfront/plugins/fasrc/data/",
-                pattern = "I,D"):
+                pattern="I,D"):
+    '''
+    '''
     fpath = f'{fpath_pref}missing_{modelname}s.csv'
     missing = [i for i in search_list if i not in list(model_attr_list)]
     if missing:
