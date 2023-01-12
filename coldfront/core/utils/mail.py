@@ -103,6 +103,7 @@ def send_allocation_admin_email(allocation_obj, subject, template_name, url_path
     ctx['pi'] = pi_name
     ctx['resource'] = resource_name
     ctx['url'] = url
+    ctx['allocation_url'] = f'{CENTER_BASE_URL.strip("/")}/{"allocation"}/{allocation_obj.project.pk}/'
 
     send_admin_email_template(
         f'{subject}: {pi_name} - {resource_name}',
@@ -120,6 +121,7 @@ def send_allocation_customer_email(allocation_obj, subject, template_name, url_p
     ctx = email_template_context()
     ctx['resource'] = allocation_obj.get_parent_resource
     ctx['url'] = url
+    ctx['allocation_url'] = f'{CENTER_BASE_URL.strip("/")}/{"allocation"}/{allocation_obj.project.pk}/'
 
     allocation_users = allocation_obj.allocationuser_set.exclude(status__name__in=['Removed', 'Error'])
     email_receiver_list = []
