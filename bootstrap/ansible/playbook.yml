@@ -482,8 +482,6 @@
             requirements: "{{ git_prefix }}/{{ reponame }}/requirements.txt"
             executable: "{{ git_prefix }}/venv/bin/pip3"
           become_user: "{{ djangooperator }}"
-          environment: # needed as pg_config isn't in PATH by default
-            PATH: "{{ ansible_env.PATH }}:/usr/pgsql-{{ postgres_version }}/bin"
 
         # Run Django management commands.
 
