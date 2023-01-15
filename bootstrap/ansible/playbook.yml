@@ -230,8 +230,6 @@
             requirements: "{{ git_prefix }}/{{ reponame }}/requirements.txt"
             executable: "{{ git_prefix }}/venv/bin/pip3"
           become_user: "{{ djangooperator }}"
-          environment: # needed as pg_config isn't in PATH by default
-            PATH: "{{ ansible_env.PATH }}:/usr/pgsql-{{ postgres_version }}/bin"
 
         # TODO: If this raises an error, the token is exposed in stderr.
         - name: Install the Python package for validating LBL billing IDs

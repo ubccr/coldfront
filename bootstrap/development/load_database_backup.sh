@@ -8,7 +8,7 @@
 DB_NAME=${@:(-2):1}
 DUMP_FILE=${@: -1}
 
-BIN=/usr/pgsql-9.6/bin/pg_restore
+BIN=/usr/pgsql-10/bin/pg_restore
 
 if [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]] ; then
     echo "Usage: `basename $0` [OPTION] name-of-database absolute-path-to-dump-file"
