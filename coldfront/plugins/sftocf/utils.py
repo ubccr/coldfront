@@ -157,7 +157,7 @@ class StarFishServer:
 
 def get_redash_vol_stats():
     all_results = []
-    redash = StarFishRedash()
+    redash = StarFishRedash(STARFISH_SERVER)
     for query_id, query_key in redash.queries['volume_query'].items():
         query_url = f'{redash.base_url}queries/{query_id}/results?api_key={query_key}'
         result = return_get_json(query_url, headers={})
