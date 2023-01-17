@@ -90,20 +90,20 @@ def return_allocation_bytes_values(attributes_with_usage, allocation_users):
     usage_bytes_list = [u.usage_bytes for u in allocation_users if u.usage_bytes != None]
     user_usage_sum = sum(usage_bytes_list)
     allocation_quota_bytes = next((a for a in attributes_with_usage if \
-            a.allocation_attribute_type.name == "Quota_In_Bytes"), "None")
+            a.allocation_attribute_type_id==5), "None")
     if allocation_quota_bytes != "None":
         allocation_usage_bytes = float(allocation_quota_bytes.allocationattributeusage.value)
         allocation_quota_bytes = float(allocation_quota_bytes.value)
-    else:
-        bytes_in_tb = 1099511627776
-        allocation_quota_tb = next((a for a in attributes_with_usage if \
-            a.allocation_attribute_type.name == "Storage Quota (TB)"), "None")
+        return (allocation_quota_bytes, allocation_usage_bytes)
+    bytes_in_tb = 1099511627776
+    allocation_quota_tb = next((a for a in attributes_with_usage if \
+        a.allocation_attribute_type.name == "Storage Quota (TB)"), "None")
 
-        allocation_usage_tb = float(allocation_quota_tb.allocationattributeusage.value)
-        allocation_quota_in_tb = float(allocation_quota_tb.value)
-        allocation_quota_bytes = float(allocation_quota_in_tb)*bytes_in_tb
-        allocation_usage_bytes = allocation_usage_tb*bytes_in_tb if \
-                    allocation_usage_tb != 0 else user_usage_sum
+    allocation_usage_tb = float(allocation_quota_tb.allocationattributeusage.value)
+    allocation_quota_in_tb = float(allocation_quota_tb.value)
+    allocation_quota_bytes = float(allocation_quota_in_tb)*bytes_in_tb
+    allocation_usage_bytes = allocation_usage_tb*bytes_in_tb if \
+                allocation_usage_tb != 0 else user_usage_sum
     return (allocation_quota_bytes, allocation_usage_bytes)
 
 def make_allocation_change_message(allocation_change_obj, approval):
