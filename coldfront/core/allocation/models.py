@@ -159,6 +159,16 @@ class Allocation(TimeStampedModel):
     )
     email = models.EmailField(max_length=40, blank=True, null=True)
     url = models.CharField(max_length=50, blank=True, null=True)
+    share_name = models.CharField(max_length=100, blank=True, null=True)
+    share_path = models.CharField(max_length=100, blank=True, null=True)
+    organization = models.CharField(max_length=25, blank=True, null=True)
+    billing_rate = models.FloatField(blank=True, null=True)
+    billable_amount_annual = models.FloatField(blank=True, null=True)
+    billable_amount_monthly = models.FloatField(blank=True, null=True)
+    actively_billing = models.CharField(max_length=3, blank=True, null=True)
+    billing_start_date = models.DateField(blank=True, null=True)
+    billing_end_date = models.DateField(blank=True, null=True)
+    quota_files = models.FloatField(blank=True, null=True)
     faculty_email = models.EmailField(max_length=40, blank=True, null=True)
     store_ephi = models.CharField(
         max_length=3,
@@ -174,6 +184,8 @@ class Allocation(TimeStampedModel):
     admin_ads_group = models.CharField(max_length=64, blank=True, null=True)
     user_ads_group = models.CharField(max_length=64, blank=True, null=True)
     data_manager = models.CharField(max_length=50, blank=True, null=True)
+    fileset = models.CharField(max_length=25, blank=True, null=True)
+    mou_link = models.CharField(max_length=100, blank=True, null=True)
     justification = models.TextField()
     description = models.CharField(max_length=512, blank=True, null=True)
     is_locked = models.BooleanField(default=False)
@@ -443,6 +455,7 @@ class AllocationAttributeType(TimeStampedModel):
     """ AllocationAttributeType. """
     attribute_type = models.ForeignKey(AttributeType, on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
+    linked_allocation_attribute = models.CharField(max_length=50, blank=True)
     has_usage = models.BooleanField(default=False)
     is_required = models.BooleanField(default=False)
     is_unique = models.BooleanField(default=False)

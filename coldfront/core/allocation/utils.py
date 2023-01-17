@@ -201,3 +201,17 @@ def create_admin_action_for_creation(user, created_obj, allocation, base_model=N
             allocation=allocation,
             action=f'Created "{created_obj}" in "{allocation}"'
         )
+
+
+def update_linked_allocation_attribute(allocation_attribute):
+    """
+    Checks if an allocation attribute's type is linked to the allocation attribute and assigns the
+    allocation attribute the new value.
+
+    :param allocation_attribute: The allocation attribute that is being created/modified
+    """
+    linked_allocation_attribute = allocation_attribute.allocation_attribute_type.linked_allocation_attribute
+    allocation_obj = allocation_attribute.allocation
+    if hasattr(allocation_obj, linked_allocation_attribute):
+        setattr(allocation_obj, linked_allocation_attribute, allocation_attribute.value)
+        allocation_obj.save()

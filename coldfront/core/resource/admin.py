@@ -31,8 +31,12 @@ class ResourceAttributeTypeAdmin(SimpleHistoryAdmin):
 
 class ResourceAttributeInline(admin.TabularInline):
     model = ResourceAttribute
+    readonly_fields = ('resource_attribute_type_description', )
     fields_change = ('resource_attribute_type', 'value',)
     extra = 0
+
+    def resource_attribute_type_description(self, obj):
+        return obj.resource_attribute_type.description
 
     def get_fields(self, request, obj):
         if obj is None:

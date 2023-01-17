@@ -61,7 +61,8 @@ from coldfront.core.allocation.utils import (compute_prorated_amount,
                                              send_removed_user_email,
                                              create_admin_action,
                                              create_admin_action_for_deletion,
-                                             create_admin_action_for_creation)
+                                             create_admin_action_for_creation,
+                                             update_linked_allocation_attribute)
 from coldfront.core.utils.common import Echo
 from coldfront.core.allocation.signals import (allocation_activate,
                                                allocation_activate_user,
@@ -1226,11 +1227,12 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 name='Account Number'
             )
             if not account_number:
-                AllocationAttribute.objects.create(
+                allocation_attribute_obj = AllocationAttribute.objects.create(
                     allocation_attribute_type=account_number_attribute_type,
                     allocation=allocation_obj,
                     value='N/A'
                 )
+                update_linked_allocation_attribute(allocation_attribute_obj)
             else:
                 AllocationAttribute.objects.create(
                     allocation_attribute_type=account_number_attribute_type,
@@ -1242,16 +1244,60 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 name='Sub-Account Number'
             )
             if not sub_account_number:
-                AllocationAttribute.objects.create(
+                allocation_attribute_obj = AllocationAttribute.objects.create(
                     allocation_attribute_type=sub_account_number_attribute_type,
                     allocation=allocation_obj,
                     value='N/A'
                 )
+                update_linked_allocation_attribute(allocation_attribute_obj)
             else:
                 AllocationAttribute.objects.create(
                     allocation_attribute_type=sub_account_number_attribute_type,
                     allocation=allocation_obj,
                     value=sub_account_number
+                )
+
+        if resource_name == "Geode-Projects":
+            if primary_contact:
+                AllocationAttribute.objects.create(
+                    allocation_attribute_type=AllocationAttributeType.objects.get(name="Primary Contact"),
+                    allocation=allocation_obj,
+                    value=primary_contact
+                )
+
+            if secondary_contact:
+                AllocationAttribute.objects.create(
+                    allocation_attribute_type=AllocationAttributeType.objects.get(name="Secondary Contact"),
+                    allocation=allocation_obj,
+                    value=secondary_contact
+                )
+
+            if it_pros:
+                AllocationAttribute.objects.create(
+                    allocation_attribute_type=AllocationAttributeType.objects.get(name="It Pro Contact"),
+                    allocation=allocation_obj,
+                    value=it_pros
+                )
+
+            if fiscal_officer:
+                AllocationAttribute.objects.create(
+                    allocation_attribute_type=AllocationAttributeType.objects.get(name="Fiscal Officer"),
+                    allocation=allocation_obj,
+                    value=fiscal_officer
+                )
+
+            if admin_ads_group:
+                AllocationAttribute.objects.create(
+                    allocation_attribute_type=AllocationAttributeType.objects.get(name="Admin Group"),
+                    allocation=allocation_obj,
+                    value=admin_ads_group
+                )
+
+            if user_ads_group:
+                AllocationAttribute.objects.create(
+                    allocation_attribute_type=AllocationAttributeType.objects.get(name="User Group"),
+                    allocation=allocation_obj,
+                    value=user_ads_group
                 )
 
         if ALLOCATION_ACCOUNT_ENABLED and allocation_account and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING:
@@ -1877,6 +1923,7 @@ class AllocationAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Cre
         return form
 
     def get_success_url(self):
+        update_linked_allocation_attribute(self.object)
         create_admin_action_for_creation(
             self.request.user,
             self.object,
@@ -3714,6 +3761,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                         for attribute_change in attribute_change_list:
                             attribute_change.allocation_attribute.value = attribute_change.new_value
                             attribute_change.allocation_attribute.save()
+                            update_linked_allocation_attribute(attribute_change.allocation_attribute)
 
                         messages.success(request, 'Allocation change request to {} has been APPROVED for {} {} ({})'.format(
                             allocation_change_obj.allocation.get_parent_resource,
@@ -4382,10 +4430,10 @@ class AllocationChangeActivateView(LoginRequiredMixin, UserPassesTestMixin, View
         allocation_change_obj.save()
 
         attribute_change_list = allocation_change_obj.allocationattributechangerequest_set.all()
-
         for attribute_change in attribute_change_list:
             attribute_change.allocation_attribute.value = attribute_change.new_value
             attribute_change.allocation_attribute.save()
+            update_linked_allocation_attribute(attribute_change.allocation_attribute)
 
         # If the resource requires payment set the allocations status to payment pending.
         # allocation_obj = allocation_change_obj.allocation
