@@ -109,7 +109,10 @@ class AllTheThingsConn:
                 for rdict in result_dicts for entrydict in rdict['data'] ]
         resp_json_by_lab = {entry['lab']:[] for entry in resp_json_formatted}
         for entry in resp_json_formatted:
-            if (entry['storage_type'] == 'Quota' and entry['tb_usage'] in [None]) or\
+            if (entry['storage_type'] == 'Quota' and (
+                entry['tb_usage'] == None) or (
+                    entry['byte_usage'] == 0 and entry['tb_allocation'] == 1)
+            ) or\
             (entry['storage_type'] == 'Isilon' and entry['tb_allocation'] in [0, None]):
                 logger.debug("removed: %s", entry)
                 continue
