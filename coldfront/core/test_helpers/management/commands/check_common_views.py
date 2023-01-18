@@ -41,22 +41,26 @@ class Command(BaseCommand):
             user_pct_dict = {}
             response = client.get(url)
             allocation_usage = response.context_data['allocation_usage_bytes']
-            for user in response.context_data['allocation_users']._result_cache:
-                if user.usage_bytes != 0:
-                    user_usage_pct = user.usage_bytes/allocation_usage*100
+            if allocation_usage != 0:
+                for user in response.context_data['allocation_users']._result_cache:
+                    if user.usage_bytes != 0:
+                        user_usage_pct = user.usage_bytes/allocation_usage*100
+                    else:
+                        user_usage_pct = 0
+                    user_pct_dict[user.user.username] = round(user_usage_pct, 4)
+                pct_sum = sum(user_pct_dict.values())
+                if not user_pct_dict:
+                    logger.warning("no user_pct_dict for %s.", obj_id)
+                    stat_counter["no_users"] += 1
+                elif pct_sum > 101:
+                    logger.warning("ALLOCATION %s: pct_sum > 101. Total: %s.\n%s", obj_id, pct_sum, user_pct_dict)
+                    stat_counter["pct_101"] += 1
+                elif sum(user_pct_dict.values()) < 99:
+                    logger.warning("ALLOCATION %s: pct_sum < 99. Total: %s.\n%s", obj_id, pct_sum, user_pct_dict)
+                    stat_counter["pct_99"] += 1
                 else:
-                    user_usage_pct = 0
-                user_pct_dict[user.user.username] = round(user_usage_pct, 4)
-            pct_sum = sum(user_pct_dict.values())
-            if not user_pct_dict:
-                logger.warning("no user_pct_dict for %s.", obj_id)
-                stat_counter["no_users"] += 1
-            elif pct_sum > 101:
-                logger.warning("ALLOCATION %s: pct_sum > 101. Total: %s.\n%s", obj_id, pct_sum, user_pct_dict)
+                    stat_counter["match"] += 1
+            elif any(user.usage_bytes != 0 for user in response.context_data['allocation_users']._result_cache):
+                logger.warning("ALLOCATION %s: allocation_usage is 0 but user_sum > 0")
                 stat_counter["pct_101"] += 1
-            elif sum(user_pct_dict.values()) < 99:
-                logger.warning("ALLOCATION %s: pct_sum < 99. Total: %s.\n%s", obj_id, pct_sum, user_pct_dict)
-                stat_counter["pct_99"] += 1
-            else:
-                stat_counter["match"] += 1
         logger.warning("match stats: %s", stat_counter)
