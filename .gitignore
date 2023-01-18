@@ -28,3 +28,5 @@ coldfront/fixtures*
 VERSION
 !*/.gitignore
 coldfront.db-journal
+django-q.log
+*.csv
