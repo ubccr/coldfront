@@ -81,7 +81,10 @@ def allocation_user_to_allocation_product_usage(allocation_user, product, overwr
         year = allocation_user.modified.year
 
     try:
-        organization = allocation_user.allocation.project.projectorganization_set.first().organization
+        project_organization = allocation_user.allocation.project.projectorganization_set.first()
+        if not project_organization:
+            raise Exception(f'ProjectOrganization entry is missing for {allocation_user.allocation.project}')
+        organization = project_organization.organization
     except ProjectOrganization.DoesNotExist:
         raise Exception(f'Cannot map allocation_user {allocation_user} to organization')
 
