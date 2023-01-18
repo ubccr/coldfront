@@ -19,7 +19,7 @@ def run_slurm_dump():
 
         cluster = SlurmCluster.new_from_resource(attr.resource)
 
-        out_dir = os.path.join(base_dir, attr.resource.name.lower())
+        out_dir = os.path.join(base_dir, attr.resource.name.lower().replace(' ', ''))
         if not os.path.isdir(out_dir):
             os.mkdir(out_dir, 0o0700)
 
