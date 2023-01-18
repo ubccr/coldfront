@@ -2034,6 +2034,31 @@ class AllocationAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Tem
         return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
 
+class AllocationAttributeEditView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name = 'allocation/allocation_allocationattribute_edit.html'
+
+    def test_func(self):
+        """ UserPassesTestMixin """
+        if self.request.user.is_superuser:
+            return True
+
+        if self.request.user.is_staff:
+            return True
+
+        messages.error('You do not have permission to edit allocation attributes')
+
+    def get_allocation_attributes(self, allocation_obj):
+        allocation_attributes = allocation_obj.allocationattribute_set.all()
+        
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        pk = self.kwargs.get('pk')
+        allocation_obj = get_object_or_404(Allocation, pk=pk)
+
+        return context
+
+
 class AllocationNoteCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = AllocationUserNote
     fields = '__all__'
