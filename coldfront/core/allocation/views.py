@@ -29,6 +29,7 @@ from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationChangeNoteForm,
                                              AllocationAttributeChangeForm,
                                              AllocationAttributeUpdateForm,
+                                             AllocationAttributeEditForm,
                                              AllocationForm,
                                              AllocationInvoiceNoteDeleteForm,
                                              AllocationInvoiceUpdateForm,
@@ -2035,6 +2036,7 @@ class AllocationAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Tem
 
 
 class AllocationAttributeEditView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    formset_class = AllocationAttributeEditForm
     template_name = 'allocation/allocation_allocationattribute_edit.html'
 
     def test_func(self):
@@ -2047,16 +2049,98 @@ class AllocationAttributeEditView(LoginRequiredMixin, UserPassesTestMixin, Templ
 
         messages.error('You do not have permission to edit allocation attributes')
 
-    def get_allocation_attributes(self, allocation_obj):
+    def get_allocation_attributes_to_change(self, allocation_obj):
         allocation_attributes = allocation_obj.allocationattribute_set.all()
-        
+
+        attributes_to_change = [
+
+            {
+             'attribute_pk': allocation_attribute.pk,
+             'name': allocation_attribute.allocation_attribute_type.name,
+             'value': allocation_attribute.value,
+             'new_value': None,
+             }
+
+            for allocation_attribute in allocation_attributes
+        ]
+
+        return attributes_to_change
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
+        allocation_attributes_to_change = self.get_allocation_attributes_to_change(
+            allocation_obj
+        )
+
+        formset = formset_factory(
+            self.formset_class,
+            max_num=len(allocation_attributes_to_change)
+        )
+        formset = formset(
+            initial=allocation_attributes_to_change, prefix='attributeform'
+        )
+        context['formset'] = formset
+
+        context['allocation'] = allocation_obj
 
         return context
+
+    def post(self, request, *args, **kwargs):
+        # TODO - Prevent submission when no fields are filled in
+        # TODO - Add checks for usernames
+        pk = self.kwargs.get('pk')
+        if not request.user.is_staff:
+            messages.error(
+                request, 'You do not have permission to edit allocation attributes'
+            )
+        allocation_obj = get_object_or_404(
+            Allocation, pk=pk
+        )
+
+        allocation_attributes_to_change = self.get_allocation_attributes_to_change(
+            allocation_obj
+        )
+
+        formset = formset_factory(
+            self.formset_class,
+            max_num=len(allocation_attributes_to_change)
+        )
+        formset = formset(
+            request.POST,
+            initial=allocation_attributes_to_change, prefix='attributeform'
+        )
+
+        if formset.is_valid():
+            for entry in formset:
+                formset_data = entry.cleaned_data
+                new_value = formset_data.get('new_value')
+
+                allocation_attribute = AllocationAttribute.objects.get(
+                    pk=formset_data.get('attribute_pk')
+                )
+
+                if new_value and new_value != allocation_attribute.value:
+                    create_admin_action(
+                        request.user,
+                        {'new_value': new_value},
+                        allocation_obj,
+                        allocation_attribute
+                    )
+
+                    allocation_attribute.value = new_value
+                    allocation_attribute.save()
+        else:
+            for error in formset.errors:
+                if error:
+                    messages.error(request, error)
+
+            return HttpResponseRedirect(reverse('allocation-attribute-edit', kwargs={'pk': pk}))
+
+        messages.success(request, 'Successfully updated allocation attributes')
+
+        return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
 
 class AllocationNoteCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
