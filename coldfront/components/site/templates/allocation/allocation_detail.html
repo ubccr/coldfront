@@ -591,6 +591,7 @@ Allocation Detail
               <th scope="col">Note</th>
               <th scope="col">Administrator</th>
               <th scope="col">Last Modified</th>
+              <th scope="col">Edit</th>
             </tr>
           </thead>
           <tbody>
@@ -604,6 +605,7 @@ Allocation Detail
                     <td>{{ note.author.first_name }} {{ note.author.last_name }}</td>
                   {% endif %}
                   <td>{{ note.modified }}</td>
+                  <td><a href="{% url 'allocation-note-update' note.pk %}"><i class="far fa-edit" aria-hidden="true"></i></a></td>
                 </tr>
               {% endif %}
             {% endfor %}

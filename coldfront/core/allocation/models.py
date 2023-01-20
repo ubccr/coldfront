@@ -583,7 +583,6 @@ class AllocationAttribute(TimeStampedModel):
             allocations = allocs)
         return expanded
 
-            
 
 class AllocationAttributeUsage(TimeStampedModel):
     """ AllocationAttributeUsage. """

@@ -9,6 +9,7 @@ from django import forms
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
+from django.contrib.messages.views import SuccessMessageMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
 from django.db.models.query import QuerySet
@@ -2183,6 +2184,45 @@ class AllocationNoteCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateVi
 
     def get_success_url(self):
         return reverse('allocation-detail', kwargs={'pk': self.kwargs.get('pk')})
+
+
+class AllocationNoteUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    model = AllocationUserNote
+    template_name = 'allocation/allocation_note_update.html'
+    fields = ['is_private', 'note']
+    success_message = 'Allocation note updated.'
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests """
+        if self.request.user.is_superuser:
+            return True
+        else:
+            messages.error(
+                self.request, 'You do not have permission to add allocation notes.'
+            )
+
+    def dispatch(self, request, *args, **kwargs):
+        allocation_note_obj = get_object_or_404(AllocationUserNote, pk=self.kwargs.get('pk'))
+        allocation_obj = allocation_note_obj.allocation
+        allocation_status_name = allocation_obj.status.name
+        if allocation_status_name not in ['Active', 'New', ]:
+            messages.error(
+                request, f'You cannot update an allocation note in an allocation with status {allocation_status_name}'
+            )
+            return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
+        else:
+            return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        pk = self.kwargs.get('pk')
+        allocation_note_obj = get_object_or_404(AllocationUserNote, pk=pk)
+        allocation_obj = allocation_note_obj.allocation
+        context['allocation'] = allocation_obj
+        return context
+
+    def get_success_url(self):
+        return reverse('allocation-detail', kwargs={'pk': self.object.allocation.pk})
 
 
 class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):

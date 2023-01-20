@@ -40,6 +40,8 @@ urlpatterns = [
          allocation_views.AllocationAttributeEditView.as_view(), name='allocation-attribute-edit'),
     path('<int:pk>/allocationnote/add',
          allocation_views.AllocationNoteCreateView.as_view(), name='allocation-note-add'),
+    path('allocationnote/<int:pk>/update',
+         allocation_views.AllocationNoteUpdateView.as_view(), name='allocation-note-update'),
     path('allocation-invoice-list', allocation_views.AllocationInvoiceListView.as_view(),
          name='allocation-invoice-list'),
     path('allocation-all-invoices-list', allocation_views.AllocationAllInvoicesListView.as_view(),
