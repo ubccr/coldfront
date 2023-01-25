@@ -24,9 +24,7 @@ from coldfront.core.allocation.models import (AllocationAttributeType,
                                               SecureDirAddUserRequest,
                                               SecureDirAddUserRequestStatusChoice,
                                               SecureDirRemoveUserRequest,
-                                              SecureDirRemoveUserRequestStatusChoice,
-                                              SecureDirRequest,
-                                              SecureDirRequestStatusChoice)
+                                              SecureDirRemoveUserRequestStatusChoice)
 from coldfront.core.allocation.signals import allocation_activate_user
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
@@ -157,26 +155,20 @@ def get_project_compute_resource_name(project_obj):
 
     The name is based on currently-enabled flags (i.e., BRC, LRC). If
     one cannot be determined, return the empty string."""
-    if flag_enabled('BRC_ONLY'):
-        if project_obj.name == 'abc':
-            resource_name = 'ABC Compute'
-        elif project_obj.name.startswith('vector_'):
-            resource_name = 'Vector Compute'
-        else:
-            resource_name = get_primary_compute_resource_name()
-        return resource_name
-    if flag_enabled('LRC_ONLY'):
-        computing_allowance_interface = ComputingAllowanceInterface()
-        project_name_prefixes = tuple([
-            computing_allowance_interface.code_from_name(allowance.name)
-            for allowance in computing_allowance_interface.allowances()])
-        if project_obj.name.startswith(project_name_prefixes):
-            resource_name = get_primary_compute_resource_name()
-        else:
-            # TODO: Verify this behavior.
-            resource_name = f'{project_obj.name.upper()} Compute'
-        return resource_name
-    return ''
+    project_name = project_obj.name
+
+    computing_allowance_interface = ComputingAllowanceInterface()
+    project_name_prefixes = tuple([
+        computing_allowance_interface.code_from_name(allowance.name)
+        for allowance in computing_allowance_interface.allowances()])
+    if project_name.startswith(project_name_prefixes):
+        return get_primary_compute_resource_name()
+
+    if flag_enabled('BRC_ONLY') and project_name.startswith('vector_'):
+        cluster_name = 'Vector'
+    else:
+        cluster_name = project_name.upper()
+    return f'{cluster_name} Compute'
 
 
 def get_project_compute_allocation(project_obj):

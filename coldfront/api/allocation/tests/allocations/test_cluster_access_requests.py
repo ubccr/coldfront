@@ -42,8 +42,9 @@ class TestClusterAccessRequestsBase(TestAllocationBase):
         status_choices = ClusterAccessRequestStatusChoice.objects.all()
         for i in range(4):
             kwargs = {
-                'allocation_user': AllocationUser.objects.get(user__username=f'user{i}',
-                                                              allocation__project__name='project0'),
+                'allocation_user': AllocationUser.objects.get(
+                    user__username=f'user{i}',
+                    allocation__project__name='fc_project0'),
                 'request_time': utc_now_offset_aware(),
             }
             if i == 0:
@@ -60,7 +61,7 @@ class TestClusterAccessRequestsBase(TestAllocationBase):
 
         self.allocation_user0 = \
             AllocationUser.objects.get(user=self.user0,
-                                       allocation__project=self.project0)
+                                       allocation__project=self.fc_project0)
 
         self.allocation_su_attr = AllocationAttribute.objects.get(
             allocation_attribute_type__name='Service Units',
@@ -193,7 +194,7 @@ class TestUpdatePatchClusterAccessRequests(TestClusterAccessRequestsBase):
         return cluster_access_attribute
 
     def _assert_complete_emails_sent(self):
-        email_body = [f'now has access to the project {self.project0.name}.',
+        email_body = [f'now has access to the project {self.fc_project0.name}.',
                       f'supercluster username is - {self.new_username}',
                       f'If this is the first time you are accessing',
                       f'start with the below Logging In page:']
@@ -209,7 +210,7 @@ class TestUpdatePatchClusterAccessRequests(TestClusterAccessRequestsBase):
         self.assertEqual(settings.EMAIL_SENDER, email.from_email)
 
     def _assert_denial_emails_sent(self):
-        email_body = [f'access request under project {self.project0.name}',
+        email_body = [f'access request under project {self.fc_project0.name}',
                       f'and allocation '
                       f'{self.allocation_user0.allocation.pk} '
                       f'has been denied.']
@@ -300,7 +301,7 @@ class TestUpdatePatchClusterAccessRequests(TestClusterAccessRequestsBase):
             'allocation_user': {'id': 12,
                                 'allocation': 3,
                                 'user': 'user3',
-                                'project': 'project0',
+                                'project': 'fc_project0',
                                 'status': 'Complete'},
             'username': 'new_username',
             'cluster_uid': '1234'

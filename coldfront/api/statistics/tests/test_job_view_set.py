@@ -73,7 +73,7 @@ class TestJobList(TestJobBase):
         allocation_amount = Decimal('1000.00')
         for i in range(self.num_projects):
             project = Project.objects.create(
-                name=f'PROJECT_{i}', status=project_status)
+                name=f'fc_project_{i}', status=project_status)
             allocation_objects = create_project_allocation(
                 project, allocation_amount)
             allocation_objects.allocation.start_date = \
@@ -88,7 +88,7 @@ class TestJobList(TestJobBase):
         for i in range(self.num_users):
             user = User.objects.get(username=f'user{i}')
             project = Project.objects.get(
-                name=f'PROJECT_{i // self.num_projects}')
+                name=f'fc_project_{i // self.num_projects}')
             status = ProjectUserStatusChoice.objects.get(name='Active')
             ProjectUser.objects.create(
                 user=user, project=project, role=role, status=status)
@@ -212,9 +212,9 @@ class TestJobList(TestJobBase):
         self.assert_results(url, status_code, count)
         # PROJECT_0 submitted 4 jobs.
         try:
-            account = Project.objects.get(name='PROJECT_0')
+            account = Project.objects.get(name='fc_project_0')
         except Project.DoesNotExist:
-            self.fail('A Project with name "PROJECT_0" should exist.')
+            self.fail('A Project with name "fc_project_0" should exist.')
         url = TestJobList.get_url(account=account.name)
         status_code, count = 200, 4
         results_dict = self.assert_results(url, status_code, count)

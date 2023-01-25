@@ -71,7 +71,7 @@ class TestListAllocations(TestAllocationBase):
 
     def test_project_filter(self):
         """Test that querying by project filters results properly."""
-        project = self.project0.name
+        project = self.fc_project0.name
 
         url = self.endpoint_url()
         query_parameters = {
@@ -97,7 +97,7 @@ class TestListAllocations(TestAllocationBase):
 
     def test_resources_filter(self):
         """Test that querying by resource filters results properly."""
-        allocation = Allocation.objects.get(project=self.project0)
+        allocation = Allocation.objects.get(project=self.fc_project0)
         resource_type = ResourceType.objects.get(name='Cluster')
         resource = Resource.objects.create(
             name='Other Compute', resource_type=resource_type)
