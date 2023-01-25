@@ -53,8 +53,8 @@ class TestBaseExportData(TestBase):
 
         # Create a Project and ProjectUsers.
         project = Project.objects.create(
-            name='project0', status=project_status)
-        setattr(self, 'project0', project)
+            name='fc_project0', status=project_status)
+        setattr(self, 'fc_project0', project)
         for j in range(2):
             ProjectUser.objects.create(
                 user=getattr(self, f'user{j}'), project=project,
@@ -72,7 +72,7 @@ class TestBaseExportData(TestBase):
         self.cluster_account_status = AllocationAttributeType.objects.get(
             name='Cluster Account Status')
 
-        allocation_object = get_accounting_allocation_objects(self.project0)
+        allocation_object = get_accounting_allocation_objects(self.fc_project0)
         for j, project_user in enumerate(project.projectuser_set.all()):
             if project_user.role.name != 'User':
                 continue
@@ -289,7 +289,7 @@ class TestNewClusterAccounts(TestBaseExportData):
 
         allocation_user_attr_obj = AllocationUserAttribute.objects.get(
             allocation_attribute_type=self.cluster_account_status,
-            allocation__project__name='project0',
+            allocation__project__name='fc_project0',
             allocation_user__user__username='user0',
             value='Active')
 
@@ -347,7 +347,7 @@ class TestNewClusterAccounts(TestBaseExportData):
 
         allocation_user_attr_obj = AllocationUserAttribute.objects.get(
             allocation_attribute_type=self.cluster_account_status,
-            allocation__project__name='project0',
+            allocation__project__name='fc_project0',
             allocation_user__user__username='user0',
             value='Active')
 

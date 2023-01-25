@@ -71,7 +71,7 @@ class TestRemovalRequestRunnerBase(TestBase):
 
         # Create Projects.
         self.project1 = Project.objects.create(
-            name='project1', status=active_project_status)
+            name='fc_project1', status=active_project_status)
 
         # add pis
         for pi_user in [self.pi1, self.pi2]:
