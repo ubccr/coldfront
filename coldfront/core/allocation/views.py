@@ -1001,6 +1001,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 status__in=[
                     AllocationStatusChoice.objects.get(name="Active"),
                     AllocationStatusChoice.objects.get(name="New"),
+                    AllocationStatusChoice.objects.get(name="Billing Information Submitted"),
                     AllocationStatusChoice.objects.get(name="Renewal Requested"),
                     AllocationStatusChoice.objects.get(name="Paid"),
                     AllocationStatusChoice.objects.get(name="Payment Pending"),
@@ -1464,7 +1465,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                 request, 'You cannot modify this allocation because it is locked! Contact support for details.')
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
-        if allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', 'Payment Pending', 'Payment Requested', 'Paid']:
+        if allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', 'Payment Pending', 'Payment Requested', 'Paid', 'Billing Information Submitted']:
             messages.error(
                 request,
                 'You cannot add users to an allocation with status "{}".'.format(allocation_obj.status.name)
@@ -1690,7 +1691,7 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
                 request, 'You cannot modify this allocation because it is locked! Contact support for details.')
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
-        if allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', 'Paid', 'Payment Pending', 'Payment Requested']:
+        if allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', 'Paid', 'Payment Pending', 'Payment Requested', 'Billing Information Submitted']:
             messages.error(
                 request,
                 'You cannot remove users from an allocation with status "{}".'.format(allocation_obj.status.name)
@@ -2275,11 +2276,11 @@ class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templat
         context = super().get_context_data(**kwargs)
         if self.request.user.is_superuser:
             allocation_list = Allocation.objects.filter(
-                status__name__in=['New', 'Renewal Requested', 'Paid', ]
+                status__name__in=['New', 'Renewal Requested', 'Paid', 'Billing Information Submitted']
             ).exclude(project__status__name__in=['Review Pending', 'Archived'])
         else:
             allocation_list = Allocation.objects.filter(
-                status__name__in=['New', 'Renewal Requested', 'Paid', 'Approved', ],
+                status__name__in=['New', 'Renewal Requested', 'Paid', 'Billing Information Submitted'],
                 resources__review_groups__in=list(self.request.user.groups.all())
             ).exclude(project__status__name__in=['Review Pending', 'Archived'])
 
@@ -2659,7 +2660,7 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
 
                     elif user_status == 'remove_from_project':
                         for active_allocation in allocation_obj.project.allocation_set.filter(status__name__in=(
-                            'Active', 'Denied', 'New', 'Paid', 'Payment Pending',
+                            'Active', 'Denied', 'New', 'Billing Information Submitted', 'Paid', 'Payment Pending',
                                 'Payment Requested', 'Payment Declined', 'Renewal Requested', 'Unpaid',)):
 
                             allocation_user_obj = active_allocation.allocationuser_set.get(
