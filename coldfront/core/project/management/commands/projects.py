@@ -74,22 +74,25 @@ class Command(BaseCommand):
                 'The name of a cluster, for which a compute resource (e.g., '
                 '"{cluster_name} Compute") should exist.'))
         parser.add_argument(
-            'pi_username',
-            help='The username of the user to make the project\'s PI.',
+            'pi_usernames',
+            help=(
+                'A space-separated list of usernames of users to make the '
+                'project\'s PIs.'),
+            nargs='+',
             type=str)
         add_argparse_dry_run_argument(parser)
 
     @staticmethod
-    def _create_project_with_compute_allocation_and_pi(project_name,
-                                                       compute_resource,
-                                                       pi_user):
+    def _create_project_with_compute_allocation_and_pis(project_name,
+                                                        compute_resource,
+                                                        pi_users):
         """Create a Project with the given name, with an Allocation to
-        the given compute Resource, and with the given User as a
-        Principal Investigator. Return the Project.
+        the given compute Resource, and with the given Users as
+        Principal Investigators. Return the Project.
 
         Some fields are set by default:
             - The Project's status is 'Active'.
-            - The ProjectUser's status is 'Active'.
+            - The ProjectUsers' statuses are 'Active'.
             - The Allocation's status is 'Active'.
             - The Allocation's start_date is today.
             - The Allocation's end_date is None.
@@ -104,12 +107,15 @@ class Command(BaseCommand):
                 title=project_name,
                 status=ProjectStatusChoice.objects.get(name='Active'))
 
-            project_user = ProjectUser.objects.create(
-                project=project,
-                user=pi_user,
-                role=ProjectUserRoleChoice.objects.get(
-                    name='Principal Investigator'),
-                status=ProjectUserStatusChoice.objects.get(name='Active'))
+            project_users = []
+            for pi_user in pi_users:
+                project_user = ProjectUser.objects.create(
+                    project=project,
+                    user=pi_user,
+                    role=ProjectUserRoleChoice.objects.get(
+                        name='Principal Investigator'),
+                    status=ProjectUserStatusChoice.objects.get(name='Active'))
+                project_users.append(project_user)
 
             allocation = Allocation.objects.create(
                 project=project,
@@ -131,13 +137,15 @@ class Command(BaseCommand):
                 allocation=num_service_units)
 
             runner_factory = NewProjectUserRunnerFactory()
-            runner = runner_factory.get_runner(
-                project_user, NewProjectUserSource.AUTO_ADDED,
-                email_strategy=DropEmailStrategy())
-            runner.run()
+            for project_user in project_users:
+                runner = runner_factory.get_runner(
+                    project_user, NewProjectUserSource.AUTO_ADDED,
+                    email_strategy=DropEmailStrategy())
+                runner.run()
 
-            pi_user.userprofile.is_pi = True
-            pi_user.userprofile.save()
+            for pi_user in pi_users:
+                pi_user.userprofile.is_pi = True
+                pi_user.userprofile.save()
 
         return project
 
@@ -146,20 +154,23 @@ class Command(BaseCommand):
         cleaned_options = self._validate_create_options(options)
         project_name = cleaned_options['project_name']
         compute_resource = cleaned_options['compute_resource']
-        pi_user = cleaned_options['pi_user']
+        pi_users = cleaned_options['pi_users']
 
+        pi_users_str = (
+            '[' +
+            ', '.join(f'"{pi_user.username}"' for pi_user in pi_users) +
+            ']')
         message_template = (
             f'{{0}} Project "{project_name}" with Allocation to '
-            f'"{compute_resource.name}" Resource under PI '
-            f'"{pi_user.username}".')
+            f'"{compute_resource.name}" Resource under PIs {pi_users_str}.')
         if options['dry_run']:
             message = message_template.format('Would create')
             self.stdout.write(self.style.WARNING(message))
             return
 
         try:
-            self._create_project_with_compute_allocation_and_pi(
-                project_name, compute_resource, pi_user)
+            self._create_project_with_compute_allocation_and_pis(
+                project_name, compute_resource, pi_users)
         except Exception as e:
             message = message_template.format('Failed to create')
             self.stderr.write(self.style.ERROR(message))
@@ -177,7 +188,7 @@ class Command(BaseCommand):
             {
                 'project_name': 'project_name',
                 'compute_resource': Resource,
-                'pi_user': User,
+                'pi_users': list of Users,
             }
         """
         project_name = options['name'].lower()
@@ -191,12 +202,16 @@ class Command(BaseCommand):
 
         # TODO: When the command is generalized, enforce business logic re:
         #  the number of certain projects a PI may have.
-        pi_username = options['pi_username']
-        try:
-            pi_user = User.objects.get(username=pi_username)
-        except User.DoesNotExist:
-            raise CommandError(
-                f'User with username "{pi_username}" does not exist.')
+        pi_usernames = list(set(options['pi_usernames']))
+        pi_users = []
+        for pi_username in pi_usernames:
+            try:
+                pi_user = User.objects.get(username=pi_username)
+            except User.DoesNotExist:
+                raise CommandError(
+                    f'User with username "{pi_username}" does not exist.')
+            else:
+                pi_users.append(pi_user)
 
         lowercase_primary_cluster_name = get_primary_compute_resource_name(
             ).replace(' Compute', '').lower()
@@ -237,5 +252,5 @@ class Command(BaseCommand):
         return {
             'project_name': project_name,
             'compute_resource': compute_resource,
-            'pi_user': pi_user,
+            'pi_users': pi_users,
         }
