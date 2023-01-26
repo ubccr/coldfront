@@ -13,7 +13,7 @@ Update Allocation Notification
 <form method="post">
   {% csrf_token %}
   {{form |crispy}}
-  <input class="btn btn-success" type="submit" value="Add" />
+  <input class="btn btn-success" type="submit" value="Update" />
   <a class="btn btn-secondary" href="{% url 'allocation-detail' allocation.pk %}" role="button">Back to
     Allocation</a><br>
 </form>
