@@ -309,11 +309,18 @@ def update_group_membership():
             for user in ifxusers:
                 # in case user is being re-added to the project, first find/create a
                 # project_user matching just project/user, then change role & status
-                project_user = ProjectUser.objects.get_or_create(project=project,
-                            user=user)
-                project_user.role=ProjectUserRoleChoice.objects.get(name='User')
-                project_user.status = ProjectUserStatusChoice.objects.get(name='Active')
-                project_user.save()
+                try:
+                    project_user = ProjectUser.objects.get(project=project,
+                                user=user)
+                    project_user.role=ProjectUserRoleChoice.objects.get(name='User')
+                    project_user.status = ProjectUserStatusChoice.objects.get(name='Active')
+                    project_user.save()
+                except ProjectUser.DoesNotExist:
+                    ProjectUser.objects.create(project=project,
+                                user=user,
+                                role=ProjectUserRoleChoice.objects.get(name='User'),
+                                status = ProjectUserStatusChoice.objects.get(name='Active')
+                                )
 
         ### check through management list ###
         try:
