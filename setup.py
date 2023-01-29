@@ -40,7 +40,7 @@ setup(
         'django-sslserver==0.22',
         'django-su==0.9.0',
         'doi2bib==0.4.0',
-        'future==0.18.2',
+        'future==0.18.3',
         'fontawesome-free==5.15.4',
         'humanize==3.13.1',
         'idna==3.3',
