@@ -16,7 +16,7 @@ Allocation Detail
   </div>
 {% endif %}
 
-{% if not user_exists_in_allocation %}
+{% if not user_exists_in_allocation and not user_has_permissions%}
   <div class="alert alert-warning" role="alert">
     You have not been added to this allocation yet. You do not have access to its resource.
   </div>
