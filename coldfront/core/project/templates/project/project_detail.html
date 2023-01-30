@@ -80,6 +80,11 @@ Project Detail
   <div class="card-header">
     <h3 class="d-inline"><i class="fas fa-file-invoice-dollar" aria-hidden="true"></i> Project Invoice</h3>
     <span class="badge badge-secondary">{{allocations|length}}</span>
+    <div class="float-right">
+      {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
+        <a class="btn btn-success" href="{% url 'allocation-create' project.pk %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Request Resource Allocation</a>
+      {% endif %}
+    </div>
   </div>
   <div class="float-right">
     {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
