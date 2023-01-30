@@ -65,7 +65,7 @@ class Command(BaseCommand):
                     )
                     # allocation_user_obj.save()
                 except ValidationError:
-                    logger.debug("adding ")
+                    logger.debug("adding PI %s to allocation %s failed", project_obj.pi.username, allocations[0].pk)
 
 
             except Project.DoesNotExist:

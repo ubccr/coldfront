@@ -140,7 +140,10 @@ class AllTheThingsConn:
         resp_json_formatted = self.format_query_results(resp_json)
         resp_json_by_lab = {entry['lab']:[] for entry in resp_json_formatted}
         for entry in resp_json_formatted:
-            if (entry['storage_type'] == 'Quota' and entry['tb_usage'] in [None]) or\
+            if (entry['storage_type'] == 'Quota' and (
+                entry['tb_usage'] == None) or (
+                    entry['byte_usage'] == 0 and entry['tb_allocation'] == 1)
+            ) or\
             (entry['storage_type'] == 'Isilon' and entry['tb_allocation'] in [0, None]):
                 logger.debug('removed: %s', entry)
                 continue
@@ -155,6 +158,7 @@ class AllTheThingsConn:
     def push_quota_data(self, result_file):
         '''Use JSON of collected ATT data to update group quota & usage values in Coldfront.
         '''
+        errored_allocations = {}
         result_json = read_json(result_file)
         counts = {'proj_err': 0, 'res_err':0, 'all_err':0, 'complete':0}
         # produce list of present labs
@@ -168,6 +172,7 @@ class AllTheThingsConn:
 
         # produce set of server values for which to locate matching resources
         resource_set = {a['server'] for l in result_json.values() for a in l}
+        logger.debug("coldfront resource_set: %s", resource_set)
         # get resource model
         res_models = Resource.objects.filter(reduce(operator.or_,
                                     (Q(name__contains=x) for x in resource_set)))
@@ -184,79 +189,81 @@ class AllTheThingsConn:
             # 1. finding the project with a name that matches lab.lab
             proj_query = proj_models.get(title=lab)
             for allocation in allocations:
-                # 2. find the resource that matches/approximates the server value
-                r_str = allocation['server'].replace('01.rc.fas.harvard.edu', '')\
-                            .replace('/n/', '')
-                resource = res_models.get(name__contains=r_str)
-                # logger.info(f'resource: {resource.__dict__}')
+                try:
+                    # 2. find the resource that matches/approximates the server value
+                    r_str = allocation['server'].replace("01.rc.fas.harvard.edu", "")\
+                                .replace("/n/", "")
+                    resource = res_models.get(name__contains=r_str)
 
+                    # 3. find the allocation with a matching project and resource_type
+                    a = Allocation.objects.filter(  project=proj_query,
+                                                    resources__id=resource.id,
+                                                    status__name='Active'   )
+                    if a.count() == 1:
+                        a = a.first()
+                    elif a.count() < 1:
+                        logger.warning("ERROR: No Allocation for project %s, resource %s",
+                                                    proj_query.title, resource.name)
+                        log_missing("allocation", [], [resource.name],
+                                                group=proj_query.title,
+                                                pattern="G,I,D")
+                        counts['all_err'] += 1
+                        continue
+                    elif a.count() > 1:
+                        logger.info("WARNING: multiple allocations returned. If LFS, will "
+                            "choose the FASSE option; if not, will choose otherwise.")
+                        just_str = "FASSE" if allocation['storage_type'] == "Isilon" else "Information for"
+                        a = Allocation.objects.get( project=proj_query,
+                                                    justification__contains=just_str,
+                                                    resources__id=resource.id,
+                                                    status__name='Active'   )
 
-                # 3. find the allocation with a matching project and resource_type
-                a = Allocation.objects.filter(  project=proj_query,
-                                                resources__id=resource.id,
-                                                status__name='Active'   )
-                if a.count() == 1:
-                    a = a.first()
-                elif a.count() < 1:
-                    logger.warning('ERROR: No Allocation for project %s, resource %s',
-                                                proj_query.title, resource.name)
-                    log_missing('allocation', [], [resource.name],
-                                            group=proj_query.title,
-                                            pattern='G,I,D')
-                    counts['all_err'] += 1
-                    continue
-                elif a.count() > 1:
-                    logger.info('WARNING: multiple allocations returned. If LFS, will '
-                        'choose the FASSE option; if not, will choose otherwise.')
-                    just_str = 'FASSE' if allocation['storage_type'] == 'Isilon' else 'Information for'
-                    a = Allocation.objects.get( project=proj_query,
-                                                justification__contains=just_str,
-                                                resources__id=resource.id,
-                                                status__name='Active'   )
+                    logger.info("allocation: %s", a.__dict__)
 
+                    # 4. get the storage quota TB allocation_attribute that has allocation=a.
+                    allocation_values = { 'Storage Quota (TB)':
+                                [allocation['tb_allocation'],allocation['tb_usage']]  }
+                    if allocation['byte_allocation'] != None:
+                        allocation_values['Quota_In_Bytes'] = [ allocation['byte_allocation'],
+                                                                allocation['byte_usage']]
 
-                logger.info('allocation: %s', a.__dict__)
+                    for k, v in allocation_values.items():
+                        allocation_attribute_type_obj = AllocationAttributeType.objects.get(
+                            name=k)
+                        try:
+                            allocation_attribute_obj = AllocationAttribute.objects.get(
+                                allocation_attribute_type=allocation_attribute_type_obj,
+                                allocation=a,
+                            )
+                            allocation_attribute_obj.value = v[0]
+                            allocation_attribute_obj.save()
+                            allocation_attribute_exist = True
+                        except AllocationAttribute.DoesNotExist:
+                            allocation_attribute_exist = False
 
-                # 4. get the storage quota TB allocation_attribute that has allocation=a.
-                allocation_values = { 'Storage Quota (TB)':
-                            [allocation['tb_allocation'],allocation['tb_usage']]  }
-                if allocation['byte_allocation'] != None:
-                    allocation_values['Quota_In_Bytes'] = [ allocation['byte_allocation'],
-                                                            allocation['byte_usage']]
+                        if (not allocation_attribute_exist):
+                            allocation_attribute_obj,_ =AllocationAttribute.objects.get_or_create(
+                                allocation_attribute_type=allocation_attribute_type_obj,
+                                allocation=a,
+                                value = v[0])
+                            allocation_attribute_type_obj.save()
 
-                for k, v in allocation_values.items():
-                    allocation_attribute_type_obj = AllocationAttributeType.objects.get(
-                        name=k)
-                    try:
-                        allocation_attribute_obj = AllocationAttribute.objects.get(
-                            allocation_attribute_type=allocation_attribute_type_obj,
+                        allocation_attribute_obj.allocationattributeusage.value = v[1]
+                        allocation_attribute_obj.allocationattributeusage.save()
+
+                    # 5. AllocationAttribute
+                    allocation_attribute_type_payment = AllocationAttributeType.objects.get(name='RequiresPayment')
+                    allocation_attribute_payment, _ = AllocationAttribute.objects.get_or_create(
+                            allocation_attribute_type=allocation_attribute_type_payment,
                             allocation=a,
-                        )
-                        allocation_attribute_obj.value = v[0]
-                        allocation_attribute_obj.save()
-                        allocation_attribute_exist = True
-                    except AllocationAttribute.DoesNotExist:
-                        allocation_attribute_exist = False
-
-                    if (not allocation_attribute_exist):
-                        allocation_attribute_obj,_ =AllocationAttribute.objects.get_or_create(
-                            allocation_attribute_type=allocation_attribute_type_obj,
-                            allocation=a,
-                            value = v[0])
-                        allocation_attribute_type_obj.save()
-
-                    allocation_attribute_obj.allocationattributeusage.value = v[1]
-                    allocation_attribute_obj.allocationattributeusage.save()
-
-                # 5. AllocationAttribute
-                allocation_attribute_type_payment = AllocationAttributeType.objects.get(name='RequiresPayment')
-                allocation_attribute_payment, _ = AllocationAttribute.objects.get_or_create(
-                        allocation_attribute_type=allocation_attribute_type_payment,
-                        allocation=a,
-                        value=True)
-                allocation_attribute_payment.save()
-                counts['complete'] += 1
-        logger.info('error counts: %s', counts)
+                            value=True)
+                    allocation_attribute_payment.save()
+                    counts['complete'] += 1
+                except Exception as e:
+                    allocation_name = f"{allocation['lab']}/{allocation['server']}"
+                    errored_allocations[allocation_name] = e
+        logger.info("error counts: %s", counts)
+        logger.info('errored_allocations:\n%s', errored_allocations)
 
 
 

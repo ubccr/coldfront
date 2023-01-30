@@ -14,7 +14,7 @@ from django.core.exceptions import ValidationError
 
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.fasrc import determine_size_fmt
-from coldfront.core.project.models import Project, ProjectUser, ProjectUserStatusChoice
+from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
 from coldfront.core.allocation.models import (Allocation,
                                             AllocationUser,
@@ -571,6 +571,19 @@ def generate_headers(token):
     }
     return headers
 
+def find_remove_absent_allocationusers(redash_usernames, allocation):
+    '''
+    Find and remove AllocationUsers that aren't in the StarfishRedash usage
+    stats (which includes all AD group users, even those with 0 usage) for the
+    accompanying Allocation.
+    '''
+    allocationusers = AllocationUser.objects.filter(allocation=allocation)
+    allocationusers_not_in_redash = allocationusers.exclude(user__username__in=redash_usernames)
+    if allocationusers_not_in_redash:
+        print("users no longer in allocation", allocation.pk, ":", [user.user.username for user in allocationusers_not_in_redash])
+    # allocationusers_not_in_redash.delete()
+
+
 def pull_sf_push_cf_redash():
     '''
     Query Starfish Redash API for user usage data and update Coldfront AllocationUser entries.
@@ -613,10 +626,14 @@ def pull_sf_push_cf_redash():
 
         usernames = [d['user_name'] for d in lab_data]
 
+        # identify and record users that aren't in Coldfront
         user_models = get_user_model().objects.filter(username__in=usernames)
         log_missing_user_models(lab, user_models, usernames)
         logger.debug('%s\n usernames: %s\n user_models: %s',
                 project.title, usernames, [u.username for u in user_models])
+
+        # identify and remove allocation users that are no longer in the AD group
+        find_remove_absent_allocationusers(usernames, allocation)
 
         for user in user_models:
             userdict = next(d for d in lab_data if d['user_name'].lower() == user.username.lower())
