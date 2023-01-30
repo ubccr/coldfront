@@ -580,7 +580,7 @@ def find_remove_absent_allocationusers(redash_usernames, allocation):
     allocationusers = AllocationUser.objects.filter(allocation=allocation)
     allocationusers_not_in_redash = allocationusers.exclude(user__username__in=redash_usernames)
     if allocationusers_not_in_redash:
-        print("users no longer in allocation", allocation.pk, ":", [user.username for user in allocationusers_not_in_redash])
+        print("users no longer in allocation", allocation.pk, ":", [user.user.username for user in allocationusers_not_in_redash])
     # allocationusers_not_in_redash.delete()
 
 
@@ -633,7 +633,7 @@ def pull_sf_push_cf_redash():
                 project.title, usernames, [u.username for u in user_models])
 
         # identify and remove allocation users that are no longer in the AD group
-        find_remove_absent_allocationusers(redash_usernames, allocation)
+        find_remove_absent_allocationusers(usernames, allocation)
 
         for user in user_models:
             userdict = next(d for d in lab_data if d['user_name'].lower() == user.username.lower())
