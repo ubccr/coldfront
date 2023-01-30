@@ -90,7 +90,7 @@ def return_allocation_bytes_values(attributes_with_usage, allocation_users):
     usage_bytes_list = [u.usage_bytes for u in allocation_users if u.usage_bytes != None]
     user_usage_sum = sum(usage_bytes_list)
     allocation_quota_bytes = next((a for a in attributes_with_usage if \
-            a.allocation_attribute_type_id==5), "None")
+            a.allocation_attribute_type.name == "Quota_In_Bytes"), "None")
     if allocation_quota_bytes != "None":
         allocation_usage_bytes = float(allocation_quota_bytes.allocationattributeusage.value)
         allocation_quota_bytes = float(allocation_quota_bytes.value)
@@ -159,13 +159,12 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         for a in invalid_attributes:
             attributes_with_usage.remove(a)
 
-        allocation_quota_bytes, allocation_usage_bytes = return_allocation_bytes_values(attributes_with_usage, allocation_obj.allocation_users)
-
-
         allocation_quota_tb = next((a for a in attributes_with_usage if \
             a.allocation_attribute_type.name == "Storage Quota (TB)"), "None")
 
         allocation_usage_tb = float(allocation_quota_tb.allocationattributeusage.value)
+
+
         allocation_quota_bytes, allocation_usage_bytes = return_allocation_bytes_values(attributes_with_usage, allocation_obj.allocation_users)
         context['allocation_quota_bytes'] = allocation_quota_bytes
         context['allocation_usage_bytes'] = allocation_usage_bytes

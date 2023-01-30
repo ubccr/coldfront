@@ -76,7 +76,6 @@ Project Detail
 
 <!-- Start Project Invoice/Allocations -->
 <div class="html2pdf__page-break"></div>
-
 <div class="card mb-3">
   <div class="card-header">
     <h3 class="d-inline"><i class="fas fa-file-invoice-dollar" aria-hidden="true"></i> Project Invoice</h3>
@@ -86,6 +85,11 @@ Project Detail
         <a class="btn btn-success" href="{% url 'allocation-create' project.pk %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Request Resource Allocation</a>
       {% endif %}
     </div>
+  </div>
+  <div class="float-right">
+    {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
+      <a class="btn btn-success" href="{% url 'allocation-create' project.pk %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Request Resource Allocation</a>
+    {% endif %}
   </div>
   <div class="card-body">
     <div class="table-responsive">
@@ -144,6 +148,12 @@ Project Detail
   </div>
 </div>
 <!-- End Project Invoice/Allocations -->
+
+
+
+<div id="chartCostHistory" style="min-height: 270px ;"></div>
+
+
 
 <!-- Start Project Users -->
 <div class="card mb-3">
@@ -445,6 +455,8 @@ Project Detail
 <!-- End Admin Messages -->
 
 <script>
+  var time_chart_data = {{ time_chart_data | safe }};
+
   function getCookie(name) {
     var cookieValue = null;
     if (document.cookie && document.cookie != '') {
@@ -461,7 +473,41 @@ Project Detail
     return cookieValue;
   }
 
+
+  function drawBillHistoryChart() {
+    var chart = c3.generate({
+      bindto: '#chartCostHistory',
+      data: time_chart_data,
+      legend: {
+        show: false,
+        item: {
+          onclick: function (id) { }
+        }
+      },
+      axis: {
+        x: {
+          type: 'category',
+          categories: time_chart_data['columns'][-1],
+          label: {
+            text: 'month',
+            position: 'outer-center'
+          }
+        },
+        y: {
+          label: {
+            text: 'cost',
+            position: 'inner-center'
+          }
+        }
+      }
+    });
+  };
+
+
   $(document).ready(function(){
+
+    drawBillHistoryChart();
+
     $('[data-toggle="popover"]').popover();
 
     $('#publication-table').DataTable({
