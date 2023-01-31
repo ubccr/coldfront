@@ -36,6 +36,7 @@ from coldfront.core.user.forms import UserProfileUpdateForm
 from coldfront.core.user.forms import UserRegistrationForm
 from coldfront.core.user.forms import UserSearchForm, UserSearchListForm
 from coldfront.core.user.models import EmailAddress
+from allauth.account.models import EmailAddress as EmailAddress_LRC
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.user.utils import ExpiringTokenGenerator
 from coldfront.core.user.utils import send_account_activation_email
@@ -425,10 +426,16 @@ class UserSearchAll(LoginRequiredMixin, ListView):
             if data.get('username'):
                 users = users.filter(username__icontains=data.get('username'))
 
-            if data.get('email'):
-                _users = EmailAddress.objects.filter(is_primary=False, email__icontains=data.get('email'))\
-                    .order_by('user').values_list('user__id')
-                users = users.filter(Q(email__icontains=data.get('email')) | Q(id__in=_users))
+            if flag_enabled('LRC_ONLY'):
+                if data.get('email'):
+                    _users = EmailAddress_LRC.objects.filter(is_primary=False, email__icontains=data.get('email'))\
+                        .order_by('user').values_list('user__id')
+                    users = users.filter(Q(email__icontains=data.get('email')) | Q(id__in=_users))
+            else:
+                if data.get('email'):
+                    _users = EmailAddress.objects.filter(is_primary=False, email__icontains=data.get('email'))\
+                        .order_by('user').values_list('user__id')
+                    users = users.filter(Q(email__icontains=data.get('email')) | Q(id__in=_users))
         else:
             users = User.objects.all().order_by(order_by)
 
