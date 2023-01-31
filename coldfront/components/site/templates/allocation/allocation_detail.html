@@ -16,7 +16,7 @@ Allocation Detail
   </div>
 {% endif %}
 
-{% if not user_exists_in_allocation %}
+{% if not user_exists_in_allocation and not user_has_permissions%}
   <div class="alert alert-warning" role="alert">
     You have not been added to this allocation yet. You do not have access to its resource.
   </div>
@@ -132,22 +132,6 @@ Allocation Detail
             </tr>
           {% endif %}
           {% if allocation.get_resources_as_string == "Geode-Projects" %}
-            <tr>
-              <th scope="row" class="text-nowrap">Primary Contact:</th>
-              <td>{{ allocation.primary_contact }}</td>
-            </tr>
-            <tr>
-              <th scope="row" class="text-nowrap">Secondary Contact:</th>
-              <td>{{ allocation.secondary_contact }}</td>
-            </tr>>
-            <tr>
-              <th scope="row" class="text-nowrap">Fiscal Officer Username:</th>
-              <td>{{ allocation.fiscal_officer }}</td>
-            </tr>
-            <tr>
-              <th scope="row" class="text-nowrap">IT Pro(s)'s Username:</th>
-              <td>{{ allocation.it_pros }}</td>
-            </tr>
             <tr>
               <th scope="row" class="text-nowrap">Data Management Plan:</th>
               <td>{{ allocation.data_management_plan }}</td>
@@ -366,7 +350,7 @@ Allocation Detail
       </div>
       {% if user_has_permissions %}
         <div class="float-right">
-          {% if allocation.status.name in 'New, Renewal Requested, Paid' %}
+          {% if allocation.status.name in 'New, Renewal Requested, Paid, Billing Information Submitted' %}
             {% if allocation.project.status.name != 'Active' %}
               Project must be approved first.
             {% else %}
@@ -389,6 +373,9 @@ Allocation Detail
         {% if user_has_permissions %}
           <a class="btn btn-success" href="{% url 'allocation-attribute-add' allocation.pk %}" role="button">
             <i class="fas fa-plus" aria-hidden="true"></i> Add Allocation Attribute
+          </a>
+          <a class="btn btn-primary" href="{% url 'allocation-attribute-edit' allocation.pk %}" role="button">
+            <i class="fas fa-edit" aria-hidden="true"></i> Edit Allocation Attributes
           </a>
           <a class="btn btn-danger" href="{% url 'allocation-attribute-delete' allocation.pk %}" role="button">
             <i class="fas fa-minus" aria-hidden="true"></i> Delete Allocation Attributes
@@ -538,7 +525,7 @@ Allocation Detail
     <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Users in Allocation</h3>
     <span class="badge badge-secondary">{{allocation_users.count}}</span>
     <div class="float-right">
-      {% if allocation.project.status.name != 'Archived' and is_allowed_to_update_project and allocation.status.name in 'Active,New,Renewal Requested, Paid, Payment Pending, Payment Requested' %}
+      {% if allocation.project.status.name != 'Archived' and is_allowed_to_update_project and allocation.status.name in 'Active,New,Renewal Requested, Paid, Payment Pending, Payment Requested, Billing Information Submitted' %}
         <a class="btn btn-success" href="{% url 'allocation-add-users' allocation.pk %}" role="button">
           <i class="fas fa-user-plus" aria-hidden="true"></i> Add Users
         </a>
@@ -604,6 +591,9 @@ Allocation Detail
               <th scope="col">Note</th>
               <th scope="col">Administrator</th>
               <th scope="col">Last Modified</th>
+              {% if user_has_permissions %}
+                <th scope="col">Edit</th>
+              {% endif %}
             </tr>
           </thead>
           <tbody>
@@ -617,6 +607,13 @@ Allocation Detail
                     <td>{{ note.author.first_name }} {{ note.author.last_name }}</td>
                   {% endif %}
                   <td>{{ note.modified }}</td>
+                  {% if user_has_permissions %}
+                    <td>
+                      <a href="{% url 'allocation-note-update' note.pk %}">
+                        <i class="far fa-edit" aria-hidden="true"></i>
+                      </a>
+                    </td>
+                  {% endif %}  
                 </tr>
               {% endif %}
             {% endfor %}

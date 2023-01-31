@@ -9,6 +9,7 @@ from django import forms
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
+from django.contrib.messages.views import SuccessMessageMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
 from django.db.models.query import QuerySet
@@ -29,6 +30,7 @@ from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationChangeNoteForm,
                                              AllocationAttributeChangeForm,
                                              AllocationAttributeUpdateForm,
+                                             AllocationAttributeEditForm,
                                              AllocationForm,
                                              AllocationInvoiceNoteDeleteForm,
                                              AllocationInvoiceUpdateForm,
@@ -61,7 +63,8 @@ from coldfront.core.allocation.utils import (compute_prorated_amount,
                                              send_removed_user_email,
                                              create_admin_action,
                                              create_admin_action_for_deletion,
-                                             create_admin_action_for_creation)
+                                             create_admin_action_for_creation,
+                                             update_linked_allocation_attribute)
 from coldfront.core.utils.common import Echo
 from coldfront.core.allocation.signals import (allocation_activate,
                                                allocation_activate_user,
@@ -156,7 +159,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         allocation_users = allocation_obj.allocationuser_set.exclude(
             status__name__in=['Removed']).order_by('user__username')
 
-        if self.request.user.is_superuser:
+        if self.request.user.is_superuser or self.request.user.has_perm('allocation.view_allocationattribute'):
             attributes_with_usage = [attribute for attribute in allocation_obj.allocationattribute_set.all(
             ).order_by('allocation_attribute_type__name') if hasattr(attribute, 'allocationattributeusage')]
 
@@ -210,14 +213,17 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context['allocation_users'] = allocation_users
         context['allocation_invoices'] = allocation_obj.allocationinvoice_set.all()
 
-        if self.request.user.is_superuser:
+        if (
+            self.request.user.is_superuser
+            or self.request.user.has_perm('allocation.view_allocationusernote')
+        ):
             notes = allocation_obj.allocationusernote_set.all()
         else:
             notes = allocation_obj.allocationusernote_set.filter(
                 is_private=False)
 
         context['user_has_permissions'] = False
-        if self.request.user.is_staff:
+        if self.request.user.has_perm('allocation.change_allocation'):
             context['user_has_permissions'] = True
 
         review_groups = allocation_obj.get_parent_resource.review_groups.all()
@@ -265,8 +271,8 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
         if not request.user.is_superuser:
-            if not request.user.is_staff:
-                messages.success(
+            if not request.user.has_perm('allocation.change_allocation'):
+                messages.error(
                     request, 'You do not have permission to update the allocation')
                 return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
@@ -995,6 +1001,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 status__in=[
                     AllocationStatusChoice.objects.get(name="Active"),
                     AllocationStatusChoice.objects.get(name="New"),
+                    AllocationStatusChoice.objects.get(name="Billing Information Submitted"),
                     AllocationStatusChoice.objects.get(name="Renewal Requested"),
                     AllocationStatusChoice.objects.get(name="Paid"),
                     AllocationStatusChoice.objects.get(name="Payment Pending"),
@@ -1226,11 +1233,12 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 name='Account Number'
             )
             if not account_number:
-                AllocationAttribute.objects.create(
+                allocation_attribute_obj = AllocationAttribute.objects.create(
                     allocation_attribute_type=account_number_attribute_type,
                     allocation=allocation_obj,
                     value='N/A'
                 )
+                update_linked_allocation_attribute(allocation_attribute_obj)
             else:
                 AllocationAttribute.objects.create(
                     allocation_attribute_type=account_number_attribute_type,
@@ -1242,16 +1250,60 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 name='Sub-Account Number'
             )
             if not sub_account_number:
-                AllocationAttribute.objects.create(
+                allocation_attribute_obj = AllocationAttribute.objects.create(
                     allocation_attribute_type=sub_account_number_attribute_type,
                     allocation=allocation_obj,
                     value='N/A'
                 )
+                update_linked_allocation_attribute(allocation_attribute_obj)
             else:
                 AllocationAttribute.objects.create(
                     allocation_attribute_type=sub_account_number_attribute_type,
                     allocation=allocation_obj,
                     value=sub_account_number
+                )
+
+        if resource_name == "Geode-Projects":
+            if primary_contact:
+                AllocationAttribute.objects.create(
+                    allocation_attribute_type=AllocationAttributeType.objects.get(name="Primary Contact"),
+                    allocation=allocation_obj,
+                    value=primary_contact
+                )
+
+            if secondary_contact:
+                AllocationAttribute.objects.create(
+                    allocation_attribute_type=AllocationAttributeType.objects.get(name="Secondary Contact"),
+                    allocation=allocation_obj,
+                    value=secondary_contact
+                )
+
+            if it_pros:
+                AllocationAttribute.objects.create(
+                    allocation_attribute_type=AllocationAttributeType.objects.get(name="It Pro Contact"),
+                    allocation=allocation_obj,
+                    value=it_pros
+                )
+
+            if fiscal_officer:
+                AllocationAttribute.objects.create(
+                    allocation_attribute_type=AllocationAttributeType.objects.get(name="Fiscal Officer"),
+                    allocation=allocation_obj,
+                    value=fiscal_officer
+                )
+
+            if admin_ads_group:
+                AllocationAttribute.objects.create(
+                    allocation_attribute_type=AllocationAttributeType.objects.get(name="Admin Group"),
+                    allocation=allocation_obj,
+                    value=admin_ads_group
+                )
+
+            if user_ads_group:
+                AllocationAttribute.objects.create(
+                    allocation_attribute_type=AllocationAttributeType.objects.get(name="User Group"),
+                    allocation=allocation_obj,
+                    value=user_ads_group
                 )
 
         if ALLOCATION_ACCOUNT_ENABLED and allocation_account and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING:
@@ -1413,7 +1465,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                 request, 'You cannot modify this allocation because it is locked! Contact support for details.')
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
-        if allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', 'Payment Pending', 'Payment Requested', 'Paid']:
+        if allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', 'Payment Pending', 'Payment Requested', 'Paid', 'Billing Information Submitted']:
             messages.error(
                 request,
                 'You cannot add users to an allocation with status "{}".'.format(allocation_obj.status.name)
@@ -1639,7 +1691,7 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
                 request, 'You cannot modify this allocation because it is locked! Contact support for details.')
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
-        if allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', 'Paid', 'Payment Pending', 'Payment Requested']:
+        if allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', 'Paid', 'Payment Pending', 'Payment Requested', 'Billing Information Submitted']:
             messages.error(
                 request,
                 'You cannot remove users from an allocation with status "{}".'.format(allocation_obj.status.name)
@@ -1833,28 +1885,26 @@ class AllocationAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Cre
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-        if self.request.user.is_superuser:
+        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
+        user = self.request.user
+        if user.is_superuser:
             return True
 
-        if self.request.user.is_staff:
-            return True
-        else:
+        if not user.has_perm('allocation.add_allocationattribute'):
             messages.error(
-                self.request, 'You do not have permission to add allocation attributes.')
-
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_superuser:
-            allocation_obj = get_object_or_404(Allocation, pk=kwargs.get('pk'))
-
-            review_groups = allocation_obj.get_parent_resource.review_groups.all()
-            if set(request.user.groups.all()).isdisjoint(set(review_groups)):
-                messages.error(
-                    request,
-                    'You are not in the correct group to create an allocation attribute with this resource.'
+                    self.request, 'You do not have permission to add allocation attributes.'
                 )
-                return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
+            return False
 
-        return super().dispatch(request, *args, **kwargs)
+        review_groups = allocation_obj.get_parent_resource.review_groups.all()
+        if set(user.groups.all()).isdisjoint(set(review_groups)):
+            messages.error(
+                self.request,
+                'You are not in the correct group to add allocation attributes in this allocation with this resource.'
+            )
+            return False
+
+        return True
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -1877,6 +1927,7 @@ class AllocationAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Cre
         return form
 
     def get_success_url(self):
+        update_linked_allocation_attribute(self.object)
         create_admin_action_for_creation(
             self.request.user,
             self.object,
@@ -1890,28 +1941,26 @@ class AllocationAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Tem
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-        if self.request.user.is_superuser:
+        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
+        user = self.request.user
+        if user.is_superuser:
             return True
 
-        if self.request.user.is_staff:
-            return True
-        else:
+        if not user.has_perm('allocation.delete_allocationattribute'):
             messages.error(
-                self.request, 'You do not have permission to delete allocation attributes.')
-
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_superuser:
-            allocation_obj = get_object_or_404(Allocation, pk=kwargs.get('pk'))
-
-            review_groups = allocation_obj.get_parent_resource.review_groups.all()
-            if set(request.user.groups.all()).isdisjoint(set(review_groups)):
-                messages.error(
-                    request,
-                    'You are not in the correct group to delete an allocation attribute with this resource.'
+                    self.request, 'You do not have permission to delete allocation attributes.'
                 )
-                return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
+            return False
 
-        return super().dispatch(request, *args, **kwargs)
+        review_groups = allocation_obj.get_parent_resource.review_groups.all()
+        if set(user.groups.all()).isdisjoint(set(review_groups)):
+            messages.error(
+                self.request,
+                'You are not in the correct group to delete allocation attributes in this allocation with this resource.'
+            )
+            return False
+
+        return True
 
     def get_allocation_attributes_to_delete(self, allocation_obj):
 
@@ -1987,6 +2036,123 @@ class AllocationAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Tem
         return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
 
+class AllocationAttributeEditView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    formset_class = AllocationAttributeEditForm
+    template_name = 'allocation/allocation_allocationattribute_edit.html'
+
+    def test_func(self):
+        """ UserPassesTestMixin """
+        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
+        user = self.request.user
+        if user.is_superuser:
+            return True
+
+        if not user.has_perm('allocation.change_allocationattribute'):
+            messages.error(
+                    self.request, 'You do not have permission to edit allocation attributes.'
+                )
+            return False
+
+        review_groups = allocation_obj.get_parent_resource.review_groups.all()
+        if set(user.groups.all()).isdisjoint(set(review_groups)):
+            messages.error(
+                self.request,
+                'You are not in the correct group to edit allocation attributes in this allocation with this resource.'
+            )
+            return False
+
+        return True
+
+    def get_allocation_attributes_to_change(self, allocation_obj):
+        allocation_attributes = allocation_obj.allocationattribute_set.all()
+
+        attributes_to_change = [
+
+            {
+             'attribute_pk': allocation_attribute.pk,
+             'name': allocation_attribute.allocation_attribute_type.name,
+             'value': allocation_attribute.value,
+             'new_value': None,
+             }
+
+            for allocation_attribute in allocation_attributes
+        ]
+
+        return attributes_to_change
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        pk = self.kwargs.get('pk')
+        allocation_obj = get_object_or_404(Allocation, pk=pk)
+        allocation_attributes_to_change = self.get_allocation_attributes_to_change(
+            allocation_obj
+        )
+
+        formset = formset_factory(
+            self.formset_class,
+            max_num=len(allocation_attributes_to_change)
+        )
+        formset = formset(
+            initial=allocation_attributes_to_change, prefix='attributeform'
+        )
+        context['formset'] = formset
+
+        context['allocation'] = allocation_obj
+
+        return context
+
+    def post(self, request, *args, **kwargs):
+        # TODO - Prevent submission when no fields are filled in
+        # TODO - Add checks for usernames
+        pk = self.kwargs.get('pk')
+        allocation_obj = get_object_or_404(
+            Allocation, pk=pk
+        )
+
+        allocation_attributes_to_change = self.get_allocation_attributes_to_change(
+            allocation_obj
+        )
+
+        formset = formset_factory(
+            self.formset_class,
+            max_num=len(allocation_attributes_to_change)
+        )
+        formset = formset(
+            request.POST,
+            initial=allocation_attributes_to_change, prefix='attributeform'
+        )
+
+        if formset.is_valid():
+            for entry in formset:
+                formset_data = entry.cleaned_data
+                new_value = formset_data.get('new_value')
+
+                allocation_attribute = AllocationAttribute.objects.get(
+                    pk=formset_data.get('attribute_pk')
+                )
+
+                if new_value and new_value != allocation_attribute.value:
+                    create_admin_action(
+                        request.user,
+                        {'new_value': new_value},
+                        allocation_obj,
+                        allocation_attribute
+                    )
+
+                    allocation_attribute.value = new_value
+                    allocation_attribute.save()
+        else:
+            for error in formset.errors:
+                if error:
+                    messages.error(request, error)
+
+            return HttpResponseRedirect(reverse('allocation-attribute-edit', kwargs={'pk': pk}))
+
+        messages.success(request, 'Successfully updated allocation attributes')
+
+        return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
+
+
 class AllocationNoteCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = AllocationUserNote
     fields = '__all__'
@@ -1994,12 +2160,26 @@ class AllocationNoteCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateVi
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-
-        if self.request.user.is_superuser:
+        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
+        user = self.request.user
+        if user.is_superuser:
             return True
-        else:
+
+        if not user.has_perm('allocation.add_allocationusernote'):
             messages.error(
-                self.request, 'You do not have permission to add allocation notes.')
+                    self.request, 'You do not have permission to add allocation notes.'
+                )
+            return False
+
+        review_groups = allocation_obj.get_parent_resource.review_groups.all()
+        if set(user.groups.all()).isdisjoint(set(review_groups)):
+            messages.error(
+                self.request,
+                'You are not in the correct group to add this note to this allocation with this resource.'
+            )
+            return False
+
+        return True
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -2029,6 +2209,53 @@ class AllocationNoteCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateVi
         return reverse('allocation-detail', kwargs={'pk': self.kwargs.get('pk')})
 
 
+class AllocationNoteUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    model = AllocationUserNote
+    template_name = 'allocation/allocation_note_update.html'
+    fields = ['is_private', 'note']
+    success_message = 'Allocation note updated.'
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests """
+        allocation_note_obj = get_object_or_404(AllocationUserNote, pk=self.kwargs.get('pk'))
+        user = self.request.user
+        if user.is_superuser:
+            return True
+
+        if not user.has_perm('allocation.change_allocationusernote'):
+            messages.error(
+                    self.request, 'You do not have permission to update allocation notes.'
+                )
+            return False
+
+        review_groups = allocation_note_obj.allocation.get_parent_resource.review_groups.all()
+        if set(user.groups.all()).isdisjoint(set(review_groups)):
+            messages.error(
+                self.request,
+                'You are not in the correct group to update this note in this allocation with this resource.'
+            )
+            return False
+
+        if user != allocation_note_obj.author:
+            messages.error(
+                self.request, 'Only the original author can edit this note.'
+            )
+            return False
+
+        return True
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        pk = self.kwargs.get('pk')
+        allocation_note_obj = get_object_or_404(AllocationUserNote, pk=pk)
+        allocation_obj = allocation_note_obj.allocation
+        context['allocation'] = allocation_obj
+        return context
+
+    def get_success_url(self):
+        return reverse('allocation-detail', kwargs={'pk': self.object.allocation.pk})
+
+
 class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'allocation/allocation_request_list.html'
     login_url = '/'
@@ -2049,11 +2276,11 @@ class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templat
         context = super().get_context_data(**kwargs)
         if self.request.user.is_superuser:
             allocation_list = Allocation.objects.filter(
-                status__name__in=['New', 'Renewal Requested', 'Paid', ]
+                status__name__in=['New', 'Renewal Requested', 'Paid', 'Billing Information Submitted']
             ).exclude(project__status__name__in=['Review Pending', 'Archived'])
         else:
             allocation_list = Allocation.objects.filter(
-                status__name__in=['New', 'Renewal Requested', 'Paid', 'Approved', ],
+                status__name__in=['New', 'Renewal Requested', 'Paid', 'Billing Information Submitted'],
                 resources__review_groups__in=list(self.request.user.groups.all())
             ).exclude(project__status__name__in=['Review Pending', 'Archived'])
 
@@ -2433,7 +2660,7 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
 
                     elif user_status == 'remove_from_project':
                         for active_allocation in allocation_obj.project.allocation_set.filter(status__name__in=(
-                            'Active', 'Denied', 'New', 'Paid', 'Payment Pending',
+                            'Active', 'Denied', 'New', 'Billing Information Submitted', 'Paid', 'Payment Pending',
                                 'Payment Requested', 'Payment Declined', 'Renewal Requested', 'Unpaid',)):
 
                             allocation_user_obj = active_allocation.allocationuser_set.get(
@@ -2498,7 +2725,7 @@ class AllocationInvoiceListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.is_staff and self.request.user.has_perm('allocation.can_manage_invoice'):
+        if self.request.user.has_perm('allocation.can_manage_invoice'):
             return True
 
         messages.error(
@@ -2547,7 +2774,7 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.is_staff and self.request.user.has_perm('allocation.can_manage_invoice'):
+        if self.request.user.has_perm('allocation.can_manage_invoice'):
             return True
 
         messages.error(
@@ -2621,7 +2848,7 @@ class AllocationAllInvoicesListView(LoginRequiredMixin, UserPassesTestMixin, Lis
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.is_staff and self.request.user.has_perm('allocation.can_manage_invoice'):
+        if self.request.user.has_perm('allocation.can_manage_invoice'):
             return True
 
         messages.error(
@@ -2907,7 +3134,7 @@ class AllocationAllInvoicesDetailView(LoginRequiredMixin, UserPassesTestMixin, T
         if self.request.user.is_superuser:
             return True
 
-        if self.request.user.is_staff and self.request.user.has_perm('allocation.can_manage_invoice'):
+        if self.request.user.has_perm('allocation.can_manage_invoice'):
             return True
 
         messages.error(
@@ -3570,7 +3797,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
             context['formset'] = formset
 
         context['user_has_permissions'] = False
-        if self.request.user.is_staff:
+        if self.request.user.has_perm('allocation.can_view_all_allocations'):
             context['user_has_permissions'] = True
 
         allocation_obj = allocation_change_obj.allocation
@@ -3597,7 +3824,10 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
         allocation_change_form.fields['justification'].disabled = True
         if allocation_change_obj.status.name != 'Pending':
             allocation_change_form.fields['end_date_extension'].disabled = True
-        if not self.request.user.is_staff and not self.request.user.is_superuser:
+        if (
+            not self.request.user.has_perm('allocation.can_view_all_allocations')
+            and not self.request.user.is_superuser
+        ):
             allocation_change_form.fields['end_date_extension'].disabled = True
 
         note_form = AllocationChangeNoteForm(
@@ -3611,7 +3841,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
 
     def post(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        if not request.user.is_staff:
+        if not request.user.has_perm('allocation.can_view_all_allocations'):
             messages.error(
                 request, 'You do not have permission to update an allocation change request')
             return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
@@ -3634,8 +3864,6 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
 
         note_form = AllocationChangeNoteForm(
             request.POST, initial={'notes': allocation_change_obj.notes})
-
-        # TODO - add admin action
 
         if note_form.is_valid():
             notes = note_form.cleaned_data.get('notes')
@@ -3714,6 +3942,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                         for attribute_change in attribute_change_list:
                             attribute_change.allocation_attribute.value = attribute_change.new_value
                             attribute_change.allocation_attribute.save()
+                            update_linked_allocation_attribute(attribute_change.allocation_attribute)
 
                         messages.success(request, 'Allocation change request to {} has been APPROVED for {} {} ({})'.format(
                             allocation_change_obj.allocation.get_parent_resource,
@@ -4382,10 +4611,10 @@ class AllocationChangeActivateView(LoginRequiredMixin, UserPassesTestMixin, View
         allocation_change_obj.save()
 
         attribute_change_list = allocation_change_obj.allocationattributechangerequest_set.all()
-
         for attribute_change in attribute_change_list:
             attribute_change.allocation_attribute.value = attribute_change.new_value
             attribute_change.allocation_attribute.save()
+            update_linked_allocation_attribute(attribute_change.allocation_attribute)
 
         # If the resource requires payment set the allocations status to payment pending.
         # allocation_obj = allocation_change_obj.allocation

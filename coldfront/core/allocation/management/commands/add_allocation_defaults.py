@@ -20,7 +20,8 @@ class Command(BaseCommand):
         for choice in ('Active', 'Denied', 'Expired',
                        'New', 'Paid', 'Payment Pending',
                        'Payment Requested', 'Payment Declined',
-                       'Renewal Requested', 'Revoked', 'Unpaid',):
+                       'Renewal Requested', 'Revoked', 'Unpaid',
+                       'Billing Information Submitted',):
             AllocationStatusChoice.objects.get_or_create(name=choice)
 
         for choice in ('Pending', 'Approved', 'Denied',):
