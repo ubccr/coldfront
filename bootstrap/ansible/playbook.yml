@@ -576,6 +576,7 @@
           service:
             name: httpd
             state: reloaded
+            enabled: true
 
         # supervisorctl is included in community.general.
         - name: Ensure that a Supervisor worker is running a django_q cluster
