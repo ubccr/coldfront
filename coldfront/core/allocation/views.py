@@ -259,7 +259,6 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                         sender=self.__class__, allocation_user_pk=allocation_user.pk)
 
                 if new_status == 'Denied':
-                    messages.warning(request, "Denying an allocation that already exists. Did you mean to revoke the allocation instead?")
                     send_allocation_customer_email(allocation_obj, 'Allocation Denied', 'email/allocation_denied.txt', domain_url=get_domain_url(self.request))
                 else:
                     send_allocation_customer_email(allocation_obj, 'Allocation Revoked', 'email/allocation_revoked.txt', domain_url=get_domain_url(self.request))
