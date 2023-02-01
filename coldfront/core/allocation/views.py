@@ -3914,10 +3914,11 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                             )
                             allocation_change_obj.end_date_extension = form_data.get('end_date_extension')
 
-                        new_end_date = allocation_change_obj.allocation.end_date + relativedelta(
-                            days=allocation_change_obj.end_date_extension)
+                        if allocation_change_obj.allocation.end_date is not None:
+                            new_end_date = allocation_change_obj.allocation.end_date + relativedelta(
+                                days=allocation_change_obj.end_date_extension)
 
-                        allocation_change_obj.allocation.end_date = new_end_date
+                            allocation_change_obj.allocation.end_date = new_end_date
                         allocation_change_obj.allocation.save()
 
                         allocation_change_obj.save()
