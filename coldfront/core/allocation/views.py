@@ -383,10 +383,11 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                         role=ProjectUserRoleChoice.objects.get(name='Manager')
                     ).exclude(status__name__in=['Removed', 'Denied'])
                     for project_manager in project_managers:
-                        for allocation_user in allocation_users:
-                            if project_manager.user == allocation_user.user:
-                                email_receiver_list.append(allocation_user.user.email)
-                                break
+                        if project_manager.enable_notifications:
+                            for allocation_user in allocation_users:
+                                if project_manager.user == allocation_user.user:
+                                    email_receiver_list.append(allocation_user.user.email)
+                                    break
 
                     # for allocation_user in allocation_users:
                     #     if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
@@ -2491,10 +2492,11 @@ class AllocationDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
                 role=ProjectUserRoleChoice.objects.get(name='Manager')
             ).exclude(status__name__in=['Removed', 'Denied'])
             for project_manager in project_managers:
-                for allocation_user in allocation_users:
-                    if project_manager.user == allocation_user.user:
-                        email_receiver_list.append(allocation_user.user.email)
-                        break
+                if project_manager.enable_notifications:
+                    for allocation_user in allocation_users:
+                        if project_manager.user == allocation_user.user:
+                            email_receiver_list.append(allocation_user.user.email)
+                            break
 
             # for allocation_user in allocation_users:
             #     if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
@@ -4127,10 +4129,11 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                         role=ProjectUserRoleChoice.objects.get(name='Manager')
                     ).exclude(status__name__in=['Removed', 'Denied'])
                     for project_manager in project_managers:
-                        for allocation_user in allocation_change_obj.allocation.allocationuser_set.exclude(status__name__in=['Removed', 'Error']):
-                            if project_manager.user == allocation_user.user:
-                                email_receiver_list.append(allocation_user.user.email)
-                                break
+                        if project_manager.enable_notifications:
+                            for allocation_user in allocation_change_obj.allocation.allocationuser_set.exclude(status__name__in=['Removed', 'Error']):
+                                if project_manager.user == allocation_user.user:
+                                    email_receiver_list.append(allocation_user.user.email)
+                                    break
 
                     # for allocation_user in allocation_change_obj.allocation.allocationuser_set.exclude(status__name__in=['Removed', 'Error']):
                     #     allocation_remove_user.send(
@@ -4751,10 +4754,11 @@ class AllocationChangeDenyView(LoginRequiredMixin, UserPassesTestMixin, View):
                 role=ProjectUserRoleChoice.objects.get(name='Manager')
             ).exclude(status__name__in=['Removed', 'Denied'])
             for project_manager in project_managers:
-                for allocation_user in allocation_change_obj.allocation.allocationuser_set.exclude(status__name__in=['Removed', 'Error']):
-                    if project_manager.user == allocation_user.user:
-                        email_receiver_list.append(allocation_user.user.email)
-                        break
+                if project_manager.enable_notifications:
+                    for allocation_user in allocation_change_obj.allocation.allocationuser_set.exclude(status__name__in=['Removed', 'Error']):
+                        if project_manager.user == allocation_user.user:
+                            email_receiver_list.append(allocation_user.user.email)
+                            break
 
             # for allocation_user in allocation_change_obj.allocation.allocationuser_set.exclude(status__name__in=['Removed', 'Error']):
             #     allocation_remove_user.send(

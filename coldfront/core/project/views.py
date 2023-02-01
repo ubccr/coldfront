@@ -2123,7 +2123,8 @@ class ProjectDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
                 role=ProjectUserRoleChoice.objects.get(name='Manager')
             ).exclude(status__name__in=['Removed', 'Denied'])
             for project_manager in project_managers:
-                email_receiver_list.append(project_manager.user.email)
+                if project_manager.enable_notifications:
+                    email_receiver_list.append(project_manager.user.email)
 
             # for project_user in project_obj.projectuser_set.exclude(status__name__in=['Removed', 'Denied']):
             #     if project_obj.projectuser_set.get(user=project_user.user).enable_notifications:
@@ -2317,7 +2318,8 @@ class ProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin, View):
                 role=ProjectUserRoleChoice.objects.get(name='Manager')
             ).exclude(status__name__in=['Removed', 'Denied'])
             for project_manager in project_managers:
-                email_receiver_list.append(project_manager.user.email)
+                if project_manager.enable_notifications:
+                    email_receiver_list.append(project_manager.user.email)
 
             # for project_user in project_obj.projectuser_set.exclude(status__name__in=['Removed', 'Denied']):
             #     if project_obj.projectuser_set.get(user=project_user.user).enable_notifications:

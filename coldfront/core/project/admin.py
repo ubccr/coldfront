@@ -30,7 +30,7 @@ class ProjectUserStatusChoiceAdmin(admin.ModelAdmin):
 
 @admin.register(ProjectUser)
 class ProjectUserAdmin(SimpleHistoryAdmin):
-    fields_change = ('user', 'project', 'role', 'status', 'created', 'modified', )
+    fields_change = ('user', 'project', 'role', 'enable_notifications', 'status', 'created', 'modified', )
     readonly_fields_change = ('user', 'project', 'created', 'modified', )
     list_display = ('pk', 'project_title', 'PI', 'User', 'role', 'status',
                     'created', 'modified',)
