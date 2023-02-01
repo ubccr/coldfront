@@ -347,7 +347,7 @@ Allocation Detail
     <div class="table-responsive">
     <div class = "container mb-3 mt-3">
       <!-- <table  class="table table-hover mydatatable" > -->
-        <table id = "mydatatable" class = "table table-striped table-bordered">
+        <table id = "mydatatable" class = "table table-striped table-bordered" filter = "off">
         <thead>
           <tr>
             <!-- <th scope="col">Username</th> -->
@@ -355,6 +355,7 @@ Allocation Detail
             <!-- <th scope="col">Email</th> -->
             <!-- <th scope="col">Bytes</th> -->
 
+            <th scope="col">Status</th>
             <th scope="col">Logical Usage</th>
             <th scope="col">Percentage Usage</th>
             <th scope="col">Cost Per User (TB/month)</th>
@@ -368,9 +369,10 @@ Allocation Detail
 
         <tbody>
           {% for user in allocation_users %}
-            <tr>
+            <tr status = "{{ user.status }}">
 
               <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
+              <td >{{ user.status }}</td>
               {% if user.usage_bytes == 0.0 %}
               <td data-sort = "{{user.usage_bytes}}" name = "usage_bytes"> 0 bytes</td>
               {% else %}
@@ -418,21 +420,47 @@ Allocation Detail
 
 
   <script>
-      $(document).ready( function () {
+      $(document).ready(
+      function () {
       $('#mydatatable').DataTable({
        "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
        "pageLength": 25,
       dom: 'B<"clear">lfrtip',
-      "order": [[ 3, "desc" ]],
-      buttons: {
-          name: 'primary',
+      order: [[ 3, "desc" ]],
+      buttons: [
+          {
+            name: 'toggleusers',
+            text: function() {
+                return $('#mydatatable').attr('filter') == "on" ? 'Show All Users' : "Show Active Users"
+              },
+            action: function(e, dt, node, config) {
+              var table = $('#mydatatable');
+              var filter = table.attr('filter') === "on" ? 'off' : "on";
+              document.querySelector('#mydatatable').setAttribute('filter', filter);
+              if (filter == 'on') {
+                $.fn.dataTable.ext.search.push(
+                  function(settings, data, dataIndex) {
+                      return $(dt.row(dataIndex).node()).attr('status') == "Active";
+                    });
+              } else {$.fn.dataTable.ext.search.pop();}
+              table.DataTable().draw();
+              this.text(filter == 'on' ? 'Show All Users' : "Show Active Users")
+            }
+          },
+          {
+            name: 'primary',
+            extend: 'collection',
+            background: false,
+            autoClose: true,
+            text: 'Export',
+            buttons: [ 'csv', 'excel', 'pdf' ]
 
-          buttons: [  'csv', 'excel', 'pdf' ]
-
-          }}
+            }
+        ]}
       );
+
       } );
-      </script>
+  </script>
 <div class="html2pdf__page-break"></div>
 <!-- Start Admin Messages -->
 <div class="card mb-3">
