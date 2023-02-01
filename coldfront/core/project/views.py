@@ -60,6 +60,7 @@ def produce_filter_parameter(key, value):
         return "".join([f'{key}={ele}&' for ele in value])
     return f'{key}={value}&'
 
+
 class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     model = Project
     template_name = 'project/project_detail.html'
@@ -87,8 +88,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             context['is_allowed_to_update_project'] = False
 
         # Only show 'Active Users'
-        project_users = self.object.projectuser_set.filter(
-            status__name='Active').order_by('user__username')
+        project_users = self.object.projectuser_set.order_by('user__username')
 
         context['mailto'] = 'mailto:' + \
             ','.join([user.user.email for user in project_users])
@@ -131,8 +131,6 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['allocations'] = allocations
         context['allocation_total'] = allocation_total
         context['project_users'] = project_users # context dictionary; key is project_users; project_users is a variable name
-        # print(type(project_users))
-        # print(type(project_users[0]))
 
 
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
