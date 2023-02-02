@@ -277,6 +277,7 @@ def update_group_membership():
     handler = logging.FileHandler(f'logs/att_membership_update-{today}.log', 'w')
     logger.addHandler(handler)
     no_members = []
+    no_users = []
     no_managers = []
 
     for project in Project.objects.filter(status__name__in=["Active", "New"]):
@@ -303,7 +304,12 @@ def update_group_membership():
 
         logger.debug('relation_groups: %s', relation_groups)
         ### check through membership list ###
-        ad_users = [u['user_name'] for u in relation_groups['MemberOf']]
+        try:
+            ad_users = [u['user_name'] for u in relation_groups['MemberOf']]
+        except KeyError:
+            logger.warning("WARNING: MANAGERS BUT NO USERS LISTED FOR %s", project.title)
+            no_users.append(proj_name)
+            ad_users = []
         # check for users not in Coldfront
         not_added = [uname for uname in ad_users if uname not in projectusernames]
         logger.debug('AD users not in ProjectUsers:\n%s', not_added)
@@ -371,6 +377,7 @@ def update_group_membership():
                     logger.debug('removed User %s from Project %s', username, project.title)
                 project_user.save()
     logger.warning('AD groups with no members: %s', no_members)
+    logger.warning('AD groups with no users: %s', no_users)
     logger.warning('AD groups with no managers: %s', no_managers)
 
 
