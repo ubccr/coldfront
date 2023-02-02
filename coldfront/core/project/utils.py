@@ -25,7 +25,7 @@ def add_project_user_role_choices(apps, schema_editor):
 def add_project_user_status_choices(apps, schema_editor):
     ProjectUserStatusChoice = apps.get_model('project', 'ProjectUserStatusChoice')
 
-    for choice in ['Active', 'Pending Remove', 'Denied', 'Removed', ]:
+    for choice in ['Active', 'Pending - Remove', 'Denied', 'Removed', ]:
         ProjectUserStatusChoice.objects.get_or_create(name=choice)
 
 def generate_usage_history_graph(project):

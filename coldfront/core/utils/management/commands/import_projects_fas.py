@@ -26,7 +26,7 @@ class Command(BaseCommand):
         LOCALDATA_ROOT = ENV.str('LOCALDATA_ROOT', default=base_dir)
         file_path = os.path.join(LOCALDATA_ROOT, 'local_data/labs')
         pi_list_file= os.path.join(LOCALDATA_ROOT, 'local_data/pimap.csv')
-        
+
         pi_dict = {}
 
         with open(pi_list_file, mode='r') as pimap:
@@ -38,7 +38,7 @@ class Command(BaseCommand):
         missing_users = open('local_data/missing_users.csv', 'w')
         writer = csv.writer(missing_users)
         writer.writerow(userheader)
- 
+
         lab_list = os.listdir(file_path)
         for lab in lab_list:
             lab_temp = lab.split(".")
@@ -48,8 +48,8 @@ class Command(BaseCommand):
             description = "Allocations for " + title
 
             print("Loading Project data for : " + title)
-                      
-            
+
+
             project_status_choices = {}
             project_status_choices['Active'] = ProjectStatusChoice.objects.get(name='Active')
             project_status_choices['Archived'] = ProjectStatusChoice.objects.get(name='Archived')
@@ -69,23 +69,23 @@ class Command(BaseCommand):
             project_user_status_choices['REM'] = ProjectUserStatusChoice.objects.get(name='Removed')
             project_user_status_choices['Missing'] = ProjectUserStatusChoice.objects.get(name='Removed')
 
-            for choice in ['Active', 'Pending Remove', 'Denied', 'Removed', ]:
+            for choice in ['Active', 'Pending - Remove', 'Denied', 'Removed', ]:
                 ProjectUserStatusChoice.objects.get_or_create(name=choice)
-            
-            created = datetime.datetime.now(tz=timezone.utc) 
-            modified = datetime.datetime.now(tz=timezone.utc) 
+
+            created = datetime.datetime.now(tz=timezone.utc)
+            modified = datetime.datetime.now(tz=timezone.utc)
 
             user_dict = []
-            csv_file =file_path+'/'+lab 
+            csv_file =file_path+'/'+lab
             with open(csv_file, 'r') as read_obj:
                 reader = csv.DictReader(read_obj)
                 for row in reader:
-                    user_dict.append(row) 
+                    user_dict.append(row)
             try:
                 filtered_query = Project.objects.filter(title = title)
                 if not filtered_query.exists():
                     print("Creating new project:" + title)
-                    for row in user_dict: 
+                    for row in user_dict:
                         user = row['samaccountname']
                         if (user == pi_username):
                             field_of_science=row['department']
@@ -94,7 +94,7 @@ class Command(BaseCommand):
                                 pi_user_obj.is_pi = True
                                 pi_user_obj.save()
                                 project_status = "New"
-                                try: 
+                                try:
                                     field_of_science_obj = FieldOfScience.objects.get(description=field_of_science)
                                 except:
                                     print(field_of_science)
@@ -103,7 +103,7 @@ class Command(BaseCommand):
                                     description=field_of_science,
                                     )
                                     field_of_science_obj.save()
-                    
+
                                 project_obj = Project.objects.create(
                                     created=created,
                                     modified=modified,
@@ -112,12 +112,12 @@ class Command(BaseCommand):
                                     description=description.strip(),
                                     field_of_science=field_of_science_obj,
                                     status=project_status_choices[project_status]
-                                )           
+                                )
                                 print(f"Project {title} created with PI {pi_username}")
                             except get_user_model().DoesNotExist:
                                 print("PI User missing: ", user)
                                 tocsv = [title, user,'PI']
-                                writer.writerow(tocsv) 
+                                writer.writerow(tocsv)
                                 continue
                 project_obj = Project.objects.get(title = title)
                 if (project_obj != ""):
@@ -136,7 +136,7 @@ class Command(BaseCommand):
                             except get_user_model().DoesNotExist:
                                 print("couldn't add user", username)
                                 tocsv = [title, username,'User']
-                                writer.writerow(tocsv) 
+                                writer.writerow(tocsv)
                                 continue
                             if not project_obj.projectuser_set.filter(user=user_obj).exists():
                                 project_user_obj = ProjectUser.objects.create(
@@ -149,7 +149,7 @@ class Command(BaseCommand):
                             elif project_obj.projectuser_set.filter(user=user_obj).exists():
                                 project_user_obj = ProjectUser.objects.get(project=project_obj, user=user_obj)
                                 project_user_obj.status=project_user_status_choices['ACT']
-                                project_user_obj.save() 
+                                project_user_obj.save()
             except Exception as e:
                 print(f'Error {e}')
         missing_users.close()
