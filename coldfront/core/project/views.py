@@ -118,9 +118,10 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             allocation_total['allocation_user_count'] += int(allocation.allocation_users.count())
             allocation_total['size'] += float(allocation.size)
 
-
-        time_chart_data = generate_usage_history_graph(self.object)
-
+        try:
+            time_chart_data = generate_usage_history_graph(self.object)
+        except Exception as e:
+            time_chart_data = None
         context['time_chart_data'] = time_chart_data
         context['publications'] = Publication.objects.filter(
             project=self.object, status='Active').order_by('-year')
