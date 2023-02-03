@@ -138,6 +138,15 @@ Project Detail
         </a>
       {% endif %}
     </p>
+
+    <!-- show survey answers if available -->
+    {% if survey_answers %}
+      <p class="card-text text-justify">
+        <strong>Survey Responses: </strong>
+        <button id="view-survey" class="btn btn-primary" role="button">View</button>
+      </p>
+    {% endif %}
+
   </div>
 </div>
 
@@ -466,4 +475,5 @@ $("[id^=email_notifications_for_user_id_]").change(function() {
 
 </script>
 
+{% include 'project/project_request/savio/project_request_survey_modal.html' with survey_form=survey_answers %}
 {% endblock %}
