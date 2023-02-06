@@ -96,7 +96,7 @@ def send_admin_email_template(subject, template_name, template_context):
     send_email_template(subject, template_name, template_context, EMAIL_SENDER, [EMAIL_TICKET_SYSTEM_ADDRESS,])
 
 
-def send_allocation_admin_email(allocation_obj, subject, template_name, url_path='', domain_url=''):
+def send_allocation_admin_email(allocation_obj, subject, template_name, url_path='', domain_url='', other_vars=None):
     """Send allocation admin emails
     """
     if not url_path:
@@ -110,6 +110,9 @@ def send_allocation_admin_email(allocation_obj, subject, template_name, url_path
     ctx['pi'] = pi_name
     ctx['resource'] = resource_name
     ctx['url'] = url
+    if other_vars:
+        for k, v in other_vars.items():
+            ctx[k] = v
 
     send_admin_email_template(
         f'{subject}: {pi_name} - {resource_name}',

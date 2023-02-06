@@ -1234,7 +1234,8 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
                         project_user_obj.save()
 
             send_allocation_admin_email(allocation_obj, 'Allocation Renewed',
-                    'email/allocation_renewed.txt', domain_url=get_domain_url(self.request))
+                    'email/allocation_renewed.txt', domain_url=get_domain_url(self.request),
+                    other_vars={"justification":justification, "quantity":quantity})
 
             messages.success(request, 'Allocation renewed successfully')
         else:
