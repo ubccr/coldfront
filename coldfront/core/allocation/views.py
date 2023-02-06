@@ -1958,7 +1958,6 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         if quantity:
             email_vars['quantity'] = quantity[0][1]
 
-        othepi
         messages.success(
             request, 'Allocation change request successfully submitted.')
 
