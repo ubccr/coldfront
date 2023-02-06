@@ -595,7 +595,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         send_allocation_admin_email(allocation_obj,
                                     'New Allocation Request',
                                     'email/new_allocation_request.txt',
-                                    domain_url=get_domain_url(self.request))
+                                    domain_url=get_domain_url(self.request),
+                                    other_vars={"justification":justification, "quantity":quantity})
 
         return super().form_valid(form)
 
@@ -1234,8 +1235,7 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
                         project_user_obj.save()
 
             send_allocation_admin_email(allocation_obj, 'Allocation Renewed',
-                    'email/allocation_renewed.txt', domain_url=get_domain_url(self.request),
-                    other_vars={"justification":justification, "quantity":quantity})
+                    'email/allocation_renewed.txt', domain_url=get_domain_url(self.request))
 
             messages.success(request, 'Allocation renewed successfully')
         else:
@@ -1953,6 +1953,12 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 new_value=attribute[1]
                 )
 
+        quantity = [a for a in attribute_changes_to_make if a[0].allocation_attribute_type.name == "Storage Quota (TB)"]
+        email_vars = {"justification":justification}
+        if quantity:
+            email_vars['quantity'] = quantity[0][1]
+
+        othepi
         messages.success(
             request, 'Allocation change request successfully submitted.')
 
@@ -1960,7 +1966,8 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                                     'New Allocation Change Request',
                                     'email/new_allocation_change_request.txt',
                                     url_path=reverse('allocation-change-list'),
-                                    domain_url=get_domain_url(self.request))
+                                    domain_url=get_domain_url(self.request),
+                                    other_vars=email_vars)
 
         return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
