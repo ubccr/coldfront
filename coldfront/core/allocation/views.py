@@ -1734,10 +1734,11 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
 
         if allocation_attributes_to_change:
             for entry in formset:
-                formset_data = entry.cleaned_data
-                new_value = formset_data.get('new_value')
-                attribute_change = AllocationAttributeChangeRequest.objects.get(
-                                            pk=formset_data.get('change_pk'))
+                if entry.is_valid():
+                    formset_data = entry.cleaned_data
+                    new_value = formset_data.get('new_value')
+                    attribute_change = AllocationAttributeChangeRequest.objects.get(
+                                                pk=formset_data.get('change_pk'))
 
                 if new_value != attribute_change.new_value:
                     attribute_change.new_value = new_value
