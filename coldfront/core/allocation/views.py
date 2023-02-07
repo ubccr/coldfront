@@ -1844,8 +1844,8 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_allocation_attributes_to_change(self, allocation_obj):
-        attributes_to_change = allocation_obj.allocationattribute_set.all()#filter(
-        #    allocation_attribute_type__is_changeable=True)
+        attributes_to_change = allocation_obj.allocationattribute_set.filter(
+            allocation_attribute_type__is_changeable=True)
         attributes_to_change = [
             {
                 'pk': attribute.pk,
