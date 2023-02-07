@@ -86,11 +86,6 @@ Project Detail
       {% endif %}
     </div>
   </div>
-  <div class="float-right">
-    {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
-      <a class="btn btn-success" href="{% url 'allocation-create' project.pk %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Request Resource Allocation</a>
-    {% endif %}
-  </div>
   <div class="card-body">
     <div class="table-responsive">
         <table id="invoice_table" class="table table-hover">
