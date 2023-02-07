@@ -483,12 +483,6 @@ class UserSearchAll(LoginRequiredMixin, ListView):
 
         return context
 
-    def _filter_users_by_email(self, users, email):
-        """Given a queryset of Users and an email address (str), return
-        a filtered queryset of the given Users who are associated with
-        the address."""
-        pass
-
 
 class UserSearchResults(LoginRequiredMixin, UserPassesTestMixin, View):
     template_name = 'user/user_search_results.html'
