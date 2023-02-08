@@ -5,4 +5,6 @@ programatic access to the ColdFront data model. Useful for writing custom
 import/export scripts.
 
 ::: coldfront.core.project.models
+::: coldfront.core.resource.models
 ::: coldfront.core.allocation.models
+::: coldfront.core.user.models
