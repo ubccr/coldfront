@@ -5,6 +5,7 @@ import json
 
 from dateutil.relativedelta import relativedelta
 from django import forms
+from django.core.exceptions import BadRequest
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
@@ -13,7 +14,7 @@ from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
 from django.db.models.query import QuerySet
 from django.forms import formset_factory
-from django.http import HttpResponseRedirect, JsonResponse
+from django.http import HttpResponseRedirect, JsonResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse, reverse_lazy
 from django.utils.html import format_html, mark_safe
@@ -192,46 +193,33 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             context['allocation'] = allocation_obj
             return render(request, self.template_name, context)
 
-        form_data = form.cleaned_data
-        end_date = form_data.get('end_date')
-        start_date = form_data.get('start_date')
-        description = form_data.get('description')
-        is_locked = form_data.get('is_locked')
-        is_changeable = form_data.get('is_changeable')
+        action = request.POST.get('action')
+        if action not in ['update', 'approve', 'auto-approve', 'deny']:
+            return HttpResponseBadRequest("Invalid request")
 
-        allocation_obj.description = description
+        form_data = form.cleaned_data
 
         old_status = allocation_obj.status.name
-        new_status = form_data.get('status').name
 
-        allocation_obj.status = form_data.get('status')
-        allocation_obj.is_locked = is_locked
-        allocation_obj.is_changeable = is_changeable
+        if action in ['update', 'approve', 'deny']:
+            allocation_obj.end_date = form_data.get('end_date')
+            allocation_obj.start_date = form_data.get('start_date')
+            allocation_obj.description = form_data.get('description')
+            allocation_obj.is_locked = form_data.get('is_locked')
+            allocation_obj.is_changeable = form_data.get('is_changeable')
+            allocation_obj.status = form_data.get('status')
 
-        if start_date and allocation_obj.start_date != start_date:
-            allocation_obj.start_date = start_date
-            
-
-        if end_date and allocation_obj.end_date != end_date:
-            allocation_obj.end_date = end_date
+        if 'approve' in action:
+            allocation_obj.status = AllocationStatusChoice.objects.get(name='Active')
+        elif action == 'deny':
+            allocation_obj.status = AllocationStatusChoice.objects.get(name='Denied')
            
-        allocation_obj.save()
+        if old_status != 'Active' == allocation_obj.status.name:
+            if not allocation_obj.start_date:
+                allocation_obj.start_date = datetime.datetime.now()
+            if 'approve' in action or not allocation_obj.end_date:
+                allocation_obj.end_date = datetime.datetime.now() + relativedelta(days=ALLOCATION_DEFAULT_ALLOCATION_LENGTH)
 
-        if 'approved' in request.POST:
-            return HttpResponseRedirect(reverse('allocation-activate-request', kwargs={'pk': pk}))
-
-        if 'denied' in request.POST:
-            return HttpResponseRedirect(reverse('allocation-deny-request', kwargs={'pk': pk}))
-
-        if old_status != 'Active' == new_status:
-            if not start_date:
-                start_date = datetime.datetime.now()
-            if not end_date:
-                end_date = datetime.datetime.now(
-                ) + relativedelta(days=ALLOCATION_DEFAULT_ALLOCATION_LENGTH)
-
-            allocation_obj.start_date = start_date
-            allocation_obj.end_date = end_date
             allocation_obj.save()
 
             allocation_activate.send(
@@ -242,13 +230,15 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                     sender=self.__class__, allocation_user_pk=allocation_user.pk)
 
             send_allocation_customer_email(allocation_obj, 'Allocation Activated', 'email/allocation_activated.txt', domain_url=get_domain_url(self.request))
+            if action != 'auto-approve':
+                messages.success(request, 'Allocation Activated!')
 
-        elif old_status != new_status in ['Denied', 'New']:
+        elif old_status != allocation_obj.status.name in ['Denied', 'New']:
             allocation_obj.start_date = None
             allocation_obj.end_date = None
             allocation_obj.save()
 
-            if new_status == 'Denied':
+            if allocation_obj.status.name == 'Denied':
                 allocation_disable.send(
                     sender=self.__class__, allocation_pk=allocation_obj.pk)
                 allocation_users = allocation_obj.allocationuser_set.exclude(
@@ -258,10 +248,23 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                         sender=self.__class__, allocation_user_pk=allocation_user.pk)
 
                 send_allocation_customer_email(allocation_obj, 'Allocation Denied', 'email/allocation_denied.txt', domain_url=get_domain_url(self.request))
+                messages.success(request, 'Allocation Denied!')
+            else:
+                messages.success(request, 'Allocation updated!')
+        else:
+            messages.success(request, 'Allocation updated!')
+            allocation_obj.save()
 
-        allocation_obj.refresh_from_db()
 
-        messages.success(request, 'Allocation updated!')
+        if action == 'auto-approve':
+            messages.success(request, 'Allocation to {} has been ACTIVATED for {} {} ({})'.format(
+                allocation_obj.get_parent_resource,
+                allocation_obj.project.pi.first_name,
+                allocation_obj.project.pi.last_name,
+                allocation_obj.project.pi.username)
+            )
+            return HttpResponseRedirect(reverse('allocation-request-list'))
+
         return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
 
@@ -931,118 +934,11 @@ class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templat
         context = super().get_context_data(**kwargs)
         allocation_list = Allocation.objects.filter(
             status__name__in=['New', 'Renewal Requested', 'Paid', 'Approved',])
+        context['allocation_status_active'] = AllocationStatusChoice.objects.get(name='Active')
         context['allocation_list'] = allocation_list
         context['PROJECT_ENABLE_PROJECT_REVIEW'] = PROJECT_ENABLE_PROJECT_REVIEW
         context['ALLOCATION_DEFAULT_ALLOCATION_LENGTH'] = ALLOCATION_DEFAULT_ALLOCATION_LENGTH
         return context
-
-
-class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
-    login_url = '/'
-
-    def test_func(self):
-        """ UserPassesTestMixin Tests"""
-
-        if self.request.user.is_superuser:
-            return True
-
-        if self.request.user.has_perm('allocation.can_review_allocation_requests'):
-            return True
-
-        messages.error(self.request, 'You do not have permission to activate a allocation request.')
-        return False
-
-    def get(self, request, pk):
-        allocation_obj = get_object_or_404(Allocation, pk=pk)
-
-        allocation_status_active_obj = AllocationStatusChoice.objects.get(
-            name='Active')
-        if allocation_obj.start_date == None and allocation_obj.end_date == None:
-            start_date = datetime.datetime.now()
-            end_date = datetime.datetime.now(
-                ) + relativedelta(days=ALLOCATION_DEFAULT_ALLOCATION_LENGTH)
-            allocation_obj.start_date = start_date
-            allocation_obj.end_date = end_date
-
-        if allocation_obj.start_date != None and allocation_obj.end_date == None:
-            end_date = allocation_obj.start_date + relativedelta(days=ALLOCATION_DEFAULT_ALLOCATION_LENGTH)
-            allocation_obj.end_date = end_date
-
-        if allocation_obj.start_date == None and allocation_obj.end_date != None:
-            if ((allocation_obj.end_date - relativedelta(days=ALLOCATION_DEFAULT_ALLOCATION_LENGTH)) >= datetime.datetime.now().date()):
-                start_date = allocation_obj.end_date - relativedelta(days=ALLOCATION_DEFAULT_ALLOCATION_LENGTH)
-                allocation_obj.start_date = start_date
-
-        allocation_obj.status = allocation_status_active_obj
-        allocation_obj.save()
-
-        messages.success(request, 'Allocation to {} has been ACTIVATED for {} {} ({})'.format(
-            allocation_obj.get_parent_resource,
-            allocation_obj.project.pi.first_name,
-            allocation_obj.project.pi.last_name,
-            allocation_obj.project.pi.username)
-        )
-
-        allocation_activate.send(
-            sender=self.__class__, allocation_pk=allocation_obj.pk)
-        allocation_users = allocation_obj.allocationuser_set.exclude(status__name__in=['Removed', 'Error'])
-        for allocation_user in allocation_users:
-            allocation_activate_user.send(
-                sender=self.__class__, allocation_user_pk=allocation_user.pk)
-
-        send_allocation_customer_email(allocation_obj, 'Allocation Activated', 'email/allocation_activated.txt', domain_url=get_domain_url(self.request))
-
-        if 'request-list' in request.META.get('HTTP_REFERER'):
-            return HttpResponseRedirect(reverse('allocation-request-list'))
-        return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
-
-
-class AllocationDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
-    login_url = '/'
-
-    def test_func(self):
-        """ UserPassesTestMixin Tests"""
-
-        if self.request.user.is_superuser:
-            return True
-
-        if self.request.user.has_perm('allocation.can_review_allocation_requests'):
-            return True
-
-        messages.error(self.request, 'You do not have permission to deny a allocation request.')
-        return False
-
-    def get(self, request, pk):
-        allocation_obj = get_object_or_404(Allocation, pk=pk)
-
-        allocation_status_denied_obj = AllocationStatusChoice.objects.get(
-            name='Denied')
-
-        allocation_obj.status = allocation_status_denied_obj
-        allocation_obj.start_date = None
-        allocation_obj.end_date = None
-        allocation_obj.save()
-
-        messages.success(request, 'Allocation to {} has been DENIED for {} {} ({})'.format(
-            allocation_obj.resources.first(),
-            allocation_obj.project.pi.first_name,
-            allocation_obj.project.pi.last_name,
-            allocation_obj.project.pi.username)
-        )
-
-        allocation_disable.send(
-            sender=self.__class__, allocation_pk=allocation_obj.pk)
-        allocation_users = allocation_obj.allocationuser_set.exclude(status__name__in=['Removed', 'Error'])
-        for allocation_user in allocation_users:
-            allocation_remove_user.send(
-                sender=self.__class__, allocation_user_pk=allocation_user.pk)
-
-        send_allocation_customer_email(allocation_obj, 'Allocation Denied', 'email/allocation_denied.txt', domain_url=get_domain_url(self.request))
-
-        if 'request-list' in request.path:
-            return HttpResponseRedirect(reverse('allocation-request-list'))
-        return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
-
 
 
 class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
