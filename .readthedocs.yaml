@@ -11,6 +11,9 @@ mkdocs:
 
 # Optionally set the version of Python and requirements required to build your docs
 python:
-  version: 3.7
+  version: 3.9
   install:
     - requirements: docs/requirements.txt
+    - requirements: requirements.txt
+    - method: pip
+      path: .
