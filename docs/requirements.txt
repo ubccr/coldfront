@@ -14,4 +14,3 @@ pymdown-extensions==9.5
 PyYAML==5.4
 six==1.16.0
 importlib-metadata==4.11.3
-coldfront
