@@ -5,7 +5,6 @@ import json
 
 from dateutil.relativedelta import relativedelta
 from django import forms
-from django.core.exceptions import BadRequest
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
@@ -1552,8 +1551,11 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
 
         notes = note_form.cleaned_data.get('notes')
 
+        action = request.POST.get('action')
+        if action not in ['update', 'approve', 'deny']:
+            return HttpResponseBadRequest("Invalid request")
 
-        if request.POST.get('choice') == 'deny':
+        if action == 'deny':
             allocation_change_obj.notes = notes
 
             allocation_change_status_denied_obj = AllocationChangeStatusChoice.objects.get(
@@ -1591,7 +1593,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
 
         allocation_change_obj.notes = notes
 
-        if request.POST.get('choice') == 'update' and allocation_change_obj.status.name != 'Pending':
+        if action == 'update' and allocation_change_obj.status.name != 'Pending':
             allocation_change_obj.save()
             messages.success(request, 'Allocation change request updated!')
             return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
@@ -1619,23 +1621,24 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                     attribute_change.save()
 
 
-        if request.POST.get('choice') == 'update':
+        if action == 'update':
 
             allocation_change_obj.save()
             messages.success(request, 'Allocation change request updated!')
 
 
-        elif request.POST.get('choice') == 'approve':
+        elif action == 'approve':
             allocation_change_status_active_obj = AllocationChangeStatusChoice.objects.get(
                 name='Approved')
             allocation_change_obj.status = allocation_change_status_active_obj
 
-            if end_date_extension != allocation_change_obj.end_date_extension:
+            if allocation_change_obj.end_date_extension > 0:
                 new_end_date = allocation_change_obj.allocation.end_date + relativedelta(
                     days=allocation_change_obj.end_date_extension)
                 allocation_change_obj.allocation.end_date = new_end_date
 
                 allocation_change_obj.allocation.save()
+
             allocation_change_obj.save()
             if allocation_attributes_to_change:
                 attribute_change_list = allocation_change_obj.allocationattributechangerequest_set.all()
@@ -1850,102 +1853,6 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                                     url_path=reverse('allocation-change-list'),
                                     domain_url=get_domain_url(self.request))
         return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
-
-
-class AllocationChangeActivateView(LoginRequiredMixin, UserPassesTestMixin, View):
-    login_url = '/'
-
-    def test_func(self):
-        """ UserPassesTestMixin Tests"""
-
-        if self.request.user.is_superuser:
-            return True
-
-        if self.request.user.has_perm('allocation.can_review_allocation_requests'):
-            return True
-
-        messages.error(self.request, 'You do not have permission to approve an allocation change.')
-        return False
-
-    def get(self, request, pk):
-        allocation_change_obj = get_object_or_404(AllocationChangeRequest, pk=pk)
-
-        allocation_change_status_active_obj = AllocationChangeStatusChoice.objects.get(
-            name='Approved')
-
-        allocation_change_obj.status = allocation_change_status_active_obj
-
-        if allocation_change_obj.end_date_extension != 0:
-            new_end_date = allocation_change_obj.allocation.end_date + relativedelta(
-                days=allocation_change_obj.end_date_extension)
-
-            allocation_change_obj.allocation.end_date = new_end_date
-
-            allocation_change_obj.allocation.save()
-        allocation_change_obj.save()
-
-        attribute_change_list = allocation_change_obj.allocationattributechangerequest_set.all()
-
-        for attribute_change in attribute_change_list:
-            attribute_change.allocation_attribute.value = attribute_change.new_value
-            attribute_change.allocation_attribute.save()
-
-        messages.success(request, 'Allocation change request to {} has been APPROVED for {} {} ({})'.format(
-            allocation_change_obj.allocation.get_parent_resource,
-            allocation_change_obj.allocation.project.pi.first_name,
-            allocation_change_obj.allocation.project.pi.last_name,
-            allocation_change_obj.allocation.project.pi.username)
-        )
-
-        allocation_change_approved.send(
-            sender=self.__class__,
-            allocation_pk=allocation_change_obj.allocation.pk,
-            allocation_change_pk=allocation_change_obj.pk,)
-
-        send_allocation_customer_email(allocation_change_obj.allocation,
-                                       'Allocation Change Approved',
-                                       'email/allocation_change_approved.txt',
-                                       domain_url=get_domain_url(self.request))
-
-        return HttpResponseRedirect(reverse('allocation-change-list'))
-
-
-class AllocationChangeDenyView(LoginRequiredMixin, UserPassesTestMixin, View):
-    login_url = '/'
-
-    def test_func(self):
-        """ UserPassesTestMixin Tests"""
-
-        if self.request.user.is_superuser:
-            return True
-
-        if self.request.user.has_perm('allocation.can_review_allocation_requests'):
-            return True
-
-        messages.error(self.request, 'You do not have permission to deny an allocation change.')
-        return False
-
-    def get(self, request, pk):
-        allocation_change_obj = get_object_or_404(AllocationChangeRequest, pk=pk)
-
-        allocation_change_status_denied_obj = AllocationChangeStatusChoice.objects.get(
-            name='Denied')
-
-        allocation_change_obj.status = allocation_change_status_denied_obj
-        allocation_change_obj.save()
-
-        messages.success(request, 'Allocation change request to {} has been DENIED for {} {} ({})'.format(
-            allocation_change_obj.allocation.resources.first(),
-            allocation_change_obj.allocation.project.pi.first_name,
-            allocation_change_obj.allocation.project.pi.last_name,
-            allocation_change_obj.allocation.project.pi.username)
-        )
-
-        send_allocation_customer_email(allocation_change_obj.allocation,
-                                       'Allocation Change Denied',
-                                       'email/allocation_change_denied.txt',
-                                       domain_url=get_domain_url(self.request))
-        return HttpResponseRedirect(reverse('allocation-change-list'))
 
 
 class AllocationChangeDeleteAttributeView(LoginRequiredMixin, UserPassesTestMixin, View):
