@@ -1,7 +1,7 @@
 htmlmin==0.1.12
 Jinja2==3.1.2
 jsmin==3.0.1
-Markdown==3.2.1
+Markdown==3.3.4
 MarkupSafe==2.1.2
 mkdocs==1.4.2
 mkdocs-material==9.0.11
