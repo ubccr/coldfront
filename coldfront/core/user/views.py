@@ -24,6 +24,8 @@ from django.views import View
 from django.views.generic import CreateView, ListView, TemplateView
 from django.views.generic.edit import FormView
 
+from allauth.account.models import EmailAddress as EmailAddress_LRC
+
 from coldfront.core.allocation.utils import has_cluster_access
 from coldfront.core.project.models import Project, ProjectUser
 from coldfront.core.user.models import IdentityLinkingRequest, IdentityLinkingRequestStatusChoice
@@ -426,13 +428,24 @@ class UserSearchAll(LoginRequiredMixin, ListView):
                 users = users.filter(username__icontains=data.get('username'))
 
             if data.get('email'):
-                _users = EmailAddress.objects.filter(is_primary=False, email__icontains=data.get('email'))\
-                    .order_by('user').values_list('user__id')
-                users = users.filter(Q(email__icontains=data.get('email')) | Q(id__in=_users))
+                users = UserSearchAll._filter_users_by_email(self, users, data)
         else:
             users = User.objects.all().order_by(order_by)
 
         return users.distinct()
+
+    def _filter_users_by_email(self, users, data):
+        if flag_enabled('LRC_ONLY'):
+            _users = EmailAddress_LRC.objects.filter(primary=False, email__icontains=data.get('email'))\
+                .order_by('user').values_list('user__id')
+            users = users.filter(
+                Q(email__icontains=data.get('email')) | Q(id__in=_users))
+        else:
+            _users = EmailAddress.objects.filter(is_primary=False, email__icontains=data.get('email'))\
+                .order_by('user').values_list('user__id')
+            users = users.filter(
+                Q(email__icontains=data.get('email')) | Q(id__in=_users))
+        return users
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
