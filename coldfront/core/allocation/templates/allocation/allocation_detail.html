@@ -122,7 +122,7 @@ Allocation Detail
               {% if request.user.is_superuser %}
                 {{ form.description }}
               {% else %}
-                {{ allocation.description }}
+                {{ allocation.description|default_if_none:"" }}
               {% endif %}
             </td>
           </tr>
