@@ -89,7 +89,7 @@ class AllocationInvoiceUpdateForm(forms.Form):
 
 class AllocationAddUserForm(forms.Form):
     username = forms.CharField(max_length=150, disabled=True)
-    first_name = forms.CharField(max_length=30, required=False, disabled=True)
+    first_name = forms.CharField(max_length=150, required=False, disabled=True)
     last_name = forms.CharField(max_length=150, required=False, disabled=True)
     email = forms.EmailField(max_length=100, required=False, disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
@@ -97,7 +97,7 @@ class AllocationAddUserForm(forms.Form):
 
 class AllocationRemoveUserForm(forms.Form):
     username = forms.CharField(max_length=150, disabled=True)
-    first_name = forms.CharField(max_length=30, required=False, disabled=True)
+    first_name = forms.CharField(max_length=150, required=False, disabled=True)
     last_name = forms.CharField(max_length=150, required=False, disabled=True)
     email = forms.EmailField(max_length=100, required=False, disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
@@ -157,7 +157,7 @@ class AllocationReviewUserForm(forms.Form):
     )
 
     username = forms.CharField(max_length=150, disabled=True)
-    first_name = forms.CharField(max_length=30, required=False, disabled=True)
+    first_name = forms.CharField(max_length=150, required=False, disabled=True)
     last_name = forms.CharField(max_length=150, required=False, disabled=True)
     email = forms.EmailField(max_length=100, required=False, disabled=True)
     user_status = forms.ChoiceField(choices=ALLOCATION_REVIEW_USER_CHOICES)

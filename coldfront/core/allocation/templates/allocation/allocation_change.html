@@ -69,7 +69,7 @@ Request Allocation Change
             {% endif %}
             <tr>
               <th scope="row" class="text-nowrap">Description:</th>
-              <td>{{ allocation.description }}</td>
+              <td>{{allocation.description|default_if_none:""}}</td>
             </tr>
             <tr>
               <th scope="row" class="text-nowrap">Created:</th>
