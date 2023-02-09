@@ -345,7 +345,7 @@ class AdminTests(LiveServerTestCase):
         request_button = driver.find_element_by_id("navbar-allocation-requests")
         request_button.click()
 
-        approve_button = driver.find_elements_by_id("activate_button")
+        approve_button = driver.find_elements_by_id("approve_button")
         approve_button[0].click()
 
         Alert(driver).accept()
