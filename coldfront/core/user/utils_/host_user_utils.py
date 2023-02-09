@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 
-from coldfront.core.user.models import EmailAddress
+from allauth.account.models import EmailAddress
 
 
 def eligible_host_project_users(project):
@@ -35,7 +35,7 @@ def lbl_email_address(user):
     if user.email.endswith(email_domain):
         return user.email
     email_addresses = EmailAddress.objects.filter(
-        user=user, is_verified=True, email__endswith=email_domain).order_by(
+        user=user, verified=True, email__endswith=email_domain).order_by(
             'email')
     if not email_addresses.exists():
         return None
