@@ -199,6 +199,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         form_data = form.cleaned_data
 
         old_status = allocation_obj.status.name
+        new_status = form_data.get('status').name
 
         if action in ['update', 'approve', 'deny']:
             allocation_obj.end_date = form_data.get('end_date')
