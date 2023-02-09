@@ -67,7 +67,7 @@ class AllTheThingsConn:
             "unique":"datetime(e.DotsLFSUpdateDate) as begin_date"}
 
         isilon = {"match": "[:Owns]-(e:IsilonPath)",
-            "where":f"WHERE (e.Isilon =~ '.*({volumes}).*')",
+            'where':f'WHERE (e.Isilon =~ \'.*({volumes}).*\') AND              (datetime() - duration(\'P14D\') <= datetime(r.DotsUpdateDate))',
             "storage_type":"\"Isilon\"",
             "fs_path":"Path",
             "server":"Isilon",
