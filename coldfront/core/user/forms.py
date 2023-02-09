@@ -240,38 +240,9 @@ class UserAccessAgreementForm(forms.Form):
             field.help_text = template.format('LBNL', 'LBNL IT Division')
 
 
-class EmailAddressAddForm(forms.Form):
-
-    email = forms.EmailField(max_length=100, required=True)
-
-    def clean_email(self):
-        cleaned_data = super().clean()
-        email = cleaned_data['email'].lower()
-        if (User.objects.filter(email=email).exists() or
-                EmailAddress.objects.filter(email=email).exists()):
-            raise forms.ValidationError(
-                f'Email address {email} is already in use.')
-        return email
-
-
 class UserReactivateForm(forms.Form):
 
     email = forms.EmailField(max_length=100, required=True)
-
-
-class PrimaryEmailAddressSelectionForm(forms.Form):
-
-    email_address = forms.ModelChoiceField(
-        label='New Primary Email Address',
-        queryset=EmailAddress.objects.none(),
-        required=True,
-        widget=forms.RadioSelect())
-
-    def __init__(self, *args, **kwargs):
-        user = kwargs.pop('user')
-        super().__init__(*args, **kwargs)
-        self.fields['email_address'].queryset = EmailAddress.objects.filter(
-            user=user, is_verified=True, is_primary=False)
 
 
 class VerifiedEmailAddressPasswordResetForm(PasswordResetForm):
