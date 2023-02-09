@@ -1,6 +1,6 @@
 Dear {{center_name}} user,
 
-Your allocation request for {{resource}} has been denied.
+Your allocation for {{resource}} has been revoked.
 
 Please login to view a message from the system administrators: {{allocation_url}}
 
