@@ -4,7 +4,17 @@ Python API documentation for the various model classes that can be used for
 programatic access to the ColdFront data model. Useful for writing custom
 import/export scripts.
 
-::: coldfront.core.project.models
+
+<!-- # Projects
+---
+::: coldfront.core.project.models -->
+
+# Resources
 ::: coldfront.core.resource.models
-::: coldfront.core.allocation.models
-::: coldfront.core.user.models
+
+<!-- # Allocations
+---
+::: coldfront.core.allocation.models -->
+
+<!-- # Users
+::: coldfront.core.user.models -->
