@@ -1,0 +1,18 @@
+{% extends "common/base.html" %}
+{% load static %}
+
+
+{% block title %}
+ColdFront - Bad Request
+{% endblock %}
+
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6 col-xs-12">
+        <div class="alert alert-danger" role="alert">
+          <i class="fas fa-user-lock" aria-hidden="true"></i> Oops! Invalid request
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -122,7 +122,7 @@ Allocation Detail
               {% if request.user.is_superuser %}
                 {{ form.description }}
               {% else %}
-                {{ allocation.description }}
+                {{ allocation.description|default_if_none:"" }}
               {% endif %}
             </td>
           </tr>
@@ -163,10 +163,10 @@ Allocation Detail
       {% if request.user.is_superuser %}
       <div class="float-right">
         {% if allocation.status.name == 'New' or allocation.status.name == 'Renewal Requested' %}
-          <button name="approved" class="btn btn-success mr-1 confirm-activate">Approve</button>
-          <button name="denied" class="btn btn-danger mr-1 confirm-deny">Deny</button>
+          <button type="submit" name="action" value="approve" class="btn btn-success mr-1 confirm-activate">Approve</button>
+          <button type="submit" name="action" value="deny" class="btn btn-danger mr-1 confirm-deny">Deny</button>
         {% endif %}
-        <button type="submit" class="btn btn-primary"><i class="fas fa-sync" aria-hidden="true"></i> Update</button>
+        <button type="submit" name="action" value="update" class="btn btn-primary"><i class="fas fa-sync" aria-hidden="true"></i> Update</button>
       {% endif %}
     </div>
     </form>
