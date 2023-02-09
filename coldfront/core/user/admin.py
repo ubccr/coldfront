@@ -1,6 +1,8 @@
 from django.contrib import admin
 
-from coldfront.core.user.models import UserProfile, EmailAddress
+from allauth.account.models import EmailAddress
+
+from coldfront.core.user.models import UserProfile
 
 
 @admin.register(UserProfile)

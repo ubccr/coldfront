@@ -1,7 +1,10 @@
-from coldfront.core.user.models import EmailAddress
-from coldfront.core.user.utils import send_email_verification_email
 from django.contrib.auth.backends import BaseBackend
 from django.contrib.auth.models import User
+
+from allauth.account.models import EmailAddress
+
+from coldfront.core.user.utils import send_email_verification_email
+
 import logging
 
 
@@ -24,7 +27,7 @@ class EmailAddressBackend(BaseBackend):
         # If the EmailAddress exists, but is not verified, send a verification
         # email to it. Only do this if the user is already active; otherwise,
         # a separate account activation email will handle email verification.
-        if user.is_active and not email_address.is_verified:
+        if user.is_active and not email_address.verified:
             try:
                 send_email_verification_email(email_address)
             except Exception as e:

@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.db import transaction
 from django.dispatch import receiver
 
-from allauth.socialaccount.models import EmailAddress
+from allauth.account.models import EmailAddress
 from allauth.socialaccount.models import SocialLogin
 from allauth.socialaccount.providers.base import AuthProcess
 from allauth.socialaccount.signals import social_account_added
