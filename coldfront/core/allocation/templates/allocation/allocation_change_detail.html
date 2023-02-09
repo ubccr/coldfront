@@ -90,7 +90,7 @@ Allocation Change Detail
             {% endif %}
             <tr>
               <th scope="row" class="text-nowrap">Description:</th>
-              <td>{{ allocation_change.allocation.description }}</td>
+              <td>{{ allocation_change.allocation.description|default_if_none:"" }}</td>
             </tr>
             <tr>
               <th scope="row" class="text-nowrap">Change Requested:</th>
@@ -186,10 +186,10 @@ Allocation Change Detail
             {{note_form.notes | as_crispy_field}}
             <div style="float: right;">
               {% if allocation_change.status.name == 'Pending' %}
-                <button type="submit" name="choice" value="approve" class="btn btn-success mr-1">Approve</button>
-                <button type="submit" name="choice" value="deny" class="btn btn-danger mr-1" id="deny">Deny</button>
+                <button type="submit" name="action" value="approve" class="btn btn-success mr-1">Approve</button>
+                <button type="submit" name="action" value="deny" class="btn btn-danger mr-1" id="deny">Deny</button>
               {% endif %}
-                <button type="submit" name="choice" value="update" value='test' class="btn btn-primary float-right">
+                <button type="submit" name="action" value="update" class="btn btn-primary float-right">
                 <i class="fas fa-sync" aria-hidden="true"></i> Update
               </button>
             </div>

@@ -206,7 +206,7 @@ class Command(BaseCommand):
         )
 
         ProjectAttributeType.objects.get_or_create(
-            attribute_type=AttributeType.objects.get(name='Int'),
+            attribute_type=AttributeType.objects.get(name='Text'),
             name='Project ID',
             is_private=False,
         )

@@ -186,7 +186,7 @@ Project Detail
               {% if allocation.get_information != '' %}
               <td class="text-nowrap">{{allocation.get_information}}</td>
               {% else %}
-              <td class="text-nowrap">{{allocation.description}}</td>
+              <td class="text-nowrap">{{allocation.description|default_if_none:""}}</td>
               {% endif %}
               {% if allocation.status.name == 'Active' %}
                 <td class="text-success">{{ allocation.status.name }}</td>
