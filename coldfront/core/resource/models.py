@@ -8,6 +8,7 @@ from simple_history.models import HistoricalRecords
 import coldfront.core.attribute_expansion as attribute_expansion
 
 class AttributeType(TimeStampedModel):
+    """ A resource attribute type indicates the data type of the attribute. Examples include Date, Float, Int, Text, and Yes/No. """
     name = models.CharField(max_length=128, unique=True)
 
     def __str__(self):
@@ -18,6 +19,7 @@ class AttributeType(TimeStampedModel):
 
 
 class ResourceType(TimeStampedModel):
+    """ A resource type indicates the type of the resource being allocated. Examples include Cloud, Server, and Storage. """
     name = models.CharField(max_length=128, unique=True)
     description = models.CharField(max_length=255)
     history = HistoricalRecords()
@@ -40,6 +42,7 @@ class ResourceType(TimeStampedModel):
 
 
 class ResourceAttributeType(TimeStampedModel):
+    """ A resource attribute type indicates the data type of the attribute. Examples include Date, Float, Int, Text, and Yes/No. """
     attribute_type = models.ForeignKey(AttributeType, on_delete=models.CASCADE)
     name = models.CharField(max_length=128)
     is_required = models.BooleanField(default=False)
