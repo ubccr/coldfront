@@ -1741,9 +1741,9 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                     attribute_change = AllocationAttributeChangeRequest.objects.get(
                                                 pk=formset_data.get('change_pk'))
 
-                if new_value != attribute_change.new_value:
-                    attribute_change.new_value = new_value
-                    attribute_change.save()
+                    if new_value != attribute_change.new_value:
+                        attribute_change.new_value = new_value
+                        attribute_change.save()
 
 
         if request.POST.get('choice') == 'update':
