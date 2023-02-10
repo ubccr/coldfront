@@ -57,15 +57,16 @@ $ COLDFRONT_ENV=coldfront.env coldfront runserver
 The following settings allow overriding basic ColdFront Django settings. For
 more advanced configuration use `local_settings.py`.
 
-| Name                 | Description                          |
-| :--------------------|:-------------------------------------|
-| ALLOWED_HOSTS        | A list of strings representing the host/domain names that ColdFront can serve. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#allowed-hosts) |
-| DEBUG                | Turn on/off debug mode. Never deploy a site into production with DEBUG turned on. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#debug) |
-| SECRET_KEY           | This is used to provide cryptographic signing, and should be set to a unique, unpredictable value. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#secret-key). If you don't provide this one will be generated each time ColdFront starts. |
-| LANGUAGE_CODE        | A string representing the language code. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#language-code)
-| TIME_ZONE            | A string representing the time zone for this installation. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#std:setting-TIME_ZONE) |
-| Q_CLUSTER_RETRY    | The number of seconds Django Q broker will wait for a cluster to finish a task. [See here](https://django-q.readthedocs.io/en/latest/configure.html#retry) |
-| Q_CLUSTER_TIMEOUT    | The number of seconds a Django Q worker is allowed to spend on a task before it’s terminated. IMPORTANT NOTE: Q_CLUSTER_TIMEOUT must be less than Q_CLUSTER_RETRY. [See here](https://django-q.readthedocs.io/en/latest/configure.html#timeout) |
+| Name                       | Description                          |
+| :------------------------- |:-------------------------------------|
+| ALLOWED_HOSTS              | A list of strings representing the host/domain names that ColdFront can serve. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#allowed-hosts) |
+| DEBUG                      | Turn on/off debug mode. Never deploy a site into production with DEBUG turned on. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#debug) |
+| SECRET_KEY                 | This is used to provide cryptographic signing, and should be set to a unique, unpredictable value. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#secret-key). If you don't provide this one will be generated each time ColdFront starts. |
+| LANGUAGE_CODE              | A string representing the language code. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#language-code)
+| TIME_ZONE                  | A string representing the time zone for this installation. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#std:setting-TIME_ZONE) |
+| Q_CLUSTER_RETRY            | The number of seconds Django Q broker will wait for a cluster to finish a task. [See here](https://django-q.readthedocs.io/en/latest/configure.html#retry) |
+| Q_CLUSTER_TIMEOUT          | The number of seconds a Django Q worker is allowed to spend on a task before it’s terminated. IMPORTANT NOTE: Q_CLUSTER_TIMEOUT must be less than Q_CLUSTER_RETRY. [See here](https://django-q.readthedocs.io/en/latest/configure.html#timeout) |
+| SESSION_INACTIVITY_TIMEOUT | Seconds of inactivity after which sessions will expire (default 1hr). This value sets the `SESSION_COOKIE_AGE` and the session is saved on every request. [See here](https://docs.djangoproject.com/en/4.1/topics/http/sessions/#when-sessions-are-saved) |
 
 ### Template settings
 
