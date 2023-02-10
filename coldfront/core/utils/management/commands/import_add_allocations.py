@@ -6,7 +6,6 @@ import os
 import logging
 
 import pandas as pd
-from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
@@ -58,12 +57,15 @@ class Command(BaseCommand):
 
                 print("Adding PI: " + project_obj.pi.username)
                 pi_obj = get_user_model().objects.get(username = project_obj.pi.username)
-                allocation_user_obj = AllocationUser.objects.get_or_create(
-                    allocation=allocations[0],
-                    user=pi_obj,
-                    status=AllocationUserStatusChoice.objects.get(name='Active')
-                )
-                # allocation_user_obj.save()
+                try:
+                    AllocationUser.objects.get_or_create(
+                        allocation=allocations[0],
+                        user=pi_obj,
+                        status=AllocationUserStatusChoice.objects.get(name='Active')
+                    )
+                    # allocation_user_obj.save()
+                except ValidationError:
+                    logger.debug("adding PI %s to allocation %s failed", project_obj.pi.username, allocations[0].pk)
 
 
             except Project.DoesNotExist:

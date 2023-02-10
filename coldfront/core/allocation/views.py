@@ -90,7 +90,7 @@ def return_allocation_bytes_values(attributes_with_usage, allocation_users):
     usage_bytes_list = [u.usage_bytes for u in allocation_users if u.usage_bytes != None]
     user_usage_sum = sum(usage_bytes_list)
     allocation_quota_bytes = next((a for a in attributes_with_usage if \
-            a.allocation_attribute_type_id==5), "None")
+            a.allocation_attribute_type.name == "Quota_In_Bytes"), "None")
     if allocation_quota_bytes != "None":
         allocation_usage_bytes = float(allocation_quota_bytes.allocationattributeusage.value)
         allocation_quota_bytes = float(allocation_quota_bytes.value)
@@ -159,13 +159,12 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         for a in invalid_attributes:
             attributes_with_usage.remove(a)
 
-        allocation_quota_bytes, allocation_usage_bytes = return_allocation_bytes_values(attributes_with_usage, allocation_obj.allocation_users)
-
-
         allocation_quota_tb = next((a for a in attributes_with_usage if \
             a.allocation_attribute_type.name == "Storage Quota (TB)"), "None")
 
         allocation_usage_tb = float(allocation_quota_tb.allocationattributeusage.value)
+
+
         allocation_quota_bytes, allocation_usage_bytes = return_allocation_bytes_values(attributes_with_usage, allocation_obj.allocation_users)
         context['allocation_quota_bytes'] = allocation_quota_bytes
         context['allocation_usage_bytes'] = allocation_usage_bytes
@@ -596,7 +595,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         send_allocation_admin_email(allocation_obj,
                                     'New Allocation Request',
                                     'email/new_allocation_request.txt',
-                                    domain_url=get_domain_url(self.request))
+                                    domain_url=get_domain_url(self.request),
+                                    other_vars={"justification":justification, "quantity":quantity})
 
         return super().form_valid(form)
 
@@ -1845,8 +1845,8 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_allocation_attributes_to_change(self, allocation_obj):
-        attributes_to_change = allocation_obj.allocationattribute_set.all()#filter(
-        #    allocation_attribute_type__is_changeable=True)
+        attributes_to_change = allocation_obj.allocationattribute_set.filter(
+            allocation_attribute_type__is_changeable=True)
         attributes_to_change = [
             {
                 'pk': attribute.pk,
@@ -1954,6 +1954,11 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 new_value=attribute[1]
                 )
 
+        quantity = [a for a in attribute_changes_to_make if a[0].allocation_attribute_type.name == "Storage Quota (TB)"]
+        email_vars = {"justification":justification}
+        if quantity:
+            email_vars['quantity'] = quantity[0][1]
+
         messages.success(
             request, 'Allocation change request successfully submitted.')
 
@@ -1961,7 +1966,8 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                                     'New Allocation Change Request',
                                     'email/new_allocation_change_request.txt',
                                     url_path=reverse('allocation-change-list'),
-                                    domain_url=get_domain_url(self.request))
+                                    domain_url=get_domain_url(self.request),
+                                    other_vars=email_vars)
 
         return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 

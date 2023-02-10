@@ -6,15 +6,20 @@ import operator
 
 import requests
 from django.db.models import Q
+from django.contrib.auth import get_user_model
 
 from coldfront.core.utils.common import import_from_settings
-from coldfront.core.project.models import Project
+from coldfront.core.project.models import ( Project,
+                                            ProjectUserRoleChoice,
+                                            ProjectUserStatusChoice,
+                                            ProjectUser)
 from coldfront.core.resource.models import Resource
 from coldfront.core.allocation.models import   (Allocation,
+                                                AllocationUser,
                                                 AllocationAttribute,
                                                 AllocationAttributeType)
 
-today = datetime.today().strftime("%Y%m%d")
+today = datetime.today().strftime('%Y%m%d')
 
 logger = logging.getLogger(__name__)
 logger.propagate = False
@@ -24,12 +29,12 @@ logger.addHandler(filehandler)
 
 
 def record_process(func):
-    """Wrapper function for logging"""
+    '''Wrapper function for logging'''
     def call(*args, **kwargs):
-        funcdata = "{} {}".format(func.__name__, func.__code__.co_firstlineno)
-        logger.debug("\n%s START.", funcdata)
+        funcdata = '{} {}'.format(func.__name__, func.__code__.co_firstlineno)
+        logger.debug('\n%s START.', funcdata)
         result = func(*args, **kwargs)
-        logger.debug("%s END. output:\n%s\n", funcdata, result)
+        logger.debug('%s END. output:\n%s\n', funcdata, result)
         return result
     return call
 
@@ -37,61 +42,91 @@ def record_process(func):
 class AllTheThingsConn:
 
     def __init__(self):
-        self.url = "https://allthethings.rc.fas.harvard.edu:7473/db/data/transaction/commit"
+        self.url = 'https://allthethings.rc.fas.harvard.edu:7473/db/data/transaction/commit'
         self.token = import_from_settings('NEO4JP')
         self.headers = generate_headers(self.token)
 
+    def post_query(self, query):
+        resp = requests.post(self.url, headers=self.headers, data=json.dumps(query), verify=False)
+        return json.loads(resp.text)
+
+    def format_query_results(self, resp_json):
+        result_dicts = list(resp_json['results'])
+        return [dict(zip(rdict['columns'],entrydict['row'])) \
+                for rdict in result_dicts for entrydict in rdict['data'] ]
+
+    def collect_group_membership(self, groupname):
+        '''
+        Collect user, and relationship information for a given lab from ATT.
+        '''
+        query = {'statements': [{
+                    'statement': f'MATCH (u:User)-[r:MemberOf|ManagedBy]-(g:Group) \
+                    WHERE (g.ADName = \'{groupname}\' OR g.ADSamAccountName = \'{groupname}\') \
+                    RETURN \
+                    u.ADgivenName AS first_name, \
+                    u.ADsurname AS last_name, \
+                    u.ADSamAccountName AS user_name, \
+                    u.ADenabled AS user_enabled, \
+                    g.ADName AS group_name,\
+                    type(r) AS relationship,\
+                    u.ADgidNumber AS user_gid_number, \
+                    g.ADgidNumber AS group_gid_number'
+                }]}
+        resp_json = self.post_query(query)
+        resp_json_formatted = self.format_query_results(resp_json)
+        return resp_json_formatted
+
 
     def pull_quota_data(self, volumes=None):
-        """Produce JSON file of quota data for LFS and Isilon from AlltheThings.
+        '''Produce JSON file of quota data for LFS and Isilon from AlltheThings.
         Parameters
         ----------
         volumes : List of volume names to collect. Optional, default None.
-        """
+        '''
         result_file = 'coldfront/plugins/fasrc/data/allthethings_output.json'
         if volumes:
-            volumes = "|".join(volumes)
+            volumes = '|'.join(volumes)
         else:
-            volumes = "|".join([r.name.split("/")[0] for r in Resource.objects.all()])
+            volumes = '|'.join([r.name.split('/')[0] for r in Resource.objects.all()])
         logger.debug("volumes: %s", volumes)
 
-        quota = {"match": "[r:HasQuota]-(e:Quota)",
-            "where":f"WHERE (e.filesystem =~ '.*({volumes}).*')",
+        quota = {'match': '[:HasQuota]-(e:Quota)',
+            'where':f'WHERE (e.filesystem =~ \'.*({volumes}).*\')',
             'relation_update': 'DotsLFSUpdateDate',
-            "storage_type":"\"Quota\"",
-            "usedgb": "usedGB",
-            "sizebytes": "limitBytes",
-            "usedbytes": "usedBytes",
-            "fs_path":"filesystem",
-            "server":"filesystem",
-            "replace": '/n/',
-            "unique":"datetime(e.DotsLFSUpdateDate) as begin_date"}
+            'storage_type':'\'Quota\'',
+            'usedgb': 'usedGB',
+            'sizebytes': 'limitBytes',
+            'usedbytes': 'usedBytes',
+            'fs_path':'filesystem',
+            'server':'filesystem',
+            'replace': '/n/',
+            'unique':'datetime(e.DotsLFSUpdateDate) as begin_date'}
 
-        isilon = {"match": "[r:Owns]-(e:IsilonPath)",
+        isilon = {'match': '[:Owns]-(e:IsilonPath)',
             'where':f"WHERE (e.Isilon =~ '.*({volumes}).*')",
             'relation_update': 'DotsUpdateDate',
-            "storage_type":"\"Isilon\"",
-            "fs_path":"Path",
-            "server":"Isilon",
-            "usedgb": "UsedGB",
-            "sizebytes": "SizeBytes",
-            "usedbytes": "UsedBytes",
-            "replace": '01.rc.fas.harvard.edu',
-            "unique":"datetime(e.DotsUpdateDate) as begin_date"}
+            'storage_type':'\'Isilon\'',
+            'fs_path':'Path',
+            'server':'Isilon',
+            'usedgb': 'UsedGB',
+            'sizebytes': 'SizeBytes',
+            'usedbytes': 'UsedBytes',
+            'replace': '01.rc.fas.harvard.edu',
+            'unique':'datetime(e.DotsUpdateDate) as begin_date'}
 
-        # volume = {"match": "[:Owns]-(e:Volume)",
-        #     "where": "",
-        #     "storage_type":"\"Volume\"",
-        #     "fs_path":"LogicalVolume",
-        #     "server":"Hostname",
-        #     "unique":"datetime(e.DotsLVSUpdateDate) as update_date, \
-        #             datetime(e.DotsLVDisplayUpdateDate) as display_date"}
+        # volume = {'match': '[:Owns]-(e:Volume)',
+        #     'where': '',
+        #     'storage_type':'\'Volume\'',
+        #     'fs_path':'LogicalVolume',
+        #     'server':'Hostname',
+        #     'unique':'datetime(e.DotsLVSUpdateDate) as update_date, \
+        #             datetime(e.DotsLVDisplayUpdateDate) as display_date'}
 
-        queries = {"statements": []}
+        queries = {'statements': []}
 
         for d in [quota, isilon]:
-            statement = {"statement": f"MATCH p=(g:Group)-{d['match']} \
-                    {d['where']} \
+            statement = {'statement': f"MATCH p=(g:Group)-{d['match']} \
+                    {d['where']}
                     AND (datetime() - duration('P31D') <= datetime(r.{d['relation_update']})) \
                     RETURN \
                     {d['unique']}, \
@@ -105,13 +140,9 @@ class AllTheThingsConn:
                     datetime(r.{d['relation_update']}) as rel_updated, \
                     replace(e.{d['server']}, '{d['replace']}', '') as server"}
             queries['statements'].append(statement)
-        resp = requests.post(self.url, headers=self.headers, data=json.dumps(queries), verify=False)
-        # logger.debug(queries)
-        resp_json = json.loads(resp.text)
+        resp_json = self.post_query(queries)
         # logger.debug(resp_json)
-        result_dicts = list(resp_json['results'])
-        resp_json_formatted = [dict(zip(rdict['columns'],entrydict['row'])) \
-                for rdict in result_dicts for entrydict in rdict['data'] ]
+        resp_json_formatted = self.format_query_results(resp_json)
         resp_json_by_lab = {entry['lab']:[] for entry in resp_json_formatted}
         for entry in resp_json_formatted:
             if (entry['storage_type'] == 'Quota' and (
@@ -119,7 +150,7 @@ class AllTheThingsConn:
                     entry['byte_usage'] == 0 and entry['tb_allocation'] == 1)
             ) or\
             (entry['storage_type'] == 'Isilon' and entry['tb_allocation'] in [0, None]):
-                logger.debug("removed: %s", entry)
+                logger.debug('removed: %s', entry)
                 continue
             resp_json_by_lab[entry['lab']].append(entry)
         # logger.debug(resp_json_by_lab)
@@ -130,17 +161,17 @@ class AllTheThingsConn:
 
 
     def push_quota_data(self, result_file):
-        """Use JSON of collected ATT data to update group quota & usage values in Coldfront.
-        """
+        '''Use JSON of collected ATT data to update group quota & usage values in Coldfront.
+        '''
         errored_allocations = {}
         result_json = read_json(result_file)
-        counts = {"proj_err": 0, "res_err":0, "all_err":0, "complete":0}
+        counts = {'proj_err': 0, 'res_err':0, 'all_err':0, 'complete':0}
         # produce list of present labs
         lablist = list(set(k for k in result_json))
         proj_models = Project.objects.filter(title__in=lablist)
         proj_titles = [p.title for p in proj_models]
         # log labs w/o projects, remove them from result_json
-        missing_projs = log_missing("project", proj_titles,lablist)
+        missing_projs = log_missing('project', proj_titles,lablist)
         counts['proj_err'] = len(missing_projs)
         [result_json.pop(key) for key in missing_projs]
 
@@ -150,15 +181,15 @@ class AllTheThingsConn:
         # get resource model
         res_models = Resource.objects.filter(reduce(operator.or_,
                                     (Q(name__contains=x) for x in resource_set)))
-        res_names = [str(r.name).split("/")[0] for r in res_models]
-        missing_res = log_missing("resource", res_names, resource_set)
+        res_names = [str(r.name).split('/')[0] for r in res_models]
+        missing_res = log_missing('resource', res_names, resource_set)
         counts['proj_err'] = len(missing_res)
 
         for k, v in result_json.items():
             result_json[k] = [a for a in v if a['server'] not in missing_res]
 
         for lab, allocations in result_json.items():
-            logger.debug("PROJECT: %s ====================================", lab)
+            logger.debug('PROJECT: %s ====================================', lab)
             # Find the correct allocation_allocationattributes to update by:
             # 1. finding the project with a name that matches lab.lab
             proj_query = proj_models.get(title=lab)
@@ -240,25 +271,139 @@ class AllTheThingsConn:
         logger.info('errored_allocations:\n%s', errored_allocations)
 
 
+
+def update_group_membership():
+    '''
+    Use ATT's user, group, and relationship information to keep the ProjectUser
+    list up-to-date for existing Coldfront Projects.
+    '''
+    # change logger filehandler
+    logger.removeHandler(filehandler)
+    handler = logging.FileHandler(f'logs/att_membership_update-{today}.log', 'w')
+    logger.addHandler(handler)
+    no_members = []
+    no_users = []
+    no_managers = []
+
+    for project in Project.objects.filter(status__name__in=["Active", "New"]):
+        # pull membership data for the given project
+        proj_name = project.title
+        att_conn = AllTheThingsConn()
+        logger.debug('updating group membership for %s', proj_name)
+        group_data = att_conn.collect_group_membership(proj_name)
+        logger.debug('raw AD group data:\n%s', group_data)
+        group_data = [group for group in group_data if group['user_enabled'] is True]
+        if not group_data:
+            no_members.append(proj_name)
+            continue
+        # project = Project.objects.get(title=proj_name)
+        projectusernames = [pu.user.username for pu in project.projectuser_set.filter(
+                    (~Q(status__name='Removed'))
+                            )]
+        logger.debug('projectusernames: %s', projectusernames)
+
+        # separate into membership and managerial control
+        relation_groups = {entry['relationship']:[] for entry in group_data}
+        for entry in group_data:
+            relation_groups[entry['relationship']].append(entry)
+
+        logger.debug('relation_groups: %s', relation_groups)
+        ### check through membership list ###
+        try:
+            ad_users = [u['user_name'] for u in relation_groups['MemberOf']]
+        except KeyError:
+            logger.warning("WARNING: MANAGERS BUT NO USERS LISTED FOR %s", project.title)
+            no_users.append(proj_name)
+            ad_users = []
+        # check for users not in Coldfront
+        not_added = [uname for uname in ad_users if uname not in projectusernames]
+        logger.debug('AD users not in ProjectUsers:\n%s', not_added)
+
+        if not_added:
+            # find accompanying ifxusers in the system
+            ifxusers = get_user_model().objects.filter(username__in=not_added)
+            ifxuser_names = [u.username for u in ifxusers]
+            log_missing('user', ifxuser_names, not_added)
+            for user in ifxusers:
+                # in case user is being re-added to the project, first find/create a
+                # project_user matching just project/user, then change role & status
+                try:
+                    project_user = ProjectUser.objects.get(project=project,
+                                user=user)
+                    project_user.role=ProjectUserRoleChoice.objects.get(name='User')
+                    project_user.status = ProjectUserStatusChoice.objects.get(name='Active')
+                    project_user.save()
+                except ProjectUser.DoesNotExist:
+                    ProjectUser.objects.create(project=project,
+                                user=user,
+                                role=ProjectUserRoleChoice.objects.get(name='User'),
+                                status = ProjectUserStatusChoice.objects.get(name='Active')
+                                )
+
+        ### check through management list ###
+        try:
+            ad_managers = [u['user_name'] for u in relation_groups['ManagedBy']]
+        except KeyError:
+            logger.warning('no active managers for project %s', proj_name)
+            print(f'WARNING: no active managers for project {proj_name}')
+            no_managers.append(proj_name)
+            continue
+
+        # get accompanying ProjectUser entries
+        project_managers = ProjectUser.objects.filter(project=project, user__username__in=ad_managers)
+        for manager in project_managers:
+            # if ProjectUser's role__name is 'User', change it to 'Manager'
+            if manager.role.name == 'User':
+                manager.role = ProjectUserRoleChoice.objects.get(name='Manager')
+                manager.save()
+
+        ### change statuses of inactive ProjectUsers to 'Removed' ###
+        projusers_to_remove = [uname for uname in projectusernames if uname not in ad_users]
+        if projusers_to_remove:
+            # log removed users
+            logger.debug('users to remove: %s', projusers_to_remove)
+
+            # if ProjectUser is still an AllocationUser, change to Pending - Remove
+            for username in projusers_to_remove:
+                project_user = ProjectUser.objects.get( project=project,
+                                                        user__username=username)
+                activeallocationusership = AllocationUser.objects.filter(
+                                            allocation__project=project,
+                                            user=project_user.user,
+                                            status__name__in=['Active', 'Pending - Add']
+                                            )
+                if activeallocationusership:
+                    message = f'cannot remove User {username} for Project {project.title} - active AllocationUser'
+                    logger.warning(message)
+                    print(message)
+                    project_user.status = ProjectUserStatusChoice.objects.get(name='Pending - Remove')
+                else:
+                    project_user.status = ProjectUserStatusChoice.objects.get(name='Removed')
+                    logger.debug('removed User %s from Project %s', username, project.title)
+                project_user.save()
+    logger.warning('AD groups with no members: %s', no_members)
+    logger.warning('AD groups with no users: %s', no_users)
+    logger.warning('AD groups with no managers: %s', no_managers)
+
+
+
 def log_missing(modelname,
                 model_attr_list,
                 search_list,
-                group="",
-                fpath_pref="./coldfront/plugins/fasrc/data/",
-                pattern="I,D"):
-    '''
-    '''
+                group='',
+                fpath_pref='./coldfront/plugins/fasrc/data/',
+                pattern='I,D'):
     fpath = f'{fpath_pref}missing_{modelname}s.csv'
     missing = [i for i in search_list if i not in list(model_attr_list)]
     if missing:
-        datestr = datetime.today().strftime("%Y%m%d")
-        patterns = [pattern.replace("I", i).replace("D", datestr).replace("G", group) for i in missing]
+        datestr = datetime.today().strftime('%Y%m%d')
+        patterns = [pattern.replace('I', i).replace('D', datestr).replace('G', group) for i in missing]
         find_or_add_file_line(fpath, patterns)
     return missing
 
 
 def find_or_add_file_line(filepath, patterns):
-    """Find or add lines matching a string contained in a list to a file.
+    '''Find or add lines matching a string contained in a list to a file.
 
     Parameters
     ----------
@@ -266,7 +411,7 @@ def find_or_add_file_line(filepath, patterns):
         path and name of file to check.
     patterns : list
         list of lines to find or append to file.
-    """
+    '''
     with open(filepath, 'a+') as file:
         file.seek(0)
         lines = file.readlines()
@@ -276,16 +421,16 @@ def find_or_add_file_line(filepath, patterns):
 
 
 def generate_headers(token):
-    """Generate "headers" attribute by using the "token" attribute.
-    """
+    '''Generate 'headers' attribute by using the 'token' attribute.
+    '''
     headers = {
-        "accept": "application/json",
-        "Authorization": "Bearer {}".format(token),
+        'accept': 'application/json',
+        'Authorization': 'Bearer {}'.format(token),
     }
     return headers
 
 def read_json(filepath):
-    logger.debug("read_json for %s", filepath)
-    with open(filepath, "r") as myfile:
+    logger.debug('read_json for %s', filepath)
+    with open(filepath, 'r') as myfile:
         data = json.loads(myfile.read())
     return data
