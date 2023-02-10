@@ -38,12 +38,13 @@ class Command(BaseCommand):
             print(lab_name, lab_resource_allocation)
             try:
                 project_obj = Project.objects.get(title=lab_name) # find project
-                allocations = Allocation.objects.filter(project=project_obj, resources__name=lab_resource_allocation, status__name='Active')
+                allocations = Allocation.objects.filter(project=project_obj, resources__name=lab_resource_allocation)
+
                 if allocations.count() == 0:
                     print("creating allocation: " + lab_name)
                     if project_obj != "":
                         start_date = datetime.datetime.now()
-                            # import allocations
+                        # import allocations
                         allocation_obj = Allocation.objects.create(
                             project=project_obj,
                             status=AllocationStatusChoice.objects.get(name='Active'),
@@ -54,7 +55,9 @@ class Command(BaseCommand):
                             Resource.objects.get(name=lab_resource_allocation))
                         allocation_obj.save()
                         allocations = Allocation.objects.filter(project=project_obj, resources__name=lab_resource_allocation, status__name='Active')
-
+                else:
+                    if allocations.filter(status__name='Active').count() == 0:
+                        allocations[0].status = AllocationStatusChoice.objects.get(name='Active')
                 print("Adding PI: " + project_obj.pi.username)
                 pi_obj = get_user_model().objects.get(username = project_obj.pi.username)
                 try:
