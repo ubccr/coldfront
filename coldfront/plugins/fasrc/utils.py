@@ -88,10 +88,11 @@ class AllTheThingsConn:
             volumes = '|'.join(volumes)
         else:
             volumes = '|'.join([r.name.split('/')[0] for r in Resource.objects.all()])
-        logger.debug('volumes: %s', volumes)
+        logger.debug("volumes: %s", volumes)
 
-        quota = {'match': '[:HasQuota]-(e:Quota)',
-            'where':f'WHERE (e.filesystem =~ \'.*({volumes}).*\')',
+        quota = {'match': '[r:HasQuota]-(e:Quota)',
+            'where':f"(e.filesystem =~ \'.*({volumes}).*\')",
+            'r_updated': 'DotsLFSUpdateDate',
             'storage_type':'\'Quota\'',
             'usedgb': 'usedGB',
             'sizebytes': 'limitBytes',
@@ -101,8 +102,9 @@ class AllTheThingsConn:
             'replace': '/n/',
             'unique':'datetime(e.DotsLFSUpdateDate) as begin_date'}
 
-        isilon = {'match': '[:Owns]-(e:IsilonPath)',
-            'where':f'WHERE (e.Isilon =~ \'.*({volumes}).*\')',
+        isilon = {'match': '[r:Owns]-(e:IsilonPath)',
+            'where':f"(e.Isilon =~ '.*({volumes}).*')",
+            'r_updated': 'DotsUpdateDate',
             'storage_type':'\'Isilon\'',
             'fs_path':'Path',
             'server':'Isilon',
@@ -124,7 +126,9 @@ class AllTheThingsConn:
 
         for d in [quota, isilon]:
             statement = {'statement': f"MATCH p=(g:Group)-{d['match']} \
-                    {d['where']} RETURN\
+                    WHERE {d['where']} \
+                    AND (datetime() - duration('P31D') <= datetime(r.{d['r_updated']})) \
+                    RETURN \
                     {d['unique']}, \
                     g.ADSamAccountName as lab,\
                     (e.SizeGB / 1024.0) as tb_allocation, \
@@ -133,6 +137,7 @@ class AllTheThingsConn:
                     (e.{d['usedgb']} / 1024.0) as tb_usage,\
                     e.{d['fs_path']} as fs_path,\
                     {d['storage_type']} as storage_type, \
+                    datetime(r.{d['r_updated']}) as rel_updated, \
                     replace(e.{d['server']}, '{d['replace']}', '') as server"}
             queries['statements'].append(statement)
         resp_json = self.post_query(queries)

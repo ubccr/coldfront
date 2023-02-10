@@ -43,7 +43,7 @@ class Command(BaseCommand):
             allocation_usage = response.context_data['allocation_usage_bytes']
             if allocation_usage != 0:
                 for user in response.context_data['allocation_users']._result_cache:
-                    if user.usage_bytes != 0:
+                    if user.usage_bytes and user.usage_bytes != 0:
                         user_usage_pct = user.usage_bytes/allocation_usage*100
                     else:
                         user_usage_pct = 0
