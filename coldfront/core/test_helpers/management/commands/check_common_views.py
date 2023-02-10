@@ -35,11 +35,14 @@ class Command(BaseCommand):
         allocation_obj_ids = utils.collect_all_ids_in_listpage(client, allocation_list_url)
         utils.confirm_loads(client, allocation_obj_ids, "/allocation/")
 
-        stat_counter = {"no_users":0, "pct_101":0, "pct_99":0, "match": 0}
+        stat_counter = {'inactive': 0, "no_users":0, "pct_101":0, "pct_99":0, "match": 0}
         for obj_id in allocation_obj_ids:
             url = f"/allocation/{obj_id}/"
             user_pct_dict = {}
             response = client.get(url)
+            if response.context_data['allocation'].status.name not in ['Active', 'New']:
+                stat_counter["inactive"] += 1
+                continue
             allocation_usage = response.context_data['allocation_usage_bytes']
             if allocation_usage != 0:
                 for user in response.context_data['allocation_users']._result_cache:
@@ -52,6 +55,8 @@ class Command(BaseCommand):
                 if not user_pct_dict:
                     logger.warning("no user_pct_dict for %s.", obj_id)
                     stat_counter["no_users"] += 1
+                elif sum(user.usage_bytes) == 0 and allocation_usage == 0:
+                    stat_counter["match"] += 1
                 elif pct_sum > 101:
                     logger.warning("ALLOCATION %s: pct_sum > 101. Total: %s.\n%s", obj_id, pct_sum, user_pct_dict)
                     stat_counter["pct_101"] += 1
@@ -61,6 +66,6 @@ class Command(BaseCommand):
                 else:
                     stat_counter["match"] += 1
             elif any(user.usage_bytes != 0 for user in response.context_data['allocation_users']._result_cache):
-                logger.warning("ALLOCATION %s: allocation_usage is 0 but user_sum > 0")
+                logger.warning("ALLOCATION %s: allocation_usage is 0 but user_sum > 0", obj_id)
                 stat_counter["pct_101"] += 1
         logger.warning("match stats: %s", stat_counter)
