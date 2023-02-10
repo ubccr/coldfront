@@ -544,12 +544,21 @@ class UserLoginView(View):
 class SSOLoginView(TemplateView):
     """Display the template for SSO login. If the user is authenticated,
     redirect to the home page."""
-    template_name = 'user/sso_login.html'
 
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_authenticated:
             return redirect(reverse('home'))
         return super().dispatch(request, *args, **kwargs)
+
+    def get_template_names(self):
+        if flag_enabled('BRC_ONLY'):
+            return ['user/sso_login_brc.html']
+        elif flag_enabled('LRC_ONLY'):
+            return ['user/sso_login_lrc.html']
+        else:
+            raise ImproperlyConfigured(
+                'One of the following flags must be enabled: BRC_ONLY, '
+                'LRC_ONLY.')
 
 
 class UserRegistrationView(CreateView):
