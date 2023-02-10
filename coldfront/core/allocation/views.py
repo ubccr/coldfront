@@ -232,12 +232,12 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             if action != 'auto-approve':
                 messages.success(request, 'Allocation Activated!')
 
-        elif old_status != allocation_obj.status.name in ['Denied', 'New']:
+        elif old_status != allocation_obj.status.name in ['Denied', 'New', 'Revoked']:
             allocation_obj.start_date = None
             allocation_obj.end_date = None
             allocation_obj.save()
 
-            if allocation_obj.status.name == 'Denied':
+            if allocation_obj.status.name == ['Denied', 'Revoked']:
                 allocation_disable.send(
                     sender=self.__class__, allocation_pk=allocation_obj.pk)
                 allocation_users = allocation_obj.allocationuser_set.exclude(
@@ -245,9 +245,12 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                 for allocation_user in allocation_users:
                     allocation_remove_user.send(
                         sender=self.__class__, allocation_user_pk=allocation_user.pk)
-
+            if allocation_obj.status.name == 'Denied':
                 send_allocation_customer_email(allocation_obj, 'Allocation Denied', 'email/allocation_denied.txt', domain_url=get_domain_url(self.request))
                 messages.success(request, 'Allocation Denied!')
+            elif allocation_obj.status.name == 'Revoked':
+                send_allocation_customer_email(allocation_obj, 'Allocation Revoked', 'email/allocation_revoked.txt', domain_url=get_domain_url(self.request))
+                messages.success(request, 'Allocation Revoked!')
             else:
                 messages.success(request, 'Allocation updated!')
         else:
