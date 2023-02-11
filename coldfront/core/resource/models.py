@@ -8,7 +8,7 @@ from simple_history.models import HistoricalRecords
 import coldfront.core.attribute_expansion as attribute_expansion
 
 class AttributeType(TimeStampedModel):
-    """ A resource attribute type indicates the data type of the attribute. Examples include Date, Float, Int, Text, and Yes/No. """
+    """ An attribute type indicates the data type of the attribute. Examples include Date, Float, Int, Text, and Yes/No. """
     name = models.CharField(max_length=128, unique=True)
 
     def __str__(self):
@@ -19,7 +19,7 @@ class AttributeType(TimeStampedModel):
 
 
 class ResourceType(TimeStampedModel):
-    """ A resource type indicates the type of the resource being allocated. Examples include Cloud, Server, and Storage. """
+    """ A resource type class links a resource and its value. """
     name = models.CharField(max_length=128, unique=True)
     description = models.CharField(max_length=255)
     history = HistoricalRecords()
@@ -42,7 +42,7 @@ class ResourceType(TimeStampedModel):
 
 
 class ResourceAttributeType(TimeStampedModel):
-    """ A resource attribute type indicates the data type of the attribute. Examples include Date, Float, Int, Text, and Yes/No. """
+    """ A resource attribute type indicates the type of the attribute. Examples include slurm_specs and slurm_cluster. """
     attribute_type = models.ForeignKey(AttributeType, on_delete=models.CASCADE)
     name = models.CharField(max_length=128)
     is_required = models.BooleanField(default=False)
@@ -58,6 +58,7 @@ class ResourceAttributeType(TimeStampedModel):
 
 
 class Resource(TimeStampedModel):
+    """ A resource is something a center maintains and provides access to for the community. Examples include Budgetstorage, Server, and Software License. """
     parent_resource = models.ForeignKey(
         'self', on_delete=models.CASCADE, blank=True, null=True)
     resource_type = models.ForeignKey(ResourceType, on_delete=models.CASCADE)
