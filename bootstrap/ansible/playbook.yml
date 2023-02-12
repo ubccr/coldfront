@@ -406,6 +406,16 @@
             name: vim
             state: present
 
+        - name: Add dev QOL lines to .bashrc
+          blockinfile:
+            path: /home/{{ djangooperator }}/.bashrc
+            block: |
+            # Upon login, navigate to the ColdFront directory and source the virtual environment.
+            cd {{ git_prefix }}/{{ reponame }}
+            source ../venv/bin/activate
+            # Restart Apache with a keyword.
+            alias reload="sudo service httpd reload"
+
         - name: Modify .bashrc to start in application directory by default
           lineinfile:
             path: /home/{{ djangooperator }}/.bashrc
