@@ -1,6 +1,6 @@
 # ColdFront Changelog
 
-## [1.1.4] - 2022-02-11
+## [1.1.4] - 2023-02-11
 
 - Datepicker changed to flatpickr. Remove jquery-ui [#438](https://github.com/ubccr/coldfront/issues/438)
 - Combined email expiry notifications [#413](https://github.com/ubccr/coldfront/pull/413)
