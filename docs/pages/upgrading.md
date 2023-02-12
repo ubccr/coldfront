@@ -3,6 +3,22 @@
 This document describes upgrading ColdFront. New releases of ColdFront may
 introduce breaking changes so please refer to this document before upgrading.
 
+## v1.1.4
+
+This release includes a new Project Attribute feature which requires a database
+migration. Before upgrading, be sure to backup your database.
+
+To upgrade via pip, following these steps:
+
+```
+$ source /path/to/your/venv/bin/activate
+$ pip install --upgrade coldfront
+$ coldfront migrate
+
+# Optionally, add new default Project Attribute Types
+$ coldfront add_default_project_choices
+```
+
 ## v1.1.3
 
 This release changes some css/javascript assets to be hosted statically instead
