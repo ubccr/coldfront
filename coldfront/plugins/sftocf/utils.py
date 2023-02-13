@@ -13,7 +13,9 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 
 from coldfront.core.utils.common import import_from_settings
-from coldfront.core.utils.fasrc import determine_size_fmt
+from coldfront.core.utils.fasrc import (determine_size_fmt,
+                                        id_present_missing_users,
+                                        log_missing)
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
 from coldfront.core.allocation.models import (Allocation,
@@ -349,9 +351,8 @@ def push_cf(filepaths, clean):
         usernames = [d['username'] for d in content['contents']]
         resource = content['volume'] + '/' + content['tier']
 
-        user_models = get_user_model().objects.only('id','username')\
-                .filter(username__in=usernames)
-        log_missing_user_models(content['project'], user_models, usernames)
+        user_models, missing_usernames = id_present_missing_users(usernames)
+        log_missing('user', missing_usernames)
 
         project = Project.objects.get(title=content['project'])
         # find project allocation
@@ -523,17 +524,6 @@ def collect_starfish_usage(server, volume, volumepath, projects):
     return filepaths
 
 
-def log_missing_user_models(groupname, user_models, usernames):
-    '''Identify and record any usernames that lack a matching user_models entry.
-    '''
-    missing_unames = [u for u in usernames if u not in [m.username for m in user_models]]
-    if missing_unames:
-        fpath = './coldfront/plugins/sftocf/data/missing_ifxusers.csv'
-        patterns = [f'{groupname},{uname},{datestr}' for uname in missing_unames]
-        write_update_file_line(fpath, patterns)
-        logger.warning('no IfxUser found for users: %s', missing_unames)
-
-
 def clean_dirs_data(data):
     data = [d for d in data if d['username'] != 'root']
     for entry in data:
@@ -627,8 +617,8 @@ def pull_sf_push_cf_redash():
         usernames = [d['user_name'] for d in lab_data]
 
         # identify and record users that aren't in Coldfront
-        user_models = get_user_model().objects.filter(username__in=usernames)
-        log_missing_user_models(lab, user_models, usernames)
+        user_models, missing_usernames = id_present_missing_users(usernames)
+        log_missing('user', missing_usernames)
         logger.debug('%s\n usernames: %s\n user_models: %s',
                 project.title, usernames, [u.username for u in user_models])
 
