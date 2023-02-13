@@ -453,23 +453,26 @@
             src: "{{ git_prefix }}/{{ reponame }}/bootstrap/ansible/password_reset_subject_template.tmpl"
             dest: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}/core/user/templates/user/passwords/password_reset_subject.txt"
 
-        # Ensure services are updated and running. Avoid restarting them to
-        # avoid disruptions to operations.
+        # Ensure services are updated, running, and enabled. Avoid restarting
+        # them to avoid disruptions to operations.
 
-        - name: Ensure that Redis service is running
+        - name: Ensure that Redis service is running and enabled
           service:
             name: redis
             state: started
+            enabled: true
 
-        - name: Ensure that Supervisord service is running
+        - name: Ensure that Supervisord service is running and enabled
           service:
             name: supervisord
             state: started
+            enabled: true
 
-        - name: Reload PostgreSQL service
+        - name: Ensure that PostgreSQL service is reloaded and enabled
           service:
             name: postgresql-9.6
             state: reloaded
+            enabled: true
 
         # Install Django application dependencies
 
