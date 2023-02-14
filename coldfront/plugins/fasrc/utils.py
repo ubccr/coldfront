@@ -102,8 +102,8 @@ class AllTheThingsConn:
             'replace': '/n/',
             'unique':'datetime(e.DotsLFSUpdateDate) as begin_date'}
 
-        isilon = {'match': '[r:Owns]-(e:IsilonPath)',
-            'where':f"(e.Isilon =~ '.*({volumes}).*')",
+        isilon = {'match': '[r:Owns]-(e:IsilonPath) MATCH (d:ConfigValue {Name: \'IsilonPath.Invocation\'})',
+            'where':f"(e.Isilon =~ '.*({volumes}).*') AND r.DotsUpdateDate = d.DotsUpdateDate",
             'r_updated': 'DotsUpdateDate',
             'storage_type':'\'Isilon\'',
             'fs_path':'Path',
