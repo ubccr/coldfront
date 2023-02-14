@@ -67,17 +67,17 @@ class AllTheThingsConn:
             "replace": '/n/',
             "unique":"datetime(e.DotsLFSUpdateDate) as begin_date"}
 
-        isilon = {"match": "[r:Owns]-(e:IsilonPath)",
-            'where':f"WHERE (e.Isilon =~ '.*({volumes}).*')",
-            'relation_update': 'DotsUpdateDate',
-            "storage_type":"\"Isilon\"",
-            "fs_path":"Path",
-            "server":"Isilon",
-            "usedgb": "UsedGB",
-            "sizebytes": "SizeBytes",
-            "usedbytes": "UsedBytes",
-            "replace": '01.rc.fas.harvard.edu',
-            "unique":"datetime(e.DotsUpdateDate) as begin_date"}
+        isilon = {'match': '[r:Owns]-(e:IsilonPath) MATCH (d:ConfigValue {Name: \'IsilonPath.Invocation\'})',
+            'where':f"(e.Isilon =~ '.*({volumes}).*') AND r.DotsUpdateDate = d.DotsUpdateDate",
+            'r_updated': 'DotsUpdateDate',
+            'storage_type':'\'Isilon\'',
+            'fs_path':'Path',
+            'server':'Isilon',
+            'usedgb': 'UsedGB',
+            'sizebytes': 'SizeBytes',
+            'usedbytes': 'UsedBytes',
+            'replace': '01.rc.fas.harvard.edu',
+            'unique':'datetime(e.DotsUpdateDate) as begin_date'}
 
         # volume = {"match": "[:Owns]-(e:Volume)",
         #     "where": "",
