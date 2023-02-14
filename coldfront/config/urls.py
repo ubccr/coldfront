@@ -55,11 +55,3 @@ if ('allauth.account.auth_backends.AuthenticationBackend' in
         ])
     for prefix, module_path in prefixes_and_module_paths:
         urlpatterns.append(path(prefix, include(module_path)))
-
-
-
-# TODO
-# NOTE: THE viz dir on the BRC repo has been updated. Copy it over.
-urlpatterns += [
-    path('viz/', include('coldfront.core.viz.urls')),
-]
