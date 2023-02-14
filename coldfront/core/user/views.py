@@ -865,7 +865,6 @@ class UpdatePrimaryEmailAddressView(LoginRequiredMixin, FormView):
 
     form_class = PrimaryEmailAddressSelectionForm
     template_name = 'user/user_update_primary_email_address.html'
-    login_url = '/'
 
     error_message = 'Unexpected failure. Please contact an administrator.'
 
@@ -946,7 +945,6 @@ class UserNameExistsView(View):
 
 @method_decorator(login_required, name='dispatch')
 class IdentityLinkingRequestView(UserPassesTestMixin, View):
-    login_url = '/'
     pending_status = None
 
     def test_func(self):

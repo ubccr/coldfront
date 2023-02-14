@@ -35,7 +35,6 @@ logger = logging.getLogger(__name__)
 
 
 class ProjectJoinView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
-    login_url = '/'
 
     logger = logging.getLogger(__name__)
 

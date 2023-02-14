@@ -198,7 +198,6 @@ class GrantReportView(LoginRequiredMixin, UserPassesTestMixin, ListView):
 
 
 class GrantDownloadView(LoginRequiredMixin, UserPassesTestMixin, View):
-    login_url = "/"
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""

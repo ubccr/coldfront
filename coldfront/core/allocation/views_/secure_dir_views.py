@@ -782,7 +782,6 @@ class SecureDirRequestLandingView(LoginRequiredMixin,
 
     template_name = \
         'secure_dir/secure_dir_request/secure_dir_request_landing.html'
-    login_url = '/'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -1067,7 +1066,6 @@ class SecureDirRequestListView(LoginRequiredMixin,
                                TemplateView):
 
     template_name = 'secure_dir/secure_dir_request/secure_dir_request_list.html'
-    login_url = '/'
     # Show completed requests if True; else, show pending requests.
     completed = False
 
@@ -1166,7 +1164,6 @@ class SecureDirRequestDetailView(LoginRequiredMixin,
     model = SecureDirRequest
     template_name = \
         'secure_dir/secure_dir_request/secure_dir_request_detail.html'
-    login_url = '/'
     context_object_name = 'secure_dir_request'
 
     logger = logging.getLogger(__name__)
@@ -1353,7 +1350,6 @@ class SecureDirRequestReviewRDMConsultView(LoginRequiredMixin,
     form_class = SecureDirRDMConsultationReviewForm
     template_name = (
         'secure_dir/secure_dir_request/secure_dir_consult_rdm.html')
-    login_url = '/'
 
     def test_func(self):
         """UserPassesTestMixin tests."""
@@ -1425,7 +1421,6 @@ class SecureDirRequestReviewMOUView(LoginRequiredMixin,
     form_class = ReviewStatusForm
     template_name = (
         'secure_dir/secure_dir_request/secure_dir_mou.html')
-    login_url = '/'
 
     def test_func(self):
         """UserPassesTestMixin tests."""
@@ -1493,7 +1488,6 @@ class SecureDirRequestReviewSetupView(LoginRequiredMixin,
     form_class = SecureDirSetupForm
     template_name = (
         'secure_dir/secure_dir_request/secure_dir_setup.html')
-    login_url = '/'
 
     def test_func(self):
         """UserPassesTestMixin tests."""
@@ -1568,7 +1562,6 @@ class SecureDirRequestReviewDenyView(LoginRequiredMixin, UserPassesTestMixin,
     form_class = ReviewDenyForm
     template_name = (
         'secure_dir/secure_dir_request/secure_dir_review_deny.html')
-    login_url = '/'
 
     def test_func(self):
         """UserPassesTestMixin tests."""
@@ -1631,7 +1624,6 @@ class SecureDirRequestUndenyRequestView(LoginRequiredMixin,
                                         UserPassesTestMixin,
                                         SecureDirRequestMixin,
                                         View):
-    login_url = '/'
 
     def test_func(self):
         """UserPassesTestMixin tests."""
