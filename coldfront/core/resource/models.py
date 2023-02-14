@@ -26,13 +26,19 @@ class ResourceType(TimeStampedModel):
 
     @property
     def active_count(self):
-        """ Returns the number of active resources of that type. """
+        """ 
+        Returns:
+            int: The number of active resources of that type.
+        """
         return ResourceAttribute.objects.filter(
             resource__resource_type__name=self.name, value="Active").count()
 
     @property
     def inactive_count(self):
-        """ Returns the number of inactive resources of that type. """
+        """ 
+        Returns:
+            int: The number of inactive resources of that type.
+        """
         return ResourceAttribute.objects.filter(
             resource__resource_type__name=self.name, value="Inactive").count()
 
@@ -96,15 +102,17 @@ class Resource(TimeStampedModel):
 
     @property
     def status(self):
-        """ Returns the status of a resource. """
+        """ 
+        Returns:
+            string: The status of the resource.
+        """
         return ResourceAttribute.objects.get(resource=self, resource_attribute_type__attribute="Status").value
 
     def get_attribute(self, name, expand=True, typed=True, 
         extra_allocations=[]):
-        """Returns the value of the first attribute found with specified name.
-
-        This will return the value of the first attribute found for this
-        resource with the specified name.
+        """
+        Returns:
+            string: The value of the first attribute found for this resource with the specified name.
 
         If expand is True (the default), we will return the expanded_value()
         method of the attribute, which will expand attributes/parameters in
@@ -137,8 +145,10 @@ class Resource(TimeStampedModel):
 
     def get_attribute_list(self, name, expand=True, typed=True,
         extra_allocations=[]):
-        """Returns a list of values of the attributes found with specified name.
-
+        """
+        Returns:
+            list: The list of values of the attributes found with specified name.
+        
         This will return a list consisting of the values of the all attributes
         found for this resource with the specified name.
 
@@ -170,7 +180,11 @@ class Resource(TimeStampedModel):
                 return [a.value for a in attr]
 
     def get_ondemand_status(self):
-        """Returns if the resource has ondemand status or not. """
+        """
+        
+        Returns:
+            str: If the resource has OnDemand status or not.
+        """
         ondemand = self.resourceattribute_set.filter(
             resource_attribute_type__name='OnDemand').first()
         if ondemand:
@@ -216,7 +230,10 @@ class ResourceAttribute(TimeStampedModel):
         return '%s: %s (%s)' % (self.resource_attribute_type, self.value, self.resource)
 
     def typed_value(self):
-        """Returns the value of the attribute, with proper type.
+        """
+
+        Returns:
+            int, float, str: The value of the attribute (with proper type).
 
         For attributes with Int or Float types, we return the value of
         the attribute coerced into an Int or Float.  If the coercion
@@ -232,7 +249,10 @@ class ResourceAttribute(TimeStampedModel):
             value=raw_value, type_name=atype_name)
 
     def expanded_value(self, typed=True, extra_allocations=[]):
-        """Returns the value of the attribute, after attribute expansion.
+        """
+        
+        Returns:
+            int, float, str: The value of the attribute after attribute expansion.
 
         For attributes with attribute type of  'Attribute Expanded Text' we
         look for an attribute with same name suffixed with '_attriblist' (this
