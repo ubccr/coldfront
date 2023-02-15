@@ -104,6 +104,14 @@ Log In
             institution. If your provider is not listed, select the
             <b>Google</b> provider.
           </li>
+          {% flag_enabled 'LINK_LOGIN_ENABLED' as link_login_enabled %}
+          {% if link_login_enabled %}
+          <li>
+            If you are an existing user whose institution is not listed, you
+            may request a short-lived login link
+            <a href="{% url 'request-login-link' %}">here</a>.
+          </li>
+          {% endif %}
         </ul>
       </div>
     </div>
