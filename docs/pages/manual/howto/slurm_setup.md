@@ -195,3 +195,36 @@ hpcadmin        staff   hpc     Remove
         staff   hpc     Remove
 ```
 This can be cron'd like the slurm_dump process or run manually.
+
+### Alternate Step 4 - Finer-grained Synchronization with Slurm  
+
+If you prefer more control over the process of synchronizing ColdFront with Slurm than is provided with the "slurm\_dump" and "slurm\_check" commands, the "slurm\_sync" command is also provided.  The "slurm\_sync" command will compare the cluster/account/user structure in Slurm (via a providedSlurm flat file dump) to what ColdFront thinks the Slurm configuration should be, and issue the appropriate Slurm sacctmgr commands to make the Slurm configuration agree with ColdFront.
+
+There is a "noop" flag available so that you can see the actual sacctmgr commands which would be run (either as a check before allowing the slurm\_sync command from running them, or to save to a file and edit).  The slurm\_sync command also accepts a number of flags to control its before.  A full list of available flags can be seen by giving it the "--help-flags" option.  Flags are strings that can be passed to the slurm\_sync command
+using the -f or --flags option; you can pass multiple flags by repeated use of the option.  Recognized flags are:
+
+- _skip\_create\_cluster_: If this flag is given, slurm\_sync will not create a cluster if missing in the Slurm flat file dump.  (*Note*: accounts and users in the missing cluster will not be created either).
+
+- _skip\_delete\_cluster_: If this flag is given, slurm\_sync will not delete a cluster if missing in ColdFront. (*Note*: accounts and users underneath the missing cluster will not be deleted either.).  Note that even without this flag, slurm\_sync will *not* issue commands to delete a cluster unless the _force\_delete\_cluster_ flag is also given, for safety.
+
+- _force\_delete\_cluster_: For safety reasons, slurm\_sync will *not* normally delete a cluster even if it is missing in ColdFront, but instead give a warning and force "noop" mode. Only if this flag is given will slurm\_sync actually execute the commands to delete a cluster if the cluster is missing in ColdFront.
+
+- _skip\_cluster\_specs_: If this flag is given, slurm\_sync will disregard the cluster specs when comparing clusters in Slurm and ColdFront.  I.e., even if the cluster specs differ, it will not issue a command to bring the Slurm cluster into agreement with ColdFront.
+
+- _skip\_create\_account_: If this flag is given, slurm\_sync will not create an account missing in the Slurm flat file dump.  *Note*: this also suppresses the creation of users underneath the missing account.
+
+- _skip\_delete\_account_: If this flag is given, slurm\_sync will not issue commands to delete an account present in Slurm but not in ColdFront.  *Note*: this also suppresses the deletion of users underneath the missing account.  *Note*: if the cluster containing the account is being deleted, this will not prevent the deletion of the account.
+
+- _skip\_account\_specs_: If this flag is given, slurm\_sync will disregard the account specs when comparing accounts in Slurm and ColdFront.  I.e., even if the account specs differ, it will not issue a command to bring the Slurm account into agreement with ColdFront.
+
+- _skip\_create\_user_: If this flag is given, slurm\_sync will not create users missing in the Slurm flat file dump.
+
+- _skip\_delete\_user_: If this flag is given, slurm\_sync will not delete users in the Slurm flat file dump but not in ColdFront.  *Note*: if the allocation containing the user is being deleted, this will not prevent the deletion of the user.
+
+- _skip\_user\_specs_: If this flag is given, slurm\_sync will disregard the user specs when comparing users in Slurm and ColdFront.  I.e., even if the user specs differ, it will not issue a command to bring the Slurm user into agreement with ColdFront.
+
+- _ignore\__***SPECFIELD***: If this flag is given, the Slurm spec ***SPECFIELD*** will be ignored when comparing specs (at any level).  Other specs for the object will still be considered.  *Note*: this only affects situations in which slurm\_sync would issue a modification command; if slurm\_sync wants to create the object, it will still give the full spec string.
+
+- _ignore\_-***SPECFIELD***_***SUBFIELD***: This flag is similar to the above, but instructs slurm\_sync to ignore a single component ***SUBFIELD*** in a TRES-like spec ***SPECFIELD***.  Other components of ***SPECFIELD*** will still be considered.
+
+*NOTE*: The slurm\_sync command tries to handle set-like specs (e.g. QoS and other specs which can use the += notation), but that has not been fully tested.  

@@ -5,9 +5,18 @@ Allocations in ColdFront are marshalled out to Slurm associations in the
 Slurm flat file format and can be loaded with sacctmgr. For more information on
 the Slurm flat file format see [here](https://slurm.schedmd.com/sacctmgr.html).
 
-A command line tool is also provided with this app that allows an administrator
-to check the consistency between ColdFront and Slurm and optionally remove any
-associations that should not be in Slurm according to ColdFront.
+The "slurm\_check" command line tool is also provided with this app 
+and allows an administrator to check the consistency between ColdFront and 
+Slurm and optionally remove any associations that should not be in Slurm 
+according to ColdFront.
+
+The "slurm\_sync" command line tool allows for synchronizing the Slurm
+configuration (provided via Slurm flat file format) with the ColdFront
+database with fine-grained control.  It normally executes (or lists if
+run in "noop" mode) the Slurm sacctmgr commands needed to bring the
+Slurm configuration in agreement with ColdFront.  Flags can be provided
+to control which actions to issue (e.g. can skip creating and/or deleting
+users, accounts, etc) or which account/user settings to ignore.
 
 ## Design
 
