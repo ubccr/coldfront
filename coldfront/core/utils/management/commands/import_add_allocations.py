@@ -57,8 +57,10 @@ class Command(BaseCommand):
                         allocations = Allocation.objects.filter(project=project_obj, resources__name=lab_resource_allocation, status__name='Active')
                 else:
                     if allocations.filter(status__name='Active').count() == 0:
-                        allocations[0].status = AllocationStatusChoice.objects.get(name='Active')
-                        allocations[0].save()
+                        # do not modify status of inactive allocations
+                        pass
+                        # allocations[0].status = AllocationStatusChoice.objects.get(name='Active')
+                        # allocations[0].save()
                 print("Adding PI: " + project_obj.pi.username)
                 pi_obj = get_user_model().objects.get(username = project_obj.pi.username)
                 try:
