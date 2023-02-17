@@ -13,7 +13,11 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 
 from coldfront.core.utils.common import import_from_settings
-from coldfront.core.utils.fasrc import determine_size_fmt
+from coldfront.core.utils.fasrc import (determine_size_fmt,
+                                        locate_or_create_dirpath,
+                                        read_json,
+                                        id_present_missing_users,
+                                        log_missing)
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
 from coldfront.core.allocation.models import (Allocation,
@@ -28,9 +32,8 @@ filehandler = logging.FileHandler(f'logs/starfish_to_coldfront_{datestr}.log', '
 logger.addHandler(filehandler)
 
 STARFISH_SERVER = "holysfdb01"
+svp = read_json('coldfront/plugins/sftocf/servers.json')
 
-with open('coldfront/plugins/sftocf/servers.json', 'r') as myfile:
-    svp = json.loads(myfile.read())
 
 def record_process(func):
     '''Wrapper function for logging'''
@@ -349,16 +352,15 @@ def push_cf(filepaths, clean):
         usernames = [d['username'] for d in content['contents']]
         resource = content['volume'] + '/' + content['tier']
 
-        user_models = get_user_model().objects.only('id','username')\
-                .filter(username__in=usernames)
-        log_missing_user_models(content['project'], user_models, usernames)
+        user_models, missing_usernames = id_present_missing_users(usernames)
+        log_missing('user', missing_usernames)
 
         project = Project.objects.get(title=content['project'])
         # find project allocation
         try:
             allocation = Allocation.objects.get(project=project, resources__name=resource)
         except Allocation.MultipleObjectsReturned:
-            logger.debug('Too many allocations for project id %s; choosing one with "Allocation Information" in justification.',
+            logger.debug('>1 allocation for project id %s; choosing one with "Allocation Information" in justification.',
                                                             project.id)
 
             # try:
@@ -415,15 +417,7 @@ def update_usage(user, userdict, allocation):
     allocationuser.usage = usage
     allocationuser.unit = unit
     # automatically updates 'modified' field & adds old record to history
-    try:
-        allocationuser.save()
-        logger.debug('successful entry: %s, %s', userdict['groupname'], userdict['username'])
-    except ValidationError:
-        logger.warning("no ProjectUser entry for %s %s", userdict['groupname'], userdict['username'])
-        fpath = './coldfront/plugins/sftocf/data/missing_projectusers.csv'
-        patterns = [f'{userdict["groupname"]},{userdict["username"]},{datestr}' for uname in missing_unames]
-        write_update_file_line(fpath, patterns)
-
+    allocationuser.save()
 
 
 def clean_data_dir(homepath):
@@ -438,13 +432,6 @@ def clean_data_dir(homepath):
         if created < now - 7 * 86400:
             os.remove(fpath)
 
-def write_update_file_line(filepath, patterns):
-    with open(filepath, 'a+') as f:
-        f.seek(0)
-        for pattern in patterns:
-            if not any(pattern == line.rstrip('\r\n') for line in f):
-                f.write(pattern + '\n')
-
 def split_num_string(x):
     n = re.search(r'\d*\.?\d+', x).group()
     s = x.replace(n, '')
@@ -458,16 +445,6 @@ def save_json(file, contents):
     with open(file, 'w') as fp:
         json.dump(contents, fp, sort_keys=True, indent=4)
 
-def read_json(filepath):
-    logger.debug('read_json for %s', filepath)
-    with open(filepath, 'r') as json_file:
-        data = json.loads(json_file.read())
-    return data
-
-def locate_or_create_dirpath(dpath):
-    if not os.path.exists(dpath):
-        os.makedirs(dpath)
-        logger.info('created new directory %s', dpath)
 
 @record_process
 def collect_starfish_usage(server, volume, volumepath, projects):
@@ -521,17 +498,6 @@ def collect_starfish_usage(server, volume, volumepath, projects):
             filepaths.append(filepath)
 
     return filepaths
-
-
-def log_missing_user_models(groupname, user_models, usernames):
-    '''Identify and record any usernames that lack a matching user_models entry.
-    '''
-    missing_unames = [u for u in usernames if u not in [m.username for m in user_models]]
-    if missing_unames:
-        fpath = './coldfront/plugins/sftocf/data/missing_ifxusers.csv'
-        patterns = [f'{groupname},{uname},{datestr}' for uname in missing_unames]
-        write_update_file_line(fpath, patterns)
-        logger.warning('no IfxUser found for users: %s', missing_unames)
 
 
 def clean_dirs_data(data):
@@ -609,7 +575,6 @@ def pull_sf_push_cf_redash():
     # limit allocations to those in the volumes collected
     searched_resources = [Resource.objects.get(name__contains=vol) for vol in vols_to_collect]
     allocations = Allocation.objects.filter(resources__in=searched_resources)
-
     # 3. iterate across allocations
     for allocation in allocations:
         project = allocation.project
@@ -627,8 +592,8 @@ def pull_sf_push_cf_redash():
         usernames = [d['user_name'] for d in lab_data]
 
         # identify and record users that aren't in Coldfront
-        user_models = get_user_model().objects.filter(username__in=usernames)
-        log_missing_user_models(lab, user_models, usernames)
+        user_models, missing_usernames = id_present_missing_users(usernames)
+        log_missing('user', missing_usernames)
         logger.debug('%s\n usernames: %s\n user_models: %s',
                 project.title, usernames, [u.username for u in user_models])
 
@@ -644,19 +609,12 @@ def pull_sf_push_cf_redash():
                 )
             except AllocationUser.DoesNotExist:
                 if userdict['size_sum'] > 0:
-                    try:
-                        allocationuser = AllocationUser.objects.create(
-                            allocation=allocation,
-                            created=timezone.now(),
-                            status=AllocationUserStatusChoice.objects.get(name='Active'),
-                            user=user
-                        )
-                    except ValidationError:
-                        logger.warning("no ProjectUser entry for %s %s", userdict['group_name'], userdict['user_name'])
-                        fpath = './coldfront/plugins/sftocf/data/missing_projectusers.csv'
-                        pattern = f'{userdict["group_name"]},{userdict["user_name"]},{datestr}'
-                        write_update_file_line(fpath, [pattern])
-                        continue
+                    allocationuser = AllocationUser.objects.create(
+                        allocation=allocation,
+                        created=timezone.now(),
+                        status=AllocationUserStatusChoice.objects.get(name='Active'),
+                        user=user
+                    )
                 else:
                     logger.warning("allocation user missing: %s %s %s", lab, resource, userdict)
                     continue

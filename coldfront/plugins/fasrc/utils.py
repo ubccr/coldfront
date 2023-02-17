@@ -1,14 +1,18 @@
 import json
 import logging
+import operator
 from functools import reduce
 from datetime import datetime
-import operator
 
 import requests
 from django.db.models import Q
 from django.contrib.auth import get_user_model
 
 from coldfront.core.utils.common import import_from_settings
+from coldfront.core.utils.fasrc import (log_missing,
+                                        id_present_missing_users,
+                                        id_present_missing_resources,
+                                        id_present_missing_projects)
 from coldfront.core.project.models import ( Project,
                                             ProjectUserRoleChoice,
                                             ProjectUserStatusChoice,
@@ -164,25 +168,22 @@ class AllTheThingsConn:
         '''Use JSON of collected ATT data to update group quota & usage values in Coldfront.
         '''
         errored_allocations = {}
+        missing_allocations = []
         result_json = read_json(result_file)
         counts = {'proj_err': 0, 'res_err':0, 'all_err':0, 'complete':0}
-        # produce list of present labs
+        # produce lists of present labs & labs w/o projects
         lablist = list(set(k for k in result_json))
-        proj_models = Project.objects.filter(title__in=lablist)
-        proj_titles = [p.title for p in proj_models]
-        # log labs w/o projects, remove them from result_json
-        missing_projs = log_missing('project', proj_titles,lablist)
+        proj_models, missing_projs = id_present_missing_projects(lablist)
+        log_missing('project', missing_projs)
+        # remove them from result_json
         counts['proj_err'] = len(missing_projs)
-        [result_json.pop(key) for key in missing_projs]
+        missing_proj_titles = [list(p.values())[0] for p in missing_projs]
+        [result_json.pop(t) for t in missing_proj_titles]
 
         # produce set of server values for which to locate matching resources
-        resource_set = {a['server'] for l in result_json.values() for a in l}
-        logger.debug("coldfront resource_set: %s", resource_set)
-        # get resource model
-        res_models = Resource.objects.filter(reduce(operator.or_,
-                                    (Q(name__contains=x) for x in resource_set)))
-        res_names = [str(r.name).split('/')[0] for r in res_models]
-        missing_res = log_missing('resource', res_names, resource_set)
+        resource_list = list({a['server'] for l in result_json.values() for a in l})
+        logger.debug("coldfront resource_list: %s", resource_list)
+        res_models, missing_res = id_present_missing_resources(resource_list)
         counts['proj_err'] = len(missing_res)
 
         for k, v in result_json.items():
@@ -209,9 +210,10 @@ class AllTheThingsConn:
                     elif a.count() < 1:
                         logger.warning("ERROR: No Allocation for project %s, resource %s",
                                                     proj_query.title, resource.name)
-                        log_missing("allocation", [], [resource.name],
-                                                group=proj_query.title,
-                                                pattern="G,I,D")
+                        missing_allocations.append({
+                                "resource_name":resource.name,
+                                "project_title": proj_query.title
+                                })
                         counts['all_err'] += 1
                         continue
                     elif a.count() > 1:
@@ -267,8 +269,9 @@ class AllTheThingsConn:
                 except Exception as e:
                     allocation_name = f"{allocation['lab']}/{allocation['server']}"
                     errored_allocations[allocation_name] = e
-        logger.info("error counts: %s", counts)
-        logger.info('errored_allocations:\n%s', errored_allocations)
+        log_missing("allocation", missing_allocations)
+        logger.warning("error counts: %s", counts)
+        logger.warning('errored_allocations:\n%s', errored_allocations)
 
 
 
@@ -321,9 +324,9 @@ def update_group_membership():
 
         if not_added:
             # find accompanying ifxusers in the system
-            ifxusers = get_user_model().objects.filter(username__in=not_added)
-            ifxuser_names = [u.username for u in ifxusers]
-            log_missing('user', ifxuser_names, not_added)
+            ifxusers, missing_users = id_present_missing_users(not_added)
+            log_missing('users', missing_users)
+
             for user in ifxusers:
                 # in case user is being re-added to the project, first find/create a
                 # project_user matching just project/user, then change role & status
@@ -384,40 +387,6 @@ def update_group_membership():
     logger.warning('AD groups with no members: %s', no_members)
     logger.warning('AD groups with no users: %s', no_users)
     logger.warning('AD groups with no managers: %s', no_managers)
-
-
-
-def log_missing(modelname,
-                model_attr_list,
-                search_list,
-                group='',
-                fpath_pref='./coldfront/plugins/fasrc/data/',
-                pattern='I,D'):
-    fpath = f'{fpath_pref}missing_{modelname}s.csv'
-    missing = [i for i in search_list if i not in list(model_attr_list)]
-    if missing:
-        datestr = datetime.today().strftime('%Y%m%d')
-        patterns = [pattern.replace('I', i).replace('D', datestr).replace('G', group) for i in missing]
-        find_or_add_file_line(fpath, patterns)
-    return missing
-
-
-def find_or_add_file_line(filepath, patterns):
-    '''Find or add lines matching a string contained in a list to a file.
-
-    Parameters
-    ----------
-    filepath : string
-        path and name of file to check.
-    patterns : list
-        list of lines to find or append to file.
-    '''
-    with open(filepath, 'a+') as file:
-        file.seek(0)
-        lines = file.readlines()
-        for pattern in patterns:
-            if not any(pattern == line.rstrip('\r\n') for line in lines):
-                file.write(pattern + '\n')
 
 
 def generate_headers(token):
