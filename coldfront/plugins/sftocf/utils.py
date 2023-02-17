@@ -16,6 +16,7 @@ from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.fasrc import (determine_size_fmt,
                                         id_present_missing_users,
                                         log_missing)
+from coldfront.core.utils.fasrc import locate_or_create_dirpath
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
 from coldfront.core.allocation.models import (Allocation,
@@ -465,10 +466,6 @@ def read_json(filepath):
         data = json.loads(json_file.read())
     return data
 
-def locate_or_create_dirpath(dpath):
-    if not os.path.exists(dpath):
-        os.makedirs(dpath)
-        logger.info('created new directory %s', dpath)
 
 @record_process
 def collect_starfish_usage(server, volume, volumepath, projects):

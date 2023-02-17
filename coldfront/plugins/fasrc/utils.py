@@ -168,6 +168,7 @@ class AllTheThingsConn:
         '''Use JSON of collected ATT data to update group quota & usage values in Coldfront.
         '''
         errored_allocations = {}
+        missing_allocations = []
         result_json = read_json(result_file)
         counts = {'proj_err': 0, 'res_err':0, 'all_err':0, 'complete':0}
         # produce lists of present labs & labs w/o projects
@@ -176,7 +177,8 @@ class AllTheThingsConn:
         log_missing('project', missing_projs)
         # remove them from result_json
         counts['proj_err'] = len(missing_projs)
-        [result_json.pop(key) for key in missing_projs]
+        missing_proj_titles = [list(p.values())[0] for p in missing_projs]
+        [result_json.pop(t) for t in missing_proj_titles]
 
         # produce set of server values for which to locate matching resources
         resource_list = list({a['server'] for l in result_json.values() for a in l})
@@ -208,9 +210,10 @@ class AllTheThingsConn:
                     elif a.count() < 1:
                         logger.warning("ERROR: No Allocation for project %s, resource %s",
                                                     proj_query.title, resource.name)
-                        log_missing("allocation", [resource.name],
-                                                group=proj_query.title,
-                                                pattern="G,I,D")
+                        missing_allocations.append({
+                                "resource_name":resource.name,
+                                "project_title": proj_query.title
+                                })
                         counts['all_err'] += 1
                         continue
                     elif a.count() > 1:
@@ -266,8 +269,9 @@ class AllTheThingsConn:
                 except Exception as e:
                     allocation_name = f"{allocation['lab']}/{allocation['server']}"
                     errored_allocations[allocation_name] = e
-        logger.info("error counts: %s", counts)
-        logger.info('errored_allocations:\n%s', errored_allocations)
+        log_missing("allocation", missing_allocations)
+        logger.warning("error counts: %s", counts)
+        logger.warning('errored_allocations:\n%s', errored_allocations)
 
 
 

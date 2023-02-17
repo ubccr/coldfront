@@ -1,6 +1,6 @@
 """A module for fasrc-specific utility functions
 """
-
+import os
 import operator
 from functools import reduce
 from datetime import datetime
@@ -11,7 +11,6 @@ from django.db.models import Q
 from django.contrib.auth import get_user_model
 
 from coldfront.core.project.models import Project
-from coldfront.core.allocation.models import Allocation
 from coldfront.core.resource.models import Resource
 
 MISSING_DATA_DIR = './local_data/missing/'
@@ -63,12 +62,12 @@ def id_present_missing_resources(resourceserver_list):
 
 
 
-def id_present_missing_projects(project_title_list):
+def id_present_missing_projects(title_list):
     '''
     '''
-    present_projects = Project.objects.filter(title__in=project_title_list)
+    present_projects = Project.objects.filter(title__in=title_list)
     proj_titles = [p.title for p in present_projects]
-    missing_project_titles = [title for title in project_title_list if title not in proj_titles]
+    missing_project_titles = [{"title": title} for title in title_list if title not in proj_titles]
     return (present_projects, missing_project_titles)
 
 
@@ -79,41 +78,42 @@ def id_present_missing_users(username_list):
     '''
     present_users = get_user_model().objects.filter(username__in=username_list)
     present_usernames = [u.username for u in present_users]
-    missing_usernames = [name for name in username_list if name not in present_usernames]
+    missing_usernames = [{"username": name} for name in username_list if name not in present_usernames]
     return (present_users, missing_usernames)
 
 
-def log_missing(modelname,
-                missing,
-                group='',
-                pattern='I,D'):
-    '''
+def log_missing(modelname, missing):
+    '''log missing entries for a given Coldfront model.
+    Add or update entries in CSV, order CSV by descending date and save.
 
     Parameters
     ----------
-    search_list : list of
+    modelname : string
+        lowercase name of the Coldfront model for "missing"
+    missing : list of dicts
+        identifying information to record for missing entries:
+            for users, "username".
+            for projects, "title".
+            for allocations, "resource_name" and "project_title".
 
     '''
-    fpath = f'{MISSING_DATA_DIR}missing_{modelname}s.csv'
-    datestr = datetime.today().strftime('%Y%m%d')
-    patterns = [pattern.replace('I', i).replace('D', datestr).replace('G', group) for i in missing]
-    find_or_add_file_line(fpath, patterns)
-    return missing
+    if missing:
+        locate_or_create_dirpath(MISSING_DATA_DIR)
+        fpath = f'{MISSING_DATA_DIR}missing_{modelname}s.csv'
+        try:
+            missing_df = pd.read_csv(fpath, parse_dates=['date'])
+        except FileNotFoundError:
+            missing_df = pd.DataFrame()
+        new_records = pd.DataFrame(missing)
+        col_checks = new_records.columns.values.tolist()
+        new_records['date'] = datetime.today()
+        missing_df = (pd.concat([missing_df, new_records])
+                        .drop_duplicates(col_checks, keep='last')
+                        .sort_values('date', ascending=False)
+                        .reset_index(drop=True))
+        missing_df.to_csv(fpath, index=False)
 
 
-def find_or_add_file_line(filepath, patterns):
-    '''Find or add lines matching a string contained in a list to a file.
-
-    Parameters
-    ----------
-    filepath : string
-        path and name of file to check.
-    patterns : list
-        list of lines to find or append to file.
-    '''
-    with open(filepath, 'a+') as file:
-        file.seek(0)
-        lines = file.readlines()
-        for pattern in patterns:
-            if not any(pattern == line.rstrip('\r\n') for line in lines):
-                file.write(pattern + '\n')
+def locate_or_create_dirpath(dpath):
+    if not os.path.exists(dpath):
+        os.makedirs(dpath)
