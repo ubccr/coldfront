@@ -54,6 +54,8 @@ def get_resource_rate(resource):
 
 def id_present_missing_resources(resourceserver_list):
     '''
+    Collect all Resource entries with resources in param resourceserver_list;
+    return tuple of all matching Resource entries and all servers with no Resource entries.
     '''
     present_resources = Resource.objects.filter(reduce(operator.or_,
                     (Q(name__contains=x) for x in resourceserver_list)))
@@ -64,6 +66,8 @@ def id_present_missing_resources(resourceserver_list):
 
 def id_present_missing_projects(title_list):
     '''
+    Collect all Project entries with titles in param title_list; return tuple
+    of all matching Project entries and all titles with no Project entries.
     '''
     present_projects = Project.objects.filter(title__in=title_list)
     proj_titles = [p.title for p in present_projects]
