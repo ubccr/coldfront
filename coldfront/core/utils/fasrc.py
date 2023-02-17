@@ -1,6 +1,7 @@
 """A module for fasrc-specific utility functions
 """
 import os
+import json
 import operator
 from functools import reduce
 from datetime import datetime
@@ -61,7 +62,6 @@ def id_present_missing_resources(resourceserver_list):
     return (present_resources, missing_res)
 
 
-
 def id_present_missing_projects(title_list):
     '''
     '''
@@ -95,7 +95,6 @@ def log_missing(modelname, missing):
             for users, "username".
             for projects, "title".
             for allocations, "resource_name" and "project_title".
-
     '''
     if missing:
         locate_or_create_dirpath(MISSING_DATA_DIR)
@@ -117,3 +116,9 @@ def log_missing(modelname, missing):
 def locate_or_create_dirpath(dpath):
     if not os.path.exists(dpath):
         os.makedirs(dpath)
+
+
+def read_json(filepath):
+    with open(filepath, 'r') as json_file:
+        data = json.loads(json_file.read())
+    return data

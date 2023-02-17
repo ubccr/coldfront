@@ -535,13 +535,6 @@ class AllocationUser(TimeStampedModel): #allocation user and user are both datab
         verbose_name_plural = 'Allocation User Status'
         unique_together = ('user', 'allocation')
 
-    def save(self, *args, **kwargs):
-        project_user = ProjectUser.objects.filter(user=self.user, project=self.allocation.project)
-        if not project_user:
-            raise ValidationError(
-            'Cannot save AllocationUser without a matching ProjectUser')
-        super().save(*args, **kwargs)
-
 
 class AllocationAccount(TimeStampedModel):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
