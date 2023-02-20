@@ -254,6 +254,46 @@ exist in your backend LDAP to show up in the ColdFront user search.
 | LDAP_USER_SEARCH_CONNECT_TIMEOUT  | Time in seconds to wait before timing out. Default 2.5  |
 | LDAP_USER_SEARCH_USE_SSL  | Whether to use ssl when connecting to LDAP server. Default True |
 
+#### social-core
+
+This plugin allows easy setup of social authentication/registration for many different
+frameworks. Social-core allows for custom backends and customization of the authentication/registration
+process required for users. Further documentation can be found in their [documentation](https://python-social-auth.readthedocs.org/).
+Please read over the configuration section for the framework you use for any requried settings based on your system. 
+
+!!! warning "Required"
+    Social-core requires `social-auth-app-django`.
+    ```
+    $ pip install social-auth-app-django
+    ```
+
+| Name            | Description                              |
+| :---------------|:-----------------------------------------|
+| PLUGIN_SOCIAL_CORE    | Enable social authentication/registration . Default False  |
+
+#### ORCID
+
+This plugin allows you to pull grant and research information from the ORCID API.
+Now users can either manually enter this information or connect their ORCID account
+through Coldfront and import this information from their ORCID record.
+
+!!! warning "Required"
+    ORCID requires `orcid` and `social-auth-app-django`.
+    ```
+    $ pip install orcid
+    ```
+    ```
+    $ pip install social-auth-app-django
+    ```
+
+| Name            | Description                              |
+| :---------------|:-----------------------------------------|
+| PLUGIN_ORCID    | Enable ORCID integration. Default False  |
+| ORCID_CLIENT_ID | API credential ID - Developer Tool       |
+| ORCID_CLIENT_SECRET  | API credentail secret - Developer Tool |
+| ORCID_REDIRECT  | Redirect URL when authorizing ORCID integration |
+| ORCID_SANDBOX   | ORCID testing server. Default False      |
+
 ## Advanced Configuration
 
 ColdFront uses the [Django

@@ -7,7 +7,7 @@ from django.urls import include, path
 from django.views.generic import TemplateView
 
 import coldfront.core.portal.views as portal_views
-
+from coldfront.config.env import ENV
 admin.site.site_header = 'ColdFront Administration'
 admin.site.site_title = 'ColdFront Administration'
 
@@ -27,6 +27,9 @@ urlpatterns = [
     path('research-output/', include('coldfront.core.research_output.urls')),
 ]
 
+if ENV.bool('PLUGIN_SOCIAL_CORE', default=False):
+    urlpatterns += [ path(r'', include('social_django.urls')),
+    ]
 
 if 'coldfront.plugins.iquota' in settings.INSTALLED_APPS:
     urlpatterns.append(path('iquota/', include('coldfront.plugins.iquota.urls')))

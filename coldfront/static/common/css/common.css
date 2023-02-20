@@ -15,7 +15,15 @@
 
 */
 
-
+.orcid-form .form-group {
+  width: 80px;
+}
+.orcid-form .form-control {
+  width: 100%;
+}
+.orcid-form .form-group div {
+  width: 90%;
+}
 
 html {
   position: relative;

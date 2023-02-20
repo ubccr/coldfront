@@ -1,0 +1,1 @@
+social-auth-app-django==5.0.0

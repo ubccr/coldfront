@@ -17,7 +17,7 @@ SU_LOGOUT_REDIRECT_URL = "/admin/auth/user/"
 
 SESSION_COOKIE_AGE = ENV.int('SESSION_INACTIVITY_TIMEOUT', default=60 * 60)
 SESSION_SAVE_EVERY_REQUEST = True
-SESSION_COOKIE_SAMESITE = 'Strict'
+SESSION_COOKIE_SAMESITE = 'Lax'
 SESSION_COOKIE_SECURE = True
 
 #------------------------------------------------------------------------------

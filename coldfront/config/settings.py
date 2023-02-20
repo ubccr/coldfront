@@ -22,6 +22,8 @@ plugin_configs = {
     'PLUGIN_AUTH_OIDC': 'plugins/openid.py',
     'PLUGIN_AUTH_LDAP': 'plugins/ldap.py',
     'PLUGIN_LDAP_USER_SEARCH': 'plugins/ldap_user_search.py',
+    'PLUGIN_ORCID': 'plugins/orcid.py',
+    'PLUGIN_SOCIAL_CORE': 'plugins/social_core.py',
 }
 
 # This allows plugins to be enabled via environment variables. Can alternatively
@@ -43,10 +45,12 @@ local_configs = [
 ]
 
 if ENV.str('COLDFRONT_CONFIG', default='') != '':
+    
     # Local settings from path specified via environment variable
     local_configs.append(environ.Path(ENV.str('COLDFRONT_CONFIG'))())
 
 for lc in local_configs:
     coldfront_configs.append(optional(lc))
+
 
 include(*coldfront_configs)

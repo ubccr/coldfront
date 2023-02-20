@@ -1,5 +1,6 @@
 {% extends "common/base.html" %}
 {% load static %}
+{% load crispy_forms_tags %}
 
 {% block title %}
 User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif %}
@@ -46,12 +47,43 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
                   </div>
                   <div class="form-group mx-sm-3 mb-2">
                     {% csrf_token %}
-                    <button class="btn btn-secondary" type="submit"><i class="fas fa-chevron-circle-up" aria-hidden="true"></i> Upgrade Account</button>
+                    <button class="btn btn-secondary" type="submit"><i class="fas fa-chevron-circle-up" aria-hidden="true"></i> Upgrade Account</button> 
                   </div>
                 </form>
               {% endif %}
             </td>
           </tr>
+          {% if orcid_plugin %} 
+          <tr>
+            <th scope="row">ORCID:</th>
+            <td>
+                {% if viewable %}
+                  {% if orcid_linked %}
+                    {% if orcid_sandbox %}
+                      <form class="form-inline" method="post" action="{% url 'social:disconnect' 'orcid-sandbox' %}" style="display:inline-block">
+                        {% csrf_token %}
+                        <button  type="submit" class="btn btn-danger mx-sm-3"> <i class="fas fa-edit" aria-hidden="true"></i>Unlink ORCID Sandbox Account</a>
+                      </form>
+                    {% else %}
+                      <form class="form-inline" method="post" action="{% url 'social:disconnect' 'orcid' %}" style="display:inline-block">
+                        {% csrf_token %}
+                        <button  type="submit" class="btn btn-danger mx-sm-3"> <i class="fas fa-edit" aria-hidden="true"></i>Unlink ORCID Account</a>
+                      </form>
+                    {% endif %}
+                  {% else %}
+                    {% if orcid_sandbox %}
+                    <a class="btn btn-success mx-sm-3" href="{% url 'social:begin' 'orcid-sandbox' %}" role="button"> <i class="fas fa-edit" aria-hidden="true"></i>Link ORCID Sandbox Account</a>
+                    {% else %}
+                    <a class="btn btn-success mx-sm-3" href="{% url 'social:begin' 'orcid' %}" role="button"> <i class="fas fa-edit" aria-hidden="true"></i>Link ORCID Account</a>
+                    {% endif %}
+                  {% endif %}
+                {% else %}
+                No permission to Link/Unlink ORCID Account 
+                {% endif %}
+          
+            </td>
+          </tr>
+          {% endif %}
           <tr>
             <th scope="row">Last Login:</th>
             <td>{{viewed_user.last_login}}</td>

@@ -24,6 +24,7 @@ class Publication(TimeStampedModel):
     STATUS_CHOICES = (
         ('Active', 'Active'),
         ('Archived', 'Archived'),
+        ('Pending', 'Pending'),
     )
     status = models.CharField(max_length=16, choices=STATUS_CHOICES, default='Active')
     history = HistoricalRecords()
