@@ -107,7 +107,8 @@ class Command(BaseCommand):
             ('training_or_inference_label', 'Text'),
             ('url', 'Text'),
             ('url_label', 'Text'),
-            ('user_limit', 'Int')
+            ('user_limit', 'Int'),
+            ('allocation_limit', 'Int')
         ):
             ResourceAttributeType.objects.get_or_create(
                 name=resource_attribute_type, attribute_type=AttributeType.objects.get(name=attribute_type))
