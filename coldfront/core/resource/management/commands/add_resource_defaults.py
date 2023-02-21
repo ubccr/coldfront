@@ -108,7 +108,19 @@ class Command(BaseCommand):
             ('url', 'Text'),
             ('url_label', 'Text'),
             ('user_limit', 'Int'),
-            ('allocation_limit', 'Int')
+            ('allocation_limit', 'Int'),
+            ('phone_number', 'Text'),
+            ('phone_number_label', 'Text'),
+            ('terms_of_service', 'True/False'),
+            ('terms_of_service_label', 'Text'),
+            ('data_management_responsibilities', 'True/False'),
+            ('data_management_responsibilities_label', 'Text'),
+            ('admin_ads_group', 'Text'),
+            ('admin_ads_group_label', 'Text'),
+            ('user_ads_group', 'Text'),
+            ('user_ads_group_label', 'Text'),
+            ('confirm_best_practices', 'True/False'),
+            ('confirm_best_practices_label', 'Text')
         ):
             ResourceAttributeType.objects.get_or_create(
                 name=resource_attribute_type, attribute_type=AttributeType.objects.get(name=attribute_type))
