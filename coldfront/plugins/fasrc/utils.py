@@ -8,6 +8,8 @@ from django.contrib.auth import get_user_model
 
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.fasrc import (log_missing,
+                                        select_one_project_allocation,
+                                        save_json,
                                         id_present_missing_users,
                                         id_present_missing_resources,
                                         id_present_missing_projects)
@@ -105,7 +107,9 @@ class AllTheThingsConn:
             'unique':'datetime(e.DotsLFSUpdateDate) as begin_date'}
 
         isilon = {'match': '[r:Owns]-(e:IsilonPath) MATCH (d:ConfigValue {Name: \'IsilonPath.Invocation\'})',
-            'where':f"(e.Isilon =~ '.*({volumes}).*') AND r.DotsUpdateDate = d.DotsUpdateDate",
+            'where':f"(e.Isilon =~ '.*({volumes}).*') \
+                        AND r.DotsUpdateDate = d.DotsUpdateDate \
+                        AND NOT (e.Path =~ '.*/rc_admin/.*')",
             'r_updated': 'DotsUpdateDate',
             'storage_type':'\'Isilon\'',
             'fs_path':'Path',
@@ -157,8 +161,7 @@ class AllTheThingsConn:
             resp_json_by_lab[entry['lab']].append(entry)
         # logger.debug(resp_json_by_lab)
         resp_json_by_lab_cleaned = {k:v for k, v in resp_json_by_lab.items() if v}
-        with open(result_file, 'w') as file:
-            file.write(json.dumps(resp_json_by_lab_cleaned, indent=2))
+        save_json(result_file, resp_json_by_lab_cleaned)
         return result_file
 
 
@@ -205,11 +208,9 @@ class AllTheThingsConn:
                     resource = res_models.get(name__contains=r_str)
 
                     # 3. find the allocation with a matching project and resource_type
-                    alloc_obj = proj_query.allocation_set.filter(resources__id=resource.id,
-                                                            status__name='Active')
-                    if alloc_obj.count() == 1:
-                        alloc_obj = alloc_obj.first()
-                    elif alloc_obj.count() < 1:
+                    alloc_obj = select_one_project_allocation(proj_query, resource, dirpath=allocation['fs_path'])
+
+                    if alloc_obj is None:
                         logger.warning("ERROR: No Allocation for project %s, resource %s",
                                                     proj_query.title, resource.name)
                         missing_allocations.append({
@@ -217,14 +218,10 @@ class AllTheThingsConn:
                                 "project_title": proj_query.title
                                 })
                         counts['all_err'] += 1
-                        continue
-                    elif alloc_obj.count() > 1:
-                        logger.info("WARNING: multiple allocations returned. If LFS, will "
-                            "choose the FASSE option; if not, will choose otherwise.")
-                        just_str = "FASSE" if allocation['storage_type'] == "Isilon" else "Information for"
-                        alloc_obj = proj_query.allocation_set.get(resources__id=resource.id,
-                                                    justification__contains=just_str,
-                                                    status__name='Active'   )
+                    elif alloc_obj == "MultiAllocationError":
+                        logger.warning("ERROR: Unresolved multiple allocations for project %s, resource %s",
+                                                    proj_query.title, resource.name)
+                        counts['all_err'] += 1
 
                     logger.info("allocation: %s", alloc_obj.__dict__)
 
@@ -257,7 +254,6 @@ class AllTheThingsConn:
         log_missing("allocation", missing_allocations)
         logger.warning("error counts: %s", counts)
         logger.warning('errored_allocations:\n%s', errored_allocations)
-
 
 
 def update_group_membership():

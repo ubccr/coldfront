@@ -16,6 +16,8 @@ from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.fasrc import (determine_size_fmt,
                                         locate_or_create_dirpath,
                                         read_json,
+                                        save_json,
+                                        select_one_project_allocation,
                                         id_present_missing_users,
                                         log_missing)
 from coldfront.core.project.models import Project
@@ -357,26 +359,7 @@ def push_cf(filepaths, clean):
 
         project = Project.objects.get(title=content['project'])
         # find project allocation
-        try:
-            allocation = project.allocation_set.get(resources__name=resource)
-        except Allocation.MultipleObjectsReturned:
-            logger.debug('>1 allocation for project id %s; choosing one with "Allocation Information" in justification.',
-                                                            project.id)
-
-            # try:
-            allocation = project.allocation_set.get(
-                resources__name=resource,
-                justification__icontains='Allocation Information',
-                justification__endswith=project.title)
-            # except Allocation.MultipleObjectsReturned:
-            #     logger.warning('Too many allocations for project id {project.id}, matching justifications; choosing the first. Fix this duplication.')
-            #     allocations = Allocation.objects.filter(
-            #         project_id=project.id,
-            #         justification__icontains='Allocation Information',
-            #         justification__endswith=project.title)
-            #     for a in allocations:
-            #         logger.warning(f'Duplicate item:{a}')
-            #     allocation = allocations.first()
+        allocation = select_one_project_allocation(project, resource)
         logger.debug('%s\n usernames: %s\n user_models: %s',
                 project.title, usernames, [u.username for u in user_models])
 
@@ -431,10 +414,6 @@ def return_get_json(url, headers):
     response = requests.get(url, headers=headers)
     return response.json()
 
-def save_json(file, contents):
-    with open(file, 'w') as fp:
-        json.dump(contents, fp, sort_keys=True, indent=4)
-
 
 @record_process
 def collect_starfish_usage(server, volume, volumepath, projects):
@@ -454,9 +433,7 @@ def collect_starfish_usage(server, volume, volumepath, projects):
     datestr = datetime.today().strftime('%Y%m%d')
     locate_or_create_dirpath('./coldfront/plugins/sftocf/data/')
 
-
     ### OLD METHOD ###
-
     for t in projects:
         p = t[0]
         tier = t[2]
@@ -544,9 +521,6 @@ def pull_sf_push_cf_redash():
     Query Starfish Redash API for user usage data and update Coldfront AllocationUser entries.
 
     Only Projects that are already in Coldfront will get updated.
-
-    Assumptions this code relies on:
-    1. A project cannot have multiple allocations on the same storage resource.
     '''
 
     # 1. cross-reference CF Resources and SF volumes to produce list of all
@@ -559,6 +533,7 @@ def pull_sf_push_cf_redash():
     # 2. grab data from redash
     redash_api = StarFishRedash(STARFISH_SERVER)
     user_usage = redash_api.get_usage_stats(volumes=vols_to_collect)
+    queryset = []
 
     # limit allocations to those in the volumes collected
     searched_resources = [Resource.objects.get(name__contains=vol) for vol in vols_to_collect]
@@ -566,12 +541,14 @@ def pull_sf_push_cf_redash():
     # 3. iterate across allocations
     for allocation in allocations:
         project = allocation.project
+        dirpath = allocation.subdirectory
         lab = project.title
         resource = allocation.get_parent_resource
         volume = resource.name.split('/')[0]
 
         # select query rows that match allocation volume and lab
-        lab_data = [i for i in user_usage if i['group_name'] == lab and i['vol_name'] == volume]
+        lab_data = [i for i in user_usage if i['group_name'] == lab and
+                        i['vol_name'] == volume and dirpath in i['lab_path']]
         if not lab_data:
             print('No starfish result for', lab, resource)
             logger.warning('WARNING: No starfish result for %s %s', lab, resource)
@@ -601,5 +578,11 @@ def pull_sf_push_cf_redash():
                 logger.info('allocation user %s created', allocationuser)
             size_sum = int(userdict['size_sum'])
             usage, unit = determine_size_fmt(userdict['size_sum'])
-            allocationuser.update(usage_bytes=size_sum, usage=usage, unit=unit)
+
+            allocationuser.usage_bytes = size_sum
+            allocationuser.usage = usage
+            allocationuser.unit = unit
+            queryset.append(allocationuser)
             logger.debug('saving %s', userdict)
+
+    AllocationUser.objects.bulk_update(queryset, ['usage_bytes', 'usage', 'unit'])

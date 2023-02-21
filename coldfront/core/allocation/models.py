@@ -113,6 +113,10 @@ class Allocation(TimeStampedModel):
         return self.allocationattribute_set.get(allocation_attribute_type_id=1).value
 
     @property
+    def dirpath(self):
+        return self.allocationattribute_set.get(allocation_attribute_type_id=8).value
+
+    @property
     def usage(self):
         return self.allocationattribute_set.get(allocation_attribute_type_id=1).allocationattributeusage.value
 

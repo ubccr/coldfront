@@ -17,6 +17,30 @@ from coldfront.core.resource.models import Resource
 MISSING_DATA_DIR = './local_data/missing/'
 
 
+def select_one_project_allocation(project_obj, resource_obj, dirpath=None):
+    '''
+    Get one allocation for a given project/resource pairing; handle return of
+    zero or multiple allocations.
+
+    If multiple allocations are in allocation_query, choose the one with the
+    similar dirpath.
+
+    Parameters
+    ----------
+    project_obj
+    resource_obj
+    '''
+    allocation_query = project_obj.allocation_set.filter(resources__id=resource_obj.id)
+    if allocation_query.count() == 1:
+        allocation_obj = allocation_query.first()
+    elif allocation_query.count() < 1:
+        allocation_obj = None
+    elif allocation_query.count() > 1:
+        allocation_obj = next((a for a in allocation_query if a.dirpath in dirpath),
+                                "MultiAllocationError")
+    return allocation_obj
+
+
 def determine_size_fmt(byte_num):
     '''Return the correct human-readable byte measurement.
     '''
@@ -126,3 +150,7 @@ def read_json(filepath):
     with open(filepath, 'r') as json_file:
         data = json.loads(json_file.read())
     return data
+
+def save_json(file, contents):
+    with open(file, 'w') as fp:
+        json.dump(contents, fp, sort_keys=True, indent=4)
