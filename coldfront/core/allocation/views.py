@@ -1233,14 +1233,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             account_number_attribute_type = AllocationAttributeType.objects.get(
                 name='Account Number'
             )
-            if not account_number:
-                allocation_attribute_obj = AllocationAttribute.objects.create(
-                    allocation_attribute_type=account_number_attribute_type,
-                    allocation=allocation_obj,
-                    value='N/A'
-                )
-                update_linked_allocation_attribute(allocation_attribute_obj)
-            else:
+            if account_number:
                 AllocationAttribute.objects.create(
                     allocation_attribute_type=account_number_attribute_type,
                     allocation=allocation_obj,
@@ -1250,14 +1243,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             sub_account_number_attribute_type = AllocationAttributeType.objects.get(
                 name='Sub-Account Number'
             )
-            if not sub_account_number:
-                allocation_attribute_obj = AllocationAttribute.objects.create(
-                    allocation_attribute_type=sub_account_number_attribute_type,
-                    allocation=allocation_obj,
-                    value='N/A'
-                )
-                update_linked_allocation_attribute(allocation_attribute_obj)
-            else:
+            if sub_account_number:
                 AllocationAttribute.objects.create(
                     allocation_attribute_type=sub_account_number_attribute_type,
                     allocation=allocation_obj,
