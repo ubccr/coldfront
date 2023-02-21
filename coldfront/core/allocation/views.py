@@ -2089,14 +2089,15 @@ class AllocationAttributeEditView(LoginRequiredMixin, UserPassesTestMixin, Templ
             allocation_obj
         )
 
-        formset = formset_factory(
-            self.formset_class,
-            max_num=len(allocation_attributes_to_change)
-        )
-        formset = formset(
-            initial=allocation_attributes_to_change, prefix='attributeform'
-        )
-        context['formset'] = formset
+        if allocation_attributes_to_change:
+            formset = formset_factory(
+                self.formset_class,
+                max_num=len(allocation_attributes_to_change)
+            )
+            formset = formset(
+                initial=allocation_attributes_to_change, prefix='attributeform'
+            )
+            context['formset'] = formset
 
         context['allocation'] = allocation_obj
 
