@@ -1,8 +1,8 @@
 import json
 import logging
+import operator
 from functools import reduce
 from datetime import datetime
-import operator
 
 import requests
 from django.db.models import Q
@@ -11,6 +11,10 @@ from django.utils import timezone
 
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.field_of_science.models import FieldOfScience
+from coldfront.core.utils.fasrc import (log_missing,
+                                        id_present_missing_users,
+                                        id_present_missing_resources,
+                                        id_present_missing_projects)
 from coldfront.core.project.models import ( Project,
                                             ProjectUserRoleChoice,
                                             ProjectUserStatusChoice,
@@ -134,10 +138,11 @@ class AllTheThingsConn:
             volumes = '|'.join(volumes)
         else:
             volumes = '|'.join([r.name.split('/')[0] for r in Resource.objects.all()])
-        logger.debug('volumes: %s', volumes)
+        logger.debug("volumes: %s", volumes)
 
-        quota = {'match': '[:HasQuota]-(e:Quota)',
-            'where':f'WHERE (e.filesystem =~ \'.*({volumes}).*\')',
+        quota = {'match': '[r:HasQuota]-(e:Quota)',
+            'where':f"(e.filesystem =~ \'.*({volumes}).*\')",
+            'r_updated': 'DotsLFSUpdateDate',
             'storage_type':'\'Quota\'',
             'usedgb': 'usedGB',
             'sizebytes': 'limitBytes',
@@ -147,8 +152,9 @@ class AllTheThingsConn:
             'replace': '/n/',
             'unique':'datetime(e.DotsLFSUpdateDate) as begin_date'}
 
-        isilon = {'match': '[:Owns]-(e:IsilonPath)',
-            'where':f'WHERE (e.Isilon =~ \'.*({volumes}).*\')',
+        isilon = {'match': '[r:Owns]-(e:IsilonPath) MATCH (d:ConfigValue {Name: \'IsilonPath.Invocation\'})',
+            'where':f"(e.Isilon =~ '.*({volumes}).*') AND r.DotsUpdateDate = d.DotsUpdateDate",
+            'r_updated': 'DotsUpdateDate',
             'storage_type':'\'Isilon\'',
             'fs_path':'Path',
             'server':'Isilon',
@@ -170,7 +176,10 @@ class AllTheThingsConn:
 
         for d in [quota, isilon]:
             statement = {'statement': f"MATCH p=(g:Group)-{d['match']} \
-                    {d['where']} RETURN\
+                    WHERE {d['where']} \
+                    AND NOT (g.ADSamAccountName =~ '.*(disabled|rc_admin).*')\
+                    AND (datetime() - duration('P31D') <= datetime(r.{d['r_updated']})) \
+                    RETURN \
                     {d['unique']}, \
                     g.ADSamAccountName as lab,\
                     (e.SizeGB / 1024.0) as tb_allocation, \
@@ -179,6 +188,7 @@ class AllTheThingsConn:
                     (e.{d['usedgb']} / 1024.0) as tb_usage,\
                     e.{d['fs_path']} as fs_path,\
                     {d['storage_type']} as storage_type, \
+                    datetime(r.{d['r_updated']}) as rel_updated, \
                     replace(e.{d['server']}, '{d['replace']}', '') as server"}
             queries['statements'].append(statement)
         resp_json = self.post_query(queries)
@@ -205,25 +215,22 @@ class AllTheThingsConn:
         '''Use JSON of collected ATT data to update group quota & usage values in Coldfront.
         '''
         errored_allocations = {}
+        missing_allocations = []
         result_json = read_json(result_file)
         counts = {'proj_err': 0, 'res_err':0, 'all_err':0, 'complete':0}
-        # produce list of present labs
+        # produce lists of present labs & labs w/o projects
         lablist = list(set(k for k in result_json))
-        proj_models = Project.objects.filter(title__in=lablist)
-        proj_titles = [p.title for p in proj_models]
-        # log labs w/o projects, remove them from result_json
-        missing_projs = log_missing('project', proj_titles,lablist)
+        proj_models, missing_projs = id_present_missing_projects(lablist)
+        log_missing('project', missing_projs)
+        # remove them from result_json
         counts['proj_err'] = len(missing_projs)
-        [result_json.pop(key) for key in missing_projs]
+        missing_proj_titles = [list(p.values())[0] for p in missing_projs]
+        [result_json.pop(t) for t in missing_proj_titles]
 
         # produce set of server values for which to locate matching resources
-        resource_set = {a['server'] for l in result_json.values() for a in l}
-        logger.debug("coldfront resource_set: %s", resource_set)
-        # get resource model
-        res_models = Resource.objects.filter(reduce(operator.or_,
-                                    (Q(name__contains=x) for x in resource_set)))
-        res_names = [str(r.name).split('/')[0] for r in res_models]
-        missing_res = log_missing('resource', res_names, resource_set)
+        resource_list = list({a['server'] for l in result_json.values() for a in l})
+        logger.debug("coldfront resource_list: %s", resource_list)
+        res_models, missing_res = id_present_missing_resources(resource_list)
         counts['proj_err'] = len(missing_res)
 
         for k, v in result_json.items():
@@ -250,9 +257,10 @@ class AllTheThingsConn:
                     elif a.count() < 1:
                         logger.warning("ERROR: No Allocation for project %s, resource %s",
                                                     proj_query.title, resource.name)
-                        log_missing("allocation", [], [resource.name],
-                                                group=proj_query.title,
-                                                pattern="G,I,D")
+                        missing_allocations.append({
+                                "resource_name":resource.name,
+                                "project_title": proj_query.title
+                                })
                         counts['all_err'] += 1
                         continue
                     elif a.count() > 1:
@@ -308,11 +316,12 @@ class AllTheThingsConn:
                 except Exception as e:
                     allocation_name = f"{allocation['lab']}/{allocation['server']}"
                     errored_allocations[allocation_name] = e
-        logger.info("error counts: %s", counts)
-        logger.info('errored_allocations:\n%s', errored_allocations)
+        log_missing("allocation", missing_allocations)
+        logger.warning("error counts: %s", counts)
+        logger.warning('errored_allocations:\n%s', errored_allocations)
 
 
-def create_new_projects(projects_list: list):
+def create_new_projects(projects_list: list, dryrun=False):
     '''
     Use ATT user, group, and relationship information to automatically create new
     Coldfront Projects from projects_list.
@@ -369,26 +378,22 @@ def create_new_projects(projects_list: list):
             continue
 
 
-        current_dt = datetime.datetime.now(tz=timezone.utc)
-
         # create description
         description = "Allocations for " + entry['group_name']
 
         # locate field_of_science
         field_of_science_name=entry['department']
-        try:
-            field_of_science_obj = FieldOfScience.objects.get(description=field_of_science_name)
-        except FieldOfScience.DoesNotExist:
-            print(field_of_science_name)
-            field_of_science_obj = FieldOfScience(
-                        is_selectable='True',
+
+        field_of_science_obj, created = FieldOfScience.objects.get_or_create(
                         description=field_of_science_name,
-                    )
-            field_of_science_obj.save()
+                        defaults={'is_selectable':'True'}
+                        )
+        if created:
+            logger.info('added new field_of_science: %s', field_of_science_name)
 
 
         ### CREATE PROJECT ###
-        # is the project pi automatically added as a ProjectUser with PI status?
+        current_dt = datetime.datetime.now(tz=timezone.utc)
         new_project = Project.objects.create(
             created=current_dt,
             modified=current_dt,
@@ -431,22 +436,25 @@ def update_group_membership():
     Use ATT's user, group, and relationship information to keep the ProjectUser
     list up-to-date for existing Coldfront Projects.
     '''
+
     # change logger filehandler
     logger.removeHandler(filehandler)
     handler = logging.FileHandler(f'logs/att_membership_update-{today}.log', 'w')
     logger.addHandler(handler)
-    errortracker = ErrorTracker()
-    att_conn = AllTheThingsConn()
+    no_members = []
+    no_users = []
+    no_managers = []
 
     for project in Project.objects.filter(status__name__in=["Active", "New"]):
         # pull membership data for the given project
         proj_name = project.title
+        att_conn = AllTheThingsConn()
         logger.debug('updating group membership for %s', proj_name)
         group_data = att_conn.collect_group_membership(proj_name)
         logger.debug('raw AD group data:\n%s', group_data)
-        group_data = [user for user in group_data if user['user_enabled']]
+        group_data = [group for group in group_data if group['user_enabled'] is True]
         if not group_data:
-            errortracker.no_members.append(proj_name)
+            no_members.append(proj_name)
             continue
         # project = Project.objects.get(title=proj_name)
         projectusernames = [pu.user.username for pu in project.projectuser_set.filter(
@@ -454,18 +462,28 @@ def update_group_membership():
                             )]
         logger.debug('projectusernames: %s', projectusernames)
 
-        ### check through membership list ###
-        ad_users = {user['user_name'] for user in group_data}
-        # check for missing ProjectUsers
-        missing_projectusers = [uname for uname in ad_users if uname not in projectusernames]
-        logger.debug('AD users not in ProjectUsers:\n%s', missing_projectusers)
+        # separate into membership and managerial control
+        relation_groups = {entry['relationship']:[] for entry in group_data}
+        for entry in group_data:
+            relation_groups[entry['relationship']].append(entry)
 
-        if missing_projectusers:
+        logger.debug('relation_groups: %s', relation_groups)
+        ### check through membership list ###
+        try:
+            ad_users = [u['user_name'] for u in relation_groups['MemberOf']]
+        except KeyError:
+            logger.warning("WARNING: MANAGERS BUT NO USERS LISTED FOR %s", project.title)
+            no_users.append(proj_name)
+            ad_users = []
+        # check for users not in Coldfront
+        not_added = [uname for uname in ad_users if uname not in projectusernames]
+        logger.debug('AD users not in ProjectUsers:\n%s', not_added)
+
+        if not_added:
             # find accompanying ifxusers in the system
-            ifxusers = get_user_model().objects.filter(username__in=missing_projectusers)
-            # log any users missing from the system
-            ifxuser_names = [u.username for u in ifxusers]
-            log_missing('user', ifxuser_names, missing_projectusers)
+            ifxusers, missing_users = id_present_missing_users(not_added)
+            log_missing('users', missing_users)
+
             for user in ifxusers:
                 # in case user is being re-added to the project, first find/create a
                 # project_user matching just project/user, then change role & status
@@ -479,15 +497,16 @@ def update_group_membership():
                     ProjectUser.objects.create(project=project,
                                 user=user,
                                 role=ProjectUserRoleChoice.objects.get(name='User'),
-                                status=ProjectUserStatusChoice.objects.get(name='Active')
+                                status = ProjectUserStatusChoice.objects.get(name='Active')
                                 )
 
         ### check through management list ###
-        ad_managers = [u['user_name'] for u in group_data if u['relationship'] == 'ManagedBy']
-        if not ad_managers:
-            logger.warning('no active managers for project %s; skipping.', proj_name)
+        try:
+            ad_managers = [u['user_name'] for u in relation_groups['ManagedBy']]
+        except KeyError:
+            logger.warning('no active managers for project %s', proj_name)
             print(f'WARNING: no active managers for project {proj_name}')
-            errortracker.no_managers.append(proj_name)
+            no_managers.append(proj_name)
             continue
 
         # get accompanying ProjectUser entries
@@ -522,52 +541,9 @@ def update_group_membership():
                     project_user.status = ProjectUserStatusChoice.objects.get(name='Removed')
                     logger.debug('removed User %s from Project %s', username, project.title)
                 project_user.save()
-    errortracker.report()
-
-
-
-def log_missing(modelname,
-                item_list,
-                search_list,
-                group='',
-                fpath_pref='./coldfront/plugins/fasrc/data/',
-                pattern='I,D'):
-    '''check if an item from search_list is present in item_list; produce a
-    CSV of all items not present.
-
-    Parameters
-    ----------
-    modelname : str
-        Name of the Coldfront user model being sought
-    item_list : list
-    search_list : list
-        list of items to confirm presence of in item_list
-    '''
-    fpath = f'{fpath_pref}missing_{modelname}s.csv'
-    missing = [i for i in search_list if i not in list(item_list)]
-    if missing:
-        datestr = datetime.today().strftime('%Y%m%d')
-        patterns = [pattern.replace('I', i).replace('D', datestr).replace('G', group) for i in missing]
-        find_or_add_file_line(fpath, patterns)
-    return missing
-
-
-def find_or_add_file_line(filepath, patterns):
-    '''Find or add lines matching a string contained in a list to a file.
-
-    Parameters
-    ----------
-    filepath : string
-        path and name of file to check.
-    patterns : list
-        list of lines to find or append to file.
-    '''
-    with open(filepath, 'a+') as file:
-        file.seek(0)
-        lines = file.readlines()
-        for pattern in patterns:
-            if not any(pattern == line.rstrip('\r\n') for line in lines):
-                file.write(pattern + '\n')
+    logger.warning('AD groups with no members: %s', no_members)
+    logger.warning('AD groups with no users: %s', no_users)
+    logger.warning('AD groups with no managers: %s', no_managers)
 
 
 def generate_headers(token):

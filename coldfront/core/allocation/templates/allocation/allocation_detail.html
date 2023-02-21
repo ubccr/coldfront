@@ -372,7 +372,14 @@ Allocation Detail
             <tr status = "{{ user.status }}">
 
               <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
-              <td >{{ user.status }}</td>
+
+              {% if user.status.name == 'Active' %}
+                <td class="text-success">{{ user.status.name }}</td>
+              {% elif user.status.name == 'Removed' %}
+                <td class="text-danger">Inactive</td>
+              {% else %}
+                <td class="text-info">{{ user.status.name }}</td>
+              {% endif %}
               {% if user.usage_bytes == 0.0 %}
               <td data-sort = "{{user.usage_bytes}}" name = "usage_bytes"> 0 bytes</td>
               {% else %}

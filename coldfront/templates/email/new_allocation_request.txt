@@ -1,2 +1,6 @@
-A new allocation has been requested for {{pi}} - {{resource}}. Please activate the allocation:
+A new allocation has been requested for {{pi}} - {{resource}}.
+Requested size: {{quantity}} TB.
+Justification:
+{{justification}}
+To activate the allocation, go to:
 {{url}}

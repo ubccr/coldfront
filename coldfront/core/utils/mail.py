@@ -96,7 +96,7 @@ def send_admin_email_template(subject, template_name, template_context):
     send_email_template(subject, template_name, template_context, EMAIL_SENDER, [EMAIL_TICKET_SYSTEM_ADDRESS,])
 
 
-def send_allocation_admin_email(allocation_obj, subject, template_name, url_path='', domain_url=''):
+def send_allocation_admin_email(allocation_obj, subject, template_name, url_path='', domain_url='', other_vars=None):
     """Send allocation admin emails
     """
     if not url_path:
@@ -110,6 +110,9 @@ def send_allocation_admin_email(allocation_obj, subject, template_name, url_path
     ctx['pi'] = pi_name
     ctx['resource'] = resource_name
     ctx['url'] = url
+    if other_vars:
+        for k, v in other_vars.items():
+            ctx[k] = v
 
     send_admin_email_template(
         f'{subject}: {pi_name} - {resource_name}',
@@ -132,9 +135,12 @@ def send_allocation_customer_email(allocation_obj, subject, template_name, url_p
     allocation_users = allocation_obj.allocationuser_set.exclude(status__name__in=['Removed', 'Error'])
     email_receiver_list = []
     for allocation_user in allocation_users:
-        if allocation_user.allocation.project.projectuser_set.get(
-                                user=allocation_user.user).enable_notifications:
-            email_receiver_list.append(allocation_user.user.email)
+        try:
+            if allocation_user.allocation.project.projectuser_set.get(
+                                    user=allocation_user.user).enable_notifications:
+                email_receiver_list.append(allocation_user.user.email)
+        except:
+            pass
 
     send_email_template(
         subject,
