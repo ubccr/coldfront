@@ -358,14 +358,13 @@ def push_cf(filepaths, clean):
         project = Project.objects.get(title=content['project'])
         # find project allocation
         try:
-            allocation = Allocation.objects.get(project=project, resources__name=resource)
+            allocation = project.allocation_set.get(resources__name=resource)
         except Allocation.MultipleObjectsReturned:
             logger.debug('>1 allocation for project id %s; choosing one with "Allocation Information" in justification.',
                                                             project.id)
 
             # try:
-            allocation = Allocation.objects.get(
-                project=project,
+            allocation = project.allocation_set.get(
                 resources__name=resource,
                 justification__icontains='Allocation Information',
                 justification__endswith=project.title)
@@ -397,27 +396,18 @@ def push_cf(filepaths, clean):
 def update_usage(user, userdict, allocation):
     usage, unit = split_num_string(userdict['size_sum_hum'])
     logger.debug('entering for user: %s', user.username)
-    try:
-        allocationuser = AllocationUser.objects.get(
-            allocation=allocation, user=user
-        )
-    except AllocationUser.DoesNotExist:
-        logger.info('creating allocation user:')
-        AllocationUser.objects.create(
-            allocation=allocation,
-            created=timezone.now(),
-            status=AllocationUserStatusChoice.objects.get(name='Active'),
-            user=user
-        )
-        allocationuser = AllocationUser.objects.get(
-            allocation=allocation, user=user
-        )
-
-    allocationuser.usage_bytes = userdict['size_sum']
-    allocationuser.usage = usage
-    allocationuser.unit = unit
-    # automatically updates 'modified' field & adds old record to history
-    allocationuser.save()
+    allocationuser, created = allocation.allocationuser_set.get_or_create(
+            user=user,
+            defaults={
+                "created": timezone.now(),
+                "status": AllocationUserStatusChoice.objects.get(name='Active')
+                }
+            )
+    if created:
+        logger.info('allocation user %s created', allocationuser)
+    allocationuser.update(  usage_bytes = userdict['size_sum'],
+                            usage = usage,
+                            unit = unit)
 
 
 def clean_data_dir(homepath):
@@ -537,17 +527,16 @@ def generate_headers(token):
     }
     return headers
 
-def find_remove_absent_allocationusers(redash_usernames, allocation):
+def zero_out_absent_allocationusers(redash_usernames, allocation):
     '''
-    Find and remove AllocationUsers that aren't in the StarfishRedash usage
-    stats (which includes all AD group users, even those with 0 usage) for the
-    accompanying Allocation.
+    Find AllocationUsers that aren't in the StarfishRedash usage
+    stats and change their usage to 0.
     '''
-    allocationusers = AllocationUser.objects.filter(allocation=allocation)
+    allocationusers = allocation.allocationuser_set.all()
     allocationusers_not_in_redash = allocationusers.exclude(user__username__in=redash_usernames)
     if allocationusers_not_in_redash:
-        print("users no longer in allocation", allocation.pk, ":", [user.user.username for user in allocationusers_not_in_redash])
-    # allocationusers_not_in_redash.delete()
+        logger.info('users no longer in allocation %s: %s', allocation.pk, [user.user.username for user in allocationusers_not_in_redash])
+        allocationusers_not_in_redash.update(usage=0, usage_bytes=0)
 
 
 def pull_sf_push_cf_redash():
@@ -570,7 +559,6 @@ def pull_sf_push_cf_redash():
     # 2. grab data from redash
     redash_api = StarFishRedash(STARFISH_SERVER)
     user_usage = redash_api.get_usage_stats(volumes=vols_to_collect)
-    queryset = []
 
     # limit allocations to those in the volumes collected
     searched_resources = [Resource.objects.get(name__contains=vol) for vol in vols_to_collect]
@@ -598,32 +586,20 @@ def pull_sf_push_cf_redash():
                 project.title, usernames, [u.username for u in user_models])
 
         # identify and remove allocation users that are no longer in the AD group
-        find_remove_absent_allocationusers(usernames, allocation)
+        zero_out_absent_allocationusers(usernames, allocation)
 
         for user in user_models:
             userdict = next(d for d in lab_data if d['user_name'].lower() == user.username.lower())
             logger.debug('entering for user: %s', user.username)
-            try:
-                allocationuser = AllocationUser.objects.get(
-                    allocation=allocation, user=user
-                )
-            except AllocationUser.DoesNotExist:
-                if userdict['size_sum'] > 0:
-                    allocationuser = AllocationUser.objects.create(
-                        allocation=allocation,
-                        created=timezone.now(),
-                        status=AllocationUserStatusChoice.objects.get(name='Active'),
-                        user=user
-                    )
-                else:
-                    logger.warning("allocation user missing: %s %s %s", lab, resource, userdict)
-                    continue
+            allocationuser, created = allocation.allocationuser_set.get_or_create(
+                user=user,
+                defaults={
+                    'status': AllocationUserStatusChoice.objects.get(name='Active'),
+                    'created': timezone.now(),
+                })
+            if created:
+                logger.info('allocation user %s created', allocationuser)
             size_sum = int(userdict['size_sum'])
             usage, unit = determine_size_fmt(userdict['size_sum'])
-            allocationuser.usage_bytes = size_sum
-            allocationuser.usage = usage
-            allocationuser.unit = unit
-            queryset.append(allocationuser)
-            # automatically update 'modified' field & add old record to history
-            logger.debug("saving %s",userdict)
-    AllocationUser.objects.bulk_update(queryset, ['usage_bytes', 'usage', 'unit'])
+            allocationuser.update(usage_bytes=size_sum, usage=usage, unit=unit)
+            logger.debug('saving %s', userdict)
