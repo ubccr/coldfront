@@ -1097,7 +1097,7 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
                     users_already_in_project.append(ele)
             context['users_already_in_project'] = users_already_in_project
 
-        status_list = ['Active', 'New', 'Renewal Requested']
+        status_list = ['Active', 'New', 'Renewal Requested', 'Billing Information Submitted']
         allocations = project_obj.allocation_set.filter(
             status__name__in=status_list,
             allocationuser__user=request.user
@@ -1221,7 +1221,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
         formset = formset_factory(ProjectAddUserForm, max_num=len(matches))
         formset = formset(request.POST, initial=matches, prefix='userform')
 
-        status_list = ['Active', 'New', 'Renewal Requested']
+        status_list = ['Active', 'New', 'Renewal Requested', 'Billing Information Submitted']
         allocations = project_obj.allocation_set.filter(
             status__name__in=status_list,
             allocationuser__user=request.user
