@@ -1964,7 +1964,7 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                         'project_id': project_obj.pk
                     },
                     EMAIL_SENDER,
-                    [EMAIL_TICKET_SYSTEM_ADDRESS, ]
+                    [EMAIL_ALERTS_EMAIL_ADDRESS, ]
                 )
 
             messages.success(request, 'Project review submitted.')
