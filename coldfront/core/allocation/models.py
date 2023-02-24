@@ -237,6 +237,10 @@ class Allocation(TimeStampedModel):
         super().save(*args, **kwargs)
 
     @property
+    def get_allocation_attributes(self):
+        return self.allocationattribute_set.all()
+
+    @property
     def expires_in(self):
         return (self.end_date - datetime.date.today()).days
 
