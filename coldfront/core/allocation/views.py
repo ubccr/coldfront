@@ -2090,7 +2090,6 @@ class AllocationAttributeUpdateView(LoginRequiredMixin, UserPassesTestMixin, Tem
         return context
 
     def post(self, request, *args, **kwargs):
-        # TODO - Prevent submission when no fields are filled in
         # TODO - Add checks for usernames
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(
@@ -2110,10 +2109,14 @@ class AllocationAttributeUpdateView(LoginRequiredMixin, UserPassesTestMixin, Tem
             initial=allocation_attributes_to_change, prefix='attributeform'
         )
 
+        no_changes = True
         if formset.is_valid():
             for entry in formset:
                 formset_data = entry.cleaned_data
                 new_value = formset_data.get('new_value')
+                if not new_value:
+                    continue
+                no_changes = False
 
                 allocation_attribute = AllocationAttribute.objects.get(
                     pk=formset_data.get('attribute_pk')
@@ -2134,6 +2137,10 @@ class AllocationAttributeUpdateView(LoginRequiredMixin, UserPassesTestMixin, Tem
                 if error:
                     messages.error(request, error)
 
+            return HttpResponseRedirect(reverse('allocation-attribute-update', kwargs={'pk': pk}))
+
+        if no_changes:
+            messages.error(self.request, 'No allocation attributes where updated')
             return HttpResponseRedirect(reverse('allocation-attribute-update', kwargs={'pk': pk}))
 
         messages.success(request, 'Successfully updated allocation attributes')
