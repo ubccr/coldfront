@@ -3,17 +3,17 @@
 {% load static %}
 
 {% block title %}
-Edit Allocation Attributes in Allocation
+Update Allocation Attributes in Allocation
 {% endblock %}
 
 {% block content %}
-<h2>Edit allocation attributes in allocation for project: {{allocation.project.title}}</h2>
+<h2>Update allocation attributes in allocation for project: {{allocation.project.title}}</h2>
 <hr>
 
 {% if formset %}
   <div class="card border-light">
     <div class="card-body">
-      <form action="{% url 'allocation-attribute-edit' allocation.pk %}" method="post">
+      <form action="{% url 'allocation-attribute-update' allocation.pk %}" method="post">
         {% csrf_token %}
         <div class="table-responsive">
           <table class="table table-sm table-hover">
@@ -38,7 +38,7 @@ Edit Allocation Attributes in Allocation
         {{ formset.management_form }}
         <div>
           <button type="submit" class="btn btn-primary"><i class="far fa-edit" aria-hidden="true"></i>
-            Edit Selected Attributes from Allocation
+            Update Selected Attributes from Allocation
           </button>
           <a class="btn btn-secondary" href="{% url 'allocation-detail' allocation.pk %}" role="button">
             <i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Allocation
@@ -51,7 +51,7 @@ Edit Allocation Attributes in Allocation
   <a class="btn btn-secondary mb-3" href="{% url 'allocation-detail' allocation.pk %}" role="button"><i
       class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Allocation</a>
   <div class="alert alert-info">
-    No allocation attributes to edit!
+    No allocation attributes to Update!
   </div>
 {% endif %}
 {% endblock %}

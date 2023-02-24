@@ -2023,9 +2023,9 @@ class AllocationAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Tem
         return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
 
-class AllocationAttributeEditView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+class AllocationAttributeUpdateView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     formset_class = AllocationAttributeEditForm
-    template_name = 'allocation/allocation_allocationattribute_edit.html'
+    template_name = 'allocation/allocation_allocationattribute_update.html'
 
     def test_func(self):
         """ UserPassesTestMixin """
@@ -2036,7 +2036,7 @@ class AllocationAttributeEditView(LoginRequiredMixin, UserPassesTestMixin, Templ
 
         if not user.has_perm('allocation.change_allocationattribute'):
             messages.error(
-                    self.request, 'You do not have permission to edit allocation attributes.'
+                    self.request, 'You do not have permission to update allocation attributes.'
                 )
             return False
 
@@ -2044,7 +2044,7 @@ class AllocationAttributeEditView(LoginRequiredMixin, UserPassesTestMixin, Templ
         if set(user.groups.all()).isdisjoint(set(review_groups)):
             messages.error(
                 self.request,
-                'You are not in the correct group to edit allocation attributes in this allocation with this resource.'
+                'You are not in the correct group to update allocation attributes in this allocation with this resource.'
             )
             return False
 
@@ -2134,7 +2134,7 @@ class AllocationAttributeEditView(LoginRequiredMixin, UserPassesTestMixin, Templ
                 if error:
                     messages.error(request, error)
 
-            return HttpResponseRedirect(reverse('allocation-attribute-edit', kwargs={'pk': pk}))
+            return HttpResponseRedirect(reverse('allocation-attribute-update', kwargs={'pk': pk}))
 
         messages.success(request, 'Successfully updated allocation attributes')
 
