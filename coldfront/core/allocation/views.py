@@ -2206,6 +2206,7 @@ class AllocationNoteUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPass
     def test_func(self):
         """ UserPassesTestMixin Tests """
         allocation_note_obj = get_object_or_404(AllocationUserNote, pk=self.kwargs.get('pk'))
+        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('allocation_pk'))
         user = self.request.user
         if user.is_superuser:
             return True
@@ -2216,7 +2217,7 @@ class AllocationNoteUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPass
                 )
             return False
 
-        review_groups = allocation_note_obj.allocation.get_parent_resource.review_groups.all()
+        review_groups = allocation_obj.get_parent_resource.review_groups.all()
         if set(user.groups.all()).isdisjoint(set(review_groups)):
             messages.error(
                 self.request,
@@ -2234,9 +2235,8 @@ class AllocationNoteUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPass
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        pk = self.kwargs.get('pk')
-        allocation_note_obj = get_object_or_404(AllocationUserNote, pk=pk)
-        allocation_obj = allocation_note_obj.allocation
+        allocation_pk = self.kwargs.get('allocation_pk')
+        allocation_obj = get_object_or_404(Allocation, pk=allocation_pk)
         context['allocation'] = allocation_obj
         return context
 

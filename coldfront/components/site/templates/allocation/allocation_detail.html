@@ -609,7 +609,7 @@ Allocation Detail
                   <td>{{ note.modified }}</td>
                   {% if user_has_permissions %}
                     <td>
-                      <a href="{% url 'allocation-note-update' note.pk %}">
+                      <a href="{% url 'allocation-note-update' allocation_pk=allocation.pk pk=note.pk %}">
                         <i class="far fa-edit" aria-hidden="true"></i>
                       </a>
                     </td>
