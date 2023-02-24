@@ -178,11 +178,16 @@ class StarFishRedash:
         self.base_url = f'https://{server_name}.rc.fas.harvard.edu/redash/api/'
         self.queries = import_from_settings('REDASH_API_KEYS')
 
+    def submit_query(self, queryname):
+        query = self.queries[queryname]
+        query_url = f'{self.base_url}queries/{query[0]}/results?api_key={query[1]}'
+        result = return_get_json(query_url, headers={})
+        return result
+
 
     def get_vol_stats(self):
-        query = self.queries['vol_query']
-        query_url = f'{self.base_url}queries/{query[0]}/results?api_key={query[1]}'
-        result = return_get_json(query_url, headers={})['query_result']['data']['rows']
+        result = self.submit_query('vol_query')
+        result = result['query_result']['data']['rows']
         result = [{k.replace(' ', '_').replace('(','').replace(')','') : v for k, v in d.items()} for d in result]
         resource_names = [re.sub(r'\/.+','',n) for n in Resource.objects.values_list('name',flat=True)]
         result = [r for r in result if r['volume_name'] in resource_names]
@@ -192,9 +197,7 @@ class StarFishRedash:
     def get_usage_stats(self, volumes=None):
         '''
         '''
-        query = self.queries['usage_query']
-        query_url = f'{self.base_url}queries/{query[0]}/results?api_key={query[1]}'
-        result = return_get_json(query_url, headers={})
+        result = self.submit_query('usage_query')
         # print(result)
         if result['query_result']:
             data = result['query_result']['data']['rows']
@@ -202,7 +205,7 @@ class StarFishRedash:
             print("no query_result value found:")
             print(result)
         if volumes:
-            result = [d for d in data if d['vol_name'] in volumes]
+            data = [d for d in data if d['vol_name'] in volumes]
 
         return data
 
@@ -515,6 +518,17 @@ def zero_out_absent_allocationusers(redash_usernames, allocation):
         logger.info('users no longer in allocation %s: %s', allocation.pk, [user.user.username for user in allocationusers_not_in_redash])
         allocationusers_not_in_redash.update(usage=0, usage_bytes=0)
 
+def compare_cf_sf_volumes():
+    '''
+    cross-reference CF Resources and SF volumes to produce list of all
+    volumes to be collected
+    '''
+    resource_names = [re.sub(r'\/.+','',n) for n in Resource.objects.values_list('name', flat=True)]
+    # limit volumes to be collected to those ones present in the Starfish database
+    volume_names = StarFishServer(STARFISH_SERVER).volumes
+    vols_to_collect = [vol for vol in volume_names for res in resource_names if vol == res]
+    return vols_to_collect
+
 
 def pull_sf_push_cf_redash():
     '''
@@ -522,14 +536,7 @@ def pull_sf_push_cf_redash():
 
     Only Projects that are already in Coldfront will get updated.
     '''
-
-    # 1. cross-reference CF Resources and SF volumes to produce list of all
-    #    volumes to be collected
-
-    resource_names = [re.sub(r'\/.+','',n) for n in Resource.objects.values_list('name', flat=True)]
-    # limit volumes to be collected to those ones present in the Starfish database
-    volume_names = StarFishServer(STARFISH_SERVER).volumes
-    vols_to_collect = [vol for vol in volume_names for res in resource_names if vol == res]
+    vols_to_collect = compare_cf_sf_volumes()
     # 2. grab data from redash
     redash_api = StarFishRedash(STARFISH_SERVER)
     user_usage = redash_api.get_usage_stats(volumes=vols_to_collect)
@@ -541,14 +548,13 @@ def pull_sf_push_cf_redash():
     # 3. iterate across allocations
     for allocation in allocations:
         project = allocation.project
-        dirpath = allocation.subdirectory
         lab = project.title
         resource = allocation.get_parent_resource
         volume = resource.name.split('/')[0]
 
         # select query rows that match allocation volume and lab
         lab_data = [i for i in user_usage if i['group_name'] == lab and
-                        i['vol_name'] == volume and dirpath in i['lab_path']]
+                        i['vol_name'] == volume and allocation.path in i['lab_path']]
         if not lab_data:
             print('No starfish result for', lab, resource)
             logger.warning('WARNING: No starfish result for %s %s', lab, resource)

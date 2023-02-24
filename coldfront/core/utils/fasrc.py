@@ -36,7 +36,7 @@ def select_one_project_allocation(project_obj, resource_obj, dirpath=None):
     elif allocation_query.count() < 1:
         allocation_obj = None
     elif allocation_query.count() > 1:
-        allocation_obj = next((a for a in allocation_query if a.dirpath in dirpath),
+        allocation_obj = next((a for a in allocation_query if a.path in dirpath),
                                 "MultiAllocationError")
     return allocation_obj
 

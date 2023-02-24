@@ -109,7 +109,8 @@ class AllTheThingsConn:
         isilon = {'match': '[r:Owns]-(e:IsilonPath) MATCH (d:ConfigValue {Name: \'IsilonPath.Invocation\'})',
             'where':f"(e.Isilon =~ '.*({volumes}).*') \
                         AND r.DotsUpdateDate = d.DotsUpdateDate \
-                        AND NOT (e.Path =~ '.*/rc_admin/.*')",
+                        AND NOT (e.Path =~ '.*/rc_admin/.*')\
+                        AND (e.Path =~ '.*labs.*')",
             'r_updated': 'DotsUpdateDate',
             'storage_type':'\'Isilon\'',
             'fs_path':'Path',
