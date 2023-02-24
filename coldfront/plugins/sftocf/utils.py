@@ -33,7 +33,7 @@ logger.setLevel(logging.DEBUG)
 filehandler = logging.FileHandler(f'logs/starfish_to_coldfront_{datestr}.log', 'w')
 logger.addHandler(filehandler)
 
-STARFISH_SERVER = "holysfdb01"
+STARFISH_SERVER = 'holysfdb01'
 svp = read_json('coldfront/plugins/sftocf/servers.json')
 
 
@@ -544,7 +544,8 @@ def pull_sf_push_cf_redash():
 
     # limit allocations to those in the volumes collected
     searched_resources = [Resource.objects.get(name__contains=vol) for vol in vols_to_collect]
-    allocations = Allocation.objects.filter(resources__in=searched_resources)
+    allocations = Allocation.objects.filter(resources__in=searched_resources,
+        status__name__in=['Active', 'New', 'Updated', 'Ready for Review'])
     # 3. iterate across allocations
     for allocation in allocations:
         project = allocation.project
@@ -553,8 +554,12 @@ def pull_sf_push_cf_redash():
         volume = resource.name.split('/')[0]
 
         # select query rows that match allocation volume and lab
-        lab_data = [i for i in user_usage if i['group_name'] == lab and
-                        i['vol_name'] == volume and allocation.path in i['lab_path']]
+        if allocation.path:
+            lab_data = [i for i in user_usage if i['vol_name'] == volume and allocation.path == i['lab_path']]
+        else:
+            lab_data = [i for i in user_usage if i['group_name'] == lab and i['vol_name'] == volume]
+        # confirm that only one allocation is represented by checking the path
+
         if not lab_data:
             print('No starfish result for', lab, resource)
             logger.warning('WARNING: No starfish result for %s %s', lab, resource)
