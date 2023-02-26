@@ -265,7 +265,7 @@ class ProjectUserRoleChoice(TimeStampedModel):
 
 
 class ProjectUserStatusChoice(TimeStampedModel):
-    """ A project user status choice indicates the status of a project user. Examples include 
+    """ A project user status choice indicates the status of a project user. Examples include Active, Pending, and Denied.
     
     Attributes:
         name (str): name of the project user status choice
@@ -282,7 +282,16 @@ class ProjectUserStatusChoice(TimeStampedModel):
 
 
 class ProjectUser(TimeStampedModel):
+    """ A project user represents a user on the project.
+    
+    Attributes:
+        user (class): represents the User class of the project user
+        project (class): links user to its project
+        role (class): links the project user role choice to the user
+        status (class): links the project user status choice to the user
+        enable_notifications (bool): indicates whether or not the user should enable notifications
 
+    """
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     role = models.ForeignKey(ProjectUserRoleChoice, on_delete=models.CASCADE)
@@ -299,7 +308,12 @@ class ProjectUser(TimeStampedModel):
 
 
 class AttributeType(TimeStampedModel):
-    """ AttributeType. """
+    """ An attribute type indicates the data type of the attribute. Examples include Date, Float, Int, Text, and Yes/No. 
+    
+    Attributes:
+        name (str): name of attribute data type
+    """
+    
     name = models.CharField(max_length=64)
 
     def __str__(self):
@@ -310,6 +324,18 @@ class AttributeType(TimeStampedModel):
 
 
 class ProjectAttributeType(TimeStampedModel):
+    """ A project attribute type indicates the type of the attribute. Examples include Project ID and Account Number. 
+    
+    Attributes:
+        attribute_type (str): indicates the data type of the attribute
+        name (str): name of project attribute type
+        has_usage (bool): indicates whether or not the attribute type has usage
+        is_required (bool): indicates whether or not the attribute is required
+        is_unique (bool): indicates whether or not the value is unique
+        is_private (bool): indicates whether or not the attribute type is private
+        is_changeable (bool): indicates whether or not the attribute type is changeable
+    """
+
     attribute_type = models.ForeignKey(AttributeType, on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
     has_usage = models.BooleanField(default=False)
@@ -330,6 +356,14 @@ class ProjectAttributeType(TimeStampedModel):
 
 
 class ProjectAttribute(TimeStampedModel):
+    """ A project attribute class links a project attribute type and a project. 
+    
+    Attributes:
+        proj_attr_type (class): project attribute type to link
+        project (class): project to link
+        value (str): value of the project attribute
+    """
+
     proj_attr_type = models.ForeignKey(ProjectAttributeType, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
 
@@ -337,12 +371,14 @@ class ProjectAttribute(TimeStampedModel):
     history = HistoricalRecords()
 
     def save(self, *args, **kwargs):
+        """ Saves the project attribute. """
         super().save(*args, **kwargs)
         if self.proj_attr_type.has_usage and not ProjectAttributeUsage.objects.filter(project_attribute=self).exists():
             ProjectAttributeUsage.objects.create(
                 project_attribute=self)
 
     def clean(self):
+        """ Validates the project and raises errors if a project is invalid. """
         if self.proj_attr_type.is_unique and self.project.projectattribute_set.filter(proj_attr_type=self.proj_attr_type).exists():
             raise ValidationError("'{}' attribute already exists for this project.".format(
                 self.proj_attr_type))
@@ -364,7 +400,13 @@ class ProjectAttribute(TimeStampedModel):
         return '%s' % (self.proj_attr_type.name)
 
 class ProjectAttributeUsage(TimeStampedModel):
-    """ ProjectAttributeUsage. """
+    """ Project attribute usage indicates the usage of a project attribute. 
+    
+    Attributes:
+        project_attribute (class): links the usage to its project attribute
+        value (float): usage value of the project attribute
+    """
+
     project_attribute = models.OneToOneField(
         ProjectAttribute, on_delete=models.CASCADE, primary_key=True)
     value = models.FloatField(default=0)
