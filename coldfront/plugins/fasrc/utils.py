@@ -1,7 +1,5 @@
 import json
 import logging
-import operator
-from functools import reduce
 from datetime import datetime
 
 import requests
@@ -12,6 +10,8 @@ from django.utils import timezone
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.utils.fasrc import (log_missing,
+                                        select_one_project_allocation,
+                                        save_json,
                                         id_present_missing_users,
                                         id_present_missing_resources,
                                         id_present_missing_projects)
@@ -159,7 +159,10 @@ class AllTheThingsConn:
             'unique':'datetime(e.DotsLFSUpdateDate) as begin_date'}
 
         isilon = {'match': '[r:Owns]-(e:IsilonPath) MATCH (d:ConfigValue {Name: \'IsilonPath.Invocation\'})',
-            'where':f"(e.Isilon =~ '.*({volumes}).*') AND r.DotsUpdateDate = d.DotsUpdateDate",
+            'where':f"(e.Isilon =~ '.*({volumes}).*') \
+                        AND r.DotsUpdateDate = d.DotsUpdateDate \
+                        AND NOT (e.Path =~ '.*/rc_admin/.*')\
+                        AND (e.Path =~ '.*labs.*')",
             'r_updated': 'DotsUpdateDate',
             'storage_type':'\'Isilon\'',
             'fs_path':'Path',
@@ -212,8 +215,7 @@ class AllTheThingsConn:
             resp_json_by_lab[entry['lab']].append(entry)
         # logger.debug(resp_json_by_lab)
         resp_json_by_lab_cleaned = {k:v for k, v in resp_json_by_lab.items() if v}
-        with open(result_file, 'w') as file:
-            file.write(json.dumps(resp_json_by_lab_cleaned, indent=2))
+        save_json(result_file, resp_json_by_lab_cleaned)
         return result_file
 
 
@@ -239,11 +241,16 @@ class AllTheThingsConn:
         res_models, missing_res = id_present_missing_resources(resource_list)
         counts['proj_err'] = len(missing_res)
 
+        # collect commonly used database objects here
+        proj_models = proj_models.prefetch_related('allocation_set')
+        allocation_attribute_types = AllocationAttributeType.objects.all()
+        allocation_attribute_type_payment = allocation_attribute_types.get(name='RequiresPayment')
+
         for k, v in result_json.items():
             result_json[k] = [a for a in v if a['server'] not in missing_res]
 
         for lab, allocations in result_json.items():
-            logger.debug('PROJECT: %s ====================================', lab)
+            logger.info('PROJECT: %s ====================================', lab)
             # Find the correct allocation_allocationattributes to update by:
             # 1. finding the project with a name that matches lab.lab
             proj_query = proj_models.get(title=lab)
@@ -255,12 +262,9 @@ class AllTheThingsConn:
                     resource = res_models.get(name__contains=r_str)
 
                     # 3. find the allocation with a matching project and resource_type
-                    a = Allocation.objects.filter(  project=proj_query,
-                                                    resources__id=resource.id,
-                                                    status__name='Active'   )
-                    if a.count() == 1:
-                        a = a.first()
-                    elif a.count() < 1:
+                    alloc_obj = select_one_project_allocation(proj_query, resource, dirpath=allocation['fs_path'])
+
+                    if alloc_obj is None:
                         logger.warning("ERROR: No Allocation for project %s, resource %s",
                                                     proj_query.title, resource.name)
                         missing_allocations.append({
@@ -268,56 +272,35 @@ class AllTheThingsConn:
                                 "project_title": proj_query.title
                                 })
                         counts['all_err'] += 1
-                        continue
-                    elif a.count() > 1:
-                        logger.info("WARNING: multiple allocations returned. If LFS, will "
-                            "choose the FASSE option; if not, will choose otherwise.")
-                        just_str = "FASSE" if allocation['storage_type'] == "Isilon" else "Information for"
-                        a = Allocation.objects.get( project=proj_query,
-                                                    justification__contains=just_str,
-                                                    resources__id=resource.id,
-                                                    status__name='Active'   )
+                    elif alloc_obj == "MultiAllocationError":
+                        logger.warning("ERROR: Unresolved multiple allocations for project %s, resource %s",
+                                                    proj_query.title, resource.name)
+                        counts['all_err'] += 1
 
-                    logger.info("allocation: %s", a.__dict__)
+                    logger.info("allocation: %s", alloc_obj.__dict__)
 
                     # 4. get the storage quota TB allocation_attribute that has allocation=a.
                     allocation_values = { 'Storage Quota (TB)':
                                 [allocation['tb_allocation'],allocation['tb_usage']]  }
-                    if allocation['byte_allocation'] != None:
+                    if allocation['byte_allocation'] is not None:
                         allocation_values['Quota_In_Bytes'] = [ allocation['byte_allocation'],
-                                                    allocation['byte_usage']]
-
+                                                                allocation['byte_usage']]
+                    else:
+                        logger.warning(
+                                "no byte_allocation value for allocation %s, lab %s on resource %s",
+                                alloc_obj.pk, lab, r_str)
                     for k, v in allocation_values.items():
-                        allocation_attribute_type_obj = AllocationAttributeType.objects.get(
-                            name=k)
-                        try:
-                            allocation_attribute_obj = AllocationAttribute.objects.get(
+                        allocation_attribute_type_obj = allocation_attribute_types.get(name=k)
+                        allocattribute_obj, _ = alloc_obj.allocationattribute_set.update_or_create(
                                 allocation_attribute_type=allocation_attribute_type_obj,
-                                allocation=a,
+                                defaults={'value': v[0]}
                             )
-                            allocation_attribute_obj.value = v[0]
-                            allocation_attribute_obj.save()
-                            allocation_attribute_exist = True
-                        except AllocationAttribute.DoesNotExist:
-                            allocation_attribute_exist = False
-
-                        if (not allocation_attribute_exist):
-                            allocation_attribute_obj,_ =AllocationAttribute.objects.get_or_create(
-                                allocation_attribute_type=allocation_attribute_type_obj,
-                                allocation=a,
-                                value = v[0])
-                            allocation_attribute_type_obj.save()
-
-                        allocation_attribute_obj.allocationattributeusage.value = v[1]
-                        allocation_attribute_obj.allocationattributeusage.save()
+                        allocattribute_obj.allocationattributeusage.update(value=v[1])
 
                     # 5. AllocationAttribute
-                    allocation_attribute_type_payment = AllocationAttributeType.objects.get(name='RequiresPayment')
-                    allocation_attribute_payment, _ = AllocationAttribute.objects.get_or_create(
+                    alloc_obj.allocationattribute_set.update_or_create(
                             allocation_attribute_type=allocation_attribute_type_payment,
-                            allocation=a,
-                            value=True)
-                    allocation_attribute_payment.save()
+                            defaults={'value':True})
                     counts['complete'] += 1
                 except Exception as e:
                     allocation_name = f"{allocation['lab']}/{allocation['server']}"
@@ -451,11 +434,16 @@ def update_group_membership():
 
     # change logger filehandler
     change_filehandler(f'logs/att_membership_update-{today}.log')
-    no_members = []
-    no_users = []
-    no_managers = []
+    errors = { "no_members": [], "no_users": [], "no_managers": [] }
 
-    for project in Project.objects.filter(status__name__in=["Active", "New"]):
+    # collect commonly used db objects
+    projectuser_role_user = ProjectUserRoleChoice.objects.get(name='User')
+    projectuserstatus_active = ProjectUserStatusChoice.objects.get(name='Active')
+    projectuserstatus_removed = ProjectUserStatusChoice.objects.get(name='Removed')
+    projectuserstatus_pendremove = ProjectUserStatusChoice.objects.get(name='Pending - Remove')
+    projectuser_role_manager = ProjectUserRoleChoice.objects.get(name='Manager')
+
+    for project in Project.objects.filter(status__name__in=["Active", "New"]).prefetch_related('projectuser_set'):
         # pull membership data for the given project
         proj_name = project.title
         att_conn = AllTheThingsConn()
@@ -464,7 +452,7 @@ def update_group_membership():
         logger.debug('raw AD group data:\n%s', group_data)
         group_data = [group for group in group_data if group['user_enabled'] is True]
         if not group_data:
-            no_members.append(proj_name)
+            errors['no_members'].append(proj_name)
             continue
         # project = Project.objects.get(title=proj_name)
         projectusernames = [pu.user.username for pu in project.projectuser_set.filter(
@@ -483,7 +471,7 @@ def update_group_membership():
             ad_users = [u['user_name'] for u in relation_groups['MemberOf']]
         except KeyError:
             logger.warning("WARNING: MANAGERS BUT NO USERS LISTED FOR %s", project.title)
-            no_users.append(proj_name)
+            errors['no_users'].append(proj_name)
             ad_users = []
         # check for users not in Coldfront
         not_added = [uname for uname in ad_users if uname not in projectusernames]
@@ -494,21 +482,19 @@ def update_group_membership():
             ifxusers, missing_users = id_present_missing_users(not_added)
             log_missing('users', missing_users)
 
-            for user in ifxusers:
-                # in case user is being re-added to the project, first find/create a
-                # project_user matching just project/user, then change role & status
-                try:
-                    project_user = ProjectUser.objects.get(project=project,
-                                user=user)
-                    project_user.role=ProjectUserRoleChoice.objects.get(name='User')
-                    project_user.status = ProjectUserStatusChoice.objects.get(name='Active')
-                    project_user.save()
-                except ProjectUser.DoesNotExist:
-                    ProjectUser.objects.create(project=project,
-                                user=user,
-                                role=ProjectUserRoleChoice.objects.get(name='User'),
-                                status = ProjectUserStatusChoice.objects.get(name='Active')
-                                )
+            present_users = project.projectuser_set.filter(user__in=ifxusers)
+            present_users.update(   role=projectuser_role_user,
+                                    status=projectuserstatus_active)
+            presentusers_ids = present_users.values_list("user__id")
+            missing_projectusers = ifxusers.exclude(id__in=presentusers_ids)
+            ProjectUser.objects.bulk_create([ProjectUser(
+                                                project=project,
+                                                user=user,
+                                                role=projectuser_role_user,
+                                                status=projectuserstatus_active
+                                            )
+                                            for user in missing_projectusers
+                                ])
 
         ### check through management list ###
         try:
@@ -516,16 +502,12 @@ def update_group_membership():
         except KeyError:
             logger.warning('no active managers for project %s', proj_name)
             print(f'WARNING: no active managers for project {proj_name}')
-            no_managers.append(proj_name)
+            errors['no_managers'].append(proj_name)
             continue
 
         # get accompanying ProjectUser entries
-        project_managers = ProjectUser.objects.filter(project=project, user__username__in=ad_managers)
-        for manager in project_managers:
-            # if ProjectUser's role__name is 'User', change it to 'Manager'
-            if manager.role.name == 'User':
-                manager.role = ProjectUserRoleChoice.objects.get(name='Manager')
-                manager.save()
+        project_managers = project.projectuser_set.filter(user__username__in=ad_managers)
+        project_managers.update(role=projectuser_role_manager)
 
         ### change statuses of inactive ProjectUsers to 'Removed' ###
         projusers_to_remove = [uname for uname in projectusernames if uname not in ad_users]
@@ -535,8 +517,7 @@ def update_group_membership():
 
             # if ProjectUser is still an AllocationUser, change to Pending - Remove
             for username in projusers_to_remove:
-                project_user = ProjectUser.objects.get( project=project,
-                                                        user__username=username)
+                project_user = project.projectuser_set.get(user__username=username)
                 activeallocationusership = AllocationUser.objects.filter(
                                             allocation__project=project,
                                             user=project_user.user,
@@ -546,14 +527,12 @@ def update_group_membership():
                     message = f'cannot remove User {username} for Project {project.title} - active AllocationUser'
                     logger.warning(message)
                     print(message)
-                    project_user.status = ProjectUserStatusChoice.objects.get(name='Pending - Remove')
+                    project_user.update(status=projectuserstatus_pendremove)
                 else:
-                    project_user.status = ProjectUserStatusChoice.objects.get(name='Removed')
+                    project_user.update(status=projectuserstatus_removed)
                     logger.debug('removed User %s from Project %s', username, project.title)
-                project_user.save()
-    logger.warning('AD groups with no members: %s', no_members)
-    logger.warning('AD groups with no users: %s', no_users)
-    logger.warning('AD groups with no managers: %s', no_managers)
+
+    logger.warning('errorlist: %s', errors)
 
 
 def generate_headers(token):
@@ -561,7 +540,7 @@ def generate_headers(token):
     '''
     headers = {
         'accept': 'application/json',
-        'Authorization': 'Bearer {}'.format(token),
+        'Authorization': f'Bearer {token}',
     }
     return headers
 

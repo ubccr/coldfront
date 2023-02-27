@@ -16,6 +16,8 @@ from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.fasrc import (determine_size_fmt,
                                         locate_or_create_dirpath,
                                         read_json,
+                                        save_json,
+                                        select_one_project_allocation,
                                         id_present_missing_users,
                                         log_missing)
 from coldfront.core.project.models import Project
@@ -31,7 +33,7 @@ logger.setLevel(logging.DEBUG)
 filehandler = logging.FileHandler(f'logs/starfish_to_coldfront_{datestr}.log', 'w')
 logger.addHandler(filehandler)
 
-STARFISH_SERVER = "holysfdb01"
+STARFISH_SERVER = 'holysfdb01'
 svp = read_json('coldfront/plugins/sftocf/servers.json')
 
 
@@ -176,11 +178,16 @@ class StarFishRedash:
         self.base_url = f'https://{server_name}.rc.fas.harvard.edu/redash/api/'
         self.queries = import_from_settings('REDASH_API_KEYS')
 
+    def submit_query(self, queryname):
+        query = self.queries[queryname]
+        query_url = f'{self.base_url}queries/{query[0]}/results?api_key={query[1]}'
+        result = return_get_json(query_url, headers={})
+        return result
+
 
     def get_vol_stats(self):
-        query = self.queries['vol_query']
-        query_url = f'{self.base_url}queries/{query[0]}/results?api_key={query[1]}'
-        result = return_get_json(query_url, headers={})['query_result']['data']['rows']
+        result = self.submit_query('vol_query')
+        result = result['query_result']['data']['rows']
         result = [{k.replace(' ', '_').replace('(','').replace(')','') : v for k, v in d.items()} for d in result]
         resource_names = [re.sub(r'\/.+','',n) for n in Resource.objects.values_list('name',flat=True)]
         result = [r for r in result if r['volume_name'] in resource_names]
@@ -190,9 +197,7 @@ class StarFishRedash:
     def get_usage_stats(self, volumes=None):
         '''
         '''
-        query = self.queries['usage_query']
-        query_url = f'{self.base_url}queries/{query[0]}/results?api_key={query[1]}'
-        result = return_get_json(query_url, headers={})
+        result = self.submit_query('usage_query')
         # print(result)
         if result['query_result']:
             data = result['query_result']['data']['rows']
@@ -200,7 +205,7 @@ class StarFishRedash:
             print("no query_result value found:")
             print(result)
         if volumes:
-            result = [d for d in data if d['vol_name'] in volumes]
+            data = [d for d in data if d['vol_name'] in volumes]
 
         return data
 
@@ -357,27 +362,7 @@ def push_cf(filepaths, clean):
 
         project = Project.objects.get(title=content['project'])
         # find project allocation
-        try:
-            allocation = Allocation.objects.get(project=project, resources__name=resource)
-        except Allocation.MultipleObjectsReturned:
-            logger.debug('>1 allocation for project id %s; choosing one with "Allocation Information" in justification.',
-                                                            project.id)
-
-            # try:
-            allocation = Allocation.objects.get(
-                project=project,
-                resources__name=resource,
-                justification__icontains='Allocation Information',
-                justification__endswith=project.title)
-            # except Allocation.MultipleObjectsReturned:
-            #     logger.warning('Too many allocations for project id {project.id}, matching justifications; choosing the first. Fix this duplication.')
-            #     allocations = Allocation.objects.filter(
-            #         project_id=project.id,
-            #         justification__icontains='Allocation Information',
-            #         justification__endswith=project.title)
-            #     for a in allocations:
-            #         logger.warning(f'Duplicate item:{a}')
-            #     allocation = allocations.first()
+        allocation = select_one_project_allocation(project, resource)
         logger.debug('%s\n usernames: %s\n user_models: %s',
                 project.title, usernames, [u.username for u in user_models])
 
@@ -397,27 +382,18 @@ def push_cf(filepaths, clean):
 def update_usage(user, userdict, allocation):
     usage, unit = split_num_string(userdict['size_sum_hum'])
     logger.debug('entering for user: %s', user.username)
-    try:
-        allocationuser = AllocationUser.objects.get(
-            allocation=allocation, user=user
-        )
-    except AllocationUser.DoesNotExist:
-        logger.info('creating allocation user:')
-        AllocationUser.objects.create(
-            allocation=allocation,
-            created=timezone.now(),
-            status=AllocationUserStatusChoice.objects.get(name='Active'),
-            user=user
-        )
-        allocationuser = AllocationUser.objects.get(
-            allocation=allocation, user=user
-        )
-
-    allocationuser.usage_bytes = userdict['size_sum']
-    allocationuser.usage = usage
-    allocationuser.unit = unit
-    # automatically updates 'modified' field & adds old record to history
-    allocationuser.save()
+    allocationuser, created = allocation.allocationuser_set.get_or_create(
+            user=user,
+            defaults={
+                "created": timezone.now(),
+                "status": AllocationUserStatusChoice.objects.get(name='Active')
+                }
+            )
+    if created:
+        logger.info('allocation user %s created', allocationuser)
+    allocationuser.update(  usage_bytes = userdict['size_sum'],
+                            usage = usage,
+                            unit = unit)
 
 
 def clean_data_dir(homepath):
@@ -441,10 +417,6 @@ def return_get_json(url, headers):
     response = requests.get(url, headers=headers)
     return response.json()
 
-def save_json(file, contents):
-    with open(file, 'w') as fp:
-        json.dump(contents, fp, sort_keys=True, indent=4)
-
 
 @record_process
 def collect_starfish_usage(server, volume, volumepath, projects):
@@ -464,9 +436,7 @@ def collect_starfish_usage(server, volume, volumepath, projects):
     datestr = datetime.today().strftime('%Y%m%d')
     locate_or_create_dirpath('./coldfront/plugins/sftocf/data/')
 
-
     ### OLD METHOD ###
-
     for t in projects:
         p = t[0]
         tier = t[2]
@@ -537,17 +507,27 @@ def generate_headers(token):
     }
     return headers
 
-def find_remove_absent_allocationusers(redash_usernames, allocation):
+def zero_out_absent_allocationusers(redash_usernames, allocation):
     '''
-    Find and remove AllocationUsers that aren't in the StarfishRedash usage
-    stats (which includes all AD group users, even those with 0 usage) for the
-    accompanying Allocation.
+    Find AllocationUsers that aren't in the StarfishRedash usage
+    stats and change their usage to 0.
     '''
-    allocationusers = AllocationUser.objects.filter(allocation=allocation)
+    allocationusers = allocation.allocationuser_set.all()
     allocationusers_not_in_redash = allocationusers.exclude(user__username__in=redash_usernames)
     if allocationusers_not_in_redash:
-        print("users no longer in allocation", allocation.pk, ":", [user.user.username for user in allocationusers_not_in_redash])
-    # allocationusers_not_in_redash.delete()
+        logger.info('users no longer in allocation %s: %s', allocation.pk, [user.user.username for user in allocationusers_not_in_redash])
+        allocationusers_not_in_redash.update(usage=0, usage_bytes=0)
+
+def compare_cf_sf_volumes():
+    '''
+    cross-reference CF Resources and SF volumes to produce list of all
+    volumes to be collected
+    '''
+    resource_names = [re.sub(r'\/.+','',n) for n in Resource.objects.values_list('name', flat=True)]
+    # limit volumes to be collected to those ones present in the Starfish database
+    volume_names = StarFishServer(STARFISH_SERVER).volumes
+    vols_to_collect = [vol for vol in volume_names for res in resource_names if vol == res]
+    return vols_to_collect
 
 
 def pull_sf_push_cf_redash():
@@ -555,18 +535,8 @@ def pull_sf_push_cf_redash():
     Query Starfish Redash API for user usage data and update Coldfront AllocationUser entries.
 
     Only Projects that are already in Coldfront will get updated.
-
-    Assumptions this code relies on:
-    1. A project cannot have multiple allocations on the same storage resource.
     '''
-
-    # 1. cross-reference CF Resources and SF volumes to produce list of all
-    #    volumes to be collected
-
-    resource_names = [re.sub(r'\/.+','',n) for n in Resource.objects.values_list('name', flat=True)]
-    # limit volumes to be collected to those ones present in the Starfish database
-    volume_names = StarFishServer(STARFISH_SERVER).volumes
-    vols_to_collect = [vol for vol in volume_names for res in resource_names if vol == res]
+    vols_to_collect = compare_cf_sf_volumes()
     # 2. grab data from redash
     redash_api = StarFishRedash(STARFISH_SERVER)
     user_usage = redash_api.get_usage_stats(volumes=vols_to_collect)
@@ -574,7 +544,8 @@ def pull_sf_push_cf_redash():
 
     # limit allocations to those in the volumes collected
     searched_resources = [Resource.objects.get(name__contains=vol) for vol in vols_to_collect]
-    allocations = Allocation.objects.filter(resources__in=searched_resources)
+    allocations = Allocation.objects.filter(resources__in=searched_resources,
+        status__name__in=['Active', 'New', 'Updated', 'Ready for Review'])
     # 3. iterate across allocations
     for allocation in allocations:
         project = allocation.project
@@ -583,7 +554,12 @@ def pull_sf_push_cf_redash():
         volume = resource.name.split('/')[0]
 
         # select query rows that match allocation volume and lab
-        lab_data = [i for i in user_usage if i['group_name'] == lab and i['vol_name'] == volume]
+        if allocation.path:
+            lab_data = [i for i in user_usage if i['vol_name'] == volume and allocation.path == i['lab_path']]
+        else:
+            lab_data = [i for i in user_usage if i['group_name'] == lab and i['vol_name'] == volume]
+        # confirm that only one allocation is represented by checking the path
+
         if not lab_data:
             print('No starfish result for', lab, resource)
             logger.warning('WARNING: No starfish result for %s %s', lab, resource)
@@ -598,32 +574,26 @@ def pull_sf_push_cf_redash():
                 project.title, usernames, [u.username for u in user_models])
 
         # identify and remove allocation users that are no longer in the AD group
-        find_remove_absent_allocationusers(usernames, allocation)
+        zero_out_absent_allocationusers(usernames, allocation)
 
         for user in user_models:
             userdict = next(d for d in lab_data if d['user_name'].lower() == user.username.lower())
             logger.debug('entering for user: %s', user.username)
-            try:
-                allocationuser = AllocationUser.objects.get(
-                    allocation=allocation, user=user
-                )
-            except AllocationUser.DoesNotExist:
-                if userdict['size_sum'] > 0:
-                    allocationuser = AllocationUser.objects.create(
-                        allocation=allocation,
-                        created=timezone.now(),
-                        status=AllocationUserStatusChoice.objects.get(name='Active'),
-                        user=user
-                    )
-                else:
-                    logger.warning("allocation user missing: %s %s %s", lab, resource, userdict)
-                    continue
+            allocationuser, created = allocation.allocationuser_set.get_or_create(
+                user=user,
+                defaults={
+                    'status': AllocationUserStatusChoice.objects.get(name='Active'),
+                    'created': timezone.now(),
+                })
+            if created:
+                logger.info('allocation user %s created', allocationuser)
             size_sum = int(userdict['size_sum'])
             usage, unit = determine_size_fmt(userdict['size_sum'])
+
             allocationuser.usage_bytes = size_sum
             allocationuser.usage = usage
             allocationuser.unit = unit
             queryset.append(allocationuser)
-            # automatically update 'modified' field & add old record to history
-            logger.debug("saving %s",userdict)
+            logger.debug('saving %s', userdict)
+
     AllocationUser.objects.bulk_update(queryset, ['usage_bytes', 'usage', 'unit'])
