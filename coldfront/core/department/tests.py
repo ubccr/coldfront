@@ -30,7 +30,7 @@ class DepartmentListViewTest(TestCase):
     def test_department_list_access(self):
         """Test department list access controls."""
         # If not logged in, can't see page; redirect to login page.
-        utils.test_redirect_to_login(self, "/department/")
+        utils.test_logged_out_redirect_to_login(self, "/department/")
 
         # after login, user and admin can access list page
         utils.test_user_can_access(self, self.admin_user, "/department/")
@@ -77,7 +77,7 @@ class DepartmentDetailViewTest(TestCase):
         """
         url = f"/department/{self.department.pk}/"
         # If not logged in, can't see page; redirect to login page.
-        utils.test_redirect_to_login(self, url)
+        utils.test_logged_out_redirect_to_login(self, url)
 
         # admin can access
         utils.test_user_can_access(self, self.admin_user, url)
