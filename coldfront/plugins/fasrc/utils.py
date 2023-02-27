@@ -5,8 +5,10 @@ from datetime import datetime
 import requests
 from django.db.models import Q
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 
 from coldfront.core.utils.common import import_from_settings
+from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.utils.fasrc import (log_missing,
                                         select_one_project_allocation,
                                         save_json,
@@ -16,6 +18,7 @@ from coldfront.core.utils.fasrc import (log_missing,
 from coldfront.core.project.models import ( Project,
                                             ProjectUserRoleChoice,
                                             ProjectUserStatusChoice,
+                                            ProjectStatusChoice,
                                             ProjectUser)
 from coldfront.core.resource.models import Resource
 from coldfront.core.allocation.models import   (Allocation,
@@ -31,6 +34,12 @@ logger.setLevel(logging.DEBUG)
 filehandler = logging.FileHandler(f'logs/{today}.log', 'w')
 logger.addHandler(filehandler)
 
+def change_filehandler(filepath):
+    '''change logger filehandler'''
+    logger.removeHandler(filehandler)
+    handler = logging.FileHandler(filepath, 'w')
+    logger.addHandler(handler)
+
 
 def record_process(func):
     '''Wrapper function for logging'''
@@ -41,6 +50,19 @@ def record_process(func):
         logger.debug('%s END. output:\n%s\n', funcdata, result)
         return result
     return call
+
+class ErrorTracker:
+    '''class for tracking errors that arise when processing groupuser data'''
+    def __init__(self):
+        self.no_members = []
+        self.no_users = []
+        self.no_managers = []
+
+    def report(self):
+        '''report errors'''
+        logger.warning('AD groups with no members: %s', self.no_members)
+        logger.warning('AD groups with no users: %s', self.no_users)
+        logger.warning('AD groups with no managers: %s', self.no_managers)
 
 
 class AllTheThingsConn:
@@ -61,18 +83,19 @@ class AllTheThingsConn:
 
     def collect_group_membership(self, groupname):
         '''
-        Collect user, and relationship information for a given lab from ATT.
+        Collect user, and relationship information for a given lab or labs from ATT.
         '''
         query = {'statements': [{
                     'statement': f'MATCH (u:User)-[r:MemberOf|ManagedBy]-(g:Group) \
-                    WHERE (g.ADName = \'{groupname}\' OR g.ADSamAccountName = \'{groupname}\') \
+                    WHERE (g.ADSamAccountName =~ \'{groupname}\') \
                     RETURN \
                     u.ADgivenName AS first_name, \
                     u.ADsurname AS last_name, \
                     u.ADSamAccountName AS user_name, \
                     u.ADenabled AS user_enabled, \
-                    g.ADName AS group_name,\
+                    g.ADSamAccountName AS group_name,\
                     type(r) AS relationship,\
+                    g.ADManaged_By AS group_manager, \
                     u.ADgidNumber AS user_gid_number, \
                     g.ADgidNumber AS group_gid_number'
                 }]}
@@ -80,6 +103,35 @@ class AllTheThingsConn:
         resp_json_formatted = self.format_query_results(resp_json)
         return resp_json_formatted
 
+    def collect_pi_data(self, grouplist):
+        '''collect information on pis for a given list of groups
+        '''
+        groupnamesearch = "|".join(grouplist)
+        query = {'statements': [{
+                    'statement': f'MATCH (g:Group)\
+                    WITH g\
+                    MATCH (u:User)\
+                    WHERE (g.ADSamAccountName =~ \'({groupnamesearch})\') \
+                    AND u.ADSamAccountName = g.ADManaged_By\
+                    RETURN\
+                    g.ADSamAccountName AS group_name,\
+                    u.ADSamAccountName AS user_name, \
+                    u.ADgivenName AS first_name, \
+                    u.ADsurname AS last_name, \
+                    u.ADmail AS email, \
+                    u.ADDepartment AS department, \
+                    u.ADTitle AS title, \
+                    u.ADCompany AS company, \
+                    u.ADParentCanonicalName AS path, \
+                    u.DotsPTLUpdateDate, \
+                    u.DotsADUpdateDate, \
+                    u.ADenabled AS user_enabled, \
+                    u.NANInNanites AS in_nanites, \
+                    u.ADgidNumber AS user_gid_number'
+                }]}
+        resp_json = self.post_query(query)
+        resp_json_formatted = self.format_query_results(resp_json)
+        return resp_json_formatted
 
     def pull_quota_data(self, volumes=None):
         '''Produce JSON file of quota data for LFS and Isilon from AlltheThings.
@@ -134,6 +186,7 @@ class AllTheThingsConn:
         for d in [quota, isilon]:
             statement = {'statement': f"MATCH p=(g:Group)-{d['match']} \
                     WHERE {d['where']} \
+                    AND NOT (g.ADSamAccountName =~ '.*(disabled|rc_admin).*')\
                     AND (datetime() - duration('P31D') <= datetime(r.{d['r_updated']})) \
                     RETURN \
                     {d['unique']}, \
@@ -257,15 +310,130 @@ class AllTheThingsConn:
         logger.warning('errored_allocations:\n%s', errored_allocations)
 
 
+def create_new_projects(projects_list: list, dryrun=False):
+    '''
+    Use ATT user, group, and relationship information to automatically create new
+    Coldfront Projects from projects_list.
+    '''
+    change_filehandler(f'logs/{today}_projectcreation_att.log')
+
+    att_conn = AllTheThingsConn()
+    errortracker = ErrorTracker()
+    # if project already exists, end here
+    existing_projects = Project.objects.filter(title__in=projects_list)
+    if existing_projects:
+        logger.debug("existing projects: %s", [p.title for p in existing_projects])
+    projects_to_add = [p for p in projects_list if p not in [p.title for p in existing_projects]]
+
+    # if PI is inactive or otherwise unavailable, don't add project or users
+    pi_data = att_conn.collect_pi_data(projects_to_add)
+    no_active_pis = [entry['group_name'] for entry in pi_data if not entry['user_enabled']]
+    logger.debug("projects lacking active PIs: %s", no_active_pis)
+    missing_pi_usernames = [entry['user_name'] for entry in pi_data if not entry['user_enabled']]
+    active_pi_groups = [entry for entry in pi_data if entry['user_enabled']]
+
+    # bulk-query user/group data
+    user_group_search = "|".join(entry['group_name'] for entry in active_pi_groups)
+    aduser_data = att_conn.collect_group_membership(f"({user_group_search})")
+    aduser_data = [user for user in aduser_data if user['user_enabled']]
+
+    # log and remove from list any AD users not in Coldfront
+    aduser_names = [u['user_name'] for u in aduser_data]
+    _, missing_users = id_present_missing_users(aduser_names)
+    log_missing('user', missing_users+missing_pi_usernames)
+    aduser_data = [u for u in aduser_data if u['user_name'] not in missing_users]
+
+    for entry in active_pi_groups:
+        # collect group membership entries
+        ad_members = [user for user in aduser_data if user['group_name'] == entry['group_name']]
+
+        # if no active group members, log and don't add Project
+        if not ad_members:
+            errortracker.no_members.append(entry['group_name'])
+            logger.warning("no members for %s; not adding.", entry['group_name'])
+            continue
+
+        ad_managers = [u['user_name'] for u in ad_members if u['relationship'] == 'ManagedBy']
+        # if no active managers, log and don't add Project
+        if not ad_managers:
+            logger.warning('no active managers for project %s', entry['group_name'])
+            print(f'WARNING: no active managers for project {entry["group_name"]}')
+            errortracker.no_managers.append(entry['group_name'])
+            continue
+
+
+        # locate PI User entry
+        try:
+            project_pi = get_user_model().objects.get(username=entry['user_name'])
+        except get_user_model().DoesNotExist:
+            logger.warning('pi for project %s not in ifxusers; skipping', entry['group_name'])
+            errortracker.no_managers.append(entry['group_name'])
+            continue
+
+
+        # create description
+        description = "Allocations for " + entry['group_name']
+
+        # locate field_of_science
+        field_of_science_name=entry['department']
+
+        field_of_science_obj, created = FieldOfScience.objects.get_or_create(
+                        description=field_of_science_name,
+                        defaults={'is_selectable':'True'}
+                        )
+        if created:
+            logger.info('added new field_of_science: %s', field_of_science_name)
+
+
+        ### CREATE PROJECT ###
+        current_dt = datetime.now(tz=timezone.utc)
+        new_project = Project.objects.create(
+            created=current_dt,
+            modified=current_dt,
+            title=entry['group_name'],
+            pi=project_pi,
+            description=description.strip(),
+            field_of_science=field_of_science_obj,
+            requires_review=False,
+            status=ProjectStatusChoice.objects.get(name='New')
+        )
+
+        ### add projectusers ###
+        # use set comprehension to avoid duplicate entries when MemberOf/ManagedBy relationships both exist
+        ad_member_usernames = {u['user_name'] for u in ad_members}
+        users_to_add = get_user_model().objects.filter(username__in=ad_member_usernames)
+        new_projectusers = [
+            ProjectUser(
+                project=new_project,
+                user=user,
+                status=ProjectUserStatusChoice.objects.get(name='Active'),
+                role=ProjectUserRoleChoice.objects.get(name='User'),
+                )
+            for user in users_to_add
+            ]
+        added_projectusers = ProjectUser.objects.bulk_create(new_projectusers)
+
+        # add permissions to PI/manager-status ProjectUsers
+        manager_usernames = ad_managers + [entry['user_name']]
+        for username in manager_usernames:
+            logger.debug('adding manager status to ProjectUser %s for Project %s',
+                        username, entry['group_name'])
+            manager = ProjectUser.objects.get(  project=new_project,
+                                                user__username=username)
+            manager.role = ProjectUserRoleChoice.objects.get(name='Manager')
+            manager.save()
+
+    errortracker.report()
+
+
 def update_group_membership():
     '''
     Use ATT's user, group, and relationship information to keep the ProjectUser
     list up-to-date for existing Coldfront Projects.
     '''
+
     # change logger filehandler
-    logger.removeHandler(filehandler)
-    handler = logging.FileHandler(f'logs/att_membership_update-{today}.log', 'w')
-    logger.addHandler(handler)
+    change_filehandler(f'logs/att_membership_update-{today}.log')
     errors = { "no_members": [], "no_users": [], "no_managers": [] }
 
     # collect commonly used db objects
