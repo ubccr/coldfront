@@ -34,6 +34,12 @@ logger.setLevel(logging.DEBUG)
 filehandler = logging.FileHandler(f'logs/{today}.log', 'w')
 logger.addHandler(filehandler)
 
+def change_filehandler(filepath):
+    '''change logger filehandler'''
+    logger.removeHandler(filehandler)
+    handler = logging.FileHandler(filepath, 'w')
+    logger.addHandler(handler)
+
 
 def record_process(func):
     '''Wrapper function for logging'''
@@ -279,7 +285,7 @@ class AllTheThingsConn:
                                 [allocation['tb_allocation'],allocation['tb_usage']]  }
                     if allocation['byte_allocation'] != None:
                         allocation_values['Quota_In_Bytes'] = [ allocation['byte_allocation'],
-                                                                allocation['byte_usage']]
+                                                    allocation['byte_usage']]
 
                     for k, v in allocation_values.items():
                         allocation_attribute_type_obj = AllocationAttributeType.objects.get(
@@ -326,6 +332,8 @@ def create_new_projects(projects_list: list, dryrun=False):
     Use ATT user, group, and relationship information to automatically create new
     Coldfront Projects from projects_list.
     '''
+    change_filehandler(f'logs/{today}_projectcreation_att.log')
+
     att_conn = AllTheThingsConn()
     errortracker = ErrorTracker()
     # if project already exists, end here
@@ -336,8 +344,9 @@ def create_new_projects(projects_list: list, dryrun=False):
 
     # if PI is inactive or otherwise unavailable, don't add project or users
     pi_data = att_conn.collect_pi_data(projects_to_add)
-    logger.debug("projects lacking active PIs: %s",
-        [entry['group_name'] for entry in pi_data if not entry['user_enabled']])
+    no_active_pis = [entry['group_name'] for entry in pi_data if not entry['user_enabled']]
+    logger.debug("projects lacking active PIs: %s", no_active_pis)
+    missing_pi_usernames = [entry['user_name'] for entry in pi_data if not entry['user_enabled']]
     active_pi_groups = [entry for entry in pi_data if entry['user_enabled']]
 
     # bulk-query user/group data
@@ -347,9 +356,9 @@ def create_new_projects(projects_list: list, dryrun=False):
 
     # log and remove from list any AD users not in Coldfront
     aduser_names = [u['user_name'] for u in aduser_data]
-    ifxusernames = [u.username for u in get_user_model.objects.filter(username__in=aduser_names)]
-    missing = log_missing('user', ifxusernames, aduser_names)
-    aduser_data = [u for u in aduser_data if u['user_name'] not in missing]
+    _, missing_users = id_present_missing_users(aduser_names)
+    log_missing('user', missing_users+missing_pi_usernames)
+    aduser_data = [u for u in aduser_data if u['user_name'] not in missing_users]
 
     for entry in active_pi_groups:
         # collect group membership entries
@@ -358,6 +367,7 @@ def create_new_projects(projects_list: list, dryrun=False):
         # if no active group members, log and don't add Project
         if not ad_members:
             errortracker.no_members.append(entry['group_name'])
+            logger.warning("no members for %s; not adding.", entry['group_name'])
             continue
 
         ad_managers = [u['user_name'] for u in ad_members if u['relationship'] == 'ManagedBy']
@@ -393,7 +403,7 @@ def create_new_projects(projects_list: list, dryrun=False):
 
 
         ### CREATE PROJECT ###
-        current_dt = datetime.datetime.now(tz=timezone.utc)
+        current_dt = datetime.now(tz=timezone.utc)
         new_project = Project.objects.create(
             created=current_dt,
             modified=current_dt,
@@ -401,6 +411,7 @@ def create_new_projects(projects_list: list, dryrun=False):
             pi=project_pi,
             description=description.strip(),
             field_of_science=field_of_science_obj,
+            requires_review=False,
             status=ProjectStatusChoice.objects.get(name='New')
         )
 
@@ -424,7 +435,8 @@ def create_new_projects(projects_list: list, dryrun=False):
         for username in manager_usernames:
             logger.debug('adding manager status to ProjectUser %s for Project %s',
                         username, entry['group_name'])
-            manager = added_projectusers.get(user__username=username)
+            manager = ProjectUser.objects.get(  project=new_project,
+                                                user__username=username)
             manager.role = ProjectUserRoleChoice.objects.get(name='Manager')
             manager.save()
 
@@ -438,9 +450,7 @@ def update_group_membership():
     '''
 
     # change logger filehandler
-    logger.removeHandler(filehandler)
-    handler = logging.FileHandler(f'logs/att_membership_update-{today}.log', 'w')
-    logger.addHandler(handler)
+    change_filehandler(f'logs/att_membership_update-{today}.log')
     no_members = []
     no_users = []
     no_managers = []
