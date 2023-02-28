@@ -118,14 +118,6 @@ which can be done with:
 
 - Any custom Django settings can be applied by modifying `dev_settings.py`.
 Note that running the Ansible playbook will overwrite these.
-- It may be convenient to add the following to `/home/vagrant/.bashrc`:
-  ```
-  # Upon login, navigate to the ColdFront directory and source the virtual environment.
-  cd /vagrant/coldfront_app/coldfront
-  source /vagrant/coldfront_app/venv/bin/activate
-  # Restart Apache with a keyword.
-  alias reload="sudo service httpd restart"
-  ```
 
 #### Emails
 
