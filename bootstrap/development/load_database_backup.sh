@@ -6,9 +6,10 @@
 
 # Store second last and last arguments.
 DB_NAME=${@:(-2):1}
+DB_OWNER=admin
 DUMP_FILE=${@: -1}
 
-BIN=/usr/pgsql-10/bin/pg_restore
+BIN=/usr/pgsql-15/bin/pg_restore
 
 if [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]] ; then
     echo "Usage: `basename $0` [OPTION] name-of-database absolute-path-to-dump-file"
@@ -30,10 +31,11 @@ if [[ "$1" == "-k" || "$1" == "--kill-connections" ]] ; then
 fi
 
 sudo -u postgres /bin/bash -c "echo DROPPING DATABASE... \
-                        && psql -c 'DROP DATABASE $DB_NAME;'; \
-                        \
-                        echo RECREATING DATABASE... \
-                        && psql -c 'CREATE DATABASE $DB_NAME;' \
-                        \
-                        && echo LOADING DATABASE... \
-                        && $BIN -d $DB_NAME $DUMP_FILE"
+                    && psql -c 'DROP DATABASE $DB_NAME;'; \
+                    \
+                    echo RECREATING DATABASE... \
+                    && psql -c 'CREATE DATABASE $DB_NAME OWNER $DB_OWNER;' \
+                    \
+                    && echo LOADING DATABASE... \
+                    && $BIN -d $DB_NAME $DUMP_FILE; \
+                    psql -c 'ALTER SCHEMA public OWNER TO $DB_OWNER;' $DB_NAME;"

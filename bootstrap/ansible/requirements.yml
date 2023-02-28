@@ -1,4 +1,6 @@
 ---
+roles:
+  - name: smbambling.scl
 collections:
   - name: ansible.posix
   - name: community.general

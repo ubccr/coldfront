@@ -1,7 +1,7 @@
 ---
 
 - name: MyBRC/LRC User Portal VM Playbook
-  gather_facts: false
+  gather_facts: true
   hosts:
     - all
     - "{{ domain }}"
@@ -15,7 +15,7 @@
     common_tasks: true
 
     python_version: 3.6
-    postgres_version: 10
+    postgres_version: 15
     python_version_dotless: "{{ python_version | regex_replace('\\.','') }}"
     postgres_version_dotless: "{{ postgres_version | regex_replace('\\.','') }}"
 
@@ -53,7 +53,12 @@
               - openssl-devel
               - git-core
               - gcc-c++
+              - libffi-devel
             state: present
+
+        - name: Install SCL
+          include_role:
+            role: smbambling.scl
 
         - name: Install required Python packages
           yum:
@@ -111,6 +116,8 @@
             section: 'program:django_q'
             option: 'numprocs'
             value: '1'
+
+        # Install and configure PostgreSQL.
 
         - name: Add Postgres yum repository
           yum_repository:
@@ -230,6 +237,8 @@
             requirements: "{{ git_prefix }}/{{ reponame }}/requirements.txt"
             executable: "{{ git_prefix }}/venv/bin/pip3"
           become_user: "{{ djangooperator }}"
+          environment: # needed as pg_config isn't in PATH by default
+            PATH: "{{ ansible_env.PATH }}:/usr/pgsql-{{ postgres_version }}/bin"
 
         # TODO: If this raises an error, the token is exposed in stderr.
         - name: Install the Python package for validating LBL billing IDs
@@ -239,22 +248,21 @@
           when: install_billing_validation_package
           no_log: true
 
-        # Create a PostgreSQL database and a user for the Django application.
+        # Create a PostgreSQL user and database for the Django application.
 
-        - name: Create a new PostgreSQL database
-          postgresql_db:
-            name: "{{ db_name }}"
+        - name: Create a PostgreSQL admin user
+          postgresql_user:
+            name: "{{ db_admin_user }}"
+            password: "{{ db_admin_passwd }}"
+            role_attr_flags: CREATEDB
           become_user: postgres
           vars:
             ansible_python_interpreter: "{{ git_prefix }}/venv/bin/python3"
 
-        - name: Create a PostgreSQL admin user and grant permissions
-          postgresql_user:
-            name: "{{ db_admin_user }}"
-            db: "{{ db_name }}"
-            priv: ALL
-            password: "{{ db_admin_passwd }}"
-            role_attr_flags: CREATEDB
+        - name: Create a new PostgreSQL database under the admin user
+          postgresql_db:
+            name: "{{ db_name }}"
+            owner: "{{ db_admin_user }}"
           become_user: postgres
           vars:
             ansible_python_interpreter: "{{ git_prefix }}/venv/bin/python3"
