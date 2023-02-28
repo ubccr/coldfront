@@ -167,30 +167,6 @@
             state: started
             enabled: true
 
-        - name: Update pg_hba.conf to change host auth from ident to md5 (1/2)
-          postgresql_pg_hba:
-            dest: /var/lib/pgsql/{{ postgres_version }}/data/pg_hba.conf
-            backup: true
-            method: md5
-            contype: host
-            source: ::1
-
-        - name: Update pg_hba.conf to change host auth from ident to md5 (2/2)
-          postgresql_pg_hba:
-            dest: /var/lib/pgsql/{{ postgres_version }}/data/pg_hba.conf
-            backup: true
-            method: md5
-            contype: host
-            source: 127.0.0.1/32
-
-        - name: Update pg_hba.conf to set authentication for all to md5
-          postgresql_pg_hba:
-            dest: /var/lib/pgsql/{{ postgres_version }}/data/pg_hba.conf
-            backup: true
-            method: md5
-            contype: host
-            source: "0.0.0.0/0"
-
         # Create Django application log files.
 
         - name: Create a parent directory for storing Django application logs
