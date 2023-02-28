@@ -2090,7 +2090,6 @@ class AllocationAttributeUpdateView(LoginRequiredMixin, UserPassesTestMixin, Tem
         return context
 
     def post(self, request, *args, **kwargs):
-        # TODO - Add checks for usernames
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(
             Allocation, pk=pk
@@ -2133,10 +2132,12 @@ class AllocationAttributeUpdateView(LoginRequiredMixin, UserPassesTestMixin, Tem
                     allocation_attribute.value = new_value
                     allocation_attribute.save()
         else:
+            errors = []
             for error in formset.errors:
-                if error:
-                    messages.error(request, error)
+                if error.get('__all__') is not None:
+                        errors.append(error.get('__all__')[0])
 
+            messages.error(request,  ', '.join(errors))
             return HttpResponseRedirect(reverse('allocation-attribute-update', kwargs={'pk': pk}))
 
         if no_changes:
@@ -3980,6 +3981,17 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                             )
 
                         return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
+                    else:
+                        errors = []
+                        for error in allocation_change_form.errors:
+                            messages.error(request, error)
+                        for error in formset.errors:
+                            if error.get('__all__') is not None:
+                                    errors.append(error.get('__all__')[0])
+
+                        if errors:
+                            messages.error(request, ', '.join(errors))
+                        return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
                 else:
                     if allocation_change_form.is_valid():
                         form_data = allocation_change_form.cleaned_data
@@ -4213,12 +4225,15 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                                 request, 'Allocation change request updated!')
                             return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
                         else:
-                            attribute_errors = ""
+                            attribute_errors = []
                             for error in allocation_change_form.errors:
                                 messages.error(request, error)
                             for error in formset.errors:
-                                if error: attribute_errors += error.get('__all__')
-                            messages.error(request, attribute_errors)
+                                if error.get('__all__') is not None:
+                                    attribute_errors.append(error.get('__all__')[0])
+
+                            if attribute_errors:
+                                messages.error(request, ', '.join(attribute_errors))
                             return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
                     else:
                         if allocation_change_form.is_valid():
@@ -4482,12 +4497,15 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                     return HttpResponseRedirect(reverse('allocation-change', kwargs={'pk': pk}))
 
             else:
-                attribute_errors = ""
+                attribute_errors = []
                 for error in form.errors:
                     messages.error(request, error)
                 for error in formset.errors:
-                    if error: attribute_errors += error.get('__all__')
-                messages.error(request, attribute_errors)
+                    if error.get('__all__') is not None:
+                        attribute_errors.append(error.get('__all__')[0])
+
+                if attribute_errors:
+                    messages.error(request,  ', '.join(attribute_errors))
                 return HttpResponseRedirect(reverse('allocation-change', kwargs={'pk': pk}))
         else:
             if form.is_valid():
