@@ -416,11 +416,6 @@
               # Restart Apache with a keyword.
               alias reload="sudo service httpd reload"
 
-        - name: Modify .bashrc to start in application directory by default
-          lineinfile:
-            path: /home/{{ djangooperator }}/.bashrc
-            line: cd {{ git_prefix }}/{{ reponame }} && source ../venv/bin/activate
-
       when: provisioning_tasks == true and deployment == "dev"
       tags: provisioning
 
