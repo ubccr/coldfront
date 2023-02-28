@@ -62,7 +62,7 @@ WSGIPassAuthorization On
 
 </VirtualHost>
 
-<VirtualHost {{ host_ip }}:80>
+<VirtualHost *:80>
 
     {% if cloudflare_enabled | bool %}
     ServerName {{ cloudflare_local_server_name }}

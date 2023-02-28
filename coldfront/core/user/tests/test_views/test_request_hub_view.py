@@ -69,16 +69,16 @@ class TestRequestHubView(TestBase):
         for i in range(2):
             # Create a Project and ProjectUsers.
             project = Project.objects.create(
-                name=f'project{i}', status=project_status)
-            setattr(self, f'project{i}', project)
+                name=f'fc_project{i}', status=project_status)
+            setattr(self, f'fc_project{i}', project)
             proj_user = ProjectUser.objects.create(
                 user=self.user0, project=project,
                 role=user_role, status=project_user_status)
-            setattr(self, f'project{i}_user0', proj_user)
+            setattr(self, f'fc_project{i}_user0', proj_user)
             pi_proj_user = ProjectUser.objects.create(
                 user=self.pi, project=project, role=manager_role,
                 status=project_user_status)
-            setattr(self, f'project{i}_pi', pi_proj_user)
+            setattr(self, f'fc_project{i}_pi', pi_proj_user)
 
             # Create a compute allocation for the Project.
             allocation = Decimal(f'{i + 1}000.00')
@@ -213,9 +213,9 @@ class TestRequestHubView(TestBase):
 
         # creating two cluster access requests for user0
         allocation_obj = \
-            get_accounting_allocation_objects(self.project0)
+            get_accounting_allocation_objects(self.fc_project0)
         allocation_user_obj = \
-            get_accounting_allocation_objects(self.project0, self.user0)
+            get_accounting_allocation_objects(self.fc_project0, self.user0)
 
         kwargs = {
             'allocation_user': allocation_user_obj.allocation_user,
@@ -287,8 +287,8 @@ class TestRequestHubView(TestBase):
         current_time = utc_now_offset_aware()
 
         kwargs = {
-            'project_user': self.project0_user0,
-            'requester': self.project0_pi.user,
+            'project_user': self.fc_project0_user0,
+            'requester': self.fc_project0_pi.user,
             'request_time': current_time,
         }
         pending_req = ProjectUserRemovalRequest.objects.create(
@@ -350,7 +350,7 @@ class TestRequestHubView(TestBase):
             'requester': self.user0,
             'allocation_type': 'FCA',
             'pi': self.pi,
-            'project': self.project0,
+            'project': self.fc_project0,
             'pool': False,
             'survey_answers': savio_project_request_state_schema()
         }
@@ -416,7 +416,7 @@ class TestRequestHubView(TestBase):
         kwargs = {
             'requester': self.user0,
             'pi': self.pi,
-            'project': self.project0,
+            'project': self.fc_project0,
             'state': vector_project_request_state_schema()
         }
 
@@ -483,14 +483,14 @@ class TestRequestHubView(TestBase):
             name='Pending - Add')
         user_role = ProjectUserRoleChoice.objects.get(name='User')
         pending_proj_user = ProjectUser.objects.create(
-            user=self.user1, project=self.project0,
+            user=self.user1, project=self.fc_project0,
             role=user_role, status=project_user_status)
 
         pending_req = ProjectUserJoinRequest.objects.create(
             project_user=pending_proj_user,
             reason='Request hub testing.')
         completed_req = ProjectUserJoinRequest.objects.create(
-            project_user=self.project0_user0,
+            project_user=self.fc_project0_user0,
             reason='Request hub testing.')
 
         # assert the correct requests are shown
@@ -546,8 +546,8 @@ class TestRequestHubView(TestBase):
             'pi': self.pi,
             'requester': self.user0,
             'allocation_period': get_current_allowance_year_period(),
-            'pre_project': self.project0,
-            'post_project': self.project0,
+            'pre_project': self.fc_project0,
+            'post_project': self.fc_project0,
             'num_service_units': 1000,
             'request_time': utc_now_offset_aware(),
             'state': allocation_renewal_request_state_schema()
@@ -612,7 +612,7 @@ class TestRequestHubView(TestBase):
         current_time = utc_now_offset_aware()
         kwargs = {
             'requester': self.pi,
-            'project': self.project0,
+            'project': self.fc_project0,
             'num_service_units': 1000,
             'request_time': current_time,
             'state': allocation_addition_request_state_schema()

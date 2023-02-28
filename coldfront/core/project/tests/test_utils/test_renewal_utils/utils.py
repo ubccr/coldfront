@@ -101,21 +101,21 @@ class TestRunnerMixinBase(object):
             name='Principal Investigator')
 
         # Create Projects.
-        self.unpooled_project0 = Project.objects.create(
-            name='unpooled_project0', status=active_project_status)
-        self.unpooled_project1 = Project.objects.create(
-            name='unpooled_project1', status=inactive_project_status)
-        self.pooled_project0 = Project.objects.create(
-            name='pooled_project0', status=active_project_status)
-        self.pooled_project1 = Project.objects.create(
-            name='pooled_project1', status=active_project_status)
+        self.fc_unpooled_project0 = Project.objects.create(
+            name='fc_unpooled_project0', status=active_project_status)
+        self.fc_unpooled_project1 = Project.objects.create(
+            name='fc_unpooled_project1', status=inactive_project_status)
+        self.fc_pooled_project0 = Project.objects.create(
+            name='fc_pooled_project0', status=active_project_status)
+        self.fc_pooled_project1 = Project.objects.create(
+            name='fc_pooled_project1', status=active_project_status)
 
         # Add the designated PIs to each Project.
         self.projects_and_pis = {
-            self.unpooled_project0: [self.pi0],
-            self.unpooled_project1: [self.pi1],
-            self.pooled_project0: [self.pi0, self.pi1],
-            self.pooled_project1: [self.pi2, self.pi3],
+            self.fc_unpooled_project0: [self.pi0],
+            self.fc_unpooled_project1: [self.pi1],
+            self.fc_pooled_project0: [self.pi0, self.pi1],
+            self.fc_pooled_project1: [self.pi2, self.pi3],
         }
         for project, pi_users in self.projects_and_pis.items():
             for pi_user in pi_users:
@@ -208,7 +208,7 @@ class TestRunnerMixinBase(object):
         """Create a new Project, a corresponding 'CLUSTER_NAME Compute'
         Allocation, and an 'Under Review' new project request for it."""
         # Create a new Project.
-        new_project_name = 'unpooled_project2'
+        new_project_name = 'fc_unpooled_project2'
         new_project_status = ProjectStatusChoice.objects.get(name='New')
         new_project = Project.objects.create(
             name=new_project_name,

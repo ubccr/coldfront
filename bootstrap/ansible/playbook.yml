@@ -78,6 +78,8 @@
               - mod_ssl
             state: present
 
+        # Install and configure Redis.
+
         - name: Install Redis
           yum:
             name: redis
@@ -89,6 +91,14 @@
             regexp: '^requirepass '
             insertafter: '^# requirepass foobared'
             line: 'requirepass {{ redis_passwd }}'
+
+        - name: Restart and enable Redis
+          service:
+            name: redis
+            state: restarted
+            enabled: true
+
+        # Install and configure Supervisord.
 
         - name: Install Supervisor
           yum:
@@ -117,6 +127,12 @@
             option: 'numprocs'
             value: '1'
 
+        - name: Restart and enable Supervisord
+          service:
+            name: supervisord
+            state: restarted
+            enabled: true
+
         # Install and configure PostgreSQL.
 
         - name: Add Postgres yum repository
@@ -125,7 +141,7 @@
             description: postgres repository
             baseurl: https://download.postgresql.org/pub/repos/yum/{{ postgres_version }}/redhat/rhel-7-x86_64/
             gpgkey: http://yum.postgresql.org/RPM-GPG-KEY-PGDG-94
-            
+
         - name: Install Postgresql packages
           yum:
             name:
@@ -473,24 +489,25 @@
             src: "{{ git_prefix }}/{{ reponame }}/bootstrap/ansible/password_reset_subject_template.tmpl"
             dest: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}/core/user/templates/user/passwords/password_reset_subject.txt"
 
-        # Restart Services.
+        # Ensure services are updated, running, and enabled. Avoid restarting
+        # them to avoid disruptions to operations.
 
-        - name: Restart and enable Redis service
+        - name: Ensure that Redis service is running and enabled
           service:
             name: redis
-            state: restarted
+            state: started
             enabled: true
 
-        - name: Restart and enable Supervisor service
+        - name: Ensure that Supervisord service is running and enabled
           service:
             name: supervisord
-            state: restarted
+            state: started
             enabled: true
 
-        - name: Restart and enable PostgreSQL service
+        - name: Ensure that PostgreSQL service is reloaded and enabled
           service:
             name: postgresql-{{ postgres_version }}
-            state: restarted
+            state: reloaded
             enabled: true
 
         # Install Django application dependencies
@@ -592,10 +609,13 @@
             mode: "u=rwX,g=rX,o=rX"
             group: apache
 
+        # Gracefully restart Apache so that processes handle current requests
+        # before being replaced by a new process.
         - name: Reload httpd service
           service:
             name: httpd
             state: reloaded
+            enabled: true
 
         # supervisorctl is included in community.general.
         - name: Ensure that a Supervisor worker is running a django_q cluster
