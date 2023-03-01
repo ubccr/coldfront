@@ -635,6 +635,11 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 'type': 'radio',
             },
             {
+                'gpu_workflow': {},
+                'gpu_workflow_label': {},
+                'type': 'radio',
+            },
+            {
                 'phi_association': {},
                 'phi_association_label': {},
                 'type': 'radio',
@@ -953,6 +958,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         storage_space_unit = form.data.get('storage_space_unit')
         leverage_multiple_gpus = form_data.get('leverage_multiple_gpus')
         dl_workflow = form_data.get('dl_workflow')
+        gpu_workflow = form_data.get('gpu_workflow')
         applications_list = form_data.get('applications_list')
         training_or_inference = form_data.get('training_or_inference')
         for_coursework = form_data.get('for_coursework')
@@ -1139,6 +1145,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             storage_space_unit=storage_space_unit,
             leverage_multiple_gpus=leverage_multiple_gpus,
             dl_workflow=dl_workflow,
+            gpu_workflow=gpu_workflow,
             applications_list=applications_list,
             training_or_inference=training_or_inference,
             for_coursework=for_coursework,
