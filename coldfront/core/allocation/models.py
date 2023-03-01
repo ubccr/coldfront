@@ -2,6 +2,7 @@ import datetime
 import logging
 from ast import literal_eval
 
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -109,6 +110,7 @@ class Allocation(TimeStampedModel):
         null=True
     )
     dl_workflow = models.CharField(max_length=4, choices=YES_NO_CHOICES, blank=True, null=True)
+    gpu_workflow = models.CharField(max_length=4, choices=YES_NO_CHOICES, blank=True, null=True)
     applications_list = models.CharField(max_length=150, blank=True, null=True)
     training_or_inference = models.CharField(
         max_length=9,
@@ -235,6 +237,10 @@ class Allocation(TimeStampedModel):
                     func_to_run(self.pk)
 
         super().save(*args, **kwargs)
+
+    @property
+    def get_allocation_attributes(self):
+        return self.allocationattribute_set.all()
 
     @property
     def expires_in(self):
@@ -506,6 +512,13 @@ class AllocationAttribute(TimeStampedModel):
             except ValueError:
                 raise ValidationError(
                     'Invalid Value "%s" for "%s". Date must be in format YYYY-MM-DD' % (self.value, self.allocation_attribute_type.name))
+
+        linked_attribute = self.allocation_attribute_type.linked_allocation_attribute
+        if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
+            from coldfront.plugins.ldap_user_info.utils import check_if_user_exists, get_users_to_check
+            if linked_attribute in get_users_to_check():
+                if not check_if_user_exists(self.value):
+                    raise ValidationError(f'{self.allocation_attribute_type.name} does not have a valid username')
 
     def __str__(self):
         return '%s' % (self.allocation_attribute_type.name)

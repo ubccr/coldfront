@@ -244,7 +244,7 @@ class AttributeTypeAdmin(admin.ModelAdmin):
 
 @admin.register(AllocationAttributeType)
 class AllocationAttributeTypeAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'name', 'attribute_type', 'has_usage', 'is_private')
+    list_display = ('pk', 'name', 'linked_allocation_attribute', 'attribute_type', 'has_usage', 'is_private')
 
 
 class AllocationAttributeUsageInline(admin.TabularInline):

@@ -91,6 +91,7 @@ class AllocationForm(forms.Form):
     storage_space_unit = forms.ChoiceField(choices=STORAGE_UNIT_CHOICES, required=False, widget=RadioSelect)
     leverage_multiple_gpus = forms.ChoiceField(choices=YES_NO_CHOICES, required=False, widget=RadioSelect)
     dl_workflow = forms.ChoiceField(choices=YES_NO_CHOICES, required=False, widget=RadioSelect)
+    gpu_workflow = forms.ChoiceField(choices=YES_NO_CHOICES, required=False, widget=RadioSelect)
     applications_list = forms.CharField(max_length=150, required=False)
     training_or_inference = forms.ChoiceField(choices=TRAINING_INFERENCE_CHOICES, required=False)
     for_coursework = forms.ChoiceField(choices=YES_NO_CHOICES, required=False, widget=RadioSelect)
@@ -232,6 +233,7 @@ class AllocationForm(forms.Form):
             PrependedText('total_cost', '$'),
             'data_manager',
             InlineRadios('leverage_multiple_gpus'),
+            InlineRadios('gpu_workflow'),
             InlineRadios('dl_workflow'),
             Field('applications_list', placeholder='tensorflow,pytorch,etc'),
             'training_or_inference',
@@ -262,35 +264,17 @@ class AllocationForm(forms.Form):
         resource_obj = Resource.objects.get(pk=cleaned_data.get('resource'))
         users = cleaned_data.get('users')
         resources = {
-            'Carbonate DL': {
-                'leverage_multiple_gpus': cleaned_data.get('leverage_multiple_gpus'),
-                'training_or_inference': cleaned_data.get('training_or_inference'),
-                'for_coursework': cleaned_data.get('for_coursework'),
-            },
-            'Carbonate GPU': {
+            'Carbonate': {
                 'dl_workflow': cleaned_data.get('dl_workflow'),
+                'gpu_workflow': cleaned_data.get('gpu_workflow'),
                 'applications_list': cleaned_data.get('applications_list'),
             },
             'Quartz': {
                 'applications_list': cleaned_data.get('applications_list'),
             },
-            'Big Red 3': {
-                'applications_list': cleaned_data.get('applications_list'),
-            },
             'Big Red 200': {
+                'gpu_workflow': cleaned_data.get('gpu_workflow'),
                 'applications_list': cleaned_data.get('applications_list'),
-            },
-            'Carbonate PHI Nodes': {
-                'phi_association': cleaned_data.get('phi_association'),
-            },
-            'cBioPortal': {
-                'phi_association': cleaned_data.get('phi_association'),
-                'access_level': cleaned_data.get('access_level'),
-                'confirm_understanding': cleaned_data.get('confirm_understanding'),
-            },
-            'RStudio Connect': {
-                'project_directory_name': cleaned_data.get('project_directory_name'),
-                'confirm_understanding': cleaned_data.get('confirm_understanding'),
             },
             'Geode-Projects': {
                 'storage_space': cleaned_data.get('storage_space'),
@@ -318,12 +302,6 @@ class AllocationForm(forms.Form):
                 'storage_space': cleaned_data.get('storage_space'),
                 'account_number': cleaned_data.get('account_number'),
                 'data_manager': cleaned_data.get('data_manager')
-            },
-            'Priority Boost': {
-                'is_grand_challenge': cleaned_data.get('is_grand_challenge'),
-                'system': cleaned_data.get('system'),
-                'grand_challenge_program': cleaned_data.get('grand_challenge_program'),
-                'end_date': cleaned_data.get('end_date'),
             },
             'SDA Group Account': {
                 'first_name': cleaned_data.get('first_name'),

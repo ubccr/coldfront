@@ -348,6 +348,39 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                         'signature': EMAIL_SIGNATURE
                     }
 
+                    resource_email_template_lookup_table = {
+                        'Carbonate': {
+                            'template': 'email/allocation_carbonate_activated.txt',
+                            'template_context': {
+                                'help_url': EMAIL_TICKET_SYSTEM_ADDRESS,
+                                'slurm_account_name': allocation_obj.get_attribute('slurm_account_name')
+                            },
+                        },
+                        'Quartz': {
+                            'template': 'email/allocation_quartz_activated.txt',
+                            'template_context': {
+                                'help_url': EMAIL_TICKET_SYSTEM_ADDRESS,
+                                'slurm_account_name': allocation_obj.get_attribute('slurm_account_name')
+                            },
+                        },
+                        'Big Red 200': {
+                            'template': 'email/allocation_bigred200_activated.txt',
+                            'template_context': {
+                                'help_url': EMAIL_TICKET_SYSTEM_ADDRESS,
+                                'slurm_account_name': allocation_obj.get_attribute('slurm_account_name')
+                            },
+                        }
+                    }
+
+                    resource_email_template = resource_email_template_lookup_table.get(
+                        allocation_obj.get_parent_resource.name
+                    )
+                    if resource_email_template is None:
+                        email_template = 'email/allocation_activated.txt'
+                    else:
+                        email_template = resource_email_template['template']
+                        template_context.update(resource_email_template['template_context'])
+
                     email_receiver_list = []
                     for allocation_user in allocation_users:
                         if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
@@ -356,7 +389,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
                     send_email_template(
                         'Allocation Activated',
-                        'email/allocation_activated.txt',
+                        email_template,
                         template_context,
                         EMAIL_TICKET_SYSTEM_ADDRESS,
                         email_receiver_list
@@ -632,6 +665,11 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             {
                 'dl_workflow': {},
                 'dl_workflow_label': {},
+                'type': 'radio',
+            },
+            {
+                'gpu_workflow': {},
+                'gpu_workflow_label': {},
                 'type': 'radio',
             },
             {
@@ -953,6 +991,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         storage_space_unit = form.data.get('storage_space_unit')
         leverage_multiple_gpus = form_data.get('leverage_multiple_gpus')
         dl_workflow = form_data.get('dl_workflow')
+        gpu_workflow = form_data.get('gpu_workflow')
         applications_list = form_data.get('applications_list')
         training_or_inference = form_data.get('training_or_inference')
         for_coursework = form_data.get('for_coursework')
@@ -1139,6 +1178,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             storage_space_unit=storage_space_unit,
             leverage_multiple_gpus=leverage_multiple_gpus,
             dl_workflow=dl_workflow,
+            gpu_workflow=gpu_workflow,
             applications_list=applications_list,
             training_or_inference=training_or_inference,
             for_coursework=for_coursework,
@@ -1233,14 +1273,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             account_number_attribute_type = AllocationAttributeType.objects.get(
                 name='Account Number'
             )
-            if not account_number:
-                allocation_attribute_obj = AllocationAttribute.objects.create(
-                    allocation_attribute_type=account_number_attribute_type,
-                    allocation=allocation_obj,
-                    value='N/A'
-                )
-                update_linked_allocation_attribute(allocation_attribute_obj)
-            else:
+            if account_number:
                 AllocationAttribute.objects.create(
                     allocation_attribute_type=account_number_attribute_type,
                     allocation=allocation_obj,
@@ -1250,14 +1283,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             sub_account_number_attribute_type = AllocationAttributeType.objects.get(
                 name='Sub-Account Number'
             )
-            if not sub_account_number:
-                allocation_attribute_obj = AllocationAttribute.objects.create(
-                    allocation_attribute_type=sub_account_number_attribute_type,
-                    allocation=allocation_obj,
-                    value='N/A'
-                )
-                update_linked_allocation_attribute(allocation_attribute_obj)
-            else:
+            if sub_account_number:
                 AllocationAttribute.objects.create(
                     allocation_attribute_type=sub_account_number_attribute_type,
                     allocation=allocation_obj,
@@ -2037,9 +2063,9 @@ class AllocationAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Tem
         return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
 
-class AllocationAttributeEditView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+class AllocationAttributeUpdateView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     formset_class = AllocationAttributeEditForm
-    template_name = 'allocation/allocation_allocationattribute_edit.html'
+    template_name = 'allocation/allocation_allocationattribute_update.html'
 
     def test_func(self):
         """ UserPassesTestMixin """
@@ -2050,7 +2076,7 @@ class AllocationAttributeEditView(LoginRequiredMixin, UserPassesTestMixin, Templ
 
         if not user.has_perm('allocation.change_allocationattribute'):
             messages.error(
-                    self.request, 'You do not have permission to edit allocation attributes.'
+                    self.request, 'You do not have permission to update allocation attributes.'
                 )
             return False
 
@@ -2058,7 +2084,7 @@ class AllocationAttributeEditView(LoginRequiredMixin, UserPassesTestMixin, Templ
         if set(user.groups.all()).isdisjoint(set(review_groups)):
             messages.error(
                 self.request,
-                'You are not in the correct group to edit allocation attributes in this allocation with this resource.'
+                'You are not in the correct group to update allocation attributes in this allocation with this resource.'
             )
             return False
 
@@ -2089,22 +2115,21 @@ class AllocationAttributeEditView(LoginRequiredMixin, UserPassesTestMixin, Templ
             allocation_obj
         )
 
-        formset = formset_factory(
-            self.formset_class,
-            max_num=len(allocation_attributes_to_change)
-        )
-        formset = formset(
-            initial=allocation_attributes_to_change, prefix='attributeform'
-        )
-        context['formset'] = formset
+        if allocation_attributes_to_change:
+            formset = formset_factory(
+                self.formset_class,
+                max_num=len(allocation_attributes_to_change)
+            )
+            formset = formset(
+                initial=allocation_attributes_to_change, prefix='attributeform'
+            )
+            context['formset'] = formset
 
         context['allocation'] = allocation_obj
 
         return context
 
     def post(self, request, *args, **kwargs):
-        # TODO - Prevent submission when no fields are filled in
-        # TODO - Add checks for usernames
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(
             Allocation, pk=pk
@@ -2123,10 +2148,14 @@ class AllocationAttributeEditView(LoginRequiredMixin, UserPassesTestMixin, Templ
             initial=allocation_attributes_to_change, prefix='attributeform'
         )
 
+        no_changes = True
         if formset.is_valid():
             for entry in formset:
                 formset_data = entry.cleaned_data
                 new_value = formset_data.get('new_value')
+                if not new_value:
+                    continue
+                no_changes = False
 
                 allocation_attribute = AllocationAttribute.objects.get(
                     pk=formset_data.get('attribute_pk')
@@ -2143,11 +2172,17 @@ class AllocationAttributeEditView(LoginRequiredMixin, UserPassesTestMixin, Templ
                     allocation_attribute.value = new_value
                     allocation_attribute.save()
         else:
+            errors = []
             for error in formset.errors:
-                if error:
-                    messages.error(request, error)
+                if error.get('__all__') is not None:
+                        errors.append(error.get('__all__')[0])
 
-            return HttpResponseRedirect(reverse('allocation-attribute-edit', kwargs={'pk': pk}))
+            messages.error(request,  ', '.join(errors))
+            return HttpResponseRedirect(reverse('allocation-attribute-update', kwargs={'pk': pk}))
+
+        if no_changes:
+            messages.error(self.request, 'No allocation attributes where updated')
+            return HttpResponseRedirect(reverse('allocation-attribute-update', kwargs={'pk': pk}))
 
         messages.success(request, 'Successfully updated allocation attributes')
 
@@ -2219,6 +2254,7 @@ class AllocationNoteUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPass
     def test_func(self):
         """ UserPassesTestMixin Tests """
         allocation_note_obj = get_object_or_404(AllocationUserNote, pk=self.kwargs.get('pk'))
+        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('allocation_pk'))
         user = self.request.user
         if user.is_superuser:
             return True
@@ -2229,7 +2265,7 @@ class AllocationNoteUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPass
                 )
             return False
 
-        review_groups = allocation_note_obj.allocation.get_parent_resource.review_groups.all()
+        review_groups = allocation_obj.get_parent_resource.review_groups.all()
         if set(user.groups.all()).isdisjoint(set(review_groups)):
             messages.error(
                 self.request,
@@ -2247,9 +2283,8 @@ class AllocationNoteUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPass
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        pk = self.kwargs.get('pk')
-        allocation_note_obj = get_object_or_404(AllocationUserNote, pk=pk)
-        allocation_obj = allocation_note_obj.allocation
+        allocation_pk = self.kwargs.get('allocation_pk')
+        allocation_obj = get_object_or_404(Allocation, pk=allocation_pk)
         context['allocation'] = allocation_obj
         return context
 
@@ -2378,13 +2413,27 @@ class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
             }
 
             resource_email_template_lookup_table = {
-                'Carbonate GPU': {
-                    'template': 'email/allocation_carbonate_gpu_activated.txt',
+                'Carbonate': {
+                    'template': 'email/allocation_carbonate_activated.txt',
                     'template_context': {
                         'help_url': EMAIL_TICKET_SYSTEM_ADDRESS,
                         'slurm_account_name': allocation_obj.get_attribute('slurm_account_name')
                     },
                 },
+                'Quartz': {
+                    'template': 'email/allocation_quartz_activated.txt',
+                    'template_context': {
+                        'help_url': EMAIL_TICKET_SYSTEM_ADDRESS,
+                        'slurm_account_name': allocation_obj.get_attribute('slurm_account_name')
+                    },
+                },
+                'Big Red 200': {
+                    'template': 'email/allocation_bigred200_activated.txt',
+                    'template_context': {
+                        'help_url': EMAIL_TICKET_SYSTEM_ADDRESS,
+                        'slurm_account_name': allocation_obj.get_attribute('slurm_account_name')
+                    },
+                }
             }
 
             resource_email_template = resource_email_template_lookup_table.get(
@@ -3914,10 +3963,11 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                             )
                             allocation_change_obj.end_date_extension = form_data.get('end_date_extension')
 
-                        new_end_date = allocation_change_obj.allocation.end_date + relativedelta(
-                            days=allocation_change_obj.end_date_extension)
+                        if allocation_change_obj.allocation.end_date is not None:
+                            new_end_date = allocation_change_obj.allocation.end_date + relativedelta(
+                                days=allocation_change_obj.end_date_extension)
 
-                        allocation_change_obj.allocation.end_date = new_end_date
+                            allocation_change_obj.allocation.end_date = new_end_date
                         allocation_change_obj.allocation.save()
 
                         allocation_change_obj.save()
@@ -3984,6 +4034,17 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                                 email_receiver_list
                             )
 
+                        return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
+                    else:
+                        errors = []
+                        for error in allocation_change_form.errors:
+                            messages.error(request, error)
+                        for error in formset.errors:
+                            if error.get('__all__') is not None:
+                                    errors.append(error.get('__all__')[0])
+
+                        if errors:
+                            messages.error(request, ', '.join(errors))
                         return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
                 else:
                     if allocation_change_form.is_valid():
@@ -4218,12 +4279,15 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                                 request, 'Allocation change request updated!')
                             return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
                         else:
-                            attribute_errors = ""
+                            attribute_errors = []
                             for error in allocation_change_form.errors:
                                 messages.error(request, error)
                             for error in formset.errors:
-                                if error: attribute_errors += error.get('__all__')
-                            messages.error(request, attribute_errors)
+                                if error.get('__all__') is not None:
+                                    attribute_errors.append(error.get('__all__')[0])
+
+                            if attribute_errors:
+                                messages.error(request, ', '.join(attribute_errors))
                             return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
                     else:
                         if allocation_change_form.is_valid():
@@ -4487,12 +4551,15 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                     return HttpResponseRedirect(reverse('allocation-change', kwargs={'pk': pk}))
 
             else:
-                attribute_errors = ""
+                attribute_errors = []
                 for error in form.errors:
                     messages.error(request, error)
                 for error in formset.errors:
-                    if error: attribute_errors += error.get('__all__')
-                messages.error(request, attribute_errors)
+                    if error.get('__all__') is not None:
+                        attribute_errors.append(error.get('__all__')[0])
+
+                if attribute_errors:
+                    messages.error(request,  ', '.join(attribute_errors))
                 return HttpResponseRedirect(reverse('allocation-change', kwargs={'pk': pk}))
         else:
             if form.is_valid():

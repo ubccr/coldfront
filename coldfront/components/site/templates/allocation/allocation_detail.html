@@ -63,7 +63,11 @@ Allocation Detail
             <th scope="row" class="text-nowrap">Resource{{ allocation.resources.all|pluralize }} in allocation:</th>
             <td>{{ allocation.get_resources_as_string }}</td>
           </tr>
-          {% if allocation.get_resources_as_string == "Carbonate GPU" %}
+          {% if allocation.get_resources_as_string == "Carbonate" %}
+            <tr>
+              <th scope="col" class="text-nowrap">GPU Workflow:</th>
+              <td>{{ allocation.gpu_workflow }}</td>
+            </tr>
             <tr>
               <th scope="row" class="text-nowrap">Deep Learning Workflow:</th>
               <td>{{ allocation.dl_workflow }}</td>
@@ -75,11 +79,9 @@ Allocation Detail
           {% endif %}
           {% if allocation.get_resources_as_string == "Big Red 200" %}
           <tr>
-            <th scope="col" class="text-nowrap">Applications To Be Used:</th>
-            <td>{{ allocation.applications_list }}</td>
+            <th scope="col" class="text-nowrap">GPU Workflow:</th>
+            <td>{{ allocation.gpu_workflow }}</td>
           </tr>
-          {% endif %}
-          {% if allocation.get_resources_as_string == "Big Red 3" %}
           <tr>
             <th scope="col" class="text-nowrap">Applications To Be Used:</th>
             <td>{{ allocation.applications_list }}</td>
@@ -90,46 +92,6 @@ Allocation Detail
             <th scope="col" class="text-nowrap">Applications To Be Used:</th>
             <td>{{ allocation.applications_list }}</td>
           </tr>
-          {% endif %}
-          {% if allocation.get_resources_as_string == "Priority Boost" %}
-            <tr>
-              <th scope="row" class="text-nowrap">System:</th>
-              <td>{{ allocation.system }}</td>
-            </tr>
-            {% if allocation.is_grand_challenge %}
-              <tr>
-                <th scope="row" class="text-nowrap">Grand Challenge Program:</th>
-                {% if allocation.grand_challenge_program == "healthinitiative" %}
-                  <td>Precision Health Initiative</td>
-                {% endif %}
-                {% if allocation.grand_challenge_program == "envchange" %}
-                  <td>Prepared for Environmental Change</td>
-                {% endif %}
-                {% if allocation.grand_challenge_program == "addiction" %}
-                  <td>Responding to the Addiction Crisis</td>
-                {% endif %}
-              </tr>
-            {% endif %}
-          {% endif %}
-          {% if allocation.get_resources_as_string == "Carbonate Precision Health Initiative (PHI) Nodes" %}
-            <tr>
-              <th scope="row" class="text-nowrap">Is Associated With PHI:</th>
-              <td>{{ allocation.phi_association }}</td>
-            </tr>
-          {% endif %}
-          {% if allocation.get_resources_as_string == "cBioPortal" %}
-            <tr>
-              <th scope="row" class="text-nowrap">Is Associated With PHI:</th>
-              <td>{{ allocation.phi_association }}</td>
-            </tr>
-            <tr>
-              <th scope="row" class="text-nowrap">Authorized Access Level:</th>
-              <td>{{ allocation.access_level }}</td>
-            </tr>
-            <tr>
-              <th scope="row" class="text-nowrap">Confirmed For Research Purposes Only:</th>
-              <td>{{ allocation.confirm_understanding }}</td>
-            </tr>
           {% endif %}
           {% if allocation.get_resources_as_string == "Geode-Projects" %}
             <tr>
@@ -374,8 +336,8 @@ Allocation Detail
           <a class="btn btn-success" href="{% url 'allocation-attribute-add' allocation.pk %}" role="button">
             <i class="fas fa-plus" aria-hidden="true"></i> Add Allocation Attribute
           </a>
-          <a class="btn btn-primary" href="{% url 'allocation-attribute-edit' allocation.pk %}" role="button">
-            <i class="fas fa-edit" aria-hidden="true"></i> Edit Allocation Attributes
+          <a class="btn btn-primary" href="{% url 'allocation-attribute-update' allocation.pk %}" role="button">
+            <i class="fas fa-edit" aria-hidden="true"></i> Update Allocation Attributes
           </a>
           <a class="btn btn-danger" href="{% url 'allocation-attribute-delete' allocation.pk %}" role="button">
             <i class="fas fa-minus" aria-hidden="true"></i> Delete Allocation Attributes
@@ -609,7 +571,7 @@ Allocation Detail
                   <td>{{ note.modified }}</td>
                   {% if user_has_permissions %}
                     <td>
-                      <a href="{% url 'allocation-note-update' note.pk %}">
+                      <a href="{% url 'allocation-note-update' allocation_pk=allocation.pk pk=note.pk %}">
                         <i class="far fa-edit" aria-hidden="true"></i>
                       </a>
                     </td>
