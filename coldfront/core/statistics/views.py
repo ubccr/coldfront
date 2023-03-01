@@ -29,7 +29,6 @@ DATE_FORMAT = '%m/%d/%Y, %H:%M:%S'
 class SlurmJobListView(LoginRequiredMixin,
                        ListView):
     template_name = 'job_list.html'
-    login_url = '/'
     paginate_by = 30
     context_object_name = 'job_list'
 

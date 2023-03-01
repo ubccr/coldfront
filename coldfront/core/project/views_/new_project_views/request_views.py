@@ -645,7 +645,6 @@ class VectorProjectRequestView(LoginRequiredMixin, UserPassesTestMixin,
                                FormView):
     form_class = VectorProjectDetailsForm
     template_name = 'project/project_request/vector/project_details.html'
-    login_url = '/'
 
     logger = logging.getLogger(__name__)
 

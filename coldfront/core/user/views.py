@@ -546,28 +546,46 @@ class CustomPasswordChangeView(PasswordChangeView):
 
 class UserLoginView(View):
     """Redirect to the Basic Auth. login view or the SSO login view
-    based on enabled flags."""
+    based on enabled flags, retaining any provided next URL. If the user
+    is authenticated, redirect to the next URL or the home page."""
 
     def dispatch(self, request, *args, **kwargs):
-        basic_auth_enabled = 'BASIC_AUTH_ENABLED'
-        if flag_enabled(basic_auth_enabled):
-            return redirect(reverse('basic-auth-login'))
-        sso_enabled = 'SSO_ENABLED'
-        if flag_enabled(sso_enabled):
-            return redirect(reverse('sso-login'))
-        raise ImproperlyConfigured(
-            f'One of the following flags must be enabled: '
-            f'{basic_auth_enabled}, {sso_enabled}.')
+        next_url = request.GET.get('next')
+
+        if request.user.is_authenticated:
+            return redirect(next_url or reverse('home'))
+
+        basic_auth_enabled = flag_enabled('BASIC_AUTH_ENABLED')
+        sso_enabled = flag_enabled('SSO_ENABLED')
+        if not basic_auth_enabled ^ sso_enabled:
+            raise ImproperlyConfigured(
+                'One of the following flags must be enabled: '
+                'BASIC_AUTH_ENABLED, SSO_ENABLED.')
+        if basic_auth_enabled:
+            redirect_url = reverse('basic-auth-login')
+        else:
+            redirect_url = reverse('sso-login')
+
+        if next_url:
+            redirect_url = self._url_with_next(redirect_url, next_url)
+        return redirect(redirect_url)
+
+    @staticmethod
+    def _url_with_next(url, next_url):
+        """Return the given URL, with a next parameter set to the given
+        next URL."""
+        return f'{url}?next={next_url}'
 
 
 class SSOLoginView(TemplateView):
     """Display the template for SSO login. If the user is authenticated,
-    redirect to the home page."""
+    redirect to the provided next URL or the home page."""
     template_name = 'user/sso_login.html'
 
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_authenticated:
-            return redirect(reverse('home'))
+            redirect_url = request.GET.get('next') or reverse('home')
+            return redirect(redirect_url)
         return super().dispatch(request, *args, **kwargs)
 
 
@@ -847,7 +865,6 @@ class UpdatePrimaryEmailAddressView(LoginRequiredMixin, FormView):
 
     form_class = PrimaryEmailAddressSelectionForm
     template_name = 'user/user_update_primary_email_address.html'
-    login_url = '/'
 
     error_message = 'Unexpected failure. Please contact an administrator.'
 
@@ -928,7 +945,6 @@ class UserNameExistsView(View):
 
 @method_decorator(login_required, name='dispatch')
 class IdentityLinkingRequestView(UserPassesTestMixin, View):
-    login_url = '/'
     pending_status = None
 
     def test_func(self):

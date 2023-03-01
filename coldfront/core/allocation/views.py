@@ -1100,7 +1100,6 @@ class AllocationAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Tem
 
 class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'allocation/allocation_request_list.html'
-    login_url = '/'
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -1121,7 +1120,6 @@ class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
 
 class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
-    login_url = '/'
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -1186,7 +1184,6 @@ class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
 
 
 class AllocationDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
-    login_url = '/'
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
