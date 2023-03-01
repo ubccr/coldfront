@@ -348,6 +348,39 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                         'signature': EMAIL_SIGNATURE
                     }
 
+                    resource_email_template_lookup_table = {
+                        'Carbonate': {
+                            'template': 'email/allocation_carbonate_activated.txt',
+                            'template_context': {
+                                'help_url': EMAIL_TICKET_SYSTEM_ADDRESS,
+                                'slurm_account_name': allocation_obj.get_attribute('slurm_account_name')
+                            },
+                        },
+                        'Quartz': {
+                            'template': 'email/allocation_quartz_activated.txt',
+                            'template_context': {
+                                'help_url': EMAIL_TICKET_SYSTEM_ADDRESS,
+                                'slurm_account_name': allocation_obj.get_attribute('slurm_account_name')
+                            },
+                        },
+                        'Big Red 200': {
+                            'template': 'email/allocation_bigred200_activated.txt',
+                            'template_context': {
+                                'help_url': EMAIL_TICKET_SYSTEM_ADDRESS,
+                                'slurm_account_name': allocation_obj.get_attribute('slurm_account_name')
+                            },
+                        }
+                    }
+
+                    resource_email_template = resource_email_template_lookup_table.get(
+                        allocation_obj.get_parent_resource.name
+                    )
+                    if resource_email_template is None:
+                        email_template = 'email/allocation_activated.txt'
+                    else:
+                        email_template = resource_email_template['template']
+                        template_context.update(resource_email_template['template_context'])
+
                     email_receiver_list = []
                     for allocation_user in allocation_users:
                         if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
@@ -356,7 +389,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
                     send_email_template(
                         'Allocation Activated',
-                        'email/allocation_activated.txt',
+                        email_template,
                         template_context,
                         EMAIL_TICKET_SYSTEM_ADDRESS,
                         email_receiver_list
@@ -2380,13 +2413,27 @@ class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
             }
 
             resource_email_template_lookup_table = {
-                'Carbonate GPU': {
-                    'template': 'email/allocation_carbonate_gpu_activated.txt',
+                'Carbonate': {
+                    'template': 'email/allocation_carbonate_activated.txt',
                     'template_context': {
                         'help_url': EMAIL_TICKET_SYSTEM_ADDRESS,
                         'slurm_account_name': allocation_obj.get_attribute('slurm_account_name')
                     },
                 },
+                'Quartz': {
+                    'template': 'email/allocation_quartz_activated.txt',
+                    'template_context': {
+                        'help_url': EMAIL_TICKET_SYSTEM_ADDRESS,
+                        'slurm_account_name': allocation_obj.get_attribute('slurm_account_name')
+                    },
+                },
+                'Big Red 200': {
+                    'template': 'email/allocation_bigred200_activated.txt',
+                    'template_context': {
+                        'help_url': EMAIL_TICKET_SYSTEM_ADDRESS,
+                        'slurm_account_name': allocation_obj.get_attribute('slurm_account_name')
+                    },
+                }
             }
 
             resource_email_template = resource_email_template_lookup_table.get(
