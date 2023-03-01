@@ -428,13 +428,14 @@ class UserSearchAll(LoginRequiredMixin, ListView):
                 users = users.filter(username__icontains=data.get('username'))
 
             if data.get('email'):
-                users = UserSearchAll._filter_users_by_email(self, users, data)
+                users = self._filter_users_by_email(users, data)
         else:
             users = User.objects.all().order_by(order_by)
 
         return users.distinct()
 
-    def _filter_users_by_email(self, users, data):
+    @staticmethod
+    def _filter_users_by_email(users, data):
         if flag_enabled('LRC_ONLY'):
             _users = EmailAddress_LRC.objects.filter(primary=False, email__icontains=data.get('email'))\
                 .order_by('user').values_list('user__id')
