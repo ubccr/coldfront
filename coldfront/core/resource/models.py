@@ -64,12 +64,12 @@ class ResourceAttributeType(TimeStampedModel):
     """ A resource attribute type indicates the type of the attribute. Examples include slurm_specs and slurm_cluster. 
     
     Attributes:
-        attribute_type (str): indicates the data type of the attribute
+        attribute_type (object): indicates the AttributeType of the attribute
         name (str): name of resource attribute type
         is_required (bool): indicates whether or not the attribute is required
         is_value_unique (bool): indicates whether or not the value is unique
-        
-        #check data type of attribute_type and define unique_per_resource/value_unique
+
+    Note: the is_unique_per_resource field is rarely used, hence documentation does not exist.
     """
 
     attribute_type = models.ForeignKey(AttributeType, on_delete=models.CASCADE)
@@ -89,7 +89,7 @@ class Resource(TimeStampedModel):
     """ A resource is something a center maintains and provides access to for the community. Examples include Budgetstorage, Server, and Software License. 
     
     Attributes:
-        parent_resource (Resource) = used for the Cluster Partition resource type as these partitions fall under a main cluster
+        parent_resource (object) = used for the Cluster Partition resource type as these partitions fall under a main cluster
         resource_type (object) = the type of resource (Cluster, Storage, etc.)
         name (str) = name of resource 
         description (str) = description of what the resource does and is used for 

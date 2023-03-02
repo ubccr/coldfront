@@ -594,7 +594,7 @@ class AllocationAccount(TimeStampedModel):
         ordering = ['name', ]
 
 class AllocationChangeStatusChoice(TimeStampedModel):
-    """ An allocation change status choice represents statuses displayed when a user changes their allocation status (for allocations that have their is_changeable attribute set to True).
+    """ An allocation change status choice represents statuses displayed when a user changes their allocation status (for allocations that have their is_changeable attribute set to True). Examples include Expired and Payment Pending.
     
     Attributes:
         name (str): status name
@@ -609,7 +609,7 @@ class AllocationChangeStatusChoice(TimeStampedModel):
         ordering = ['name', ]
 
 class AllocationChangeRequest(TimeStampedModel):
-    """ An allocation change request represents a request from a PI/ manager to change their allocation.
+    """ An allocation change request represents a request from a PI or manager to change their allocation.
     
     Attributes:
         allocation (object): represents the allocation to change

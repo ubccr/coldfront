@@ -3,11 +3,11 @@ from django.db import models
 
 
 class UserProfile(models.Model):
-    """ Displays a user's profile. A user can be a principal investigator (PI), administrator, or center director. The is_pi field indicates whether or not a user is a PI. 
+    """ Displays a user's profile. A user can be a principal investigator (PI), manager, administrator, staff member, billing staff member, or center director.
 
     Attributes:
         is_pi (bool): indicates whether or not the user is a PI
-        user (class): represents the Django User model    
+        user (object): represents the Django User model    
     """
 
     user = models.OneToOneField(User, on_delete=models.CASCADE)
