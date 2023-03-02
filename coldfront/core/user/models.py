@@ -7,7 +7,7 @@ class UserProfile(models.Model):
 
     Attributes:
         is_pi (bool): indicates whether or not the user is a PI
-        user (object): represents the Django User model    
+        user (User): represents the Django User model    
     """
 
     user = models.OneToOneField(User, on_delete=models.CASCADE)

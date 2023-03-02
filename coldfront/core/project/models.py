@@ -44,10 +44,10 @@ class Project(TimeStampedModel):
     
     Attributes:
         title (str): name of the project
-        pi (object): represents the User object of the project's PI
+        pi (User): represents the User object of the project's PI
         description (str): description of the project
-        field_of_science (object): represents the field of science for this project
-        status (object): represents the ProjectStatusChoice of this project
+        field_of_science (FieldOfScience): represents the field of science for this project
+        status (ProjectStatusChoice): represents the ProjectStatusChoice of this project
         force_review (bool): indicates whether or not to force a review for the project
         requires_review (bool): indicates whether or not the project requires review
     """
@@ -159,10 +159,10 @@ We do not have information about your research. Please provide a detailed descri
     def user_permissions(self, user):
         """
         Params:
-            user (object): represents the user whose permissions are to be retrieved
+            user (User): represents the user whose permissions are to be retrieved
 
         Returns:
-            list of ProjectPermission objects: a list of the user's permissions for the project
+            list[ProjectPermission]: a list of the user's permissions for the project
         """
 
         if user.is_superuser:
@@ -188,8 +188,8 @@ We do not have information about your research. Please provide a detailed descri
     def has_perm(self, user, perm):
         """
         Params:
-            user (object): user to check permissions for
-            perm (object): permission to check for in user's list
+            user (User): user to check permissions for
+            perm (ProjectPermission): permission to check for in user's list
 
         Returns:
             bool: whether or not the user has the specified permission
@@ -213,8 +213,8 @@ class ProjectAdminComment(TimeStampedModel):
     """ A project admin comment is a comment that an admin can make on a project. 
     
     Attributes:
-        project (object): links the project the comment is from to the comment
-        author (object): represents the admin who authored the comment
+        project (Project): links the project the comment is from to the comment
+        author (User): represents the admin who authored the comment
         comment (str): text input from the project admin containing the comment
     """
 
@@ -229,8 +229,8 @@ class ProjectUserMessage(TimeStampedModel):
     """ A project user message is a message sent to a user in a project. 
     
     Attributes:
-        project (object): links the project the message is from to the message
-        author (object): represents the user who authored the message
+        project (Project): links the project the message is from to the message
+        author (User): represents the user who authored the message
         is_private (bool): indicates whether or not the message is private
         message (str): text input from the user containing the message
     """
@@ -262,8 +262,8 @@ class ProjectReview(TimeStampedModel):
     """ A project review is what a user submits to their PI when their project status is Pending. 
     
     Attributes:
-        project (object): links the project to its review
-        status (object): links the project review to its status
+        project (Project): links the project to its review
+        status (ProjectReviewStatusChoice): links the project review to its status
         reason_for_not_updating_project (str): text input from the user indicating why the project was not updated
     """
 
@@ -273,7 +273,7 @@ class ProjectReview(TimeStampedModel):
     history = HistoricalRecords()
 
 class ProjectUserRoleChoice(TimeStampedModel):
-    """ A project user role choice is an option an admin has while selecting a user's role. Examples include Manager and User.
+    """ A project user role choice is an option a PI, manager, or admin has while selecting a user's role. Examples include Manager and User.
     
     Attributes:
         name (str): name of the user role choice  
@@ -306,10 +306,10 @@ class ProjectUser(TimeStampedModel):
     """ A project user represents a user on the project.
     
     Attributes:
-        user (object): represents the User object of the project user
-        project (object): links user to its project
-        role (object): links the project user role choice to the user
-        status (object): links the project user status choice to the user
+        user (User): represents the User object of the project user
+        project (Project): links user to its project
+        role (ProjectUserRoleChoice): links the project user role choice to the user
+        status (ProjectUserStatusChoice): links the project user status choice to the user
         enable_notifications (bool): indicates whether or not the user should enable notifications
     """
 
@@ -346,7 +346,7 @@ class ProjectAttributeType(TimeStampedModel):
     """ A project attribute type indicates the type of the attribute. Examples include Project ID and Account Number. 
     
     Attributes:
-        attribute_type (object): indicates the data type of the attribute
+        attribute_type (AttributeType): indicates the data type of the attribute
         name (str): name of project attribute type
         has_usage (bool): indicates whether or not the attribute type has usage
         is_required (bool): indicates whether or not the attribute is required
@@ -377,8 +377,8 @@ class ProjectAttribute(TimeStampedModel):
     """ A project attribute class links a project attribute type and a project. 
     
     Attributes:
-        proj_attr_type (object): project attribute type to link
-        project (object): project to link
+        proj_attr_type (ProjectAttributeType): project attribute type to link
+        project (Project): project to link
         value (str): value of the project attribute
     """
 
@@ -421,7 +421,7 @@ class ProjectAttributeUsage(TimeStampedModel):
     """ Project attribute usage indicates the usage of a project attribute. 
     
     Attributes:
-        project_attribute (object): links the usage to its project attribute
+        project_attribute (ProjectAttribute): links the usage to its project attribute
         value (float): usage value of the project attribute
     """
 

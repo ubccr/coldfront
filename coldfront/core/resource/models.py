@@ -64,7 +64,7 @@ class ResourceAttributeType(TimeStampedModel):
     """ A resource attribute type indicates the type of the attribute. Examples include slurm_specs and slurm_cluster. 
     
     Attributes:
-        attribute_type (object): indicates the AttributeType of the attribute
+        attribute_type (AttributeType): indicates the AttributeType of the attribute
         name (str): name of resource attribute type
         is_required (bool): indicates whether or not the attribute is required
         is_value_unique (bool): indicates whether or not the value is unique
@@ -89,15 +89,15 @@ class Resource(TimeStampedModel):
     """ A resource is something a center maintains and provides access to for the community. Examples include Budgetstorage, Server, and Software License. 
     
     Attributes:
-        parent_resource (object) = used for the Cluster Partition resource type as these partitions fall under a main cluster
-        resource_type (object) = the type of resource (Cluster, Storage, etc.)
+        parent_resource (Resource) = used for the Cluster Partition resource type as these partitions fall under a main cluster
+        resource_type (ResourceType) = the type of resource (Cluster, Storage, etc.)
         name (str) = name of resource 
         description (str) = description of what the resource does and is used for 
         is_available (bool) = indicates whether or not the resource is available for users to request an allocation for
         is_public (bool) =  indicates whether or not users can see the resource
         requires_payment (bool) = indicates whether or not users have to pay to use this resource
-        allowed_groups (object) = uses the Django Group model to allow certain user groups to request the resource
-        allowed_users (object) = links Django Users that are allowed to request the resource to the resource
+        allowed_groups (Group) = uses the Django Group model to allow certain user groups to request the resource
+        allowed_users (User) = links Django Users that are allowed to request the resource to the resource
     """
 
     parent_resource = models.ForeignKey(
@@ -120,7 +120,7 @@ class Resource(TimeStampedModel):
             required (bool): indicates whether or not to get only the missing resource attributes that are required (if True, get only required missing attributes; else, get required and non-required missing attributes)
 
         Returns:
-            list of ResourceAttributes: a list of resource attributes that do not already exist for this resource
+            list[ResourceAttribute]: a list of resource attributes that do not already exist for this resource
         """
 
         if required:
@@ -153,7 +153,7 @@ class Resource(TimeStampedModel):
             name (str): name of the resource attribute type
             expand (bool): indicates whether or not to return the expanded value with attributes/parameters for attributes with a base type of 'Attribute Expanded Text'
             typed (bool): indicates whether or not to convert the attribute value to an int/ float/ str based on the base AttributeType name
-            extra_allocations (list of Allocation objects): allocations which are available to reference in the attribute list in addition to those associated with this ResourceAttribute
+            extra_allocations (list[Allocation]): allocations which are available to reference in the attribute list in addition to those associated with this ResourceAttribute
 
         Returns:
             str: the value of the first attribute found for this resource with the specified name
@@ -179,7 +179,7 @@ class Resource(TimeStampedModel):
             name (str): name of the resource
             expand (bool): indicates whether or not to return the expanded value with attributes/parameters for attributes with a base type of 'Attribute Expanded Text'
             typed (bool): indicates whether or not to convert the attribute value to an int/ float/ str based on the base AttributeType name
-            extra_allocations (list of Allocation objects): allocations which are available to reference in the attribute list in addition to those associated with this ResourceAttribute
+            extra_allocations (list[Allocation]): allocations which are available to reference in the attribute list in addition to those associated with this ResourceAttribute
 
         Returns:
             list: the list of values of the attributes found with specified name
@@ -218,8 +218,8 @@ class ResourceAttribute(TimeStampedModel):
     """ A resource attribute class links a resource attribute type and a resource. 
     
     Attributes:
-        resource_attribute_type (object): resource attribute type to link
-        resource (object): resource to link
+        resource_attribute_type (ResourceAttributeType): resource attribute type to link
+        resource (Resource): resource to link
         value (str): value of the resource attribute
     """
 
@@ -267,7 +267,7 @@ class ResourceAttribute(TimeStampedModel):
         """
         Params:
             typed (bool): indicates whether or not to convert the attribute value to an int/ float/ str based on the base AttributeType name (unrecognized values not converted, so will return str)
-            extra_allocations (list of Allocation objects): allocations which are available to reference in the attribute list in addition to those associated with this ResourceAttribute
+            extra_allocations (list[Allocation]): allocations which are available to reference in the attribute list in addition to those associated with this ResourceAttribute
 
         Returns:
             int, float, str: the value of the attribute after attribute expansion
