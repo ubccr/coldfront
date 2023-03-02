@@ -130,7 +130,7 @@ class Allocation(TimeStampedModel):
     def expires_in(self):
         """ 
         Returns:
-            int: the number of days until the allocation expires.
+            int: the number of days until the allocation expires
         """
 
         return (self.end_date - datetime.date.today()).days

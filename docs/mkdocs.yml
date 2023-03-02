@@ -28,6 +28,7 @@ plugins:
         python:
           options:
             show_source: false
+            show_signature: false
             
           setup_commands:
             - "import os"

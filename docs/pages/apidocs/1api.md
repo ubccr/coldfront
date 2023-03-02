@@ -4,10 +4,18 @@ ColdFront Python API documentation for the various model classes that can be use
 
 #### Table of contents:
 
-##### [Allocations API](allocations.md)
+##### [Allocations API](Allocations.md)
 
-##### [Projects API](projects.md)
+#### [Fields of Science API](Fields-of-Science.md)
 
-##### [Resources API](resources.md)
+#### [Grants API](Grants.md)
 
-##### [Users API](users.md)
+#### [Publications API](Publications.md)
+
+#### [Research Outputs API](Research-Outputs.md)
+
+##### [Projects API](Projects.md)
+
+##### [Resources API](Resources.md)
+
+##### [Users API](Users.md)
