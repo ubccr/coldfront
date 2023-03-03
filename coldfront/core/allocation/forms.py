@@ -273,6 +273,7 @@ class AllocationForm(forms.Form):
                 'applications_list': cleaned_data.get('applications_list'),
             },
             'Big Red 200': {
+                'dl_workflow': cleaned_data.get('dl_workflow'),
                 'gpu_workflow': cleaned_data.get('gpu_workflow'),
                 'applications_list': cleaned_data.get('applications_list'),
             },
