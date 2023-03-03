@@ -13,6 +13,7 @@ from coldfront.core.utils.fasrc import (log_missing,
                                         select_one_project_allocation,
                                         save_json,
                                         id_present_missing_users,
+                                        id_present_missing_projectusers,
                                         id_present_missing_resources,
                                         id_present_missing_projects)
 from coldfront.core.project.models import ( Project,
@@ -21,9 +22,7 @@ from coldfront.core.project.models import ( Project,
                                             ProjectStatusChoice,
                                             ProjectUser)
 from coldfront.core.resource.models import Resource
-from coldfront.core.allocation.models import   (Allocation,
-                                                AllocationUser,
-                                                AllocationAttribute,
+from coldfront.core.allocation.models import   (AllocationUser,
                                                 AllocationAttributeType)
 
 today = datetime.today().strftime('%Y%m%d')
@@ -31,7 +30,7 @@ today = datetime.today().strftime('%Y%m%d')
 logger = logging.getLogger(__name__)
 logger.propagate = False
 logger.setLevel(logging.DEBUG)
-filehandler = logging.FileHandler(f'logs/{today}.log', 'w')
+filehandler = logging.FileHandler(f'logs/{today}-allthethings.log', 'w')
 logger.addHandler(filehandler)
 
 def change_filehandler(filepath):
@@ -263,19 +262,21 @@ class AllTheThingsConn:
 
                     # 3. find the allocation with a matching project and resource_type
                     alloc_obj = select_one_project_allocation(proj_query, resource, dirpath=allocation['fs_path'])
-
+                    error_message = None
                     if alloc_obj is None:
-                        logger.warning("ERROR: No Allocation for project %s, resource %s",
-                                                    proj_query.title, resource.name)
+                        error_message = "No Allocation"
                         missing_allocations.append({
                                 "resource_name":resource.name,
                                 "project_title": proj_query.title
                                 })
-                        counts['all_err'] += 1
                     elif alloc_obj == "MultiAllocationError":
-                        logger.warning("ERROR: Unresolved multiple allocations for project %s, resource %s",
-                                                    proj_query.title, resource.name)
+                        print(allocation['fs_path'])
+                        error_message = "Unresolved multiple Allocations"
+                    if error_message:
+                        logger.warning("ERROR: %s for allocation %s-%s",
+                                    error_message, proj_query.title, resource.name)
                         counts['all_err'] += 1
+                        continue
 
                     logger.info("allocation: %s", alloc_obj.__dict__)
 
@@ -295,7 +296,8 @@ class AllTheThingsConn:
                                 allocation_attribute_type=allocation_attribute_type_obj,
                                 defaults={'value': v[0]}
                             )
-                        allocattribute_obj.allocationattributeusage.update(value=v[1])
+                        allocattribute_obj.allocationattributeusage.value = v[1]
+                        allocattribute_obj.save()
 
                     # 5. AllocationAttribute
                     alloc_obj.allocationattribute_set.update_or_create(
@@ -309,40 +311,46 @@ class AllTheThingsConn:
         logger.warning("error counts: %s", counts)
         logger.warning('errored_allocations:\n%s', errored_allocations)
 
-
-def create_new_projects(projects_list: list, dryrun=False):
-    '''
-    Use ATT user, group, and relationship information to automatically create new
-    Coldfront Projects from projects_list.
-    '''
-    change_filehandler(f'logs/{today}_projectcreation_att.log')
-
+def collect_new_project_data(projects_to_add):
     att_conn = AllTheThingsConn()
-    errortracker = ErrorTracker()
-    # if project already exists, end here
-    existing_projects = Project.objects.filter(title__in=projects_list)
-    if existing_projects:
-        logger.debug("existing projects: %s", [p.title for p in existing_projects])
-    projects_to_add = [p for p in projects_list if p not in [p.title for p in existing_projects]]
-
-    # if PI is inactive or otherwise unavailable, don't add project or users
     pi_data = att_conn.collect_pi_data(projects_to_add)
-    no_active_pis = [entry['group_name'] for entry in pi_data if not entry['user_enabled']]
-    logger.debug("projects lacking active PIs: %s", no_active_pis)
-    missing_pi_usernames = [entry['user_name'] for entry in pi_data if not entry['user_enabled']]
     active_pi_groups = [entry for entry in pi_data if entry['user_enabled']]
 
     # bulk-query user/group data
     user_group_search = "|".join(entry['group_name'] for entry in active_pi_groups)
     aduser_data = att_conn.collect_group_membership(f"({user_group_search})")
     aduser_data = [user for user in aduser_data if user['user_enabled']]
+    return (pi_data, aduser_data)
+
+
+def add_new_projects(pi_data, aduser_data):
+    '''create new Coldfront Projects and ProjectUsers from PI and AD user data
+    already collected from ATT.
+    '''
+    errortracker = ErrorTracker()
+    # ignore projects that don't have active PIs
+    no_active_pis = [entry['group_name'] for entry in pi_data if not entry['user_enabled']]
+    logger.debug("projects lacking active PIs: %s", no_active_pis)
+    active_pi_groups = [entry for entry in pi_data if entry['user_enabled']]
+
+    # record and remove projects where pis aren't available
+    projects_pis = [(u['group_name'], u['user_name']) for u in active_pi_groups]
+    _, missing_projpis = id_present_missing_projectusers(projects_pis)
+    log_missing('project_user', missing_projpis)
+
+    missing_pinames = [d['username'] for d in missing_projpis]
+    active_pi_groups = [entry for entry in active_pi_groups if entry['user_name'] not in missing_pinames]
+
 
     # log and remove from list any AD users not in Coldfront
-    aduser_names = [u['user_name'] for u in aduser_data]
-    _, missing_users = id_present_missing_users(aduser_names)
-    log_missing('user', missing_users+missing_pi_usernames)
-    aduser_data = [u for u in aduser_data if u['user_name'] not in missing_users]
-
+    projects_users = [(u['group_name'], u['user_name']) for u in aduser_data]
+    _, missing_projusers = id_present_missing_projectusers(projects_users)
+    log_missing('project_user', missing_projpis)
+    missing_usernames = [d['username'] for d in missing_projusers]
+    log_missing('user', missing_usernames)
+    aduser_data = [u for u in aduser_data if u['user_name'] not in missing_usernames]
+    print(active_pi_groups)
+    added_projects = []
     for entry in active_pi_groups:
         # collect group membership entries
         ad_members = [user for user in aduser_data if user['group_name'] == entry['group_name']]
@@ -361,19 +369,6 @@ def create_new_projects(projects_list: list, dryrun=False):
             errortracker.no_managers.append(entry['group_name'])
             continue
 
-
-        # locate PI User entry
-        try:
-            project_pi = get_user_model().objects.get(username=entry['user_name'])
-        except get_user_model().DoesNotExist:
-            logger.warning('pi for project %s not in ifxusers; skipping', entry['group_name'])
-            errortracker.no_managers.append(entry['group_name'])
-            continue
-
-
-        # create description
-        description = "Allocations for " + entry['group_name']
-
         # locate field_of_science
         field_of_science_name=entry['department']
 
@@ -386,7 +381,10 @@ def create_new_projects(projects_list: list, dryrun=False):
 
 
         ### CREATE PROJECT ###
+        project_pi = get_user_model().objects.get(username=entry['user_name'])
         current_dt = datetime.now(tz=timezone.utc)
+        description = "Allocations for " + entry['group_name']
+
         new_project = Project.objects.create(
             created=current_dt,
             modified=current_dt,
@@ -397,7 +395,7 @@ def create_new_projects(projects_list: list, dryrun=False):
             requires_review=False,
             status=ProjectStatusChoice.objects.get(name='New')
         )
-
+        added_projects.append(new_project)
         ### add projectusers ###
         # use set comprehension to avoid duplicate entries when MemberOf/ManagedBy relationships both exist
         ad_member_usernames = {u['user_name'] for u in ad_members}
@@ -418,12 +416,30 @@ def create_new_projects(projects_list: list, dryrun=False):
         for username in manager_usernames:
             logger.debug('adding manager status to ProjectUser %s for Project %s',
                         username, entry['group_name'])
-            manager = ProjectUser.objects.get(  project=new_project,
-                                                user__username=username)
+            manager = new_project.projectuser_set.get(user__username=username)
             manager.role = ProjectUserRoleChoice.objects.get(name='Manager')
             manager.save()
-
     errortracker.report()
+    return added_projects
+
+
+def create_new_projects(projects_list: list):
+    '''
+    Use ATT user, group, and relationship information to automatically create new
+    Coldfront Projects from projects_list.
+    '''
+    change_filehandler(f'logs/{today}_projectcreation_att.log')
+
+    # if project already exists, end here
+    existing_projects = Project.objects.filter(title__in=projects_list)
+    if existing_projects:
+        logger.debug("existing projects: %s", [p.title for p in existing_projects])
+    projects_to_add = [p for p in projects_list if p not in [p.title for p in existing_projects]]
+
+    # if PI is inactive or otherwise unavailable, don't add project or users
+    pi_data, aduser_data = collect_new_project_data(projects_to_add)
+    add_new_projects(pi_data, aduser_data)
+
 
 
 def update_group_membership():
