@@ -50,19 +50,6 @@ def record_process(func):
         return result
     return call
 
-class ErrorTracker:
-    '''class for tracking errors that arise when processing groupuser data'''
-    def __init__(self):
-        self.no_members = []
-        self.no_users = []
-        self.no_managers = []
-
-    def report(self):
-        '''report errors'''
-        logger.warning('AD groups with no members: %s', self.no_members)
-        logger.warning('AD groups with no users: %s', self.no_users)
-        logger.warning('AD groups with no managers: %s', self.no_managers)
-
 
 class AllTheThingsConn:
 
@@ -82,7 +69,7 @@ class AllTheThingsConn:
 
     def collect_group_membership(self, groupname):
         '''
-        Collect user, and relationship information for a given lab or labs from ATT.
+        Collect user, and relationship information for a lab or labs from ATT.
         '''
         query = {'statements': [{
                     'statement': f'MATCH (u:User)-[r:MemberOf|ManagedBy]-(g:Group) \
@@ -105,7 +92,7 @@ class AllTheThingsConn:
     def collect_pi_data(self, grouplist):
         '''collect information on pis for a given list of groups
         '''
-        groupnamesearch = "|".join(grouplist)
+        groupnamesearch = '|'.join(grouplist)
         query = {'statements': [{
                     'statement': f'MATCH (g:Group)\
                     WITH g\
@@ -143,7 +130,7 @@ class AllTheThingsConn:
             volumes = '|'.join(volumes)
         else:
             volumes = '|'.join([r.name.split('/')[0] for r in Resource.objects.all()])
-        logger.debug("volumes: %s", volumes)
+        logger.debug('volumes: %s', volumes)
 
         quota = {'match': '[r:HasQuota]-(e:Quota)',
             'where':f"(e.filesystem =~ \'.*({volumes}).*\')",
@@ -236,7 +223,7 @@ class AllTheThingsConn:
 
         # produce set of server values for which to locate matching resources
         resource_list = list({a['server'] for l in result_json.values() for a in l})
-        logger.debug("coldfront resource_list: %s", resource_list)
+        logger.debug('coldfront resource_list: %s', resource_list)
         res_models, missing_res = id_present_missing_resources(resource_list)
         counts['proj_err'] = len(missing_res)
 
@@ -256,29 +243,29 @@ class AllTheThingsConn:
             for allocation in allocations:
                 try:
                     # 2. find the resource that matches/approximates the server value
-                    r_str = allocation['server'].replace("01.rc.fas.harvard.edu", "")\
-                                .replace("/n/", "")
+                    r_str = allocation['server'].replace('01.rc.fas.harvard.edu', '')\
+                                .replace('/n/', '')
                     resource = res_models.get(name__contains=r_str)
 
                     # 3. find the allocation with a matching project and resource_type
                     alloc_obj = select_one_project_allocation(proj_query, resource, dirpath=allocation['fs_path'])
                     error_message = None
                     if alloc_obj is None:
-                        error_message = "No Allocation"
+                        error_message = 'No Allocation'
                         missing_allocations.append({
-                                "resource_name":resource.name,
-                                "project_title": proj_query.title
+                                'resource_name':resource.name,
+                                'project_title': proj_query.title
                                 })
-                    elif alloc_obj == "MultiAllocationError":
+                    elif alloc_obj == 'MultiAllocationError':
                         print(allocation['fs_path'])
-                        error_message = "Unresolved multiple Allocations"
+                        error_message = 'Unresolved multiple Allocations'
                     if error_message:
-                        logger.warning("ERROR: %s for allocation %s-%s",
+                        logger.warning('ERROR: %s for allocation %s-%s',
                                     error_message, proj_query.title, resource.name)
                         counts['all_err'] += 1
                         continue
 
-                    logger.info("allocation: %s", alloc_obj.__dict__)
+                    logger.info('allocation: %s', alloc_obj.__dict__)
 
                     # 4. get the storage quota TB allocation_attribute that has allocation=a.
                     allocation_values = { 'Storage Quota (TB)':
@@ -288,7 +275,7 @@ class AllTheThingsConn:
                                                                 allocation['byte_usage']]
                     else:
                         logger.warning(
-                                "no byte_allocation value for allocation %s, lab %s on resource %s",
+                                'no byte_allocation value for allocation %s, lab %s on resource %s',
                                 alloc_obj.pk, lab, r_str)
                     for k, v in allocation_values.items():
                         allocation_attribute_type_obj = allocation_attribute_types.get(name=k)
@@ -307,8 +294,8 @@ class AllTheThingsConn:
                 except Exception as e:
                     allocation_name = f"{allocation['lab']}/{allocation['server']}"
                     errored_allocations[allocation_name] = e
-        log_missing("allocation", missing_allocations)
-        logger.warning("error counts: %s", counts)
+        log_missing('allocation', missing_allocations)
+        logger.warning('error counts: %s', counts)
         logger.warning('errored_allocations:\n%s', errored_allocations)
 
 def collect_new_project_data(projects_to_add):
@@ -317,8 +304,8 @@ def collect_new_project_data(projects_to_add):
     active_pi_groups = [entry for entry in pi_data if entry['user_enabled']]
 
     # bulk-query user/group data
-    user_group_search = "|".join(entry['group_name'] for entry in active_pi_groups)
-    aduser_data = att_conn.collect_group_membership(f"({user_group_search})")
+    user_group_search = '|'.join(entry['group_name'] for entry in active_pi_groups)
+    aduser_data = att_conn.collect_group_membership(f'({user_group_search})')
     aduser_data = [user for user in aduser_data if user['user_enabled']]
     return (pi_data, aduser_data)
 
@@ -327,29 +314,28 @@ def add_new_projects(pi_data, aduser_data):
     '''create new Coldfront Projects and ProjectUsers from PI and AD user data
     already collected from ATT.
     '''
-    errortracker = ErrorTracker()
+    errortracker = { 'no_members': [], 'no_managers': [], 'no_pi': [] }
     # ignore projects that don't have active PIs
     no_active_pis = [entry['group_name'] for entry in pi_data if not entry['user_enabled']]
-    logger.debug("projects lacking active PIs: %s", no_active_pis)
+    logger.debug('projects lacking active PIs: %s', no_active_pis)
     active_pi_groups = [entry for entry in pi_data if entry['user_enabled']]
 
     # record and remove projects where pis aren't available
-    projects_pis = [(u['group_name'], u['user_name']) for u in active_pi_groups]
-    _, missing_projpis = id_present_missing_projectusers(projects_pis)
-    log_missing('project_user', missing_projpis)
+    pis = [u['user_name'] for u in active_pi_groups]
+    _, missing_projpis = id_present_missing_users(pis)
+    log_missing('user', missing_projpis)
 
     missing_pinames = [d['username'] for d in missing_projpis]
-    active_pi_groups = [entry for entry in active_pi_groups if entry['user_name'] not in missing_pinames]
+    active_pi_groups = [g for g in active_pi_groups if g['user_name'] not in missing_pinames]
+    errortracker['no_pi'] = {g['group_name'] for g in active_pi_groups if g['user_name'] in missing_pinames}
 
 
     # log and remove from list any AD users not in Coldfront
-    projects_users = [(u['group_name'], u['user_name']) for u in aduser_data]
-    _, missing_projusers = id_present_missing_projectusers(projects_users)
-    log_missing('project_user', missing_projpis)
-    missing_usernames = [d['username'] for d in missing_projusers]
-    log_missing('user', missing_usernames)
+    users = [u['user_name'] for u in aduser_data]
+    _, missing_users = id_present_missing_users(users)
+    log_missing('user', missing_users)
+    missing_usernames = [d['username'] for d in missing_users]
     aduser_data = [u for u in aduser_data if u['user_name'] not in missing_usernames]
-    print(active_pi_groups)
     added_projects = []
     for entry in active_pi_groups:
         # collect group membership entries
@@ -357,7 +343,7 @@ def add_new_projects(pi_data, aduser_data):
 
         # if no active group members, log and don't add Project
         if not ad_members:
-            errortracker.no_members.append(entry['group_name'])
+            errortracker['no_members'].append(entry['group_name'])
             logger.warning("no members for %s; not adding.", entry['group_name'])
             continue
 
@@ -366,7 +352,7 @@ def add_new_projects(pi_data, aduser_data):
         if not ad_managers:
             logger.warning('no active managers for project %s', entry['group_name'])
             print(f'WARNING: no active managers for project {entry["group_name"]}')
-            errortracker.no_managers.append(entry['group_name'])
+            errortracker['no_managers'].append(entry['group_name'])
             continue
 
         # locate field_of_science
@@ -383,7 +369,7 @@ def add_new_projects(pi_data, aduser_data):
         ### CREATE PROJECT ###
         project_pi = get_user_model().objects.get(username=entry['user_name'])
         current_dt = datetime.now(tz=timezone.utc)
-        description = "Allocations for " + entry['group_name']
+        description = 'Allocations for ' + entry['group_name']
 
         new_project = Project.objects.create(
             created=current_dt,
@@ -397,7 +383,8 @@ def add_new_projects(pi_data, aduser_data):
         )
         added_projects.append(new_project)
         ### add projectusers ###
-        # use set comprehension to avoid duplicate entries when MemberOf/ManagedBy relationships both exist
+        # use set comprehension to avoid duplicate entries when MemberOf/ManagedBy
+        # relationships both exist
         ad_member_usernames = {u['user_name'] for u in ad_members}
         users_to_add = get_user_model().objects.filter(username__in=ad_member_usernames)
         new_projectusers = [
@@ -419,8 +406,9 @@ def add_new_projects(pi_data, aduser_data):
             manager = new_project.projectuser_set.get(user__username=username)
             manager.role = ProjectUserRoleChoice.objects.get(name='Manager')
             manager.save()
-    errortracker.report()
-    return added_projects
+    for errortype in errortracker:
+        logger.warning('AD groups with %s: %s', errortype, errortracker[errortype])
+    return added_projects, errortracker
 
 
 def create_new_projects(projects_list: list):
@@ -433,7 +421,7 @@ def create_new_projects(projects_list: list):
     # if project already exists, end here
     existing_projects = Project.objects.filter(title__in=projects_list)
     if existing_projects:
-        logger.debug("existing projects: %s", [p.title for p in existing_projects])
+        logger.debug('existing projects: %s', [p.title for p in existing_projects])
     projects_to_add = [p for p in projects_list if p not in [p.title for p in existing_projects]]
 
     # if PI is inactive or otherwise unavailable, don't add project or users
@@ -450,7 +438,7 @@ def update_group_membership():
 
     # change logger filehandler
     change_filehandler(f'logs/att_membership_update-{today}.log')
-    errors = { "no_members": [], "no_users": [], "no_managers": [] }
+    errors = { 'no_members': [], 'no_users': [], 'no_managers': [] }
 
     # collect commonly used db objects
     projectuser_role_user = ProjectUserRoleChoice.objects.get(name='User')
@@ -459,7 +447,7 @@ def update_group_membership():
     projectuserstatus_pendremove = ProjectUserStatusChoice.objects.get(name='Pending - Remove')
     projectuser_role_manager = ProjectUserRoleChoice.objects.get(name='Manager')
 
-    for project in Project.objects.filter(status__name__in=["Active", "New"]).prefetch_related('projectuser_set'):
+    for project in Project.objects.filter(status__name__in=['Active', 'New']).prefetch_related('projectuser_set'):
         # pull membership data for the given project
         proj_name = project.title
         att_conn = AllTheThingsConn()
@@ -486,7 +474,7 @@ def update_group_membership():
         try:
             ad_users = [u['user_name'] for u in relation_groups['MemberOf']]
         except KeyError:
-            logger.warning("WARNING: MANAGERS BUT NO USERS LISTED FOR %s", project.title)
+            logger.warning('WARNING: MANAGERS BUT NO USERS LISTED FOR %s', project.title)
             errors['no_users'].append(proj_name)
             ad_users = []
         # check for users not in Coldfront
@@ -501,7 +489,7 @@ def update_group_membership():
             present_users = project.projectuser_set.filter(user__in=ifxusers)
             present_users.update(   role=projectuser_role_user,
                                     status=projectuserstatus_active)
-            presentusers_ids = present_users.values_list("user__id")
+            presentusers_ids = present_users.values_list('user__id')
             missing_projectusers = ifxusers.exclude(id__in=presentusers_ids)
             ProjectUser.objects.bulk_create([ProjectUser(
                                                 project=project,

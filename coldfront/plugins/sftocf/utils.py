@@ -1,16 +1,12 @@
 import os
 import re
-import json
 import time
 import logging
 from pathlib import Path
 from datetime import datetime, timedelta
 
 import requests
-from ifxbilling.models import Account, BillingRecord, ProductUsage
 from django.utils import timezone
-from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
 
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.fasrc import (determine_size_fmt,
@@ -24,6 +20,7 @@ from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
 from coldfront.core.allocation.models import (Allocation,
                                             AllocationUser,
+                                            AllocationAttributeType,
                                             AllocationUserStatusChoice)
 
 datestr = datetime.today().strftime('%Y%m%d')
@@ -160,19 +157,6 @@ class StarFishServer:
         return group_list
 
 
-def get_redash_vol_stats():
-    all_results = []
-    redash = StarFishRedash(STARFISH_SERVER)
-    for query_id, query_key in redash.queries['volume_query'].items():
-        query_url = f'{redash.base_url}queries/{query_id}/results?api_key={query_key}'
-        result = return_get_json(query_url, headers={})
-        all_results.extend(result['query_result']['data']['rows'])
-    all_results = [{k.replace(' ', '_').replace('(','').replace(')','') : v for k, v in d.items()} for d in all_results]
-    resource_names = [re.sub(r'\/.+','',n) for n in Resource.objects.values_list('name', flat=True)]
-    all_results = [r for r in all_results if r['volume_name'] in resource_names]
-    return all_results
-
-
 class StarFishRedash:
     def __init__(self, server_name):
         self.base_url = f'https://{server_name}.rc.fas.harvard.edu/redash/api/'
@@ -194,16 +178,15 @@ class StarFishRedash:
         return result
 
 
-    def get_usage_stats(self, volumes=None):
+    def get_usage_stats(self, query='path_usage_query', volumes=None):
         '''
         '''
-        result = self.submit_query('usage_query')
+        result = self.submit_query(query)
         # print(result)
         if result['query_result']:
             data = result['query_result']['data']['rows']
         else:
-            print("no query_result value found:")
-            print(result)
+            print("no query_result value found:\n", result)
         if volumes:
             data = [d for d in data if d['vol_name'] in volumes]
 
@@ -289,9 +272,10 @@ def produce_lab_dict(vol):
 
 def check_volume_collection(lr, homepath='./coldfront/plugins/sftocf/data/'):
     '''
-    for each lab-resource combination in parameter lr, check existence of corresponding
-    file in data path. If a file for that lab-resource combination that is <2 days old
-    exists, mark it as collected. If not, slate lab-resource combination for collection.
+    for each lab-resource combination in parameter lr, check existence of
+    corresponding file in data path. If a file for that lab-resource combination
+    that is <2 days old exists, mark it as collected. If not, slate lab-resource
+    combination for collection.
 
     Parameters
     ----------
@@ -395,18 +379,6 @@ def update_usage(user, userdict, allocation):
                             usage = usage,
                             unit = unit)
 
-
-def clean_data_dir(homepath):
-    '''Remove json from data folder that's more than a week old
-    '''
-    files = os.listdir(homepath)
-    json_files = [f for f in files if '.json' in f]
-    now = time.time()
-    for f in json_files:
-        fpath = f'{homepath}{f}'
-        created = os.stat(fpath).st_ctime
-        if created < now - 7 * 86400:
-            os.remove(fpath)
 
 def split_num_string(x):
     n = re.search(r'\d*\.?\d+', x).group()
@@ -530,7 +502,7 @@ def compare_cf_sf_volumes():
     return vols_to_collect
 
 
-def pull_sf_push_cf_redash():
+def pull_sf_push_cf_redash(pull_totals=False):
     '''
     Query Starfish Redash API for user usage data and update Coldfront AllocationUser entries.
 
@@ -540,10 +512,16 @@ def pull_sf_push_cf_redash():
     # 2. grab data from redash
     redash_api = StarFishRedash(STARFISH_SERVER)
     user_usage = redash_api.get_usage_stats(volumes=vols_to_collect)
+    user_usage_by_group = redash_api.get_usage_stats(query='usage_query', volumes=vols_to_collect)
+    allocation_usages = redash_api.get_usage_stats(query="subdirectory", volumes=vols_to_collect)
     queryset = []
+    issues = {'no_users':[], 'no_total':[], 'no_path':[]}
 
     # limit allocations to those in the volumes collected
     searched_resources = [Resource.objects.get(name__contains=vol) for vol in vols_to_collect]
+    allocation_attribute_types = AllocationAttributeType.objects.all()
+    quota_bytes_attributetype = allocation_attribute_types.get(name='Quota_In_Bytes')
+    quota_tbs_attributetype = allocation_attribute_types.get(name='Storage Quota (TB)')
     allocations = Allocation.objects.filter(resources__in=searched_resources,
         status__name__in=['Active', 'New', 'Updated', 'Ready for Review'])
     # 3. iterate across allocations
@@ -552,26 +530,57 @@ def pull_sf_push_cf_redash():
         lab = project.title
         resource = allocation.get_parent_resource
         volume = resource.name.split('/')[0]
+        logger.debug('adding resource for %s %s (path %s)', lab, resource, allocation.path)
 
         # select query rows that match allocation volume and lab
+        # confirm that only one allocation is represented by checking the path
         if allocation.path:
             lab_data = [i for i in user_usage if i['vol_name'] == volume and allocation.path == i['lab_path']]
+            usage_data = [i for i in allocation_usages if i['vol_name'] == volume and allocation.path == i['path']]
         else:
-            lab_data = [i for i in user_usage if i['group_name'] == lab and i['vol_name'] == volume]
-        # confirm that only one allocation is represented by checking the path
+            logger.info('no allocation path for allocation %s / %s; defaulting to membership-based usage reporting.', project, volume)
+            issues['no_path'].append((allocation.pk, project, volume))
+            lab_data = [i for i in user_usage_by_group if i['vol_name'] == volume and i['group_name'] == lab]
+            print(f'no allocation path for allocation {allocation.pk} {project} / {volume}; defaulting to membership-based usage reporting.', allocation.allocationattribute_set.all())
+            usage_data = [i for i in allocation_usages if i['vol_name'] == volume and i['group_name'] == lab]
+
+        if pull_totals is False:
+            pass
+        if not usage_data:
+            print('WARNING: No starfish allocation usage for', allocation.pk, lab, resource)
+            logger.warning('WARNING: No starfish allocation usage result for allocation %s %s %s',
+                allocation.pk, lab, resource)
+            issues['no_total'].append((allocation.pk, project, volume))
+        else:
+            usage_data = usage_data[0]
+            bytes_attribute, _ = allocation.allocationattribute_set.update_or_create(
+                    allocation_attribute_type=quota_bytes_attributetype,
+                    defaults={'value': usage_data['total_size']}
+                )
+            tbs = (usage_data['total_size']/1099511627776)
+            logger.info('allocation usage for allocation %s: %s bytes, %s terabytes',
+                        allocation.pk, usage_data['total_size'], tbs)
+            tbs_attribute, _ = allocation.allocationattribute_set.update_or_create(
+                    allocation_attribute_type=quota_tbs_attributetype,
+                    defaults={'value': tbs })
 
         if not lab_data:
-            print('No starfish result for', lab, resource)
-            logger.warning('WARNING: No starfish result for %s %s', lab, resource)
+            print('No starfish user-level results for',allocation.pk, lab, resource)
+            logger.warning('WARNING: No starfish user usage result for allocation %s %s %s',
+                                                allocation.pk, lab, resource)
+            issues['no_users'].append((allocation.pk, project, volume))
+            usernames = []
+            zero_out_absent_allocationusers(usernames, allocation)
             continue
 
         usernames = [d['user_name'] for d in lab_data]
+        logger.debug('users returned: %s', usernames)
 
         # identify and record users that aren't in Coldfront
         user_models, missing_usernames = id_present_missing_users(usernames)
         log_missing('user', missing_usernames)
-        logger.debug('%s\n usernames: %s\n user_models: %s',
-                project.title, usernames, [u.username for u in user_models])
+        logger.debug('%d / %d users are present.\nColdfront users: %s',
+                len(user_models), len(usernames), [u.username for u in user_models])
 
         # identify and remove allocation users that are no longer in the AD group
         zero_out_absent_allocationusers(usernames, allocation)
@@ -597,3 +606,5 @@ def pull_sf_push_cf_redash():
             logger.debug('saving %s', userdict)
 
     AllocationUser.objects.bulk_update(queryset, ['usage_bytes', 'usage', 'unit'])
+    logger.warning("issues recorded: %s", issues)
+    print(f"issues recorded: {issues}")
