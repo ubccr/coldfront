@@ -143,7 +143,7 @@ class Command(BaseCommand):
                 f'date before its start date.'))
 
             if ComputingAllowance(resource).is_yearly():
-                if start_date != YEARLY_ALLOCATION_PERIOD.start_date:
+                if start_date < YEARLY_ALLOCATION_PERIOD.start_date:
                     self.stdout.write(self.style.ERROR(f'{resource_name} {id} '
                     f'for {project_status.lower()} FCA or PCA project {project}'
                     f' has a start date of {start_date} that is before its '
