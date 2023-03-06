@@ -236,20 +236,21 @@ class Command(BaseCommand):
         Assert that all users with a cluster UID should be associated with
         at least one Project.
         '''
-        users = UserProfile.objects.filter(cluster_uid__isnull=False) \
+        userprofiles = UserProfile.objects.filter(cluster_uid__isnull=False) \
             .select_related('user') \
             .order_by('user__is_active', 'user__username') \
-            .values('id', 'user__first_name', 'user__last_name',
+            .only('id', 'user__first_name', 'user__last_name',
                     'user__email', 'user__username', 'user__is_active')
 
-        for user in users:
+        for userprofile in userprofiles:
+            user = userprofile.user
             user_project_exists = ProjectUser.objects \
-                .filter(user_id=user['id']).exists()
+                .filter(user=user).exists()
             if not user_project_exists:
                 self.stdout.write(self.style.ERROR(
-                f'{("Inactive", "Active")[user["user__is_active"]]} User '
-                f'{user["user__username"]} ({user["user__first_name"]} '
-                f'{user["user__last_name"]}, {user["user__email"]}) '
+                f'{("Inactive", "Active")[user.is_active]} User '
+                f'{user.username} ({user.first_name} '
+                f'{user.last_name}, {user.email}) '
                 f'has a cluster UID but is not associated with any projects.'))
 
     def handle_lrc_user_billing(self):
@@ -257,15 +258,16 @@ class Command(BaseCommand):
         TODO: Lawrencium features don't work and need to be further developed.
         Assert that all LRC users have a billing_activity.
         '''
-        users = UserProfile.objects.filter(cluster_uid__isnull=False) \
-            .values('id', 'billing_activity', 'user__first_name',
+        userprofiles = UserProfile.objects.filter(cluster_uid__isnull=False) \
+            .only('id', 'billing_activity', 'user__first_name',
                     'user__last_name', 'user__email')
-        for user in users:
-            if user['billing_activity'] is None:
+        for userprofile in userprofiles:
+            user = userprofile.user
+            if userprofile.billing_activity is None:
                 self.stdout.write(self.style.ERROR(
-                f'{("Inactive", "Active")[user["user__is_active"]]} User '
-                f'{user["user__username"]} ({user["user__first_name"]} '
-                f'{user["user__last_name"]}, {user["user__email"]}) '
+                f'{("Inactive", "Active")[user.is_active]} User '
+                f'{user.username} ({user.first_name} '
+                f'{user.last_name}, {user.email}) '
                 f'has a cluster UID but is not associated with any billing '
                 f'activity.'))
 
