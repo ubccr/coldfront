@@ -94,9 +94,32 @@ def id_present_missing_projects(title_list):
     of all matching Project entries and all titles with no Project entries.
     '''
     present_projects = Project.objects.filter(title__in=title_list)
-    proj_titles = [p.title for p in present_projects]
+    proj_titles = list(present_projects.values_list('title', flat=True))
     missing_project_titles = [{"title": title} for title in title_list if title not in proj_titles]
     return (present_projects, missing_project_titles)
+
+
+def id_present_missing_projectusers(projectuser_tuple_list):
+    '''
+    Collect all User entries with usernames in position [1] of projectuser_tuple_list
+    tuples; return tuple consisting of all matching User entries and a list of
+    dicts recording the project and user of missing entries.
+
+    Parameters
+    ----------
+    projectuser_tuple_list : list of (project_title, username) tuples
+
+    Returns
+    -------
+    present_users :
+    missing_projectusers :
+    '''
+    username_list = [tuple[1] for tuple in projectuser_tuple_list]
+    present_users = get_user_model().objects.filter(username__in=username_list)
+    present_usernames = list(present_users.values_list('username', flat=True))
+    missing_projusers = [{"project": tuple[0], 'username':tuple[1]}
+            for tuple in projectuser_tuple_list if tuple[1] not in present_usernames]
+    return (present_users, missing_projusers)
 
 
 def id_present_missing_users(username_list):
@@ -105,7 +128,7 @@ def id_present_missing_users(username_list):
     of all matching User entries and all usernames with no User entries.
     '''
     present_users = get_user_model().objects.filter(username__in=username_list)
-    present_usernames = [u.username for u in present_users]
+    present_usernames = list(present_users.values_list('username', flat=True))
     missing_usernames = [{"username": name} for name in username_list if name not in present_usernames]
     return (present_users, missing_usernames)
 
