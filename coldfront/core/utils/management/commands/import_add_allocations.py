@@ -1,9 +1,10 @@
 '''
 Add allocations specified in local_data/add_allocations.csv
 '''
-import datetime
 import os
+import json
 import logging
+import datetime
 
 import pandas as pd
 from django.conf import settings
@@ -40,7 +41,7 @@ class Command(BaseCommand):
         if not file:
             LOCALDATA_ROOT = ENV.str('LOCALDATA_ROOT', default=base_dir)
             allocation_file = 'add_allocations.csv'
-            allo_list_file = os.path.join(LOCALDATA_ROOT, 'local_data/', allocation_file)
+            allo_list_file = os.path.join(LOCALDATA_ROOT, 'local_data/ready_to_add/', allocation_file)
         else:
             allo_list_file = file
 
@@ -65,7 +66,7 @@ class Command(BaseCommand):
             try:
                 allocation, created = project_obj.allocation_set.get_or_create(
                     resources__name=lab_resource_allocation,
-                    path=lab_path,
+                    allocationattribute__value=lab_path,
                     defaults={
                         'status': AllocationStatusChoice.objects.get(name='Active'),
                         'start_date': datetime.datetime.now(),
@@ -96,4 +97,4 @@ class Command(BaseCommand):
                 )
             except ValidationError:
                 logger.debug('adding PI %s to allocation %s failed', pi_obj.pi.username, allocation.pk)
-        return command_report
+        return json.dumps(command_report, indent=2)
