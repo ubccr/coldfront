@@ -53,6 +53,7 @@ that quotes need not be provided, except in the list variable.
    redis_passwd: password_here
    from_email: you@email.com
    admin_email: you@email.com
+   email_admin_list: ["you@email.com"]
    request_approval_cc_list: ["you@email.com"]
    ```
 8. Provision the VM. This should run the Ansible playbook. Expect this to take
@@ -117,14 +118,6 @@ which can be done with:
 
 - Any custom Django settings can be applied by modifying `dev_settings.py`.
 Note that running the Ansible playbook will overwrite these.
-- It may be convenient to add the following to `/home/vagrant/.bashrc`:
-  ```
-  # Upon login, navigate to the ColdFront directory and source the virtual environment.
-  cd /vagrant/coldfront_app/coldfront
-  source /vagrant/coldfront_app/venv/bin/activate
-  # Restart Apache with a keyword.
-  alias reload="sudo service httpd restart"
-  ```
 
 #### Emails
 

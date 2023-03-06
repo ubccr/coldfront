@@ -1,4 +1,12 @@
 ###############################################################################
+# Ansible Settings
+###############################################################################
+
+# Types of Ansible tasks to run by default.
+provisioning_tasks: true
+common_tasks: true
+
+###############################################################################
 # General Settings
 ###############################################################################
 
@@ -36,6 +44,37 @@ wsgi_conf_file_name: cf_mybrc_wsgi.conf
 # TODO: For LRC, use the substring 'cf_lrc'.
 wsgi_conf_log_prefix: cf_brc
 
+# LRC Cloudflare settings.
+# Whether the web server is behind Cloudflare.
+# TODO: For the LRC production deployment, enable Cloudflare, since LBL
+# TODO: requires that web servers visible to the Internet be placed behind it.
+# TODO: https://commons.lbl.gov/display/cpp/Open+Web+Server+Requirements
+cloudflare_enabled: false
+# A list of Cloudflare's IP ranges.
+# TODO: Keep it up-to-date with: https://www.cloudflare.com/ips/.
+cloudflare_ip_ranges: [
+    103.21.244.0/22,
+    103.22.200.0/22,
+    103.31.4.0/22,
+    104.16.0.0/13,
+    104.24.0.0/14,
+    108.162.192.0/18,
+    131.0.72.0/22,
+    141.101.64.0/18,
+    162.158.0.0/15,
+    172.64.0.0/13,
+    173.245.48.0/20,
+    188.114.96.0/20,
+    190.93.240.0/20,
+    197.234.240.0/22,
+    198.41.128.0/17
+]
+# The name of the server, which should differ from the name of the website.
+# Source: See Open Web Server Requirements link above.
+# TODO: Set this to e.g., mylrc-local.lbl.gov for mylrc.lbl.gov if Cloudflare
+# TODO: is enabled.
+cloudflare_local_server_name:
+
 # CILogon client settings.
 # TODO: Set these, needed only if SSO should be enabled.
 cilogon_app_client_id: ""
@@ -60,7 +99,7 @@ portal_name: "MyBRC"
 program_name_long: "Berkeley Research Computing"
 program_name_short: "BRC"
 primary_cluster_name: "Savio"
-# TODO: For MyLRC, use "https://it.lbl.gov/resource/hpc/for-users/".
+# TODO: For MyLRC, use "https://it.lbl.gov/service/scienceit/high-performance-computing/lrc/".
 center_user_guide: "https://docs-research-it.berkeley.edu/services/high-performance-computing/user-guide/"
 # TODO: For MyLRC, use "https://it.lbl.gov/resource/hpc/for-users/getting-started/".
 center_login_guide: "https://docs-research-it.berkeley.edu/services/high-performance-computing/user-guide/logging-brc-clusters/#Logging-in"
@@ -90,10 +129,6 @@ allow_all_jobs: false
 # The URL of the Sentry instance to send errors to.
 sentry_dsn: ""
 
-# Types of Ansible tasks to run by default.
-provisioning_tasks: True
-common_tasks: True
-
 ###############################################################################
 # staging_settings
 ###############################################################################
@@ -120,10 +155,15 @@ common_tasks: True
 # ssl_enabled: false
 # ssl_certificate_file: /etc/ssl/ssl_certificate.file
 # ssl_certificate_key_file: /etc/ssl/ssl_certificate_key.file
+# # An optional chain file.
 # ssl_certificate_chain_file: /etc/ssl/ssl_certification_chain.file
 
-# # An IP range, in CIDR notation, to which the REST API is accessible.
-# ip_range_with_api_access: 0.0.0.0/24
+# # Zero or more space-separated IP ranges, in CIDR notation, to which the REST
+# # API is accessible. If none are given, API access is not restricted.
+# ip_range_with_api_access:
+
+# # IP addresses other than 127.0.0.1 that can view the django debug toolbar.
+# debug_toolbar_ips: []
 
 # # Email settings.
 # email_port: 25
@@ -133,8 +173,12 @@ common_tasks: True
 # # TODO: For LRC, use the substring 'MyLRC'.
 # email_subject_prefix: '[MyBRC-User-Portal]'
 
+# # A list of admin email addresses to be notified about new requests and other
+# # events.
+# # TODO: Set these addresses to yours.
+# email_admin_list: []
 # # A list of email addresses to CC when certain requests are processed.
-# # TODO: Set this address to yours.
+# # TODO: Set these addresses to yours.
 # request_approval_cc_list: []
 
 ###############################################################################
@@ -166,11 +210,15 @@ common_tasks: True
 # ssl_enabled: true
 # ssl_certificate_file: /etc/ssl/ssl_certificate.file
 # ssl_certificate_key_file: /etc/ssl/ssl_certificate_key.file
+# # An optional chain file.
 # ssl_certificate_chain_file: /etc/ssl/ssl_certification_chain.file
 
-# # One or more space-separated IP ranges, in CIDR notation, to which the REST
-# # API is accessible.
+# # Zero or more space-separated IP ranges, in CIDR notation, to which the REST
+# # API is accessible. If none are given, API access is not restricted.
 # ip_range_with_api_access: 10.0.0.0/8
+
+# # IP addresses other than 127.0.0.1 that can view the django debug toolbar.
+# debug_toolbar_ips: []
 
 # # Email settings.
 # email_port: 25
@@ -180,9 +228,13 @@ common_tasks: True
 # # TODO: For LRC, use the substring 'MyLRC'.
 # email_subject_prefix: '[MyBRC-User-Portal]'
 
+# # A list of admin email addresses to be notified about new requests and other
+# # events.
+# # TODO: Set these addresses to yours.
+# email_admin_list: []
 # # A list of email addresses to CC when certain requests are processed.
-# # TODO: Set this address to yours.
-# request_approval_cc_list: ['wfeinstein@lbl.gov']
+# # TODO: Set these addresses to yours.
+# request_approval_cc_list: []
 
 ###############################################################################
 # dev_settings
@@ -210,10 +262,15 @@ common_tasks: True
 # ssl_enabled: false
 # ssl_certificate_file: /etc/ssl/ssl_certificate.file
 # ssl_certificate_key_file: /etc/ssl/ssl_certificate_key.file
+# # An optional chain file.
 # ssl_certificate_chain_file: /etc/ssl/ssl_certification_chain.file
 
-# # An IP range, in CIDR notation, to which the REST API is accessible.
-# ip_range_with_api_access: 0.0.0.0/0
+# # Zero or more space-separated IP ranges, in CIDR notation, to which the REST
+# # API is accessible. If none are given, API access is not restricted.
+# ip_range_with_api_access:
+
+# # IP addresses other than 127.0.0.1 that can view the django debug toolbar.
+# debug_toolbar_ips: ['10.0.2.2']  # 10.0.2.2 is the vagrant host.
 
 # # Email settings.
 # email_port: 1025
@@ -223,6 +280,10 @@ common_tasks: True
 # # TODO: For LRC, use the substring 'MyLRC'.
 # email_subject_prefix: '[MyBRC-User-Portal]'
 
+# # A list of admin email addresses to be notified about new requests and other
+# # events.
+# # TODO: Set these addresses to yours.
+# email_admin_list: ['you@email.com']
 # # A list of email addresses to CC when certain requests are processed.
-# # TODO: Set this address to yours.
+# # TODO: Set these addresses to yours.
 # request_approval_cc_list: ['you@email.com']

@@ -21,7 +21,9 @@ CENTER_PROJECT_RENEWAL_HELP_URL = CENTER_BASE_URL + '/help'
 
 EMAIL_PORT = {{ email_port }}
 EMAIL_SUBJECT_PREFIX = '{{ email_subject_prefix }}'
-EMAIL_ADMIN_LIST = ['admin@{{ hostname }}']
+# A list of admin email addresses to be notified about new requests and other
+# events.
+EMAIL_ADMIN_LIST = {{ email_admin_list }} or ['admin@{{ hostname }}']
 EMAIL_SENDER = '{{ from_email }}'
 EMAIL_TICKET_SYSTEM_ADDRESS = 'help@{{ hostname }}'
 EMAIL_DIRECTOR_EMAIL_ADDRESS = 'director@{{ hostname }}'
@@ -138,6 +140,17 @@ CONSTANCE_REDIS_CONNECTION = {
     'db': 0,
     'password': '{{ redis_passwd }}',
 }
+
+#------------------------------------------------------------------------------
+# django debug toolbar settings
+#------------------------------------------------------------------------------
+
+# IP addresses other than 127.0.0.1 that can view the django debug toolbar.
+EXTRA_INTERNAL_IPS = [
+{% for ip in debug_toolbar_ips %}
+    '{{ ip }}',
+{% endfor %}
+]
 
 #------------------------------------------------------------------------------
 # django-flags settings

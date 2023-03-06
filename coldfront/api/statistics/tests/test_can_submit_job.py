@@ -3,10 +3,13 @@ from coldfront.core.allocation.models import AllocationAttributeUsage
 from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.allocation.models import AllocationUserAttributeUsage
 from coldfront.core.allocation.models import AllocationUserStatusChoice
+from coldfront.core.resource.models import Resource
+from coldfront.core.resource.models import ResourceType
 from coldfront.core.resource.utils import get_computing_allowance_project_prefixes
 from coldfront.core.resource.utils import get_primary_compute_resource
 from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
+from coldfront.core.utils.tests.test_base import enable_deployment
 from decimal import ConversionSyntax
 from decimal import Decimal
 from django.conf import settings
@@ -120,13 +123,35 @@ class TestCanSubmitJobView(TestJobBase):
             self.assert_result(
                 job_cost, '0', self.project.name, 200, result, message)
 
-        example_exempt_project_names = (
-            'abc', 'alsacc', 'etna', 'nano', 'vector_project', 'vulcan')
-        for project_name in example_exempt_project_names:
+        resource_type = ResourceType.objects.get(name='Cluster')
+        lrc_departmental_cluster_names = (
+            'ALICE', 'ALSACC', 'BALDUR', 'ETNA', 'NANO', 'VULCAN')
+        for cluster_name in lrc_departmental_cluster_names:
+            Resource.objects.create(
+                name=f'{cluster_name} Compute', resource_type=resource_type)
+
+        self.allocation.resources.clear()
+
+        departmental_project_names = (
+            'alice', 'alsacc', 'etna', 'nano', 'vulcan')
+        for project_name in departmental_project_names:
             self.project.name = project_name
             self.project.save()
-            self.assert_result(
-                job_cost, '0', self.project.name, 200, True, success_message)
+            resource = Resource.objects.get(
+                name=f'{project_name.upper()} Compute')
+            self.allocation.resources.add(resource)
+            with enable_deployment('LRC'):
+                self.assert_result(
+                    job_cost, '0', self.project.name, 200, True,
+                    success_message)
+                # If the departmental project does not have an Allocation to
+                # the expected Resource, an error should result.
+                self.allocation.resources.clear()
+                message = (
+                    f'Account {self.project.name} has no active compute '
+                    f'allocation.')
+                self.assert_result(
+                    job_cost, '0', self.project.name, 200, False, message)
 
     def test_no_active_compute_allocation(self):
         """Test that requests wherein the account has no active compute

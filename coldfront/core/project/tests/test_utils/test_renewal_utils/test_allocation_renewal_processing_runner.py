@@ -1049,8 +1049,8 @@ class TestUnpooledToUnpooled(TestFutureRequestsUpdateMixin, TestRunnerMixin,
                 name='Approved'),
             pi=self.pi0,
             computing_allowance=self.computing_allowance,
-            pre_project=self.unpooled_project0,
-            post_project=self.unpooled_project0)
+            pre_project=self.fc_unpooled_project0,
+            post_project=self.fc_unpooled_project0)
 
     def test_pooling_preference_case(self):
         """Test that the pooling preference case for the class' renewal
@@ -1073,8 +1073,8 @@ class TestUnpooledToPooled(TestFutureRequestsUpdateMixin, TestRunnerMixin,
                 name='Approved'),
             pi=self.pi0,
             computing_allowance=self.computing_allowance,
-            pre_project=self.unpooled_project0,
-            post_project=self.pooled_project1)
+            pre_project=self.fc_unpooled_project0,
+            post_project=self.fc_pooled_project1)
 
     def test_pooling_preference_case(self):
         """Test that the pooling preference case for the class' renewal
@@ -1097,8 +1097,8 @@ class TestPooledToPooledSame(TestFutureRequestsUpdateMixin, TestRunnerMixin,
                 name='Approved'),
             pi=self.pi0,
             computing_allowance=self.computing_allowance,
-            pre_project=self.pooled_project0,
-            post_project=self.pooled_project0)
+            pre_project=self.fc_pooled_project0,
+            post_project=self.fc_pooled_project0)
 
     def test_pooling_preference_case(self):
         """Test that the pooling preference case for the class' renewal
@@ -1122,8 +1122,8 @@ class TestPooledToPooledDifferent(TestFutureRequestsUpdateMixin,
                 name='Approved'),
             pi=self.pi0,
             computing_allowance=self.computing_allowance,
-            pre_project=self.pooled_project0,
-            post_project=self.pooled_project1)
+            pre_project=self.fc_pooled_project0,
+            post_project=self.fc_pooled_project1)
 
     def test_pooling_preference_case(self):
         """Test that the pooling preference case for the class' renewal
@@ -1146,8 +1146,8 @@ class TestPooledToUnpooledOld(TestFutureRequestsUpdateMixin,
                 name='Approved'),
             pi=self.pi0,
             computing_allowance=self.computing_allowance,
-            pre_project=self.pooled_project0,
-            post_project=self.unpooled_project0)
+            pre_project=self.fc_pooled_project0,
+            post_project=self.fc_unpooled_project0)
 
     def test_pooling_preference_case(self):
         """Test that the pooling preference case for the class' renewal
@@ -1172,7 +1172,7 @@ class TestPooledToUnpooledNew(TestFutureRequestsUpdateMixin,
                 name='Approved'),
             pi=self.pi0,
             computing_allowance=self.computing_allowance,
-            pre_project=self.pooled_project0,
+            pre_project=self.fc_pooled_project0,
             post_project=new_project_request.project,
             new_project_request=new_project_request)
 

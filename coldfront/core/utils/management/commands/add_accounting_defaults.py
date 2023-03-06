@@ -28,6 +28,7 @@ class Command(BaseCommand):
                 ('Savio Compute', 'Savio cluster compute access'),
                 ('Vector Compute', 'Vector cluster compute access'),
                 ('ABC Compute', 'ABC cluster compute access'),
+                ('REFMLAB Compute', 'REFMLAB cluster compute access'),
             ],
             'LRC_ONLY': [
                 ('ALICE Compute', 'ALICE cluster compute access'),

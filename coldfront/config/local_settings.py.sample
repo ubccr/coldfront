@@ -369,6 +369,22 @@ REST_FRAMEWORK = {
     ],
 }
 
+#------------------------------------------------------------------------------
+# Enable django debug toolbar
+#------------------------------------------------------------------------------
+
+EXTRA_APPS += [
+    'debug_toolbar'
+]
+
+EXTRA_MIDDLEWARE += [
+    'debug_toolbar.middleware.DebugToolbarMiddleware'
+]
+
+INTERNAL_IPS = [
+    '127.0.0.1'
+]
+
 # The number of hours for which a newly created authentication token will be
 # valid.
 TOKEN_EXPIRATION_HOURS = 24
@@ -459,7 +475,13 @@ except ImportError:
         try:
             from .dev_settings import *
         except ImportError:
-            pass
+            try:
+                from .test_settings import *
+            except ImportError:
+                pass
+
+# Update internal IPs for debug toolbar based on potentially-updated variables.
+INTERNAL_IPS += EXTRA_INTERNAL_IPS
 
 # Update logging settings based on potentially-updated variables.
 LOGGING['handlers']['file']['filename'] = LOG_PATH
