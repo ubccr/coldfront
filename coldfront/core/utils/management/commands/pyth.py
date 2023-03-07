@@ -7,10 +7,10 @@ from django.core.management.base import BaseCommand, CommandError
 
 def import_model(filename):
     with open(filename) as file:
+        next(file)
         f=csv.reader(file)
         for m in f:
-            print(m)
-            username, first_name, last_name, email, is_active, is_staff, is_superuser, *groups = m.strip().split(',')
+            username, first_name, last_name, email, is_active, is_staff, is_superuser, *groups = m
             user_obj = User.objects.create(
                 username=username,
                 first_name=first_name,
@@ -25,6 +25,6 @@ def import_model(filename):
                 groups = groups[0]
             else:
                 groups = ''
-            print(user_obj)
             user_obj.save()
-import_model('sample_csv.txt')
+            # print(first_name," complete")
+import_model('sample_csv.csv')

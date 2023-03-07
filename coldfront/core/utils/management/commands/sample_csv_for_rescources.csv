@@ -1,0 +1,4 @@
+resource_type_name, resource_attribute_type_name, resource_attribute_type_type_name, resource_name, value
+Cluster,slurm_specs,Project ID,University Cloud Storage,230
+Unknown,slurm_specs,Project ID,University Cloud Storage,130
+Unknown2,slurm_specs,Project ID,University Cloud Storage,330

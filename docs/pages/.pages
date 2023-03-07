@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 nav:
   - index.md
   - install.md
@@ -6,3 +7,14 @@ nav:
   - plugin.md
   - Deployment: deploy.md
   - manual
+=======
+nav:
+  - index.md
+  - install.md
+  - config.md
+  - upgrading.md
+  - plugin.md
+  - Deployment: deploy.md
+  - manual
+  - API: api.md
+>>>>>>> upstream/main

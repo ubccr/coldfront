@@ -1,5 +1,0 @@
-username, first_name, last_name, email, is_active, is_staff, is_superuser, *groups
-joeb, joe,smith,joesmith@.com,True,False,True
-harshith11, harshith,gupta,hargupt@.com,True,False,True
-
-

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 Dear {{center_name}} user,
 
 Your allocation request for {{resource}} has been activated. You now have access to this resource.
@@ -8,3 +9,20 @@ to opt out of future notifications, instructions can be found here: {{opt_out_in
 
 Thank you,
 {{signature}}
+=======
+Dear {{center_name}} user,
+
+Your allocation request for {{resource}} has been activated. You now have
+access to this resource.
+
+To view your allocations information, please go to:
+
+{{url}}
+
+If you are a student or collaborator under this project, you are receiving this
+notice as a courtesy. If you would like to opt out of future notifications,
+instructions can be found here: {{opt_out_instruction_url}}
+
+Thank you,
+{{signature}}
+>>>>>>> upstream/main
