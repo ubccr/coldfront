@@ -110,9 +110,11 @@ class AllocationRenewalRequestMixin(object):
         num_service_units = Decimal(
             ComputingAllowanceInterface().service_units_from_name(
                 self.computing_allowance_obj.get_name()))
-        return prorated_allocation_amount(
-            num_service_units, self.request_obj.request_time,
-            self.allocation_period_obj)
+        if self.computing_allowance_obj.are_service_units_prorated():
+            num_service_units = prorated_allocation_amount(
+                num_service_units, self.request_obj.request_time,
+                self.allocation_period_obj)
+        return num_service_units
 
     def set_common_context_data(self, context):
         """Given a dictionary of context variables to include in the
