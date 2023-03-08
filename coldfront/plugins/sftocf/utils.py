@@ -162,6 +162,24 @@ class StarFishRedash:
         self.base_url = f'https://{server_name}.rc.fas.harvard.edu/redash/api/'
         self.queries = import_from_settings('REDASH_API_KEYS')
 
+
+    def return_present_absent_allocations(self):
+        '''Divide Starfish redash subdirectory query results by presence of
+        allocation in Coldfront.
+        Only counts allocations that also have projects in
+        '''
+        data = self.return_cleaned_allocation_results()
+        allocations = [(a.project.title, a.resources.first().name.split('/')[0], a.path)
+                        for a in Allocation.objects.all()]
+        starfish_allocations = [(a['group_name'],a['vol_name'], a['path'])
+                        for a in data]
+
+        present_by_path = [a for a in starfish_allocations if any(a[1]==b[1] and a[2]==b[2] for b in allocations)]
+        absent_by_path = [a for a in starfish_allocations if not any(a[1]==b[1] and a[2]==b[2] for b in allocations)]
+        absent_by_path_or_group = [a for a in absent_by_path if not any(a[1]==b[1] and a[0]==b[0] for b in allocations)]
+        absent_clustered = []
+
+
     def submit_query(self, queryname):
         query = self.queries[queryname]
         query_url = f'{self.base_url}queries/{query[0]}/results?api_key={query[1]}'
@@ -502,7 +520,7 @@ def compare_cf_sf_volumes():
     return vols_to_collect
 
 
-def pull_sf_push_cf_redash(pull_totals=False):
+def pull_sf_push_cf_redash(pull_totals=True):
     '''
     Query Starfish Redash API for user usage data and update Coldfront AllocationUser entries.
 
@@ -546,7 +564,7 @@ def pull_sf_push_cf_redash(pull_totals=False):
 
         if pull_totals is False:
             pass
-        if not usage_data:
+        elif not usage_data:
             print('WARNING: No starfish allocation usage for', allocation.pk, lab, resource)
             logger.warning('WARNING: No starfish allocation usage result for allocation %s %s %s',
                 allocation.pk, lab, resource)

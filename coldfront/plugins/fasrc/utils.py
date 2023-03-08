@@ -283,8 +283,8 @@ class AllTheThingsConn:
                                 allocation_attribute_type=allocation_attribute_type_obj,
                                 defaults={'value': v[0]}
                             )
-                        allocattribute_obj.allocationattributeusage.value = v[1]
-                        allocattribute_obj.save()
+                        # allocattribute_obj.allocationattributeusage.value = v[1]
+                        # allocattribute_obj.save()
 
                     # 5. AllocationAttribute
                     alloc_obj.allocationattribute_set.update_or_create(
