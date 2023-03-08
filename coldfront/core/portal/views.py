@@ -79,25 +79,19 @@ def home(request):
             Q(allocationuser__status__name__in=['Active', 'Pending - Remove'])
         ).distinct().order_by('-created')
 
-        allocations_for_slurm_accounts = allocation_list.all().exclude(
-            status__name__in=['New', ]
-        )
-
         allocation_list = allocation_list[:5]
 
-        projects_with_slurm_account_to_list = []
-        for allocation in allocations_for_slurm_accounts:
-            resource = allocation.get_parent_resource
-            if resource.is_available:
-                if resource.get_attribute('slurm_cluster'):
-                    if allocation.project not in projects_with_slurm_account_to_list:
-                        projects_with_slurm_account_to_list.append(allocation.project)
-                elif resource.parent_resource:
-                    resource = resource.parent_resource
-                    if (resource.get_attribute('slurm_cluster')):
-                        if allocation.project not in projects_with_slurm_account_to_list:
-                            projects_with_slurm_account_to_list.append(allocation.project)
-        context['projects_with_slurm_account_to_list'] = projects_with_slurm_account_to_list
+        projects_with_a_slurm_account_to_list = []
+        for project in project_list:
+            resources_with_slurm_accounts = project.get_list_of_resources_with_slurm_accounts()
+            if resources_with_slurm_accounts:
+                project_dict = {
+                    'title': project.title,
+                    'slurm_account_name': project.slurm_account_name,
+                    'resources_with_slurm_accounts': ', '.join(resources_with_slurm_accounts)
+                }
+                projects_with_a_slurm_account_to_list.append(project_dict)
+        context['projects_with_a_slurm_account_to_list'] = projects_with_a_slurm_account_to_list
 
         context['user'] = request.user
         context['project_list'] = project_list
