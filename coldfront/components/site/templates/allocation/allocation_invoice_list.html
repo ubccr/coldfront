@@ -9,10 +9,11 @@ Allocation Invoice List
 
 
 {% block content %}
-<h2 class="d-inline">Allocations that require payment</h2>
+<h2 class="d-inline">Allocation Invoices</h2>
 <button type="button" class="btn btn-success float-right" data-toggle="modal" data-target="#id_export_csv">
   Export to CSV
 </button>
+<hr>
 
 <div class="modal fade" id="id_export_csv" tabindex="-1" role="dialog" aria-labelledby="id_export_csv_label" aria-hidden="true">
   <div class="modal-dialog" role="document">
@@ -65,7 +66,7 @@ Allocation Invoice List
   </div>
 {% else %}
   <div class="alert alert-info">
-    No allocations requiring payment!
+    No allocation invoices!
   </div>
 {% endif %}
 

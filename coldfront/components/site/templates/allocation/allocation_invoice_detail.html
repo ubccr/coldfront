@@ -53,15 +53,21 @@ Allocation Invoice Detail
             </td>
           </tr>
           <tr>
+            <th scope="row" class="text-nowrap">Fiscal Officer:</th>
+            <td>
+              {{ allocation.fiscal_officer }}
+            </td>
+          </tr>
+          <tr>
             <th scope="row" class="text-nowrap">Resource{{ allocation.resources.all|pluralize }} in allocation:</th>
             <td>{{ allocation.get_resources_as_string }}</td>
           </tr>
-          <tr>
+          <!-- <tr>
             <th scope="row" class="text-nowrap">Justification:</th>
             <td>
               {{ allocation.justification }}
             </td>
-          </tr>
+          </tr> -->
           <tr>
             <th scope="row" class="text-nowrap">Account Number:</th>
             <td>
@@ -75,11 +81,17 @@ Allocation Invoice Detail
             </td>
           </tr>
           <tr>
+            <th scope="row" class=""text-nowrap>Status:</th>
+            <td>
+              {{ allocation.status }}
+            </td>
+          </tr>
+          <!-- <tr>
             <th scope="row" class="text-nowrap">Status:</th>
             <td>
               {{ form.status }}
             </td>
-          </tr>
+          </tr> -->
           <tr>
             <th scope="row" class="text-nowrap">Created:</th>
             <td>{{ allocation.created }}</td>
@@ -90,9 +102,9 @@ Allocation Invoice Detail
           </tr>
         </table>
       </div>
-      {% if request.user.is_superuser or perms.allocation.can_manage_invoice%}
+      <!-- {% if request.user.is_superuser or perms.allocation.can_manage_invoice%}
         <button type="submit" class="btn btn-success float-right"><i class="fas fa-sync" aria-hidden="true"></i> Update</button>
-      {% endif %}
+      {% endif %} -->
     </form>
   </div>
 </div>
