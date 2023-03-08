@@ -16,6 +16,7 @@ from coldfront.core.allocation.models import (Allocation,
                                             AllocationUser,
                                             AllocationStatusChoice,
                                             AllocationUserStatusChoice)
+from coldfront.core.utils.fasrc import log_missing 
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
 from coldfront.config.env import ENV
@@ -97,4 +98,7 @@ class Command(BaseCommand):
                 )
             except ValidationError:
                 logger.debug('adding PI %s to allocation %s failed', pi_obj.pi.username, allocation.pk)
+        missing_projects = [{'title': title} for title in command_report['missing_projects']]
+        log_missing('project', missing_projects)
+        
         return json.dumps(command_report, indent=2)
