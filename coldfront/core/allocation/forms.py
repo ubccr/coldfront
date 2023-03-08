@@ -596,14 +596,18 @@ class AllocationInvoiceSearchForm(forms.Form):
 class AllocationInvoiceExportForm(forms.Form):
     file_name = forms.CharField(max_length=64, initial='invoices')
     resource = forms.ChoiceField(choices=())
-    start_date = forms.DateField(
-        widget=forms.DateInput(attrs={'class': 'datepicker'}),
-        required=False
+    allocation_status = forms.ModelMultipleChoiceField(
+        label='Allocation status',
+        queryset=AllocationStatusChoice.objects.filter(name__in=['Active', 'Billing Information Submitted', ]).order_by('name')
     )
-    end_date = forms.DateField(
-        widget=forms.DateInput(attrs={'class': 'datepicker'}),
-        required=False
-    )
+    # start_date = forms.DateField(
+    #     widget=forms.DateInput(attrs={'class': 'datepicker'}),
+    #     required=False
+    # )
+    # end_date = forms.DateField(
+    #     widget=forms.DateInput(attrs={'class': 'datepicker'}),
+    #     required=False
+    # )
 
     def __init__(self, *args, resources=None, **kwargs):
         super().__init__(*args, **kwargs)

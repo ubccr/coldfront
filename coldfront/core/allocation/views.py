@@ -2805,14 +2805,19 @@ class AllocationInvoiceListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
     def get_queryset(self):
         if self.request.user.is_superuser:
             allocations = Allocation.objects.filter(
-                status__name__in=['Paid', 'Payment Pending', 'Payment Requested', 'Payment Declined', ]
+                status__name__in=['Active', ]
             )
         else:
             allocations = Allocation.objects.filter(
-                status__name__in=['Paid', 'Payment Pending', 'Payment Requested', 'Payment Declined', ],
+                status__name__in=['Active', ],
                 resources__review_groups__in=list(self.request.user.groups.all())
             )
-        return allocations
+        allocations_require_payment = []
+        for allocation in allocations:
+            if allocation.get_parent_resource.requires_payment:
+                allocations_require_payment.append(allocation)
+        
+        return allocations_require_payment
 
 
 class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -3394,14 +3399,16 @@ class AllocationInvoiceExportView(LoginRequiredMixin, UserPassesTestMixin, View)
     def post(self, request):
         file_name = request.POST['file_name']
         resource = request.POST['resource']
-        start_date = request.POST['start_date']
-        end_date = request.POST['end_date']
+        allocation_status = request.POST['allocation_status']
+        # start_date = request.POST['start_date']
+        # end_date = request.POST['end_date']
 
         initial_data = {
             'file_name': file_name,
             'resource': resource,
-            'start_date': start_date,
-            'end_date': end_date
+            'allocation_status': allocation_status,
+            # 'start_date': start_date,
+            # 'end_date': end_date
         }
 
         if self.request.user.is_superuser:
@@ -3429,26 +3436,27 @@ class AllocationInvoiceExportView(LoginRequiredMixin, UserPassesTestMixin, View)
             data = form.cleaned_data
             file_name = data.get('file_name')
             resource = data.get('resource')
-            start_date = data.get('start_date')
-            end_date = data.get('end_date')
+            allocation_status = data.get('allocation_status')
+            # start_date = data.get('start_date')
+            # end_date = data.get('end_date')
 
             if file_name[-4:] != ".csv":
                 file_name += ".csv"
 
             invoices = Allocation.objects.prefetch_related('project', 'status').filter(
-                Q(status__name__in=['Payment Pending', 'Paid', ]) &
+                Q(status__pk__in=allocation_status) &
                 Q(resources__name=resource)
             ).order_by('-created')
 
-            if start_date:
-                invoices = invoices.filter(
-                    created__gt=start_date
-                ).order_by('-created')
+            # if start_date:
+            #     invoices = invoices.filter(
+            #         created__gt=start_date
+            #     ).order_by('-created')
 
-            if end_date:
-                invoices = invoices.filter(
-                    created__lt=end_date
-                ).order_by('-created')
+            # if end_date:
+            #     invoices = invoices.filter(
+            #         created__lt=end_date
+            #     ).order_by('-created')
 
             rows = []
             if resource == "RStudio Connect":
@@ -3503,6 +3511,50 @@ class AllocationInvoiceExportView(LoginRequiredMixin, UserPassesTestMixin, View)
                     row = [
                         ' '.join((invoice.project.pi.first_name, invoice.project.pi.last_name)),
                         invoice.account_number
+                    ]
+
+                    rows.append(row)
+                rows.insert(0, header)
+            elif resource == "Geode-Projects":
+                header = [
+                    'PI',
+                    'Fiscal Officer',
+                    'Account Number',
+                    'Sub-account Number',
+                    'Share Name',
+                    'Org',
+                    'Quota Data (GiBs)',
+                    'Quota Files (M)',
+                    'Billing Rate',
+                    'Billable Amount Annual',
+                    'Billable Amount Monthly',
+                    'Billing Start Date',
+                    'Billing End Date',
+                    'Status'
+                ]
+
+                for invoice in invoices:
+                    fiscal_officer_user_exists = User.objects.filter(username=invoice.fiscal_officer).exists()
+                    fiscal_officer = invoice.fiscal_officer
+                    if fiscal_officer_user_exists:
+                        fiscal_officer_user_obj = User.objects.get(username=invoice.fiscal_officer)
+                        fiscal_officer = ' '.join((fiscal_officer_user_obj.first_name, fiscal_officer_user_obj.last_name))
+
+                    row = [
+                        ' '.join((invoice.project.pi.first_name, invoice.project.pi.last_name)),
+                        fiscal_officer,
+                        invoice.account_number,
+                        invoice.sub_account_number,
+                        invoice.share_name,
+                        invoice.organization,
+                        invoice.storage_space,
+                        invoice.quota_files,
+                        invoice.billing_rate,
+                        invoice.billable_amount_annual,
+                        invoice.billable_amount_monthly,
+                        invoice.billing_start_date,
+                        invoice.billing_end_date,
+                        invoice.status
                     ]
 
                     rows.append(row)
