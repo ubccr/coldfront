@@ -5,12 +5,10 @@ from django.core.management.base import BaseCommand
 
 from coldfront.core.resource.models import Resource
 from coldfront.core.allocation.models import Allocation
-from coldfront.plugins.sftocf.utils import StarFishRedash, compare_cf_sf_volumes
+from coldfront.plugins.sftocf.utils import StarFishRedash, compare_cf_sf_volumes, STARFISH_SERVER
 
 
 logger = logging.getLogger(__name__)
-STARFISH_SERVER = "holysfdb01"
-
 
 def make_error_csv(filename, errors):
     csv_path = f"local_data/error_tracking/{filename}.csv"
@@ -23,7 +21,8 @@ class Command(BaseCommand):
     collect LFS and Isilon subdir values from starfish redash query; assign them
     to respective allocations' Subdirectory allocationattribute.
 
-    If a group/user pairing has 0 or >1 allocation, log in an error csv to handle manually.
+    If a group/user pairing has 0 or >1 allocation, log in an error csv to
+    handle manually.
     '''
 
     def handle(self, *args, **kwargs):

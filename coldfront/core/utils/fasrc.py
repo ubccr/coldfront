@@ -129,7 +129,7 @@ def id_present_missing_users(username_list):
     '''
     present_users = get_user_model().objects.filter(username__in=username_list)
     present_usernames = list(present_users.values_list('username', flat=True))
-    missing_usernames = [{"username": name} for name in username_list if name not in present_usernames]
+    missing_usernames = [{"username": n} for n in username_list if n not in present_usernames]
     return (present_users, missing_usernames)
 
 

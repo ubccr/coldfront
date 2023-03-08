@@ -30,7 +30,7 @@ logger.setLevel(logging.DEBUG)
 filehandler = logging.FileHandler(f'logs/starfish_to_coldfront_{datestr}.log', 'w')
 logger.addHandler(filehandler)
 
-STARFISH_SERVER = 'holysfdb01'
+STARFISH_SERVER = import_from_settings('STARFISH_SERVER')
 svp = read_json('coldfront/plugins/sftocf/servers.json')
 
 
