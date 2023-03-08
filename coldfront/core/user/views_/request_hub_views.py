@@ -406,7 +406,7 @@ class RequestHubView(LoginRequiredMixin,
             request_pks = [request.pk for request in secure_dir_join_pending if
                            request.allocation.project.projectuser_set.filter(
                                user=user,
-                               role__name='Principle Investigator',
+                               role__name='Principal Investigator',
                                status__name='Active'
                            ).exists()]
             pi_cond = Q(pk__in=request_pks)
@@ -416,7 +416,7 @@ class RequestHubView(LoginRequiredMixin,
             request_pks = [request.pk for request in secure_dir_join_complete if
                            request.allocation.project.projectuser_set.filter(
                                user=user,
-                               role__name='Principle Investigator',
+                               role__name='Principal Investigator',
                                status__name='Active'
                            ).exists()]
             pi_cond = Q(pk__in=request_pks)
@@ -469,7 +469,7 @@ class RequestHubView(LoginRequiredMixin,
             request_pks = [request.pk for request in secure_dir_remove_pending if
                            request.allocation.project.projectuser_set.filter(
                                user=user,
-                               role__name='Principle Investigator',
+                               role__name='Principal Investigator',
                                status__name='Active'
                            ).exists()]
             pi_cond = Q(pk__in=request_pks)
@@ -479,7 +479,7 @@ class RequestHubView(LoginRequiredMixin,
             request_pks = [request.pk for request in secure_dir_remove_complete if
                            request.allocation.project.projectuser_set.filter(
                                user=user,
-                               role__name='Principle Investigator',
+                               role__name='Principal Investigator',
                                status__name='Active'
                            ).exists()]
             pi_cond = Q(pk__in=request_pks)
@@ -533,7 +533,7 @@ class RequestHubView(LoginRequiredMixin,
             request_pks = [request.pk for request in secure_dir_pending if
                            request.project.projectuser_set.filter(
                                user=user,
-                               role__name='Principle Investigator',
+                               role__name='Principal Investigator',
                                status__name='Active'
                            ).exists()]
             pi_cond = Q(pk__in=request_pks)
@@ -543,7 +543,7 @@ class RequestHubView(LoginRequiredMixin,
             request_pks = [request.pk for request in secure_dir_complete if
                            request.project.projectuser_set.filter(
                                user=user,
-                               role__name='Principle Investigator',
+                               role__name='Principal Investigator',
                                status__name='Active'
                            ).exists()]
             pi_cond = Q(pk__in=request_pks)
@@ -604,5 +604,6 @@ class RequestHubView(LoginRequiredMixin,
 
         context['admin_staff'] = (self.request.user.is_superuser or
                                   self.request.user.is_staff)
+        context['hide_table_sorter'] = True
 
         return context
