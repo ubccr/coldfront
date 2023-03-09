@@ -1,0 +1,6 @@
+created, modified, project__title, project__pi__username, project_status, project_number, title, funding_agency, project_start, project_end, percent_credit, direct_funding, total_amount_awarded, status
+2023-01-11 01:11:10,2022-10-10 7:07:09,fakeproject, lucas11,Active,7168891383, NSF, NASA,2023-01-11 01:11:10,2023-11-11 01:11:10,30,200000,1200000,Active
+2023-01-10 01:11:10,2022-10-09 7:07:09,fakeproject, astridschmidt,Active,7168891383, NSF, NASA,2023-01-11 01:11:10,2023-11-11 01:11:10,30,200000,1200000,Active
+2023-01-12 01:11:10,2022-10-08 7:07:09,fakeproject, joe11,Active,7168891383, NSF, NASA,2023-01-11 01:11:10,2023-11-11 01:11:10,30,200000,1200000,Active
+2023-01-09 01:11:10,2022-10-07 7:07:09,fakeproject, HarshithGupta,Active,7168891383, NSF, NASA,2023-01-11 01:11:10,2023-11-11 01:11:10,30,200000,1200000,Active
+2023-01-08 01:11:10,2022-10-12 7:07:09,fakeproject, lucas11,Active,7168891383, NSF, NASA,2023-01-11 01:11:10,2023-11-11 01:11:10,30,200000,1200000,Active
