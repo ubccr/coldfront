@@ -408,7 +408,7 @@ class AllocationAttributeType(TimeStampedModel):
     history = HistoricalRecords()
 
     def __str__(self):
-        return '%s (%s)' % (self.name, self.attribute_type.name)
+        return '%s' % (self.name)
 
     class Meta:
         ordering = ['name', ]
@@ -568,7 +568,7 @@ class AllocationUser(TimeStampedModel):
     history = HistoricalRecords()
 
     def __str__(self):
-        return '%s (%s)' % (self.user, self.allocation.resources.first().name)
+        return '%s' % (self.user)
 
     class Meta:
         verbose_name_plural = 'Allocation User Status'
