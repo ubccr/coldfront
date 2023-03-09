@@ -34,13 +34,18 @@ from django.db.models.query_utils import Q
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.http import HttpResponse
-
+from rest_framework import permissions
 
 class AllocationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Allocation
-        fields = ['id', 'all_public_attributes_as_list', 'project_id']
+        fields = ['id', 'all_public_attributes_as_list', 'project_id', 'resource']
+    
+    resource = serializers.SerializerMethodField()
 
+    def get_resource(self, obj):
+        return  obj.resources.first().name
+    
 class SLURMAccountsAPI(APIView):
     def get(self, request, cluster):
         #resource = ResourceAttribute.objects.get(resource_attribute_type_id=15, value=cluster).resource
@@ -52,6 +57,20 @@ class SLURMAccountsAPI(APIView):
         )
         return Response(AllocationSerializer(allocations, many=True).data)
 
+
+
+class SLURMAccountsPublicAPI(APIView):
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly] #this is public api
+
+    def get(self, request, username):
+        #resource = ResourceAttribute.objects.get(resource_attribute_type_id=15, value=cluster).resource
+        
+        allocations = Allocation.objects.filter(
+                resources__in=Resource.objects.filter(is_public=True, resource_type__name__in=['Cluster','Cluster Partition']), 
+                status__name='Active', 
+                allocationuser__user__username=username
+        ).distinct()
+        return Response(AllocationSerializer(allocations, many=True).data)
 
 
 @login_required
