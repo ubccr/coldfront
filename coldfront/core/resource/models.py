@@ -89,15 +89,15 @@ class Resource(TimeStampedModel):
     """ A resource is something a center maintains and provides access to for the community. Examples include Budgetstorage, Server, and Software License. 
     
     Attributes:
-        parent_resource (Resource) = used for the Cluster Partition resource type as these partitions fall under a main cluster
-        resource_type (ResourceType) = the type of resource (Cluster, Storage, etc.)
-        name (str) = name of resource 
-        description (str) = description of what the resource does and is used for 
-        is_available (bool) = indicates whether or not the resource is available for users to request an allocation for
-        is_public (bool) =  indicates whether or not users can see the resource
-        requires_payment (bool) = indicates whether or not users have to pay to use this resource
-        allowed_groups (Group) = uses the Django Group model to allow certain user groups to request the resource
-        allowed_users (User) = links Django Users that are allowed to request the resource to the resource
+        parent_resource (Resource): used for the Cluster Partition resource type as these partitions fall under a main cluster
+        resource_type (ResourceType): the type of resource (Cluster, Storage, etc.)
+        name (str): name of resource 
+        description (str): description of what the resource does and is used for 
+        is_available (bool): indicates whether or not the resource is available for users to request an allocation for
+        is_public (bool):  indicates whether or not users can see the resource
+        requires_payment (bool): indicates whether or not users have to pay to use this resource
+        allowed_groups (Group): uses the Django Group model to allow certain user groups to request the resource
+        allowed_users (User): links Django Users that are allowed to request the resource to the resource
     """
 
     parent_resource = models.ForeignKey(

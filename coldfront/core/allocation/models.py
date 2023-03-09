@@ -237,8 +237,7 @@ class Allocation(TimeStampedModel):
         """
         Params:
             name (str): allocation attribute type whose usage to set
-            value (int): value to set usage to
-            # check value type
+            value (float): value to set usage to
         """
 
         attr = self.allocationattribute_set.filter(
