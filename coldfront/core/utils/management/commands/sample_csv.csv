@@ -1,0 +1,4 @@
+username, first_name, last_name, email, is_active, is_staff, is_superuser, *groups
+joe11, joe,smith,joesmith@.com,True,False,True,True
+astridschmidt, Astrid,Schmidt,astridschmidt@astrid.edu,True,False,True,True
+HarshithGupta,Harshith,Gupta,harshith_oob@gemsedu.com,False,False,False,True
