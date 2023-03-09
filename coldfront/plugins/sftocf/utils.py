@@ -575,14 +575,15 @@ def pull_sf_push_cf_redash(pull_totals=True):
                     allocation_attribute_type=quota_bytes_attributetype
                 )
             bytes_attribute.allocationattributeusage.value = usage_data['total_size']
-            bytes_attribute.allocationattributeusage.save()
+            bytes_attribute.save()
             tbs = (usage_data['total_size']/1099511627776)
             logger.info('allocation usage for allocation %s: %s bytes, %s terabytes',
                         allocation.pk, usage_data['total_size'], tbs)
-            tbs_attribute, _ = allocation.allocationattribute_set.get_or_create(
-                    allocation_attribute_type=quota_tbs_attributetype)
+            tbs_attribute, _ = allocation.allocationattribute_set.update_or_create(
+                    allocation_attribute_type=quota_tbs_attributetype,
+                    defaults={'value': tbs })
             tbs_attribute.allocationattributeusage.value = usage_data['total_size']
-            tbs_attribute.allocationattributeusage.save()
+            tbs_attribute.save()
         if not lab_data:
             logger.warning('WARNING: No starfish user usage result for allocation %s %s %s',
                                                 allocation.pk, lab, resource)
