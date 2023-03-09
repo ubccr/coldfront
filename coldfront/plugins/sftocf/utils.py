@@ -571,19 +571,20 @@ def pull_sf_push_cf_redash(pull_totals=True):
             issues['no_total'].append((allocation.pk, project, volume))
         else:
             usage_data = usage_data[0]
-            bytes_attribute, _ = allocation.allocationattribute_set.update_or_create(
-                    allocation_attribute_type=quota_bytes_attributetype,
-                    defaults={'value': usage_data['total_size']}
+            bytes_attribute, _ = allocation.allocationattribute_set.get_or_create(
+                    allocation_attribute_type=quota_bytes_attributetype
                 )
+            bytes_attribute.usage.value = usage_data['total_size']
+            bytes_attribute.save()
             tbs = (usage_data['total_size']/1099511627776)
             logger.info('allocation usage for allocation %s: %s bytes, %s terabytes',
                         allocation.pk, usage_data['total_size'], tbs)
             tbs_attribute, _ = allocation.allocationattribute_set.update_or_create(
                     allocation_attribute_type=quota_tbs_attributetype,
                     defaults={'value': tbs })
-
+            tbs_attribute.usage.value = usage_data['total_size']
+            tbs_attribute.save()
         if not lab_data:
-            print('No starfish user-level results for',allocation.pk, lab, resource)
             logger.warning('WARNING: No starfish user usage result for allocation %s %s %s',
                                                 allocation.pk, lab, resource)
             issues['no_users'].append((allocation.pk, project, volume))

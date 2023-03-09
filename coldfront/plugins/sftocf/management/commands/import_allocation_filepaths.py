@@ -37,7 +37,7 @@ class Command(BaseCommand):
             lab = allocation.project.title
             resource = allocation.get_parent_resource
             volume = resource.name.split('/')[0]
-            matched_subdirs = [entry for entry in data if entry['group_name'] == lab
+            matched_subdirs = [entry for entry in data if entry['group_name'].lower() == lab
             and entry['vol_name'] == volume]
             if not matched_subdirs:
                 if allocation.status.name == "Inactive":
