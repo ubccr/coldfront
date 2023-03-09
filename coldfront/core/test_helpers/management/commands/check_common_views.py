@@ -10,7 +10,7 @@ datestr = datetime.today().strftime('%Y%m%d')
 logger = logging.getLogger(__name__)
 logger.propagate = False
 logger.setLevel(logging.DEBUG)
-filehandler = logging.FileHandler(f'coldfront/core/test_helpers/view_check_{datestr}.log', 'w')
+filehandler = logging.FileHandler(f'logs/view_check_{datestr}.log', 'w')
 logger.addHandler(filehandler)
 
 
@@ -67,6 +67,7 @@ class Command(BaseCommand):
             'pct_99': ['groups with pct_sum < 99:\n']
             }
 
+        logger.info("number of allocation pages: %s", len(allocation_obj_ids))
         for obj_id in allocation_obj_ids:
             url = f'/allocation/{obj_id}/'
             try:
@@ -74,6 +75,7 @@ class Command(BaseCommand):
             except Exception as e:
                 allocation_errors['no_page_load'].append(f'Failed load for url: {url}   {e}\n{e.__traceback__}')
                 continue
+            user_usage_bytes_dict = {}
             user_pct_dict = {}
             if response.context_data['allocation'].status.name not in ['Active', 'New']:
                 allocation_errors['inactive'].append(f"{obj_id}, ")
@@ -89,24 +91,44 @@ class Command(BaseCommand):
                 allocation_errors['mismatched_usages'].append(f'{obj_id} ({usage_b_to_tb} v. {usage_tb})\n')
             # confirm that allocation_usage_tb < allocation_quota_tb
 
+            resource = response.context_data['allocation'].resources.all()[0]
+            lab = response.context_data['allocation'].project
             users = response.context_data['allocation_users']._result_cache
-            if allocation_usage != 0:
-                for user in users:
-                    if user.usage_bytes and user.usage_bytes != 0:
+
+            for user in users:
+                if user.usage_bytes and user.usage_bytes != 0:
+                    user_usage_bytes_dict[user.user.username] = user.usage_bytes
+                    if allocation_usage != 0:
                         user_usage_pct = user.usage_bytes/allocation_usage*100
                     else:
-                        user_usage_pct = 0
-                    user_pct_dict[user.user.username] = round(user_usage_pct, 4)
+                        user_usage_pct = 200
+                else:
+                    user_usage_pct = 0
+                user_pct_dict[user.user.username] = round(user_usage_pct, 4)
+
+
+            if allocation_usage != 0:
                 pct_sum = sum(user_pct_dict.values())
+                bytes_sum = sum(user_usage_bytes_dict.values())
+                totalpct_error_message = f'\nALLOCATION {obj_id} {resource} {lab} \
+                percent total: {pct_sum}\ntotal usage bytes: {allocation_usage}\
+                \n{user_pct_dict}\n{user_usage_bytes_dict}\n'
                 if not user_pct_dict:
                     logger.warning('no user_pct_dict for %s.', obj_id)
                     allocation_errors['no_users'].append(f"{obj_id}, ")
                 elif pct_sum == 0 and allocation_usage == 0:
                     continue
                 elif pct_sum > 101:
-                    allocation_errors['pct_101'].append(f'\nALLOCATION {obj_id} total: {pct_sum}\n{user_pct_dict}\n')
+                    allocation_errors['pct_101'].append(totalpct_error_message)
+                    if bytes_sum <= allocation_usage:
+                        message = f"NON-ISSUE FOR {obj_id} {resource} {lab}\npercent total: {pct_sum}\ntotal usage bytes: {allocation_usage}\n{user_pct_dict}\n{user_usage_bytes_dict}\n"
+                        logger.warning(message)
                 elif pct_sum < 99:
-                    allocation_errors['pct_99'].append(f'\nALLOCATION {obj_id} total: {pct_sum}\n{user_pct_dict}\n')
-            elif any(user.usage_bytes != 0 for user in users):
-                allocation_errors['pct_101'].append(f'\nALLOCATION {obj_id}: allocation_usage is 0 but user_sum > 0')
+                    allocation_errors['pct_99'].append(totalpct_error_message)
+                    if bytes_sum == allocation_usage:
+                        logger.warning("NON-ISSUE")
+            elif sum(user.usage_bytes for user in users if user.usage_bytes is not None) > 0:
+                allocation_errors['pct_101'].append(f'\nALLOCATION {obj_id} \
+                {resource} {lab}: allocation_usage is 0 but user_sum > 0\ntotal \
+                usage bytes: {allocation_usage}\n{user_pct_dict}\n{user_usage_bytes_dict}\n')
         report_errors(allocation_errors)
