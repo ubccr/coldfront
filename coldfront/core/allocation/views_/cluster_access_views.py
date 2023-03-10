@@ -128,7 +128,6 @@ class AllocationClusterAccountRequestListView(LoginRequiredMixin,
                                               UserPassesTestMixin,
                                               ListView):
     template_name = 'allocation/allocation_cluster_account_request_list.html'
-    login_url = '/'
     completed = False
     paginate_by = 30
     context_object_name = "cluster_request_list"
@@ -261,7 +260,6 @@ class AllocationClusterAccountUpdateStatusView(LoginRequiredMixin,
                                                UserPassesTestMixin,
                                                FormView):
     form_class = AllocationClusterAccountUpdateStatusForm
-    login_url = '/'
     template_name = (
         'allocation/allocation_update_cluster_account_status.html')
 
@@ -330,7 +328,6 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
                                                   UserPassesTestMixin,
                                                   FormView):
     form_class = AllocationClusterAccountRequestActivationForm
-    login_url = '/'
     template_name = (
         'allocation/allocation_activate_cluster_account_request.html')
 
@@ -428,7 +425,6 @@ class AllocationClusterAccountActivateRequestView(LoginRequiredMixin,
 class AllocationClusterAccountDenyRequestView(LoginRequiredMixin,
                                               UserPassesTestMixin,
                                               View):
-    login_url = '/'
 
     def test_func(self):
         """UserPassesTestMixin tests."""

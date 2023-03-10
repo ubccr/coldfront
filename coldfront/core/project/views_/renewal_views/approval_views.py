@@ -43,7 +43,6 @@ logger = logging.getLogger(__name__)
 
 class AllocationRenewalRequestListView(LoginRequiredMixin, TemplateView):
     template_name = 'project/project_renewal/project_renewal_request_list.html'
-    login_url = '/'
     completed = False
 
     def get_queryset(self):
@@ -138,7 +137,6 @@ class AllocationRenewalRequestDetailView(LoginRequiredMixin,
     model = AllocationRenewalRequest
     template_name = (
         'project/project_renewal/project_renewal_request_detail.html')
-    login_url = '/'
 
     error_message = 'Unexpected failure. Please contact an administrator.'
     request_obj = None
@@ -335,7 +333,6 @@ class AllocationRenewalRequestReviewEligibilityView(LoginRequiredMixin,
                                                     FormView):
     form_class = ReviewStatusForm
     template_name = 'project/project_renewal/review_eligibility.html'
-    login_url = '/'
 
     def test_func(self):
         """UserPassesTestMixin tests."""
@@ -411,7 +408,6 @@ class AllocationRenewalRequestReviewDenyView(LoginRequiredMixin,
                                              FormView):
     form_class = ReviewDenyForm
     template_name = 'project/project_renewal/review_deny.html'
-    login_url = '/'
 
     def test_func(self):
         """UserPassesTestMixin tests."""
@@ -488,7 +484,6 @@ class AllocationRenewalRequestReviewDenyView(LoginRequiredMixin,
 #                                          UserPassesTestMixin,
 #                                          AllocationRenewalRequestMixin,
 #                                          View):
-#     login_url = '/'
 #
 #     def test_func(self):
 #         """UserPassesTestMixin tests."""

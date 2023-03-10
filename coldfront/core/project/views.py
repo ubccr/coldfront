@@ -1210,7 +1210,6 @@ def project_update_email_notification(request):
 
 class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'project/project_review.html'
-    login_url = "/"  # redirect URL if fail test_func
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -1320,7 +1319,6 @@ class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
 
 
 class ProjectReviewCompleteView(LoginRequiredMixin, UserPassesTestMixin, View):
-    login_url = "/"
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -1354,7 +1352,6 @@ class ProjectReviewCompleteView(LoginRequiredMixin, UserPassesTestMixin, View):
 class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     form_class = ProjectReviewEmailForm
     template_name = 'project/project_review_email.html'
-    login_url = "/"
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""

@@ -40,7 +40,6 @@ class AllocationAdditionRequestDetailView(LoginRequiredMixin,
 
     model = AllocationAdditionRequest
     template_name = 'project/project_allocation_addition/request_detail.html'
-    login_url = '/'
     context_object_name = 'addition_request'
 
     request_obj = None
@@ -196,7 +195,6 @@ class AllocationAdditionRequestListView(LoginRequiredMixin,
     Service Units under Projects."""
 
     template_name = 'project/project_allocation_addition/request_list.html'
-    login_url = '/'
     completed = False
 
     def get_context_data(self, **kwargs):
@@ -271,7 +269,6 @@ class AllocationAdditionReviewBase(LoginRequiredMixin, UserPassesTestMixin,
     """A base class for views for reviewing an
     AllocationAdditionRequest."""
 
-    login_url = '/'
 
     error_message = 'Unexpected failure. Please contact an administrator.'
     request_obj = None

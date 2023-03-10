@@ -1,7 +1,7 @@
 ---
 
 - name: MyBRC/LRC User Portal VM Playbook
-  gather_facts: false
+  gather_facts: true
   hosts:
     - all
     - "{{ domain }}"
@@ -14,6 +14,11 @@
     provisioning_tasks: true
     common_tasks: true
 
+    python_version: 3.6
+    postgres_version: 15
+    python_version_dotless: "{{ python_version | regex_replace('\\.','') }}"
+    postgres_version_dotless: "{{ postgres_version | regex_replace('\\.','') }}"
+
   vars_files:
     - "../../main.yml"
 
@@ -25,7 +30,7 @@
           service:
             name: NetworkManager
             state: stopped
-            enabled: no
+            enabled: false
 
         - name: Disable SELinux
           ansible.posix.selinux:
@@ -34,14 +39,10 @@
 
         # Install yum packages.
 
-        - name: Install curl
-          yum:
-            name: curl
-            state: present
-
-        - name: Install required OS packages
+        - name: Install required packages
           yum:
             name:
+              - curl
               - texinfo
               - ntp
               - zlib-devel
@@ -52,7 +53,12 @@
               - openssl-devel
               - git-core
               - gcc-c++
+              - libffi-devel
             state: present
+
+        - name: Install SCL
+          include_role:
+            role: smbambling.scl
 
         - name: Install required Python packages
           yum:
@@ -72,23 +78,31 @@
               - mod_ssl
             state: present
 
-        - name: Install redis
+        # Install and configure Redis.
+
+        - name: Install Redis
           yum:
-            name:
-              - redis
+            name: redis
             state: present
 
-        - name: Set redis password
+        - name: Set Redis password
           lineinfile:
             path: /etc/redis.conf
             regexp: '^requirepass '
             insertafter: '^# requirepass foobared'
             line: 'requirepass {{ redis_passwd }}'
 
+        - name: Restart and enable Redis
+          service:
+            name: redis
+            state: restarted
+            enabled: true
+
+        # Install and configure Supervisord.
+
         - name: Install Supervisor
           yum:
-            name:
-              - supervisor
+            name: supervisor
             state: present
 
         # ini_file is included in community.general.
@@ -113,56 +127,45 @@
             option: 'numprocs'
             value: '1'
 
+        - name: Restart and enable Supervisord
+          service:
+            name: supervisord
+            state: restarted
+            enabled: true
+
+        # Install and configure PostgreSQL.
+
+        - name: Add Postgres yum repository
+          yum_repository:
+            name: postgres-repository
+            description: postgres repository
+            baseurl: https://download.postgresql.org/pub/repos/yum/{{ postgres_version }}/redhat/rhel-7-x86_64/
+            gpgkey: http://yum.postgresql.org/RPM-GPG-KEY-PGDG-94
+
         - name: Install Postgresql packages
           yum:
             name:
-              - 'https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/postgresql96-9.6.24-1PGDG.rhel7.x86_64.rpm'
-              - 'https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/postgresql96-libs-9.6.24-1PGDG.rhel7.x86_64.rpm'
-              - 'https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/postgresql96-devel-9.6.24-1PGDG.rhel7.x86_64.rpm'
-              - 'https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/postgresql96-test-9.6.24-1PGDG.rhel7.x86_64.rpm'
-              - 'https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/postgresql96-server-9.6.24-1PGDG.rhel7.x86_64.rpm'
+              - 'postgresql{{ postgres_version }}'
+              - 'postgresql{{ postgres_version }}-libs'
+              - 'postgresql{{ postgres_version }}-devel'
+              - 'postgresql{{ postgres_version }}-test'
+              - 'postgresql{{ postgres_version }}-server'
             state: present
-
-        # Configure PostgreSQL.
 
         - name: Check if PostgreSQL is initialized
           stat:
-            path: /var/lib/pgsql/9.6/data/PG_VERSION
+            path: /var/lib/pgsql/{{ postgres_version }}/data/PG_VERSION
           register: pgdata_dir_version
 
         - name: Initialize PostgreSQL if not already initialized
-          command: /usr/pgsql-9.6/bin/postgresql96-setup initdb
+          command: /usr/pgsql-{{ postgres_version }}/bin/postgresql-{{ postgres_version_dotless }}-setup initdb
           when: not pgdata_dir_version.stat.exists
 
         - name: Start and enable PostgreSQL service
           service:
-            name: postgresql-9.6
+            name: postgresql-{{ postgres_version }}
             state: started
-            enabled: yes
-
-        - name: Update pg_hba.conf to change host auth from ident to md5 (1/2)
-          postgresql_pg_hba:
-            dest: /var/lib/pgsql/9.6/data/pg_hba.conf
-            backup: yes
-            method: md5
-            contype: host
-            source: ::1
-
-        - name: Update pg_hba.conf to change host auth from ident to md5 (2/2)
-          postgresql_pg_hba:
-            dest: /var/lib/pgsql/9.6/data/pg_hba.conf
-            backup: yes
-            method: md5
-            contype: host
-            source: 127.0.0.1/32
-
-        - name: Update pg_hba.conf to set authentication for all to md5
-          postgresql_pg_hba:
-            dest: /var/lib/pgsql/9.6/data/pg_hba.conf
-            backup: yes
-            method: md5
-            contype: host
-            source: "0.0.0.0/0"
+            enabled: true
 
         # Create Django application log files.
 
@@ -177,7 +180,7 @@
         - name: Create a log file for Django portal logs
           copy:
             content: ""
-            force: no
+            force: false
             dest: "{{ log_path }}/{{ portal_log_file }}"
             mode: 0660
             owner: "{{ djangooperator }}"
@@ -186,7 +189,7 @@
         - name: Create a log file for Django API logs
           copy:
             content: ""
-            force: no
+            force: false
             dest: "{{ log_path }}/{{ api_log_file }}"
             mode: 0660
             owner: "{{ djangooperator }}"
@@ -205,11 +208,17 @@
         - name: Initialize Python virtual environment
           shell: >
               test -f {{ git_prefix }}/venv/bin/activate
-              || (python3.6 -m venv {{ git_prefix }}/venv
+              || (python{{ python_version }} -m venv {{ git_prefix }}/venv
               && echo created)
           register: venv_register
           become_user: "{{ djangooperator }}"
           changed_when: venv_register.stdout == "created"
+        
+        - name: Upgrade pip
+          pip:
+            name: pip
+            executable: "{{ git_prefix }}/venv/bin/pip3"
+            state: latest
 
         # Install Django application dependencies, including psycopg2,
         # required to create the PostgreSQL database and user, and mod-wsgi,
@@ -220,6 +229,8 @@
             requirements: "{{ git_prefix }}/{{ reponame }}/requirements.txt"
             executable: "{{ git_prefix }}/venv/bin/pip3"
           become_user: "{{ djangooperator }}"
+          environment: # needed as pg_config isn't in PATH by default
+            PATH: "{{ ansible_env.PATH }}:/usr/pgsql-{{ postgres_version }}/bin"
 
         # TODO: If this raises an error, the token is exposed in stderr.
         - name: Install the Python package for validating LBL billing IDs
@@ -229,34 +240,33 @@
           when: install_billing_validation_package
           no_log: true
 
-        # Create a PostgreSQL database and a user for the Django application.
+        # Create a PostgreSQL user and database for the Django application.
 
-        - name: Create a new PostgreSQL database
-          postgresql_db:
-            name: "{{ db_name }}"
-          become_user: postgres
-          vars:
-            ansible_python_interpreter: "{{ git_prefix }}/venv/bin/python3"
-
-        - name: Create a PostgreSQL admin user and grant permissions
+        - name: Create a PostgreSQL admin user
           postgresql_user:
             name: "{{ db_admin_user }}"
-            db: "{{ db_name }}"
-            priv: ALL
             password: "{{ db_admin_passwd }}"
             role_attr_flags: CREATEDB
           become_user: postgres
           vars:
             ansible_python_interpreter: "{{ git_prefix }}/venv/bin/python3"
 
+        - name: Create a new PostgreSQL database under the admin user
+          postgresql_db:
+            name: "{{ db_name }}"
+            owner: "{{ db_admin_user }}"
+          become_user: postgres
+          vars:
+            ansible_python_interpreter: "{{ git_prefix }}/venv/bin/python3"
+
         # Configure Apache.
 
-        - name: Check if the mod_wsgi module from Python 3.6 is installed to Apache
+        - name: Check if the mod_wsgi module from Python {{ python_version }} is installed to Apache
           stat:
             path: /etc/httpd/conf.modules.d/02-wsgi.conf
           register: mod_wsgi_installed
 
-        - name: Install the mod_wsgi module from Python 3.6 to Apache
+        - name: Install the mod_wsgi module from Python {{ python_version }} to Apache
           shell: "{{ git_prefix }}/venv/bin/mod_wsgi-express install-module --modules-directory /etc/httpd/modules > /etc/httpd/conf.modules.d/02-wsgi.conf"
           when: not mod_wsgi_installed.stat.exists
 
@@ -292,7 +302,7 @@
               service:
                 name: rsyslog
                 state: restarted
-                enabled: yes
+                enabled: true
 
             # Configure the firewall.
 
@@ -300,14 +310,14 @@
               service:
                 name: firewalld
                 state: started
-                enabled: yes
+                enabled: true
 
             - name: Permit http traffic in public zone
               ansible.posix.firewalld:
                 zone: public
                 service: http
                 state: enabled
-                permanent: yes
+                permanent: true
 
             - name: Run Cloudflare Tasks
               block:
@@ -318,20 +328,20 @@
                     zone: public
                     service: https
                     state: disabled
-                    permanent: yes
+                    permanent: true
 
                 - name: Deny 443/tcp in public zone
                   ansible.posix.firewalld:
                     zone: public
                     port: 443/tcp
                     state: disabled
-                    permanent: yes
+                    permanent: true
 
                 - name: Create firewalld zone for Cloudflare IP ranges
                   ansible.posix.firewalld:
                     zone: cloudflare
                     state: present
-                    permanent: yes
+                    permanent: true
 
                 # Firewalld must be reloaded after zone transactions.
                 # https://docs.ansible.com/ansible/latest/collections/ansible/posix/firewalld_module.html#notes
@@ -344,7 +354,7 @@
                   ansible.posix.firewalld:
                     zone: cloudflare
                     source: "{{ item }}"
-                    permanent: yes
+                    permanent: true
                     state: enabled
                   loop: "{{ cloudflare_ip_ranges }}"
 
@@ -353,7 +363,7 @@
                     zone: cloudflare
                     service: "{{ item }}"
                     state: enabled
-                    permanent: yes
+                    permanent: true
                   loop:
                     - http
                     - https
@@ -390,10 +400,23 @@
     # Development only provisioning tasks.
     - name: Run Development Provisioning Tasks
       block:
-        # Don't do anything as there aren't any development-specific tasks yet.
-        - meta: noop
-      # Uncomment when tasks are added.
-      # when: provisioning_tasks == true and deployment == "dev"
+
+        - name: Install vim
+          yum:
+            name: vim
+            state: present
+
+        - name: Add dev QOL lines to .bashrc
+          blockinfile:
+            path: /home/{{ djangooperator }}/.bashrc
+            block: |
+              # Upon login, navigate to the ColdFront directory and source the virtual environment.
+              cd {{ git_prefix }}/{{ reponame }}
+              source ../venv/bin/activate
+              # Restart Apache with a keyword.
+              alias reload="sudo service httpd reload"
+
+      when: provisioning_tasks == true and deployment == "dev"
       tags: provisioning
 
     # Non-provisioning tasks common to development and production.
@@ -437,25 +460,26 @@
             src: "{{ git_prefix }}/{{ reponame }}/bootstrap/ansible/password_reset_subject_template.tmpl"
             dest: "{{ git_prefix }}/{{ reponame }}/{{ djangoprojname }}/core/user/templates/user/passwords/password_reset_subject.txt"
 
-        # Restart Services.
+        # Ensure services are updated, running, and enabled. Avoid restarting
+        # them to avoid disruptions to operations.
 
-        - name: Restart and enable Redis service
+        - name: Ensure that Redis service is running and enabled
           service:
             name: redis
-            state: restarted
-            enabled: yes
+            state: started
+            enabled: true
 
-        - name: Restart and enable Supervisor service
+        - name: Ensure that Supervisord service is running and enabled
           service:
             name: supervisord
-            state: restarted
-            enabled: yes
+            state: started
+            enabled: true
 
-        - name: Restart and enable PostgreSQL service
+        - name: Ensure that PostgreSQL service is reloaded and enabled
           service:
-            name: postgresql-9.6
-            state: restarted
-            enabled: yes
+            name: postgresql-{{ postgres_version }}
+            state: reloaded
+            enabled: true
 
         # Install Django application dependencies
 
@@ -552,14 +576,17 @@
           file:
             path: "{{ git_prefix }}/{{ reponame }}"
             state: directory
-            recurse: yes
+            recurse: true
             mode: "u=rwX,g=rX,o=rX"
             group: apache
 
+        # Gracefully restart Apache so that processes handle current requests
+        # before being replaced by a new process.
         - name: Reload httpd service
           service:
             name: httpd
             state: reloaded
+            enabled: true
 
         # supervisorctl is included in community.general.
         - name: Ensure that a Supervisor worker is running a django_q cluster
