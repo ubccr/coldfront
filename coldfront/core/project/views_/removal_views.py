@@ -203,7 +203,6 @@ class ProjectRemovalRequestListView(LoginRequiredMixin,
                                     UserPassesTestMixin,
                                     ListView):
     template_name = 'project/project_removal/project_removal_request_list.html'
-    login_url = '/'
     completed = False
     paginate_by = 30
     context_object_name = "project_removal_request_list"
@@ -345,7 +344,6 @@ class ProjectRemovalRequestListView(LoginRequiredMixin,
 class ProjectRemovalRequestUpdateStatusView(LoginRequiredMixin,
                                             UserPassesTestMixin, FormView):
     form_class = ProjectRemovalRequestUpdateStatusForm
-    login_url = '/'
     template_name = \
         'project/project_removal/project_removal_request_update_status.html'
 
@@ -408,7 +406,6 @@ class ProjectRemovalRequestCompleteStatusView(LoginRequiredMixin,
                                               UserPassesTestMixin,
                                               FormView):
     form_class = ProjectRemovalRequestCompletionForm
-    login_url = '/'
     template_name = \
         'project/project_removal/project_removal_request_complete_status.html'
 
