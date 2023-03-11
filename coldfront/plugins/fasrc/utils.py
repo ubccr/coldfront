@@ -306,7 +306,6 @@ def collect_new_project_data(projects_to_add):
     # bulk-query user/group data
     user_group_search = '|'.join(entry['group_name'] for entry in active_pi_groups)
     aduser_data = att_conn.collect_group_membership(f'({user_group_search})')
-    aduser_data = [user for user in aduser_data if user['user_enabled']]
     return (pi_data, aduser_data)
 
 
@@ -326,8 +325,8 @@ def add_new_projects(pi_data, aduser_data):
     log_missing('user', missing_projpis)
 
     missing_pinames = [d['username'] for d in missing_projpis]
+    errortracker['no_pi'] = list({g['group_name'] for g in active_pi_groups if g['user_name'] in missing_pinames})
     active_pi_groups = [g for g in active_pi_groups if g['user_name'] not in missing_pinames]
-    errortracker['no_pi'] = {g['group_name'] for g in active_pi_groups if g['user_name'] in missing_pinames}
 
 
     # log and remove from list any AD users not in Coldfront
@@ -406,6 +405,7 @@ def add_new_projects(pi_data, aduser_data):
             manager = new_project.projectuser_set.get(user__username=username)
             manager.role = ProjectUserRoleChoice.objects.get(name='Manager')
             manager.save()
+
     for errortype in errortracker:
         logger.warning('AD groups with %s: %s', errortype, errortracker[errortype])
     return added_projects, errortracker
@@ -426,8 +426,8 @@ def create_new_projects(projects_list: list):
 
     # if PI is inactive or otherwise unavailable, don't add project or users
     pi_data, aduser_data = collect_new_project_data(projects_to_add)
-    add_new_projects(pi_data, aduser_data)
-
+    added_projects, errortracker = add_new_projects(pi_data, aduser_data)
+    return added_projects, errortracker
 
 
 def update_group_membership():
