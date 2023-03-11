@@ -54,19 +54,20 @@ class Command(BaseCommand):
                 }
         for row in lab_data.itertuples(index=True, name='Pandas'):
             lab_name = row.project_title
-            lab_resource_allocation = row.server
+            lab_server = row.server
             lab_path = row.path
-            print(lab_name, lab_resource_allocation)
+            resource = Resource.objects.get(name__contains=lab_server)
+            print(lab_name, lab_server)
             try:
                 project_obj = Project.objects.get(title=lab_name) # find project
             except Project.DoesNotExist:
-                command_report['missing_projects'].append(f'{lab_name}-{lab_resource_allocation}-{lab_path}')
+                command_report['missing_projects'].append(f'{lab_name}  {lab_server}  {lab_path}')
                 continue
             if project_obj == '':
                 continue
             try:
                 allocation, created = project_obj.allocation_set.get_or_create(
-                    resources__name=lab_resource_allocation,
+                    resources=resource,
                     allocationattribute__value=lab_path,
                     defaults={
                         'status': AllocationStatusChoice.objects.get(name='Active'),
@@ -75,16 +76,16 @@ class Command(BaseCommand):
                         }
                     )
             except MultipleObjectsReturned:
-                print(f'multiple objects returned for allocation {lab_name}-{lab_resource_allocation}')
+                print(f'multiple objects returned for allocation {lab_name}-{lab_server}')
+                continue
             # do not modify status of inactive allocations
             if created:
-                allocation.resources.add(
-                Resource.objects.get(name__contains=lab_resource_allocation))
+                allocation.resources.add(resource)
                 print(f'allocation created: {lab_name}')
                 allocation.save()
-                command_report['allocations_added'].append(f'{lab_name}-{lab_resource_allocation}-{lab_path}')
+                command_report['allocations_added'].append(f'{lab_name}  {lab_server}  {lab_path}')
             else:
-                command_report['allocations_existing'].append(f'{lab_name}-{lab_resource_allocation}-{lab_path}')
+                command_report['allocations_existing'].append(f'{lab_name}  {lab_server}  {lab_path}')
             if allocation.status.name != 'Active':
                 continue
             print('Adding PI: ' + project_obj.pi.username)
