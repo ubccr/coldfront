@@ -24,7 +24,9 @@ class Command(BaseCommand):
         subdir_results = redash.submit_query('subdirectory')
         data = subdir_results['query_result']['data']['rows']
         # remove entries with no group name or with group names that are not projects
-        data = [entry for entry in data if entry['group_name'] not in [None, 'Domain Users','root', 'bin']]
+        data = [entry for entry in data if entry['group_name'] not in
+                [None, 'Domain Users','root', 'bin', 'rc_admin', 'rc_unpriv'] 
+                    and 'DISABLED' not in entry['group_name']]
         allocations = [(a.project.title, a.resources.first().name.split('/')[0], a.path)
                         for a in Allocation.objects.all()]
         starfish_allocations = [(a['group_name'],a['vol_name'], a['path'])

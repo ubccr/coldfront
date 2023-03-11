@@ -16,7 +16,7 @@ from coldfront.core.allocation.models import (Allocation,
                                             AllocationUser,
                                             AllocationStatusChoice,
                                             AllocationUserStatusChoice)
-from coldfront.core.utils.fasrc import log_missing 
+from coldfront.core.utils.fasrc import log_missing
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
 from coldfront.config.env import ENV
@@ -53,8 +53,8 @@ class Command(BaseCommand):
                 'missing_projects': [],
                 }
         for row in lab_data.itertuples(index=True, name='Pandas'):
-            lab_name = row.lab
-            lab_resource_allocation = row.resource
+            lab_name = row.project_title
+            lab_resource_allocation = row.server
             lab_path = row.path
             print(lab_name, lab_resource_allocation)
             try:
@@ -80,7 +80,7 @@ class Command(BaseCommand):
             if created:
                 print(f'allocation created: {lab_name}')
                 allocation.resources.add(
-                Resource.objects.get(name=lab_resource_allocation))
+                Resource.objects.get(name__contains=lab_resource_allocation))
                 allocation.save()
                 command_report['allocations_added'].append(allocation)
             else:
@@ -100,5 +100,5 @@ class Command(BaseCommand):
                 logger.debug('adding PI %s to allocation %s failed', pi_obj.pi.username, allocation.pk)
         missing_projects = [{'title': title} for title in command_report['missing_projects']]
         log_missing('project', missing_projects)
-        
+
         return json.dumps(command_report, indent=2)
