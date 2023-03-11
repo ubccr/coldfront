@@ -60,7 +60,7 @@ class Command(BaseCommand):
             try:
                 project_obj = Project.objects.get(title=lab_name) # find project
             except Project.DoesNotExist:
-                command_report['missing_projects'].append(lab_name)
+                command_report['missing_projects'].append(f'{lab_name}-{lab_resource_allocation}-{lab_path}')
                 continue
             if project_obj == '':
                 continue
@@ -82,9 +82,9 @@ class Command(BaseCommand):
                 Resource.objects.get(name__contains=lab_resource_allocation))
                 print(f'allocation created: {lab_name}')
                 allocation.save()
-                command_report['allocations_added'].append(allocation)
+                command_report['allocations_added'].append(f'{lab_name}-{lab_resource_allocation}-{lab_path}')
             else:
-                command_report['allocations_existing'].append(allocation)
+                command_report['allocations_existing'].append(f'{lab_name}-{lab_resource_allocation}-{lab_path}')
             if allocation.status.name != 'Active':
                 continue
             print('Adding PI: ' + project_obj.pi.username)
