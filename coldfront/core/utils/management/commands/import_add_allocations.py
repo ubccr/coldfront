@@ -78,9 +78,9 @@ class Command(BaseCommand):
                 print(f'multiple objects returned for allocation {lab_name}-{lab_resource_allocation}')
             # do not modify status of inactive allocations
             if created:
-                print(f'allocation created: {lab_name}')
                 allocation.resources.add(
                 Resource.objects.get(name__contains=lab_resource_allocation))
+                print(f'allocation created: {lab_name}')
                 allocation.save()
                 command_report['allocations_added'].append(allocation)
             else:
