@@ -14,6 +14,8 @@ from django.core.management.base import BaseCommand
 
 from coldfront.core.allocation.models import (Allocation,
                                             AllocationUser,
+                                            AllocationAttribute,
+                                            AllocationAttributeType,
                                             AllocationStatusChoice,
                                             AllocationUserStatusChoice)
 from coldfront.core.utils.fasrc import log_missing
@@ -46,6 +48,7 @@ class Command(BaseCommand):
         else:
             allo_list_file = file
 
+        subdir_type = AllocationAttributeType.objects.get(name="Subdirectory")
         lab_data = pd.read_csv(allo_list_file)
         command_report = {
                 'allocations_added': [],
@@ -56,7 +59,7 @@ class Command(BaseCommand):
             lab_name = row.project_title
             lab_server = row.server
             lab_path = row.path
-            resource = Resource.objects.get(name__contains=lab_server)
+            resource = Resource.objects.get(name__contains=lab_server).name
             print(lab_name, lab_server)
             try:
                 project_obj = Project.objects.get(title=lab_name) # find project
@@ -67,7 +70,7 @@ class Command(BaseCommand):
                 continue
             try:
                 allocation, created = project_obj.allocation_set.get_or_create(
-                    resources=resource,
+                    resources__name=resource,
                     allocationattribute__value=lab_path,
                     defaults={
                         'status': AllocationStatusChoice.objects.get(name='Active'),
@@ -80,7 +83,12 @@ class Command(BaseCommand):
                 continue
             # do not modify status of inactive allocations
             if created:
-                allocation.resources.add(resource)
+                allocation.resources.add(Resource.objects.get(name=resource))
+                AllocationAttribute.objects.create(
+                    allocation=allocation,
+                    allocation_attribute_type_id=subdir_type.pk,
+                    value=lab_path
+                    )
                 print(f'allocation created: {lab_name}')
                 allocation.save()
                 command_report['allocations_added'].append(f'{lab_name}  {lab_server}  {lab_path}')
