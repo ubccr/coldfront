@@ -278,6 +278,10 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             context['survey_answers'] = SavioProjectSurveyForm(
                 initial=allocation_request.survey_answers, disable_fields=True)
 
+        allocation_requests = SavioProjectAllocationRequest.objects.filter(project=self.object)
+        survey_answers_list = list(map(lambda x: SavioProjectSurveyForm(initial=x.survey_answers, disable_fields=True), allocation_requests))
+        context['survey_answers'] = list(zip(allocation_requests, survey_answers_list))
+
         context['user_agreement_signed'] = \
             access_agreement_signed(self.request.user)
 
