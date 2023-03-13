@@ -150,6 +150,7 @@ Request New Allocation
   var resource_descriptions = {{ resource_descriptions | safe }};
   var resources_with_accounts = {{ resources_with_accounts | safe }};
   var resources_with_eula = {{ resources_with_eula | safe }};
+  var resources_requiring_user_accounts = {{ resources_requiring_user_accounts | safe }};
 
   var resource_special_attributes = {{ resource_special_attributes | safe }}
   var resource_form = {{ resource_form | safe }}
@@ -219,6 +220,12 @@ Request New Allocation
       })
       .next("button")
       .addClass("btn btn-secondary")
+
+    $('#div_id_justification').after(
+      '<p id="user_account_info">You must first have an account on this resource to gain access to its partitions. \
+      To create an account, go to \
+      <a href="https://access.iu.edu/Accounts/Create" target = "_blank">Create Additional Accounts.</a></p>'
+    );
 
     $('#div_id_justification').after(
       '<p id="additional_info_1">In order to gain access to the Carbonate Deep Learning Partition, you must first have \
@@ -517,6 +524,12 @@ Request New Allocation
       $('#additional_info_1').hide();
     }
 
+    if (resources_requiring_user_accounts.includes(parseInt(resource_id)))
+    {
+      $('#user_account_info').show();
+    } else {
+      $('#user_account_info').hide();
+    }
 
     if (resource_name === 'Carbonate GPU') {
       $('#additional_info_2').show();

@@ -882,8 +882,12 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         ]
 
         resource_descriptions = {}
+        resources_requiring_user_accounts = []
         for resource in user_resources:
             resource_descriptions[resource.id] = resource.description
+
+            if resource.resourceattribute_set.filter(resource_attribute_type__name='check_user_account').exists():
+                resources_requiring_user_accounts.append(resource.pk)
 
             for attribute in resource_special_attributes:
                 keys = list(attribute.keys())
@@ -957,6 +961,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         context['AllocationAccountForm'] = AllocationAccountForm()
         context['resource_descriptions'] = resource_descriptions
 
+        context['resources_requiring_user_accounts'] = resources_requiring_user_accounts
         context['resources_with_eula'] = resources_with_eula
         context['resources_with_accounts'] = list(Resource.objects.filter(
             name__in=list(ALLOCATION_ACCOUNT_MAPPING.keys())).values_list('id', flat=True))
