@@ -128,12 +128,6 @@ class Allocation(TimeStampedModel):
 
 
     @property
-    def allocation_users(self):
-        # allocationuser_filter = (Q(status__name='Active') #&
-        #                         #~Q(usage_bytes__isnull=True))
-        return self.allocationuser_set.filter(status__name='Active')
-
-    @property
     def get_information(self, public_only=True):
         html_string = ''
         if public_only:
@@ -196,7 +190,7 @@ class Allocation(TimeStampedModel):
     def allocation_users(self):
         # allocationuser_filter = (Q(status__name='Active') #&
         #                         #~Q(usage_bytes__isnull=True))
-        return self.allocationuser_set.filter(status__name='Active')
+        return self.allocationuser_set.all()#.filter(status__name='Active')
 
     @property
     def get_parent_resource(self):

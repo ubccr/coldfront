@@ -227,7 +227,7 @@ class AllocationChangeForm(forms.Form):
     justification = forms.CharField(
         label='Justification for Changes',
         widget=forms.Textarea,
-        required=True,
+        required=False,
         help_text='Justification for requesting this allocation change request.')
 
     def __init__(self, *args, **kwargs):
@@ -236,8 +236,8 @@ class AllocationChangeForm(forms.Form):
 
 class AllocationChangeNoteForm(forms.Form):
         notes = forms.CharField(
-            max_length=512, 
-            label='Notes', 
-            required=False, 
+            max_length=512,
+            label='Notes',
+            required=False,
             widget=forms.Textarea,
             help_text="Leave any feedback about the allocation change request.")

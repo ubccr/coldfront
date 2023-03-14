@@ -76,7 +76,6 @@ Project Detail
 
 <!-- Start Project Invoice/Allocations -->
 <div class="html2pdf__page-break"></div>
-
 <div class="card mb-3">
   <div class="card-header">
     <h3 class="d-inline"><i class="fas fa-file-invoice-dollar" aria-hidden="true"></i> Project Invoice</h3>
@@ -145,6 +144,12 @@ Project Detail
 </div>
 <!-- End Project Invoice/Allocations -->
 
+
+
+<div id="chartCostHistory" style="min-height: 270px ;"></div>
+
+
+
 <!-- Start Project Users -->
 <div class="card mb-3">
   <div class="card-header">
@@ -161,7 +166,7 @@ Project Detail
   </div>
   <div class="card-body">
     <div class="table-responsive">
-      <table class="table table-hover">
+      <table id="projectusertable" class="table table-hover" filter="off">
         <thead>
           <tr>
             <th scope="col">Username</th>
@@ -188,7 +193,7 @@ Project Detail
           it's coming from views.py under class ProjectDetailView; rendered project_user object -->
           <!-- project_user is giving out userid -->
           {% for user in project_users %}
-            <tr>
+            <tr status = "{{ user.status }}">
               <td>{{ user.user.username }}</td>
               <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
               <td>{{ user.user.email }}</td>
@@ -197,11 +202,11 @@ Project Detail
 
               {% if user.status.name == 'Active' %}
                 <td class="text-success">{{ user.status.name }}</td>
+              {% elif user.status.name == 'Removed' %}
+                <td class="text-danger">Inactive</td>
               {% else %}
                 <td class="text-info">{{ user.status.name }}</td>
               {% endif %}
-
-
 
               <td>
                 {% if is_allowed_to_update_project %}
@@ -444,7 +449,13 @@ Project Detail
 </div>
 <!-- End Admin Messages -->
 
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.24/af-2.3.5/b-1.7.0/b-colvis-1.7.0/b-html5-1.7.0/b-print-1.7.0/cr-1.5.3/date-1.0.2/fc-3.3.2/kt-2.6.1/r-2.2.7/rg-1.1.2/rr-1.2.7/sl-1.3.2/datatables.min.css"/>
+<script type="text/javascript" src="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.24/af-2.3.5/b-1.7.0/b-colvis-1.7.0/b-html5-1.7.0/b-print-1.7.0/cr-1.5.3/date-1.0.2/fc-3.3.2/kt-2.6.1/r-2.2.7/rg-1.1.2/rr-1.2.7/sl-1.3.2/datatables.min.js"></script>
+
+
 <script>
+  var time_chart_data = {{ time_chart_data | safe }};
+
   function getCookie(name) {
     var cookieValue = null;
     if (document.cookie && document.cookie != '') {
@@ -461,7 +472,41 @@ Project Detail
     return cookieValue;
   }
 
+
+  function drawBillHistoryChart() {
+    var chart = c3.generate({
+      bindto: '#chartCostHistory',
+      data: time_chart_data,
+      legend: {
+        show: false,
+        item: {
+          onclick: function (id) { }
+        }
+      },
+      axis: {
+        x: {
+          type: 'category',
+          categories: time_chart_data['columns'][-1],
+          label: {
+            text: 'month',
+            position: 'outer-center'
+          }
+        },
+        y: {
+          label: {
+            text: 'cost',
+            position: 'inner-center'
+          }
+        }
+      }
+    });
+  };
+
+
   $(document).ready(function(){
+
+    drawBillHistoryChart();
+
     $('[data-toggle="popover"]').popover();
 
     $('#publication-table').DataTable({
@@ -472,6 +517,34 @@ Project Detail
       "bSortClasses": false,
       "order": [[ 1, "desc" ]]
     });
+
+    $('#projectusertable').DataTable({
+     "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
+     "pageLength": 25,
+     dom: 'B<"clear">lfrtip',
+     order: [[ 3, "desc" ]],
+     buttons: [
+        {
+          name: 'toggleusers',
+          text: function() {
+              return $('#projectusertable').attr('filter') == "on" ? 'Show All Users' : "Show Active Users"
+            },
+          action: function(e, dt, node, config) {
+            var table = $('#projectusertable');
+            var filter = table.attr('filter') === "on" ? 'off' : "on";
+            document.querySelector('#projectusertable').setAttribute('filter', filter);
+            if (filter == 'on') {
+              $.fn.dataTable.ext.search.push(
+                function(settings, data, dataIndex) {
+                    return $(dt.row(dataIndex).node()).attr('status') == "Active";
+                  });
+            } else {$.fn.dataTable.ext.search.pop();}
+            table.DataTable().draw();
+            this.text(filter == 'on' ? 'Show All Users' : "Show Active Users")
+          }
+        }
+      ]}
+    );
 
     $('#invoice_table').DataTable({
       'aoColumnDefs': [{
@@ -486,6 +559,7 @@ Project Detail
         'aTargets': ['nosort']
       }]
     });
+
 
     $("#selectAll").click(function () {
       $("input[id^='email_notifications_for_user_id_']").not(":disabled").prop('checked', $(this).prop('checked')).change();

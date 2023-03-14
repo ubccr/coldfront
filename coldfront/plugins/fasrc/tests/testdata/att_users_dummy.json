@@ -1,0 +1,43 @@
+
+[{"first_name": "isaac",
+"last_name": "newton",
+"user_name": "inewton",
+"user_enabled": true,
+"group_name": "newton_lab",
+"relationship": "ManagedBy",
+"group_manager": "inewton",
+"user_gid_number": 20221,
+"group_gid_number": 10935
+},
+{
+  "first_name": "william",
+"last_name": "whiston",
+"user_name": "wwhiston",
+"user_enabled": true,
+"group_name": "newton_lab",
+"relationship": "MemberOf",
+"group_manager": "inewton",
+"user_gid_number": 20221,
+"group_gid_number": 10935
+},
+{
+  "first_name": "roger",
+"last_name": "cotes",
+"user_name": "rcotes",
+"user_enabled": true,
+"group_name": "newton_lab",
+"relationship": "MemberOf",
+"group_manager": "inewton",
+"user_gid_number": 20221,
+"group_gid_number": 10935
+},
+{
+  "first_name": "isaac",
+"last_name": "newton",
+"user_name": "inewton",
+"user_enabled": true,
+"group_name": "newton_lab",
+"relationship": "MemberOf",
+"group_manager": "inewton",
+"user_gid_number": 20221,
+"group_gid_number": 10935}]
