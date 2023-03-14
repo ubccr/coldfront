@@ -40,7 +40,7 @@ class DepartmentListView(LoginRequiredMixin, ListView):
         order_by = self.request.GET.get('order_by')
         if order_by:
             direction = self.request.GET.get('direction')
-            direction = '' if direction == 'asc' else '-'
+            direction = '-' if direction == 'des' else ''
             order_by = direction + order_by
         else:
             order_by = 'id'
@@ -178,10 +178,12 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
         if self.request.user.is_superuser or 'approver' in member_permissions:
             context['manager'] = True
-            projectview_filter = Q()
+            projectview_filter = Q(status__name__in=['New', 'Active'],
+                            )
         else:
             context['manager'] = False
-            projectview_filter = Q(projectuser__user=self.request.user)
+            projectview_filter = Q(status__name__in=['New', 'Active'],
+                            projectuser__user=self.request.user)
 
         project_objs = list(department_obj.projects.filter(projectview_filter)\
                     .annotate(total_quota=Sum('allocation__allocationattribute__value', filter=(
@@ -201,7 +203,7 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                                 ~Q(usage_bytes__isnull=True))
 
         for p in project_objs:
-            p.allocs = p.allocation_set.all().filter(
+            p.allocs = p.allocation_set.filter(
                             allocationattribute__allocation_attribute_type_id=1,
                             status__name__in=['Active', 'New'])
 
