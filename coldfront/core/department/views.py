@@ -178,10 +178,12 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
         if self.request.user.is_superuser or 'approver' in member_permissions:
             context['manager'] = True
-            projectview_filter = Q()
+            projectview_filter = Q(status__name__in=['New', 'Active'],
+                            )
         else:
             context['manager'] = False
-            projectview_filter = Q(projectuser__user=self.request.user)
+            projectview_filter = Q(status__name__in=['New', 'Active'],
+                            projectuser__user=self.request.user)
 
         project_objs = list(department_obj.projects.filter(projectview_filter)\
                     .annotate(total_quota=Sum('allocation__allocationattribute__value', filter=(
