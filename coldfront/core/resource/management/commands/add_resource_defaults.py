@@ -120,7 +120,9 @@ class Command(BaseCommand):
             ('user_ads_group', 'Text'),
             ('user_ads_group_label', 'Text'),
             ('confirm_best_practices', 'True/False'),
-            ('confirm_best_practices_label', 'Text')
+            ('confirm_best_practices_label', 'Text'),
+            ('gpu_workflow', 'True/False'),
+            ('gpu_workflow_label', 'Text')
         ):
             ResourceAttributeType.objects.get_or_create(
                 name=resource_attribute_type, attribute_type=AttributeType.objects.get(name=attribute_type))
