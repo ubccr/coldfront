@@ -202,7 +202,8 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
         for p in project_objs:
             p.allocs = p.allocation_set.all().filter(
-                            allocationattribute__allocation_attribute_type_id=1)
+                            allocationattribute__allocation_attribute_type_id=1,
+                            status__name__in=['Active', 'New'])
 
             p.total_price = sum(float(a.cost) for a in p.allocs.all())
 
