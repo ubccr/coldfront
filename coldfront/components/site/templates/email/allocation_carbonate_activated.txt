@@ -3,6 +3,7 @@ Dear {{ center_name }} user,
 Your allocation request for {{ resource }} has been activated.
 
 To view your allocations information, please go to {{ allocation_url }}
+
 It may take up to 24 hours for these changes to propagate through the system. 
 
 The Carbonate system consists of 72 compute nodes, each with 256 GB of RAM and two 12-core Intel Xeon E5-2680 v3 CPUs, and 8 large-memory compute nodes, each with 512 GB of RAM and two 12-core Intel Xeon E5-2680 v3 CPUs.
@@ -20,7 +21,7 @@ To use this new account you will need to add this line to your job script:
 #SBATCH -A {{ slurm_account_name }}
 
 Interactive jobs will require this:
-srun <commands> -A {{ slurm_account_name }}
+srun -A {{ slurm_account_name }} <commands>
 
 If you would like assistance with the development and optimization of your workflow, please contact us at {{ help_url }}. Thanks!
 

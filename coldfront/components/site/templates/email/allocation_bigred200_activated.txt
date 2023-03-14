@@ -21,7 +21,7 @@ To use this new account you will need to add this line to your job script:
 #SBATCH -A {{ slurm_account_name }}
 
 Interactive jobs will require this:
-srun <commands> -A {{ slurm_account_name }}
+srun -A {{ slurm_account_name }} <commands>
 
 We are also happy to help with the development and optimization of your workflow, just contact us at {{ help_url }}. Thanks!
 
