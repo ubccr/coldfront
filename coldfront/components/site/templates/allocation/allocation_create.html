@@ -227,24 +227,6 @@ Request New Allocation
       <a href="https://access.iu.edu/Accounts/Create" target = "_blank">Create Additional Accounts.</a></p>'
     );
 
-    $('#div_id_justification').after(
-      '<p id="additional_info_1">In order to gain access to the Carbonate Deep Learning Partition, you must first have \
-      an account on Carbonate. To create an account, go to \
-      <a href="https://access.iu.edu/Accounts/Create" target = "_blank">Create Additional Accounts.</a></p>'
-    );
-
-    $('#div_id_justification').after(
-      '<p id="additional_info_2">In order to gain access to the Carbonate GPU Partition, you must first have \
-      an account on Carbonate. To create an account, go to \
-      <a href="https://access.iu.edu/Accounts/Create" target = "_blank">Create Additional Accounts.</a></p>'
-    );
-
-    $('#div_id_justification').after(
-      '<p id="additional_info_3">A priority increase will prioritize your jobs ahead of the general workload. If you are \
-      affiliated with a Grand Challenge, you will receive this boost indefinitely. Otherwise, we \
-      can assist you in receiving a short-term priority boost up to your required deadline.</p>'
-    );
-
     $('#div_id_store_ephi').append(
       '<p id="id_ephi_info">If you use the Slate-Project file system for storing electronic protected health \
       information (ePHI), please note that <strong>you and/or the Principal Investigator (PI) \
@@ -302,60 +284,6 @@ Request New Allocation
         } else {
           $('#div_id_account_number').hide()
         }
-      }
-    })
-
-    // Set up grand challenge checkbox and options for the priority boost form.
-    // Save the value since it will be deleted when we change checkbox the label.
-    var is_grand_challenge = $('#id_is_grand_challenge').is(':checked');
-    $('label[for="id_is_grand_challenge"]').html('My project is part of an IU Grand Challenge program.');
-    $('label[for="id_grand_challenge_program"]').html(
-      '<strong>Select your Grand Challenge program*</strong>'
-    )
-    $('#div_id_grand_challenge_program label').before(
-      '<p id="id_grand_challenge_info">Grand Challenge projects on Big Red 3 are eligible to receive an indefinite priority boost, no end date is required.</p>'
-    )
-    $('#id_is_grand_challenge').prop('checked', is_grand_challenge)
-
-    if ($('input[type=radio][name=system]:checked').val() === 'BigRed3') {
-      $('#div_id_is_grand_challenge').show();
-      if (is_grand_challenge) {
-        $('#div_id_grand_challenge_program').show();
-        $('#div_id_end_date').hide();
-        $('#id_end_date').val('')
-        $('#id_is_grand_challenge').prop('checked', true)
-      } else {
-        $('#div_id_grand_challenge_program').hide();
-      }
-    }
-    else {
-      $('#div_id_is_grand_challenge').hide();
-      $('#div_id_grand_challenge_program').hide();
-    }
-
-    $('input[type=radio][name=system]').change(function (e) {
-      if (e.target.value === 'BigRed3') {
-        if ($('#id_is_grand_challenge').is(':checked')) {
-          $('#div_id_grand_challenge_program').show();
-          $('#div_id_end_date').hide();
-          $('#id_end_date').val('')
-        }
-        $('#div_id_is_grand_challenge').show();
-      } else {
-        $('#div_id_is_grand_challenge').hide();
-        $('#div_id_grand_challenge_program').hide();
-        $('#div_id_end_date').show();
-      }
-    })
-    
-    $('#id_is_grand_challenge').change(function (e) {
-      if (e.target.checked) {
-        $('#div_id_grand_challenge_program').show();
-        $('#div_id_end_date').hide();
-        $('#id_end_date').val('')
-      } else {
-        $('#div_id_grand_challenge_program').hide();
-        $('#div_id_end_date').show();
       }
     })
 
@@ -517,12 +445,6 @@ Request New Allocation
       enableUserSelection();
     }
 
-    if (resource_name === 'Carbonate DL') {
-      $('#additional_info_1').show();
-    } else {
-      $('#additional_info_1').hide();
-    }
-
     if (resources_requiring_user_accounts.includes(parseInt(resource_id)))
     {
       $('#user_account_info').show();
@@ -530,41 +452,9 @@ Request New Allocation
       $('#user_account_info').hide();
     }
 
-    if (resource_name === 'Carbonate GPU') {
-      $('#additional_info_2').show();
-    } else {
-      $('#additional_info_2').hide();
-    }
-
-    if (resource_name === 'Priority Boost') {
-      $('#additional_info_3').show();
-      if ($('input[type=radio][name=system]:checked').val() === 'BigRed3') {
-        if ($('#id_is_grand_challenge').is(':checked')) {
-          $('#div_id_grand_challenge_program').show();
-          $('#div_id_end_date').hide();
-          $('#id_end_date').val('')
-        }
-        $('#div_id_is_grand_challenge').show();
-      }
-
-    } else {
-      $('#additional_info_3').hide();
-      $('#div_id_is_grand_challenge').hide();
-      $('#div_id_grand_challenge_program').hide();
-    }
-
-    if (resource_name === 'RStudio Connect') {
-      $('#id_rstudio_connect_info').show();
-      if (checkDate(5, 10)) {
-        $('#div_id_license_term').show();
-      } else {
-        $('#div_id_license_term').hide();
-      }
-    } else {
-      $('#id_rstudio_connect_info').hide();
-      $('#div_id_license_term').hide();
-      $('#div_id_total_cost').hide();
-    }
+    // These are for prorated resources
+    $('#div_id_license_term').hide();
+    $('#div_id_total_cost').hide();
 
     for (let i = 0; i < resource_form.length; i++) {
       const field_set = resource_form[i];
@@ -623,9 +513,6 @@ Request New Allocation
             $('#id_total_cost').val(field[resource_id]);
             $('#div_' + id).show();
             $('#div_id_cost').hide();
-            if (resource_name === 'RStudio Connect') {
-              handleLicenseTermSelection($('#id_license_term option:selected').val());
-            }
           } else {
             if ($('#' + id).val() === '') {
               $('#' + id).val(field[resource_id]) 
@@ -654,10 +541,6 @@ Request New Allocation
         if ($('#id_storage_space').val() <= 15) {
           $('#div_id_account_number').hide();
         }
-    }
-
-    if (resource_name === 'Geode-Projects') {
-      
     }
 
     if (resources_with_accounts.includes(parseInt(resource_id))) {

@@ -1088,8 +1088,6 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             if expiry_date is not None:
                 month, day, year = expiry_date.split('/')
                 end_date = self.calculate_end_date(int(month), int(day))
-                if resource_obj.name == 'RStudio Connect':
-                    end_date = self.calculate_end_date(int(month), int(day), license_term)
 
         if resource_obj.name == 'Slate-Project':
             storage_space_unit = 'TB'
@@ -1098,9 +1096,6 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             if use_indefinitely:
                 end_date = None
         elif resource_obj.name == 'SDA Group Account':
-            if use_indefinitely:
-                end_date = None
-        elif resource_obj.name == 'Priority Boost':
             if use_indefinitely:
                 end_date = None
 
@@ -1146,17 +1141,11 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         resource_name = ''
         for user in users:
             username = user.username
-            if resource_obj.name == 'Priority Boost':
-                if not resource_obj.check_user_account_exists(username, system):
+            if resource_account is not None:
+                if not resource_obj.check_user_account_exists(username, resource_account):
                     denied_users.append(username)
-                    resource_name = system
+                    resource_name = resource_account
                     users.remove(user)
-            else:
-                if resource_account is not None:
-                    if not resource_obj.check_user_account_exists(username, resource_account):
-                        denied_users.append(username)
-                        resource_name = resource_account
-                        users.remove(user)
 
         if denied_users:
             messages.warning(self.request, format_html(

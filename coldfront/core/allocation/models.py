@@ -380,8 +380,6 @@ class Allocation(TimeStampedModel):
 
     def check_user_account_exists_on_resource(self, username):
         resource = self.get_parent_resource.get_attribute('check_user_account')
-        if self.get_parent_resource.name == 'Priority Boost':
-            resource = self.system
 
         if resource is None:
             return True
