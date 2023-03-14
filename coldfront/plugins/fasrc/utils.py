@@ -132,6 +132,7 @@ class AllTheThingsConn:
             volumes = '|'.join([r.name.split('/')[0] for r in Resource.objects.all()])
         logger.debug('volumes: %s', volumes)
 
+
         quota = {'match': '[r:HasQuota]-(e:Quota)',
             'where':f"(e.filesystem =~ \'.*({volumes}).*\')",
             'r_updated': 'DotsLFSUpdateDate',
@@ -159,6 +160,7 @@ class AllTheThingsConn:
             'replace': '01.rc.fas.harvard.edu',
             'unique':'datetime(e.DotsUpdateDate) as begin_date'}
 
+
         # volume = {'match': '[:Owns]-(e:Volume)',
         #     'where': '',
         #     'storage_type':'\'Volume\'',
@@ -168,6 +170,7 @@ class AllTheThingsConn:
         #             datetime(e.DotsLVDisplayUpdateDate) as display_date'}
 
         queries = {'statements': []}
+
 
         for d in [quota, isilon]:
             statement = {'statement': f"MATCH p=(g:Group)-{d['match']} \
