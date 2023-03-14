@@ -188,18 +188,17 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         project_objs = list(department_obj.projects.filter(projectview_filter)\
                     .annotate(total_quota=Sum('allocation__allocationattribute__value', filter=(
                         Q(allocation__allocationattribute__allocation_attribute_type_id=1))&(
-                        Q(allocation__status_id=1)))))
+                        Q(allocation__status_id__in=[1, 2])))))
         child_depts = Department.objects.filter(parents=department_obj)
         if child_depts:
             for dept in child_depts:
                 child_projs = list(dept.projects.filter(projectview_filter)\
                     .annotate(total_quota=Sum('allocation__allocationattribute__value', filter=(
                         Q(allocation__allocationattribute__allocation_attribute_type_id=1))&(
-                        Q(allocation__status_id=1)))))
+                        Q(allocation__status_id__in=[1, 2])))))
                 project_objs.extend(child_projs)
 
         allocationuser_filter = (Q(status__name='Active') &
-                                ~Q(status__name__in=['Removed']) &
                                 ~Q(usage_bytes__isnull=True))
 
         for p in project_objs:
@@ -213,7 +212,9 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['projects'] = project_objs
         context['department'] = department_obj
 
-        allocation_objs = Allocation.objects.filter(project_id__in=[o.id for o in project_objs])
+        allocation_objs = Allocation.objects.filter(
+                    project_id__in=[o.id for o in project_objs],
+                    status__name__in=['Active', 'New'])
 
         context['allocations_count'] = allocation_objs.count()
 
