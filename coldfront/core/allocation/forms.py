@@ -5,7 +5,6 @@ from django.core.exceptions import ValidationError
 from django.forms.widgets import RadioSelect
 from django.shortcuts import get_object_or_404
 from django.conf import settings
-from django.utils.html import format_html
 
 from coldfront.core.allocation.models import (AllocationAccount,
                                               AllocationAttributeType,
@@ -262,202 +261,87 @@ class AllocationForm(forms.Form):
     def clean(self):
         cleaned_data = super().clean()
         resource_obj = Resource.objects.get(pk=cleaned_data.get('resource'))
-        users = cleaned_data.get('users')
-        resources = {
-            'Carbonate': {
-                'dl_workflow': cleaned_data.get('dl_workflow'),
-                'gpu_workflow': cleaned_data.get('gpu_workflow'),
-                'applications_list': cleaned_data.get('applications_list'),
-            },
-            'Quartz': {
-                'applications_list': cleaned_data.get('applications_list'),
-            },
-            'Big Red 200': {
-                'dl_workflow': cleaned_data.get('dl_workflow'),
-                'gpu_workflow': cleaned_data.get('gpu_workflow'),
-                'applications_list': cleaned_data.get('applications_list'),
-            },
-            'Geode-Projects': {
-                'storage_space': cleaned_data.get('storage_space'),
-                'department_full_name': cleaned_data.get('department_full_name'),
-                'fiscal_officer': cleaned_data.get('fiscal_officer'),
-                'account_number': cleaned_data.get('account_number'),
-                'data_management_plan': cleaned_data.get('data_management_plan'),
-                'terms_of_service': cleaned_data.get('terms_of_service'),
-                'data_management_responsibilities': cleaned_data.get('data_management_responsibilities'),
-                'confirm_best_practices': cleaned_data.get('confirm_best_practices'),
-                'primary_contact': cleaned_data.get('primary_contact'),  # Only check if username is given
-                'secondary_contact': cleaned_data.get('secondary_contact'),  # Only check if username is given
-                'it_pros': cleaned_data.get('it_pros'),  # Only check if username is given
-                'end_date': cleaned_data.get('end_date'),
-                'use_indefinitely': cleaned_data.get('use_indefinitely'),
-            },
-            'Slate-Project': {
-                'first_name': cleaned_data.get('first_name'),
-                'last_name': cleaned_data.get('last_name'),
-                'campus_affiliation': cleaned_data.get('campus_affiliation'),
-                'email': cleaned_data.get('email'),
-                'project_directory_name': cleaned_data.get('project_directory_name'),
-                'start_date': cleaned_data.get('start_date'),
-                'store_ephi': cleaned_data.get('store_ephi'),
-                'storage_space': cleaned_data.get('storage_space'),
-                'account_number': cleaned_data.get('account_number'),
-                'data_manager': cleaned_data.get('data_manager')
-            },
-            'SDA Group Account': {
-                'first_name': cleaned_data.get('first_name'),
-                'last_name': cleaned_data.get('last_name'),
-                'email': cleaned_data.get('email'),
-                'department_full_name': cleaned_data.get('department_full_name'),
-                'group_account_name': cleaned_data.get('group_account_name'),
-                'data_management_plan': cleaned_data.get('data_management_plan'),
-                'terms_of_service': cleaned_data.get('terms_of_service'),
-                'data_management_responsibilities': cleaned_data.get('data_management_responsibilities'),
-                'primary_contact': cleaned_data.get('primary_contact'),  # Only check if username is given
-                'secondary_contact': cleaned_data.get('secondary_contact'),  # Only check if username is given
-                'it_pros': cleaned_data.get('it_pros'),  # Only check if username is given
-                'end_date': cleaned_data.get('end_date'),
-                'use_indefinitely': cleaned_data.get('use_indefinitely'),
-            }
-        }
-        resource = resources.get(resource_obj.name)
-        if resource is None:
-            return
+
+        resource_attribute_objs = resource_obj.resourceattribute_set.all()
 
         ldap_user_info_enabled = False
         if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
             from coldfront.plugins.ldap_user_info.utils import check_if_user_exists
             ldap_user_info_enabled = True
 
-        raise_error = False
-        required_field_text = 'This field is required'
-        for key, value in resource.items():
-            resource_name = resource_obj.name
+        errors = {}
+        for resource_attribute_obj in resource_attribute_objs:
+            name = resource_attribute_obj.resource_attribute_type.name
+            field_value = cleaned_data.get(name)
+            if resource_attribute_obj.is_required:
+                if not field_value:
+                    if name == 'end_date':
+                        use_indefinitely = resource_attribute_objs.filter(
+                            resource_attribute_type__name='use_indefinitely'
+                        )
+                        if use_indefinitely.exists() and cleaned_data.get('use_indefinitely'):
+                            continue
 
-            # First check if the required field was filled in.
-            if value is None or value == '' or value is False:
-                # Handle special cases for missing required fields here before continuing.
-                if resource_name in ['Geode-Projects', 'SDA Group Account', ]:
-                    if key == 'end_date' and resources[resource_name]['use_indefinitely']:
-                        continue
-                    elif key in ['use_indefinitely', 'primary_contact', 'secondary_contact', 'it_pros', ]:
-                        continue
-                elif resource_name == 'Slate-Project':
-                    if key == 'account_number' and resources[resource_name]['storage_space'] <= 15:
-                        continue
-                elif resource_name == 'Priority Boost':
-                    system = resources[resource_name]['system']
-                    is_grand_challenge = resources[resource_name]['is_grand_challenge']
-                    if key == 'is_grand_challenge':
-                        continue
-                    elif key == 'end_date' and is_grand_challenge and system == 'BigRed3':
-                        continue
-                    elif key == 'grand_challenge_program' and (not is_grand_challenge or system == 'Carbonate'):
-                        continue
+                    errors[name] = 'This field is required'
+                    continue
+            if resource_attribute_obj.check_if_username_exists:
+                if field_value and ldap_user_info_enabled:
+                    if ',' in field_value:
+                        invalid_users = []
+                        field_values = field_value.split(',')
+                        for value in field_values:
+                            value = value.strip()
+                            if value and not check_if_user_exists(value):
+                                invalid_users.append(value)
 
-                raise_error = True
-                self.add_error(key, required_field_text)
-                # If the value does not exist then no more value checking is needed.
-                continue
-
-            # General value checks for required fields should go here.
-            if key == 'start_date':
-                if value <= date.today():
-                    raise_error = True
-                    self.add_error(key, 'Please select a start date later than today')
-                    continue
-                end_date = resources[resource_name].get('end_date')
-                if end_date and value >= end_date:
-                    raise_error = True
-                    self.add_error(key, 'Start date must be earlier than end date')
-                    continue
-            elif key == 'account_number':
-                if not len(value) == 9:
-                    raise_error = True
-                    self.add_error(key, 'Account number must have a format of ##-###-##')
-                    continue
-                elif not value[2] == '-' or not value[6] == '-':
-                    raise_error = True
-                    self.add_error(key, 'Account number must have a format of ##-###-##')
-                    continue
-            elif key == 'storage_space':
-                if value <= 0:
-                    raise_error = True
-                    self.add_error(key, 'Storage space must be greater than 0')
-                    continue
-            elif key == 'end_date':
-                if value and value <= date.today():
-                    raise_error = True
-                    self.add_error(key, 'Please select an end date later than today')
-                    continue
-            elif key == 'project_directory_name':
-                if not value.isalnum():
-                    raise_error = True
-                    self.add_error(key, 'Project directory name must be alphanumeric')
-                    continue
-            elif key == 'data_manager':
-                manager_exists = self.project_obj.projectuser_set.filter(
-                    user__username=value,
-                    role__name='Manager',
-                    status__name='Active'
-                ).exists()
-                if not manager_exists:
-                    raise_error = True
-                    self.add_error(key, 'Data Manager must be a project Manager')
-                    continue
-
+                        if invalid_users:
+                            errors[name] = f'Usernames {", ".join(invalid_users)} are not valid'
+                            continue
+                    else:
+                        if not check_if_user_exists(field_value):
+                            errors[name] = 'This username is not valid'
+                            continue
+            if resource_attribute_obj.resource_account_is_required:
                 check_resource_account = resource_obj.get_attribute('check_user_account')
-                if check_resource_account and not resource_obj.check_user_account_exists(value, check_resource_account):
-                    raise_error = True
-                    self.add_error(
-                        key,
-                        format_html(
-                            """
-                            Data Manager must have a Slate-Project account. They can create one
-                            <a href="https://access.iu.edu/Accounts/Create">here</a>
-                            """
-                        )
-                    )
+                if not resource_obj.check_user_account_exists(field_value, check_resource_account):
+                    errors[name] = 'This user does not have an account on this resource'
                     continue
 
-            # Value checks for a specific resource's required fields should go here.
-            if resource_name in ['Geode-Projects', 'SDA Group Account', ]:
-                if key in ['primary_contact', 'secondary_contact', 'fiscal_officer', 'it_pros']:
-                    user_exists = True
-                    if ldap_user_info_enabled:
-                        user_exists = check_if_user_exists(value)
-
-                    if not user_exists:
-                        raise_error = True
-                        self.add_error(key, 'This username is not valid')
+            if name == 'account_number' and field_value:
+                if not len(field_value) == 9:
+                    errors[name] = 'Account number must have a format of ##-###-##'
+                    continue
+                elif not field_value[2] == '-' or not field_value[6] == '-':
+                    errors[name] = 'Account number must have a format of ##-###-##'
+                    continue
+            elif name == 'start_date' and field_value:
+                if field_value <= date.today():
+                    errors[name] = 'Please select a start date later than today'
+                    continue
+                end_date = resource_attribute_objs.filter(resource_attribute_type__name='end_date')
+                use_indefinitely = resource_attribute_objs.filter(
+                    resource_attribute_type__name='use_indefinitely'
+                )
+                if not use_indefinitely.exists() or not cleaned_data.get(use_indefinitely):
+                    if end_date.exists() and field_value >= cleaned_data.get('end_date'):
+                        errors[name] = 'Start date must be earlier than end date'
                         continue
-                elif key == 'it_pros':
-                    invalid_users = []
-                    for username in value.split(','):
-                        user_exists = True
-                        if ldap_user_info_enabled:
-                            user_exists = check_if_user_exists(username)
+            elif name == 'end_date' and field_value:
+                if field_value <= date.today():
+                    errors[name] = 'Please select an end date later than today'
+                    continue
+            elif name == 'storage_space':
+                if field_value <= 0:
+                    errors[name] = 'Storage space must be greater than 0'
+                    continue
+            elif name == 'project_directory_name':
+                if not field_value.isalnum():
+                    errors[name] = 'Project directory name must be alphanumeric'
+                    continue
 
-                        if not user_exists:
-                            invalid_users.append(username)
-
-                    if invalid_users:
-                        raise_error = True
-                        self.add_error(key, 'Username(s) {} are not valid'.format(
-                            ', '.join(invalid_users)
-                            ))
-                        continue
-            elif resource_name == 'Slate-Project':
-                if key == 'data_manager':
-                    if users and value != self.request_user.username:
-                        raise_error = True
-                        self.add_error(
-                            'users',
-                            'Only the data manager can add users to a Slate-Project resource'
-                        )
-                        continue
-
-        if raise_error:
+        if errors:
+            for name, error in errors.items():
+                self.add_error(name, error)
             raise ValidationError('Please correct the errors below')
 
 

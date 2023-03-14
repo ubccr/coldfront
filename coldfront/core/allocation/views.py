@@ -871,6 +871,11 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 'confirm_best_practices': {},
                 'confirm_best_practices_label': {},
                 'type': 'checkbox',
+            },
+            {
+                'use_indefinitely': {},
+                'use_indefinitely_label': {},
+                'type': 'checkbox'
             }
         ]
 
