@@ -40,7 +40,7 @@ class DepartmentListView(LoginRequiredMixin, ListView):
         order_by = self.request.GET.get('order_by')
         if order_by:
             direction = self.request.GET.get('direction')
-            direction = '' if direction == 'asc' else '-'
+            direction = '-' if direction == 'des' else ''
             order_by = direction + order_by
         else:
             order_by = 'id'

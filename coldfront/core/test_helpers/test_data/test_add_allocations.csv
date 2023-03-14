@@ -1,0 +1,4 @@
+lab,resource,type,path
+newton_lab,holylfs10/tier1,Allocation,rc_labs/newton_lab
+poisson_lab,holylfs10/tier1,Allocation,rc_labs/poisson_lab
+gordon_lab,holylfs10/tier1,Allocation,rc_labs/gordon_lab

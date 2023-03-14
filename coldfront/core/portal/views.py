@@ -14,7 +14,7 @@ from coldfront.core.portal.utils import (generate_allocations_chart_data,
 from coldfront.core.project.models import Project
 from coldfront.core.publication.models import Publication
 from coldfront.core.resource.models import Resource
-from coldfront.plugins.sftocf.utils import get_redash_vol_stats
+from coldfront.plugins.sftocf.utils import StarFishRedash, STARFISH_SERVER
 
 
 def home(request):
@@ -74,11 +74,12 @@ def center_summary(request):
 
 
     # Storage Card
-    volumes = get_redash_vol_stats()
+    starfish_redash = StarFishRedash(STARFISH_SERVER)
+    volumes = starfish_redash.get_vol_stats()
     volumes = [
         {
-            "name": vol['volume_name'],
-            "quota_TB": vol['capacity_TB'],
+            'name': vol['volume_name'],
+            'quota_TB': vol['capacity_TB'],
             'free_TB': vol['free_TB'],
             'used_TB': vol['used_physical_TB'],
             'regular_files': vol['regular_files'],
@@ -90,15 +91,15 @@ def center_summary(request):
     for volume in volumes:
         resource = Resource.objects.get(name__contains=volume['name'])
 
-        resource_allocation = Allocation.objects.filter(status__name="Active", resources=resource)
+        resource_allocations = resource.allocation_set.filter(status__name='Active')
 
-        allocation_sizes = [float(allocation.size) for allocation in resource_allocation]
+        allocation_sizes = [float(allocation.size) for allocation in resource_allocations]
         # volume['avgsize'] = allocation_sizes
         volume['avgsize'] = round(sum(allocation_sizes)/len(allocation_sizes), 2)
 
-        project_ids = set(resource_allocation.values_list("project"))
+        project_ids = set(resource_allocations.values_list('project'))
         volume['lab_count'] = len(project_ids)
-        user_ids = {user.pk for allocation in resource_allocation for user in allocation.allocation_users}
+        user_ids = {user.pk for allocation in resource_allocations for user in allocation.allocation_users}
         volume['user_count'] = len(user_ids)
 
     context['volumes'] = volumes
@@ -107,10 +108,10 @@ def center_summary(request):
 
     # # Tier Stats
     #
-    # resource_names = Resource.objects.values("name")
+    # resource_names = Resource.objects.values('name')
     # new = []
     # for n in [vol['name'] for vol in volumes]:
-    #     match = next(r.split("/")[1] for r in resource_names if n in r)
+    #     match = next(r.split('/')[1] for r in resource_names if n in r)
     #     new.append(match)
     # # storage_stats['names'] = new
 
@@ -123,26 +124,26 @@ def center_summary(request):
     free_tb = [vol['free_TB'] for vol in volumes]
     usage_tb = [vol['used_TB'] for vol in volumes]
 
-    names.insert(0, "names")
-    usage_tb.insert(0, "usage (TB)")
-    free_tb.insert(0, "quota (TB)")
+    names.insert(0, 'names')
+    usage_tb.insert(0, 'usage (TB)')
+    free_tb.insert(0, 'quota (TB)')
 
     storage_data_columns = [ usage_tb, free_tb,names, ]
 
     context['storage_data_columns'] = storage_data_columns
 
     resource_chart_data = {
-        "x": "Resource Type",
-        "columns": [
+        'x': 'Resource Type',
+        'columns': [
             ['Resource Type', 'Storage'],
             ['Used', round(sum(usage_tb[1:]), 2)],
             ['Capacity', round(sum(free_tb[1:]), 2)],
         ],
-        "type": "bar",
-        "order":"null",
-        "groups": [['Used', 'Capacity',]],
-        "colors": {
-            "Capacity": '#000'
+        'type': 'bar',
+        'order':'null',
+        'groups': [['Used', 'Capacity',]],
+        'colors': {
+            'Capacity': '#000'
         }
     }
     context['resource_chart_data'] = resource_chart_data
@@ -164,7 +165,7 @@ def allocation_by_fos(request):
         status__name='Active').values_list('project__field_of_science__description', flat=True)))
 
     user_allocations = AllocationUser.objects.filter(
-        status__name='Active', allocation__status__name='Active')
+        status__name='Active', allocation__status__name__in=['Active', 'New'])
 
     active_users_by_fos = Counter(list(user_allocations.values_list(
         'allocation__project__field_of_science__description', flat=True)))

@@ -182,10 +182,7 @@ class ResourceListView(LoginRequiredMixin, ListView):
         order_by = self.request.GET.get('order_by')
         if order_by:
             direction = self.request.GET.get('direction')
-            if direction == 'asc':
-                direction = ''
-            else:
-                direction = '-'
+            direction = '-' if direction == 'des' else ''
             order_by = direction + order_by
         else:
             order_by = 'id'

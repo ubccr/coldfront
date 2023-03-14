@@ -33,7 +33,7 @@ class ProjectListViewTest(TestCase):
     def test_project_list_access(self):
         """Test project list access controls."""
         # If not logged in, can't see page; redirect to login page.
-        utils.test_redirect_to_login(self, "/project/")
+        utils.test_logged_out_redirect_to_login(self, "/project/")
 
         # after login, user and admin can access list page
         utils.test_user_can_access(self, self.admin_user, "/project/")
@@ -63,7 +63,7 @@ class ProjectDetailViewTest(TestCase):
         """
         url = f"/project/{self.project.pk}/"
         # If not logged in, can't see page; redirect to login page.
-        utils.test_redirect_to_login(self, url)
+        utils.test_logged_out_redirect_to_login(self, url)
 
         # admin can access
         utils.test_user_can_access(self, self.admin_user, url)
