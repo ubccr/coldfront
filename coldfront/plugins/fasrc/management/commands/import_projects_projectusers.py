@@ -22,7 +22,7 @@ class Command(BaseCommand):
         projects_list = pd.read_csv(project_csv)
         added_projects, errortracker = create_new_projects(projects_list.title.to_list())
         add_later = errortracker['no_pi'] + errortracker['no_members'] + errortracker['no_managers']
-        projects_to_add = projects_list.loc[projects_list['title'].isin(add_later)]
+        projects_to_add = projects_list.loc[projects_list['title'].isin(add_later)].copy()
         try:
             projects_to_add['first_attempt'] = projects_to_add['first_attempt'].fillna(datetime.now())
         except KeyError:

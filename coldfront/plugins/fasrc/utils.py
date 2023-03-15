@@ -340,6 +340,7 @@ def add_new_projects(pi_data, aduser_data):
     aduser_data = [u for u in aduser_data if u['user_name'] not in missing_usernames]
     added_projects = []
     for entry in active_pi_groups:
+        logger.debug('source: %s', entry)
         # collect group membership entries
         ad_members = [user for user in aduser_data if user['group_name'] == entry['group_name']]
 
@@ -358,14 +359,19 @@ def add_new_projects(pi_data, aduser_data):
             continue
 
         # locate field_of_science
-        field_of_science_name=entry['department']
-
-        field_of_science_obj, created = FieldOfScience.objects.get_or_create(
-                        description=field_of_science_name,
-                        defaults={'is_selectable':'True'}
-                        )
-        if created:
-            logger.info('added new field_of_science: %s', field_of_science_name)
+        if entry['department'] is not None:
+            field_of_science_name=entry['department']
+            logger.debug("field_of_science_name %s", field_of_science_name)
+            field_of_science_obj, created = FieldOfScience.objects.get_or_create(
+                            description=field_of_science_name,
+                            defaults={'is_selectable':'True'}
+                            )
+            if created:
+                logger.info('added new field_of_science: %s', field_of_science_name)
+        else:
+            logger.warning('no department for project %s', entry['group_name'])
+            print(f'WARNING: no field of science for project {entry["group_name"]}')
+            field_of_science_obj = None
 
 
         ### CREATE PROJECT ###
@@ -401,7 +407,7 @@ def add_new_projects(pi_data, aduser_data):
         added_projectusers = ProjectUser.objects.bulk_create(new_projectusers)
 
         # add permissions to PI/manager-status ProjectUsers
-        manager_usernames = ad_managers + [entry['user_name']]
+        manager_usernames = set(ad_managers + [entry['user_name']])
         for username in manager_usernames:
             logger.debug('adding manager status to ProjectUser %s for Project %s',
                         username, entry['group_name'])

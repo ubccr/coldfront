@@ -541,7 +541,8 @@ def pull_sf_push_cf_redash(pull_totals=True):
     quota_bytes_attributetype = allocation_attribute_types.get(name='Quota_In_Bytes')
     quota_tbs_attributetype = allocation_attribute_types.get(name='Storage Quota (TB)')
     allocations = Allocation.objects.filter(resources__in=searched_resources,
-        status__name__in=['Active', 'New', 'Updated', 'Ready for Review'])
+        status__name__in=['Active', 'New', 'Updated', 'Ready for Review']
+        ).prefetch_related('project','allocationattribute_set', 'allocationuser_set')
     # 3. iterate across allocations
     for allocation in allocations:
         project = allocation.project
@@ -576,13 +577,13 @@ def pull_sf_push_cf_redash(pull_totals=True):
                 )
             bytes_attribute.allocationattributeusage.value = usage_data['total_size']
             bytes_attribute.allocationattributeusage.save()
+
             tbs = (usage_data['total_size']/1099511627776)
             logger.info('allocation usage for allocation %s: %s bytes, %s terabytes',
                         allocation.pk, usage_data['total_size'], tbs)
             tbs_attribute, _ = allocation.allocationattribute_set.update_or_create(
-                    allocation_attribute_type=quota_tbs_attributetype,
-                    defaults={'value': tbs })
-            tbs_attribute.allocationattributeusage.value = usage_data['total_size']
+                    allocation_attribute_type=quota_tbs_attributetype)
+            tbs_attribute.allocationattributeusage.value = tbs
             tbs_attribute.allocationattributeusage.save()
         if not lab_data:
             logger.warning('WARNING: No starfish user usage result for allocation %s %s %s',
