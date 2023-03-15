@@ -96,10 +96,9 @@ class Command(BaseCommand):
                 command_report['allocations_existing'].append(f'{lab_name}  {lab_server}  {lab_path}')
             if allocation.status.name != 'Active':
                 continue
-            print('Adding PI: ' + project_obj.pi.username)
             pi_obj = project_obj.pi
             try:
-                AllocationUser.objects.get_or_create(
+                allocationuser, created = AllocationUser.objects.get_or_create(
                     allocation=allocation,
                     user=pi_obj,
                     defaults={
@@ -107,6 +106,9 @@ class Command(BaseCommand):
                 )
             except ValidationError:
                 logger.debug('adding PI %s to allocation %s failed', pi_obj.pi.username, allocation.pk)
+                created = None
+            if created:
+                print('PI added: ' + project_obj.pi.username)
         missing_projects = [{'title': title} for title in command_report['missing_projects']]
         log_missing('project', missing_projects)
 
