@@ -6,4 +6,4 @@ nav:
   - plugin.md
   - Deployment: deploy.md
   - manual
-  - API: api.md
+  - API: apidocs
