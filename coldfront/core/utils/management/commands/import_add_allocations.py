@@ -98,7 +98,7 @@ class Command(BaseCommand):
                 continue
             pi_obj = project_obj.pi
             try:
-                allocationuser, created = AllocationUser.objects.get_or_create(
+                _, created = AllocationUser.objects.get_or_create(
                     allocation=allocation,
                     user=pi_obj,
                     defaults={

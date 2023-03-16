@@ -578,7 +578,7 @@ def pull_sf_push_cf_redash(pull_totals=True):
             bytes_attribute.allocationattributeusage.value = usage_data['total_size']
             bytes_attribute.allocationattributeusage.save()
 
-            tbs = (usage_data['total_size']/1099511627776)
+            tbs = round((usage_data['total_size']/1099511627776), 5)
             logger.info('allocation usage for allocation %s: %s bytes, %s terabytes',
                         allocation.pk, usage_data['total_size'], tbs)
             tbs_attribute, _ = allocation.allocationattribute_set.update_or_create(
