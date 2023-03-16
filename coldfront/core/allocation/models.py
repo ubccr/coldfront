@@ -460,6 +460,7 @@ class AllocationAttributeType(TimeStampedModel):
     attribute_type = models.ForeignKey(AttributeType, on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
     linked_allocation_attribute = models.CharField(max_length=50, blank=True)
+    linked_resources = models.ManyToManyField(Resource, blank=True)
     has_usage = models.BooleanField(default=False)
     is_required = models.BooleanField(default=False)
     is_unique = models.BooleanField(default=False)
@@ -469,6 +470,9 @@ class AllocationAttributeType(TimeStampedModel):
 
     def __str__(self):
         return '%s (%s)' % (self.name, self.attribute_type.name)
+    
+    def get_linked_resources(self):
+        return self.linked_resources.all()
 
     class Meta:
         ordering = ['name', ]

@@ -1950,6 +1950,26 @@ class AllocationAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Cre
         """Return an instance of the form to be used in this view."""
         form = super().get_form(form_class)
         form.fields['allocation'].widget = forms.HiddenInput()
+
+        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
+        current_allocation_attribute_objs = allocation_obj.allocationattribute_set.all()
+        current_allocation_attribute_type_objs = []
+        for allocation_attribute_obj in current_allocation_attribute_objs:
+            current_allocation_attribute_type_objs.append(
+                allocation_attribute_obj.allocation_attribute_type
+            )
+        allocation_attribute_type_objs = AllocationAttributeType.objects.all()
+        allocation_attribute_type_pks = []
+        for allocation_attribute_type_obj in allocation_attribute_type_objs:
+            if allocation_attribute_type_obj in current_allocation_attribute_type_objs:
+                continue
+
+            if allocation_obj.get_parent_resource in allocation_attribute_type_obj.get_linked_resources():
+                allocation_attribute_type_pks.append(allocation_attribute_type_obj.pk)
+        form.fields['allocation_attribute_type'].queryset = AllocationAttributeType.objects.filter(
+            pk__in=allocation_attribute_type_pks
+        )
+
         return form
 
     def get_success_url(self):
