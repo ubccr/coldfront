@@ -37,13 +37,13 @@ jobs:
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install git+ssh://git@github.com/harvardinformatics/ifxurls.git@${IFXURLS_COMMIT} && \
-        pip install git+ssh://git@github.com/harvardinformatics/nanites.client.git@${NANITES_CLIENT_COMMIT} && \
-        pip install git+ssh://git@github.com/harvardinformatics/ifxuser.git@${IFXUSER_COMMIT} && \
-        pip install git+ssh://git@github.com/harvardinformatics/ifxmail.client.git@${IFXMAIL_CLIENT_COMMIT} && \
-        pip install git+ssh://git@gitlab-int.rc.fas.harvard.edu/informatics/fiine.client.git@${FIINE_CLIENT_COMMIT} && \
-        pip install git+ssh://git@gitlab-int.rc.fas.harvard.edu/informatics/ifxvalidcode.git@${IFXVALIDCODE_COMMIT} && \
-        pip install git+ssh://git@gitlab-int.rc.fas.harvard.edu/informatics/ifxbilling.git@${IFXBILLING_COMMIT} && \
+        pip install git+ssh://git@github.com/harvardinformatics/ifxurls.git@${{ IFXURLS_COMMIT }} && \
+        pip install git+ssh://git@github.com/harvardinformatics/nanites.client.git@${{ NANITES_CLIENT_COMMIT }} && \
+        pip install git+ssh://git@github.com/harvardinformatics/ifxuser.git@${{ IFXUSER_COMMIT }} && \
+        pip install git+ssh://git@github.com/harvardinformatics/ifxmail.client.git@${{ IFXMAIL_CLIENT_COMMIT }} && \
+        pip install git+ssh://git@gitlab-int.rc.fas.harvard.edu/informatics/fiine.client.git@${{ FIINE_CLIENT_COMMIT }} && \
+        pip install git+ssh://git@gitlab-int.rc.fas.harvard.edu/informatics/ifxvalidcode.git@${{ IFXVALIDCODE_COMMIT }} && \
+        pip install git+ssh://git@gitlab-int.rc.fas.harvard.edu/informatics/ifxbilling.git@${{ IFXBILLING_COMMIT }} && \
         pip install ldap3 django_auth_ldap && \
         pip install -r requirements.txt
     # - name: Format with black
