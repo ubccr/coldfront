@@ -20,8 +20,8 @@ DATABASES = {
      'default': {
          'ENGINE': 'django.db.backends.mysql',
          'NAME': ENV.str('DB', default="coldfront"),
-         'USER': ENV.str('DB_USER'),
-         'PASSWORD': ENV.str('DB_PASS'),
+         'USER': ENV.str('DB_USER', default="coldfront"),
+         'PASSWORD': ENV.str('DB_PASS', default=""),
          'HOST': ENV.str('DB_HOST', default="127.0.0.1"),
          'PORT': '3306',
      },
