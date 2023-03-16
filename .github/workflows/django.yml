@@ -6,6 +6,15 @@ on:
   pull_request:
     branches: [ "cp_ci_cd", "development" ]
 
+env:
+  IFXBILLING_COMMIT: 5f345d5592636091e288c567a18c15a7e586398b
+  IFXURLS_COMMIT: 549af42dbe83d07b12dd37055a5ec6368d4b649
+  NANITES_CLIENT_COMMIT: 1e67ce787e27c9c0e32a4c97a4967c297d30b7cf
+  IFXUSER_COMMIT: 6b7194698b49550ae6df395cfea96380536a41bc
+  IFXMAIL_CLIENT_COMMIT: 8f728ff54441d2f2449fd3c31b75f0f77372b5f2
+  FIINE_CLIENT_COMMIT: 1ccb266c7f3c735f39c32067ce71294ecee35747
+  IFXVALIDCODE_COMMIT: 4dd332c5a8e13d904a90da014094406a81b617e6
+
 jobs:
   build:
 
@@ -14,20 +23,6 @@ jobs:
       max-parallel: 4
       matrix:
         python-version: [3.7, 3.8, 3.9]
-        IFXBILLING_COMMIT:
-          - 5f345d5592636091e288c567a18c15a7e586398b
-        IFXURLS_COMMIT:
-          - 549af42dbe83d07b12dd37055a5ec6368d4b649
-        NANITES_CLIENT_COMMIT:
-          - 1e67ce787e27c9c0e32a4c97a4967c297d30b7cf
-        IFXUSER_COMMIT:
-          - 6b7194698b49550ae6df395cfea96380536a41bc
-        IFXMAIL_CLIENT_COMMIT:
-          - 8f728ff54441d2f2449fd3c31b75f0f77372b5f2
-        FIINE_CLIENT_COMMIT:
-          - 1ccb266c7f3c735f39c32067ce71294ecee35747
-        IFXVALIDCODE_COMMIT:
-          - 4dd332c5a8e13d904a90da014094406a81b617e6
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python ${{ matrix.python-version }}
