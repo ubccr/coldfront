@@ -2,9 +2,9 @@ name: Coldfront CI
 
 on:
   push:
-    branches: [ "cp_ci_cd" ]
+    branches: [ "cp_ci_cd", "development" ]
   pull_request:
-    branches: [ "cp_ci_cd" ]
+    branches: [ "cp_ci_cd", "development" ]
 
 jobs:
   build:
