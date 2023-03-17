@@ -30,6 +30,7 @@ class Command(BaseCommand):
         redash = StarFishRedash(STARFISH_SERVER)
         subdir_results = redash.submit_query("subdirectory")
         data = subdir_results['query_result']['data']['rows']
+        data = [result for result in data if result['group_name']]
         vols_to_collect = compare_cf_sf_volumes()
         searched_resources = [Resource.objects.get(name__contains=vol) for vol in vols_to_collect]
         allocations = Allocation.objects.filter(resources__in=searched_resources)
