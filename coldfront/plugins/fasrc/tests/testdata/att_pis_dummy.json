@@ -1,0 +1,16 @@
+[{
+  "group_name": "newton_lab",
+  "user_name": "inewton",
+  "first_name": "isaac",
+  "last_name": "newton",
+  "email": "isaac_newton@fas.harvard.edu",
+  "department": "faculty of arts and sciences",
+  "title": "faculty",
+  "company": "fas",
+   "path": "rc.domain/domain users/fas/newton lab",
+   "u.DotsPTLUpdateDate": "2023-03-03T12:32:57.1534868-05:00",
+   "u.DotsADUpdateDate": "2023-03-02t23:43:11.0864958-05:00",
+   "user_enabled": true,
+   "in_nanites": true,
+   "user_gid_number": 20221
+ }]

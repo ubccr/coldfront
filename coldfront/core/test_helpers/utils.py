@@ -48,7 +48,7 @@ def login_and_get_page(client, user, page):
     client.force_login(user, backend="django.contrib.auth.backends.ModelBackend")
     return client.get(page)
 
-def test_redirect_to_login(test_case, page):
+def test_logged_out_redirect_to_login(test_case, page):
     """
     Confirm that attempting to access page while not logged in triggers a 302
     redirect to a login page.
@@ -65,6 +65,26 @@ def test_redirect_to_login(test_case, page):
     test_case.assertEqual(response.status_code, 302)
     test_case.assertEqual(response.url, f"/user/login?next={page}")
 
+
+def test_redirect(test_case, page):
+    """
+    Confirm that attempting to access page in whatever test_case state is given
+    produces a redirect.
+
+    Parameters
+    ----------
+    test_case : must have client.
+    page : str
+        must begin and end with a slash.
+
+    Returns
+    -------
+    response.url : string
+        the redirected url given.
+    """
+    response = test_case.client.get(page)
+    test_case.assertEqual(response.status_code, 302)
+    return response.url
 
 
 def test_user_can_access(test_case, user, page):

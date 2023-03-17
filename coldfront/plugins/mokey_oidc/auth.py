@@ -60,7 +60,7 @@ class OIDCMokeyAuthenticationBackend(OIDCAuthenticationBackend):
         if email and len(email) > 0:
             user.email = email
         else:
-            logger.warn("Failed to update email. Could not find email for user %s in mokey oidc id_token claims: %s", username, claims)
+            logger.warn("Failed to update email. Could not find email for user %s %s in mokey oidc id_token claims: %s", user.first_name, user.last_name, claims)
 
         groups = self._parse_groups_from_claims(claims)
         self._sync_groups(user, groups)
@@ -86,7 +86,7 @@ class OIDCMokeyAuthenticationBackend(OIDCAuthenticationBackend):
             return verified and True
 
         groups = self._parse_groups_from_claims(claims)
-        
+
         if len(ALLOWED_GROUPS) > 0:
             for g in ALLOWED_GROUPS:
                 if g not in groups:
@@ -96,5 +96,5 @@ class OIDCMokeyAuthenticationBackend(OIDCAuthenticationBackend):
             for g in DENY_GROUPS:
                 if g in groups:
                     return False
-    
+
         return verified and True

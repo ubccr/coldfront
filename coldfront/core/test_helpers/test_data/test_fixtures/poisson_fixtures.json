@@ -207,6 +207,17 @@
     }
   },
   {
+    "model": "allocation.allocationattribute",
+    "pk": 10,
+    "fields": {
+      "created": "2021-07-23T18:05:15.731Z",
+      "modified": "2022-02-09T22:02:38.321Z",
+      "allocation_attribute_type": 4,
+      "allocation": 1,
+      "value": true
+    }
+  },
+  {
     "model": "allocation.allocationattributeusage",
     "pk": 1,
     "fields": {

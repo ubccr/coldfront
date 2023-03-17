@@ -4,7 +4,7 @@ from django import forms
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model
-from django.contrib.auth.decorators import user_passes_test, login_required
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
@@ -38,6 +38,7 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice,
                                            ProjectUserMessage)
+from coldfront.core.project.utils import generate_usage_history_graph
 from coldfront.core.publication.models import Publication
 from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.user.forms import UserSearchForm
@@ -58,6 +59,7 @@ def produce_filter_parameter(key, value):
     if isinstance(value, list):
         return "".join([f'{key}={ele}&' for ele in value])
     return f'{key}={value}&'
+
 
 class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     model = Project
@@ -86,8 +88,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             context['is_allowed_to_update_project'] = False
 
         # Only show 'Active Users'
-        project_users = self.object.projectuser_set.filter(
-            status__name='Active').order_by('user__username')
+        project_users = self.object.projectuser_set.order_by('user__username')
 
         context['mailto'] = 'mailto:' + \
             ','.join([user.user.email for user in project_users])
@@ -117,6 +118,11 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             allocation_total['allocation_user_count'] += int(allocation.allocation_users.count())
             allocation_total['size'] += float(allocation.size)
 
+        try:
+            time_chart_data = generate_usage_history_graph(self.object)
+        except Exception as e:
+            time_chart_data = None
+        context['time_chart_data'] = time_chart_data
         context['publications'] = Publication.objects.filter(
             project=self.object, status='Active').order_by('-year')
         context['research_outputs'] = ResearchOutput.objects.filter(
@@ -126,8 +132,6 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['allocations'] = allocations
         context['allocation_total'] = allocation_total
         context['project_users'] = project_users # context dictionary; key is project_users; project_users is a variable name
-        # print(type(project_users))
-        # print(type(project_users[0]))
 
 
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
@@ -153,10 +157,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
         order_by = self.request.GET.get('order_by')
         if order_by:
             direction = self.request.GET.get('direction')
-            if direction == 'asc':
-                direction = ''
-            elif direction == 'des':
-                direction = '-'
+            direction = '-' if direction == 'des' else ''
             order_by = direction + order_by
         else:
             order_by = 'id'
@@ -261,10 +262,7 @@ class ProjectArchivedListView(LoginRequiredMixin, ListView):
         order_by = self.request.GET.get('order_by')
         if order_by:
             direction = self.request.GET.get('direction')
-            if direction == 'asc':
-                direction = ''
-            elif direction == 'des':
-                direction = '-'
+            direction = '-' if direction == 'des' else ''
             order_by = direction + order_by
         else:
             order_by = 'id'
