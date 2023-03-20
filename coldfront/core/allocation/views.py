@@ -995,22 +995,14 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         project_obj = get_object_or_404(
             Project, pk=self.kwargs.get('project_pk'))
         resource_obj = Resource.objects.get(pk=form_data.get('resource'))
-        storage_space = form_data.get('storage_space')
         storage_space_unit = form.data.get('storage_space_unit')
         end_date = form_data.get('end_date')
         use_indefinitely = form_data.get('use_indefinitely')
-        primary_contact = form_data.get('primary_contact')
-        secondary_contact = form_data.get('secondary_contact')
-        fiscal_officer = form_data.get('fiscal_officer')
         account_number = form_data.get('account_number')
-        sub_account_number = form_data.get('sub_account_number')
-        it_pros = form_data.get('it_pros')
         url = form_data.get('url')
         data_manager = form_data.get('data_manager')
         allocation_account = form_data.get('allocation_account', None)
         license_term = form_data.get('license_term', None)
-        admin_ads_group = form_data.get('admin_ads_group')
-        user_ads_group = form_data.get('user_ads_group')
 
         allocation_limit = resource_obj.get_attribute('allocation_limit')
         if allocation_limit is not None:
@@ -1106,13 +1098,11 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             return self.form_invalid(form)
 
         denied_users = []
-        resource_name = ''
         for user in users:
             username = user.username
             if resource_account is not None:
                 if not resource_obj.check_user_account_exists(username, resource_account):
                     denied_users.append(username)
-                    resource_name = resource_account
                     users.remove(user)
 
         if denied_users:
@@ -1149,57 +1139,6 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         form_data['total_cost'] = total_cost
         form_data['storage_space_unit'] = storage_space_unit
         allocation_obj = Allocation.objects.create(**form_data)
-        # allocation_obj = Allocation.objects.create(
-        #     project=project_obj,
-        #     justification=justification,
-        #     quantity=quantity,
-        #     storage_space=storage_space,
-        #     storage_space_unit=storage_space_unit,
-        #     leverage_multiple_gpus=leverage_multiple_gpus,
-        #     dl_workflow=dl_workflow,
-        #     gpu_workflow=gpu_workflow,
-        #     applications_list=applications_list,
-        #     training_or_inference=training_or_inference,
-        #     for_coursework=for_coursework,
-        #     system=system,
-        #     is_grand_challenge=is_grand_challenge,
-        #     grand_challenge_program=grand_challenge_program,
-        #     start_date=start_date,
-        #     end_date=end_date,
-        #     use_indefinitely=use_indefinitely,
-        #     phi_association=phi_association,
-        #     access_level=access_level,
-        #     confirm_understanding=confirm_understanding,
-        #     primary_contact=primary_contact,
-        #     secondary_contact=secondary_contact,
-        #     department_full_name=department_full_name,
-        #     department_short_name=department_short_name,
-        #     fiscal_officer=fiscal_officer,
-        #     account_number=account_number,
-        #     sub_account_number=sub_account_number,
-        #     it_pros=it_pros,
-        #     devices_ip_addresses=devices_ip_addresses,
-        #     data_management_plan=data_management_plan,
-        #     project_directory_name=project_directory_name,
-        #     total_cost=total_cost,
-        #     first_name=first_name,
-        #     last_name=last_name,
-        #     campus_affiliation=campus_affiliation,
-        #     email=email,
-        #     url=url,
-        #     faculty_email=faculty_email,
-        #     store_ephi=store_ephi,
-        #     data_manager=data_manager,
-        #     phone_number=phone_number,
-        #     group_account_name=group_account_name,
-        #     group_account_name_exists=group_account_name_exists,
-        #     terms_of_service=terms_of_service,
-        #     data_management_responsibilities=data_management_responsibilities,
-        #     admin_ads_group=admin_ads_group,
-        #     user_ads_group=user_ads_group,
-        #     confirm_best_practices=confirm_best_practices,
-        #     status=allocation_status_obj
-        # )
 
         if ALLOCATION_ENABLE_CHANGE_REQUESTS_BY_DEFAULT:
             allocation_obj.is_changeable = True
@@ -1207,110 +1146,23 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         allocation_obj.resources.add(resource_obj)
 
-        if resource_obj.resourceattribute_set.filter(resource_attribute_type__name='slurm_cluster').exists():
-            if project_obj.slurm_account_name:
-                value = project_obj.slurm_account_name
-
-                slurm_account_name_attribute_type = AllocationAttributeType.objects.get(
-                    name='slurm_account_name'
-                )
-                AllocationAttribute.objects.create(
-                    allocation_attribute_type=slurm_account_name_attribute_type,
-                    allocation=allocation_obj,
-                    value=value
-                )
-        elif (resource_obj.parent_resource is not None and
-              resource_obj.parent_resource.resourceattribute_set.filter(resource_attribute_type__name='slurm_cluster').exists()):
-            if project_obj.slurm_account_name:
-                value = project_obj.slurm_account_name
-
-                slurm_account_name_attribute_type = AllocationAttributeType.objects.get(
-                    name='slurm_account_name'
-                )
-                AllocationAttribute.objects.create(
-                    allocation_attribute_type=slurm_account_name_attribute_type,
-                    allocation=allocation_obj,
-                    value=value
-                )
-
-        if storage_space:
-            if storage_space_unit == 'TB':
-                storage_quota_attribute_type = AllocationAttributeType.objects.get(
-                    name='Storage Quota (TB)'
-                )
-            else:
-                storage_quota_attribute_type = AllocationAttributeType.objects.get(
-                    name='Storage Quota (GB)'
-                )
-            AllocationAttribute.objects.create(
-                allocation_attribute_type=storage_quota_attribute_type,
-                allocation=allocation_obj,
-                value=storage_space
-            )
-
-        if resource_obj.requires_payment:
-            account_number_attribute_type = AllocationAttributeType.objects.get(
-                name='Account Number'
-            )
-            if account_number:
-                AllocationAttribute.objects.create(
-                    allocation_attribute_type=account_number_attribute_type,
-                    allocation=allocation_obj,
-                    value=account_number
-                )
-
-            sub_account_number_attribute_type = AllocationAttributeType.objects.get(
-                name='Sub-Account Number'
-            )
-            if sub_account_number:
-                AllocationAttribute.objects.create(
-                    allocation_attribute_type=sub_account_number_attribute_type,
-                    allocation=allocation_obj,
-                    value=sub_account_number
-                )
-
-        if resource_name == "Geode-Projects":
-            if primary_contact:
-                AllocationAttribute.objects.create(
-                    allocation_attribute_type=AllocationAttributeType.objects.get(name="Primary Contact"),
-                    allocation=allocation_obj,
-                    value=primary_contact
-                )
-
-            if secondary_contact:
-                AllocationAttribute.objects.create(
-                    allocation_attribute_type=AllocationAttributeType.objects.get(name="Secondary Contact"),
-                    allocation=allocation_obj,
-                    value=secondary_contact
-                )
-
-            if it_pros:
-                AllocationAttribute.objects.create(
-                    allocation_attribute_type=AllocationAttributeType.objects.get(name="It Pro Contact"),
-                    allocation=allocation_obj,
-                    value=it_pros
-                )
-
-            if fiscal_officer:
-                AllocationAttribute.objects.create(
-                    allocation_attribute_type=AllocationAttributeType.objects.get(name="Fiscal Officer"),
-                    allocation=allocation_obj,
-                    value=fiscal_officer
-                )
-
-            if admin_ads_group:
-                AllocationAttribute.objects.create(
-                    allocation_attribute_type=AllocationAttributeType.objects.get(name="Admin Group"),
-                    allocation=allocation_obj,
-                    value=admin_ads_group
-                )
-
-            if user_ads_group:
-                AllocationAttribute.objects.create(
-                    allocation_attribute_type=AllocationAttributeType.objects.get(name="User Group"),
-                    allocation=allocation_obj,
-                    value=user_ads_group
-                )
+        allocation_attribute_type_objs = AllocationAttributeType.objects.all()
+        for allocation_attribute_type_obj in allocation_attribute_type_objs:
+            if allocation_obj.get_parent_resource in allocation_attribute_type_obj.get_linked_resources():
+                linked_allocation_attribute = allocation_attribute_type_obj.linked_allocation_attribute
+                if form_data.get(linked_allocation_attribute):
+                    AllocationAttribute.objects.create(
+                        allocation_attribute_type=allocation_attribute_type_obj,
+                        allocation=allocation_obj,
+                        value=form_data[linked_allocation_attribute]
+                    )
+                else:
+                    if allocation_attribute_type_obj.name == 'slurm_account_name':
+                        AllocationAttribute.objects.create(
+                            allocation_attribute_type=allocation_attribute_type_obj,
+                            allocation=allocation_obj,
+                            value=project_obj.slurm_account_name
+                        )
 
         if ALLOCATION_ACCOUNT_ENABLED and allocation_account and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING:
 
@@ -1364,7 +1216,6 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         pi_name = '{} {} ({})'.format(allocation_obj.project.pi.first_name,
                                       allocation_obj.project.pi.last_name, allocation_obj.project.pi.username)
-        resource_name = allocation_obj.get_parent_resource
         domain_url = get_domain_url(self.request)
         url = '{}{}'.format(domain_url, reverse('allocation-request-list'))
 
@@ -1372,6 +1223,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             text = f'A new allocation in project "{project_obj.title}" with id {project_obj.pk} has been requested for {pi_name} - {resource_name}. Please review the allocation: {url}'
             send_message(text)
         if EMAIL_ENABLED:
+            resource_name = allocation_obj.get_parent_resource
             template_context = {
                 'project_title': project_obj.title,
                 'project_id': project_obj.pk,
