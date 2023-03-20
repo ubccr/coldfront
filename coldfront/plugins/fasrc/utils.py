@@ -13,7 +13,6 @@ from coldfront.core.utils.fasrc import (log_missing,
                                         select_one_project_allocation,
                                         save_json,
                                         id_present_missing_users,
-                                        id_present_missing_projectusers,
                                         id_present_missing_resources,
                                         id_present_missing_projects)
 from coldfront.core.project.models import ( Project,
@@ -257,7 +256,8 @@ class AllTheThingsConn:
                         error_message = 'No Allocation'
                         missing_allocations.append({
                                 'resource_name':resource.name,
-                                'project_title': proj_query.title
+                                'project_title': proj_query.title,
+                                'path': allocation['fs_path']
                                 })
                     elif alloc_obj == 'MultiAllocationError':
                         print(allocation['fs_path'])

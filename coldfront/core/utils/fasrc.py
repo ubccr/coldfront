@@ -1,5 +1,5 @@
-"""A module for fasrc-specific utility functions
-"""
+'''A module for fasrc-specific utility functions.
+'''
 import os
 import json
 import operator
@@ -37,14 +37,14 @@ def select_one_project_allocation(project_obj, resource_obj, dirpath=None):
         allocation_obj = None
     elif allocation_query.count() > 1:
         allocation_obj = next((a for a in allocation_query if a.path in dirpath),
-                                "MultiAllocationError")
+                                'MultiAllocationError')
     return allocation_obj
 
 
 def determine_size_fmt(byte_num):
     '''Return the correct human-readable byte measurement.
     '''
-    units = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB"]
+    units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB']
     for u in units:
         unit = u
         if abs(byte_num) < 1024.0:
@@ -52,8 +52,8 @@ def determine_size_fmt(byte_num):
         byte_num /= 1024.0
     return(round(byte_num, 3), unit)
 
-def convert_size_fmt(num, target_unit, source_unit="B"):
-    units = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB"]
+def convert_size_fmt(num, target_unit, source_unit='B'):
+    units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB']
     diff = units.index(target_unit) - units.index(source_unit)
     if diff == 0:
         pass
@@ -66,13 +66,13 @@ def convert_size_fmt(num, target_unit, source_unit="B"):
     return round(num, 3)
 
 def get_resource_rate(resource):
-    """find Product with the name provided and return the associated rate"""
+    '''find Product with the name provided and return the associated rate'''
     prod_obj = Product.objects.get(product_name=resource)
     rate_obj = prod_obj.rate_set.get(is_active=True)
     # return charge per TB, adjusted to dollar value
-    if rate_obj.units == "TB":
+    if rate_obj.units == 'TB':
         return rate_obj.price/100
-    price = convert_size_fmt(rate_obj.price, "TB", source_unit=rate_obj.units)
+    price = convert_size_fmt(rate_obj.price, 'TB', source_unit=rate_obj.units)
     return round(price/100, 2)
 
 
@@ -95,7 +95,7 @@ def id_present_missing_projects(title_list):
     '''
     present_projects = Project.objects.filter(title__in=title_list)
     proj_titles = list(present_projects.values_list('title', flat=True))
-    missing_project_titles = [{"title": title} for title in title_list if title not in proj_titles]
+    missing_project_titles = [{'title': title} for title in title_list if title not in proj_titles]
     return (present_projects, missing_project_titles)
 
 
@@ -117,7 +117,7 @@ def id_present_missing_projectusers(projectuser_tuple_list):
     username_list = [tuple[1] for tuple in projectuser_tuple_list]
     present_users = get_user_model().objects.filter(username__in=username_list)
     present_usernames = list(present_users.values_list('username', flat=True))
-    missing_projusers = [{"project": tuple[0], 'username':tuple[1]}
+    missing_projusers = [{'project': tuple[0], 'username':tuple[1]}
             for tuple in projectuser_tuple_list if tuple[1] not in present_usernames]
     return (present_users, missing_projusers)
 
@@ -129,7 +129,7 @@ def id_present_missing_users(username_list):
     '''
     present_users = get_user_model().objects.filter(username__in=username_list)
     present_usernames = list(present_users.values_list('username', flat=True))
-    missing_usernames = [{"username": n} for n in username_list if n not in present_usernames]
+    missing_usernames = [{'username': name} for name in username_list if name not in present_usernames]
     return (present_users, missing_usernames)
 
 
@@ -145,7 +145,7 @@ def log_missing(modelname, missing):
         identifying information to record for missing entries:
             for users, "username".
             for projects, "title".
-            for allocations, "resource_name" and "project_title".
+            for allocations, "resource_name", "project_title", and "path".
     '''
     if missing:
         locate_or_create_dirpath(MISSING_DATA_DIR)
