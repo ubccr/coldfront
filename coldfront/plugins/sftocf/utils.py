@@ -520,18 +520,18 @@ def compare_cf_sf_volumes():
     return vols_to_collect
 
 
-def pull_sf_push_cf_redash(pull_totals=True):
+def pull_sf_push_cf_redash():
     '''
     Query Starfish Redash API for user usage data and update Coldfront AllocationUser entries.
 
-    Only Projects that are already in Coldfront will get updated.
+    Only Allocations for Projects that are already in Coldfront will be updated.
     '''
     vols_to_collect = compare_cf_sf_volumes()
     # 2. grab data from redash
     redash_api = StarFishRedash(STARFISH_SERVER)
     user_usage = redash_api.get_usage_stats(volumes=vols_to_collect)
     user_usage_by_group = redash_api.get_usage_stats(query='usage_query', volumes=vols_to_collect)
-    allocation_usages = redash_api.get_usage_stats(query="subdirectory", volumes=vols_to_collect)
+    allocation_usages = redash_api.get_usage_stats(query='subdirectory', volumes=vols_to_collect)
     queryset = []
     issues = {'no_users':[], 'no_total':[], 'no_path':[]}
 
@@ -554,38 +554,36 @@ def pull_sf_push_cf_redash(pull_totals=True):
         # select query rows that match allocation volume and lab
         # confirm that only one allocation is represented by checking the path
         if allocation.path:
-            lab_data = [i for i in user_usage if i['vol_name'] == volume and allocation.path == i['lab_path']]
-            usage_data = [i for i in allocation_usages if i['vol_name'] == volume and allocation.path == i['path']]
+            user_usage_entries = [i for i in user_usage if i['vol_name'] == volume and allocation.path == i['lab_path']]
+            lab_usage_entries = [i for i in allocation_usages if i['vol_name'] == volume and allocation.path == i['path']]
         else:
             logger.info('no allocation path for allocation %s / %s; defaulting to membership-based usage reporting.', project, volume)
             issues['no_path'].append((allocation.pk, project, volume))
-            lab_data = [i for i in user_usage_by_group if i['vol_name'] == volume and i['group_name'] == lab]
+            user_usage_entries = [i for i in user_usage_by_group if i['vol_name'] == volume and i['group_name'] == lab]
             print(f'no allocation path for allocation {allocation.pk} {project} / {volume}; defaulting to membership-based usage reporting.', allocation.allocationattribute_set.all())
-            usage_data = [i for i in allocation_usages if i['vol_name'] == volume and i['group_name'] == lab]
+            lab_usage_entries = [i for i in allocation_usages if i['vol_name'] == volume and i['group_name'] == lab]
 
-        if pull_totals is False:
-            pass
-        elif not usage_data:
+        if not lab_usage_entries:
             print('WARNING: No starfish allocation usage for', allocation.pk, lab, resource)
             logger.warning('WARNING: No starfish allocation usage result for allocation %s %s %s',
                 allocation.pk, lab, resource)
             issues['no_total'].append((allocation.pk, project, volume))
         else:
-            usage_data = usage_data[0]
+            lab_usage_entries = lab_usage_entries[0]
             bytes_attribute, _ = allocation.allocationattribute_set.get_or_create(
                     allocation_attribute_type=quota_bytes_attributetype
                 )
-            bytes_attribute.allocationattributeusage.value = usage_data['total_size']
+            bytes_attribute.allocationattributeusage.value = lab_usage_entries['total_size']
             bytes_attribute.allocationattributeusage.save()
 
-            tbs = round((usage_data['total_size']/1099511627776), 5)
+            tbs = round((lab_usage_entries['total_size']/1099511627776), 5)
             logger.info('allocation usage for allocation %s: %s bytes, %s terabytes',
-                        allocation.pk, usage_data['total_size'], tbs)
+                        allocation.pk, lab_usage_entries['total_size'], tbs)
             tbs_attribute, _ = allocation.allocationattribute_set.update_or_create(
                     allocation_attribute_type=quota_tbs_attributetype)
             tbs_attribute.allocationattributeusage.value = tbs
             tbs_attribute.allocationattributeusage.save()
-        if not lab_data:
+        if not user_usage_entries:
             logger.warning('WARNING: No starfish user usage result for allocation %s %s %s',
                                                 allocation.pk, lab, resource)
             issues['no_users'].append((allocation.pk, project, volume))
@@ -593,7 +591,7 @@ def pull_sf_push_cf_redash(pull_totals=True):
             zero_out_absent_allocationusers(usernames, allocation)
             continue
 
-        usernames = [d['user_name'] for d in lab_data]
+        usernames = [d['user_name'] for d in user_usage_entries]
         logger.debug('users returned: %s', usernames)
 
         # identify and record users that aren't in Coldfront
@@ -606,7 +604,7 @@ def pull_sf_push_cf_redash(pull_totals=True):
         zero_out_absent_allocationusers(usernames, allocation)
 
         for user in user_models:
-            userdict = next(d for d in lab_data if d['user_name'].lower() == user.username.lower())
+            userdict = next(d for d in user_usage_entries if d['user_name'].lower() == user.username.lower())
             logger.debug('entering for user: %s', user.username)
             allocationuser, created = allocation.allocationuser_set.get_or_create(
                 user=user,
