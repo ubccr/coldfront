@@ -30,13 +30,14 @@ def select_one_project_allocation(project_obj, resource_obj, dirpath=None):
     project_obj
     resource_obj
     '''
-    allocation_query = project_obj.allocation_set.filter(resources__id=resource_obj.id)
+    allocation_query = project_obj.allocation_set.filter(
+                                                resources__id=resource_obj.id)
     if allocation_query.count() == 1:
         allocation_obj = allocation_query.first()
     elif allocation_query.count() < 1:
         allocation_obj = None
     elif allocation_query.count() > 1:
-        allocation_obj = next((a for a in allocation_query if a.path in dirpath),
+        allocation_obj = next((a for a in allocation_query if a.path.lower() in dirpath.lower()),
                                 'MultiAllocationError')
     return allocation_obj
 
