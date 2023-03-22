@@ -81,9 +81,10 @@ cilogon_app_client_id: ""
 cilogon_app_secret: ""
 
 # Django Flags settings.
-# TODO: For LRC, disable basic auth. and enable SSO.
-flag_basic_auth_enabled: True
-flag_sso_enabled: False
+# TODO: For LRC, disable link login.
+flag_basic_auth_enabled: False
+flag_sso_enabled: True
+flag_link_login_enabled: True
 # TODO: For LRC, disable BRC and enable LRC.
 flag_brc_enabled: True
 flag_lrc_enabled: False
