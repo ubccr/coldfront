@@ -309,7 +309,9 @@ def collect_new_project_data(projects_to_add):
     # bulk-query user/group data
     user_group_search = '|'.join(entry['group_name'] for entry in active_pi_groups)
     aduser_data = att_conn.collect_group_membership(f'({user_group_search})')
-    return (pi_data, aduser_data)
+    lab_list = [entry['group_name'] for entry in active_pi_groups]
+    invalid_projects = [lab for lab in projects_to_add if lab not in lab_list]
+    return (pi_data, aduser_data, invalid_projects)
 
 
 def add_new_projects(pi_data, aduser_data):
@@ -434,8 +436,9 @@ def create_new_projects(projects_list: list):
     projects_to_add = [p for p in projects_list if p not in [p.title for p in existing_projects]]
 
     # if PI is inactive or otherwise unavailable, don't add project or users
-    pi_data, aduser_data = collect_new_project_data(projects_to_add)
+    pi_data, aduser_data, invalid_projects = collect_new_project_data(projects_to_add)
     added_projects, errortracker = add_new_projects(pi_data, aduser_data)
+    errortracker['att_uncollected'] = invalid_projects
     return added_projects, errortracker
 
 
