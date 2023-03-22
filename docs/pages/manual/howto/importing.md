@@ -432,6 +432,34 @@ Cluster,slurm_specs,Project ID,University Cloud Storage,230
 
 
 ```
+## Commands
+
+In the case that your data fits the parameters exactly, you can use the predefined commands to import your data into Coldfront
+
+The general command syntax is 
+``` coldfront import_new_x -i filepath```
+
+Users-
+
+``` coldfront import_new_users -i filepath```
+
+Publications-
+
+``` coldfront import_new_publications -i filepath```
+
+Resources-
+
+``` coldfront import_new_resources -i filepath```
+
+Grants-
+
+``` coldfront import_new_grants -i filepath```
+
+Projects-
+
+``` coldfront import_new_projects -i filepath```
+
+
 
 
 
