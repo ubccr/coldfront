@@ -304,14 +304,16 @@ class AllTheThingsConn:
 def collect_new_project_data(projects_to_add):
     att_conn = AllTheThingsConn()
     pi_data = att_conn.collect_pi_data(projects_to_add)
+    logger.debug('pi_data:\n%s', pi_data)
     active_pi_groups = [entry for entry in pi_data if entry['user_enabled']]
 
     # bulk-query user/group data
     user_group_search = '|'.join(entry['group_name'] for entry in active_pi_groups)
     aduser_data = att_conn.collect_group_membership(f'({user_group_search})')
     lab_list = [entry['group_name'] for entry in active_pi_groups]
-    invalid_projects = [lab for lab in projects_to_add if lab not in lab_list]
-    return (pi_data, aduser_data, invalid_projects)
+    invalid_projs = [lab for lab in projects_to_add if lab not in lab_list]
+    logger.warning('projects absent from the query or with invalid PIs: %s', invalid_projs)
+    return (pi_data, aduser_data, invalid_projs)
 
 
 def add_new_projects(pi_data, aduser_data):
