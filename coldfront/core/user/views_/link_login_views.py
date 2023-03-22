@@ -64,13 +64,12 @@ class RequestLoginLinkView(FormView):
 
     def _validate_email_address(self, email):
         """Return an EmailAddress object corresponding to the given
-        address (str) if one exists. Otherwise, return None. Write user
-        and log messages as needed."""
-        email_address = None
+        address (str) if one exists and is verified. Otherwise, return
+        None. Write user and log messages as needed."""
         try:
             email_address = EmailAddress.objects.get(email=email)
         except EmailAddress.DoesNotExist:
-            pass
+            return None
         except EmailAddress.MultipleObjectsReturned:
             logger.error(
                 f'Unexpectedly found multiple EmailAddresses for email '
@@ -78,7 +77,11 @@ class RequestLoginLinkView(FormView):
             message = (
                 'Unexpected server error. Please contact an administrator.')
             messages.error(self.request, message)
-        return email_address
+            return None
+        else:
+            if not email_address.verified:
+                return None
+            return email_address
 
     def _validate_user_eligible(self, user):
         """Return None if the given User is eligible to log in using
