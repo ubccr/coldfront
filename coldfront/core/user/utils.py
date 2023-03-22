@@ -305,10 +305,30 @@ def send_login_link_email(email_address):
     template_name = 'email/login_link.txt'
     context = {
         'PORTAL_NAME': settings.PORTAL_NAME,
-        'center_name': import_from_settings('CENTER_NAME', ''),
         'login_url': login_token_url(email_address.user),
         'login_link_max_age_minutes': (
             import_from_settings('SESAME_MAX_AGE') // 60),
+        'signature': import_from_settings('EMAIL_SIGNATURE', ''),
+    }
+
+    sender = import_from_settings('EMAIL_SENDER')
+    receiver_list = [email_address.email, ]
+
+    send_email_template(subject, template_name, context, sender, receiver_list)
+
+
+def send_login_link_ineligible_email(email_address, reason):
+    """Send an email containing a reason explaining why the User with
+    the given EmailAddress is ineligible to receive a login link."""
+    email_enabled = import_from_settings('EMAIL_ENABLED', False)
+    if not email_enabled:
+        return
+
+    subject = 'Ineligible for Login Link'
+    template_name = 'email/login_link_ineligible.txt'
+    context = {
+        'PORTAL_NAME': settings.PORTAL_NAME,
+        'reason': reason,
         'signature': import_from_settings('EMAIL_SIGNATURE', ''),
     }
 

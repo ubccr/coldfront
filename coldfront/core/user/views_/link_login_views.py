@@ -10,6 +10,7 @@ from sesame.views import LoginView
 
 from coldfront.core.user.forms_.link_login_forms import RequestLoginLinkForm
 from coldfront.core.user.utils import send_login_link_email
+from coldfront.core.user.utils import send_login_link_ineligible_email
 from coldfront.core.utils.common import import_from_settings
 
 
@@ -23,6 +24,9 @@ class RequestLoginLinkView(FormView):
     form_class = RequestLoginLinkForm
     template_name = 'user/request_login_link.html'
 
+    class UserIneligibleException(Exception):
+        pass
+
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_authenticated:
             return redirect(reverse('home'))
@@ -34,7 +38,13 @@ class RequestLoginLinkView(FormView):
         email = form.cleaned_data.get('email')
         email_address = self._validate_email_address(email)
         if email_address:
-            send_login_link_email(email_address)
+            try:
+                self._validate_user_eligible(email_address.user)
+            except self.UserIneligibleException as e:
+                reason = str(e)
+                send_login_link_ineligible_email(email_address, reason)
+            else:
+                send_login_link_email(email_address)
         self._send_success_message()
         return super().form_valid(form)
 
@@ -69,6 +79,16 @@ class RequestLoginLinkView(FormView):
                 'Unexpected server error. Please contact an administrator.')
             messages.error(self.request, message)
         return email_address
+
+    def _validate_user_eligible(self, user):
+        """Return None if the given User is eligible to log in using
+        this method. Otherwise, raise an exception with a user-facing
+        message explaining why the user is ineligible."""
+        # Staff users and superusers
+        if user.is_staff or user.is_superuser:
+            raise self.UserIneligibleException(
+                'For security reasons, portal staff are disallowed from '
+                'logging in using a link.')
 
 
 class LinkLoginView(LoginView):
