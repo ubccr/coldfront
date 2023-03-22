@@ -1,8 +1,9 @@
 import logging
+from datetime import datetime
 
 from django.core.management.base import BaseCommand, CommandError
 
-from coldfront.plugins.fasrc.utils import AllTheThingsConn
+from coldfront.plugins.fasrc.utils import AllTheThingsConn, change_filehandler
 from coldfront.core.allocation.models import Allocation, AllocationAttribute
 
 logger = logging.getLogger(__name__)
@@ -25,6 +26,8 @@ class Command(BaseCommand):
         volumes = volumes = kwargs['volumes']
         if volumes:
             volumes = volumes.split(",")
+        today = datetime.today().strftime('%Y%m%d')
+        change_filehandler(f'logs/{today}-allthethings.log')
         attconn = AllTheThingsConn()
         result_file = attconn.pull_quota_data(volumes=volumes)
         attconn.push_quota_data(result_file)
