@@ -498,7 +498,7 @@ def update_group_membership():
         if not_added:
             # find accompanying ifxusers in the system
             ifxusers, missing_users = id_present_missing_users(not_added)
-            log_missing('users', missing_users)
+            # log_missing('users', missing_users)
 
             present_users = project.projectuser_set.filter(user__in=ifxusers)
             present_users.update(   role=projectuser_role_user,
