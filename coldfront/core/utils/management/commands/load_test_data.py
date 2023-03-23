@@ -24,8 +24,11 @@ from coldfront.core.resource.models import (Resource, ResourceAttribute,
                                             ResourceAttributeType,
                                             ResourceType)
 from coldfront.core.user.models import UserProfile
+from coldfront.core.utils.common import import_from_settings
 
 base_dir = settings.BASE_DIR
+
+PUBLICATION_ENABLE = import_from_settings('PUBLICATION_ENABLE', False)
 
 # first, last
 Users = ['Carl	Gray',  # PI#1
@@ -234,57 +237,57 @@ class Command(BaseCommand):
             resource_obj = Resource.objects.get(name=scavanger)
             univ_hpc.linked_resources.add(resource_obj)
             univ_hpc.save()
+        if PUBLICATION_ENABLE:
+            publication_source = PublicationSource.objects.get(name='doi')
+            # for title, author, year, unique_id, source in (
+            #     ('Angular momentum in QGP holography', 'Brett McInnes',
+            #      2014, '10.1016/j.nuclphysb.2014.08.011', 'doi'),
+            #     ('Robust ferroelectric state in multiferroicMn1-xZnxWO4',
+            #      'R. P. Chaudhury and F. Ye and J. A. Fernandez-Baca and B. Lorenz and Y. Q. Wang and Y. Y. Sun and H. A. Mook and C. W. Chu',
+            #      2011,
+            #      '10.1103/PhysRevB.83.014401',
+            #      'doi'
+            #      ),
+            #     ('Extreme sensitivity of a frustrated quantum magnet:Cs2CuCl4',
+            #      'Oleg A. Starykh and Hosho Katsura and Leon Balents',
+            #      2010,
+            #      '10.1103/PhysRevB.82.014421',
+            #      'doi'
+            #      ),
+            #     ('Magnetic excitations in the spinel compoundLix[Mn1.96Li0.04]O4(x=0.2,0.6,0.8,1.0): How a classical system can mimic quantum critical scaling',
+            #      'Thomas Heitmann and Alexander Schmets and John Gaddy and Jagat Lamsal and Marcus Petrovic and Thomas Vojta and Wouter Montfrooij',
+            #      2010,
+            #      '10.1103/PhysRevB.81.014411',
+            #      'doi'
+            #      ),
+            # ):
+            #     Publication.objects.get_or_create(
+            #         project=project_obj,
+            #         title=title,
+            #         author=author,
+            #         year=year,
+            #         unique_id=unique_id,
+            #         source=publication_source
+            #     )
 
-        publication_source = PublicationSource.objects.get(name='doi')
-        # for title, author, year, unique_id, source in (
-        #     ('Angular momentum in QGP holography', 'Brett McInnes',
-        #      2014, '10.1016/j.nuclphysb.2014.08.011', 'doi'),
-        #     ('Robust ferroelectric state in multiferroicMn1-xZnxWO4',
-        #      'R. P. Chaudhury and F. Ye and J. A. Fernandez-Baca and B. Lorenz and Y. Q. Wang and Y. Y. Sun and H. A. Mook and C. W. Chu',
-        #      2011,
-        #      '10.1103/PhysRevB.83.014401',
-        #      'doi'
-        #      ),
-        #     ('Extreme sensitivity of a frustrated quantum magnet:Cs2CuCl4',
-        #      'Oleg A. Starykh and Hosho Katsura and Leon Balents',
-        #      2010,
-        #      '10.1103/PhysRevB.82.014421',
-        #      'doi'
-        #      ),
-        #     ('Magnetic excitations in the spinel compoundLix[Mn1.96Li0.04]O4(x=0.2,0.6,0.8,1.0): How a classical system can mimic quantum critical scaling',
-        #      'Thomas Heitmann and Alexander Schmets and John Gaddy and Jagat Lamsal and Marcus Petrovic and Thomas Vojta and Wouter Montfrooij',
-        #      2010,
-        #      '10.1103/PhysRevB.81.014411',
-        #      'doi'
-        #      ),
-        # ):
-        #     Publication.objects.get_or_create(
-        #         project=project_obj,
-        #         title=title,
-        #         author=author,
-        #         year=year,
-        #         unique_id=unique_id,
-        #         source=publication_source
-        #     )
+            # start_date = datetime.datetime.now()
+            # end_date = datetime.datetime.now() + relativedelta(days=900)
 
-        # start_date = datetime.datetime.now()
-        # end_date = datetime.datetime.now() + relativedelta(days=900)
-
-        # Grant.objects.get_or_create(
-        #     project=project_obj,
-        #     title='Angular momentum in QGP holography',
-        #     grant_number='12345',
-        #     role='CoPI',
-        #     grant_pi_full_name='John Doe',
-        #     funding_agency=GrantFundingAgency.objects.get(
-        #         name='National Science Foundation (NSF)'),
-        #     grant_start=start_date,
-        #     grant_end=end_date,
-        #     percent_credit=20.0,
-        #     direct_funding=600000.0,
-        #     total_amount_awarded=3000000.0,
-        #     status=GrantStatusChoice.objects.get(name='Active')
-        # )
+            # Grant.objects.get_or_create(
+            #     project=project_obj,
+            #     title='Angular momentum in QGP holography',
+            #     grant_number='12345',
+            #     role='CoPI',
+            #     grant_pi_full_name='John Doe',
+            #     funding_agency=GrantFundingAgency.objects.get(
+            #         name='National Science Foundation (NSF)'),
+            #     grant_start=start_date,
+            #     grant_end=end_date,
+            #     percent_credit=20.0,
+            #     direct_funding=600000.0,
+            #     total_amount_awarded=3000000.0,
+            #     status=GrantStatusChoice.objects.get(name='Active')
+            # )
 
         project_user_obj, _ = ProjectUser.objects.get_or_create(
             user=pi1,
@@ -452,45 +455,46 @@ class Command(BaseCommand):
             role=ProjectUserRoleChoice.objects.get(name='Manager'),
             status=ProjectUserStatusChoice.objects.get(name='Active')
         )
-
-        for title, author, year, journal, unique_id, source in (
-            ('Lattice constants from semilocal density functionals with zero-point phonon correction',
-             "Pan Hao and Yuan Fang and Jianwei Sun and G\'abor I. Csonka and Pier H. T. Philipsen and John P. Perdew",
-             2012,
-             'Physical Review B',
-             '10.1103/PhysRevB.85.014111',
-             'doi'),
-            ('Anisotropic magnetocapacitance in ferromagnetic-plate capacitors',
-             "J. A. Haigh and C. Ciccarelli and A. C. Betz and A. Irvine and V. Nov\'ak and T. Jungwirth and J. Wunderlich",
-             2015,
-             'Physical Review B',
-             '10.1103/PhysRevB.91.140409',
-             'doi'
-             ),
-            ('Interaction effects in topological superconducting wires supporting Majorana fermions',
-             'E. M. Stoudenmire and Jason Alicea and Oleg A. Starykh and Matthew P.A. Fisher',
-             2011,
-             'Physical Review B',
-             '10.1103/PhysRevB.84.014503',
-             'doi'
-             ),
-            ('Logarithmic correlations in quantum Hall plateau transitions',
-             'Romain Vasseur',
-             2015,
-             'Physical Review B',
-             '10.1103/PhysRevB.92.014205',
-             'doi'
-             ),
-        ):
-            Publication.objects.get_or_create(
-                project=project_obj,
-                title=title,
-                author=author,
-                year=year,
-                journal=journal,
-                unique_id=unique_id,
-                source=publication_source
-            )
+        
+        if PUBLICATION_ENABLE:
+            for title, author, year, journal, unique_id, source in (
+                ('Lattice constants from semilocal density functionals with zero-point phonon correction',
+                "Pan Hao and Yuan Fang and Jianwei Sun and G\'abor I. Csonka and Pier H. T. Philipsen and John P. Perdew",
+                2012,
+                'Physical Review B',
+                '10.1103/PhysRevB.85.014111',
+                'doi'),
+                ('Anisotropic magnetocapacitance in ferromagnetic-plate capacitors',
+                "J. A. Haigh and C. Ciccarelli and A. C. Betz and A. Irvine and V. Nov\'ak and T. Jungwirth and J. Wunderlich",
+                2015,
+                'Physical Review B',
+                '10.1103/PhysRevB.91.140409',
+                'doi'
+                ),
+                ('Interaction effects in topological superconducting wires supporting Majorana fermions',
+                'E. M. Stoudenmire and Jason Alicea and Oleg A. Starykh and Matthew P.A. Fisher',
+                2011,
+                'Physical Review B',
+                '10.1103/PhysRevB.84.014503',
+                'doi'
+                ),
+                ('Logarithmic correlations in quantum Hall plateau transitions',
+                'Romain Vasseur',
+                2015,
+                'Physical Review B',
+                '10.1103/PhysRevB.92.014205',
+                'doi'
+                ),
+            ):
+                Publication.objects.get_or_create(
+                    project=project_obj,
+                    title=title,
+                    author=author,
+                    year=year,
+                    journal=journal,
+                    unique_id=unique_id,
+                    source=publication_source
+                )
 
         start_date = datetime.datetime.now()
         end_date = datetime.datetime.now() + relativedelta(days=900)

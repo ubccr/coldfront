@@ -17,6 +17,7 @@ EMAIL_ADMIN_LIST = import_from_settings('EMAIL_ADMIN_LIST', [])
 EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
     'EMAIL_DIRECTOR_EMAIL_ADDRESS', '')
 
+PUBLICATION_ENABLE = import_from_settings('PUBLICATION_ENABLE', False)
 
 class ProjectSearchForm(forms.Form):
     """ Search form for the Project list page.
@@ -99,18 +100,19 @@ class ProjectReviewForm(forms.Form):
         else:
             grant_updated_in_last_year = None
 
-        if project_obj.publication_set.exists():
-            latest_publication = project_obj.publication_set.order_by(
-                '-created')[0]
-            publication_updated_in_last_year = (
-                now - latest_publication.created).days < 365
-        else:
-            publication_updated_in_last_year = None
+        if PUBLICATION_ENABLE:
+            if project_obj.publication_set.exists():
+                latest_publication = project_obj.publication_set.order_by(
+                    '-created')[0]
+                publication_updated_in_last_year = (
+                    now - latest_publication.created).days < 365
+            else:
+                publication_updated_in_last_year = None
 
-        if grant_updated_in_last_year or publication_updated_in_last_year:
-            self.fields['reason'].widget = forms.HiddenInput()
-        else:
-            self.fields['reason'].required = True
+            if grant_updated_in_last_year or publication_updated_in_last_year:
+                self.fields['reason'].widget = forms.HiddenInput()
+            else:
+                self.fields['reason'].required = True
 
 
 class ProjectReviewEmailForm(forms.Form):

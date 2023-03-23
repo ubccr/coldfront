@@ -15,6 +15,7 @@ from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.utils.common import import_from_settings
 
 PROJECT_ENABLE_PROJECT_REVIEW = import_from_settings('PROJECT_ENABLE_PROJECT_REVIEW', False)
+PUBLICATION_ENABLE = import_from_settings('PUBLICATION_ENABLE', False)
 
 class ProjectPermission(Enum):
     """ A project permission stores the user, manager, pi, and update fields of a project. """
@@ -107,17 +108,18 @@ We do not have information about your research. Please provide a detailed descri
         else:
             return None
 
-    @property
-    def latest_publication(self):
-        """
-        Returns:
-            Publication: the most recent publication for this project, or None if there are no publications
-        """
+    if PUBLICATION_ENABLE:
+        @property
+        def latest_publication(self):
+            """
+            Returns:
+                Publication: the most recent publication for this project, or None if there are no publications
+            """
 
-        if self.publication_set.exists():
-            return self.publication_set.order_by('-created')[0]
-        else:
-            return None
+            if self.publication_set.exists():
+                return self.publication_set.order_by('-created')[0]
+            else:
+                return None
 
     @property
     def needs_review(self):

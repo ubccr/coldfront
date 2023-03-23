@@ -10,7 +10,7 @@ RESEARCH_OUTPUT_ENABLE = import_from_settings('RESEARCH_OUTPUT_ENABLE', False)
 
 if RESEARCH_OUTPUT_ENABLE:
     class ResearchOutput(TimeStampedModel):
-        """ A research output represents anything related a project that would not fall under the publication section. Examples include magazine or newspaper articles, media coverage, databases, software, or other products created.
+        """ A research output represents anything related to a project that would not fall under the publication section. Examples include magazine or newspaper articles, media coverage, databases, software, or other products created.
         
         Attributes:
             project (Project): links project to research output

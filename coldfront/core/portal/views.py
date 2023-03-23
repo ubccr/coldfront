@@ -10,16 +10,20 @@ from django.views.decorators.cache import cache_page
 from coldfront.core.allocation.models import Allocation, AllocationUser
 from coldfront.core.grant.models import Grant
 from coldfront.core.portal.utils import (generate_allocations_chart_data,
-                                         generate_publication_by_year_chart_data,
                                          generate_resources_chart_data,
                                          generate_total_grants_by_agency_chart_data)
 from coldfront.core.project.models import Project
-from coldfront.core.publication.models import Publication
+
 from coldfront.core.utils.common import import_from_settings
 RESEARCH_OUTPUT_ENABLE = import_from_settings('RESEARCH_OUTPUT_ENABLE', False)
+PUBLICATION_ENABLE = import_from_settings('PUBLICATION_ENABLE', False)
 
 if RESEARCH_OUTPUT_ENABLE:
     from coldfront.core.research_output.models import ResearchOutput
+
+if PUBLICATION_ENABLE:
+    from coldfront.core.publication.models import Publication
+    from coldfront.core.portal.utils import generate_publication_by_year_chart_data
 
 def home(request):
 
@@ -62,18 +66,19 @@ def home(request):
 def center_summary(request):
     context = {}
 
-    # Publications Card
-    publications_by_year = list(Publication.objects.filter(year__gte=1999).values(
-        'unique_id', 'year').distinct().values('year').annotate(num_pub=Count('year')).order_by('-year'))
+    if PUBLICATION_ENABLE:
+        # Publications Card
+        publications_by_year = list(Publication.objects.filter(year__gte=1999).values(
+            'unique_id', 'year').distinct().values('year').annotate(num_pub=Count('year')).order_by('-year'))
 
-    publications_by_year = [(ele['year'], ele['num_pub'])
-                            for ele in publications_by_year]
+        publications_by_year = [(ele['year'], ele['num_pub'])
+                                for ele in publications_by_year]
 
-    publication_by_year_bar_chart_data = generate_publication_by_year_chart_data(
-        publications_by_year)
-    context['publication_by_year_bar_chart_data'] = publication_by_year_bar_chart_data
-    context['total_publications_count'] = Publication.objects.filter(
-        year__gte=1999).values('unique_id', 'year').distinct().count()
+        publication_by_year_bar_chart_data = generate_publication_by_year_chart_data(
+            publications_by_year)
+        context['publication_by_year_bar_chart_data'] = publication_by_year_bar_chart_data
+        context['total_publications_count'] = Publication.objects.filter(
+            year__gte=1999).values('unique_id', 'year').distinct().count()
 
     # Research Outputs card
     if RESEARCH_OUTPUT_ENABLE:

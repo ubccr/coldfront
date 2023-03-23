@@ -9,6 +9,8 @@ from django.contrib.auth.models import User
 from factory.django import DjangoModelFactory
 from factory import SubFactory
 
+from coldfront.core.utils.common import import_from_settings
+PUBLICATION_ENABLE = import_from_settings('PUBLICATION_ENABLE', False)
 
 class UserFactory(DjangoModelFactory):
     class Meta:
@@ -47,13 +49,13 @@ class ProjectFactory(DjangoModelFactory):
     force_review = False
     requires_review = False
 
+if PUBLICATION_ENABLE:
+    class PublicationSourceFactory(DjangoModelFactory):
+        class Meta:
+            model = PublicationSource
 
-class PublicationSourceFactory(DjangoModelFactory):
-    class Meta:
-        model = PublicationSource
-
-    name = 'doi'
-    url = 'https://doi.org/'
+        name = 'doi'
+        url = 'https://doi.org/'
 
 
 class ResourceTypeFactory(DjangoModelFactory):

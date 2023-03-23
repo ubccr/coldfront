@@ -9,6 +9,7 @@ from django.views.generic import TemplateView
 import coldfront.core.portal.views as portal_views
 from coldfront.core.utils.common import import_from_settings
 RESEARCH_OUTPUT_ENABLE = import_from_settings('RESEARCH_OUTPUT_ENABLE', False)
+PUBLICATION_ENABLE = import_from_settings('PUBLICATION_ENABLE', False)
 
 admin.site.site_header = 'ColdFront Administration'
 admin.site.site_title = 'ColdFront Administration'
@@ -25,12 +26,12 @@ urlpatterns = [
     path('allocation/', include('coldfront.core.allocation.urls')),
     path('resource/', include('coldfront.core.resource.urls')),
     path('grant/', include('coldfront.core.grant.urls')),
-    path('publication/', include('coldfront.core.publication.urls')),
 ]
 if RESEARCH_OUTPUT_ENABLE:
     urlpatterns += path('research-output/', include('coldfront.core.research_output.urls')),
 
-
+if PUBLICATION_ENABLE:
+    urlpatterns += path('publication/', include('coldfront.core.publication.urls')),
 
 if 'coldfront.plugins.iquota' in settings.INSTALLED_APPS:
     urlpatterns.append(path('iquota/', include('coldfront.plugins.iquota.urls')))

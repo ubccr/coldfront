@@ -15,6 +15,7 @@ Center Summary
 <hr>
 
 <!-- Start  Publications -->
+{% if PUBLICATION_ENABLE %}
 <div class="card mb-3 border-primary">
   <div class="card-header bg-primary text-white">
     <i class="fas fa-newspaper" aria-hidden="true"></i> User Entered Publications
@@ -24,6 +25,7 @@ Center Summary
     <strong>Total Publications:</strong> {{total_publications_count}}
   </div>
 </div>
+{% endif %}
 <!-- End Publications -->
 
 <!-- Start  Research Outputs -->
@@ -32,9 +34,11 @@ Center Summary
   <div class="card-header bg-primary text-white">
     <i class="far fa-newspaper" aria-hidden="true"></i> User Entered Research Outputs
   </div>
+  {% if PUBLICATION_ENABLE %}
   <div class="card-body">
     <strong>Total Publications:</strong> {{total_research_outputs_count}}
   </div>
+  {% endif %}
 </div>
 {% endif %}
 <!-- End Research Outputs -->

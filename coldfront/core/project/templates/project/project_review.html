@@ -20,7 +20,9 @@ Review Project
 
   <ol>
     <li><a href="{% url 'project-detail' project.pk %}"><i class="fas fa-external-link-alt" aria-hidden="true"></i> Verify</a> your project description is accurate</li>
+    {% if PUBLICATION_ENABLE %}
     <li><a href="{% url 'project-detail' project.pk %}#publications"><i class="fas fa-external-link-alt" aria-hidden="true"></i> Add</a> Publications</li>
+    {% endif %}
     <li><a href="{% url 'project-detail' project.pk %}#grants"><i class="fas fa-external-link-alt" aria-hidden="true"></i> Add</a> Grants</li>
     <li><a href="{% url 'project-detail' project.pk %}#users"><i class="fas fa-external-link-alt" aria-hidden="true"></i> Verify</a> the user accounts in your group and remove any that should no longer have access to {% settings_value 'CENTER_NAME' %} resources</li>
   </ol>
@@ -31,10 +33,12 @@ Review Project
         <th scope="row" class="text-nowrap">Grants Last Updated:</th>
         <td>{{project.latest_grant.modified|date:"M. d, Y"|default:"No grants"}}</td>
       </tr>
+      {% if PUBLICATION_ENABLE %}
       <tr>
         <th scope="row" class="text-nowrap">Publications Last Updated:</th>
         <td>{{project.latest_publication.created|date:"M. d, Y"|default:"No publications"}}</td>
       </tr>
+      {% endif %}
       <tr>
         <th scope="row" class="text-nowrap">Users in project:</th>
         <td>{{project_users}}</td>

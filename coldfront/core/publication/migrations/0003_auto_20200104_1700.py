@@ -3,21 +3,25 @@
 from django.db import migrations, models
 
 
-class Migration(migrations.Migration):
+from coldfront.core.utils.common import import_from_settings
+PUBLICATION_ENABLE = import_from_settings('PUBLICATION_ENABLE', False)
 
-    dependencies = [
-        ('publication', '0002_auto_20191223_1115'),
-    ]
+if PUBLICATION_ENABLE:
+    class Migration(migrations.Migration):
 
-    operations = [
-        migrations.AlterField(
-            model_name='publicationsource',
-            name='name',
-            field=models.CharField(max_length=255, unique=True),
-        ),
-        migrations.AlterField(
-            model_name='publicationsource',
-            name='url',
-            field=models.URLField(blank=True, null=True),
-        ),
-    ]
+        dependencies = [
+            ('publication', '0002_auto_20191223_1115'),
+        ]
+
+        operations = [
+            migrations.AlterField(
+                model_name='publicationsource',
+                name='name',
+                field=models.CharField(max_length=255, unique=True),
+            ),
+            migrations.AlterField(
+                model_name='publicationsource',
+                name='url',
+                field=models.URLField(blank=True, null=True),
+            ),
+        ]

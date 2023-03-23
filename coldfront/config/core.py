@@ -20,7 +20,7 @@ CENTER_BASE_URL = ENV.str('CENTER_BASE_URL', default='')
 #------------------------------------------------------------------------------
 RESEARCH_OUTPUT_ENABLE = ENV.bool('RESEARCH_OUTPUT_ENABLE', default=False)
 GRANT_ENABLE = ENV.bool('GRANT_ENABLE', default=True)
-PUBLICATION_ENABLE = ENV.bool('PUBLICATION_ENABLE', default=True)
+PUBLICATION_ENABLE = ENV.bool('PUBLICATION_ENABLE', default=False)
 
 #------------------------------------------------------------------------------
 # Enable Project Review

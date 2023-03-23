@@ -53,7 +53,6 @@ from coldfront.core.project.models import (Project,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice,
                                            ProjectUserMessage)
-from coldfront.core.publication.models import Publication
 from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.utils.common import get_domain_url, import_from_settings
@@ -63,6 +62,11 @@ RESEARCH_OUTPUT_ENABLE = import_from_settings('RESEARCH_OUTPUT_ENABLE', False)
 
 if RESEARCH_OUTPUT_ENABLE:
     from coldfront.core.research_output.models import ResearchOutput
+
+PUBLICATION_ENABLE = import_from_settings('PUBLICATION_ENABLE', False)
+
+if PUBLICATION_ENABLE:
+    from coldfront.core.publication.models import Publication
 
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
@@ -167,11 +171,13 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             else:
                 allocations = Allocation.objects.prefetch_related(
                     'resources').filter(project=self.object)
-
-        context['publications'] = Publication.objects.filter(
-            project=self.object, status='Active').order_by('-year')
-        context['research_outputs'] = ResearchOutput.objects.filter(
-            project=self.object).order_by('-created')
+        if PUBLICATION_ENABLE:
+            context['publications'] = Publication.objects.filter(
+                project=self.object, status='Active').order_by('-year')
+        if RESEARCH_OUTPUT_ENABLE:
+            context['research_outputs'] = ResearchOutput.objects.filter(
+                project=self.object).order_by('-created')
+            
         context['grants'] = Grant.objects.filter(
             project=self.object, status__name__in=['Active', 'Pending', 'Archived'])
         context['allocations'] = allocations
