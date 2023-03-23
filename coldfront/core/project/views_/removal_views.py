@@ -217,7 +217,7 @@ class ProjectRemovalRequestListView(LoginRequiredMixin,
                 direction = '-'
             order_by = direction + order_by
         else:
-            order_by = 'id'
+            order_by = '-modified'
 
         project_removal_status_complete, _ = \
             ProjectUserRemovalRequestStatusChoice.objects.get_or_create(
