@@ -219,7 +219,7 @@ Allocation Detail
                       <span class="badge badge-warning">
                         {{ allocation.expires_in|add:ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING }} days left to renew <br> Cannot renew during <br> project review
                       </span>
-                    {% elif project.status.name not in 'Expired, Denied' %}             
+                    {% elif project.status.name not in 'Expired, Denied, Revoked' %}
                       <a href="{% url 'allocation-renew' allocation.pk %}">
                           <span class="badge badge-warning"><i class="fas fa-redo-alt" aria-hidden="true"></i>
                             {{ allocation.expires_in|add:ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING }} days left to renew
@@ -261,7 +261,7 @@ Allocation Detail
                       <span class="badge badge-warning">
                         {{ allocation.expires_in|add:ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING }} days left to renew <br> Cannot renew during <br> project review
                       </span>
-                    {% elif project.status.name not in 'Expired, Denied' %}
+                    {% elif project.status.name not in 'Expired, Denied, Revoked' %}
                       <a href="{% url 'allocation-renew' allocation.pk %}">
                         <span class="badge badge-warning"><i class="fas fa-redo-alt" aria-hidden="true"></i>
                           {{ allocation.expires_in|add:ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING }} days left to renew

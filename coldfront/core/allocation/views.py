@@ -2539,7 +2539,7 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
                 request, 'Allocation renewal is disabled. Request a new allocation to this resource if you want to continue using it after the active until date.')
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
-        if allocation_obj.status.name not in ['Active', 'Expired', ]:
+        if allocation_obj.status.name not in ['Active', 'Expired', 'Revoked', ]:
             messages.error(request, 'You cannot renew an allocation with status "{}".'.format(
                 allocation_obj.status.name))
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
@@ -4398,7 +4398,7 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 request, 'You cannot request a change to this allocation because you have to review your project first.')
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
-        if allocation_obj.project.status.name in ['Denied', 'Expired', ]:
+        if allocation_obj.project.status.name in ['Denied', 'Expired', 'Revoked', ]:
             messages.error(
                 request, 'You cannot request a change to an allocation in a project with status "{}".'.format(allocation_obj.project.status.name))
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))

@@ -353,7 +353,7 @@ Project Detail
               <td class="text-nowrap"><strong>{{ allocation.get_information }}</strong></td>
               {% if allocation.status.name == 'Active' %}
                 <td class="text-success"><strong>{{ allocation.status.name }}</strong></td>
-              {% elif allocation.status.name in 'Expired, Denied' %}
+              {% elif allocation.status.name in 'Expired, Denied, Revoked' %}
                 <td class="text-danger"><strong>{{ allocation.status.name }}</strong></td>
               {% else %}
                 <td class="text-primary"><strong>{{ allocation.status.name }}</strong></td>
