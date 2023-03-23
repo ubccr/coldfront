@@ -35,15 +35,22 @@ Allocation Detail
 
 <div class="card mb-3">
   <div class="card-header">
-    {% if allocation.is_changeable and is_allowed_to_update_project %}
+    {% if is_allowed_to_update_project %}
       <div class="row">
         <div class="col">
           <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>
         </div>
         <div class="col">
-          <a class="btn btn-primary" href="{% url 'allocation-change' allocation.pk %}" role="button" style="float: right;">
-            Request Change
-          </a>
+          {% if allocation.is_changeable %}
+            <a class="btn btn-primary" href="{% url 'allocation-change' allocation.pk %}" role="button" style="float: right;">
+              Request Change
+            </a>
+          {% endif %}
+          {% if allocation.status.name in 'Active, Billing Information Submitted' %}
+            <a class="btn btn-primary mr-1" href="{% url 'allocation-revoke' allocation.pk %}" role="button" style="float: right;">
+              Revoke
+            </a>
+          {% endif %}
         </div>
       </div>
     {% else %}

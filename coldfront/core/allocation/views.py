@@ -447,6 +447,92 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             return render(request, self.template_name, context)
 
 
+class AllocationRevokeView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name = 'allocation/allocation_revoke.html'
+
+    def test_func(self):
+        user = self.request.user
+        if user.is_superuser:
+            return True
+        
+        allocation_obj = get_object_or_404(
+            Allocation, pk=self.kwargs.get('pk')
+        )
+        
+        if allocation_obj.project.pi == user:
+            return True
+
+        if allocation_obj.project.projectuser_set.filter(user=user, role__name='Manager', status__name='Active').exists():
+            return True
+        
+        messages.error(
+            self.request, 'You do not have permission to revoke an allocation in this project.'
+        )
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_superuser:
+            return super().dispatch(request, *args, **kwargs)
+
+        allocation_obj = get_object_or_404(
+            Allocation, pk=self.kwargs.get('pk')
+        )
+        if 'project' in request.META.get('HTTP_REFERER'):
+            project_pk = allocation_obj.project.pk
+            http_response_redirect = HttpResponseRedirect(
+                reverse('project-detail', kwargs={'pk': project_pk})
+            )
+        else:
+            http_response_redirect = HttpResponseRedirect(
+                reverse('allocation-detail', kwargs={'pk': allocation_obj.pk})
+            )
+
+        if not allocation_obj.get_parent_resource.requires_payment:
+            messages.error(request, 'This allocation cannot be revoked')
+            return http_response_redirect
+
+        if allocation_obj.status.name not in ['Active', 'Billing Information Submitted', ]:
+            messages.error(
+                request,
+                f'Cannot revoke an allocation with status "{allocation_obj.status}"'
+            )
+            return http_response_redirect
+
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        allocation_obj = Allocation.objects.get(pk=self.kwargs.get('pk'))
+        allocation_users = allocation_obj.allocationuser_set.filter(status__name='Active')
+
+        users = []
+        for allocation_user in allocation_users:
+            users.append(
+                f'{allocation_user.user.first_name} {allocation_user.user.last_name} ({allocation_user.user.username})'
+            )
+
+        context['from_project'] = 'project' in self.request.META.get('HTTP_REFERER')
+        context['users'] = ', '.join(users)
+        context['allocation'] = allocation_obj
+        return context
+    
+    def post(self, request, *args, **kwargs):
+        pk=self.kwargs.get('pk')
+        allocation_obj = Allocation.objects.get(pk=self.kwargs.get('pk'))
+        new_status = AllocationStatusChoice.objects.get(name='Revoked')
+        allocation_obj.status = new_status
+        allocation_obj.end_date = datetime.date.today()
+        allocation_obj.save()
+
+        # Checking if the string 'true' is there
+        from_project = self.request.GET.get('from_project')
+        if from_project:
+            allocation_obj = Allocation.objects.get(pk=self.kwargs.get('pk'))
+            project_pk = allocation_obj.project.pk
+            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_pk}))
+        
+        return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': self.kwargs.get('pk')}))
+
+
 class AllocationListView(LoginRequiredMixin, ListView):
 
     model = Allocation

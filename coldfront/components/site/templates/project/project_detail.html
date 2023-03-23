@@ -360,7 +360,14 @@ Project Detail
               {% endif %}
               <td>{{ allocation.end_date|date:"Y-m-d" }}</td>
               <td class="text-nowrap">
-                <a href="{% url 'allocation-detail' allocation.pk %}"><i class="far fa-folder-open" aria-hidden="true"></i><span class="sr-only">Details</span></a>
+                <a href="{% url 'allocation-detail' allocation.pk %}">
+                  <i class="far fa-folder-open" aria-hidden="true"></i><span class="sr-only">Details</span>
+                </a>
+                {% if is_allowed_to_update_project and allocation.status.name in 'Active, Billing Information Submitted' %}
+                  <a href="{% url 'allocation-revoke' pk=allocation.pk %}?from_project=true">
+                    <i class="far fa-times-circle" aria-hidden="true"></i><span class="sr-only">Revoke</span>
+                  </a>
+                {% endif %}
                 {% if allocation.is_locked and allocation.status.name == 'Active' and allocation.expires_in <= ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING and allocation.expires_in >= 0 %}
                   <span class="badge badge-warning"><i class="far fa-clock" aria-hidden="true"></i>
                     Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} <br> Not renewable
