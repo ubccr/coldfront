@@ -6,7 +6,10 @@ from django.test import TestCase
 from coldfront.core.resource.models import Resource
 from coldfront.plugins.slurm.associations import SlurmCluster
 from coldfront.plugins.slurm.utils import SLURM_CLUSTER_ATTRIBUTE_NAME
+from coldfront.core.utils.common import import_from_settings
 
+PUBLICATION_ENABLE = import_from_settings('PUBLICATION_ENABLE', False)
+GRANT_ENABLE = import_from_settings('GRANT_ENABLE', False)
 
 class AssociationTest(TestCase):
     fixtures = ['test_data.json']
@@ -14,10 +17,12 @@ class AssociationTest(TestCase):
     @classmethod
     def setUpClass(cls):
         call_command('import_field_of_science_data')
-        call_command('add_default_grant_options')
+        if GRANT_ENABLE:
+            call_command('add_default_grant_options')
         call_command('add_default_project_choices')
         call_command('add_default_allocation_choices')
-        call_command('add_default_publication_sources')
+        if PUBLICATION_ENABLE:
+            call_command('add_default_publication_sources')
         super(AssociationTest, cls).setUpClass()
 
     def test_allocations_to_slurm(self):

@@ -5,6 +5,8 @@
     <a class="dropdown-item" href="{% url 'allocation-list' %}?show_all_allocations=on">All Allocations</a>
     <a class="dropdown-item" href="{% url 'resource-list' %}">All Resources</a>
     <a id="navbar-project-reviews" class="dropdown-item" href="{% url 'project-review-list' %}">Project Reviews</a>
+    {% if GRANT_ENABLE %}
     <a id="navbar-grant-report" class="dropdown-item" href="{% url 'grant-report' %}">Grant Report</a>
+    {% endif %}
   </div>
 </li>

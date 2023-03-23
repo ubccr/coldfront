@@ -11,6 +11,7 @@ from factory import SubFactory
 
 from coldfront.core.utils.common import import_from_settings
 PUBLICATION_ENABLE = import_from_settings('PUBLICATION_ENABLE', False)
+GRANT_ENABLE = import_from_settings('GRANT_ENABLE', False)
 
 class UserFactory(DjangoModelFactory):
     class Meta:
@@ -21,15 +22,15 @@ class FieldOfScienceFactory(DjangoModelFactory):
     class Meta:
         model = FieldOfScience
 
+if GRANT_ENABLE:
+    class GrantFundingAgencyFactory(DjangoModelFactory):
+        class Meta:
+            model = GrantFundingAgency
 
-class GrantFundingAgencyFactory(DjangoModelFactory):
-    class Meta:
-        model = GrantFundingAgency
 
-
-class GrantStatusChoiceFactory(DjangoModelFactory):
-    class Meta:
-        model = GrantStatusChoice
+    class GrantStatusChoiceFactory(DjangoModelFactory):
+        class Meta:
+            model = GrantStatusChoice
 
 
 class ProjectStatusChoiceFactory(DjangoModelFactory):

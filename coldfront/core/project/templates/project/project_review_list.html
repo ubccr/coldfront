@@ -20,7 +20,9 @@ Project Review List
           <th scope="col">Project Title</th>
           <th scope="col">Date Review Submitted</th>
           <th scope="col">PI</th>
+          {% if GRANT_ENABLE %}
           <th scope="col">Grants Last Updated</th>
+          {% endif %}
           {% if PUBLICATION_ENABLE %}
           <th scope="col">Publications Last Updated</th>
           {% endif %}

@@ -41,8 +41,10 @@ Allocation Review New Requests
           <td>{{ allocation.created }}</td>
         </tr>
         <tr>
+          {% if GRANT_ENABLE %}
           <th scope="row" class="text-nowrap">Grants Last Updated:</th>
           <td>{{allocation.project.latest_grant.created|date:"M-d-Y"|default:"No grants"}}</td>
+          {% endif %}
         </tr>
         <tr>
           {% if PUBLICATION_ENABLE %}

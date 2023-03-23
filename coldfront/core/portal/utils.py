@@ -3,6 +3,7 @@ import datetime
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.utils.common import import_from_settings
 PUBLICATION_ENABLE = import_from_settings('PUBLICATION_ENABLE', False)
+GRANT_ENABLE = import_from_settings('GRANT_ENABLE', False)
 
 if PUBLICATION_ENABLE:
     def generate_publication_by_year_chart_data(publications_by_year):
@@ -33,15 +34,15 @@ if PUBLICATION_ENABLE:
 
         return data
 
+if GRANT_ENABLE:
+    def generate_total_grants_by_agency_chart_data(total_grants_by_agency):
 
-def generate_total_grants_by_agency_chart_data(total_grants_by_agency):
+        grants_agency_chart_data = {
+            "columns": total_grants_by_agency,
+            "type": 'donut'
+        }
 
-    grants_agency_chart_data = {
-        "columns": total_grants_by_agency,
-        "type": 'donut'
-    }
-
-    return grants_agency_chart_data
+        return grants_agency_chart_data
 
 
 def generate_resources_chart_data(allocations_count_by_resource_type):

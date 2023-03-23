@@ -8,6 +8,7 @@ from coldfront.core.utils.common import import_from_settings
 base_dir = settings.BASE_DIR
 
 PUBLICATION_ENABLE = import_from_settings('PUBLICATION_ENABLE', False)
+GRANT_ENABLE = import_from_settings('GRANT_ENABLE', False)
 
 class Command(BaseCommand):
     help = 'Run setup script to initialize the Coldfront database'
@@ -31,7 +32,8 @@ class Command(BaseCommand):
 def run_setup():
     call_command('migrate')
     call_command('import_field_of_science_data')
-    call_command('add_default_grant_options')
+    if GRANT_ENABLE:
+        call_command('add_default_grant_options')
     call_command('add_default_project_choices')
     call_command('add_resource_defaults')
     call_command('add_allocation_defaults')

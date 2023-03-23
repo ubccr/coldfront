@@ -18,6 +18,7 @@ EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
     'EMAIL_DIRECTOR_EMAIL_ADDRESS', '')
 
 PUBLICATION_ENABLE = import_from_settings('PUBLICATION_ENABLE', False)
+GRANT_ENABLE = import_from_settings('GRANT_ENABLE', False)
 
 class ProjectSearchForm(forms.Form):
     """ Search form for the Project list page.
@@ -93,12 +94,13 @@ class ProjectReviewForm(forms.Form):
         project_obj = get_object_or_404(Project, pk=project_pk)
         now = datetime.datetime.now(datetime.timezone.utc)
 
-        if project_obj.grant_set.exists():
-            latest_grant = project_obj.grant_set.order_by('-modified')[0]
-            grant_updated_in_last_year = (
-                now - latest_grant.created).days < 365
-        else:
-            grant_updated_in_last_year = None
+        if GRANT_ENABLE:
+            if project_obj.grant_set.exists():
+                latest_grant = project_obj.grant_set.order_by('-modified')[0]
+                grant_updated_in_last_year = (
+                    now - latest_grant.created).days < 365
+            else:
+                grant_updated_in_last_year = None
 
         if PUBLICATION_ENABLE:
             if project_obj.publication_set.exists():
@@ -109,10 +111,11 @@ class ProjectReviewForm(forms.Form):
             else:
                 publication_updated_in_last_year = None
 
-            if grant_updated_in_last_year or publication_updated_in_last_year:
-                self.fields['reason'].widget = forms.HiddenInput()
-            else:
-                self.fields['reason'].required = True
+            if GRANT_ENABLE:
+                if grant_updated_in_last_year or publication_updated_in_last_year:
+                    self.fields['reason'].widget = forms.HiddenInput()
+                else:
+                    self.fields['reason'].required = True
 
 
 class ProjectReviewEmailForm(forms.Form):

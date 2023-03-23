@@ -16,6 +16,7 @@ from coldfront.core.utils.common import import_from_settings
 
 PROJECT_ENABLE_PROJECT_REVIEW = import_from_settings('PROJECT_ENABLE_PROJECT_REVIEW', False)
 PUBLICATION_ENABLE = import_from_settings('PUBLICATION_ENABLE', False)
+GRANT_ENABLE = import_from_settings('GRANT_ENABLE', False)
 
 class ProjectPermission(Enum):
     """ A project permission stores the user, manager, pi, and update fields of a project. """
@@ -96,17 +97,18 @@ We do not have information about your research. Please provide a detailed descri
         else:
             return None
 
-    @property
-    def latest_grant(self):
-        """
-        Returns:
-            Grant: the most recent grant for this project, or None if there are no grants
-        """
+    if GRANT_ENABLE:
+        @property
+        def latest_grant(self):
+            """
+            Returns:
+                Grant: the most recent grant for this project, or None if there are no grants
+            """
 
-        if self.grant_set.exists():
-            return self.grant_set.order_by('-modified')[0]
-        else:
-            return None
+            if self.grant_set.exists():
+                return self.grant_set.order_by('-modified')[0]
+            else:
+                return None
 
     if PUBLICATION_ENABLE:
         @property

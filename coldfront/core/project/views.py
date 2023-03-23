@@ -33,7 +33,6 @@ from coldfront.core.allocation.models import (Allocation,
                                               AllocationUserStatusChoice)
 from coldfront.core.allocation.signals import (allocation_activate_user,
                                                allocation_remove_user)
-from coldfront.core.grant.models import Grant
 from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectAddUsersToAllocationForm,
                                           ProjectAttributeAddForm,
@@ -67,6 +66,11 @@ PUBLICATION_ENABLE = import_from_settings('PUBLICATION_ENABLE', False)
 
 if PUBLICATION_ENABLE:
     from coldfront.core.publication.models import Publication
+
+GRANT_ENABLE = import_from_settings('GRANT_ENABLE', False)
+
+if GRANT_ENABLE:
+    from coldfront.core.grant.models import Grant
 
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
@@ -177,9 +181,10 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         if RESEARCH_OUTPUT_ENABLE:
             context['research_outputs'] = ResearchOutput.objects.filter(
                 project=self.object).order_by('-created')
+        if GRANT_ENABLE:
+            context['grants'] = Grant.objects.filter(
+                project=self.object, status__name__in=['Active', 'Pending', 'Archived'])
             
-        context['grants'] = Grant.objects.filter(
-            project=self.object, status__name__in=['Active', 'Pending', 'Archived'])
         context['allocations'] = allocations
         context['attributes'] = attributes
         context['guage_data'] = guage_data

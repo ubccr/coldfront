@@ -13,13 +13,10 @@ from coldfront.core.allocation.models import (Allocation, AllocationAttribute,
                                               AllocationUser,
                                               AllocationUserStatusChoice)
 from coldfront.core.field_of_science.models import FieldOfScience
-from coldfront.core.grant.models import (Grant, GrantFundingAgency,
-                                         GrantStatusChoice)
 from coldfront.core.project.models import (Project, ProjectStatusChoice,
                                            ProjectUser, ProjectUserRoleChoice,
                                            ProjectUserStatusChoice, ProjectAttribute
                                            , ProjectAttributeType, AttributeType)
-from coldfront.core.publication.models import Publication, PublicationSource
 from coldfront.core.resource.models import (Resource, ResourceAttribute,
                                             ResourceAttributeType,
                                             ResourceType)
@@ -29,6 +26,14 @@ from coldfront.core.utils.common import import_from_settings
 base_dir = settings.BASE_DIR
 
 PUBLICATION_ENABLE = import_from_settings('PUBLICATION_ENABLE', False)
+GRANT_ENABLE = import_from_settings('GRANT_ENABLE', False)
+
+if PUBLICATION_ENABLE:
+    from coldfront.core.publication.models import Publication, PublicationSource
+
+if GRANT_ENABLE:
+    from coldfront.core.grant.models import (Grant, GrantFundingAgency,
+                                         GrantStatusChoice)
 
 # first, last
 Users = ['Carl	Gray',  # PI#1
@@ -237,7 +242,7 @@ class Command(BaseCommand):
             resource_obj = Resource.objects.get(name=scavanger)
             univ_hpc.linked_resources.add(resource_obj)
             univ_hpc.save()
-        if PUBLICATION_ENABLE:
+        if PUBLICATION_ENABLE and GRANT_ENABLE:
             publication_source = PublicationSource.objects.get(name='doi')
             # for title, author, year, unique_id, source in (
             #     ('Angular momentum in QGP holography', 'Brett McInnes',
@@ -498,22 +503,23 @@ class Command(BaseCommand):
 
         start_date = datetime.datetime.now()
         end_date = datetime.datetime.now() + relativedelta(days=900)
-
-        Grant.objects.get_or_create(
-            project=project_obj,
-            title='Quantum Halls',
-            grant_number='12345',
-            role='PI',
-            grant_pi_full_name='Stephanie Foster',
-            funding_agency=GrantFundingAgency.objects.get(
-                name='Department of Defense (DoD)'),
-            grant_start=start_date,
-            grant_end=end_date,
-            percent_credit=20.0,
-            direct_funding=200000.0,
-            total_amount_awarded=1000000.0,
-            status=GrantStatusChoice.objects.get(name='Active')
-        )
+        
+        if GRANT_ENABLE:
+            Grant.objects.get_or_create(
+                project=project_obj,
+                title='Quantum Halls',
+                grant_number='12345',
+                role='PI',
+                grant_pi_full_name='Stephanie Foster',
+                funding_agency=GrantFundingAgency.objects.get(
+                    name='Department of Defense (DoD)'),
+                grant_start=start_date,
+                grant_end=end_date,
+                percent_credit=20.0,
+                direct_funding=200000.0,
+                total_amount_awarded=1000000.0,
+                status=GrantStatusChoice.objects.get(name='Active')
+            )
 
         # Add university cloud
         allocation_obj, _ = Allocation.objects.get_or_create(

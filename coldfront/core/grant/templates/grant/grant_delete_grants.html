@@ -2,7 +2,7 @@
 {% load crispy_forms_tags %}
 {% load static %}
 
-
+{% if GRANT_ENABLE %}
 {% block title %}
 Delete Grants from Project
 {% endblock %}
@@ -55,6 +55,7 @@ Delete Grants from Project
   <div class="alert alert-info">
     No grants to delete!
   </div>
+{% endif %}
 {% endif %}
 
 <script>
