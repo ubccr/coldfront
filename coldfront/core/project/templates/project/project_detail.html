@@ -408,6 +408,7 @@ Project Detail
 
 
 <!-- Start Project ResearchOutputs -->
+{% if RESEARCH_OUTPUT_ENABLE %}
 <div class="card mb-3">
   <div class="card-header">
     <h3 class="d-inline" id="research_outputs"><i class="far fa-newspaper" aria-hidden="true"></i> Research Outputs</h3> <span class="badge badge-secondary">{{ research_outputs.count}}</span>
@@ -445,6 +446,7 @@ Project Detail
     {% endif %}
   </div>
 </div>
+{% endif %}
 <!-- End Project ResearchOutputs -->
 
 

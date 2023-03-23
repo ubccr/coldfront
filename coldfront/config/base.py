@@ -7,6 +7,10 @@ import coldfront
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management.utils import get_random_secret_key
 from coldfront.config.env import ENV, PROJECT_ROOT
+from coldfront.config.core import SETTINGS_EXPORT
+from coldfront.config.core import RESEARCH_OUTPUT_ENABLE, GRANT_ENABLE, PUBLICATION_ENABLE
+
+SETTINGS_EXPORT = SETTINGS_EXPORT
 
 #------------------------------------------------------------------------------
 # Base Django config for ColdFront
@@ -69,10 +73,16 @@ INSTALLED_APPS += [
     'coldfront.core.project',
     'coldfront.core.resource',
     'coldfront.core.allocation',
-    'coldfront.core.grant',
-    'coldfront.core.publication',
-    'coldfront.core.research_output',
 ]
+
+if RESEARCH_OUTPUT_ENABLE == True:
+    INSTALLED_APPS += ['coldfront.core.research_output',]
+
+if GRANT_ENABLE == True:
+    INSTALLED_APPS += ['coldfront.core.grant',]
+
+if PUBLICATION_ENABLE == True:
+    INSTALLED_APPS += ['coldfront.core.publication',]
 
 #------------------------------------------------------------------------------
 # Django Middleware
@@ -135,7 +145,7 @@ if len(SITE_TEMPLATES) > 0:
         raise ImproperlyConfigured('SITE_TEMPLATES should be a path to a directory')
 
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
-SETTINGS_EXPORT = []
+# SETTINGS_EXPORT = []
 
 STATIC_URL = '/static/'
 STATIC_ROOT = ENV.str('STATIC_ROOT', default=PROJECT_ROOT('static_root'))
