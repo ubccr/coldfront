@@ -54,11 +54,15 @@ from coldfront.core.project.models import (Project,
                                            ProjectUserStatusChoice,
                                            ProjectUserMessage)
 from coldfront.core.publication.models import Publication
-from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email, send_email_template
+
+RESEARCH_OUTPUT_ENABLE = import_from_settings('RESEARCH_OUTPUT_ENABLE', False)
+
+if RESEARCH_OUTPUT_ENABLE:
+    from coldfront.core.research_output.models import ResearchOutput
 
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(

@@ -9,6 +9,7 @@ Delete Research Outputs
 
 
 {% block content %}
+{% if RESEARCH_OUTPUT_ENABLE %}
 <h2>Delete research outputs from project: {{project.title}}</h2>
 <hr>
 {% with object_list as research_outputs %}
@@ -59,4 +60,5 @@ Delete Research Outputs
     </div>
   {% endif %}
 {% endwith %}
+{% endif %}
 {% endblock %}

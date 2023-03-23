@@ -15,8 +15,11 @@ from coldfront.core.portal.utils import (generate_allocations_chart_data,
                                          generate_total_grants_by_agency_chart_data)
 from coldfront.core.project.models import Project
 from coldfront.core.publication.models import Publication
-from coldfront.core.research_output.models import ResearchOutput
+from coldfront.core.utils.common import import_from_settings
+RESEARCH_OUTPUT_ENABLE = import_from_settings('RESEARCH_OUTPUT_ENABLE', False)
 
+if RESEARCH_OUTPUT_ENABLE:
+    from coldfront.core.research_output.models import ResearchOutput
 
 def home(request):
 
@@ -73,7 +76,8 @@ def center_summary(request):
         year__gte=1999).values('unique_id', 'year').distinct().count()
 
     # Research Outputs card
-    context['total_research_outputs_count'] = ResearchOutput.objects.all().distinct().count()
+    if RESEARCH_OUTPUT_ENABLE:
+        context['total_research_outputs_count'] = ResearchOutput.objects.all().distinct().count()
 
     # Grants Card
     total_grants_by_agency_sum = list(Grant.objects.values(
