@@ -211,7 +211,7 @@ Project Detail
               </td> -->
               <td>
                 {% if is_allowed_to_update_project %}
-                  <a href="{% url 'project-user-detail' project.pk user.id %}"><i class="fas fa-user-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a>
+                  <a title="Edit user" href="{% url 'project-user-detail' project.pk user.id %}"><i class="fas fa-user-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a>
                 {% endif %}
               </td>
             </tr>
@@ -271,7 +271,9 @@ Project Detail
                 <td>{{allocation.end_date|date:"Y-m-d"}}</td>
               {% endif %}
               <td class="text-nowrap">
-                <a href="{% url 'allocation-detail' allocation.pk %}"><i class="far fa-folder-open" aria-hidden="true"></i><span class="sr-only">Details</span></a>
+                <a title="Details" href="{% url 'allocation-detail' allocation.pk %}">
+                  <i class="far fa-folder-open" aria-hidden="true"></i><span class="sr-only">Details</span>
+                </a>
                 {% if project.requires_review %}
                   {% if allocation.is_locked and allocation.status.name == 'Active' and allocation.expires_in <= ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING and allocation.expires_in >= 0 %}
                     <span class="badge badge-warning"><i class="far fa-clock" aria-hidden="true"></i>
@@ -361,11 +363,11 @@ Project Detail
               <td>{{ allocation.end_date|date:"Y-m-d" }}</td>
               <td class="text-nowrap">
                 <a href="{% url 'allocation-detail' allocation.pk %}">
-                  <i class="far fa-folder-open" aria-hidden="true"></i><span class="sr-only">Details</span>
+                  <i title="Details" class="far fa-folder-open" aria-hidden="true"></i><span class="sr-only">Details</span>
                 </a>
                 {% if is_allowed_to_update_project and allocation.status.name in 'Active, Billing Information Submitted' %}
                   <a href="{% url 'allocation-revoke' pk=allocation.pk %}?from_project=true">
-                    <i class="far fa-times-circle" aria-hidden="true"></i><span class="sr-only">Revoke</span>
+                    <i title="Revoke access" class="far fa-times-circle" aria-hidden="true"></i><span class="sr-only">Revoke access</span>
                   </a>
                 {% endif %}
                 {% if allocation.is_locked and allocation.status.name == 'Active' and allocation.expires_in <= ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING and allocation.expires_in >= 0 %}
