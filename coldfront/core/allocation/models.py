@@ -12,7 +12,7 @@ from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
 from coldfront.core.project.models import Project
-from coldfront.core.resource.models import Resource
+from coldfront.core.resource.models import Resource, ResourceAttribute
 from coldfront.core.utils.common import import_from_settings
 import coldfront.core.attribute_expansion as attribute_expansion
 
@@ -517,8 +517,13 @@ class AllocationAttribute(TimeStampedModel):
 
         linked_attribute = self.allocation_attribute_type.linked_allocation_attribute
         if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
-            from coldfront.plugins.ldap_user_info.utils import check_if_user_exists, get_users_to_check
-            if linked_attribute in get_users_to_check():
+            from coldfront.plugins.ldap_user_info.utils import check_if_user_exists
+            linked_attribute_obj = ResourceAttribute.objects.filter(
+                resource=self.allocation.get_parent_resource,
+                resource_attribute_type__name=linked_attribute,
+                check_if_username_exists=True
+            )
+            if linked_attribute_obj.exists():
                 if not check_if_user_exists(self.value):
                     raise ValidationError(f'{self.allocation_attribute_type.name} does not have a valid username')
 
