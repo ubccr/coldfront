@@ -172,7 +172,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 resources__requires_payment=False
             ).order_by('-end_date')
 
-            priced_allocations = Allocation.objects.prefetch_related(
+            paid_allocations = Allocation.objects.prefetch_related(
                 'resources'
             ).filter(
                 project=self.object,
@@ -189,7 +189,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                     Q(allocationuser__status__name__in=['Active', ])
                 ).distinct().order_by('-end_date')
 
-                priced_allocations = Allocation.objects.filter(
+                paid_allocations = Allocation.objects.filter(
                     Q(project=self.object) &
                     Q(project__projectuser__user=self.request.user) &
                     Q(project__projectuser__status__name__in=['Active', ]) &
@@ -205,7 +205,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                     resources__requires_payment=False
                 )
 
-                priced_allocations = Allocation.objects.prefetch_related(
+                paid_allocations = Allocation.objects.prefetch_related(
                     'resources'
                 ).filter(
                     project=self.object,
@@ -219,7 +219,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['grants'] = Grant.objects.filter(
             project=self.object, status__name__in=['Active', 'Pending', 'Archived'])
         context['free_allocations'] = free_allocations
-        context['priced_allocations'] = priced_allocations
+        context['paid_allocations'] = paid_allocations
         context['project_users'] = project_users
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
         context['PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING'] = PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING

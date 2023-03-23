@@ -226,7 +226,7 @@ Project Detail
 <!-- Start Project Allocations -->
 <div class="card mb-3">
   <div class="card-header">
-    <h3 class="d-inline"><i class="fas fa-server" aria-hidden="true"></i> Allocations</h3> <span class="badge badge-secondary">{{ free_allocations.count|add:priced_allocations.count }}</span>
+    <h3 class="d-inline"><i class="fas fa-server" aria-hidden="true"></i> Allocations</h3> <span class="badge badge-secondary">{{ free_allocations.count|add:paid_allocations.count }}</span>
     <div class="float-right">
       {% if not project.status.name in 'Archived, Denied, Review Pending, Expired' and is_allowed_to_update_project %}
         <a class="btn btn-success" href="{% url 'allocation-create' project.pk %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Request Resource Allocation</a>
@@ -330,11 +330,11 @@ Project Detail
     <hr>
   </div>
   <div class="card-body">
-    <h4 class="d-inline">Paid Allocations</h4> <span class="badge badge-secondary">{{ priced_allocations.count }}</span>
+    <h4 class="d-inline">Paid Allocations</h4> <span class="badge badge-secondary">{{ paid_allocations.count }}</span>
     <hr>
-    {% if priced_allocations %}
+    {% if paid_allocations %}
     <div class="table-responsive">
-      <table id="priced_allocation_table" class="table table-hover">
+      <table id="paid_allocation_table" class="table table-hover">
         <thead>
           <tr>
             <th scope="col">Resource Name</th>
@@ -346,7 +346,7 @@ Project Detail
           </tr>
         </thead>
         <tbody>
-          {% for allocation in priced_allocations %}
+          {% for allocation in paid_allocations %}
             <tr>
               <td>{{ allocation.get_parent_resource.name }}</td>
               <td>{{ allocation.get_parent_resource.resource_type.name }}</td>
@@ -668,7 +668,7 @@ Project Detail
       }]
     });
 
-    $('#priced_allocation_table').DataTable({
+    $('#paid_allocation_table').DataTable({
       'aoColumnDefs': [{
         'bSortable': false,
         'aTargets': ['nosort']
