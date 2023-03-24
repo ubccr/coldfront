@@ -18,16 +18,16 @@ _NOTE: this isn't a typo, this is django pluralizing objects!_
 
 ### Editing Grants
 
-Grant information on pending or active grants can be edited by clicking on the folder icon next to the grant in the grant list on the Project Detail page
+Grant information on pending or active grants can be edited by clicking on the folder icon next to the grant in the grant list on the Project Detail page  
 
-![Edit Grant](../../images/grantlist.PNG)
+![Edit Grant](../../images/grantlist.PNG)  
 
 
 ### Deleting Grants
 
 Grants can be deleted by clicking on the 'Delete Grants' button.  A list of all grants in any status are displayed.  
 
-![Delete Grant](../../images/deletegrant.PNG)
+![Delete Grant](../../images/deletegrant.PNG)  
 No grants are selected by default.  The user can individually select the grant(s) to delete or click on the top checkbox to select them all.  Once the 'Delete Selected Grants from Project' button is clicked, the grant(s) are removed.  This can not be undone.
 
 

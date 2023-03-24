@@ -28,7 +28,8 @@ Select slurm_specs from the attribute menu and enter any slurm specs necessary f
 
 ### Step 2 - Create an Allocation for the Resources
 
-Login as the PI and request an allocation for the new resource.  
+Login as the PI and request an allocation for the new resource:  
+
 - Under the PI's project, click 'Request Resource Allocation'  
 - Select the cluster resource off the drop down list and enter a justification.  This is usually used by centers to get PIs to say why they need access to a particular resource.  
 - Select any other project users to add to the allocation.  
@@ -45,21 +46,25 @@ When logged in as a center admin, navigate to the Admin menu and click on 'Alloc
 ![Slurm Attributes](../../images/admin_approve.PNG)
 
 From here, the admin has a few options:  
+
 - You can click on the project title and you'll be redirected to the Project Detail page  
 - You can click on the allocation ID number and you'll be redirected to the Allocation Detail page  
 - You can click on the "Deny" button and the allocation status will change to 'denied.'  The PI and allocation users will get an email notifying them that the allocation has been denied.  
-- If you click on the "Approve" button, the allocation status will update to 'active' and the expiration date will be set one year out.  
+- If you click on the "Approve" button, the allocation status will update to 'active' and the expiration date will be set one year out.  You will also be asked to confirm that you want to activate the allocation without setting any attributes.    
 
-Most of the time, we want to set allocation attributes on the allocation before approving it, so that the plugins can interact and accounts get updated.  In this example, we want to set some Slurm attributes on the allocation before activating it.  Click on the allocation ID number to go to the Allocation detail page:  
+Most of the time, we want to set allocation attributes on the allocation before approving it, so that the plugins can interact and accounts get updated.  In this example, we want to set some Slurm attributes on the allocation before activating it.  Click on the allocation ID number or the "Details" button to go to the Allocation detail page:  
 
 ![Slurm Attributes](../../images/alloc_setup.PNG)
 
 Here we add 3 slurm attributes to the allocation:
+
 - slurm_account_name = PIusername (this will depend on how you name your slurm accounts - PI name, project name/ID, etc)
 - slurm_specs = Fairshare=100 (this is the fairshare applied to the slurm account)
-- slurm_user_specs = Fairshare=parent (this is the fairshare value inherited by all the associations of the slurm account)
+- slurm_user_specs = Fairshare=parent (this is the fairshare value inherited by all the associations of the slurm account)   
 
-We also change the status of the allocation to 'Active' and set today's date and the end date of the allocation.  If your allocation is good for one year, you could also go back to the "Allocation Requests" page and click the "Approve" button to set this all automatically.
+There may be other Slurm related info you add to these attributes.  `slurm_specs` get applied to the slurm account and are inherited by any slurm associations under that account.  `slurm_user_specs` are applied to each of the slurm associations (each user on the allocation).  
+
+We also change the status of the allocation to 'Active', set today's date as the start date, set the end date of the allocation, and then click the "Update" button.  If you want your allocation to be good for one year, you can click the "Approve" button to set this all automatically.
 
 
 ### Step 4 - Sync with Slurm  

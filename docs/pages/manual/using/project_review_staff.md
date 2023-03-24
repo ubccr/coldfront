@@ -1,8 +1,9 @@
 # Project Reviews for Center Staff
 
 The center director has access to the "Project Reviews" page under the 'Admin' menu in ColdFront.  Pending reviews will display here with the following information:  
-- Project Title - link to the Project Detail page   
-- Date Review Submitted  
+
+- Project title - link to the Project Detail page   
+- Date review was submitted  
 - PI - full name and username  
 - Grants last updated date  
 - Publications last updated date  
@@ -10,9 +11,9 @@ The center director has access to the "Project Reviews" page under the 'Admin' m
 
 ![Project Review](../../images/project_review8.PNG)
 
-If the director is satisifed with the project review and details provided, he/she can click the "Mark Complete" button.  This resets the review clock and starts the countdown to next year's due date.  It also changes the status displayed for the system administrators or other staff reviewing allocation requests (see below).
+If the director is satisifed with the project review and details provided, they can click the "Mark Complete" button.  This resets the review clock and starts the countdown to next year's due date.  It also changes the status displayed for the system administrators or other staff reviewing allocation requests (see below).
 
-If the director is not satisfied with the project update, he/she can click the 'Email' button to display a editable template email to send to the PI.  A CC field accepts additional email addresses to include on the email.  The project review can remain pending while the director waits for the PI to respond to the email request or update the project details in ColdFront.
+If the director is not satisfied with the project update, they can click the 'Email' button to display an editable template email to send to the PI.  A CC field accepts additional email addresses to include on the email.  The project review can remain pending while the director waits for the PI to respond to the email request or update the project details in ColdFront.
 
 ![Project Review](../../images/project_review9.PNG)
 
@@ -48,3 +49,6 @@ director@example.com
 555-555-5555
 ```
 The local_settings.py file should be in the ColdFront installation directory, likely /etc/coldfront
+
+!!! Tip  
+    After updating email configuration settings you will need to restart the coldfront-workers service.  
