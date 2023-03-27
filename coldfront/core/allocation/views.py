@@ -74,7 +74,7 @@ from coldfront.core.allocation.signals import (allocation_activate,
 from coldfront.core.project.models import (Project, ProjectUser,
                                            ProjectUserStatusChoice,
                                            ProjectUserRoleChoice)
-from coldfront.core.resource.models import Resource
+from coldfront.core.resource.models import Resource, ResourceAttributeType
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email_template, get_email_recipient_from_groups
 from coldfront.core.utils.slack import send_message
@@ -745,233 +745,56 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         #   label
         #   type
         # }
-        resource_form = [
-            {
-                'leverage_multiple_gpus': {},
-                'leverage_multiple_gpus_label': {},
-                'type': 'radio',
-            },
-            {
-                'for_coursework': {},
-                'for_coursework_label': {},
-                'type': 'radio',
-            },
-            {
-                'dl_workflow': {},
-                'dl_workflow_label': {},
-                'type': 'radio',
-            },
-            {
-                'gpu_workflow': {},
-                'gpu_workflow_label': {},
-                'type': 'radio',
-            },
-            {
-                'phi_association': {},
-                'phi_association_label': {},
-                'type': 'radio',
-            },
-            {
-                'system': {},
-                'system_label': {},
-                'type': 'radio',
-            },
-            {
-                'store_ephi': {},
-                'store_ephi_label': {},
-                'type': 'radio',
-            },
-            {
-                'access_level': {},
-                'access_level_label': {},
-                'type': 'radio',
-            },
-            {
-                'applications_list': {},
-                'applications_list_label': {},
-                'type': 'text',
-            },
-            {
-                'training_or_inference': {},
-                'training_or_inference_label': {},
-                'type': 'choice',
-            },
-            {
-                'primary_contact': {},
-                'primary_contact_label': {},
-                'type': 'text',
-            },
-            {
-                'secondary_contact': {},
-                'secondary_contact_label': {},
-                'type': 'text',
-            },
-            {
-                'department_full_name': {},
-                'department_full_name_label': {},
-                'type': 'text',
-            },
-            {
-                'department_short_name': {},
-                'department_short_name_label': {},
-                'type': 'text',
-            },
-            {
-                'fiscal_officer': {},
-                'fiscal_officer_label': {},
-                'type': 'text',
-            },
-            {
-                'account_number': {},
-                'account_number_label': {},
-                'type': 'text',
-            },
-            {
-                'sub_account_number': {},
-                'sub_account_number_label': {},
-                'type': 'text',
-            },
-            {
-                'it_pros': {},
-                'it_pros_label': {},
-                'type': 'text',
-            },
-            {
-                'devices_ip_addresses': {},
-                'devices_ip_addresses_label': {},
-                'type': 'text',
-            },
-            {
-                'data_management_plan': {},
-                'data_management_plan_label': {},
-                'type': 'text',
-            },
-            {
-                'project_directory_name': {},
-                'project_directory_name_label': {},
-                'type': 'text',
-            },
-            {
-                'first_name': {},
-                'first_name_label': {},
-                'type': 'text',
-            },
-            {
-                'last_name': {},
-                'last_name_label': {},
-                'type': 'text',
-            },
-            {
-                'data_manager': {},
-                'data_manager_label': {},
-                'type': 'text',
-            },
-            {
-                'campus_affiliation': {},
-                'campus_affiliation_label': {},
-                'type': 'choice',
-            },
-            {
-                'url': {},
-                'url_label': {},
-                'type': 'text',
-            },
-            {
-                'email': {},
-                'email_label': {},
-                'type': 'email',
-            },
-            {
-                'faculty_email': {},
-                'faculty_email_label': {},
-                'type': 'email',
-            },
-            {
-                'start_date': {},
-                'start_date_label': {},
-                'type': 'date',
-            },
-            {
-                'end_date': {},
-                'end_date_label': {},
-                'type': 'date',
-            },
-            {
-                'confirm_understanding': {},
-                'confirm_understanding_label': {},
-                'type': 'checkbox',
-            },
-            {
-                'storage_space': {},
-                'storage_space_label': {},
-                'type': 'int',
-            },
-            {
-                'storage_space_unit': {},
-                'storage_space_unit_label': {},
-                'type': 'radio',
-            },
-            {
-                'cost': {},
-                'cost_label': {},
-                'type': 'int',
-            },
-            {
-                'prorated_cost': {},
-                'prorated_cost_label': {},
-                'type': 'int',
-            },
-            {
-                'quantity': {},
-                'quantity_label': {},
-                'type': 'int',
-            },
-            {
-                'phone_number': {},
-                'phone_number_label': {},
-                'type': 'text'
-            },
-            {
-                'group_account_name': {},
-                'group_account_name_label': {},
-                'type': 'text',
-            },
-            {
-                'group_account_name_exists': {},
-                'group_account_name_exists_label': {},
-                'type': 'checkbox',
-            },
-            {
-                'terms_of_service': {},
-                'terms_of_service_label': {},
-                'type': 'checkbox',
-            },
-            {
-                'data_management_responsibilities': {},
-                'data_management_responsibilities_label': {},
-                'type': 'checkbox',
-            },
-            {
-                'admin_ads_group': {},
-                'admin_ads_group_label': {},
-                'type': 'text',
-            },
-            {
-                'user_ads_group': {},
-                'user_ads_group_label': {},
-                'type': 'text',
-            },
-            {
-                'confirm_best_practices': {},
-                'confirm_best_practices_label': {},
-                'type': 'checkbox',
-            },
-            {
-                'use_indefinitely': {},
-                'use_indefinitely_label': {},
-                'type': 'checkbox'
-            }
-        ]
+        resource_form = []
+        resource_attributes_type_labels = ResourceAttributeType.objects.filter(
+            name__endswith='label'
+        )
+        resource_attributes_type_field_names = [x.name[:-6] for x in resource_attributes_type_labels] 
+        resource_attributes_type_fields = ResourceAttributeType.objects.filter(
+            name__in=resource_attributes_type_field_names
+        )
+        for resource_attributes_type_field in resource_attributes_type_fields:
+            resource_attributes_type_field_name = resource_attributes_type_field.name
+            resource_attributes_type_attribute_type_name = resource_attributes_type_field.attribute_type.name
+            if resource_attributes_type_attribute_type_name == 'Yes/No':
+                resource_attributes_type_attribute_type_name = 'radio'
+            elif resource_attributes_type_attribute_type_name == 'True/False':
+                resource_attributes_type_attribute_type_name = 'checkbox'
+
+            if resource_attributes_type_field_name in ['access_level', 'system', 'storage_space_unit']:
+                resource_attributes_type_attribute_type_name = 'radio'
+            elif resource_attributes_type_field_name in ['campus_affiliation', 'training_or_inference']:
+                resource_attributes_type_attribute_type_name = 'choice'
+            elif resource_attributes_type_field_name in ['email', 'faculty_email']:
+                resource_attributes_type_attribute_type_name = 'email'
+
+            resource_form.append({
+                resource_attributes_type_field_name: {},
+                resource_attributes_type_field_name + '_label': {},
+                'type': resource_attributes_type_attribute_type_name.lower()
+            })
+
+        # These do not exist as ResourceAttributeTypes
+        resource_form.append({
+            'group_account_name': {},
+            'group_account_name_label': {},
+            'type': 'text',
+        })
+        resource_form.append({
+            'group_account_name_exists': {},
+            'group_account_name_exists_label': {},
+            'type': 'checkbox',
+        })
+        resource_form.append({
+            'prorated_cost': {},
+            'prorated_cost_label': {},
+            'type': 'int',
+        })
+        resource_form.append({
+            'quantity': {},
+            'quantity_label': {},
+            'type': 'int',
+        })
 
         resource_special_attributes = [
             {
