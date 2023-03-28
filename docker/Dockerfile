@@ -24,9 +24,7 @@ import yaml; \
 env = Environment(loader=FileSystemLoader('bootstrap/ansible/')); \
 env.filters['bool'] = lambda x: str(x).lower() in ['true', 'yes', 'on', '1']; \
 options = yaml.safe_load(open('main.yml').read()); \
-options.update({'redis_host': 'redis', 'db_host': 'db', \
-                'debug_toolbar_ips': \
-                  [type(str('c'), (), {'__contains__': lambda *a: True})()]}); \
+options.update({'redis_host': 'redis', 'db_host': 'db'}); \
 print(env.get_template('settings_template.tmpl').render(options))" \
                                         > coldfront/config/dev_settings.py
 
