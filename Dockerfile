@@ -2,16 +2,9 @@ FROM centos/python-38-centos7
 
 LABEL description="coldfront"
 
-
-# install dependencies
-# RUN yum -y install epel-release
-# RUN yum -y update
-# RUN yum -y install python36 python36-devel git memcached redis
-
 USER root
 WORKDIR /root
 
-# install coldfront
 RUN mkdir -p /vagrant/coldfront_app
 WORKDIR /vagrant/coldfront_app/
 RUN git clone -b issue_521 https://github.com/ucb-rit/coldfront.git
@@ -41,7 +34,6 @@ RUN mkdir -p /var/log/user_portals/cf_mybrc \
  && chmod 775 /var/log/user_portals/cf_mybrc \
  && chmod 664 /var/log/user_portals/cf_mybrc/cf_mybrc_{portal,api}.log \
  && chmod +x ./manage.py
-
 
 CMD ./manage.py initial_setup \
  && ./manage.py runserver
