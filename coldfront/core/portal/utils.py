@@ -5,44 +5,44 @@ from coldfront.core.utils.common import import_from_settings
 PUBLICATION_ENABLE = import_from_settings('PUBLICATION_ENABLE', False)
 GRANT_ENABLE = import_from_settings('GRANT_ENABLE', False)
 
-if PUBLICATION_ENABLE:
-    def generate_publication_by_year_chart_data(publications_by_year):
+# if PUBLICATION_ENABLE:
+def generate_publication_by_year_chart_data(publications_by_year):
 
-        if publications_by_year:
-            years, publications = zip(*publications_by_year)
-            years = list(years)
-            publications = list(publications)
-            years.insert(0, "Year")
-            publications.insert(0, "Publications")
+    if publications_by_year:
+        years, publications = zip(*publications_by_year)
+        years = list(years)
+        publications = list(publications)
+        years.insert(0, "Year")
+        publications.insert(0, "Publications")
 
-            data = {
-                "x": "Year",
-                "columns": [
-                    years,
-                    publications
-                ],
-                "type": "bar",
-                "colors": {
-                    "Publications": '#17a2b8'
-                }
+        data = {
+            "x": "Year",
+            "columns": [
+                years,
+                publications
+            ],
+            "type": "bar",
+            "colors": {
+                "Publications": '#17a2b8'
             }
-        else:
-            data = {
-                "columns": [],
-                "type": 'bar'
-            }
-
-        return data
-
-if GRANT_ENABLE:
-    def generate_total_grants_by_agency_chart_data(total_grants_by_agency):
-
-        grants_agency_chart_data = {
-            "columns": total_grants_by_agency,
-            "type": 'donut'
+        }
+    else:
+        data = {
+            "columns": [],
+            "type": 'bar'
         }
 
-        return grants_agency_chart_data
+    return data
+
+# if GRANT_ENABLE:
+def generate_total_grants_by_agency_chart_data(total_grants_by_agency):
+
+    grants_agency_chart_data = {
+        "columns": total_grants_by_agency,
+        "type": 'donut'
+    }
+
+    return grants_agency_chart_data
 
 
 def generate_resources_chart_data(allocations_count_by_resource_type):

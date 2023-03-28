@@ -73,16 +73,19 @@ INSTALLED_APPS += [
     'coldfront.core.project',
     'coldfront.core.resource',
     'coldfront.core.allocation',
+    'coldfront.core.research_output',
+    'coldfront.core.grant',
+    'coldfront.core.publication',
 ]
 
-if RESEARCH_OUTPUT_ENABLE == True:
-    INSTALLED_APPS += ['coldfront.core.research_output',]
+# if RESEARCH_OUTPUT_ENABLE == True:
+#     INSTALLED_APPS += ['coldfront.core.research_output',]
 
-if GRANT_ENABLE == True:
-    INSTALLED_APPS += ['coldfront.core.grant',]
+# if GRANT_ENABLE == True:
+#     INSTALLED_APPS += ['coldfront.core.grant',]
 
-if PUBLICATION_ENABLE == True:
-    INSTALLED_APPS += ['coldfront.core.publication',]
+# if PUBLICATION_ENABLE == True:
+#     INSTALLED_APPS += ['coldfront.core.publication',]
 
 #------------------------------------------------------------------------------
 # Django Middleware
