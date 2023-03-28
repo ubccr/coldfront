@@ -59,3 +59,4 @@ volumes:
     external: false
   redis_data:
     external: false
+
