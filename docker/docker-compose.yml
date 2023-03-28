@@ -19,7 +19,7 @@ services:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: root
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "admin"]
+      test: ["CMD", "pg_isready", "-U", "admin", "-d", "cf_brc_db"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -44,14 +44,15 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - 8880:8000
+      - 8880:80
+    extra_hosts:
+        - "host.docker.internal:host-gateway"
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
     restart: unless-stopped
-    # network_mode: host
 
 volumes:
   db_data:
