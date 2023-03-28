@@ -596,7 +596,25 @@ def pull_sf_push_cf_redash():
 
         # identify and record users that aren't in Coldfront
         user_models, missing_usernames = id_present_missing_users(usernames)
-        log_missing('user', missing_usernames)
+        missing_user_list = [d['username'] for d in missing_usernames]
+        try:
+            missing_unames_metadata = [{
+                    'username': d['user_name'],
+                    'volume': d['vol_name'],
+                    'path': d['lab_path'],
+                    'group': ''
+                }
+            for d in user_usage_entries if d['user_name'] in missing_user_list]
+        except KeyError:
+            missing_unames_metadata = [{
+                    'username': d['user_name'],
+                    'volume': d['vol_name'],
+                    'path': '',
+                    'group': d['group_name']
+                }
+            for d in user_usage_entries if d['user_name'] in missing_user_list]
+
+        log_missing('user', missing_unames_metadata)
         logger.debug('%d / %d users are present.\nColdfront users: %s',
                 len(user_models), len(usernames), [u.username for u in user_models])
 
