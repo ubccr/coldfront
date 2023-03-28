@@ -193,9 +193,12 @@ class AllocationForm(forms.Form):
         if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
             from coldfront.plugins.ldap_user_info.utils import get_user_info
             attributes = get_user_info(request_user.username, ['division', 'ou', 'mail'])
-            self.fields['department_short_name'].initial = attributes['division'][0]
-            self.fields['campus_affiliation'].initial = attributes['ou'][0]
-            self.fields['email'].initial = attributes['mail'][0]
+            if attributes.get('division'):
+                self.fields['department_short_name'].initial = attributes['division'][0]
+            if attributes.get('ou'):
+                self.fields['campus_affiliation'].initial = attributes['ou'][0]
+            if attributes.get('mail'):
+                self.fields['email'].initial = attributes['mail'][0]
 
         self.helper = FormHelper()
         self.helper.layout = Layout(
