@@ -5,7 +5,6 @@ from coldfront.core.utils.common import import_from_settings
 PUBLICATION_ENABLE = import_from_settings('PUBLICATION_ENABLE', False)
 GRANT_ENABLE = import_from_settings('GRANT_ENABLE', False)
 
-# if PUBLICATION_ENABLE:
 def generate_publication_by_year_chart_data(publications_by_year):
 
     if publications_by_year:
@@ -34,7 +33,6 @@ def generate_publication_by_year_chart_data(publications_by_year):
 
     return data
 
-# if GRANT_ENABLE:
 def generate_total_grants_by_agency_chart_data(total_grants_by_agency):
 
     grants_agency_chart_data = {
