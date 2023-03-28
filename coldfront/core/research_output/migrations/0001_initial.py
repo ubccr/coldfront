@@ -9,8 +9,6 @@ from coldfront.core.utils.common import import_from_settings
 import model_utils.fields
 import simple_history.models
 
-RESEARCH_OUTPUT_ENABLE = import_from_settings('RESEARCH_OUTPUT_ENABLE', False)
-
 class Migration(migrations.Migration):
 
     initial = True
@@ -19,42 +17,40 @@ class Migration(migrations.Migration):
         ('project', '0001_initial'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
-
-    if RESEARCH_OUTPUT_ENABLE:
-        operations = [
-            migrations.CreateModel(
-                name='ResearchOutput',
-                fields=[
-                    ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                    ('modified', model_utils.fields.AutoLastModifiedField(default=django.utils.timezone.now, editable=False, verbose_name='modified')),
-                    ('title', models.CharField(blank=True, max_length=128)),
-                    ('description', models.TextField(validators=[django.core.validators.MinLengthValidator(3)])),
-                    ('created', models.DateTimeField(auto_now_add=True)),
-                    ('created_by', models.ForeignKey(editable=False, null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL)),
-                    ('project', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='project.Project')),
-                ],
-            ),
-            migrations.CreateModel(
-                name='HistoricalResearchOutput',
-                fields=[
-                    ('id', models.IntegerField(auto_created=True, blank=True, db_index=True, verbose_name='ID')),
-                    ('modified', model_utils.fields.AutoLastModifiedField(default=django.utils.timezone.now, editable=False, verbose_name='modified')),
-                    ('title', models.CharField(blank=True, max_length=128)),
-                    ('description', models.TextField(validators=[django.core.validators.MinLengthValidator(3)])),
-                    ('created', models.DateTimeField(blank=True, editable=False)),
-                    ('history_id', models.AutoField(primary_key=True, serialize=False)),
-                    ('history_date', models.DateTimeField()),
-                    ('history_change_reason', models.CharField(max_length=100, null=True)),
-                    ('history_type', models.CharField(choices=[('+', 'Created'), ('~', 'Changed'), ('-', 'Deleted')], max_length=1)),
-                    ('created_by', models.ForeignKey(blank=True, db_constraint=False, editable=False, null=True, on_delete=django.db.models.deletion.DO_NOTHING, related_name='+', to=settings.AUTH_USER_MODEL)),
-                    ('history_user', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='+', to=settings.AUTH_USER_MODEL)),
-                    ('project', models.ForeignKey(blank=True, db_constraint=False, null=True, on_delete=django.db.models.deletion.DO_NOTHING, related_name='+', to='project.Project')),
-                ],
-                options={
-                    'verbose_name': 'historical research output',
-                    'ordering': ('-history_date', '-history_id'),
-                    'get_latest_by': 'history_date',
-                },
-                bases=(simple_history.models.HistoricalChanges, models.Model),
-            ),
-        ]
+    operations = [
+        migrations.CreateModel(
+            name='ResearchOutput',
+            fields=[
+                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('modified', model_utils.fields.AutoLastModifiedField(default=django.utils.timezone.now, editable=False, verbose_name='modified')),
+                ('title', models.CharField(blank=True, max_length=128)),
+                ('description', models.TextField(validators=[django.core.validators.MinLengthValidator(3)])),
+                ('created', models.DateTimeField(auto_now_add=True)),
+                ('created_by', models.ForeignKey(editable=False, null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL)),
+                ('project', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='project.Project')),
+            ],
+        ),
+        migrations.CreateModel(
+            name='HistoricalResearchOutput',
+            fields=[
+                ('id', models.IntegerField(auto_created=True, blank=True, db_index=True, verbose_name='ID')),
+                ('modified', model_utils.fields.AutoLastModifiedField(default=django.utils.timezone.now, editable=False, verbose_name='modified')),
+                ('title', models.CharField(blank=True, max_length=128)),
+                ('description', models.TextField(validators=[django.core.validators.MinLengthValidator(3)])),
+                ('created', models.DateTimeField(blank=True, editable=False)),
+                ('history_id', models.AutoField(primary_key=True, serialize=False)),
+                ('history_date', models.DateTimeField()),
+                ('history_change_reason', models.CharField(max_length=100, null=True)),
+                ('history_type', models.CharField(choices=[('+', 'Created'), ('~', 'Changed'), ('-', 'Deleted')], max_length=1)),
+                ('created_by', models.ForeignKey(blank=True, db_constraint=False, editable=False, null=True, on_delete=django.db.models.deletion.DO_NOTHING, related_name='+', to=settings.AUTH_USER_MODEL)),
+                ('history_user', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='+', to=settings.AUTH_USER_MODEL)),
+                ('project', models.ForeignKey(blank=True, db_constraint=False, null=True, on_delete=django.db.models.deletion.DO_NOTHING, related_name='+', to='project.Project')),
+            ],
+            options={
+                'verbose_name': 'historical research output',
+                'ordering': ('-history_date', '-history_id'),
+                'get_latest_by': 'history_date',
+            },
+            bases=(simple_history.models.HistoricalChanges, models.Model),
+        ),
+    ]

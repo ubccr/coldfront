@@ -4,9 +4,6 @@ from simple_history.admin import SimpleHistoryAdmin
 
 from coldfront.core.research_output.models import ResearchOutput
 
-# ! FIGURE OUT HOW TO HIDE IN ADMIN
-# todos: admin
-
 _research_output_fields_for_end = ['created_by', 'project', 'created', 'modified']
 
 RESEARCH_OUTPUT_ENABLE = import_from_settings('RESEARCH_OUTPUT_ENABLE', False)
