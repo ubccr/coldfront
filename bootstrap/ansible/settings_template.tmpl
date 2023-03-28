@@ -46,7 +46,7 @@ DATABASES = {
         'NAME': '{{ db_name }}',
         'USER': '{{ db_admin_user }}',
         'PASSWORD': '{{ db_admin_passwd }}',
-        'HOST': 'localhost',
+        'HOST': '{{ db_host }}',
         'PORT': '5432',
     },
 }
@@ -135,7 +135,7 @@ CONSTANCE_CONFIG = {
     'LAUNCH_DATE': (date(1970, 1, 1), 'The date the portal was launched.'),
 }
 CONSTANCE_REDIS_CONNECTION = {
-    'host': '127.0.0.1',
+    'host': '{{ redis_host }}',
     'port': 6379,
     'db': 0,
     'password': '{{ redis_passwd }}',
@@ -174,7 +174,7 @@ FLAGS = {
 
 Q_CLUSTER = {
     'redis': {
-        'host': '127.0.0.1',
+        'host': '{{ redis_host }}',
         'port': 6379,
         'db': 0,
         'password': '{{ redis_passwd }}',
