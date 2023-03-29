@@ -24,7 +24,7 @@ CMD ./manage.py initial_setup \
  && ./manage.py add_directory_defaults \
  && ./manage.py create_allocation_periods \
  && ./manage.py create_staff_group \
- && ./manage.py collectstatic \
+ && ./manage.py collectstatic --noinput \
  && ./manage.py runserver 0.0.0.0:80
 
 EXPOSE 80
