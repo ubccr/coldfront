@@ -1,0 +1,100 @@
+{% extends "common/base.html" %}
+{% load common_tags %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Report runs
+{% endblock %}
+
+
+{% block content %}
+<script>
+    $(document).ready(function(){
+
+        $( "#progressbar" ).progressbar({
+            value: false
+        });
+        var dialog = $('#loading').dialog(
+            {
+                autoOpen: false,
+                height: 200,
+                width: 300,
+                modal: true,
+            }
+        )
+        $(document)
+          .ajaxStart(function () {
+            dialog.dialog("open");
+          })
+          .ajaxStop(function () {
+            dialog.dialog("close");
+          });
+        var reportRunsTable = $("#report-runs").DataTable({
+            dom: 't',
+            columns: [
+                {data: 'report', width: '100px'},
+                {data: 'date_range', width: '100px'},
+                {data:  function(item){ return `<a href="${item.url_root}/${item.xls_file_path}">${item.xls_file_path}</a>`}},
+                {data:  function(item){ return `<a href="${item.url_root}/${item.text_file_path}">${item.text_file_path}</a>`}},
+                {data:  function(item){ return new Date(item.updated).toLocaleTimeString('en-us', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}}
+            ],
+            ajax: {
+                url: '/ifx/api/report-runs/',
+                type: 'GET',
+                dataSrc: '',
+            }
+        })
+
+        $("input[type='submit']").click((ev) => {
+            ev.preventDefault()
+            $.ajax({
+                contentType: 'application/json',
+                url: '/ifx/api/run-report/',
+                method: 'POST',
+                headers: {'X-CSRFToken': '{{ csrf_token }}'},
+                data: JSON.stringify({
+                    'name': 'Standard',
+                    'date_range': 'fy'
+                }),
+                dataType: "json"
+            }).done(
+                function () { reportRunsTable.ajax.reload() }
+            )
+        })
+    })
+</script>
+<div>
+    <div id="loading">
+        <div style="text-align: center">
+            Enjoy this progress bar while you wait for the report to run.
+        </div>
+        <p>
+            <div id="progressbar"></div>
+        </p>
+    </div>
+    <div style="margin: 2em;">
+        <form method="post">
+            {% csrf_token %}
+            <input type="submit" value="Run FY report"></input>
+        </form>
+    </div>
+    <div style="margin: 2em;">
+        <table id="report-runs" class="display" style="width: 100%" cellpadding="5px">
+            <thead>
+                <tr>
+                    <th>Report</th>
+                    <th>Date Range</th>
+                    <th>XLS</th>
+                    <th>CSV</th>
+                    <th>Last updated</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
