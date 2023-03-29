@@ -35,8 +35,8 @@ class CILogonAccountAdapter(DefaultSocialAccountAdapter):
             user_uid = 'unknown'
 
         if provider == 'cilogon':
-            first_name = data.get('first_name')
-            last_name = data.get('last_name')
+            first_name = data.get('first_name', '')
+            last_name = data.get('last_name', '')
             email = data.get('email')
 
             validated_email = valid_email_or_none(email)
