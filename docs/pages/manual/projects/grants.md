@@ -37,4 +37,4 @@ System administrators have access to the 'Grant Report' under the Admin menu.  T
 
 ![Grant Report](../../images/grantreport.PNG)  
 
-If you've granted other staff, such as the Center Director, with access to view all grants, the Grant Report option falls under the 'Staff' menu.  See [details about these special permissions here](../users/director.md)  
+If you've granted other staff, such as the Center Director, with access to view all grants, the Grant Report option falls under the 'Staff' menu.  See [details about these special permissions here](../roles/director.md)  

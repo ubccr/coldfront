@@ -44,7 +44,7 @@ Admins have the ability to update the status, start & end dates, and description
 
 ### Center Staff    
 
-System administrators will be able to see all allocations.  There are additional settings for center directors/administrators and those with 'staff status' enabled that you can add to allow them to view all allocations as well.  See the documentation on [director permissions](../users/director.md) and [staff permissions](../users/staff.md) for information on how to configure this.
+System administrators will be able to see all allocations.  There are additional settings for center directors/administrators and those with 'staff status' enabled that you can add to allow them to view all allocations as well.  See the documentation on [director permissions](../roles/director.md) and [staff permissions](../roles/staff.md) for information on how to configure this.
 
 System administrators can choose 'All Allocations' from the Admin menu.  Staff and center directors can choose 'All Allocations' from the 'Staff' menu.
 

@@ -1,8 +1,8 @@
 # Configuring Allocations   
 
-The process of reviewing allocation requests and configuring the allocation is very specific to your center's policies and procedures.  Allocation requests are accessible to the [center admin staff](../users/sysadmins.md) via the Admin - Allocation Requests menu.  
+The process of reviewing allocation requests and configuring the allocation is very specific to your center's policies and procedures.  Allocation requests are accessible to the [center admin staff](../roles/sysadmins.md) via the Admin - Allocation Requests menu.  
 
-NOTE: If you'd like other staff to be able to view allocation requests without making them a 'super user' [check out these instructions](../users/staff.md#give-staff-access-to-review-allocation-requests)
+NOTE: If you'd like other staff to be able to view allocation requests without making them a 'super user' [check out these instructions](../roles/staff.md#give-staff-access-to-review-allocation-requests)
 
 ![Allocation Requests](../../images/alloc_requests.PNG)
 

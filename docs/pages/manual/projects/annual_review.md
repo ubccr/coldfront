@@ -6,8 +6,8 @@ ColdFront provides a way for centers to require PIs to review their projects and
 ### The Project Review Process  
 
 There are two sides of the project review process.  Please see these pages for more info:  
-[The PI's Perspective](../howto/project_review_PI.md)  
-[The Center Staff's Perspective](../howto/project_review_staff.md)
+[The PI's Perspective](../using/project_review_PI.md)  
+[The Center Staff's Perspective](../using/project_review_staff.md)
 
 ### Disable Project Reviews
 
