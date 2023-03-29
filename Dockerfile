@@ -1,34 +1,48 @@
-FROM centos:8
+FROM centos/python-38-centos7
 
 LABEL description="coldfront"
 
-# install dependencies
-RUN yum -y install epel-release
-RUN yum -y update
-RUN yum -y install python36 python36-devel git memcached redis
-
+USER root
 WORKDIR /root
+COPY requirements.txt ./
+RUN pip install -r requirements.txt \
+ && pip install jinja2 pyyaml && rm requirements.txt
 
-# install coldfront
-RUN mkdir /opt/coldfront_app
+RUN mkdir -p /vagrant/coldfront_app
+WORKDIR /vagrant/coldfront_app/
+RUN git clone -b issue_521 https://github.com/ucb-rit/coldfront.git
+WORKDIR ./coldfront
+COPY main.yml ./main.yml
 
-WORKDIR /opt/coldfront_app
+RUN mkdir -p /var/log/user_portals/cf_mybrc \
+ && touch /var/log/user_portals/cf_mybrc/cf_mybrc_{portal,api}.log \
+ && chmod 775 /var/log/user_portals/cf_mybrc \
+ && chmod 664 /var/log/user_portals/cf_mybrc/cf_mybrc_{portal,api}.log \
+ && chmod +x ./manage.py
 
-RUN cd /opt/coldfront_app
-RUN git clone https://github.com/ubccr/coldfront.git
-RUN python3.6 -mvenv venv
-RUN source venv/bin/activate
+RUN cp coldfront/config/local_settings.py.sample \
+       coldfront/config/local_settings.py \
+ && cp coldfront/config/local_strings.py.sample \
+       coldfront/config/local_strings.py \
+ && python -c \
+"from jinja2 import Template, Environment, FileSystemLoader; \
+import yaml; \
+env = Environment(loader=FileSystemLoader('bootstrap/ansible/')); \
+env.filters['bool'] = lambda x: str(x).lower() in ['true', 'yes', 'on', '1']; \
+options = yaml.safe_load(open('main.yml').read()); \
+options.update({'redis_host': 'redis', 'db_host': 'db'}); \
+print(env.get_template('settings_template.tmpl').render(options))" \
+                                        > coldfront/config/dev_settings.py
 
-WORKDIR /opt/coldfront_app/coldfront
+CMD ./manage.py initial_setup \
+ && ./manage.py migrate \
+ && ./manage.py add_accounting_defaults \
+ && ./manage.py add_allowance_defaults \
+ && ./manage.py add_directory_defaults \
+ && ./manage.py create_allocation_periods \
+ && ./manage.py create_staff_group \
+ && ./manage.py collectstatic \
+ && ./manage.py runserver 0.0.0.0:80
 
-RUN cd /opt/coldfront_app/coldfront
-RUN pip3 install wheel
-RUN pip3 install -r requirements.txt
-RUN cp coldfront/config/local_settings.py.sample coldfront/config/local_settings.py
-RUN cp coldfront/config/local_strings.py.sample coldfront/config/local_strings.py
-
-RUN python3 ./manage.py initial_setup
-RUN python3 ./manage.py load_test_data
-
-EXPOSE 8000
+EXPOSE 80
 STOPSIGNAL SIGINT
