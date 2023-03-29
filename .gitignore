@@ -30,3 +30,4 @@ VERSION
 coldfront.db-journal
 django-q.log
 *.csv
+media/reports*

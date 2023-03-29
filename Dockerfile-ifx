@@ -43,6 +43,8 @@ RUN pip install django-debug-toolbar
 
 ENV PYTHONPATH /usr/src/app:/usr/src/app/ifxreport
 
+RUN mkdir -p /usr/src/app/media/reports
+
 EXPOSE 80
 EXPOSE 25
 

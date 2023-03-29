@@ -31,3 +31,9 @@ AUTHOR_IGNORE_MODELS = [
 ]
 STANDARD_QUANTIZE = Decimal('0.0000')
 TWO_DIGIT_QUANTIZE = Decimal('0.00')
+
+MEDIA_ROOT = '/usr/src/app/media/'
+MEDIA_URL = '/media/'
+
+IFXREPORT_FILE_ROOT = os.path.join(MEDIA_ROOT, 'reports')
+IFXREPORT_URL_ROOT = f'{MEDIA_URL}reports'

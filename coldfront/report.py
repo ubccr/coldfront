@@ -27,36 +27,35 @@ class StandardReportRunner(BaseReportRunner):
         '''
 
         sql = '''
-           select
-                o.name as 'Lab Name',
+            select
                 p.title as 'Project',
                 s.name as 'Project Status',
-                a.id as 'Allocation ID',
-                a.quantity as 'Allocation TB',
+                alloc.id as 'Allocation ID',
+                alloc.quantity as 'Allocation TB',
                 u.full_name as 'User',
-                pi.full_name as 'PI',
-                pu.decimal_quantity as 'Usage TB',
+                au.usage as 'Usage TB',
                 br.decimal_charge as 'Charge',
-                CONCAT(br.year, '-', br.month) as 'Billing Month',
-                r.name as 'Rate Name',
-                r.decimal_price as 'Rate',
+                br.percent as 'Percent',
+                CONCAT(pu.year, '-', LPAD(pu.month, 2, '0')) as 'Billing Month',
+                o.name as 'Lab Name',
                 a.code as 'Code',
                 a.name as 'Account Name',
-                a.account_type as 'Account Type'
+                pi.full_name as 'PI'
             from
                 project_project p
                     inner join project_projectstatuschoice s on s.id = p.status_id
-                    inner join allocation_allocation a on p.id = a.project_id
-                    inner join allocation_historicalallocationuser au on au.allocation_id = a.id
-                    left join ifx_allocationuserproductusage aupu on au.id = aupu.allocation_user_id
+                    inner join ifxuser pi on pi.id = p.pi_id
+                    inner join allocation_allocation alloc on p.id = alloc.project_id
+                    inner join allocation_historicalallocationuser au on au.allocation_id = alloc.id
+                    left join ifxuser u on au.user_id = u.id
+                    left join ifx_allocationuserproductusage aupu on au.history_id = aupu.allocation_user_id
                     left join product_usage pu on aupu.product_usage_id = pu.id
                     left join billing_record br on pu.id = br.product_usage_id
                     left join ifx_projectorganization po on p.id = po.project_id
                     left join nanites_organization o on po.organization_id = o.id
-                    left join account a on a.id = br.account_id
-                    left join rate r on r.id = br.rate_obj_id
+                    left join account a on br.account_id = a.id
             where
-                pu.start_date >= %s and pu.end_date < %s
+                pu.start_date >= %s and pu.start_date < %s
         '''
 
         return sql
