@@ -1,5 +1,4 @@
 from collections import Counter
-
 from django.conf import settings
 from django.contrib.humanize.templatetags.humanize import intcomma
 from django.db.models import Count, Q, Sum
@@ -14,7 +13,10 @@ from coldfront.core.portal.utils import (generate_allocations_chart_data,
 from coldfront.core.project.models import Project
 from coldfront.core.publication.models import Publication
 from coldfront.core.resource.models import Resource
-from coldfront.plugins.sftocf.utils import StarFishRedash, STARFISH_SERVER
+from coldfront.config.env import ENV
+
+if ENV.bool('PLUGIN_SFTOCF', default=False):
+    from coldfront.plugins.sftocf.utils import StarFishRedash, STARFISH_SERVER
 
 
 def home(request):
@@ -74,35 +76,36 @@ def center_summary(request):
 
 
     # Storage Card
-    starfish_redash = StarFishRedash(STARFISH_SERVER)
-    volumes = starfish_redash.get_vol_stats()
-    volumes = [
-        {
-            'name': vol['volume_name'],
-            'quota_TB': vol['capacity_TB'],
-            'free_TB': vol['free_TB'],
-            'used_TB': vol['used_physical_TB'],
-            'regular_files': vol['regular_files'],
-        }
-        for vol in volumes
-    ]
-    # collect user and lab counts, allocation sizes for each volume
-
-    for volume in volumes:
-        resource = Resource.objects.get(name__contains=volume['name'])
-
-        resource_allocations = resource.allocation_set.filter(status__name='Active')
-
-        allocation_sizes = [float(allocation.size) for allocation in resource_allocations]
-        # volume['avgsize'] = allocation_sizes
-        volume['avgsize'] = round(sum(allocation_sizes)/len(allocation_sizes), 2)
-
-        project_ids = set(resource_allocations.values_list('project'))
-        volume['lab_count'] = len(project_ids)
-        user_ids = {user.pk for allocation in resource_allocations for user in allocation.allocation_users}
-        volume['user_count'] = len(user_ids)
-
-    context['volumes'] = volumes
+    if ENV.bool('PLUGIN_SFTOCF', default=False):
+        starfish_redash = StarFishRedash(STARFISH_SERVER)
+        volumes = starfish_redash.get_vol_stats()
+        volumes = [
+            {
+                'name': vol['volume_name'],
+                'quota_TB': vol['capacity_TB'],
+                'free_TB': vol['free_TB'],
+                'used_TB': vol['used_physical_TB'],
+                'regular_files': vol['regular_files'],
+            }
+            for vol in volumes
+        ]
+        # collect user and lab counts, allocation sizes for each volume
+    
+        for volume in volumes:
+            resource = Resource.objects.get(name__contains=volume['name'])
+    
+            resource_allocations = resource.allocation_set.filter(status__name='Active')
+    
+            allocation_sizes = [float(allocation.size) for allocation in resource_allocations]
+            # volume['avgsize'] = allocation_sizes
+            volume['avgsize'] = round(sum(allocation_sizes)/len(allocation_sizes), 2)
+    
+            project_ids = set(resource_allocations.values_list('project'))
+            volume['lab_count'] = len(project_ids)
+            user_ids = {user.pk for allocation in resource_allocations for user in allocation.allocation_users}
+            volume['user_count'] = len(user_ids)
+    
+        context['volumes'] = volumes
 
 
 
