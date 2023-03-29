@@ -46,7 +46,7 @@ services:
     ports:
       - 8880:80
     volumes:
-      - ./coldfront:/vagrant/coldfront_app/coldfront/coldfront
+      - ./:/vagrant/coldfront_app/coldfront/
     extra_hosts:
         - "host.docker.internal:host-gateway"
     depends_on:
