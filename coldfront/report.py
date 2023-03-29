@@ -19,7 +19,7 @@ class StandardReportRunner(BaseReportRunner):
     def __init__(self, report, file_root, url_root):
         '''Setup some formats'''
         super().__init__(report, file_root, url_root)
-        self.xls_hours_format_str = '#,##0.0'
+        self.xls_tb_format_str = '#,##0.00'
 
     def get_sql(self):
         '''
@@ -88,7 +88,7 @@ class StandardReportRunner(BaseReportRunner):
         '''
         date_format = workbook.add_format({'num_format': self.xls_date_format_str})
         money_format = workbook.add_format({'num_format': self.xls_accounting_format_str})
-        hours_format = workbook.add_format({'num_format': self.xls_hours_format_str})
+        tb_format = workbook.add_format({'num_format': self.xls_tb_format_str})
 
         if field_value is None:
             worksheet.write_blank(row, col, field_value)
@@ -97,9 +97,8 @@ class StandardReportRunner(BaseReportRunner):
             worksheet.write_number(row, col, date_number, date_format)
         elif 'charge' in field_name.lower():
             worksheet.write_number(row, col, field_value, money_format)
-        elif 'time' in field_name.lower():
-            hours_value = Decimal(field_value / 60)
-            worksheet.write_number(row, col, hours_value, hours_format)
+        elif 'tb' in field_name.lower():
+            worksheet.write_number(row, col, field_value, tb_format)
         else:
             worksheet.write(row, col, field_value)
 
