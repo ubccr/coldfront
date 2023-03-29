@@ -41,6 +41,8 @@ COPY . .
 RUN pip install django-redis reportlab==3.6.6
 RUN pip install django-debug-toolbar
 
+ENV PYTHONPATH /usr/src/app:/usr/src/app/ifxreport
+
 EXPOSE 80
 EXPOSE 25
 

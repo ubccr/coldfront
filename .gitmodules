@@ -1,0 +1,3 @@
+[submodule "ifxreport"]
+	path = ifxreport
+	url = git@github.com:harvardinformatics/ifxreport.git

@@ -6,7 +6,7 @@ import os
 from decimal import Decimal
 from coldfront.config.base import INSTALLED_APPS, MIDDLEWARE
 
-INSTALLED_APPS = ['ifxuser'] + INSTALLED_APPS + ['author', 'ifxbilling', 'rest_framework.authtoken',]
+INSTALLED_APPS = ['ifxuser'] + INSTALLED_APPS + ['author', 'ifxbilling', 'rest_framework.authtoken', 'ifxreport']
 
 MIDDLEWARE += [
     'author.middlewares.AuthorDefaultBackendMiddleware',
