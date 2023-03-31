@@ -179,7 +179,8 @@ if not (
         FLAGS['SSO_ENABLED'][0]['value']):
     raise ImproperlyConfigured(
         'Exactly one of BASIC_AUTH_ENABLED, SSO_ENABLED should be enabled.')
-if not FLAGS['SSO_ENABLED'][0]['value'] and FLAGS['LINK_LOGIN_ENABLED']:
+if (not FLAGS['SSO_ENABLED'][0]['value'] and
+        FLAGS['LINK_LOGIN_ENABLED'][0]['value']):
     raise ImproperlyConfigured(
         'LINK_LOGIN_ENABLED should only be enabled when SSO_ENABLED is '
         'enabled.')

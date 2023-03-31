@@ -1,0 +1,14 @@
+Dear {{ PORTAL_NAME }} user,
+
+You requested a link to log in to the portal.
+
+Below is the link, which will expire in {{ login_link_max_age_minutes }} minutes.
+
+{{ login_url }}
+
+Do not share this link with anyone else.
+
+Reminder: If your institution is listed in CILogon, you should use it to log in.
+
+Thank you,
+{{ signature }}
