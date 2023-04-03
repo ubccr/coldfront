@@ -272,15 +272,22 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             pi_eligible_to_request_secure_dir(self.request.user)
 
         # show survey responses if available
-        allocation_request = SavioProjectAllocationRequest.objects.filter(
-            project=self.object).first()
-        if allocation_request:
-            context['survey_answers'] = SavioProjectSurveyForm(
-                initial=allocation_request.survey_answers, disable_fields=True)
+        allocation_requests = SavioProjectAllocationRequest.objects.filter(
+            project=self.object, status__name='Approved - Complete').order_by('request_time')
 
-        allocation_requests = SavioProjectAllocationRequest.objects.filter(project=self.object)
-        survey_answers_list = list(map(lambda x: SavioProjectSurveyForm(initial=x.survey_answers, disable_fields=True), allocation_requests))
-        context['survey_answers'] = list(zip(allocation_requests, survey_answers_list))
+        if allocation_requests.exists():
+            survey_answers_list = list(map(
+                lambda x: SavioProjectSurveyForm(
+                    initial=x.survey_answers,
+                    disable_fields=True
+                ),
+                allocation_requests
+            ))
+
+            context['survey_answers'] = list(zip(
+                allocation_requests,
+                survey_answers_list
+            ))
 
         context['user_agreement_signed'] = \
             access_agreement_signed(self.request.user)

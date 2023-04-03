@@ -20,11 +20,13 @@
       <div class="modal-nav">
         <ul class='nav nav-tabs' role='tablist'>
           {% for allocation_request, survey_form in survey_answers %}
-            {% if forloop.counter == 1 %}
-              <li id='survey-nav-item' class="nav-item"><a data-toggle="tab" class='nav-link active' href="#survey{{forloop.counter}}">Survey #{{forloop.counter}}</a></li>
-            {% else %}
-              <li id='survey-nav-item' class="nav-item"><a data-toggle="tab" class='nav-link' href="#survey{{forloop.counter}}">Survey #{{forloop.counter}}</a></li>
-            {% endif %}
+            <li id="survey-nav-item" class="nav-item">
+              <a data-toggle="tab"
+                class="nav-link {% if forloop.counter == 1 %} active {% endif %}"
+                href="#survey{{forloop.counter}}">
+                Survey #{{forloop.counter}}
+              </a>
+            </li>
           {% endfor %}
         </ul>
       </div>
@@ -33,31 +35,33 @@
       <div class="modal-body">
         <div class="tab-content">
           {% for allocation_request, survey_form in survey_answers %}
-            {% if forloop.counter == 1 %}
-              <div id="survey{{forloop.counter}}" class="tab-pane active" style="background: none">
-                <div class="card" style='margin-bottom: .5em'>
-                  <div class="card-body">
-                    <p class="card-text"><b>Requester:</b> {{ allocation_request.requester }} </p>
-                    <p class="card-text"><b>Principal Investigator:</b> {{ allocation_request.pi }} </p>
-                    <p class="card-text"><b>Requested:</b> {{ allocation_request.request_time|date:"M. d, Y"}} </p>
-                  </div>
-                </div>
+            <div id="survey{{forloop.counter}}"
+                 class="tab-pane {% if forloop.counter == 1 %} active {% else %} fade {% endif %}" style="background: none">
+              <div class="card" style='margin-bottom: .5em'>
+                <div class="card-body">
+                  <p class="card-text">
+                    <b>Requester:</b>
+                    {{ allocation_request.requester.first_name }}
+                    {{ allocation_request.requester.last_name }}
+                    ({{ allocation_request.requester.username }})
+                  </p>
 
-                {{ survey_form|crispy }}
-              </div>
-            {% else %}
-              <div id="survey{{forloop.counter}}" class="tab-pane fade" style="background: none">
-                <div class="card" style='margin-bottom: .5em'>
-                  <div class="card-body">
-                    <p class="card-text"><b>Requester:</b> {{ allocation_request.requester }} </p>
-                    <p class="card-text"><b>Principal Investigator:</b> {{ allocation_request.pi }} </p>
-                    <p class="card-text"><b>Requested:</b> {{ allocation_request.request_time|date:"M. d, Y"}} </p>
-                  </div>
-                </div>
+                  <p class="card-text">
+                    <b>Principal Investigator:</b>
+                    {{ allocation_request.pi.first_name }}
+                    {{ allocation_request.pi.last_name }}
+                    ({{ allocation_request.pi.username }})
+                  </p>
 
-                {{ survey_form|crispy }}
+                  <p class="card-text">
+                    <b>Requested:</b>
+                    {{ allocation_request.request_time|date:"M. d, Y"}}
+                  </p>
+                </div>
               </div>
-            {% endif %}
+
+              {{ survey_form|crispy }}
+            </div>
           {% endfor %}
         </div>
       </div>
