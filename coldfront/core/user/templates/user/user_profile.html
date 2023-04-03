@@ -298,22 +298,24 @@ User Profile{% if not requester_is_viewed_user %}: {{ viewed_user.username }}{% 
       <div class="card-header">
         <i class="far fa-user-circle"></i>
         Request Linking Email for OTP Management
-        <div class="float-right">
-          {% if not has_cluster_access or linking_request and linking_request.status.name == 'Pending' %}
-            <a class="btn btn-secondary float-right disabled" id="request-linking-email-button">
-              <i class="fas fa-paper-plane"></i>
-              Request Linking Email
-            </a>
-          {% else %}
-            <form action="{% url 'identity-linking-request' %}" method="post">
-              {% csrf_token %}
-              <button class="btn btn-success float-right" type="submit">
+        {% if requester_is_viewed_user %}
+          <div class="float-right">
+            {% if not has_cluster_access or linking_request and linking_request.status.name == 'Pending' %}
+              <a class="btn btn-secondary float-right disabled" id="request-linking-email-button">
                 <i class="fas fa-paper-plane"></i>
                 Request Linking Email
-              </button>
-            </form>
-          {% endif %}
-        </div>
+              </a>
+            {% else %}
+              <form action="{% url 'identity-linking-request' %}" method="post">
+                {% csrf_token %}
+                <button class="btn btn-success float-right" type="submit">
+                  <i class="fas fa-paper-plane"></i>
+                  Request Linking Email
+                </button>
+              </form>
+            {% endif %}
+          </div>
+        {% endif %}
       </div>
       <div class="card-body">
         <p>
