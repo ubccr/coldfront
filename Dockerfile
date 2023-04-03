@@ -8,14 +8,15 @@ COPY requirements.txt ./
 RUN pip install -r requirements.txt \
  && pip install jinja2 pyyaml && rm requirements.txt
 
-COPY . /vagrant/coldfront_app/coldfront/
-WORKDIR /vagrant/coldfront_app/coldfront/
-
 RUN mkdir -p /var/log/user_portals/cf_mybrc \
  && touch /var/log/user_portals/cf_mybrc/cf_mybrc_{portal,api}.log \
  && chmod 775 /var/log/user_portals/cf_mybrc \
- && chmod 664 /var/log/user_portals/cf_mybrc/cf_mybrc_{portal,api}.log \
- && chmod +x ./manage.py
+ && chmod 664 /var/log/user_portals/cf_mybrc/cf_mybrc_{portal,api}.log
+
+COPY . /vagrant/coldfront_app/coldfront/
+WORKDIR /vagrant/coldfront_app/coldfront/
+
+RUN chmod +x ./manage.py
 
 CMD ./manage.py initial_setup \
  && ./manage.py migrate \
