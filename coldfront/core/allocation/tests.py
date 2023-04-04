@@ -51,14 +51,14 @@ class AllocationListViewTest(TestCase):
                     backend="django.contrib.auth.backends.ModelBackend")
         response = self.client.get("/allocation/?show_all_allocations=on")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context['allocation_list'], 1)
+        self.assertEqual(len(response.context['allocation_list']), 1)
 
         # confirm that show_all_allocations=on is accessible to non-admin but
         # contains only the user's allocations
         self.client.force_login(self.project_admin_allocation_user, backend="django.contrib.auth.backends.ModelBackend")
         response = self.client.get("/allocation/")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context['allocation_list'], 1)
+        self.assertEqual(len(response.context['allocation_list']), 1)
 
 
 
