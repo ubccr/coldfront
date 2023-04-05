@@ -27,7 +27,11 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     def get_child_resources(self, resource_obj):
         child_resources = [resource for resource in resource_obj.resource_set.all(
         ).order_by(Lower("name"))]
-
+        acc=True
+        for m in child_resources:
+            if(m.is_available==True):
+                acc=False
+        
         child_resources = [
 
             {'object': resource,
@@ -35,9 +39,12 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
              'ServiceEnd': resource.get_attribute('ServiceEnd'),
              'Vendor': resource.get_attribute('Vendor'),
              'SerialNumber': resource.get_attribute('SerialNumber'),
-             'Model': resource.get_attribute('Model'),            
+             'Model': resource.get_attribute('Model'),
+             'Available' : resource.is_available,
+             'Allocatable' : resource.is_allocatable,
+             'Acc':acc
              }
-
+             
             for resource in child_resources
         ]
 
