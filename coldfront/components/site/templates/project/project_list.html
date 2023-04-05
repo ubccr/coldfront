@@ -25,11 +25,6 @@ Project List
       </div>
       <div class="col-7">
         <div class="float-right">
-          {% if show_export_button %}
-            <button type="button" class="btn btn-success align-right" data-toggle="modal" data-target="#id_export_csv">
-              Export Projects to CSV
-            </button>
-          {% endif %}
           <a class="btn btn-primary" href="{% url 'project-denied-list' %}" role="button"><i class="fas fa-archive" aria-hidden="true"></i> View denied projects</a>
           <a class="btn btn-primary" href="{% url 'project-archived-list' %}" role="button"><i class="fas fa-archive" aria-hidden="true"></i> View archived projects</a>
         </div>
@@ -38,18 +33,36 @@ Project List
   </div>
 </div>
 
-<div class="modal fade" id="id_export_csv" tabindex="-1" role="dialog" aria-labelledby="id_export_csv_label" aria-hidden="true">
+<div class="modal fade" id="id_project_export_csv" tabindex="-1" role="dialog" aria-labelledby="id_project_export_csv_label" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="id_export_csv_label">Export to CSV</h5>
+        <h5 class="modal-title" id="id_project_export_csv_label">Export to CSV</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
       <div class="modal-body">
-        <form id="id_export_form" action="{% url 'project-export' %}" method="post">
+        <form id="id_project_export_form" action="{% url 'project-export' %}" method="post">
           {% crispy project_export_form %}
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="id_project_user_export_csv" tabindex="-1" role="dialog" aria-labelledby="id_project_user_export_csv_label" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="id_project_user_export_csv_label">Export to CSV</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="id_project_user_export_form" action="{% url 'project-user-export' %}" method="post">
+          {% crispy project_user_export_form %}
         </form>
       </div>
     </div>
@@ -100,147 +113,167 @@ Project List
     </div>
   </div>
 </div>
-
-<h2>Projects</h2>
 <hr>
-{% if expand_accordion == "show" or project_list or user.is_superuser%}
-  <div class="mb-3" id="accordion">
-    <div class="card">
-      <div class="card-header">
-        <a id="expand_button" role="button" class="card-link " data-toggle="collapse" href="#collapseOne"> 
-          <i class="fas fa-filter" aria-hidden="true"></i> Filter
-          <i id="plus_minus" class="fas {{expand_accordion|get_icon}} float-right"></i>
-        </a>
-      </div>
-      <div id="collapseOne" class="collapse {{expand_accordion}}" data-parent="#accordion">
-        <div class="card-body">
-          <form id="filter_form" method="GET" action="{% url 'project-list' %}" autocomplete="off">
-            {{ project_search_form|crispy }}
-            <input type="submit" class="btn btn-primary" value="Search">
-            <button id="form_reset_button" type="button" class="btn btn-secondary">Reset</button>
-          </form>
+
+{% if project_list %}
+  <div class="card">
+    <div class="card-header">
+      <div class="row">
+        <div class="col">
+          <h3 style="margin-bottom: 0;"><strong>Projects: {{ projects_count }}</strong></h3>
         </div>
+        {% if show_export_button %}
+          <div class="col float-right">
+            <div class="float-right">
+              <button type="button" class="btn btn-success" data-toggle="modal" data-target="#id_project_export_csv">
+                Export Projects to CSV
+              </button>
+              <button type="button" class="btn btn-success" data-toggle="modal" data-target="#id_project_user_export_csv">
+                Export Project Users to CSV
+              </button>
+            </div>
+          </div>
+        {% endif %}
       </div>
     </div>
-  </div>
-  <hr>
-{% endif %}
-{% if project_list %}
-  <strong>Projects: {{projects_count}}</strong>
-  <div class="table-responsive">
-    <table class="table table-sm">
-      <thead>
-        <tr>
-          <th scope="col" class="text-nowrap">
-            ID
-            <a href="?order_by=id&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort ID asc</span></a>
-            <a href="?order_by=id&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort ID desc</span></a>
-          </th>
-          <th scope="col" class="text-nowrap">
-            PI
-            <a href="?order_by=pi__username&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort PI asc</span></a>
-            <a href="?order_by=pi__username&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort PI desc</span></a>
-          </th>
-          <th scope="col">Title</th>
-          <!-- <th scope="col" class="text-nowrap">
-            Field of Science
-            <a href="?order_by=field_of_science&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Field of Science asc</span></a>
-            <a href="?order_by=field_of_science&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Field of Science desc</span></a>
-          </th> -->
-          <th scope="col" class="text-nowrap">
-            Type
-            <a href="?order_by=type&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Type asc</span></a>
-            <a href="?order_by=type&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Type desc</span></a>
-          </th>
-          <th scope="col" class="text-nowrap">
-            Status
-            <a href="?order_by=status&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Status asc</span></a>
-            <a href="?order_by=status&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Status desc</span></a>
-          </th>
-          <th scope="col" class="text-nowrap">
-            End Date
-          </th>
-          <th scope="col" class="text-nowrap">
-            Actions
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for project in project_list %}
-          <tr>
-            <td>{{ project.id }}</td>
-            <td>{{ project.pi.username }}</td>
-            <td style="text-align: justify; text-justify: inter-word;">{{ project.title|truncatechars:30 }}</td>
-            <!-- <td>{{ project.field_of_science.description }}</td> -->
-            <td>{{ project.type.name }}</td>
-            {% if project.status.name == 'Active' %}
-              {% if project.can_be_reviewed %}
-                <td class="text-warning">
-                  <strong>{{ project.status.name }}</strong>
-                  {% if user.username in project.list_of_manager_usernames %}
-                    <a href="{% url 'project-review' project.pk %}">
-                      <span class="badge badge-warning">
-                        <i class="fas fa-redo-alt" aria-hidden="true"></i>
-                        Expires in {{ project.expires_in }} day{{ project.expires_in|pluralize }} - click to renew
-                      </span>
-
-                    </a>
+    <div class="card-body">
+      {% if expand_accordion == "show" or project_list or user.is_superuser%}
+        <div class="mb-3" id="accordion">
+          <div class="card">
+            <div class="card-header">
+              <a id="expand_button" role="button" class="card-link " data-toggle="collapse" href="#collapseOne"> 
+                <i class="fas fa-filter" aria-hidden="true"></i> Filter
+                <i id="plus_minus" class="fas {{expand_accordion|get_icon}} float-right"></i>
+              </a>
+            </div>
+            <div id="collapseOne" class="collapse {{expand_accordion}}" data-parent="#accordion">
+              <div class="card-body">
+                <form id="filter_form" method="GET" action="{% url 'project-list' %}" autocomplete="off">
+                  {{ project_search_form|crispy }}
+                  <input type="submit" class="btn btn-primary" value="Search">
+                  <button id="form_reset_button" type="button" class="btn btn-secondary">Reset</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+      <div class="table-responsive">
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th scope="col" class="text-nowrap">
+                ID
+                <a href="?order_by=id&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort ID asc</span></a>
+                <a href="?order_by=id&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort ID desc</span></a>
+              </th>
+              <th scope="col" class="text-nowrap">
+                PI
+                <a href="?order_by=pi__username&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort PI asc</span></a>
+                <a href="?order_by=pi__username&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort PI desc</span></a>
+              </th>
+              <th scope="col">Title</th>
+              <!-- <th scope="col" class="text-nowrap">
+                Field of Science
+                <a href="?order_by=field_of_science&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Field of Science asc</span></a>
+                <a href="?order_by=field_of_science&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Field of Science desc</span></a>
+              </th> -->
+              <th scope="col" class="text-nowrap">
+                Type
+                <a href="?order_by=type&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Type asc</span></a>
+                <a href="?order_by=type&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Type desc</span></a>
+              </th>
+              <th scope="col" class="text-nowrap">
+                Status
+                <a href="?order_by=status&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Status asc</span></a>
+                <a href="?order_by=status&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Status desc</span></a>
+              </th>
+              <th scope="col" class="text-nowrap">
+                End Date
+              </th>
+              <th scope="col" class="text-nowrap">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for project in project_list %}
+              <tr>
+                <td>{{ project.id }}</td>
+                <td>{{ project.pi.username }}</td>
+                <td style="text-align: justify; text-justify: inter-word;">{{ project.title|truncatechars:30 }}</td>
+                <!-- <td>{{ project.field_of_science.description }}</td> -->
+                <td>{{ project.type.name }}</td>
+                {% if project.status.name == 'Active' %}
+                  {% if project.can_be_reviewed %}
+                    <td class="text-warning">
+                      <strong>{{ project.status.name }}</strong>
+                      {% if user.username in project.list_of_manager_usernames %}
+                        <a href="{% url 'project-review' project.pk %}">
+                          <span class="badge badge-warning">
+                            <i class="fas fa-redo-alt" aria-hidden="true"></i>
+                            Expires in {{ project.expires_in }} day{{ project.expires_in|pluralize }} - click to renew
+                          </span>
+    
+                        </a>
+                      {% endif %}
+                    </td>
+                  {% elif project.needs_review %}
+                    <td class="text-warning">
+                      <strong>{{ project.status.name }}</strong>
+                      {% if user.username in project.list_of_manager_usernames %}
+                        <a href="{% url 'project-review' project.pk %}">
+                          <span class="badge badge-warning">
+                            <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                            Needs Review - click to review
+                          </span>
+                        </a>
+                      {% endif %}
+                    </td>
+                  {% else %}
+                    <td class="text-success"><strong>{{ project.status.name }}</strong></td>
                   {% endif %}
+                {% elif project.status.name in 'Archived, Denied, Expired' %}
+                  <td class="text-danger">
+                    <strong>{{ project.status.name }}</strong>
+                      {% if user.username in project.list_of_manager_usernames %}
+                        {% if project.status.name == 'Expired' and project.can_be_reviewed %}
+                          <a href="{% url 'project-review' project.pk %}">
+                            <span class="badge badge-warning">
+                              <i class="fas fa-redo-alt" aria-hidden="true"></i>
+                              {{ project.expires_in|add:PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING }} days left to renew
+                            </span>
+                          </a>
+                        {% endif %}
+                      {% endif %}
+                  </td>
+                {% else %}
+                  <td class="text-primary"><strong>{{ project.status.name }}</strong></td>
+                {% endif %}
+                <td>{{ project.end_date }}</td>
+                <td>
+                  <a class="btn btn-primary" href="{% url 'project-detail' project.pk %}" role="button">Details</a>
                 </td>
-              {% elif project.needs_review %}
-                <td class="text-warning">
-                  <strong>{{ project.status.name }}</strong>
-                  {% if user.username in project.list_of_manager_usernames %}
-                    <a href="{% url 'project-review' project.pk %}">
-                      <span class="badge badge-warning">
-                        <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
-                        Needs Review - click to review
-                      </span>
-                    </a>
-                  {% endif %}
-                </td>
-              {% else %}
-                <td class="text-success"><strong>{{ project.status.name }}</strong></td>
-              {% endif %}
-            {% elif project.status.name in 'Archived, Denied, Expired' %}
-              <td class="text-danger">
-                <strong>{{ project.status.name }}</strong>
-                  {% if user.username in project.list_of_manager_usernames %}
-                    {% if project.status.name == 'Expired' and project.can_be_reviewed %}
-                      <a href="{% url 'project-review' project.pk %}">
-                        <span class="badge badge-warning">
-                          <i class="fas fa-redo-alt" aria-hidden="true"></i>
-                          {{ project.expires_in|add:PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING }} days left to renew
-                        </span>
-                      </a>
-                    {% endif %}
-                  {% endif %}
-              </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% if is_paginated %} Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+          <ul class="pagination float-right mr-3">
+            {% if page_obj.has_previous %}
+              <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{filter_parameters_with_order_by}}">Previous</a></li>
             {% else %}
-              <td class="text-primary"><strong>{{ project.status.name }}</strong></td>
+              <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
             {% endif %}
-            <td>{{ project.end_date }}</td>
-            <td>
-              <a class="btn btn-primary" href="{% url 'project-detail' project.pk %}" role="button">Details</a>
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {% if is_paginated %} Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-      <ul class="pagination float-right mr-3">
-        {% if page_obj.has_previous %}
-          <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{filter_parameters_with_order_by}}">Previous</a></li>
-        {% else %}
-          <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
+            {% if page_obj.has_next %}
+              <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{filter_parameters_with_order_by}}">Next</a></li>
+            {% else %}
+              <li class="page-item disabled"><a class="page-link" href="#">Next</a></li>
+            {% endif %}
+          </ul>
         {% endif %}
-        {% if page_obj.has_next %}
-          <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{filter_parameters_with_order_by}}">Next</a></li>
-        {% else %}
-          <li class="page-item disabled"><a class="page-link" href="#">Next</a></li>
-        {% endif %}
-      </ul>
-    {% endif %}
+      </div>
+    </div>
   </div>
 {% elif expand_accordion == "show"%}
   <div class="alert alert-info">
@@ -251,6 +284,7 @@ Project List
     No projects to display!
   </div>
 {% endif %}
+<br>
 
 <script>
   var pi_last_searched = '';
