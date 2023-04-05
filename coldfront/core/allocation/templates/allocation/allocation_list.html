@@ -50,6 +50,10 @@ Allocation List
           <th scope="col" class="text-nowrap">
             Project
           </th>
+          <a href="?order_by=project__title&direction=asc&{{filter_parameters}}"><i
+              class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Project Title asc</span></a>
+          <a href="?order_by=project__title&direction=des&{{filter_parameters}}"><i
+              class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Project Title desc</span></a>
           <th scope="col" class="text-nowrap">
             PI
             <a href="?order_by=project__pi__username&direction=asc&{{filter_parameters}}"><i
@@ -68,9 +72,10 @@ Allocation List
             <a href="?order_by=status__name&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Status desc</span></a>
           </th>
           <th scope="col" class="text-nowrap">
-            End Date
-            <a href="?order_by=end_date&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort End Date asc</span></a>
-            <a href="?order_by=end_date&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort End Date desc</span></a>
+            Size
+          </th>
+          <th scope="col" class="text-nowrap">
+            Usage
           </th>
         </tr>
       </thead>
@@ -78,13 +83,14 @@ Allocation List
         {% for allocation in allocation_list %}
           <tr>
             <td><a href="/allocation/{{allocation.id}}/">{{ allocation.id }}</a></td>
-            <td class="text-nowrap"><a 
+            <td class="text-nowrap"><a
                 href="/project/{{allocation.project.id}}/">{{ allocation.project.title|truncatechars:50 }}</a></td>
             <td class="text-nowrap">{{allocation.project.pi.first_name}} {{allocation.project.pi.last_name}}
               ({{allocation.project.pi.username}})</td>
             <td class="text-nowrap">{{ allocation.get_parent_resource }}</td>
             <td class="text-nowrap">{{ allocation.status.name }}</td>
-            <td class="text-nowrap">{{ allocation.end_date }}</td>
+            <td class="text-nowrap">{{ allocation.size|floatformat:2 }}</td>
+            <td class="text-nowrap">{{ allocation.usage|floatformat:2 }}</td>
           </tr>
         {% endfor %}
       </tbody>
