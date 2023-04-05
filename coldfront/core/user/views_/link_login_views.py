@@ -121,6 +121,8 @@ class LinkLoginView(LoginView):
         if not user.is_active:
             user.is_active = True
             user.save()
+            log_message = f'Activated User {user.pk}.'
+            logger.info(log_message)
 
         message = f'Successfully signed in as {user.username}.'
         messages.success(self.request, message)
