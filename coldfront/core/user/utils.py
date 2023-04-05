@@ -302,7 +302,7 @@ def send_login_link_email(email_address):
         return
 
     subject = 'Login Link'
-    template_name = 'email/login_link.txt'
+    template_name = 'email/login/login_link.txt'
     context = {
         'PORTAL_NAME': settings.PORTAL_NAME,
         'login_url': login_token_url(email_address.user),
@@ -325,7 +325,7 @@ def send_login_link_ineligible_email(email_address, reason):
         return
 
     subject = 'Ineligible for Login Link'
-    template_name = 'email/login_link_ineligible.txt'
+    template_name = 'email/login/login_link_ineligible.txt'
     context = {
         'PORTAL_NAME': settings.PORTAL_NAME,
         'reason': reason,
