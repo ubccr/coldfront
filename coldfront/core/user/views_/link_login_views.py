@@ -8,9 +8,10 @@ from django.views.generic.edit import FormView
 from allauth.account.models import EmailAddress
 from sesame.views import LoginView
 
+from coldfront.core.account.utils.login_activity import LoginActivityVerifier
 from coldfront.core.user.forms_.link_login_forms import RequestLoginLinkForm
-from coldfront.core.user.utils import send_login_link_email
-from coldfront.core.user.utils import send_login_link_ineligible_email
+from coldfront.core.user.utils_.link_login_utils import send_login_link_email
+from coldfront.core.user.utils_.link_login_utils import send_login_link_ineligible_email
 from coldfront.core.utils.common import import_from_settings
 
 
@@ -33,41 +34,52 @@ class RequestLoginLinkView(FormView):
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
-        """If the email address belongs to a user, send a login link to
-        it."""
+        """If a corresponding EmailAddress exists, send an email (with a
+        login link, further instructions, or an explanation) to it.
+
+        In all cases, display an acknowledging message with the same
+        text, to avoid leaking information."""
         email = form.cleaned_data.get('email')
         email_address = self._validate_email_address(email)
         if email_address:
-            try:
-                self._validate_user_eligible(email_address.user)
-            except self.UserIneligibleException as e:
-                reason = str(e)
-                send_login_link_ineligible_email(email_address, reason)
+            if not email_address.verified:
+                request_login_method_str = 'Link Login Request'
+                verifier = LoginActivityVerifier(
+                    self.request, email_address, request_login_method_str)
+                verifier.send_email()
             else:
-                send_login_link_email(email_address)
-        self._send_success_message()
+                try:
+                    self._validate_user_eligible(email_address.user)
+                except self.UserIneligibleException as e:
+                    reason = str(e)
+                    send_login_link_ineligible_email(email_address, reason)
+                else:
+                    send_login_link_email(email_address)
+        self._send_ack_message()
         return super().form_valid(form)
 
-    def get_success_url(self):
+    @staticmethod
+    def get_success_url():
         return reverse('request-login-link')
 
-    def _send_success_message(self):
-        """Send a success message to the user explaining that a link was
-        (conditionally) sent."""
+    def _send_ack_message(self):
+        """Send an acknowledging message to the user explaining that a
+        link or further instructions were (conditionally) sent."""
         login_link_max_age_minutes = (
             import_from_settings('SESAME_MAX_AGE') // 60)
         message = (
             f'If the email address you entered corresponds to an existing '
-            f'user, please check the address for a login link. Note that this '
-            f'link will expire in {login_link_max_age_minutes} minutes.')
+            f'user, please check the address for a login link or further '
+            f'instructions. Note that this link will expire in '
+            f'{login_link_max_age_minutes} minutes.')
         messages.success(self.request, message)
 
     def _validate_email_address(self, email):
         """Return an EmailAddress object corresponding to the given
-        address (str) if one exists and is verified. Otherwise, return
-        None. Write user and log messages as needed."""
+        address (str) if one exists. Otherwise, return None. Write user
+        and log messages as needed."""
         try:
-            email_address = EmailAddress.objects.get(email=email)
+            return EmailAddress.objects.get(email=email)
         except EmailAddress.DoesNotExist:
             return None
         except EmailAddress.MultipleObjectsReturned:
@@ -78,10 +90,6 @@ class RequestLoginLinkView(FormView):
                 'Unexpected server error. Please contact an administrator.')
             messages.error(self.request, message)
             return None
-        else:
-            if not email_address.verified:
-                return None
-            return email_address
 
     def _validate_user_eligible(self, user):
         """Return None if the given User is eligible to log in using
