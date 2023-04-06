@@ -74,22 +74,23 @@ class Command(BaseCommand):
         with open(os.path.join(cwd, file_name), 'r') as csv_file:
             reader = csv.DictReader(csv_file)
 
-            organizations = dict()
+            # organizations = dict()
             for row in reader:
-                organization = row["Org"].strip()
-                project_obj = None
-                if organization == "BL-COAS":
-                    self.import_geode_project(row)
-                else:
-                    if organizations.get(organization) is None:
-                        project_obj = self.import_geode_project(row)
-                    else:
-                        project_obj = self.import_geode_project(row, organizations[organization])
+                self.import_geode_project(row)
+                # organization = row["Org"].strip()
+                # project_obj = None
+                # if organization == "BL-COAS":
+                #     self.import_geode_project(row)
+                # else:
+                #     if organizations.get(organization) is None:
+                #         project_obj = self.import_geode_project(row)
+                #     else:
+                #         project_obj = self.import_geode_project(row, organizations[organization])
 
-                    if project_obj is None:
-                        continue
+                #     if project_obj is None:
+                #         continue
 
-                    organizations[organization] = project_obj
+                #     organizations[organization] = project_obj
 
         print("Finished importing Geode-Projects")
 
@@ -311,7 +312,7 @@ class Command(BaseCommand):
 
         if quota_files > 0:
             AllocationAttribute.objects.create(
-                allocation_attribute_type=AllocationAttributeType.objects.get(name="Quota Files"),
+                allocation_attribute_type=AllocationAttributeType.objects.get(name="Quota Files (M)"),
                 allocation=allocation_obj,
                 value=quota_files
             )
@@ -420,7 +421,7 @@ class Command(BaseCommand):
             end_date=project_end_date
         )
         project_obj.slurm_account_name = self.generate_slurm_account_name(project_obj)
-        project_obj.title = f"Geode Project - {share_name}"
+        project_obj.title = f"Geode Project \"{share_name}\""
         project_obj.save()
 
         ProjectUser.objects.create(
