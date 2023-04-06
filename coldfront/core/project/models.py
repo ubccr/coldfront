@@ -24,6 +24,10 @@ class ProjectPermission(Enum):
     PI = 'pi'
     UPDATE = 'update'
 
+class ProjectStatusChoiceManager(models.Manager):
+    def get_by_natural_key(self, name):
+        return self.get(name=name)
+
 class ProjectStatusChoice(TimeStampedModel):
     """ A project status choice indicates the status of the project. Examples include Active, Archived, and New. 
     
@@ -31,13 +35,22 @@ class ProjectStatusChoice(TimeStampedModel):
         name (str): name of project status choice
     """
 
-    name = models.CharField(max_length=64)
+    name = models.CharField(max_length=64, unique=True)
 
     def __str__(self):
         return self.name
 
+    objects = ProjectStatusChoiceManager()
+
     class Meta:
         ordering = ('name',)
+
+    def natural_key(self):
+        return [self.name]
+
+class ProjectManager(models.Manager):
+    def get_by_natural_key(self, title, pi_username):
+        return self.get(title=title, pi__username=pi_username)
 
 class Project(TimeStampedModel):
     """ A project is a container that includes users, allocations, publications, grants, and other research output. 
@@ -201,13 +214,19 @@ We do not have information about your research. Please provide a detailed descri
     def __str__(self):
         return self.title
 
+    objects = ProjectManager()
+
     class Meta:
         ordering = ['title']
+        unique_together = ('title', 'pi')
 
         permissions = (
             ("can_view_all_projects", "Can view all projects"),
             ("can_review_pending_project_reviews", "Can review pending project reviews"),
         )
+
+    def natural_key(self):
+        return (self.title,) + self.pi.natural_key()
 
 class ProjectAdminComment(TimeStampedModel):
     """ A project admin comment is a comment that an admin can make on a project. 

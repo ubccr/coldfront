@@ -22,6 +22,10 @@ class AttributeType(TimeStampedModel):
     class Meta:
         ordering = ['name', ]
 
+class ResourceTypeManager(models.Manager):
+    def get_by_natural_key(self, name):
+        return self.get(name=name)
+
 class ResourceType(TimeStampedModel):
     """ A resource type class links a resource and its value. 
     
@@ -57,8 +61,13 @@ class ResourceType(TimeStampedModel):
     def __str__(self):
         return self.name
 
+    objects = ResourceTypeManager()
+
     class Meta:
         ordering = ['name', ]
+
+    def natural_key(self):
+        return [self.name]
 
 class ResourceAttributeType(TimeStampedModel):
     """ A resource attribute type indicates the type of the attribute. Examples include slurm_specs and slurm_cluster. 
@@ -84,6 +93,10 @@ class ResourceAttributeType(TimeStampedModel):
 
     class Meta:
         ordering = ['name', ]
+
+class ResourceManager(models.Manager):
+    def get_by_natural_key(self, name):
+        return self.get(name=name)
 
 class Resource(TimeStampedModel):
     """ A resource is something a center maintains and provides access to for the community. Examples include Budgetstorage, Server, and Software License. 
@@ -211,8 +224,13 @@ class Resource(TimeStampedModel):
     def __str__(self):
         return '%s (%s)' % (self.name, self.resource_type.name)
 
+    objects = ResourceManager()
+
     class Meta:
         ordering = ['name', ]
+
+    def natural_key(self):
+        return [self.name]
 
 class ResourceAttribute(TimeStampedModel):
     """ A resource attribute class links a resource attribute type and a resource. 

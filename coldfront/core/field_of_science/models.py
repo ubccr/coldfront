@@ -1,6 +1,9 @@
 from django.db import models
 from model_utils.models import TimeStampedModel
 
+class FieldOfScienceManager(models.Manager):
+    def get_by_natural_key(self, description):
+        return self.get(description=description)
 
 class FieldOfScience(TimeStampedModel):
     """ A field of science is a division under which a project falls. The list is prepopulated in ColdFront using the National Science Foundation FOS list, but can be changed by a center admin if needed. Examples include Chemistry and Physics.
@@ -17,7 +20,7 @@ class FieldOfScience(TimeStampedModel):
     DEFAULT_PK = 149
     parent_id = models.ForeignKey('self', on_delete=models.CASCADE, null=True)
     is_selectable = models.BooleanField(default=True)
-    description = models.CharField(max_length=255)
+    description = models.CharField(max_length=255, unique=True)
     fos_nsf_id = models.IntegerField(null=True, blank=True)
     fos_nsf_abbrev = models.CharField(max_length=10, null=True, blank=True)
     directorate_fos_id = models.IntegerField(null=True, blank=True)
@@ -25,5 +28,10 @@ class FieldOfScience(TimeStampedModel):
     def __str__(self):
         return self.description
 
+    objects = FieldOfScienceManager()
+
     class Meta:
         ordering = ['description']
+
+    def natural_key(self):
+        return [self.description]

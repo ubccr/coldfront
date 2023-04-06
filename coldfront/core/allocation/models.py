@@ -34,6 +34,10 @@ class AllocationPermission(Enum):
     USER = 'USER'
     MANAGER = 'MANAGER'
 
+class AllocationStatusChoiceManager(models.Manager):
+    def get_by_natural_key(self, name):
+        return self.get(name=name)
+
 class AllocationStatusChoice(TimeStampedModel):
     """ A project status choice indicates the status of the project. Examples include Active, Archived, and New. 
     
@@ -46,8 +50,13 @@ class AllocationStatusChoice(TimeStampedModel):
     def __str__(self):
         return self.name
 
+    objects = AllocationStatusChoiceManager()
+
     class Meta:
         ordering = ['name', ]
+
+    def natural_key(self):
+        return [self.name]
 
 class Allocation(TimeStampedModel):
     """ An allocation provides users access to a resource. 
