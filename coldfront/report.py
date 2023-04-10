@@ -31,7 +31,8 @@ class StandardReportRunner(BaseReportRunner):
                 p.title as 'Project',
                 s.name as 'Project Status',
                 alloc.id as 'Allocation ID',
-                alloc.quantity as 'Allocation TB',
+                storage_attribute.value as 'Allocation TB',
+                CONCAT(storage_attribute.value, ' TB of ', r.name, ' (', alloc.id, ')') as 'Allocation Name',
                 u.full_name as 'User',
                 au.usage as 'Usage TB',
                 br.decimal_charge as 'Charge',
@@ -47,6 +48,10 @@ class StandardReportRunner(BaseReportRunner):
                     inner join ifxuser pi on pi.id = p.pi_id
                     inner join allocation_allocation alloc on p.id = alloc.project_id
                     inner join allocation_historicalallocationuser au on au.allocation_id = alloc.id
+                    inner join allocation_allocation_resources alloc_res on alloc.id = alloc_res.allocation_id
+                    inner join resource_resource r on r.id = alloc_res.resource_id
+                    inner join allocation_allocationattribute storage_attribute on storage_attribute.allocation_id = alloc.id
+                    inner join allocation_allocationattributetype storage_attribute_type on storage_attribute_type.id = storage_attribute.allocation_attribute_type_id
                     left join ifxuser u on au.user_id = u.id
                     left join ifx_allocationuserproductusage aupu on au.history_id = aupu.allocation_user_id
                     left join product_usage pu on aupu.product_usage_id = pu.id
@@ -55,6 +60,7 @@ class StandardReportRunner(BaseReportRunner):
                     left join nanites_organization o on po.organization_id = o.id
                     left join account a on br.account_id = a.id
             where
+                storage_attribute_type.name = 'Storage Quota (TB)' and
                 pu.start_date >= %s and pu.start_date < %s
         '''
 
@@ -96,7 +102,7 @@ class StandardReportRunner(BaseReportRunner):
             worksheet.write_number(row, col, date_number, date_format)
         elif 'charge' in field_name.lower():
             worksheet.write_number(row, col, field_value, money_format)
-        elif 'tb' in field_name.lower():
+        elif 'usage tb' in field_name.lower():
             worksheet.write_number(row, col, field_value, tb_format)
         else:
             worksheet.write(row, col, field_value)
