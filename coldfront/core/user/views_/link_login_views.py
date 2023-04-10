@@ -108,15 +108,13 @@ class LinkLoginView(LoginView):
         return super().login_failed()
 
     def login_success(self):
-        """Activate the user if needed, send a success message to the
-        user, and write to the log before deferring to parent logic."""
-        user = self.request.user
-        if not user.is_active:
-            user.is_active = True
-            user.save()
-            log_message = f'Activated User {user.pk}.'
-            logger.info(log_message)
+        """Send a success message to the user and write to the log
+        before deferring to parent logic.
 
+        Note: Users should not be activated, so that explicitly blocked
+        users do not have a path to reactivation.
+        """
+        user = self.request.user
         message = f'Successfully signed in as {user.username}.'
         messages.success(self.request, message)
         logger.warning(

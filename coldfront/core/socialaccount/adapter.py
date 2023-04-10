@@ -133,7 +133,7 @@ class CILogonAccountAdapter(DefaultSocialAccountAdapter):
             user = next(iter(matching_addresses_by_user))
             addresses = matching_addresses_by_user[user]
             if any([a.verified for a in addresses]):
-                self._activate_and_connect_user(
+                self._connect_user(
                     request, sociallogin, provider, user, user_email, user_uid)
             else:
                 self._block_login_for_verification(
@@ -148,23 +148,6 @@ class CILogonAccountAdapter(DefaultSocialAccountAdapter):
                 f'UID {user_uid}.')
             logger.error(log_message)
             self._raise_server_error(self._get_auth_error_message())
-
-    @staticmethod
-    def _activate_and_connect_user(request, sociallogin, provider, user,
-                                   user_email, user_uid):
-        """Activate the User if needed and connect the provider account
-        to the User's account in the database."""
-        if not user.is_active:
-            user.is_active = True
-            user.save()
-            log_message = f'Activated User {user.pk}.'
-            logger.info(log_message)
-
-        sociallogin.connect(request, user)
-        log_message = (
-            f'Successfully connected data for User with email {user_email} and '
-            f'UID {user_uid} from provider {provider} to local User {user.pk}.')
-        logger.info(log_message)
 
     def _block_login_for_verification(self, request, sociallogin, provider,
                                       user, user_email, user_uid,
@@ -194,6 +177,17 @@ class CILogonAccountAdapter(DefaultSocialAccountAdapter):
             'with an existing user, but it is unverified. Please check the '
             'address for a verification email.')
         self._raise_client_error(message)
+
+    @staticmethod
+    def _connect_user(request, sociallogin, provider, user, user_email,
+                      user_uid):
+        """Connect the provider account to the User's account in the
+        database."""
+        sociallogin.connect(request, user)
+        log_message = (
+            f'Successfully connected data for User with email {user_email} and '
+            f'UID {user_uid} from provider {provider} to local User {user.pk}.')
+        logger.info(log_message)
 
     @staticmethod
     def _get_auth_error_message():
