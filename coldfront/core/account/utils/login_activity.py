@@ -55,7 +55,10 @@ class LoginActivityVerifier(object):
     def get_request_user_agent_str(self):
         """Given an HTTP request, return a str describing the user agent
         that made the request (e.g., 'Chrome on Mac OS X')."""
-        user_agent = parse(self._request.headers.get('user-agent'))
+        user_agent_header = self._request.headers.get('user-agent', '')
+        if not user_agent_header:
+            return 'Unknown Browser and OS'
+        user_agent = parse(user_agent_header)
         return f'{user_agent.browser.family} on {user_agent.os.family}'
 
     def login_activity_verification_url(self):
