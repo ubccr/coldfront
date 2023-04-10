@@ -12,6 +12,8 @@ from coldfront.core.account.utils.login_activity import LoginActivityVerifier
 from coldfront.core.user.forms_.link_login_forms import RequestLoginLinkForm
 from coldfront.core.user.utils_.link_login_utils import send_login_link_email
 from coldfront.core.user.utils_.link_login_utils import send_login_link_ineligible_email
+from coldfront.core.user.utils_.link_login_utils import UserLoginLinkIneligible
+from coldfront.core.user.utils_.link_login_utils import validate_user_eligible_for_login_link
 from coldfront.core.utils.common import import_from_settings
 
 
@@ -24,9 +26,6 @@ class RequestLoginLinkView(FormView):
 
     form_class = RequestLoginLinkForm
     template_name = 'user/request_login_link.html'
-
-    class UserIneligibleException(Exception):
-        pass
 
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_authenticated:
@@ -49,8 +48,8 @@ class RequestLoginLinkView(FormView):
                 verifier.send_email()
             else:
                 try:
-                    self._validate_user_eligible(email_address.user)
-                except self.UserIneligibleException as e:
+                    validate_user_eligible_for_login_link(email_address.user)
+                except UserLoginLinkIneligible as e:
                     reason = str(e)
                     send_login_link_ineligible_email(email_address, reason)
                 else:
@@ -59,20 +58,24 @@ class RequestLoginLinkView(FormView):
         return super().form_valid(form)
 
     @staticmethod
-    def get_success_url():
-        return reverse('request-login-link')
-
-    def _send_ack_message(self):
-        """Send an acknowledging message to the user explaining that a
-        link or further instructions were (conditionally) sent."""
+    def ack_message():
+        """Return an acknowledging message explaining that a link or
+        further instructions were (conditionally) sent."""
         login_link_max_age_minutes = (
             import_from_settings('SESAME_MAX_AGE') // 60)
-        message = (
+        return (
             f'If the email address you entered corresponds to an existing '
             f'user, please check the address for a login link or further '
             f'instructions. Note that this link will expire in '
             f'{login_link_max_age_minutes} minutes.')
-        messages.success(self.request, message)
+
+    @staticmethod
+    def get_success_url():
+        return reverse('request-login-link')
+
+    def _send_ack_message(self):
+        """Send an acknowledging message to the user."""
+        messages.success(self.request, self.ack_message())
 
     def _validate_email_address(self, email):
         """Return an EmailAddress object corresponding to the given
@@ -90,16 +93,6 @@ class RequestLoginLinkView(FormView):
                 'Unexpected server error. Please contact an administrator.')
             messages.error(self.request, message)
             return None
-
-    def _validate_user_eligible(self, user):
-        """Return None if the given User is eligible to log in using
-        this method. Otherwise, raise an exception with a user-facing
-        message explaining why the user is ineligible."""
-        # Staff users and superusers
-        if user.is_staff or user.is_superuser:
-            raise self.UserIneligibleException(
-                'For security reasons, portal staff are disallowed from '
-                'logging in using a link.')
 
 
 class LinkLoginView(LoginView):
