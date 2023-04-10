@@ -443,7 +443,7 @@ SOCIALACCOUNT_QUERY_EMAIL = True
 #------------------------------------------------------------------------------
 
 EXTRA_AUTHENTICATION_BACKENDS += [
-    'sesame.backends.ModelBackend',
+    'coldfront.core.user.auth.SesameBackend',
 ]
 
 # The number of seconds a login token is valid for.
