@@ -6,12 +6,15 @@
     </th>
     <th scope="col">
       Username
+      {% include 'common/table_sorter.html' with table_sorter_field='project_user__user__username' %}
     </th>
     <th scope="col">
       User Email
+      {% include 'common/table_sorter.html' with table_sorter_field='project_user__user__email' %}
     </th>
     <th scope="col">
       Project
+      {% include 'common/table_sorter.html' with table_sorter_field='project_user__project' %}
     </th>
     <th scope="col">
       Date Requested
