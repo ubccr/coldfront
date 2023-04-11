@@ -19,40 +19,39 @@ To load user data into ColdFront create a json file `users.json` in the followin
 
 ```json
 [
-    {
-        "fields": {
-            "email": "cgray@example.com",
-            "first_name": "Carl",
-            "is_active": true,
-            "is_staff": false,
-            "is_superuser": false,
-            "last_name": "Gray",
-            "password": "pbkdf2_sha256$260000$hQje4tukf0uRXYwo76JZG5$SsKKuWmn4+T31ixwnmY7DRsmMsO3JpQ7PDq4U94QWQ8=",
-            "username": "cgray"
-        },
-        "model": "auth.user"
+{
+    "fields": {
+        "email": "cgray@example.com",
+        "first_name": "Carl",
+        "is_active": true,
+        "is_staff": false,
+        "is_superuser": false,
+        "last_name": "Gray",
+        "password": "pbkdf2_sha256$260000$hQje4tukf0uRXYwo76JZG5$SsKKuWmn4+T31ixwnmY7DRsmMsO3JpQ7PDq4U94QWQ8=",
+        "username": "cgray"
     },
-    {
-        "fields": {
-            "email": "sfoster@example.com",
-            "first_name": "Stephanie",
-            "is_active": true,
-            "is_staff": false,
-            "is_superuser": false,
-            "last_name": "Foster",
-            "password": "pbkdf2_sha256$260000$eMdXzwu1Gl9OKB9mTxpaD2$ayXIWhf5MQ3gQlL8aHyfDA+hmiA2kx5jOeIg7duh0uU=",
-            "username": "sfoster"
-        },
-        "model": "auth.user"
-    }
+    "model": "auth.user"
+},
+{
+    "fields": {
+        "email": "sfoster@example.com",
+        "first_name": "Stephanie",
+        "is_active": true,
+        "is_staff": false,
+        "is_superuser": false,
+        "last_name": "Foster",
+        "password": "pbkdf2_sha256$260000$eMdXzwu1Gl9OKB9mTxpaD2$ayXIWhf5MQ3gQlL8aHyfDA+hmiA2kx5jOeIg7duh0uU=",
+        "username": "sfoster"
+    },
+    "model": "auth.user"
+}
 ]
 ```
 
 !!! note "Passwords optional and username must be unique"
-    It is important that the username is unique. The `password` field is
-    optional. Most sites use some type of external single sign on
-    authentication like OAuth2 and in this case the password field can be left
-    blank.
+    The `password` field is optional but the username must be unique. Most sites
+    use some type of external single sign on authentication like OAuth2 and in
+    this case the password field can be left blank.
 
 To load the json file we use the Django (ColdFront) `loaddata` command:
 
@@ -65,30 +64,30 @@ To load project data into ColdFront create a json file `projects.json` in the fo
 
 ```json
 [
-    {
-        "fields": {
-            "description": "We want to estimate the quark chemical potential of a rotating sample of plasma.",
-            "field_of_science": ["Chemistry"],
-            "force_review": true,
-            "pi": ["cgray"],
-            "requires_review": true,
-            "status": ["Active"],
-            "title": "Angular momentum in QGP holography"
-        },
-        "model": "project.project"
+{
+    "fields": {
+        "description": "We want to estimate the quark chemical potential of a rotating sample of plasma.",
+        "field_of_science": ["Chemistry"],
+        "force_review": true,
+        "pi": ["cgray"],
+        "requires_review": true,
+        "status": ["Active"],
+        "title": "Angular momentum in QGP holography"
     },
-    {
-        "fields": {
-            "description": "This purpose of this project is to measure the critical behavior of quantum Hall transitions.",
-            "field_of_science": ["Physics"],
-            "force_review": false,
-            "pi": ["sfoster"],
-            "requires_review": true,
-            "status": ["Active"],
-            "title": "Measuring critical behavior of quantum Hall transitions"
-        },
-        "model": "project.project"
-    }
+    "model": "project.project"
+},
+{
+    "fields": {
+        "description": "This purpose of this project is to measure the critical behavior of quantum Hall transitions.",
+        "field_of_science": ["Physics"],
+        "force_review": false,
+        "pi": ["sfoster"],
+        "requires_review": true,
+        "status": ["Active"],
+        "title": "Measuring critical behavior of quantum Hall transitions"
+    },
+    "model": "project.project"
+}
 ]
 ```
 
@@ -96,40 +95,91 @@ To load the json file we use the Django (ColdFront) `loaddata` command:
 
 ```coldfront loaddata --format=json projects.json```
 
+## Adding Users to Projects
+
+To add users to projects create a json file `project-users.json` in the following format:
+
+```json
+[
+{
+    "model": "project.projectuser",
+    "fields": {
+        "user": [
+            "cgray"
+        ],
+        "project": [
+            "Angular momentum in QGP holography",
+            "cgray"
+        ],
+        "role": [
+            "Manager"
+        ],
+        "status": [
+            "Active"
+        ],
+        "enable_notifications": true
+    }
+},
+{
+    "model": "project.projectuser",
+    "fields": {
+        "user": [
+            "sfoster"
+        ],
+        "project": [
+            "Measuring critical behavior of quantum Hall transitions",
+            "sfoster"
+        ],
+        "role": [
+            "Manager"
+        ],
+        "status": [
+            "Active"
+        ],
+        "enable_notifications": true
+    }
+}
+]
+```
+
+To load the json file we use the Django (ColdFront) `loaddata` command:
+
+```coldfront loaddata --format=json project-users.json```
+
 ## Importing Resources
 
 To load resource data into ColdFront create a json file `resources.json` in the following format:
 
 ```json
 [
-    {
-        "fields": {
-            "description": "University Academic Cluster",
-            "is_allocatable": true,
-            "is_available": true,
-            "is_public": true,
-            "name": "University HPC",
-            "requires_payment": false,
-            "resource_type": [
-                "Cluster"
-            ]
-        },
-        "model": "resource.resource"
+{
+    "fields": {
+        "description": "University Academic Cluster",
+        "is_allocatable": true,
+        "is_available": true,
+        "is_public": true,
+        "name": "University HPC",
+        "requires_payment": false,
+        "resource_type": [
+            "Cluster"
+        ]
     },
-    {
-        "fields": {
-            "description": "University Research Cloud",
-            "is_allocatable": true,
-            "is_available": true,
-            "is_public": true,
-            "name": "University Cloud",
-            "requires_payment": false,
-            "resource_type": [
-                "Cloud"
-            ]
-        },
-        "model": "resource.resource"
-    }
+    "model": "resource.resource"
+},
+{
+    "fields": {
+        "description": "University Research Cloud",
+        "is_allocatable": true,
+        "is_available": true,
+        "is_public": true,
+        "name": "University Cloud",
+        "requires_payment": false,
+        "resource_type": [
+            "Cloud"
+        ]
+    },
+    "model": "resource.resource"
+}
 ]
 ```
 
@@ -143,58 +193,141 @@ To load allocation data into ColdFront create a json file `allocations.json` in 
 
 ```json
 [
-    {
-        "fields": {
-            "end_date": "2024-04-05",
-            "is_changeable": true,
-            "is_locked": false,
-            "justification": "I need access to university cluster.",
-            "project": [
-                "Angular momentum in QGP holography",
-                "cgray"
-            ],
-            "quantity": 1,
-            "resources": [
-                [
-                    "University HPC"
-                ]
-            ],
-            "start_date": "2023-04-06",
-            "status": [
-                "Active"
+{
+    "fields": {
+        "end_date": "2024-04-05",
+        "is_changeable": true,
+        "is_locked": false,
+        "justification": "I need access to university cluster.",
+        "project": [
+            "Angular momentum in QGP holography",
+            "cgray"
+        ],
+        "quantity": 1,
+        "resources": [
+            [
+                "University HPC"
             ]
-        },
-        "model": "allocation.allocation"
+        ],
+        "start_date": "2023-04-06",
+        "status": [
+            "Active"
+        ]
     },
-    {
-        "fields": {
-            "end_date": "2025-09-22",
-            "is_changeable": true,
-            "is_locked": false,
-            "justification": "Need access to research cloud.",
-            "project": [
-                "Measuring critical behavior of quantum Hall transitions",
-                "sfoster"
-            ],
-            "quantity": 1,
-            "resources": [
-                [
-                    "University Cloud"
-                ]
-            ],
-            "start_date": "2023-04-06",
-            "status": [
-                "Active"
+    "model": "allocation.allocation"
+},
+{
+    "fields": {
+        "end_date": "2025-09-22",
+        "is_changeable": true,
+        "is_locked": false,
+        "justification": "Need access to research cloud.",
+        "project": [
+            "Measuring critical behavior of quantum Hall transitions",
+            "sfoster"
+        ],
+        "quantity": 1,
+        "resources": [
+            [
+                "University Cloud"
             ]
-        },
-        "model": "allocation.allocation"
-    }
+        ],
+        "start_date": "2023-04-06",
+        "status": [
+            "Active"
+        ]
+    },
+    "model": "allocation.allocation"
+}
 ]
 ```
 
 To load the json file we use the Django (ColdFront) `loaddata` command:
 
 ```coldfront loaddata --format=json allocations.json```
+
+## Adding Users to Allocations
+
+Adding users to allocations requires a bit more work as allocations are
+uniquely identified by their primary key id. Here we show two approaches for
+adding users to allocations. The first approach assumes you already know the
+allocation IDs and in this case you can simply create the following json file
+`allocation-users.json` and import into ColdFront:
+
+```json
+[
+{
+    "model": "allocation.allocationuser",
+    "fields": {
+        "allocation": 1,
+        "user": [
+            "cgray"
+        ],
+        "status": [
+            "Active"
+        ]
+    }
+},
+{
+    "model": "allocation.allocationuser",
+    "fields": {
+        "allocation": 5,
+        "user": [
+            "sfoster"
+        ],
+        "status": [
+            "Active"
+        ]
+    }
+}
+]
+```
+
+To load the above json file we use the Django (ColdFront) `loaddata` command:
+
+```coldfront loaddata --format=json allocation-users.json```
+
+Alternatively, if you don't know the allocation IDs in advance you can use the
+[ColdFront Python API](../../apidocs/index.md) to fetch the allocations for a
+given project and add users accordingly. Here's a simple example that adds the
+PI user `cgray` to all the allocations for a given project. Create the
+following python file `import-alloc-users.py`:
+
+```python
+from django.db.models import Q
+from django.contrib.auth.models import User
+from coldfront.core.project.models import Project
+from coldfront.core.allocation.models import (
+                                          Allocation,
+                                          AllocationUser,
+                                          AllocationUserStatusChoice)
+
+
+status = AllocationUserStatusChoice.objects.get(name="Active")
+piuser = User.objects.get(username="cgray")
+project = Project.objects.get(
+                    title="Angular momentum in QGP holography",
+                    pi=piuser)
+
+allocations = Allocation.objects.filter(
+    Q(project=project) &
+    Q(project__projectuser__user=piuser) &
+    Q(project__projectuser__status__name__in=["Active", ])
+).distinct()
+
+for a in allocations:
+    allocation_user = AllocationUser.objects.get_or_create(
+        allocation=a,
+        user=piuser,
+        status=status
+    )
+```
+
+Then you can run the above python code using the Django (ColdFront) shell:
+
+```
+$ coldfront shell < import-alloc-users.py`
+```
 
 ## Importing other data
 
