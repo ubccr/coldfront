@@ -4,7 +4,7 @@ This howto guide demonstrates importing data into ColdFront using json files.
 The examples are very basic and can be easily modified to import data from any
 legacy system. 
 
-The following sections describe how you can builk import Users, Projects,
+The following sections describe how you can bulk import Users, Projects,
 Resources and Allocations into ColdFront. We provide an example json file
 format which can be adopted to your specific needs. Exporting data from
 preexisting legacy systems into this json format is left as an exercise for the
@@ -198,7 +198,7 @@ To load the json file we use the Django (ColdFront) `loaddata` command:
 
 ## Importing other data
 
-The previous sections provide examples of import specific data into ColdFront.
+The previous sections provide examples of importing specific data into ColdFront.
 These examples use Django's built in [serialization framework](https://docs.djangoproject.com/en/3.2/topics/serialization/) 
 which can be used to import/export any ColdFront model. One simple way to
 explore this is to load the ColdFront test data and dump out the json format.
@@ -264,6 +264,7 @@ $ coldfront dumpdata --natural-foreign --indent=4 --format=json grant.Grant
         ],
         "grant_start": "2023-04-06",
         "grant_end": "2025-09-22",
+        "percent_credit": 10.0,
         "direct_funding": 500000.0,
         "total_amount_awarded": 3000000.0,
         "status": [
