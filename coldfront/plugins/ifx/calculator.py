@@ -463,7 +463,10 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
             # For the situation where there is an allocation, and the PI is an allocation user, but no data is used
             # set fraction to 1.
             if total == 0:
-                allocation_user_fractions[uid]['fraction'] = Decimal(1)
+                if count == 0:
+                    allocation_user_fractions[uid]['fraction'] = Decimal(1)
+                else:
+                    raise Exception('There are multiple 0 byte users')
             else:
                 allocation_user_fractions[uid]['fraction'] = Decimal(allocation_user_fractions[uid]['quantity']) / Decimal(total)
         return allocation_user_fractions
