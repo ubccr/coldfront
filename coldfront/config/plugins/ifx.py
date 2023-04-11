@@ -6,7 +6,7 @@ import os
 from decimal import Decimal
 from coldfront.config.base import INSTALLED_APPS, MIDDLEWARE
 
-INSTALLED_APPS = ['ifxuser'] + INSTALLED_APPS + ['author', 'ifxbilling', 'rest_framework.authtoken',]
+INSTALLED_APPS = ['ifxuser'] + INSTALLED_APPS + ['author', 'ifxbilling', 'rest_framework.authtoken', 'ifxreport', 'django_extensions']
 
 MIDDLEWARE += [
     'author.middlewares.AuthorDefaultBackendMiddleware',
@@ -31,3 +31,9 @@ AUTHOR_IGNORE_MODELS = [
 ]
 STANDARD_QUANTIZE = Decimal('0.0000')
 TWO_DIGIT_QUANTIZE = Decimal('0.00')
+
+MEDIA_ROOT = '/usr/src/app/media/'
+MEDIA_URL = '/media/'
+
+IFXREPORT_FILE_ROOT = os.path.join(MEDIA_ROOT, 'reports')
+IFXREPORT_URL_ROOT = f'{MEDIA_URL}reports'

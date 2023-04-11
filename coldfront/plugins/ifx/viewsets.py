@@ -5,7 +5,8 @@ Viewsets
 '''
 from ifxbilling.serializers import BillingRecordViewSet
 from rest_framework.authentication import TokenAuthentication
-from coldfront.plugins.ifx.permissions import FiineBillingRecordViewSetPermissions
+from ifxreport.serializers import ReportRunViewSet
+from coldfront.plugins.ifx.permissions import FiineBillingRecordViewSetPermissions, AdminPermissions
 
 class ColdfrontBillingRecordViewSet(BillingRecordViewSet):
     '''
@@ -13,4 +14,13 @@ class ColdfrontBillingRecordViewSet(BillingRecordViewSet):
     '''
     permission_classes = [FiineBillingRecordViewSetPermissions]
     authentication_classes = [TokenAuthentication]
+    pagination_class = None
+
+
+class ColdfrontReportRunViewSet(ReportRunViewSet):
+    '''
+    Set Admin permissions
+    '''
+    permission_classes = [AdminPermissions]
+#    authentication_classes = [TokenAuthentication]
     pagination_class = None

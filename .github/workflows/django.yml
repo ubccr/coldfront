@@ -13,7 +13,22 @@ jobs:
       matrix:
         python-version: [3.7, 3.8]
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout 
+      uses: actions/checkout@v3
+    - name: Set up SSH key
+      run: |
+        mkdir -p ~/.ssh/
+        echo "$SSH_KEY" > ~/.ssh/staging.key
+        chmod 600 ~/.ssh/staging.key
+        ssh-agent -a $SSH_AUTH_SOCK > /dev/null
+        ssh-add ~/.ssh/staging.key
+      env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+          SSH_KEY: ${{ secrets.ACTION_SSH }}
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+      env:
+        SSH_AUTH_SOCK: /tmp/ssh_agent.sock
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v3
       with:
@@ -36,16 +51,6 @@ jobs:
         # stop the build if there are Python syntax errors or undefined names
         isort .
         isort --check --diff .
-    - name: Set up SSH key
-      run: |
-        mkdir -p ~/.ssh/
-        echo "$SSH_KEY" > ~/.ssh/staging.key
-        chmod 600 ~/.ssh/staging.key
-        ssh-agent -a $SSH_AUTH_SOCK > /dev/null
-        ssh-add ~/.ssh/staging.key
-      env:
-          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-          SSH_KEY: ${{ secrets.ACTION_SSH }}
     - name: Create .env file
       run: echo -e "NEO4JP=${{ secrets.NEO4JP }}\nSFUSER=${{ secrets.SFUSER }}\nSFPASS=${{ secrets.SFPASS }} > .env"
     - name: Build the images and start the containers
