@@ -120,9 +120,12 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
         try:
             time_chart_data = generate_usage_history_graph(self.object)
+            time_chart_data_error = None
         except Exception as e:
+            time_chart_data_error = e
             time_chart_data = None
         context['time_chart_data'] = time_chart_data
+        context['time_chart_data_error'] = time_chart_data_error
         context['publications'] = Publication.objects.filter(
             project=self.object, status='Active').order_by('-year')
         context['research_outputs'] = ResearchOutput.objects.filter(

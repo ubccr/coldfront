@@ -38,6 +38,8 @@
     "units": "TB",
     "is_active": true,
     "product_id": 1,
+    "created": "2022-02-22T16:26:49.635Z",
+    "updated": "2022-02-22T16:26:49.635Z",
     "max_qty": null
   }
 },

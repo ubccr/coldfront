@@ -145,8 +145,22 @@ Project Detail
 <!-- End Project Invoice/Allocations -->
 
 
+<!-- Start Project Invoice/Allocations -->
+{% if time_chart_data %}
+<div class="html2pdf__page-break"></div>
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="d-inline"><i class="fas fa-file-invoice-dollar" aria-hidden="true"></i> Invoice History</h3>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <div id="chartCostHistory" style="min-height: 270px ;"></div>
+    </div>
 
-<!-- <div id="chartCostHistory" style="min-height: 270px ;"></div> -->
+  </div>
+</div>
+{% endif %}
+
 
 
 

@@ -1,14 +1,12 @@
 '''
 Add allocations specified in local_data/add_allocations.csv
 '''
-import os
 import json
 import logging
 import datetime
 
 import pandas as pd
 from django.conf import settings
-from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError, MultipleObjectsReturned
 from django.core.management.base import BaseCommand
 
@@ -21,7 +19,6 @@ from coldfront.core.allocation.models import (Allocation,
 from coldfront.core.utils.fasrc import log_missing
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
-from coldfront.config.env import ENV
 
 
 logger = logging.getLogger()
@@ -42,12 +39,13 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         file = file = options['file']
         if not file:
-            LOCALDATA_ROOT = ENV.str('LOCALDATA_ROOT', default=base_dir)
-            allocation_file = 'add_allocations.csv'
-            allo_list_file = os.path.join(LOCALDATA_ROOT, 'local_data/ready_to_add/', allocation_file)
+            allo_list_file = './local_data/ready_to_add/add_allocations.csv'
         else:
             allo_list_file = file
 
+        timestamp = datetime.datetime.now()
+        added_allocation_csv = f'./local_data/added_allocations_{timestamp}.csv'
+        added_allocations_df = pd.DataFrame()
         subdir_type = AllocationAttributeType.objects.get(name="Subdirectory")
         lab_data = pd.read_csv(allo_list_file)
         command_report = {
@@ -75,6 +73,7 @@ class Command(BaseCommand):
                     defaults={
                         'status': AllocationStatusChoice.objects.get(name='Active'),
                         'start_date': datetime.datetime.now(),
+                        'is_changeable': True,
                         'justification': f'Allocation Information for {lab_name}',
                         }
                     )
@@ -92,6 +91,7 @@ class Command(BaseCommand):
                 print(f'allocation created: {lab_name}')
                 allocation.save()
                 command_report['allocations_added'].append(f'{lab_name}  {lab_server}  {lab_path}')
+                added_allocations_df = added_allocations_df.append(row, ignore_index=True)
             else:
                 command_report['allocations_existing'].append(f'{lab_name}  {lab_server}  {lab_path}')
             if allocation.status.name != 'Active':
@@ -110,6 +110,9 @@ class Command(BaseCommand):
             if created:
                 print('PI added: ' + project_obj.pi.username)
         missing_projects = [{'title': title} for title in command_report['missing_projects']]
+        if not added_allocations_df.empty:
+            added_allocations_df['billing_code'] = None
+            added_allocations_df.to_csv(added_allocation_csv, index=False)
         log_missing('project', missing_projects)
 
         return json.dumps(command_report, indent=2)
