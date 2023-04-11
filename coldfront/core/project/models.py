@@ -24,33 +24,27 @@ class ProjectPermission(Enum):
     PI = 'pi'
     UPDATE = 'update'
 
-class ProjectStatusChoiceManager(models.Manager):
-    def get_by_natural_key(self, name):
-        return self.get(name=name)
-
 class ProjectStatusChoice(TimeStampedModel):
     """ A project status choice indicates the status of the project. Examples include Active, Archived, and New. 
     
     Attributes:
         name (str): name of project status choice
     """
+    class Meta:
+        ordering = ('name',)
+
+    class ProjectStatusChoiceManager(models.Manager):
+        def get_by_natural_key(self, name):
+            return self.get(name=name)
 
     name = models.CharField(max_length=64, unique=True)
+    objects = ProjectStatusChoiceManager()
 
     def __str__(self):
         return self.name
 
-    objects = ProjectStatusChoiceManager()
-
-    class Meta:
-        ordering = ('name',)
-
     def natural_key(self):
-        return [self.name]
-
-class ProjectManager(models.Manager):
-    def get_by_natural_key(self, title, pi_username):
-        return self.get(title=title, pi__username=pi_username)
+        return (self.name,)
 
 class Project(TimeStampedModel):
     """ A project is a container that includes users, allocations, publications, grants, and other research output. 
@@ -64,6 +58,19 @@ class Project(TimeStampedModel):
         force_review (bool): indicates whether or not to force a review for the project
         requires_review (bool): indicates whether or not the project requires review
     """
+    class Meta:
+        ordering = ['title']
+        unique_together = ('title', 'pi')
+
+        permissions = (
+            ("can_view_all_projects", "Can view all projects"),
+            ("can_review_pending_project_reviews", "Can review pending project reviews"),
+        )
+
+    class ProjectManager(models.Manager):
+        def get_by_natural_key(self, title, pi_username):
+            return self.get(title=title, pi__username=pi_username)
+
 
     DEFAULT_DESCRIPTION = '''
 We do not have information about your research. Please provide a detailed description of your work and update your field of science. Thank you!
@@ -86,6 +93,7 @@ We do not have information about your research. Please provide a detailed descri
     force_review = models.BooleanField(default=False)
     requires_review = models.BooleanField(default=True)
     history = HistoricalRecords()
+    objects = ProjectManager()
 
     def clean(self):
         """ Validates the project and raises errors if the project is invalid. """
@@ -214,17 +222,6 @@ We do not have information about your research. Please provide a detailed descri
     def __str__(self):
         return self.title
 
-    objects = ProjectManager()
-
-    class Meta:
-        ordering = ['title']
-        unique_together = ('title', 'pi')
-
-        permissions = (
-            ("can_view_all_projects", "Can view all projects"),
-            ("can_review_pending_project_reviews", "Can review pending project reviews"),
-        )
-
     def natural_key(self):
         return (self.title,) + self.pi.natural_key()
 
@@ -298,13 +295,21 @@ class ProjectUserRoleChoice(TimeStampedModel):
         name (str): name of the user role choice  
     """
 
-    name = models.CharField(max_length=64)
+    class Meta:
+        ordering = ['name', ]
+
+    class ProjectUserRoleChoiceManager(models.Manager):
+        def get_by_natural_key(self, name):
+            return self.get(name=name)
+
+    name = models.CharField(max_length=64, unique=True)
+    objects = ProjectUserRoleChoiceManager()
 
     def __str__(self):
         return self.name
 
-    class Meta:
-        ordering = ['name', ]
+    def natural_key(self):
+        return (self.name,)
 
 class ProjectUserStatusChoice(TimeStampedModel):
     """ A project user status choice indicates the status of a project user. Examples include Active, Pending, and Denied.
@@ -312,14 +317,21 @@ class ProjectUserStatusChoice(TimeStampedModel):
     Attributes:
         name (str): name of the project user status choice
     """
+    class Meta:
+        ordering = ['name', ]
 
-    name = models.CharField(max_length=64)
+    class ProjectUserStatusChoiceManager(models.Manager):
+        def get_by_natural_key(self, name):
+            return self.get(name=name)
+
+    name = models.CharField(max_length=64, unique=True)
+    objects = ProjectUserStatusChoiceManager()
 
     def __str__(self):
         return self.name
 
-    class Meta:
-        ordering = ['name', ]
+    def natural_key(self):
+        return (self.name,)
 
 class ProjectUser(TimeStampedModel):
     """ A project user represents a user on the project.
