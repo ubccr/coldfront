@@ -271,7 +271,7 @@ allocation IDs and in this case you can simply create the following json file
 {
     "model": "allocation.allocationuser",
     "fields": {
-        "allocation": 5,
+        "allocation": 2,
         "user": [
             "sfoster"
         ],
