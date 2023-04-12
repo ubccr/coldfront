@@ -40,14 +40,21 @@ class AllocationStatusChoice(TimeStampedModel):
     Attributes:
         name (str): name of project status choice
     """
+    class Meta:
+        ordering = ['name', ]
+
+    class AllocationStatusChoiceManager(models.Manager):
+        def get_by_natural_key(self, name):
+            return self.get(name=name)
 
     name = models.CharField(max_length=64)
+    objects = AllocationStatusChoiceManager()
 
     def __str__(self):
         return self.name
 
-    class Meta:
-        ordering = ['name', ]
+    def natural_key(self):
+        return (self.name,)
 
 class Allocation(TimeStampedModel):
     """ An allocation provides users access to a resource. 
@@ -65,19 +72,6 @@ class Allocation(TimeStampedModel):
         is_changeable (bool): indicates whether or not the allocation is changeable
     """
 
-    project = models.ForeignKey(Project, on_delete=models.CASCADE,)
-    resources = models.ManyToManyField(Resource)
-    status = models.ForeignKey(
-        AllocationStatusChoice, on_delete=models.CASCADE, verbose_name='Status')
-    quantity = models.IntegerField(default=1)
-    start_date = models.DateField(blank=True, null=True)
-    end_date = models.DateField(blank=True, null=True)
-    justification = models.TextField()
-    description = models.CharField(max_length=512, blank=True, null=True)
-    is_locked = models.BooleanField(default=False)
-    is_changeable = models.BooleanField(default=False)
-    history = HistoricalRecords()
-
     class Meta:
         ordering = ['end_date', ]
 
@@ -87,6 +81,18 @@ class Allocation(TimeStampedModel):
              'Can review allocation requests'),
             ('can_manage_invoice', 'Can manage invoice'),
         )
+
+    project = models.ForeignKey(Project, on_delete=models.CASCADE,)
+    resources = models.ManyToManyField(Resource)
+    status = models.ForeignKey(AllocationStatusChoice, on_delete=models.CASCADE, verbose_name='Status')
+    quantity = models.IntegerField(default=1)
+    start_date = models.DateField(blank=True, null=True)
+    end_date = models.DateField(blank=True, null=True)
+    justification = models.TextField()
+    description = models.CharField(max_length=512, blank=True, null=True)
+    is_locked = models.BooleanField(default=False)
+    is_changeable = models.BooleanField(default=False)
+    history = HistoricalRecords()
 
     def clean(self):
         """ Validates the allocation and raises errors if the allocation is invalid. """
@@ -543,14 +549,21 @@ class AllocationUserStatusChoice(TimeStampedModel):
     Attributes:
         name (str): name of the allocation user status choice
     """
+    class Meta:
+        ordering = ['name', ]
+
+    class AllocationUserStatusChoiceManager(models.Manager):
+        def get_by_natural_key(self, name):
+            return self.get(name=name)
 
     name = models.CharField(max_length=64)
+    objects = AllocationUserStatusChoiceManager()
 
     def __str__(self):
         return self.name
 
-    class Meta:
-        ordering = ['name', ]
+    def natural_key(self):
+        return (self.name,)
 
 class AllocationUser(TimeStampedModel):
     """ An allocation user represents a user on the allocation.
