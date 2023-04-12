@@ -12,6 +12,7 @@ from django.conf import settings
 from ifxbilling.calculator import BasicBillingCalculator, NewBillingCalculator
 from ifxbilling.models import Account, Product, ProductUsage, Rate, BillingRecord
 from coldfront.core.allocation.models import Allocation, AllocationStatusChoice
+from coldfront.plugins.ifx import adjust
 from .models import AllocationUserProductUsage
 
 
@@ -641,6 +642,18 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
             raise Exception(f'More than one AllocationUserProductUsage found for allocation {allocation}, user {user} with organization {organization}')
 
         return aupu.product_usage
+
+    def calculate_billing_month(self, year, month, organizations=None, recalculate=False, verbosity=0):
+        '''
+        Adjust march 2023 due to bad DR issues
+        '''
+        results = super().calculate_billing_month(year, month, organizations, recalculate, verbosity)
+        if year == 2023 and month == 3:
+            adjust.march_2023_dr()
+
+        return results
+
+
 
 class Resultinator():
     '''

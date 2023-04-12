@@ -38,4 +38,4 @@ def march_2023_dr():
             pu.billingrecord_set.all().delete()
             count += 1
 
-    print(f'Removed billing records from {count} usages of {", ".join(products)}')
+    logger.info(f'Removed billing records from {count} usages of {", ".join(products)}')
