@@ -27,6 +27,7 @@ def march_2023_dr():
     month = 3
     products = ['holy-isilon/tier1', 'bos-isilon/tier1']
     count = 0
+    billing_record_count = 0
     for pu in ProductUsage.objects.filter(year=year, month=month, product__product_name__in=products):
         with transaction.atomic():
             pup = pu.productusageprocessing_set.first()
@@ -35,7 +36,9 @@ def march_2023_dr():
             pup.error_message = f'Billing Record removed for {month}/{year} due to tier1 disaster recovery issues'
             pup.resolved = True
             pup.save()
-            pu.billingrecord_set.all().delete()
+            delete_result = pu.billingrecord_set.all().delete()
             count += 1
+            if delete_result and 'ifxbilling.BillingRecord' in delete_result[1]:
+                billing_record_count += delete_result[1]['ifxbilling.BillingRecord']
 
-    logger.info(f'Removed billing records from {count} usages of {", ".join(products)}')
+    logger.info(f'Removed {billing_record_count} billing records from {count} usages of {", ".join(products)}')
