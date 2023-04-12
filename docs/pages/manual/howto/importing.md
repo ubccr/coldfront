@@ -326,7 +326,7 @@ for a in allocations:
 Then you can run the above python code using the Django (ColdFront) shell:
 
 ```
-$ coldfront shell < import-alloc-users.py`
+$ coldfront shell < import-alloc-users.py
 ```
 
 ## Importing other data
