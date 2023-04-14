@@ -225,14 +225,26 @@ def get_accounting_allocation_objects(project, user=None,
     if not isinstance(user, User):
         raise TypeError(f'User {user} is not a User object.')
 
-    # Check that there is an active association between the user and project.
-    active_status = ProjectUserStatusChoice.objects.get(name='Active')
-    ProjectUser.objects.get(user=user, project=project, status=active_status)
+    project_user_kwargs = {
+        'user': user,
+        'project': project,
+    }
+    if enforce_allocation_active:
+        # Check that there is an active association between the user and
+        # project.
+        project_user_kwargs['status'] = ProjectUserStatusChoice.objects.get(
+            name='Active')
+    ProjectUser.objects.get(**project_user_kwargs)
 
-    # Check that the user is an active member of the allocation.
-    active_status = AllocationUserStatusChoice.objects.get(name='Active')
-    allocation_user = AllocationUser.objects.get(
-        allocation=allocation, user=user, status=active_status)
+    allocation_user_kwargs = {
+        'allocation': allocation,
+        'user': user,
+    }
+    if enforce_allocation_active:
+        # Check that the user is an active member of the allocation.
+        allocation_user_kwargs['status'] = \
+            AllocationUserStatusChoice.objects.get(name='Active')
+    allocation_user = AllocationUser.objects.get(**allocation_user_kwargs)
 
     # Check that the allocation user has an attribute for Service Units
     # and an associated usage.
