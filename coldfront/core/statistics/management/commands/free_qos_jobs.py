@@ -75,6 +75,10 @@ class Command(BaseCommand):
             help='A space-separated list of free QoS names.',
             nargs='+',
             type=str)
+        parser.add_argument(
+            '--project',
+            help='The name of a specific project to get a summary for.',
+            type=str)
 
     def _handle_reset(self, *args, **options):
         """Handle the 'reset' subcommand."""
@@ -87,20 +91,30 @@ class Command(BaseCommand):
 
     def _handle_summary(self, *args, **options):
         """Handle the 'summary' subcommand."""
-        output_json = self._summary_json(options['qos_names'])
+        if options['project'] is not None:
+            project = Project.objects.get(name=options['project'])
+        else:
+            project = None
+        output_json = self._summary_json(options['qos_names'], project=project)
         self.stdout.write(json.dumps(output_json, indent=4, sort_keys=True))
 
     @staticmethod
-    def _summary_json(qos_names):
+    def _summary_json(qos_names, project=None):
         """Return a dictionary detailing the number of jobs with the
         given QoSes that have non-zero amounts, as well as the total
-        associated usage."""
+        associated usage. Optionally only consider jobs under the given
+        Project. """
         zero = Decimal('0.00')
 
         num_jobs = 0
         total_by_project_id = {}
-        for job in Job.objects.filter(
-                qos__in=qos_names, amount__gt=zero).iterator():
+        kwargs = {
+            'qos__in': qos_names,
+            'amount__gt': zero,
+        }
+        if project is not None:
+            kwargs['accountid'] = project
+        for job in Job.objects.filter(**kwargs).iterator():
             num_jobs += 1
             # Use accountid_id to avoid a foreign key lookup.
             project_id = job.accountid_id
