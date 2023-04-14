@@ -374,7 +374,7 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
             logger.warning(f'Job {jobslurmid} has no amount.')
 
         try:
-            job_dates_valid = self.validate_job_dates(
+            job_dates_valid = validate_job_dates(
                 serializer.validated_data, allocation_objects.allocation,
                 end_date_expected=True)
         except Exception as e:
