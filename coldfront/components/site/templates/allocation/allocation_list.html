@@ -109,7 +109,7 @@ Allocation List
             <td class="text-nowrap">{{allocation.project.pi.first_name}} {{allocation.project.pi.last_name}}
               ({{allocation.project.pi.username}})</td>
             <td class="text-nowrap">{{ allocation.get_parent_resource }}</td>
-            <td class="text-nowrap">{{ allocation.status.name }}</td>
+            <td class="text-nowrap">{{ allocation.status.name|truncatechars:15 }}</td>
             <td class="text-nowrap">{{ allocation.end_date }}</td>
             <td class="text-nowrap"><a class="btn btn-primary" href="{% url 'allocation-detail' allocation.id %}" role="button">Details</a></td>
           </tr>
