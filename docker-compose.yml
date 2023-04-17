@@ -9,15 +9,19 @@
 
 services:
   db:
-    image: postgres:15
+    image: coldfront_db:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.db
     ports:
       - 5432:5432
-    volumes:
-      - db_data:/var/lib/postgresql/data
     environment:
       POSTGRES_DB: cf_brc_db
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: root
+      LOAD_DUMP: true
+    volumes:
+      - db_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "admin", "-d", "cf_brc_db"]
       interval: 10s
@@ -31,6 +35,7 @@ services:
       - 6379:6379
     volumes:
       - redis_data:/data
+    command: --requirepass root
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
