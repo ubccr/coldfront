@@ -215,3 +215,22 @@ def update_linked_allocation_attribute(allocation_attribute):
     if hasattr(allocation_obj, linked_allocation_attribute):
         setattr(allocation_obj, linked_allocation_attribute, allocation_attribute.value)
         allocation_obj.save()
+
+
+def get_project_managers_in_allocation(allocation_obj):
+    """
+    Returns the project managers in the given allocation.
+
+    :param allocation_obj: The allocation to grab the project managers from
+    """
+    project_managers_in_allocation=[]
+    project_managers = allocation_obj.project.projectuser_set.filter(
+        role__name='Manager'
+    ).exclude(status__name__in=['Removed', 'Denied'])
+    allocation_users = allocation_obj.allocationuser_set.exclude(status__name__in=['Removed', 'Error'])
+    users = [allocation_user.user for allocation_user in allocation_users]
+    for project_manager in project_managers:
+        if project_manager.user in users:
+            project_managers_in_allocation.append(project_manager)
+
+    return project_managers_in_allocation

@@ -3,11 +3,11 @@
 {% load static %}
 
 {% block title %}
-Revoke Allocation
+Remove Allocation
 {% endblock %}
 
 {% block content %}
-<h2>Revoking Allocation</h2>
+<h2>Remove Allocation</h2>
 
 <div class="card mb-3">
   <div class="card-header">
@@ -30,7 +30,7 @@ Revoke Allocation
 
 <div class="alert alert-danger" role="alert">
   <form method="post">{% csrf_token %}
-    <p>Are you sure you want to revoke access to this allocation?</p>
+    <p>Are you sure you want to remove access to this allocation?</p>
     <input class="btn btn-danger" type="submit" value="Yes" />
     {% if from_project %}
       <a class="btn btn-secondary" href="{% url 'project-detail' allocation.project.pk %}" role="button">Cancel</a>

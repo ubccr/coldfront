@@ -74,6 +74,12 @@ urlpatterns = [
          name='allocation-user-request-info'),
     path('allocation-export/', allocation_views.AllocationExportView.as_view(),
          name='allocation-export'),
-    path('<int:pk>/allocation-revoke/', allocation_views.AllocationRevokeView.as_view(),
-         name='allocation-revoke')
+    path('<int:pk>/allocation-remove/', allocation_views.AllocationRemoveView.as_view(),
+         name='allocation-remove'),
+    path('removal-list/', allocation_views.AllocationRemovalListView.as_view(),
+         name='allocation-removal-request-list'),
+    path('<int:pk>/allocation-approve-removal/', allocation_views.AllocationApproveRemovalView.as_view(),
+         name='allocation-approve-removal-request'),
+    path('<int:pk>/allocation-deny-removal/', allocation_views.AllocationDenyRemovalRequest.as_view(),
+         name='allocation-deny-removal-request')
 ]

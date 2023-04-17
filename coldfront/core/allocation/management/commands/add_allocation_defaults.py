@@ -21,6 +21,7 @@ class Command(BaseCommand):
                        'New', 'Paid', 'Payment Pending',
                        'Payment Requested', 'Payment Declined',
                        'Renewal Requested', 'Revoked', 'Unpaid',
+                       'Removal Requested', 'Removed',
                        'Billing Information Submitted',):
             AllocationStatusChoice.objects.get_or_create(name=choice)
 

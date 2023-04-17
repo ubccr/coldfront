@@ -202,6 +202,7 @@ class Allocation(TimeStampedModel):
             ('can_review_allocation_requests',
              'Can review allocation requests'),
             ('can_manage_invoice', 'Can manage invoice'),
+            ('can_remove_allocation', 'Can remove allocation')
         )
 
     def clean(self):
