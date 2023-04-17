@@ -8,10 +8,12 @@ COPY requirements.txt ./
 RUN pip install -r requirements.txt \
  && pip install jinja2 pyyaml && rm requirements.txt
 
-RUN mkdir -p /var/log/user_portals/cf_mybrc \
- && touch /var/log/user_portals/cf_mybrc/cf_mybrc_{portal,api}.log \
- && chmod 775 /var/log/user_portals/cf_mybrc \
- && chmod 664 /var/log/user_portals/cf_mybrc/cf_mybrc_{portal,api}.log
+# mybrc or mylrc
+ARG portal="mybrc"
+RUN mkdir -p /var/log/user_portals/cf_${portal} \
+ && touch /var/log/user_portals/cf_${portal}/cf_${portal}_{portal,api}.log \
+ && chmod 775 /var/log/user_portals/cf_${portal} \
+ && chmod 664 /var/log/user_portals/cf_${portal}/cf_${portal}_{portal,api}.log
 
 COPY . /vagrant/coldfront_app/coldfront/
 WORKDIR /vagrant/coldfront_app/coldfront/
