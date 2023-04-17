@@ -207,6 +207,14 @@ multiple files or directories to omit.
     - Open `htmlcov/index.html` in a browser to view which lines of 
   code were covered by the tests and which were not.
 
+## Docker - Quick Install (Recommend)
+1. Generate configuration (`dev_settings.py`): have Python with the `jinja2` and `pyyaml` libraries installed, and then run `bootstrap/development/gen_config.sh`
+2. Build Images: In the base directory, run `docker build . -t coldfront` and `docker build . -f Dockerfile.db -t coldfront_db`
+3. To run: In the base directory, run `docker compose up`
+4. To enter the coldfront container (similar to `vagrant ssh`): run `docker exec -it coldfront-coldfront-1 bash`
+5. To load a database backup: run `bootstrap/development/docker_load_database_backup.sh ${DB_NAME} ${PATH_TO_DUMP}`
+6. To start from scratch (delete volumes): In the base directory, run `docker compose down --volumes`
+
 ## Local Machine - Quick Install (Not Recommended)
 
 1. ColdFront requires Python 3.6, memcached, and redis.
