@@ -1,3 +1,4 @@
+import logging
 from datetime import date
 from coldfront.core.user.models import UserProfile
 from django import forms
@@ -19,6 +20,7 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Field, Layout, Submit, HTML, Row, Column, Fieldset, Reset
 from crispy_forms.bootstrap import InlineRadios, FormActions, PrependedText
 
+logger = logging.getLogger(__name__)
 
 ALLOCATION_ACCOUNT_ENABLED = import_from_settings(
     'ALLOCATION_ACCOUNT_ENABLED', False)
@@ -343,7 +345,10 @@ class AllocationForm(forms.Form):
 
         if errors:
             for name, error in errors.items():
-                self.add_error(name, error)
+                try:
+                    self.add_error(name, error)
+                except ValueError:
+                    logger.warning(f'{name} is not an internal allocation attribute and cannot have constraints. Skipping')
             raise ValidationError('Please correct the errors below')
 
 
