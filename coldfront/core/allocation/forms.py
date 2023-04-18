@@ -128,6 +128,7 @@ class AllocationForm(forms.Form):
     data_management_responsibilities = forms.BooleanField(required=False)
     admin_ads_group = forms.CharField(max_length=64, required=False)
     user_ads_group = forms.CharField(max_length=64, required=False)
+    will_exceed_limit = forms.ChoiceField(choices=YES_NO_CHOICES, required=False, widget=RadioSelect)
 
     users = forms.MultipleChoiceField(
         widget=forms.CheckboxSelectMultiple, required=False)
@@ -214,6 +215,7 @@ class AllocationForm(forms.Form):
             'quantity',
             'storage_space',
             InlineRadios('storage_space_unit'),
+            InlineRadios('will_exceed_limit'),
             'group_account_name',
             'group_account_name_exists',
             Field('start_date', placeholder='mm/dd/yyyy'),

@@ -111,6 +111,7 @@ class Allocation(TimeStampedModel):
     )
     dl_workflow = models.CharField(max_length=4, choices=YES_NO_CHOICES, blank=True, null=True)
     gpu_workflow = models.CharField(max_length=4, choices=YES_NO_CHOICES, blank=True, null=True)
+    will_exceed_limit = models.CharField(max_length=4, choices=YES_NO_CHOICES, blank=True, null=True)
     applications_list = models.CharField(max_length=150, blank=True, null=True)
     training_or_inference = models.CharField(
         max_length=9,
