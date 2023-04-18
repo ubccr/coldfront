@@ -148,21 +148,37 @@ def log_missing(modelname, missing):
             for projects, "title".
             for allocations, "resource_name", "project_title", and "path".
     '''
-    if missing:
-        locate_or_create_dirpath(MISSING_DATA_DIR)
-        fpath = f'{MISSING_DATA_DIR}missing_{modelname}s.csv'
+    update_csv(missing, MISSING_DATA_DIR, f'missing_{modelname}s.csv')
+
+def update_csv(new_entries, dirpath, csv_name, date_update='date'):
+    '''Add or update entries in CSV, order CSV by descending date and save.
+
+    Parameters
+    ----------
+    new_entries : list of dicts
+        identifying information to record for missing entries:
+        for users, "username".
+        for projects, "title".
+        for allocations, "resource_name", "project_title", and "path".
+    dirpath : str
+    csv_name : str
+    date_update : str
+    '''
+    if new_entries:
+        locate_or_create_dirpath(dirpath)
+        fpath = f'{dirpath}{csv_name}'
         try:
-            missing_df = pd.read_csv(fpath, parse_dates=['date'])
+            df = pd.read_csv(fpath, parse_dates=[date_update])
         except FileNotFoundError:
-            missing_df = pd.DataFrame()
-        new_records = pd.DataFrame(missing)
+            df = pd.DataFrame()
+        new_records = pd.DataFrame(new_entries)
         col_checks = new_records.columns.values.tolist()
-        new_records['date'] = datetime.today()
-        missing_df = (pd.concat([missing_df, new_records])
+        new_records[date_update] = datetime.today()
+        updated_df = (pd.concat([df, new_records])
                         .drop_duplicates(col_checks, keep='last')
-                        .sort_values('date', ascending=False)
+                        .sort_values(date_update, ascending=False)
                         .reset_index(drop=True))
-        missing_df.to_csv(fpath, index=False)
+        updated_df.to_csv(fpath, index=False)
 
 
 def locate_or_create_dirpath(dpath):

@@ -49,6 +49,69 @@ def record_process(func):
         return result
     return call
 
+class ATTAllocationQuery:
+
+    def __init__(self):
+        self.queries = {'statements': []}
+
+    def produce_query_statement(self, vol_type, volumes=None):
+
+        query_dict = {
+            'quota': {
+                'match': '[r:HasQuota]-(e:Quota) MATCH (d:ConfigValue {Name: \'Quota.Invocation\'})',
+                'validation_query': 'NOT ((e.SizeGB IS null) OR (e.usedBytes = 0 AND e.SizeGB = 1024)) AND NOT (e.Path IS null)',
+                'r_updated': 'DotsLFSUpdateDate',
+                'storage_type': '\'Quota\'',
+                'usedgb': 'usedGB',
+                'sizebytes': 'limitBytes',
+                'usedbytes': 'usedBytes',
+                'fs_path': 'Path',
+                'server': 'filesystem',
+                'server_replace': '/n/',
+                'path_replace': '/n//',
+                'unique':'datetime(e.DotsLFSUpdateDate) as begin_date'
+                },
+            'isilon': {
+                'match': '[r:Owns]-(e:IsilonPath) MATCH (d:ConfigValue {Name: \'IsilonPath.Invocation\'})',
+                'validation_query':"r.DotsUpdateDate = d.DotsUpdateDate \
+                                    AND NOT (e.Path =~ '.*/rc_admin/.*')\
+                                    AND (e.Path =~ '.*labs.*')",
+                'r_updated': 'DotsUpdateDate',
+                'storage_type':'\'Isilon\'',
+                'fs_path':'Path',
+                'server':'Isilon',
+                'usedgb': 'UsedGB',
+                'sizebytes': 'SizeBytes',
+                'usedbytes': 'UsedBytes',
+                'server_replace': '01.rc.fas.harvard.edu',
+                'path_replace': '/ifs/',
+                'unique':'datetime(e.DotsUpdateDate) as begin_date'
+                }
+            }
+        d = query_dict[vol_type]
+
+        if volumes:
+            volumes = '|'.join(volumes)
+        else:
+            volumes = '|'.join([r.name.split('/')[0] for r in Resource.objects.all()])
+        where = f"(e.{d['server']} =~ \'.*({volumes}).*\')"
+
+        statement = {'statement': f"MATCH p=(g:Group)-{d['match']} \
+                WHERE {where} AND {d['validation_query']}\
+                AND NOT (g.ADSamAccountName =~ '.*(disabled|rc_admin).*')\
+                AND (datetime() - duration('P31D') <= datetime(r.{d['r_updated']})) \
+                RETURN \
+                {d['unique']}, \
+                g.ADSamAccountName as lab,\
+                (e.SizeGB / 1024.0) as tb_allocation, \
+                e.{d['sizebytes']} as byte_allocation,\
+                e.{d['usedbytes']} as byte_usage,\
+                (e.{d['usedgb']} / 1024.0) as tb_usage,\
+                replace(e.{d['fs_path']}, '{d['path_replace']}', '') as fs_path, \
+                {d['storage_type']} as storage_type, \
+                datetime(r.{d['r_updated']}) as rel_updated, \
+                replace(e.{d['server']}, '{d['server_replace']}', '') as server"}
+        self.queries['statements'].append(statement)
 
 class AllTheThingsConn:
 
@@ -125,86 +188,35 @@ class AllTheThingsConn:
         volumes : List of volume names to collect. Optional, default None.
         '''
         result_file = 'coldfront/plugins/fasrc/data/allthethings_output.json'
+        query = ATTAllocationQuery()
         if volumes:
             volumes = '|'.join(volumes)
         else:
             volumes = '|'.join([r.name.split('/')[0] for r in Resource.objects.all()])
-        logger.debug('volumes: %s', volumes)
-
-
-        quota = {'match': '[r:HasQuota]-(e:Quota)',
-            'where':f"(e.filesystem =~ \'.*({volumes}).*\')",
-            'r_updated': 'DotsLFSUpdateDate',
-            'storage_type':'\'Quota\'',
-            'usedgb': 'usedGB',
-            'sizebytes': 'limitBytes',
-            'usedbytes': 'usedBytes',
-            'fs_path':'filesystem',
-            'server':'filesystem',
-            'replace': '/n/',
-            'unique':'datetime(e.DotsLFSUpdateDate) as begin_date'}
-
-        isilon = {'match': '[r:Owns]-(e:IsilonPath) MATCH (d:ConfigValue {Name: \'IsilonPath.Invocation\'})',
-            'where':f"(e.Isilon =~ '.*({volumes}).*') \
-                        AND r.DotsUpdateDate = d.DotsUpdateDate \
-                        AND NOT (e.Path =~ '.*/rc_admin/.*')\
-                        AND (e.Path =~ '.*labs.*')",
-            'r_updated': 'DotsUpdateDate',
-            'storage_type':'\'Isilon\'',
-            'fs_path':'Path',
-            'server':'Isilon',
-            'usedgb': 'UsedGB',
-            'sizebytes': 'SizeBytes',
-            'usedbytes': 'UsedBytes',
-            'replace': '01.rc.fas.harvard.edu',
-            'unique':'datetime(e.DotsUpdateDate) as begin_date'}
-
-
-        # volume = {'match': '[:Owns]-(e:Volume)',
-        #     'where': '',
-        #     'storage_type':'\'Volume\'',
-        #     'fs_path':'LogicalVolume',
-        #     'server':'Hostname',
-        #     'unique':'datetime(e.DotsLVSUpdateDate) as update_date, \
-        #             datetime(e.DotsLVDisplayUpdateDate) as display_date'}
-
-        queries = {'statements': []}
-
-
-        for d in [quota, isilon]:
-            statement = {'statement': f"MATCH p=(g:Group)-{d['match']} \
-                    WHERE {d['where']} \
-                    AND NOT (g.ADSamAccountName =~ '.*(disabled|rc_admin).*')\
-                    AND (datetime() - duration('P31D') <= datetime(r.{d['r_updated']})) \
-                    RETURN \
-                    {d['unique']}, \
-                    g.ADSamAccountName as lab,\
-                    (e.SizeGB / 1024.0) as tb_allocation, \
-                    e.{d['sizebytes']} as byte_allocation,\
-                    e.{d['usedbytes']} as byte_usage,\
-                    (e.{d['usedgb']} / 1024.0) as tb_usage,\
-                    e.{d['fs_path']} as fs_path,\
-                    {d['storage_type']} as storage_type, \
-                    datetime(r.{d['r_updated']}) as rel_updated, \
-                    replace(e.{d['server']}, '{d['replace']}', '') as server"}
-            queries['statements'].append(statement)
-        resp_json = self.post_query(queries)
+        query.produce_query_statement('isilon')
+        query.produce_query_statement('quota')
+        resp_json = self.post_query(query.queries)
         # logger.debug(resp_json)
         resp_json_formatted = self.format_query_results(resp_json)
         resp_json_by_lab = {entry['lab']:[] for entry in resp_json_formatted}
-        for entry in resp_json_formatted:
-            if (entry['storage_type'] == 'Quota' and (
-                entry['tb_usage'] == None) or (
-                    entry['byte_usage'] == 0 and entry['tb_allocation'] == 1)
-            ) or\
-            (entry['storage_type'] == 'Isilon' and entry['tb_allocation'] in [0, None]):
-                logger.debug('removed: %s', entry)
-                continue
-            resp_json_by_lab[entry['lab']].append(entry)
+        [resp_json_by_lab[e['lab']].append(e) for e in resp_json_formatted]
         # logger.debug(resp_json_by_lab)
         resp_json_by_lab_cleaned = {k:v for k, v in resp_json_by_lab.items() if v}
         save_json(result_file, resp_json_by_lab_cleaned)
         return result_file
+
+    def match_entries_with_projects(self, result_json):
+        '''
+        Remove and report allocations for projects not in Coldfront
+        '''
+        # produce lists of present labs & labs w/o projects
+        lablist = list(set(k for k in result_json))
+        proj_models, missing_projs = id_present_missing_projects(lablist)
+        log_missing('project', missing_projs)
+        # remove them from result_json
+        missing_proj_titles = [list(p.values())[0] for p in missing_projs]
+        [result_json.pop(t) for t in missing_proj_titles]
+        return result_json, proj_models
 
 
     def push_quota_data(self, result_file):
@@ -215,29 +227,15 @@ class AllTheThingsConn:
         result_json = read_json(result_file)
         counts = {'proj_err': 0, 'res_err':0, 'all_err':0, 'complete':0}
         # produce lists of present labs & labs w/o projects
-        lablist = list(set(k for k in result_json))
-        proj_models, missing_projs = id_present_missing_projects(lablist)
-        log_missing('project', missing_projs)
-        # remove them from result_json
-        counts['proj_err'] = len(missing_projs)
-        missing_proj_titles = [list(p.values())[0] for p in missing_projs]
-        [result_json.pop(t) for t in missing_proj_titles]
-
-        # produce set of server values for which to locate matching resources
-        resource_list = list({a['server'] for l in result_json.values() for a in l})
-        logger.debug('coldfront resource_list: %s', resource_list)
-        res_models, missing_res = id_present_missing_resources(resource_list)
-        counts['proj_err'] = len(missing_res)
+        result_json_cleaned, proj_models = self.match_entries_with_projects(result_json)
+        counts['proj_err'] = len(result_json) - len(result_json_cleaned)
 
         # collect commonly used database objects here
         proj_models = proj_models.prefetch_related('allocation_set')
         allocation_attribute_types = AllocationAttributeType.objects.all()
         allocation_attribute_type_payment = allocation_attribute_types.get(name='RequiresPayment')
 
-        for k, v in result_json.items():
-            result_json[k] = [a for a in v if a['server'] not in missing_res]
-
-        for lab, allocations in result_json.items():
+        for lab, allocations in result_json_cleaned.items():
             logger.info('PROJECT: %s ====================================', lab)
             # Find the correct allocation_allocationattributes to update by:
             # 1. finding the project with a name that matches lab.lab
@@ -245,9 +243,7 @@ class AllTheThingsConn:
             for allocation in allocations:
                 try:
                     # 2. find the resource that matches/approximates the server value
-                    r_str = allocation['server'].replace('01.rc.fas.harvard.edu', '')\
-                                .replace('/n/', '')
-                    resource = res_models.get(name__contains=r_str)
+                    resource = Resource.models.get(name__contains=allocation['server'])
 
                     # 3. find the allocation with a matching project and resource_type
                     alloc_obj = select_one_project_allocation(proj_query, resource, dirpath=allocation['fs_path'])
@@ -279,7 +275,7 @@ class AllTheThingsConn:
                     else:
                         logger.warning(
                                 'no byte_allocation value for allocation %s, lab %s on resource %s',
-                                alloc_obj.pk, lab, r_str)
+                                alloc_obj.pk, lab, allocation['server'])
                     for k, v in allocation_values.items():
                         allocation_attribute_type_obj = allocation_attribute_types.get(name=k)
                         allocattribute_obj, _ = alloc_obj.allocationattribute_set.update_or_create(
