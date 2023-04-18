@@ -352,7 +352,7 @@ Project Detail
             <tr>
               <td>{{ allocation.get_parent_resource.name }}</td>
               <td>{{ allocation.get_parent_resource.resource_type.name }}</td>
-              <td class="text-nowrap"><strong>{{ allocation.get_information }}</strong></td>
+              <td class="text-nowrap">{{ allocation.get_information }}</td>
               {% if allocation.status.name == 'Active' %}
                 <td class="text-success"><strong>{{ allocation.status.name }}</strong></td>
               {% elif allocation.status.name in 'Expired, Denied, Revoked, Removed' %}
