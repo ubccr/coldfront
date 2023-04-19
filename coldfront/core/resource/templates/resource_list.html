@@ -67,7 +67,7 @@ Resource List
       <tbody>
         {% for resource in resource_list %}
         <tr>
-          {% if resource.is_allocatable and resource.is_available %}
+          {% if resource.is_available %}
             <td><a href="/resource/{{resource.id}}/">{{ resource.id }}</a></td>
             <td>{{ resource }}</td>
             <td>{{ resource.parent_resource }}</td>
