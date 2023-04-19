@@ -34,12 +34,14 @@ from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectSearchForm,
                                           ProjectUpdateForm,
                                           ProjectUserUpdateForm)
+from coldfront.core.project.forms_.new_project_forms.request_forms import SavioProjectSurveyForm
 from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectReviewStatusChoice,
                                            ProjectStatusChoice, ProjectUser,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice,
-                                           ProjectUserRemovalRequest)
+                                           ProjectUserRemovalRequest,
+                                           SavioProjectAllocationRequest)
 from coldfront.core.project.utils import (annotate_queryset_with_cluster_name,
                                           is_primary_cluster_project)
 from coldfront.core.project.utils_.addition_utils import can_project_purchase_service_units
@@ -268,6 +270,24 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         # secure directories
         context['can_request_sec_dir'] = \
             pi_eligible_to_request_secure_dir(self.request.user)
+
+        # show survey responses if available
+        allocation_requests = SavioProjectAllocationRequest.objects.filter(
+            project=self.object, status__name='Approved - Complete').order_by('request_time')
+
+        if allocation_requests.exists():
+            survey_answers_list = list(map(
+                lambda x: SavioProjectSurveyForm(
+                    initial=x.survey_answers,
+                    disable_fields=True
+                ),
+                allocation_requests
+            ))
+
+            context['survey_answers'] = list(zip(
+                allocation_requests,
+                survey_answers_list
+            ))
 
         context['user_agreement_signed'] = \
             access_agreement_signed(self.request.user)
