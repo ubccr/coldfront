@@ -1,0 +1,8 @@
+{% if not hide_table_sorter %}
+  <a href="?order_by={{ table_sorter_field }}&direction=asc&{{ filter_parameters }}">
+    <i class="fas fa-sort-up"></i>
+  </a>
+  <a href="?order_by={{ table_sorter_field }}&direction=des&{{ filter_parameters }}">
+    <i class="fas fa-sort-down"></i>
+  </a>
+{% endif %}

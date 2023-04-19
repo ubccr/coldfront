@@ -55,7 +55,8 @@ class AllocationRenewalRequestListView(LoginRequiredMixin, TemplateView):
                 direction = '-'
             order_by = direction + order_by
         else:
-            order_by = 'id'
+            order_by = '-request_time'
+
         return annotate_queryset_with_allocation_period_not_started_bool(
             AllocationRenewalRequest.objects.order_by(order_by))
 
