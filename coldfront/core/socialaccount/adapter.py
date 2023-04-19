@@ -66,6 +66,9 @@ class CILogonAccountAdapter(DefaultSocialAccountAdapter):
         EmailAddress matching one of those given by the provider,
         connect the two accounts.
 
+        Note that login is blocked outside (after) this method if the
+        user is inactive.
+
         Adapted from:
         https://github.com/pennersr/django-allauth/issues/418#issuecomment-137259550
         """
@@ -133,6 +136,9 @@ class CILogonAccountAdapter(DefaultSocialAccountAdapter):
             user = next(iter(matching_addresses_by_user))
             addresses = matching_addresses_by_user[user]
             if any([a.verified for a in addresses]):
+                # After this, allauth.account.adapter.pre_login blocks login if
+                # the user is inactive. Regardless of that, connect the user
+                # (and trigger signals for creating EmailAddresses).
                 self._connect_user(
                     request, sociallogin, provider, user, user_email, user_uid)
             else:
@@ -173,7 +179,7 @@ class CILogonAccountAdapter(DefaultSocialAccountAdapter):
             verifier.send_email()
 
         message = (
-            'You are attempting to login using an email address associated '
+            'You are attempting to log in using an email address associated '
             'with an existing user, but it is unverified. Please check the '
             'address for a verification email.')
         self._raise_client_error(message)
