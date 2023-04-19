@@ -1154,7 +1154,7 @@ class TestJobViewSet(TestJobBase):
                 self.assertFalse(
                     Job.objects.filter(jobslurmid=data['jobslurmid']).exists())
 
-    @patch('coldfront.api.statistics.views.JobViewSet.validate_job_dates')
+    @patch('coldfront.api.statistics.views.validate_job_dates')
     def test_post_handles_exception_when_validating_dates(self, mock_method):
         """Test that a POST (create) request does not fail to create a
         job even if an exception is raised when determining whether
@@ -1396,7 +1396,7 @@ class TestJobViewSet(TestJobBase):
                 self.assertFalse(
                     Job.objects.filter(jobslurmid=data['jobslurmid']).exists())
 
-    @patch('coldfront.api.statistics.views.JobViewSet.validate_job_dates')
+    @patch('coldfront.api.statistics.views.validate_job_dates')
     def test_put_handles_exception_when_validating_dates(self, mock_method):
         """Test that a PUT (update) request does not fail to create a
         job even if an exception is raised when determining whether
