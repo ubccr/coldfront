@@ -1391,12 +1391,11 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                                       allocation_obj.project.pi.last_name, allocation_obj.project.pi.username)
         domain_url = get_domain_url(self.request)
         url = '{}{}'.format(domain_url, reverse('allocation-request-list'))
-
+        resource_name = allocation_obj.get_parent_resource
         if SLACK_MESSAGING_ENABLED:
             text = f'A new allocation in project "{project_obj.title}" with id {project_obj.pk} has been requested for {pi_name} - {resource_name}. Please review the allocation: {url}'
             send_message(text)
         if EMAIL_ENABLED:
-            resource_name = allocation_obj.get_parent_resource
             template_context = {
                 'project_title': project_obj.title,
                 'project_id': project_obj.pk,
