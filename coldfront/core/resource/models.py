@@ -29,10 +29,17 @@ class ResourceType(TimeStampedModel):
         name (str): name of resource type
         description (str): description of resource type
     """
+    class Meta:
+        ordering = ['name', ]
+
+    class ResourceTypeManager(models.Manager):
+        def get_by_natural_key(self, name):
+            return self.get(name=name)
 
     name = models.CharField(max_length=128, unique=True)
     description = models.CharField(max_length=255)
     history = HistoricalRecords()
+    objects = ResourceTypeManager()
 
     @property
     def active_count(self):
@@ -57,8 +64,8 @@ class ResourceType(TimeStampedModel):
     def __str__(self):
         return self.name
 
-    class Meta:
-        ordering = ['name', ]
+    def natural_key(self):
+        return [self.name]
 
 class ResourceAttributeType(TimeStampedModel):
     """ A resource attribute type indicates the type of the attribute. Examples include slurm_specs and slurm_cluster. 
@@ -99,6 +106,12 @@ class Resource(TimeStampedModel):
         allowed_groups (Group): uses the Django Group model to allow certain user groups to request the resource
         allowed_users (User): links Django Users that are allowed to request the resource to the resource
     """
+    class Meta:
+        ordering = ['name', ]
+
+    class ResourceManager(models.Manager):
+        def get_by_natural_key(self, name):
+            return self.get(name=name)
 
     parent_resource = models.ForeignKey(
         'self', on_delete=models.CASCADE, blank=True, null=True)
@@ -113,6 +126,7 @@ class Resource(TimeStampedModel):
     allowed_users = models.ManyToManyField(User, blank=True)
     linked_resources = models.ManyToManyField('self', blank=True)
     history = HistoricalRecords()
+    objects = ResourceManager()
 
     def get_missing_resource_attributes(self, required=False):
         """
@@ -211,8 +225,8 @@ class Resource(TimeStampedModel):
     def __str__(self):
         return '%s (%s)' % (self.name, self.resource_type.name)
 
-    class Meta:
-        ordering = ['name', ]
+    def natural_key(self):
+        return [self.name]
 
 class ResourceAttribute(TimeStampedModel):
     """ A resource attribute class links a resource attribute type and a resource. 
