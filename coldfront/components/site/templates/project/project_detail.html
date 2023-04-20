@@ -211,7 +211,7 @@ Project Detail
               </td> -->
               <td>
                 {% if is_allowed_to_update_project %}
-                  <a href="{% url 'project-user-detail' project.pk user.id %}"><i class="fas fa-user-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a>
+                  <a title="Edit user" href="{% url 'project-user-detail' project.pk user.id %}"><i class="fas fa-user-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a>
                 {% endif %}
               </td>
             </tr>
@@ -226,7 +226,7 @@ Project Detail
 <!-- Start Project Allocations -->
 <div class="card mb-3">
   <div class="card-header">
-    <h3 class="d-inline"><i class="fas fa-server" aria-hidden="true"></i> Allocations</h3> <span class="badge badge-secondary">{{ free_allocations.count|add:priced_allocations.count }}</span>
+    <h3 class="d-inline"><i class="fas fa-server" aria-hidden="true"></i> Allocations</h3> <span class="badge badge-secondary">{{ free_allocations.count|add:paid_allocations.count }}</span>
     <div class="float-right">
       {% if not project.status.name in 'Archived, Denied, Review Pending, Expired' and is_allowed_to_update_project %}
         <a class="btn btn-success" href="{% url 'allocation-create' project.pk %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Request Resource Allocation</a>
@@ -271,7 +271,9 @@ Project Detail
                 <td>{{allocation.end_date|date:"Y-m-d"}}</td>
               {% endif %}
               <td class="text-nowrap">
-                <a href="{% url 'allocation-detail' allocation.pk %}"><i class="far fa-folder-open" aria-hidden="true"></i><span class="sr-only">Details</span></a>
+                <a title="Details" href="{% url 'allocation-detail' allocation.pk %}">
+                  <i class="far fa-folder-open" aria-hidden="true"></i><span class="sr-only">Details</span>
+                </a>
                 {% if project.requires_review %}
                   {% if allocation.is_locked and allocation.status.name == 'Active' and allocation.expires_in <= ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING and allocation.expires_in >= 0 %}
                     <span class="badge badge-warning"><i class="far fa-clock" aria-hidden="true"></i>
@@ -330,11 +332,11 @@ Project Detail
     <hr>
   </div>
   <div class="card-body">
-    <h4 class="d-inline">Paid Allocations</h4> <span class="badge badge-secondary">{{ priced_allocations.count }}</span>
+    <h4 class="d-inline">Paid Allocations</h4> <span class="badge badge-secondary">{{ paid_allocations.count }}</span>
     <hr>
-    {% if priced_allocations %}
+    {% if paid_allocations %}
     <div class="table-responsive">
-      <table id="priced_allocation_table" class="table table-hover">
+      <table id="paid_allocation_table" class="table table-hover">
         <thead>
           <tr>
             <th scope="col">Resource Name</th>
@@ -346,21 +348,28 @@ Project Detail
           </tr>
         </thead>
         <tbody>
-          {% for allocation in priced_allocations %}
+          {% for allocation in paid_allocations %}
             <tr>
               <td>{{ allocation.get_parent_resource.name }}</td>
               <td>{{ allocation.get_parent_resource.resource_type.name }}</td>
-              <td class="text-nowrap"><strong>{{ allocation.get_information }}</strong></td>
+              <td class="text-nowrap">{{ allocation.get_information }}</td>
               {% if allocation.status.name == 'Active' %}
                 <td class="text-success"><strong>{{ allocation.status.name }}</strong></td>
-              {% elif allocation.status.name in 'Expired, Denied' %}
+              {% elif allocation.status.name in 'Expired, Denied, Revoked, Removed' %}
                 <td class="text-danger"><strong>{{ allocation.status.name }}</strong></td>
               {% else %}
                 <td class="text-primary"><strong>{{ allocation.status.name }}</strong></td>
               {% endif %}
               <td>{{ allocation.end_date|date:"Y-m-d" }}</td>
               <td class="text-nowrap">
-                <a href="{% url 'allocation-detail' allocation.pk %}"><i class="far fa-folder-open" aria-hidden="true"></i><span class="sr-only">Details</span></a>
+                <a href="{% url 'allocation-detail' allocation.pk %}">
+                  <i title="Details" class="far fa-folder-open" aria-hidden="true"></i><span class="sr-only">Details</span>
+                </a>
+                {% if is_allowed_to_update_project and allocation.status.name in 'Active, Billing Information Submitted' %}
+                  <a href="{% url 'allocation-remove' pk=allocation.pk %}?from_project=true">
+                    <i title="Remove access" class="far fa-times-circle" aria-hidden="true"></i><span class="sr-only">Remove access</span>
+                  </a>
+                {% endif %}
                 {% if allocation.is_locked and allocation.status.name == 'Active' and allocation.expires_in <= ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING and allocation.expires_in >= 0 %}
                   <span class="badge badge-warning"><i class="far fa-clock" aria-hidden="true"></i>
                     Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} <br> Not renewable
@@ -661,7 +670,7 @@ Project Detail
       }]
     });
 
-    $('#priced_allocation_table').DataTable({
+    $('#paid_allocation_table').DataTable({
       'aoColumnDefs': [{
         'bSortable': false,
         'aTargets': ['nosort']

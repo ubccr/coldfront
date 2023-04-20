@@ -32,7 +32,7 @@ class ResourceAttributeTypeAdmin(SimpleHistoryAdmin):
 class ResourceAttributeInline(admin.TabularInline):
     model = ResourceAttribute
     readonly_fields = ('resource_attribute_type_description', )
-    fields_change = ('resource_attribute_type', 'value',)
+    fields_change = ('resource_attribute_type', 'value', 'is_required', 'check_if_username_exists', 'resource_account_is_required')
     extra = 0
 
     def resource_attribute_type_description(self, obj):
@@ -72,7 +72,7 @@ class ResourceAdmin(SimpleHistoryAdmin):
 
 @admin.register(ResourceAttribute)
 class ResourceAttributeAdmin(SimpleHistoryAdmin):
-    list_display = ('pk', 'resource_name', 'value', 'resource_attribute_type_name', 'created', 'modified', )
+    list_display = ('pk', 'resource_name', 'value', 'is_required', 'check_if_username_exists', 'resource_account_is_required', 'resource_attribute_type_name', 'created', 'modified', )
     search_fields = ('resource__name', 'resource_attribute_type__name', 'value')
     list_filter = ('resource_attribute_type__name', )
 

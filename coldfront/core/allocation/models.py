@@ -12,7 +12,7 @@ from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
 from coldfront.core.project.models import Project
-from coldfront.core.resource.models import Resource
+from coldfront.core.resource.models import Resource, ResourceAttribute
 from coldfront.core.utils.common import import_from_settings
 import coldfront.core.attribute_expansion as attribute_expansion
 
@@ -111,6 +111,7 @@ class Allocation(TimeStampedModel):
     )
     dl_workflow = models.CharField(max_length=4, choices=YES_NO_CHOICES, blank=True, null=True)
     gpu_workflow = models.CharField(max_length=4, choices=YES_NO_CHOICES, blank=True, null=True)
+    will_exceed_limit = models.CharField(max_length=4, choices=YES_NO_CHOICES, blank=True, null=True)
     applications_list = models.CharField(max_length=150, blank=True, null=True)
     training_or_inference = models.CharField(
         max_length=9,
@@ -202,6 +203,7 @@ class Allocation(TimeStampedModel):
             ('can_review_allocation_requests',
              'Can review allocation requests'),
             ('can_manage_invoice', 'Can manage invoice'),
+            ('can_remove_allocation', 'Can remove allocation')
         )
 
     def clean(self):
@@ -380,8 +382,6 @@ class Allocation(TimeStampedModel):
 
     def check_user_account_exists_on_resource(self, username):
         resource = self.get_parent_resource.get_attribute('check_user_account')
-        if self.get_parent_resource.name == 'Priority Boost':
-            resource = self.system
 
         if resource is None:
             return True
@@ -462,6 +462,7 @@ class AllocationAttributeType(TimeStampedModel):
     attribute_type = models.ForeignKey(AttributeType, on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
     linked_allocation_attribute = models.CharField(max_length=50, blank=True)
+    linked_resources = models.ManyToManyField(Resource, blank=True)
     has_usage = models.BooleanField(default=False)
     is_required = models.BooleanField(default=False)
     is_unique = models.BooleanField(default=False)
@@ -471,6 +472,9 @@ class AllocationAttributeType(TimeStampedModel):
 
     def __str__(self):
         return '%s (%s)' % (self.name, self.attribute_type.name)
+    
+    def get_linked_resources(self):
+        return self.linked_resources.all()
 
     class Meta:
         ordering = ['name', ]
@@ -515,8 +519,13 @@ class AllocationAttribute(TimeStampedModel):
 
         linked_attribute = self.allocation_attribute_type.linked_allocation_attribute
         if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
-            from coldfront.plugins.ldap_user_info.utils import check_if_user_exists, get_users_to_check
-            if linked_attribute in get_users_to_check():
+            from coldfront.plugins.ldap_user_info.utils import check_if_user_exists
+            linked_attribute_obj = ResourceAttribute.objects.filter(
+                resource=self.allocation.get_parent_resource,
+                resource_attribute_type__name=linked_attribute,
+                check_if_username_exists=True
+            )
+            if linked_attribute_obj.exists():
                 if not check_if_user_exists(self.value):
                     raise ValidationError(f'{self.allocation_attribute_type.name} does not have a valid username')
 

@@ -228,6 +228,9 @@ class ResourceAttribute(TimeStampedModel):
         ResourceAttributeType, on_delete=models.CASCADE)
     resource = models.ForeignKey(Resource, on_delete=models.CASCADE)
     value = models.TextField(blank=True)
+    is_required = models.BooleanField(default=False)
+    check_if_username_exists = models.BooleanField(default=False)
+    resource_account_is_required = models.BooleanField(default=False)
     history = HistoricalRecords()
 
     def clean(self):

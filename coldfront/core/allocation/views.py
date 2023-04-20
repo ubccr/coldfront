@@ -64,7 +64,8 @@ from coldfront.core.allocation.utils import (compute_prorated_amount,
                                              create_admin_action,
                                              create_admin_action_for_deletion,
                                              create_admin_action_for_creation,
-                                             update_linked_allocation_attribute)
+                                             update_linked_allocation_attribute,
+                                             get_project_managers_in_allocation)
 from coldfront.core.utils.common import Echo
 from coldfront.core.allocation.signals import (allocation_activate,
                                                allocation_activate_user,
@@ -74,7 +75,7 @@ from coldfront.core.allocation.signals import (allocation_activate,
 from coldfront.core.project.models import (Project, ProjectUser,
                                            ProjectUserStatusChoice,
                                            ProjectUserRoleChoice)
-from coldfront.core.resource.models import Resource
+from coldfront.core.resource.models import Resource, ResourceAttributeType
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email_template, get_email_recipient_from_groups
 from coldfront.core.utils.slack import send_message
@@ -198,7 +199,10 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
         # Can the user update the project?
         context['is_allowed_to_update_project'] = False
+        review_groups = allocation_obj.get_parent_resource.review_groups.all()
         if self.request.user.is_superuser:
+            context['is_allowed_to_update_project'] = True
+        elif not set(self.request.user.groups.all()).isdisjoint(set(review_groups)):
             context['is_allowed_to_update_project'] = True
         elif allocation_obj.project.projectuser_set.filter(user=self.request.user).exists():
             project_user = allocation_obj.project.projectuser_set.get(
@@ -434,6 +438,39 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                         EMAIL_TICKET_SYSTEM_ADDRESS,
                         email_receiver_list
                     )
+            elif old_status != 'Removed' and new_status == 'Removed':
+                allocation_status_removed_obj = AllocationStatusChoice.objects.get(name='Removed')
+                end_date = datetime.datetime.now()
+
+                allocation_obj.status = allocation_status_removed_obj
+                allocation_obj.end_date = end_date
+                allocation_obj.save()
+
+                if EMAIL_ENABLED:
+                    email_receiver_list = []
+
+                    for allocation_user in allocation_obj.allocationuser_set.exclude(status__name__in=['Removed', 'Error']):
+                        if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
+                            email_receiver_list.append(allocation_user.user.email)
+                    
+                    resource_name = allocation_obj.get_parent_resource
+                    domain_url = get_domain_url(self.request)
+                    allocation_detail_url = reverse('allocation-detail', kwargs={'pk': allocation_obj.pk})
+                    allocation_url = f'{domain_url}{allocation_detail_url}'
+                    template_context = {
+                        'center_name': EMAIL_CENTER_NAME,
+                        'resource': resource_name,
+                        'allocation_url': allocation_url,
+                        'signature': EMAIL_SIGNATURE
+                    }
+
+                    send_email_template(
+                        'Allocation Removed',
+                        'email/allocation_removed.txt',
+                        template_context,
+                        EMAIL_TICKET_SYSTEM_ADDRESS,
+                        email_receiver_list
+                    )
 
             allocation_obj.refresh_from_db()
 
@@ -445,6 +482,311 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             context['allocation'] = allocation_obj
 
             return render(request, self.template_name, context)
+
+
+class AllocationRemoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name = 'allocation/allocation_remove.html'
+
+    def test_func(self):
+        user = self.request.user
+        if user.is_superuser:
+            return True
+        
+        allocation_obj = get_object_or_404(
+            Allocation, pk=self.kwargs.get('pk')
+        )
+        
+        if allocation_obj.project.pi == user:
+            return True
+
+        if allocation_obj.project.projectuser_set.filter(user=user, role__name='Manager', status__name='Active').exists():
+            return True
+
+        review_groups = allocation_obj.get_parent_resource.review_groups.all()
+        if not set(self.request.user.groups.all()).isdisjoint(set(review_groups)):
+            if self.request.user.has_perm('allocation.can_remove_allocation'):
+                return True
+        
+        messages.error(
+            self.request, 'You do not have permission to remove this allocation from this project.'
+        )
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_superuser:
+            return super().dispatch(request, *args, **kwargs)
+
+        allocation_obj = get_object_or_404(
+            Allocation, pk=self.kwargs.get('pk')
+        )
+        if self.request.GET.get('from_project'):
+            project_pk = allocation_obj.project.pk
+            http_response_redirect = HttpResponseRedirect(
+                reverse('project-detail', kwargs={'pk': project_pk})
+            )
+        else:
+            http_response_redirect = HttpResponseRedirect(
+                reverse('allocation-detail', kwargs={'pk': allocation_obj.pk})
+            )
+
+        if not allocation_obj.get_parent_resource.requires_payment:
+            messages.error(request, 'This allocation cannot be removed')
+            return http_response_redirect
+
+        if allocation_obj.status.name not in ['Active', 'Billing Information Submitted', ]:
+            messages.error(
+                request,
+                f'Cannot remove an allocation with status "{allocation_obj.status}"'
+            )
+            return http_response_redirect
+
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        allocation_obj = Allocation.objects.get(pk=self.kwargs.get('pk'))
+        allocation_users = allocation_obj.allocationuser_set.filter(status__name='Active')
+
+        users = []
+        for allocation_user in allocation_users:
+            users.append(
+                f'{allocation_user.user.first_name} {allocation_user.user.last_name} ({allocation_user.user.username})'
+            )
+
+        context['from_project'] = 'project' in self.request.META.get('HTTP_REFERER')
+        context['users'] = ', '.join(users)
+        context['allocation'] = allocation_obj
+        return context
+    
+    def post(self, request, *args, **kwargs):
+        pk=self.kwargs.get('pk')
+        allocation_obj = Allocation.objects.get(pk=pk)
+        if allocation_obj.project.projectuser_set.filter(user=request.user, role__name='Manager', status__name='Active').exists():
+            new_status = AllocationStatusChoice.objects.get(name='Removal Requested')
+            message = 'Allocation removal request sent'
+        else:
+            new_status = AllocationStatusChoice.objects.get(name='Removed')
+            allocation_obj.end_date = datetime.date.today()
+            message = 'Allocation has been removed'
+
+            create_admin_action(
+                request.user,
+                {'status': new_status},
+                allocation_obj
+            )
+
+        allocation_obj.status = new_status
+        allocation_obj.save()
+
+        if EMAIL_ENABLED:
+            if new_status.name == 'Removed':
+                email_receiver_list = []
+
+                for allocation_user in allocation_obj.allocationuser_set.exclude(status__name__in=['Removed', 'Error']):
+                    if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
+                        email_receiver_list.append(allocation_user.user.email)
+                
+                resource_name = allocation_obj.get_parent_resource
+                domain_url = get_domain_url(self.request)
+                allocation_detail_url = reverse('allocation-detail', kwargs={'pk': allocation_obj.pk})
+                allocation_url = f'{domain_url}{allocation_detail_url}'
+                template_context = {
+                    'center_name': EMAIL_CENTER_NAME,
+                    'resource': resource_name,
+                    'allocation_url': allocation_url,
+                    'signature': EMAIL_SIGNATURE
+                }
+
+                send_email_template(
+                    'Allocation Removed',
+                    'email/allocation_removed.txt',
+                    template_context,
+                    EMAIL_TICKET_SYSTEM_ADDRESS,
+                    email_receiver_list
+                )
+            else:
+                email_recipient = get_email_recipient_from_groups(
+                    allocation_obj.get_parent_resource.review_groups.all()
+                )
+                resource_name = allocation_obj.get_parent_resource
+                domain_url = get_domain_url(self.request)
+                allocation_detail_url = reverse('allocation-detail', kwargs={'pk': allocation_obj.pk})
+                allocation_url = f'{domain_url}{allocation_detail_url}'
+                project_obj = allocation_obj.project
+                template_context = {
+                    'project_title': project_obj.title,
+                    'project_id': project_obj.pk,
+                    'requestor': request.user,
+                    'resource': resource_name,
+                    'url': allocation_url,
+                    'pi': project_obj.pi.username
+                }
+
+                send_email_template(
+                    'Allocation Removal Request',
+                    'email/new_allocation_removal_request.txt',
+                    template_context,
+                    EMAIL_SENDER,
+                    email_recipient
+                )
+
+        messages.success(request, message)
+
+        # Checking if the string 'true' is there
+        from_project = self.request.GET.get('from_project')
+        if from_project:
+            allocation_obj = Allocation.objects.get(pk=pk)
+            project_pk = allocation_obj.project.pk
+            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_pk}))
+        
+        return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
+
+
+class AllocationRemovalListView(LoginRequiredMixin, TemplateView):
+    template_name = 'allocation/allocation_removal_request_list.html'
+    login_url = '/'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.request.user.is_superuser:
+            allocation_list = Allocation.objects.filter(
+                status__name='Removal Requested'
+            ).exclude(project__status__name__in=['Review Pending', 'Archived'])
+        else:
+            allocation_list = Allocation.objects.filter(
+                status__name='Removal Requested',
+                resources__review_groups__in=list(self.request.user.groups.all())
+            ).exclude(project__status__name__in=['Review Pending', 'Archived'])
+
+        context['allocation_list'] = allocation_list
+        return context
+    
+class AllocationApproveRemovalView(LoginRequiredMixin, UserPassesTestMixin, View):
+    login_url = '/'
+
+    def test_func(self):
+        if self.request.user.is_superuser:
+            return True
+        
+        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
+        review_groups = allocation_obj.get_parent_resource.review_groups.all()
+        if not set(self.request.user.groups.all()).isdisjoint(set(review_groups)):
+            if self.request.user.has_perm('allocation.can_remove_allocation'):
+                return True
+        
+        messages.error(
+            self.request, 'You do not have permission to approve this allocation removal request.'
+        )
+
+    def get(self, request, pk):
+        allocation_obj = get_object_or_404(Allocation, pk=pk)
+
+        allocation_status_removed_obj = AllocationStatusChoice.objects.get(name='Removed')
+        end_date = datetime.datetime.now()
+
+        create_admin_action(
+            request.user,
+            {'status': allocation_status_removed_obj},
+            allocation_obj
+        )
+        allocation_obj.status = allocation_status_removed_obj
+        allocation_obj.end_date = end_date
+        allocation_obj.save()
+
+        messages.success(
+            request,
+            f'Allocation has been removed from project "{allocation_obj.project.title}"'
+        )
+
+        if EMAIL_ENABLED:
+            email_receiver_list = []
+
+            for allocation_user in allocation_obj.allocationuser_set.exclude(status__name__in=['Removed', 'Error']):
+                if allocation_user.allocation.project.projectuser_set.get(user=allocation_user.user).enable_notifications:
+                    email_receiver_list.append(allocation_user.user.email)
+            
+            resource_name = allocation_obj.get_parent_resource
+            domain_url = get_domain_url(self.request)
+            allocation_detail_url = reverse('allocation-detail', kwargs={'pk': allocation_obj.pk})
+            allocation_url = f'{domain_url}{allocation_detail_url}'
+            template_context = {
+                'center_name': EMAIL_CENTER_NAME,
+                'resource': resource_name,
+                'allocation_url': allocation_url,
+                'signature': EMAIL_SIGNATURE
+            }
+
+            send_email_template(
+                'Allocation Removed',
+                'email/allocation_removed.txt',
+                template_context,
+                EMAIL_TICKET_SYSTEM_ADDRESS,
+                email_receiver_list
+            )
+
+        return HttpResponseRedirect(reverse('allocation-removal-request-list'))
+
+
+class AllocationDenyRemovalRequest(LoginRequiredMixin, UserPassesTestMixin, View):
+    login_url = '/'
+
+    def test_func(self):
+        if self.request.user.is_superuser:
+            return True
+        
+        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
+        review_groups = allocation_obj.get_parent_resource.review_groups.all()
+        if not set(self.request.user.groups.all()).isdisjoint(set(review_groups)):
+            return True
+        
+        messages.error(
+            self.request, 'You do not have permission to deny this allocation removal request.'
+        )
+
+    def get(self, request, pk):
+        allocation_obj = get_object_or_404(Allocation, pk=pk)
+
+        allocation_status_active_obj = AllocationStatusChoice.objects.get(name='Active')
+
+        create_admin_action(
+            request.user,
+            {'status': allocation_status_active_obj},
+            allocation_obj
+        )
+        allocation_obj.status = allocation_status_active_obj
+        allocation_obj.save()
+
+        messages.success(
+            request,
+            f'Allocation has not been removed from project "{allocation_obj.project.title}"'
+        )
+
+        if EMAIL_ENABLED:
+            email_receiver_list = []
+            project_managers = get_project_managers_in_allocation(allocation_obj)
+            for project_manager in project_managers:
+                if project_manager.enable_notifications:
+                    email_receiver_list.append(project_manager.user.email)
+            
+            resource_name = allocation_obj.get_parent_resource
+            domain_url = get_domain_url(self.request)
+            allocation_detail_url = reverse('allocation-detail', kwargs={'pk': allocation_obj.pk})
+            allocation_url = f'{domain_url}{allocation_detail_url}'
+            template_context = {
+                'center_name': EMAIL_CENTER_NAME,
+                'resource': resource_name,
+                'allocation_url': allocation_url,
+                'signature': EMAIL_SIGNATURE
+            }
+
+            send_email_template(
+                'Allocation Removal Denied',
+                'email/allocation_removal_denied.txt',
+                template_context,
+                EMAIL_TICKET_SYSTEM_ADDRESS,
+                email_receiver_list
+            )
+
+        return HttpResponseRedirect(reverse('allocation-removal-request-list'))
 
 
 class AllocationListView(LoginRequiredMixin, ListView):
@@ -472,9 +814,17 @@ class AllocationListView(LoginRequiredMixin, ListView):
         if allocation_search_form.is_valid():
             data = allocation_search_form.cleaned_data
 
-            if data.get('show_all_allocations') and (self.request.user.is_superuser or self.request.user.has_perm('allocation.can_view_all_allocations')):
+            if data.get('show_all_allocations') and self.request.user.is_superuser:
                 allocations = Allocation.objects.prefetch_related(
-                    'project', 'project__pi', 'status',).all().order_by(order_by)
+                    'project', 'project__pi', 'status',
+                ).all().order_by(order_by)
+            elif data.get('show_all_allocations') and self.request.user.has_perm('allocation.can_view_all_allocations'):
+                allocations = Allocation.objects.prefetch_related(
+                    'project', 'project__pi', 'status',
+                ).filter(
+                    resources__review_groups__in=list(self.request.user.groups.all())
+                ).order_by(order_by)
+
             else:
                 allocations = Allocation.objects.prefetch_related('project', 'project__pi', 'status',).filter(
                     Q(project__status__name__in=['New', 'Active', ]) &
@@ -651,228 +1001,56 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         #   label
         #   type
         # }
-        resource_form = [
-            {
-                'leverage_multiple_gpus': {},
-                'leverage_multiple_gpus_label': {},
-                'type': 'radio',
-            },
-            {
-                'for_coursework': {},
-                'for_coursework_label': {},
-                'type': 'radio',
-            },
-            {
-                'dl_workflow': {},
-                'dl_workflow_label': {},
-                'type': 'radio',
-            },
-            {
-                'gpu_workflow': {},
-                'gpu_workflow_label': {},
-                'type': 'radio',
-            },
-            {
-                'phi_association': {},
-                'phi_association_label': {},
-                'type': 'radio',
-            },
-            {
-                'system': {},
-                'system_label': {},
-                'type': 'radio',
-            },
-            {
-                'store_ephi': {},
-                'store_ephi_label': {},
-                'type': 'radio',
-            },
-            {
-                'access_level': {},
-                'access_level_label': {},
-                'type': 'radio',
-            },
-            {
-                'applications_list': {},
-                'applications_list_label': {},
-                'type': 'text',
-            },
-            {
-                'training_or_inference': {},
-                'training_or_inference_label': {},
-                'type': 'choice',
-            },
-            {
-                'primary_contact': {},
-                'primary_contact_label': {},
-                'type': 'text',
-            },
-            {
-                'secondary_contact': {},
-                'secondary_contact_label': {},
-                'type': 'text',
-            },
-            {
-                'department_full_name': {},
-                'department_full_name_label': {},
-                'type': 'text',
-            },
-            {
-                'department_short_name': {},
-                'department_short_name_label': {},
-                'type': 'text',
-            },
-            {
-                'fiscal_officer': {},
-                'fiscal_officer_label': {},
-                'type': 'text',
-            },
-            {
-                'account_number': {},
-                'account_number_label': {},
-                'type': 'text',
-            },
-            {
-                'sub_account_number': {},
-                'sub_account_number_label': {},
-                'type': 'text',
-            },
-            {
-                'it_pros': {},
-                'it_pros_label': {},
-                'type': 'text',
-            },
-            {
-                'devices_ip_addresses': {},
-                'devices_ip_addresses_label': {},
-                'type': 'text',
-            },
-            {
-                'data_management_plan': {},
-                'data_management_plan_label': {},
-                'type': 'text',
-            },
-            {
-                'project_directory_name': {},
-                'project_directory_name_label': {},
-                'type': 'text',
-            },
-            {
-                'first_name': {},
-                'first_name_label': {},
-                'type': 'text',
-            },
-            {
-                'last_name': {},
-                'last_name_label': {},
-                'type': 'text',
-            },
-            {
-                'data_manager': {},
-                'data_manager_label': {},
-                'type': 'text',
-            },
-            {
-                'campus_affiliation': {},
-                'campus_affiliation_label': {},
-                'type': 'choice',
-            },
-            {
-                'url': {},
-                'url_label': {},
-                'type': 'text',
-            },
-            {
-                'email': {},
-                'email_label': {},
-                'type': 'email',
-            },
-            {
-                'faculty_email': {},
-                'faculty_email_label': {},
-                'type': 'email',
-            },
-            {
-                'start_date': {},
-                'start_date_label': {},
-                'type': 'date',
-            },
-            {
-                'end_date': {},
-                'end_date_label': {},
-                'type': 'date',
-            },
-            {
-                'confirm_understanding': {},
-                'confirm_understanding_label': {},
-                'type': 'checkbox',
-            },
-            {
-                'storage_space': {},
-                'storage_space_label': {},
-                'type': 'int',
-            },
-            {
-                'storage_space_unit': {},
-                'storage_space_unit_label': {},
-                'type': 'radio',
-            },
-            {
-                'cost': {},
-                'cost_label': {},
-                'type': 'int',
-            },
-            {
-                'prorated_cost': {},
-                'prorated_cost_label': {},
-                'type': 'int',
-            },
-            {
-                'quantity': {},
-                'quantity_label': {},
-                'type': 'int',
-            },
-            {
-                'phone_number': {},
-                'phone_number_label': {},
-                'type': 'text'
-            },
-            {
-                'group_account_name': {},
-                'group_account_name_label': {},
-                'type': 'text',
-            },
-            {
-                'group_account_name_exists': {},
-                'group_account_name_exists_label': {},
-                'type': 'checkbox',
-            },
-            {
-                'terms_of_service': {},
-                'terms_of_service_label': {},
-                'type': 'checkbox',
-            },
-            {
-                'data_management_responsibilities': {},
-                'data_management_responsibilities_label': {},
-                'type': 'checkbox',
-            },
-            {
-                'admin_ads_group': {},
-                'admin_ads_group_label': {},
-                'type': 'text',
-            },
-            {
-                'user_ads_group': {},
-                'user_ads_group_label': {},
-                'type': 'text',
-            },
-            {
-                'confirm_best_practices': {},
-                'confirm_best_practices_label': {},
-                'type': 'checkbox',
-            }
-        ]
+        resource_form = []
+        resource_attributes_type_labels = ResourceAttributeType.objects.filter(
+            name__endswith='label'
+        )
+        resource_attributes_type_field_names = [x.name[:-6] for x in resource_attributes_type_labels] 
+        resource_attributes_type_fields = ResourceAttributeType.objects.filter(
+            name__in=resource_attributes_type_field_names
+        )
+        for resource_attributes_type_field in resource_attributes_type_fields:
+            resource_attributes_type_field_name = resource_attributes_type_field.name
+            resource_attributes_type_attribute_type_name = resource_attributes_type_field.attribute_type.name
+            if resource_attributes_type_attribute_type_name == 'Yes/No':
+                resource_attributes_type_attribute_type_name = 'radio'
+            elif resource_attributes_type_attribute_type_name == 'True/False':
+                resource_attributes_type_attribute_type_name = 'checkbox'
+
+            if resource_attributes_type_field_name in ['access_level', 'system', 'storage_space_unit']:
+                resource_attributes_type_attribute_type_name = 'radio'
+            elif resource_attributes_type_field_name in ['campus_affiliation', 'training_or_inference']:
+                resource_attributes_type_attribute_type_name = 'choice'
+            elif resource_attributes_type_field_name in ['email', 'faculty_email']:
+                resource_attributes_type_attribute_type_name = 'email'
+
+            resource_form.append({
+                resource_attributes_type_field_name: {},
+                resource_attributes_type_field_name + '_label': {},
+                'type': resource_attributes_type_attribute_type_name.lower()
+            })
+
+        # These do not exist as ResourceAttributeTypes
+        resource_form.append({
+            'group_account_name': {},
+            'group_account_name_label': {},
+            'type': 'text',
+        })
+        resource_form.append({
+            'group_account_name_exists': {},
+            'group_account_name_exists_label': {},
+            'type': 'checkbox',
+        })
+        resource_form.append({
+            'prorated_cost': {},
+            'prorated_cost_label': {},
+            'type': 'int',
+        })
+        resource_form.append({
+            'quantity': {},
+            'quantity_label': {},
+            'type': 'int',
+        })
 
         resource_special_attributes = [
             {
@@ -990,54 +1168,14 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         project_obj = get_object_or_404(
             Project, pk=self.kwargs.get('project_pk'))
         resource_obj = Resource.objects.get(pk=form_data.get('resource'))
-        justification = form_data.get('justification')
-        quantity = form_data.get('quantity', 1)
-        storage_space = form_data.get('storage_space')
         storage_space_unit = form.data.get('storage_space_unit')
-        leverage_multiple_gpus = form_data.get('leverage_multiple_gpus')
-        dl_workflow = form_data.get('dl_workflow')
-        gpu_workflow = form_data.get('gpu_workflow')
-        applications_list = form_data.get('applications_list')
-        training_or_inference = form_data.get('training_or_inference')
-        for_coursework = form_data.get('for_coursework')
-        system = form_data.get('system')
-        is_grand_challenge = form_data.get('is_grand_challenge')
-        grand_challenge_program = form_data.get('grand_challenge_program')
-        start_date = form_data.get('start_date')
         end_date = form_data.get('end_date')
         use_indefinitely = form_data.get('use_indefinitely')
-        phi_association = form_data.get('phi_association')
-        access_level = form_data.get('access_level')
-        confirm_understanding = form_data.get('confirm_understanding')
-        primary_contact = form_data.get('primary_contact')
-        secondary_contact = form_data.get('secondary_contact')
-        department_full_name = form_data.get('department_full_name')
-        department_short_name = form_data.get('department_short_name')
-        fiscal_officer = form_data.get('fiscal_officer')
         account_number = form_data.get('account_number')
-        sub_account_number = form_data.get('sub_account_number')
-        it_pros = form_data.get('it_pros')
-        devices_ip_addresses = form_data.get('devices_ip_addresses')
-        data_management_plan = form_data.get('data_management_plan')
-        project_directory_name = form_data.get('project_directory_name')
-        first_name = form_data.get('first_name')
-        last_name = form_data.get('last_name')
-        campus_affiliation = form_data.get('campus_affiliation')
-        email = form_data.get('email')
         url = form_data.get('url')
-        faculty_email = form_data.get('faculty_email')
-        store_ephi = form_data.get('store_ephi')
         data_manager = form_data.get('data_manager')
         allocation_account = form_data.get('allocation_account', None)
         license_term = form_data.get('license_term', None)
-        phone_number = form_data.get('phone_number')
-        group_account_name = form_data.get('group_account_name')
-        group_account_name_exists = form_data.get('group_account_name_exists')
-        terms_of_service = form_data.get('terms_of_service')
-        data_management_responsibilities = form_data.get('data_management_responsibilities')
-        admin_ads_group = form_data.get('admin_ads_group')
-        user_ads_group = form_data.get('user_ads_group')
-        confirm_best_practices = form_data.get('confirm_best_practices')
 
         allocation_limit = resource_obj.get_attribute('allocation_limit')
         if allocation_limit is not None:
@@ -1083,8 +1221,6 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             if expiry_date is not None:
                 month, day, year = expiry_date.split('/')
                 end_date = self.calculate_end_date(int(month), int(day))
-                if resource_obj.name == 'RStudio Connect':
-                    end_date = self.calculate_end_date(int(month), int(day), license_term)
 
         if resource_obj.name == 'Slate-Project':
             storage_space_unit = 'TB'
@@ -1093,9 +1229,6 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             if use_indefinitely:
                 end_date = None
         elif resource_obj.name == 'SDA Group Account':
-            if use_indefinitely:
-                end_date = None
-        elif resource_obj.name == 'Priority Boost':
             if use_indefinitely:
                 end_date = None
 
@@ -1138,20 +1271,12 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             return self.form_invalid(form)
 
         denied_users = []
-        resource_name = ''
         for user in users:
             username = user.username
-            if resource_obj.name == 'Priority Boost':
-                if not resource_obj.check_user_account_exists(username, system):
+            if resource_account is not None:
+                if not resource_obj.check_user_account_exists(username, resource_account):
                     denied_users.append(username)
-                    resource_name = system
                     users.remove(user)
-            else:
-                if resource_account is not None:
-                    if not resource_obj.check_user_account_exists(username, resource_account):
-                        denied_users.append(username)
-                        resource_name = resource_account
-                        users.remove(user)
 
         if denied_users:
             messages.warning(self.request, format_html(
@@ -1175,57 +1300,18 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             allocation_status_obj = AllocationStatusChoice.objects.get(
                 name='New')
 
-        allocation_obj = Allocation.objects.create(
-            project=project_obj,
-            justification=justification,
-            quantity=quantity,
-            storage_space=storage_space,
-            storage_space_unit=storage_space_unit,
-            leverage_multiple_gpus=leverage_multiple_gpus,
-            dl_workflow=dl_workflow,
-            gpu_workflow=gpu_workflow,
-            applications_list=applications_list,
-            training_or_inference=training_or_inference,
-            for_coursework=for_coursework,
-            system=system,
-            is_grand_challenge=is_grand_challenge,
-            grand_challenge_program=grand_challenge_program,
-            start_date=start_date,
-            end_date=end_date,
-            use_indefinitely=use_indefinitely,
-            phi_association=phi_association,
-            access_level=access_level,
-            confirm_understanding=confirm_understanding,
-            primary_contact=primary_contact,
-            secondary_contact=secondary_contact,
-            department_full_name=department_full_name,
-            department_short_name=department_short_name,
-            fiscal_officer=fiscal_officer,
-            account_number=account_number,
-            sub_account_number=sub_account_number,
-            it_pros=it_pros,
-            devices_ip_addresses=devices_ip_addresses,
-            data_management_plan=data_management_plan,
-            project_directory_name=project_directory_name,
-            total_cost=total_cost,
-            first_name=first_name,
-            last_name=last_name,
-            campus_affiliation=campus_affiliation,
-            email=email,
-            url=url,
-            faculty_email=faculty_email,
-            store_ephi=store_ephi,
-            data_manager=data_manager,
-            phone_number=phone_number,
-            group_account_name=group_account_name,
-            group_account_name_exists=group_account_name_exists,
-            terms_of_service=terms_of_service,
-            data_management_responsibilities=data_management_responsibilities,
-            admin_ads_group=admin_ads_group,
-            user_ads_group=user_ads_group,
-            confirm_best_practices=confirm_best_practices,
-            status=allocation_status_obj
-        )
+        form_data.pop('cost')
+        form_data.pop('users')
+        form_data.pop('resource')
+        form_data.pop('license_term') 
+        form_data.pop('prorated_cost')
+        form_data.pop('allocation_account')
+        form_data['status'] = allocation_status_obj
+        form_data['project'] = project_obj
+        form_data['end_date'] = end_date
+        form_data['total_cost'] = total_cost
+        form_data['storage_space_unit'] = storage_space_unit
+        allocation_obj = Allocation.objects.create(**form_data)
 
         if ALLOCATION_ENABLE_CHANGE_REQUESTS_BY_DEFAULT:
             allocation_obj.is_changeable = True
@@ -1233,110 +1319,23 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         allocation_obj.resources.add(resource_obj)
 
-        if resource_obj.resourceattribute_set.filter(resource_attribute_type__name='slurm_cluster').exists():
-            if project_obj.slurm_account_name:
-                value = project_obj.slurm_account_name
-
-                slurm_account_name_attribute_type = AllocationAttributeType.objects.get(
-                    name='slurm_account_name'
-                )
-                AllocationAttribute.objects.create(
-                    allocation_attribute_type=slurm_account_name_attribute_type,
-                    allocation=allocation_obj,
-                    value=value
-                )
-        elif (resource_obj.parent_resource is not None and
-              resource_obj.parent_resource.resourceattribute_set.filter(resource_attribute_type__name='slurm_cluster').exists()):
-            if project_obj.slurm_account_name:
-                value = project_obj.slurm_account_name
-
-                slurm_account_name_attribute_type = AllocationAttributeType.objects.get(
-                    name='slurm_account_name'
-                )
-                AllocationAttribute.objects.create(
-                    allocation_attribute_type=slurm_account_name_attribute_type,
-                    allocation=allocation_obj,
-                    value=value
-                )
-
-        if storage_space:
-            if storage_space_unit == 'TB':
-                storage_quota_attribute_type = AllocationAttributeType.objects.get(
-                    name='Storage Quota (TB)'
-                )
-            else:
-                storage_quota_attribute_type = AllocationAttributeType.objects.get(
-                    name='Storage Quota (GB)'
-                )
-            AllocationAttribute.objects.create(
-                allocation_attribute_type=storage_quota_attribute_type,
-                allocation=allocation_obj,
-                value=storage_space
-            )
-
-        if resource_obj.requires_payment:
-            account_number_attribute_type = AllocationAttributeType.objects.get(
-                name='Account Number'
-            )
-            if account_number:
-                AllocationAttribute.objects.create(
-                    allocation_attribute_type=account_number_attribute_type,
-                    allocation=allocation_obj,
-                    value=account_number
-                )
-
-            sub_account_number_attribute_type = AllocationAttributeType.objects.get(
-                name='Sub-Account Number'
-            )
-            if sub_account_number:
-                AllocationAttribute.objects.create(
-                    allocation_attribute_type=sub_account_number_attribute_type,
-                    allocation=allocation_obj,
-                    value=sub_account_number
-                )
-
-        if resource_name == "Geode-Projects":
-            if primary_contact:
-                AllocationAttribute.objects.create(
-                    allocation_attribute_type=AllocationAttributeType.objects.get(name="Primary Contact"),
-                    allocation=allocation_obj,
-                    value=primary_contact
-                )
-
-            if secondary_contact:
-                AllocationAttribute.objects.create(
-                    allocation_attribute_type=AllocationAttributeType.objects.get(name="Secondary Contact"),
-                    allocation=allocation_obj,
-                    value=secondary_contact
-                )
-
-            if it_pros:
-                AllocationAttribute.objects.create(
-                    allocation_attribute_type=AllocationAttributeType.objects.get(name="It Pro Contact"),
-                    allocation=allocation_obj,
-                    value=it_pros
-                )
-
-            if fiscal_officer:
-                AllocationAttribute.objects.create(
-                    allocation_attribute_type=AllocationAttributeType.objects.get(name="Fiscal Officer"),
-                    allocation=allocation_obj,
-                    value=fiscal_officer
-                )
-
-            if admin_ads_group:
-                AllocationAttribute.objects.create(
-                    allocation_attribute_type=AllocationAttributeType.objects.get(name="Admin Group"),
-                    allocation=allocation_obj,
-                    value=admin_ads_group
-                )
-
-            if user_ads_group:
-                AllocationAttribute.objects.create(
-                    allocation_attribute_type=AllocationAttributeType.objects.get(name="User Group"),
-                    allocation=allocation_obj,
-                    value=user_ads_group
-                )
+        allocation_attribute_type_objs = AllocationAttributeType.objects.all()
+        for allocation_attribute_type_obj in allocation_attribute_type_objs:
+            if allocation_obj.get_parent_resource in allocation_attribute_type_obj.get_linked_resources():
+                linked_allocation_attribute = allocation_attribute_type_obj.linked_allocation_attribute
+                if form_data.get(linked_allocation_attribute):
+                    AllocationAttribute.objects.create(
+                        allocation_attribute_type=allocation_attribute_type_obj,
+                        allocation=allocation_obj,
+                        value=form_data[linked_allocation_attribute]
+                    )
+                else:
+                    if allocation_attribute_type_obj.name == 'slurm_account_name':
+                        AllocationAttribute.objects.create(
+                            allocation_attribute_type=allocation_attribute_type_obj,
+                            allocation=allocation_obj,
+                            value=project_obj.slurm_account_name
+                        )
 
         if ALLOCATION_ACCOUNT_ENABLED and allocation_account and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING:
 
@@ -1390,7 +1389,6 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         pi_name = '{} {} ({})'.format(allocation_obj.project.pi.first_name,
                                       allocation_obj.project.pi.last_name, allocation_obj.project.pi.username)
-        resource_name = allocation_obj.get_parent_resource
         domain_url = get_domain_url(self.request)
         url = '{}{}'.format(domain_url, reverse('allocation-request-list'))
 
@@ -1398,6 +1396,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             text = f'A new allocation in project "{project_obj.title}" with id {project_obj.pk} has been requested for {pi_name} - {resource_name}. Please review the allocation: {url}'
             send_message(text)
         if EMAIL_ENABLED:
+            resource_name = allocation_obj.get_parent_resource
             template_context = {
                 'project_title': project_obj.title,
                 'project_id': project_obj.pk,
@@ -1956,6 +1955,26 @@ class AllocationAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Cre
         """Return an instance of the form to be used in this view."""
         form = super().get_form(form_class)
         form.fields['allocation'].widget = forms.HiddenInput()
+
+        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
+        current_allocation_attribute_objs = allocation_obj.allocationattribute_set.all()
+        current_allocation_attribute_type_objs = []
+        for allocation_attribute_obj in current_allocation_attribute_objs:
+            current_allocation_attribute_type_objs.append(
+                allocation_attribute_obj.allocation_attribute_type
+            )
+        allocation_attribute_type_objs = AllocationAttributeType.objects.all()
+        allocation_attribute_type_pks = []
+        for allocation_attribute_type_obj in allocation_attribute_type_objs:
+            if allocation_attribute_type_obj in current_allocation_attribute_type_objs:
+                continue
+
+            if allocation_obj.get_parent_resource in allocation_attribute_type_obj.get_linked_resources():
+                allocation_attribute_type_pks.append(allocation_attribute_type_obj.pk)
+        form.fields['allocation_attribute_type'].queryset = AllocationAttributeType.objects.filter(
+            pk__in=allocation_attribute_type_pks
+        )
+
         return form
 
     def get_success_url(self):
@@ -2344,7 +2363,7 @@ class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
             return True
 
         messages.error(
-            self.request, 'You do not have permission to activate a allocation request.')
+            self.request, 'You do not have permission to activate an allocation request.')
 
     def dispatch(self, request, *args, **kwargs):
         allocation_obj = get_object_or_404(Allocation, pk=kwargs.get('pk'))
@@ -2599,7 +2618,7 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
                 request, 'Allocation renewal is disabled. Request a new allocation to this resource if you want to continue using it after the active until date.')
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
-        if allocation_obj.status.name not in ['Active', 'Expired', ]:
+        if allocation_obj.status.name not in ['Active', 'Expired', 'Revoked', ]:
             messages.error(request, 'You cannot renew an allocation with status "{}".'.format(
                 allocation_obj.status.name))
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
@@ -4458,7 +4477,7 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 request, 'You cannot request a change to this allocation because you have to review your project first.')
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
-        if allocation_obj.project.status.name in ['Denied', 'Expired', ]:
+        if allocation_obj.project.status.name in ['Denied', 'Expired', 'Revoked', ]:
             messages.error(
                 request, 'You cannot request a change to an allocation in a project with status "{}".'.format(allocation_obj.project.status.name))
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))

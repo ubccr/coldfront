@@ -204,6 +204,47 @@ class ProjectExportForm(forms.Form):
         help_text='Do not select any if you want all statuses',
         required=False
     )
+    project_creation_range_start = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'datepicker'}),
+        label='Start',
+        help_text='Includes start date',
+        required=False
+    )
+    project_creation_range_stop = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'datepicker'}),
+        label='End',
+        help_text='Does not include end date',
+        required=False
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            'file_name',
+            Row(
+                Column('project_statuses')
+            ),
+            Fieldset(
+                'Project Creation Range',
+                Row(
+                    Column('project_creation_range_start', css_class='col-md-6'),
+                    Column('project_creation_range_stop', css_class='col-md-6'),
+                )
+            ),
+            Submit('submit', 'Export', css_class='btn-success'),
+            Reset('reset', 'Reset', css_class='btn-secondary')
+        )
+
+
+class ProjectUserExportForm(forms.Form):
+    file_name = forms.CharField(max_length=64, initial='projectusers')
+    project_statuses = forms.ModelMultipleChoiceField(
+        queryset=ProjectStatusChoice.objects.all().order_by('name'),
+        help_text='Do not select any if you want all statuses',
+        required=False
+    )
     project_user_roles = forms.ModelMultipleChoiceField(
         queryset=ProjectUserRoleChoice.objects.all().order_by('name'),
         help_text='Do not select any if you want all roles',

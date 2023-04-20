@@ -74,22 +74,23 @@ class Command(BaseCommand):
         with open(os.path.join(cwd, file_name), 'r') as csv_file:
             reader = csv.DictReader(csv_file)
 
-            organizations = dict()
+            # organizations = dict()
             for row in reader:
-                organization = row["Org"].strip()
-                project_obj = None
-                if organization == "BL-COAS":
-                    self.import_geode_project(row)
-                else:
-                    if organizations.get(organization) is None:
-                        project_obj = self.import_geode_project(row)
-                    else:
-                        project_obj = self.import_geode_project(row, organizations[organization])
+                self.import_geode_project(row)
+                # organization = row["Org"].strip()
+                # project_obj = None
+                # if organization == "BL-COAS":
+                #     self.import_geode_project(row)
+                # else:
+                #     if organizations.get(organization) is None:
+                #         project_obj = self.import_geode_project(row)
+                #     else:
+                #         project_obj = self.import_geode_project(row, organizations[organization])
 
-                    if project_obj is None:
-                        continue
+                #     if project_obj is None:
+                #         continue
 
-                    organizations[organization] = project_obj
+                #     organizations[organization] = project_obj
 
         print("Finished importing Geode-Projects")
 
@@ -118,10 +119,11 @@ class Command(BaseCommand):
             if end_date < datetime.datetime.today():
                 return
 
+        share_name = row["Share Name"].strip()
         if project_obj is None:
-            project_obj = self.create_project(pi_username, end_date)
+            project_obj = self.create_project(pi_username, end_date, share_name)
         elif project_obj.pi.username != pi_username:
-            project_obj = self.create_project(pi_username, end_date)
+            project_obj = self.create_project(pi_username, end_date, share_name)
 
         start_date = row["Start Date"]
         if not start_date:
@@ -190,7 +192,7 @@ class Command(BaseCommand):
             user_ads_group=row["Users Group"].strip(),
             confirm_best_practices=True,
             data_management_plan="N/A. Allocation was imported.",
-            share_name=row["Share Name"].strip(),
+            share_name=share_name,
             share_path=row["MountPath"].strip(),
             organization=row["Org"].strip(),
             billing_rate=billing_rate,
@@ -310,7 +312,7 @@ class Command(BaseCommand):
 
         if quota_files > 0:
             AllocationAttribute.objects.create(
-                allocation_attribute_type=AllocationAttributeType.objects.get(name="Quota Files"),
+                allocation_attribute_type=AllocationAttributeType.objects.get(name="Quota Files (M)"),
                 allocation=allocation_obj,
                 value=quota_files
             )
@@ -388,7 +390,7 @@ class Command(BaseCommand):
 
         return project_obj
 
-    def create_project(self, pi_username, end_date):
+    def create_project(self, pi_username, end_date, share_name):
         pi_obj, _ = User.objects.get_or_create(
             username=pi_username
         )
@@ -419,7 +421,7 @@ class Command(BaseCommand):
             end_date=project_end_date
         )
         project_obj.slurm_account_name = self.generate_slurm_account_name(project_obj)
-        project_obj.title = f"New Project {project_obj.pk}"
+        project_obj.title = f"Geode Project \"{share_name}\""
         project_obj.save()
 
         ProjectUser.objects.create(

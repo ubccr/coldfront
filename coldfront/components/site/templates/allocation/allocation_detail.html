@@ -35,15 +35,22 @@ Allocation Detail
 
 <div class="card mb-3">
   <div class="card-header">
-    {% if allocation.is_changeable and is_allowed_to_update_project %}
+    {% if is_allowed_to_update_project %}
       <div class="row">
         <div class="col">
           <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>
         </div>
         <div class="col">
-          <a class="btn btn-primary" href="{% url 'allocation-change' allocation.pk %}" role="button" style="float: right;">
-            Request Change
-          </a>
+          {% if allocation.is_changeable %}
+            <a class="btn btn-primary" href="{% url 'allocation-change' allocation.pk %}" role="button" style="float: right;">
+              Request Change
+            </a>
+          {% endif %}
+          {% if allocation.status.name in 'Active, Billing Information Submitted' %}
+            <a class="btn btn-primary mr-1" href="{% url 'allocation-remove' allocation.pk %}" role="button" style="float: right;">
+              Remove Access
+            </a>
+          {% endif %}
         </div>
       </div>
     {% else %}
@@ -216,7 +223,7 @@ Allocation Detail
                       <span class="badge badge-warning">
                         {{ allocation.expires_in|add:ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING }} days left to renew <br> Cannot renew during <br> project review
                       </span>
-                    {% elif project.status.name not in 'Expired, Denied' %}             
+                    {% elif project.status.name not in 'Expired, Denied, Revoked, Removed' %}
                       <a href="{% url 'allocation-renew' allocation.pk %}">
                           <span class="badge badge-warning"><i class="fas fa-redo-alt" aria-hidden="true"></i>
                             {{ allocation.expires_in|add:ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING }} days left to renew
@@ -258,7 +265,7 @@ Allocation Detail
                       <span class="badge badge-warning">
                         {{ allocation.expires_in|add:ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING }} days left to renew <br> Cannot renew during <br> project review
                       </span>
-                    {% elif project.status.name not in 'Expired, Denied' %}
+                    {% elif project.status.name not in 'Expired, Denied, Revoked, Removed' %}
                       <a href="{% url 'allocation-renew' allocation.pk %}">
                         <span class="badge badge-warning"><i class="fas fa-redo-alt" aria-hidden="true"></i>
                           {{ allocation.expires_in|add:ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING }} days left to renew
