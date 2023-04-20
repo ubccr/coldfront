@@ -626,7 +626,7 @@ class AllocationRemoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                     'email/new_allocation_removal_request.txt',
                     template_context,
                     EMAIL_SENDER,
-                    email_recipient
+                    [email_recipient, ]
                 )
 
         messages.success(request, message)
