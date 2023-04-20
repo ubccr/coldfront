@@ -53,4 +53,4 @@ To add a new attribute type, click the green plus sign next to "attribute type" 
 
 ###  Resource Detail Pages
 
-See more about [resource detail pages](resource_detail.md)
+See more about [resource detail pages](detail.md)

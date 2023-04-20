@@ -42,16 +42,3 @@ The Center Summary provides a graph of total publications entered into ColdFront
 ![Center Publication Summary](../../images/centersummarypubs.PNG)
 
 
-## Viewing All Allocations - Center Staff
-
-System administrators will be able to see all allocations.  There are additional settings for center directors/administrators and those with 'staff status' enabled that you can add to allow them to view all allocations as well.  See the documentation on [director permissions](../users/director.md) and [staff permissions](../users/staff.md) for information on how to configure this.
-
-System administrators can choose 'All Allocations' from the Admin menu.  Staff and center directors can choose 'All Allocations' from the 'Staff' menu.
-
-![Center Publication Summary](../../images/allallocations_staff.PNG)
-
-The allocations search will allow you to filter on all possible allocation attributes, project information, username, type of resource or resource name, dates, and all allocation statuses. Enter the fields you want to search on and make sure to check 'Show all allocations' at the bottom before clicking the 'Search' button.  If you don't, you'll only see allocations that your user account is a member of.
-
-![Allocation Search](../../images/allocationsearch.PNG)
-
-In the resulting list, you can click on the allocation ID to bring you to the Allocation Detail page or you can click on the project name which will bring you to the Project Detail page.

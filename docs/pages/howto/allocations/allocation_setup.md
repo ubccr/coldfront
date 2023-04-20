@@ -1,8 +1,8 @@
 # Configuring Allocations   
 
-The process of review allocation requests and configuring the allocation is very specific to your center's policies and procedures.  Allocation requests are accessible to the [center admin staff](../users/sysadmins.md) via the Admin - Allocation Requests menu.  
+The process of reviewing allocation requests and configuring the allocation is very specific to your center's policies and procedures.  Allocation requests are accessible to the [center admin staff](../roles/sysadmins.md) via the Admin - Allocation Requests menu.  
 
-NOTE: If you'd like other staff to be able to view allocation requests without making them a 'super user' [check out these instructions](../users/staff.md#give-staff-access-to-review-allocation-requests)
+NOTE: If you'd like other staff to be able to view allocation requests without making them a 'super user' [check out these instructions](../roles/staff.md#give-staff-access-to-review-allocation-requests)
 
 ![Allocation Requests](../../images/alloc_requests.PNG)
 
@@ -39,10 +39,10 @@ The allocation detail page for cloud resource allocations will display usage cha
 
 ## Allocation Renewals
 
-Allocation renewals may not require any additions or changes to the allocation attributes.  By default, if the admin clicks on the 'Activate' button the allocation status changes from "Renewal Requested" to "Active" and the expiration date is set to the ALLOCATION_DEFAULT_ALLOCATION_LENGTH set in the ColdFront configuration.  The default, if not configured, is 365 days.  An email notification is sent to the PI and all users on the allocation.
+Allocation renewals may not require any additions or changes to the allocation attributes.  By default, if the admin clicks on the 'Approve' button the allocation status changes from "Renewal Requested" to "Active" and the expiration date is set to the ALLOCATION_DEFAULT_ALLOCATION_LENGTH set in the ColdFront configuration.  The default, if not configured, is 365 days.  An email notification is sent to the PI and all users on the allocation.
 
 ![Allocation Renewal](../../images/alloc_renew.PNG)
 
-To set a different expiration date, change the status to anything other than 'Active' or modify any of the allocation attributes, click on the allocation ID to access the allocation detail page.  
+To set a different expiration date, change the status to anything other than 'Active' or modify any of the allocation attributes, click on the 'Details' button to access the allocation detail page.  
 
 To deny the allocation request, click the Deny button.  The allocation status will change to 'Denied' and the PI and users on the allocation will receive an email notification.  

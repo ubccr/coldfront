@@ -12,6 +12,10 @@ For details, see the documentation for each plugin below:
 - [iQuota](https://github.com/ubccr/coldfront/tree/master/coldfront/plugins/iquota)
 - [Open OnDemand](https://github.com/ubccr/coldfront/tree/master/coldfront/plugins/ondemand)
 - [Open XDMoD](https://github.com/ubccr/coldfront/tree/master/coldfront/plugins/xdmod)
-- [System Monitor](https://github.com/ubccr/coldfront/tree/master/coldfront/plugins/system_monitor) (example of ways to integrate your own plug-ins)
-- [OpenStack Plugin](https://github.com/nerc-project/coldfront-plugin-openstack)
-- [Keycloak User Search](https://github.com/nerc-project/coldfront-plugin-keycloak)
+- [System Monitor](https://github.com/ubccr/coldfront/tree/master/coldfront/plugins/system_monitor) (example of ways to integrate your own plug-ins)  
+
+Community Supported ColdFront Plugins:  
+
+- [OpenStack Plugin](https://github.com/nerc-project/coldfront-plugin-openstack)  
+- [Keycloak User Search](https://github.com/nerc-project/coldfront-plugin-keycloak)  
+- [Starfish Plugin](https://github.com/fasrc/sftocf)  
