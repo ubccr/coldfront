@@ -123,7 +123,7 @@ class Command(BaseCommand):
             ('confirm_best_practices_label', 'Text'),
             ('gpu_workflow', 'True/False'),
             ('gpu_workflow_label', 'Text'),
-            ('will_exceed_limit', 'Text'),
+            ('will_exceed_limit', 'Yes/No'),
             ('will_exceed_limit_label', 'Text')
         ):
             ResourceAttributeType.objects.get_or_create(
