@@ -5,5 +5,5 @@ nav:
   - upgrading.md
   - plugin.md
   - Deployment: deploy.md
-  - manual
+  - How To: howto
   - API: apidocs

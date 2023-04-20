@@ -288,7 +288,7 @@ To load the above json file we use the Django (ColdFront) `loaddata` command:
 ```coldfront loaddata --format=json allocation-users.json```
 
 Alternatively, if you don't know the allocation IDs in advance you can use the
-[ColdFront Python API](../../apidocs/index.md) to fetch the allocations for a
+[ColdFront Python API](../apidocs/index.md) to fetch the allocations for a
 given project and add users accordingly. Here's a simple example that adds the
 PI user `cgray` to all the allocations for a given project. Create the
 following python file `import-alloc-users.py`:
