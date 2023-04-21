@@ -53,7 +53,7 @@ setup(
         'redis==3.5.3',
         'requests==2.28.2',
         'six==1.16.0',
-        'sqlparse==0.4.2',
+        'sqlparse==0.4.4',
         'text-unidecode==1.3',
         'urllib3==1.26.14',
         'wcwidth==0.2.6',
