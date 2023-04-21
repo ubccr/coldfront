@@ -18,7 +18,6 @@ from django.utils.module_loading import import_string
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.mail import send_email_template
 
-from sesame.utils import get_query_string
 from urllib.parse import urljoin
 
 logger = logging.getLogger(__name__)
@@ -212,13 +211,6 @@ def __email_verification_url(email_address):
     return urljoin(domain, view)
 
 
-def login_token_url(user):
-    """Return a Django Sesame login link for the given User."""
-    domain = import_from_settings('CENTER_BASE_URL')
-    path = reverse('link-login') + get_query_string(user)
-    return urljoin(domain, path)
-
-
 def send_account_activation_email(user):
     """Send an activation email to the given User, who has just created
     an account, providing a link to activate the account."""
@@ -285,50 +277,6 @@ def send_email_verification_email(email_address):
         'PORTAL_NAME': settings.PORTAL_NAME,
         'center_name': import_from_settings('CENTER_NAME', ''),
         'verification_url': __email_verification_url(email_address),
-        'signature': import_from_settings('EMAIL_SIGNATURE', ''),
-    }
-
-    sender = import_from_settings('EMAIL_SENDER')
-    receiver_list = [email_address.email, ]
-
-    send_email_template(subject, template_name, context, sender, receiver_list)
-
-
-def send_login_link_email(email_address):
-    """Send an email containing a login link to the given
-    EmailAddress."""
-    email_enabled = import_from_settings('EMAIL_ENABLED', False)
-    if not email_enabled:
-        return
-
-    subject = 'Login Link'
-    template_name = 'email/login/login_link.txt'
-    context = {
-        'PORTAL_NAME': settings.PORTAL_NAME,
-        'login_url': login_token_url(email_address.user),
-        'login_link_max_age_minutes': (
-            import_from_settings('SESAME_MAX_AGE') // 60),
-        'signature': import_from_settings('EMAIL_SIGNATURE', ''),
-    }
-
-    sender = import_from_settings('EMAIL_SENDER')
-    receiver_list = [email_address.email, ]
-
-    send_email_template(subject, template_name, context, sender, receiver_list)
-
-
-def send_login_link_ineligible_email(email_address, reason):
-    """Send an email containing a reason explaining why the User with
-    the given EmailAddress is ineligible to receive a login link."""
-    email_enabled = import_from_settings('EMAIL_ENABLED', False)
-    if not email_enabled:
-        return
-
-    subject = 'Ineligible for Login Link'
-    template_name = 'email/login/login_link_ineligible.txt'
-    context = {
-        'PORTAL_NAME': settings.PORTAL_NAME,
-        'reason': reason,
         'signature': import_from_settings('EMAIL_SIGNATURE', ''),
     }
 
