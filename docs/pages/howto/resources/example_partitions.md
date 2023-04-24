@@ -1,4 +1,4 @@
-## Cluster Partition Resources
+# Cluster Partition Resources
 
 There may be a time when you want to allow PIs to request allocations for a single partition in a cluster, rather than for the whole cluster.  Many centers provide options for PIs to buy into a condo cluster environment.  This may be where the center provides the equpiment and PIs buy a fraction of it or where PIs purchase equipment and the center manages it.  For this purchase, we have a resource type in ColdFront called 'Cluster Partition'
 

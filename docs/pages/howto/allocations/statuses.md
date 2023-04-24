@@ -4,6 +4,7 @@ Allocations in ColdFront have many status options.  Some tie to ColdFront plugin
 
 #### Active  
 When an allocation is in 'active' status:  
+
 - The FreeIPA plugin syncs the allocation attribute freeipa_group for all allocation users, adding users to the group if they are not already members  
 - The Slurm plugin syncs Slurm attributes with the Slurm database for all allocations users  
 - It's important to point out that unless these plugins are run to properly sync the systems, or the center is using some other mechanism for granting access to a resource, the allocation users' access will not yet be active on the systems, despite this allocation status being 'active'  
@@ -21,6 +22,7 @@ When an allocation is in 'active' status:
 
 #### Expired  
 When an allocation is in 'expired' status:  
+
 - The FreeIPA plugin syncs the allocation attribute freeipa_group for all allocation users, removing users from the group unless they're on another active allocation with the same group membership  
 - The Slurm plugin (slurm_check) syncs Slurm attributes with the Slurm database for all allocations users, removing Slurm associations and accounts if necessary
 - It's important to point out that unless these plugins are run to properly remove access, or the center is using some other mechanism for granting access to a resource, the allocation users' access will still be active on the systems, despite this allocation status being 'expired'  

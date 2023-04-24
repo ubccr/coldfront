@@ -116,6 +116,9 @@ $ source /srv/coldfront/venv/bin/activate
 $ coldfront createsuperuser
 ```
 
+!!! Tip  
+    This command should prompt you to select a username, password, and email address for your super user account.  Set a secure password for use in production.  
+
 ## Deploy static files
 
 This step allows serving all of ColdFront static assets (CSS/JavaScript/Images)

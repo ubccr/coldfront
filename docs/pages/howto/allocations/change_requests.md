@@ -16,13 +16,13 @@ Type "help", "copyright", "credits" or "license" for more information.
 >>> Allocation.objects.all().update(is_changeable=True)
 ```
 
-Once changes are enabled on an allocation, the PI/manager on a project will be permitted to request an extension to the allocation expiration date.  If other allocation attributes are marked "changeable" the manager would also be allowed to request a change in value to those attributes (see below).  
+Once changes are enabled on an allocation, the PI/manager on a project will be permitted to request an extension to the allocation expiration date.  If other allocation attributes are marked "changeable" the PI/manager would also be allowed to request a change in value to those attributes (see below).  
 
 
 
 ## Set attributes to allow changes
 
-Allocation attributes need to be enabled to allow the  PI/manager to request changes to their value.  Administrators won't necessarily want users requesting changes for all allocation attributes.  The primary use case for most centers using allocation changes is to allow users to request changes to storage and CPU quotas.  In the ColdFront (Django) administration console, administrators should navigate to the 'Allocation' section, click on 'Allocation attribute types' and then on the attribute they want to allow changes for.  To enable changes for this attribute type, check the 'Is Changeable' box:  
+Allocation attributes need to be enabled to allow the  PI/manager to request changes to their value.  Administrators won't necessarily want users requesting changes for all allocation attributes.  The primary use case for most centers using allocation changes is to allow users to request changes to storage and CPU quotas.  In the ColdFront Administration Dashboard, administrators should navigate to the 'Allocation' section, click on 'Allocation attribute types' and then on the attribute they want to allow changes for.  To enable changes for this attribute type, check the 'Is Changeable' box:  
 
 ![Allocation Attribute Change](../../images/allocation_attribute_change.PNG)  
 
@@ -30,14 +30,14 @@ This will allow a PI/manager to request changes for that type of attribute on al
 
 ## Requesting allocation changes  
 
-On the Allocation Detail page the project PI or manager can request changes to allocations by clicking the "Request Change" button.  Note that the allocation must be marked 'changeable' and unlocked for this button to appear.  
+On the Allocation Detail page the project PI/manager can request changes to allocations by clicking the "Request Change" button.  Note that the allocation must be marked 'changeable' and unlocked for this button to appear.  
 
 ![Allocation Change Requests](../../images/allocation_change_request6.PNG)
 
  Details about the allocation are displayed and the PI/manager can request a date extension, if desired.  If attributes on this allocation are 'changeable' the requestor will be able to add a new value for the attribute.  A justification for the change is required.  
 ![Allocation Change Requests](../../images/allocation_change_request7.PNG)  
 
-Once submitted, the allocation change request will show as pending on the allocation detail page.  it will also display on the list of Allocation Change Requests for administrators to process.  
+Once submitted, the allocation change request will show as pending on the allocation detail page.  It will also display on the list of Allocation Change Requests for administrators to process.  
 
 ## Viewing allocation changes
 

@@ -6,7 +6,6 @@ from simple_history.models import HistoricalRecords
 
 from coldfront.core.project.models import Project
 
-
 class GrantFundingAgency(TimeStampedModel):
     """ A grant funding agency is an agency that funds projects. Examples include Department of Defense (DoD) and National Aeronautics and Space Administration (NASA).
     
@@ -14,11 +13,18 @@ class GrantFundingAgency(TimeStampedModel):
         name (str): agency name
     """
 
-    name = models.CharField(max_length=255)
+    class GrantFundingAgencyManager(models.Manager):
+        def get_by_natural_key(self, name):
+            return self.get(name=name)
+
+    name = models.CharField(max_length=255, unique=True)
+    objects = GrantFundingAgencyManager()
 
     def __str__(self):
         return self.name
 
+    def natural_key(self):
+        return [self.name]
 
 class GrantStatusChoice(TimeStampedModel):
     """ A grant status choice is an option a user has when setting the status of a grant. Examples include Active, Archived, and Pending.
@@ -26,15 +32,21 @@ class GrantStatusChoice(TimeStampedModel):
     Attributes:
         name (str): status name
     """
+    class Meta:
+        ordering = ('name',)
 
-    name = models.CharField(max_length=64)
+    class GrantStatusManager(models.Manager):
+        def get_by_natural_key(self, name):
+            return self.get(name=name)
+
+    name = models.CharField(max_length=64, unique=True)
+    objects = GrantStatusManager()
 
     def __str__(self):
         return self.name
 
-    class Meta:
-        ordering = ('name',)
-
+    def natural_key(self):
+        return [self.name]
 
 class Grant(TimeStampedModel):
     """ A grant is funding that a PI receives for their project.
