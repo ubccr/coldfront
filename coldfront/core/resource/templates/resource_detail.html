@@ -145,7 +145,7 @@ Resource Detail
             </thead>
             <tbody>
               {% for child in child_resources %}
-                  {% if child.Available and child.Allocatable %}
+                  {% if child.Available %}
                     <tr>
                       <td><a href="{% url 'resource-detail' child.object.pk %}">{{child.object}}</a></td>
                       <td>{{child.WarrantyExpirationDate}}</td>
