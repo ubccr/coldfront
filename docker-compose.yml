@@ -1,12 +1,3 @@
-# Decompoe the stack into microservices running in Docker, orchestrated with Docker Compose.
-# Use cases:
-
-# People with MacBooks with M1 chips aren’t able to use VirtualBox right now, so we need an alternative for them.
-# The group is bringing up an internal Kubernetes cluster. It’d be nice to have multiple staging instances that we can easily bring up so that we can stage multiple branches at the same time.
-# This should be more lightweight/faster than a VM.
-# The deliverable would be a set of Docker images (Postgres, Redis, one to run the web service, etc.) and a Docker Compose file to run them.
-# I’m not exactly sure how Ansible is going to fit into this picture. Maybe Ansible just creates configuration files that get injected into containers. Let me know if you have thoughts on / experience with this.# Docker Compose
-
 services:
   db:
     image: coldfront_db:latest
@@ -16,14 +7,14 @@ services:
     ports:
       - 5432:5432
     environment:
-      POSTGRES_DB: cf_brc_db
+      POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: root
       LOAD_DUMP: true
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "admin", "-d", "cf_brc_db"]
+      test: ["CMD", "pg_isready", "-U", "admin", "-d", "${DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 5

@@ -209,11 +209,12 @@ multiple files or directories to omit.
 
 ## Docker - Quick Install (Recommend)
 1. Generate configuration (`dev_settings.py`): have Python with the `jinja2` and `pyyaml` libraries installed, and then run `bootstrap/development/gen_config.sh`
-2. Build Images: In the base directory, run `docker build . -t coldfront` and `docker build . -f Dockerfile.db -t coldfront_db`
-3. To run: In the base directory, run `docker compose up`
-4. To enter the coldfront container (similar to `vagrant ssh`): run `docker exec -it coldfront-coldfront-1 bash`
-5. To load a database backup: run `bootstrap/development/docker_load_database_backup.sh ${DB_NAME} ${PATH_TO_DUMP}`
-6. To start from scratch (delete volumes): In the base directory, run `docker compose down --volumes`
+2. Build Images: In the base directory, run `docker build . -t coldfront` and `docker build . -f Dockerfile.db -t coldfront_db`. `--build-arg PORTAL=mylrc` can be added to the build command to build for mylrc.
+3. If needed, modify `.env` to customize the web server port and the database name (e.g from `cf_mybrc_db` to `cf_mylrc_db`)
+4. To run: In the base directory, run `docker compose up`
+5. To enter the coldfront container (similar to `vagrant ssh`): run `docker exec -it coldfront-coldfront-1 bash`
+6. To load a database backup: run `bootstrap/development/docker_load_database_backup.sh ${DB_NAME} ${PATH_TO_DUMP}`
+7. To start from scratch (delete volumes): In the base directory, run `docker compose down --volumes`
 
 ## Local Machine - Quick Install (Not Recommended)
 
