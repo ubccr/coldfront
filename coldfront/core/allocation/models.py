@@ -13,13 +13,14 @@ from django.utils.module_loading import import_string
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
-from coldfront.core.project.models import (Project,
-                                           ProjectUser,
-                                           ProjectPermission)
+from coldfront.config.env import ENV
+from coldfront.core import attribute_expansion
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import import_from_settings
-from coldfront.core import attribute_expansion
-from coldfront.core.utils.fasrc import get_resource_rate
+from coldfront.core.project.models import Project, ProjectPermission
+
+if ENV.bool('PLUGIN_IFX', default=False):
+    from coldfront.core.utils.fasrc import get_resource_rate
 
 
 logger = logging.getLogger(__name__)

@@ -7,12 +7,14 @@ from functools import reduce
 from datetime import datetime
 
 import pandas as pd
-from ifxbilling.models import Product
 from django.db.models import Q
 from django.contrib.auth import get_user_model
 
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
+from coldfront.config.env import ENV
+
+from ifxbilling.models import Product
 
 MISSING_DATA_DIR = './local_data/missing/'
 

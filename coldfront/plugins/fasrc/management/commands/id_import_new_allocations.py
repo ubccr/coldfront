@@ -1,6 +1,4 @@
 '''
-Add allocations specified in local_data/ready_to_add/add_allocations.csv.
-
 Check allocations against ATT and SF data both to validate and to automatically
 add quota, usage, and users.
 '''
@@ -9,25 +7,24 @@ import logging
 from datetime import datetime
 
 import pandas as pd
-from django.conf import settings
-from django.core.exceptions import ValidationError, MultipleObjectsReturned
+from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand
 
-from coldfront.core.allocation.models import (Allocation,
-                                            AllocationUser,
+from coldfront.core.project.models import ProjectStatusChoice
+from coldfront.core.allocation.models import (AllocationUser,
                                             AllocationAttribute,
                                             AllocationAttributeType,
                                             AllocationStatusChoice,
                                             AllocationUserStatusChoice)
-from coldfront.core.utils.fasrc import update_csv, select_one_project_allocation
+from coldfront.core.utils.fasrc import update_csv, select_one_project_allocation, save_json
 from coldfront.core.resource.models import Resource
-from coldfront.plugins.sftocf.utils import StarFishRedash, STARFISH_SERVER
-from coldfront.plugins.fasrc.utils import (pull_sf_push_cf_redash,
-                                            AllTheThingsConn,
-                                            read_json)
+from coldfront.plugins.sftocf.utils import (StarFishRedash,
+                                            STARFISH_SERVER,
+                                            pull_sf_push_cf_redash)
+from coldfront.plugins.fasrc.utils import (AllTheThingsConn,
+                            match_entries_with_projects, push_quota_data)
 
-logger = logging.getLogger()
-
+logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
 
@@ -40,10 +37,18 @@ class Command(BaseCommand):
                 'allocations_existing': [],
                 'missing_projects': [],
                 }
+        # connect and pull quota data
         attconn = AllTheThingsConn()
-        result_file = attconn.pull_quota_data()
-        result_json = read_json(result_file)
-        result_json_cleaned, proj_models = attconn.match_entries_with_projects(result_json)
+        # query includes filters
+        result_json = attconn.pull_quota_data()
+        result_json = attconn.format_query_results(result_json)
+        resp_json_by_lab = {entry['lab']:[] for entry in result_json}
+        [resp_json_by_lab[e['lab']].append(e) for e in result_json]
+        result_file = 'local_data/att_quota_data.json'
+        save_json(result_file, resp_json_by_lab)
+
+        # Remove allocations for labs not in Coldfront, add those labs to a list
+        result_json_cleaned, proj_models = match_entries_with_projects(resp_json_by_lab)
 
         redash_api = StarFishRedash(STARFISH_SERVER)
         allocation_usages = redash_api.get_usage_stats(query='subdirectory')
@@ -51,6 +56,8 @@ class Command(BaseCommand):
 
         for lab, allocations in result_json_cleaned.items():
             project = proj_models.get(title=lab)
+            if project.status.name == 'New':
+                project.status = ProjectStatusChoice.objects.get(name='Active')
             for entry in allocations:
                 lab_name = entry['lab']
                 lab_server = entry['server']
@@ -109,7 +116,7 @@ class Command(BaseCommand):
                     print('PI added: ' + project.pi.username)
         if not added_allocations_df.empty:
             added_allocations_df['billing_code'] = None
-            update_csv(added_allocations_df, './local_data/', 'added_allocations.csv')
-        attconn.push_quota_data(result_file)
+            update_csv(added_allocations_df.to_json(orient='records'), './local_data/', 'added_allocations.csv')
+        push_quota_data(result_file)
         pull_sf_push_cf_redash()
         return json.dumps(command_report, indent=2)

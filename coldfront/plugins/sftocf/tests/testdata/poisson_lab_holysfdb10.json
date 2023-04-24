@@ -24,7 +24,7 @@
     ],
     "date": "20220222",
     "path": "",
-    "server": "holysfdb10",
+    "project": "poisson_lab",
     "tier": "tier1",
-    "volume": "holy-isilon"
+    "volume": "holylfs10"
 }

@@ -15,6 +15,7 @@ MESSAGE_TAGS = {
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {},
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
@@ -28,6 +29,7 @@ LOGGING = {
         #     'filename': '/tmp/debug.log',
         # },
     },
+    'formatters': {},
     'loggers': {
         'django_auth_ldap': {
             'level': 'INFO',
@@ -41,10 +43,6 @@ LOGGING = {
         'django-q': {
             'handlers': ['django-q'],
             'level': 'DEBUG',
-        },
-        '': {
-            'handlers': ['console'],
-            'level': 'INFO',
         },
         'ifx': {
             'handlers': ['console'],

@@ -28,8 +28,13 @@ def add_project_user_status_choices(apps, schema_editor):
         ProjectUserStatusChoice.objects.get_or_create(name=choice)
 
 def generate_usage_history_graph(project):
-    '''Create a billing record graph for a project.
+    '''Create a Project billing record graph.
 
+    Returns
+    -------
+    data : dict
+        contains
+        columns : list
     '''
     current_year = date.today().year
     previous_year = current_year - 1
@@ -39,6 +44,7 @@ def generate_usage_history_graph(project):
     year_months = [(previous_year, month) for month in range(current_month, 13)] + [(current_year, month) for month in range(1, current_month+1)]
     allocations = project.allocation_set.all()
     columns = []
+    projection = False
     for allocation in allocations:
         allocation_res = allocation.get_parent_resource.name
         allocation_billing_records = BillingRecord.objects.filter(
@@ -55,6 +61,8 @@ def generate_usage_history_graph(project):
             if year == current_year and month == current_month and ym_records.count() == 0:
                 projection = True
                 ym_cost = allocation.cost
+            elif ym_records.count() == 0:
+                ym_cost = 0
             else:
                 ym_cost = float(sum(r.decimal_charge for r in ym_records))
 

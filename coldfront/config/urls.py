@@ -44,3 +44,6 @@ if 'django_su.backends.SuBackend' in settings.AUTHENTICATION_BACKENDS:
 
 if 'coldfront.plugins.ifx' in settings.INSTALLED_APPS:
     urlpatterns.append(path('ifx/', include('coldfront.plugins.ifx.urls')))
+
+if 'coldfront.plugins.fasrc_monitoring' in settings.INSTALLED_APPS:
+    urlpatterns.append(path('', include('coldfront.plugins.fasrc_monitoring.urls')))

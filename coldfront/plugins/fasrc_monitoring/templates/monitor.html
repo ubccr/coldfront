@@ -1,0 +1,126 @@
+{% extends "common/base.html" %}
+{% load common_tags %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Monitor
+{% endblock %}
+
+
+{% block content %}
+
+<div class="html2pdf__page-break"></div>
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="d-inline"><i class="fas fa-star" aria-hidden="true"></i> Starfish Volume Updates</h3>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+        <table id="invoice_table" class="table table-hover">
+        <thead>
+          <tr>
+            <th scope="col">Volume</th>
+            <th scope="col">State</th>
+            <th scope="col">Creation Time</th>
+            <th scope="col">Completion Time</th>
+            <th scope="col">Duration</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for scan in scan_data %}
+          <tr style="background-color:#FFFFFF">
+            <td>{{ scan.volume }}</td>
+            <td>{{ scan.state }}</td>
+            <td>{{ scan.creation_time_hum }}</td>
+            <td>{{ scan.end_hum }}</td>
+            <td>{{ scan.duration_hum }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+
+<div class="html2pdf__page-break"></div>
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="d-inline"><i class="fas fa-question" aria-hidden="true"></i> UI Errors (As of date {{ page_issues_dt }})</h3>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+        <table id="invoice_table" class="table table-hover">
+        <thead>
+          <tr>
+            <th scope="col">Type</th>
+            <th scope="col">Name</th>
+            <th scope="col">URL</th>
+            <th scope="col">Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for issue in page_issues %}
+          <tr style="background-color:#FFFFFF">
+            <td>{{ issue.type }}</td>
+            <td>{{ issue.name }}</td>
+            <td><a href="{{ issue.url }}">{{ issue.url }}</a></td>
+            <td>{{ issue.detail }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+
+
+<div class="html2pdf__page-break"></div>
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="d-inline"><i class="fas fa-database" aria-hidden="true"></i> Database Checks</h3>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+        <table id="invoice_table" class="table table-hover">
+        <thead>
+          <tr>
+            <th scope="col">Object</th>
+            <th scope="col">Detail Page</th>
+            <th scope="col">Issue</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for project in pi_not_projectuser %}
+          <tr style="background-color:#FFFFFF">
+            <td>{{ project }}</td>
+            <td><a href="{% url 'project-detail' project.pk %}">project/{{ project.pk }}/</td>
+            <td>pi_not_projectuser</td>
+          </tr>
+          {% endfor %}
+          {% for allocation in allocation_not_changeable %}
+          <tr style="background-color:#FFFFFF">
+            <td>{{ allocation }}</td>
+            <td><a href="{% url 'allocation-detail' allocation.pk %}">allocation/{{ allocation.pk }}/</td>
+            <td>allocation_not_changeable</td>
+          </tr>
+          {% endfor %}
+          {% for allocation in multiple_allocation_resources %}
+          <tr style="background-color:#FFFFFF">
+            <td>{{ allocation }}</td>
+            <td><a href="{% url 'allocation-detail' allocation.pk %}">allocation/{{ allocation.pk }}/</td>
+            <td>multiple_allocation_resources</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

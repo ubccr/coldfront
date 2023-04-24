@@ -52,7 +52,7 @@ jobs:
         isort .
         isort --check --diff .
     - name: Create .env file
-      run: echo -e "NEO4JP=${{ secrets.NEO4JP }}\nSFUSER=${{ secrets.SFUSER }}\nSFPASS=${{ secrets.SFPASS }} > .env"
+      run: echo -e "NEO4JP=${{ secrets.NEO4JP }}\nSFUSER=${{ secrets.SFUSER }}\nSFPASS=${{ secrets.SFPASS }}\nPLUGIN_FASRC=True" > .env
     - name: Build the images and start the containers
       run: |
         export GITHUB_WORKFLOW=True
@@ -60,9 +60,14 @@ jobs:
         export COMPOSE_DOCKER_CLI_BUILD=1
         export DOCKER_BUILDKIT=1
         make build
-        docker run -d --rm --name coldfront -v `pwd`:/usr/src/app -e PLUGIN_IFX=True -e NEO4JP=${{ secrets.NEO4JP }} -e PLUGIN_FASRC=True -p 9000:80 coldfront
+        docker run -d --rm --name coldfront -v `pwd`:/usr/src/app -e PLUGIN_SFTOCF=True -e PLUGIN_IFX=True -e NEO4JP=${{ secrets.NEO4JP }} -e PLUGIN_FASRC=True -e PLUGIN_LDAP=True -e AUTH_LDAP_SERVER_URI=${{ secrets.AUTH_LDAP_SERVER_URI }} -e AUTH_LDAP_BIND_DN=${{ secrets.AUTH_LDAP_BIND_DN }} -e AUTH_LDAP_BIND_PASSWORD=${{ secrets.AUTH_LDAP_BIND_PASSWORD }} -e AUTH_LDAP_GROUP_SEARCH_BASE=${{ secrets.AUTH_LDAP_GROUP_SEARCH_BASE }} -e AUTH_LDAP_USER_SEARCH_BASE=${{ secrets.AUTH_LDAP_USER_SEARCH_BASE }} -p 9000:80 coldfront
       env:
         SSH_AUTH_SOCK: /tmp/ssh_agent.sock
     - name: Run Tests
       run: |
-        docker exec coldfront ./manage.py test
+        docker exec coldfront ./manage.py test --exclude-tag=net
+    # - name: change env variables
+    #   run: docker exec coldfront export
+    # - name: Run Tests
+    #   run: |
+    #     docker exec coldfront ./manage.py test

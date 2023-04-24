@@ -130,6 +130,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'django_settings_export.settings_export',
                 'django.template.context_processors.request',
+                'coldfront.config.context_processors.export_vars',
             ],
             'libraries': {
                 'rest_framework': 'rest_framework.templatetags.rest_framework',
