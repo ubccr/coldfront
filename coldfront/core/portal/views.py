@@ -71,7 +71,7 @@ def home(request):
         ).distinct().order_by('-created')[:5]
 
         allocation_list = Allocation.objects.filter(
-            Q(status__name__in=['Active', 'New', 'Renewal Requested', ]) &
+            Q(status__name__in=['Active', 'New', 'Renewal Requested', 'Billing Information Submitted']) &
             Q(project__status__name__in=['Active', 'New', 'Review Pending', 'Expired']) &
             Q(project__projectuser__user=request.user) &
             Q(project__projectuser__status__name__in=['Active', ]) &
