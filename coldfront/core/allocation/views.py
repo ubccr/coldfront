@@ -1483,6 +1483,10 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         if allocation_obj.project.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
             return True
 
+        review_groups = allocation_obj.get_parent_resource.review_groups.all()
+        if not set(self.request.user.groups.all()).isdisjoint(set(review_groups)):
+            return True
+
         messages.error(
             self.request, 'You do not have permission to add users to the allocation.')
 
@@ -1707,6 +1711,10 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
             return True
 
         if allocation_obj.project.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+            return True
+        
+        review_groups = allocation_obj.get_parent_resource.review_groups.all()
+        if not set(self.request.user.groups.all()).isdisjoint(set(review_groups)):
             return True
 
         messages.error(
