@@ -152,7 +152,10 @@ def send_expiry_emails():
 
     expring_in_days = datetime.datetime.today() + datetime.timedelta(days=-1)
 
-    for allocation_obj in Allocation.objects.filter(end_date=expring_in_days, project__requires_review=True):
+    for allocation_obj in Allocation.objects.filter(
+        end_date=expring_in_days,
+        status__name__in=['Active', ],
+        project__requires_review=True):
 
         expire_notification = allocation_obj.allocationattribute_set.filter(
             allocation_attribute_type__name='EXPIRE NOTIFICATION').first()
