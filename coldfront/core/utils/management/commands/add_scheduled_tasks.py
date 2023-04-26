@@ -24,13 +24,23 @@ class Command(BaseCommand):
 
         # if plugins are installed, add their tasks
         kwargs = {  "repeats":-1, }
-        plugins = ['fasrc', 'sftocf']
-        if all(f'coldfront.plugins.{plugin}' in settings.INSTALLED_APPS for plugin in plugins):
-            scheduled = [task.func for task in Schedule.objects.all()]
-            for func in ('coldfront.plugins.sftocf.tasks.pull_sf_push_cf_redash',
-                        'coldfront.plugins.fasrc.tasks.import_quotas'):
-                if func not in scheduled:
-                    schedule(func,
-                        next_run=date,
-                        schedule_type=Schedule.DAILY,
-                        **kwargs)
+        plugins_tasks = {'fasrc': [
+                            'import_quotas',
+                            'id_import_allocations'
+                            ],
+                         'sftocf': ['pull_sf_push_cf_redash'],
+                         'ldap': [
+                            'update_group_membership_ldap',
+                            'id_add_projects'
+                            ],
+                         }
+        scheduled = [task.func for task in Schedule.objects.all()]
+
+        for plugin, tasks in plugins_tasks.items():
+            if f'coldfront.plugins.{plugin}' in settings.INSTALLED_APPS:
+                for task in tasks:
+                    if f'coldfront.plugins.{plugin}.tasks.{task}' not in scheduled:
+                        schedule(f'coldfront.plugins.{plugin}.tasks.{task}',
+                            next_run=date,
+                            schedule_type=Schedule.DAILY,
+                            **kwargs)

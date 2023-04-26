@@ -7,7 +7,7 @@ INSTALLED_APPS += [ 'coldfront.plugins.sftocf' ]
 
 SFUSER = ENV.str('SFUSER')
 SFPASS = ENV.str('SFPASS')
-STARFISH_SERVER = "holysfdb01"
+STARFISH_SERVER = 'starfish'
 
 
 LOGGING['formatters']['sftocf'] = {

@@ -218,6 +218,17 @@
     }
   },
   {
+    "model": "allocation.allocationattribute",
+    "pk": 11,
+    "fields": {
+      "created": "2021-07-23T18:05:15.731Z",
+      "modified": "2022-02-09T22:02:38.321Z",
+      "allocation_attribute_type": 8,
+      "allocation": 1,
+      "value": "C/LABS/poisson_lab"
+    }
+  },
+  {
     "model": "allocation.allocationattributeusage",
     "pk": 1,
     "fields": {

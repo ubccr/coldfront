@@ -51,13 +51,14 @@ class Command(BaseCommand):
         result_json_cleaned, proj_models = match_entries_with_projects(resp_json_by_lab)
 
         redash_api = StarFishRedash(STARFISH_SERVER)
-        allocation_usages = redash_api.get_usage_stats(query='subdirectory')
+        allocation_usages = redash_api.return_query_results(query='subdirectory')
         subdir_type = AllocationAttributeType.objects.get(name="Subdirectory")
 
         for lab, allocations in result_json_cleaned.items():
             project = proj_models.get(title=lab)
             if project.status.name == 'New':
                 project.status = ProjectStatusChoice.objects.get(name='Active')
+                project.save()
             for entry in allocations:
                 lab_name = entry['lab']
                 lab_server = entry['server']
@@ -67,7 +68,8 @@ class Command(BaseCommand):
                 alloc_obj = select_one_project_allocation(project, resource, dirpath=entry['fs_path'])
                 if alloc_obj is not None:
                     continue
-                lab_usage_entries = [i for i in allocation_usages if i['vol_name'] == lab_server and lab_path in i['path'] and i['group_name'] == lab_name]
+                lab_usage_entries = [i for i in allocation_usages if i['vol_name'] == lab_server
+                            and lab_path in i['path'] and i['group_name'] == lab_name]
                 if not lab_usage_entries:
                     continue
 
@@ -116,7 +118,7 @@ class Command(BaseCommand):
                     print('PI added: ' + project.pi.username)
         if not added_allocations_df.empty:
             added_allocations_df['billing_code'] = None
-            update_csv(added_allocations_df.to_json(orient='records'), './local_data/', 'added_allocations.csv')
+            update_csv(added_allocations_df.to_dict(orient='records'), './local_data/', 'added_allocations.csv')
         push_quota_data(result_file)
         pull_sf_push_cf_redash()
         return json.dumps(command_report, indent=2)

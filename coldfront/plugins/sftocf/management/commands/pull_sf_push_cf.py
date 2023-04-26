@@ -1,8 +1,10 @@
+import os
 import logging
 
 from django.core.management.base import BaseCommand
-from coldfront.plugins.sftocf.utils import pull_sf, push_cf
 
+from coldfront.core.utils.fasrc import read_json
+from coldfront.plugins.sftocf.utils import pull_sf, push_cf
 
 logger = logging.getLogger(__name__)
 
@@ -29,4 +31,9 @@ class Command(BaseCommand):
         volume = volume = kwargs['volume']
         clean = clean = kwargs['clean']
         filepaths = pull_sf(volume=volume)
-        push_cf(filepaths, clean)
+        for f in filepaths:
+            content = read_json(f)
+            errors = push_cf(content)
+            if not errors and clean:
+                os.remove(f)
+        logger.debug('push_cf complete')

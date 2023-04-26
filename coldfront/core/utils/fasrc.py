@@ -16,8 +16,31 @@ from coldfront.config.env import ENV
 
 from ifxbilling.models import Product
 
+from ifxbilling.models import Product
+
 MISSING_DATA_DIR = './local_data/missing/'
 
+
+def sort_by(list1, sorter, how='attr'):
+    '''split one list into two on basis of each item's ability to meet a condition
+    Parameters
+    ----------
+    list1 : list
+        list of objects to be sorted
+    sorter : attribute or function
+        attribute or function to be used to sort the list
+    how : str
+        type of sorter ('attr' or 'condition')
+    '''
+    is_true, is_false = [], []
+    for x in list1:
+        if how == 'attr':
+            (is_false, is_true)[getattr(x, sorter)].append(x)
+        elif how == 'condition':
+            (is_false, is_true)[sorter(x)].append(x)
+        else:
+            raise Exception('unclear sorting method')
+    return is_true, is_false
 
 def select_one_project_allocation(project_obj, resource_obj, dirpath=None):
     '''
@@ -151,6 +174,18 @@ def log_missing(modelname, missing):
             for allocations, "resource_name", "project_title", and "path".
     '''
     update_csv(missing, MISSING_DATA_DIR, f'missing_{modelname}s.csv')
+
+def slate_for_check(log_entries):
+    '''Add an issue encountered during runtime to a CSV for administrative review.
+
+    Parameters
+    ----------
+    log_entries : list of dicts
+        keys should be "error" (description of issue encountered),
+        "program" (where encountered), "urls" (url(s) to related object detail
+        pages), "detail" (exc_info, if necessary)
+    '''
+    update_csv(log_entries, 'local_data/', 'program_error_checks.csv')
 
 def update_csv(new_entries, dirpath, csv_name, date_update='date'):
     '''Add or update entries in CSV, order CSV by descending date and save.

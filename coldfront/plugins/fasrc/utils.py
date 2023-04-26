@@ -105,7 +105,7 @@ class QuotaDataPuller:
     def _standardize_nesefile(self):
         datafile = 'nese_data/pools'
         header_file = 'nese_data/pools.header'
-        translator = dict((kv.split('=') for kv in (l.strip('\n') for l in open('nese_data/group_key'))))
+        translator = dict((kv.split('=') for kv in (l.strip('\n') for l in open('nese_data/groupkey'))))
         headers_df = pd.read_csv(header_file, header=0, delim_whitespace=True)
         headers = headers_df.columns.values.tolist()
         data = pd.read_csv(datafile, names=headers, delim_whitespace=True)
@@ -121,8 +121,8 @@ class QuotaDataPuller:
         data['tb_usage'] = data['mib_used'] / 953674.3164
         data['fs_path'] = None
         data = data[['lab', 'server', 'storage_type', 'byte_allocation', 'byte_usage', 'tb_allocation', 'tb_usage', 'fs_path']]
-        nesejson = data.to_json(orient='records')
-        return json.loads(nesejson)
+        nesedict = data.to_dict(orient='records')
+        return nesedict
 
 
 

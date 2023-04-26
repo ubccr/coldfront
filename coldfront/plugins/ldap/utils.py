@@ -12,7 +12,8 @@ from ldap3 import Connection, Server, ALL_ATTRIBUTES
 
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.field_of_science.models import FieldOfScience
-from coldfront.core.utils.fasrc import id_present_missing_users, log_missing
+from coldfront.core.utils.fasrc import (id_present_missing_users,
+                                        log_missing, slate_for_check, sort_by)
 from coldfront.core.project.models import ( Project,
                                             ProjectStatusChoice,
                                             ProjectUserRoleChoice,
@@ -103,6 +104,19 @@ class LDAPConn:
             group_entries = [e.entry_attributes_as_dict for e in group_entries]
         return group_entries
 
+    def return_multi_group_members_manager(self, samaccountname_list):
+        '''return tuples of user and PI entries for each group listed in samaccountname_list
+        '''
+        group_entries = self.search_groups(
+                    {'sAMAccountName': samaccountname_list},
+                    attributes=['managedBy', 'distinguishedName',
+                                'sAMAccountName', 'member']
+                                )
+        manager_members_tuples = []
+        for entry in group_entries:
+            manager_members_tuples.append(self.manager_members_from_group(entry))
+        return manager_members_tuples
+
     def return_group_members_manager(self, samaccountname):
         '''return user entries that are members of the specified group.
 
@@ -122,6 +136,9 @@ class LDAPConn:
         if not group_entries:
             return 'no matching groups found'
         group_entry = group_entries[0]
+        return self.manager_members_from_group(group_entry)
+
+    def manager_members_from_group(self, group_entry):
         group_dn = group_entry['distinguishedName'][0]
         user_attr_list = ['sAMAccountName', 'cn', 'name', 'title', 'department',
             'distinguishedName', 'accountExpires', 'info', 'userAccountControl'
@@ -139,6 +156,7 @@ class LDAPConn:
         if not group_manager:
             return 'no ADUser manager found'
         return (group_members, group_manager[0])
+
 
 def user_valid(user):
     return user['accountExpires'][0] > timezone.now() and user['userAccountControl'][0] in [512, 66048]
@@ -225,27 +243,6 @@ def uniques_and_intersection(list1, list2):
 def is_string(value):
     return isinstance(value, str)
 
-def sort_by(list1, sorter, how='attr'):
-    '''split one list into two on basis of each item's ability to meet a condition
-    Parameters
-    ----------
-    list1 : list
-        list of objects to be sorted
-    sorter : attribute or function
-        attribute or function to be used to sort the list
-    how : str
-        type of sorter ('attr' or 'condition')
-    '''
-    is_true, is_false = [], []
-    for x in list1:
-        if how == 'attr':
-            (is_false, is_true)[getattr(x, sorter)].append(x)
-        elif how == 'condition':
-            (is_false, is_true)[sorter(x)].append(x)
-        else:
-            raise Exception('unclear sorting method')
-    return is_true, is_false
-
 def sort_dict_on_conditional(dict1, condition):
     '''split one dictionary into two on basis of value's ability to meet a condition
     '''
@@ -293,10 +290,18 @@ def collect_update_project_status_membership():
 
     active_pi_groups, inactive_pi_groups = remove_inactive_disabled_managers(groupusercollections)
     projects_to_deactivate = [g.project for g in inactive_pi_groups]
-    projects_to_deactivate.update(status=ProjectStatusChoice.objects.get(name='Inactive'))
-    pis_to_deactivate = [ProjectUser.objects.get(project=project, user=project.pi)
-                                        for project in projects_to_deactivate]
-    pis_to_deactivate.update(status=ProjectUserStatusChoice.objects.get(name='Removed'))
+    Project.objects.bulk_update([Project(id=p.pk, status=ProjectStatusChoice.objects.get(name='Inactive'))
+                                    for p in projects_to_deactivate], ['status'])
+    logger.debug('projects_to_deactivate %s', projects_to_deactivate)
+    if projects_to_deactivate:
+        pis_to_deactivate = ProjectUser.objects.filter(
+            reduce(operator.or_,
+                (  Q(project=project) & Q(user=project.pi)
+                    for project in projects_to_deactivate)
+            ))
+        logger.debug('pis_to_deactivate %s', pis_to_deactivate)
+        pis_to_deactivate.update(status=ProjectUserStatusChoice.objects.get(name='Removed'))
+        logger.info('deactivated projects and pis: %s', [(pi.project.title, pi.user.username) for pi in pis_to_deactivate])
 
     ### identify PIs with incorrect roles and change their status ###
     projectuser_role_manager = ProjectUserRoleChoice.objects.get(name='Manager')
@@ -433,8 +438,14 @@ def add_new_projects(groupusercollections, errortracker):
                 logger.info('added new field_of_science: %s', field_of_science_name)
         else:
             errortracker['no_fos'].append(group.name)
-            logger.warning('no department for PI of project %s', group.name)
-            print(f'HALTING: no field of science for PI of project {group.name}')
+            message = f'no department for AD group {group.name}, will not add unless fixed'
+            logger.warning(message)
+            print(f'HALTING: {message}')
+            issue = {'error': message,
+                     'program': 'ldap.utils.add_new_projects',
+                     'url': 'NA; AD issue'
+                    }
+            slate_for_check([issue])
             print(group.pi)
             continue
 

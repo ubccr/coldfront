@@ -1,5 +1,6 @@
-import os
 import re
+from operator import itemgetter
+from itertools import groupby
 import time
 import logging
 from pathlib import Path
@@ -13,6 +14,7 @@ from coldfront.core.utils.fasrc import (determine_size_fmt,
                                         locate_or_create_dirpath,
                                         read_json,
                                         save_json,
+                                        slate_for_check,
                                         select_one_project_allocation,
                                         id_present_missing_users,
                                         log_missing)
@@ -20,6 +22,8 @@ from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
 from coldfront.core.allocation.models import (Allocation,
                                             AllocationUser,
+                                            AllocationAttribute,
+                                            AllocationAttributeUsage,
                                             AllocationAttributeType,
                                             AllocationUserStatusChoice)
 
@@ -201,7 +205,7 @@ class StarFishRedash:
         return result
 
 
-    def get_usage_stats(self, query='path_usage_query', volumes=None):
+    def return_query_results(self, query='path_usage_query', volumes=None):
         '''
         '''
         result = self.submit_query(query)
@@ -209,7 +213,7 @@ class StarFishRedash:
         if result['query_result']:
             data = result['query_result']['data']['rows']
         else:
-            print("no query_result value found:\n", result)
+            print('no query_result value found:\n', result)
         if volumes:
             data = [d for d in data if d['vol_name'] in volumes]
 
@@ -226,6 +230,7 @@ class AsyncQuery:
 
     @record_process
     def post_async_query(self, query, group_by, volpath, q_format='parent_path +rec_aggrs'):
+        '''Post an async query to the Starfish API.'''
         query_url = self.api_url + 'async/query/'
 
         params = {
@@ -280,14 +285,11 @@ def produce_lab_dict(vol):
         'lab_name': [('volume', 'tier'),('volume', 'tier')]
     '''
     pr_objs = Allocation.objects.only('id', 'project')
-    pr_dict = {}
+    pr_dict = {alloc.project.title: [] for alloc in pr_objs}
     for alloc in pr_objs:
         proj_name = alloc.project.title
         resource_list = alloc.get_resources_as_string.split(', ')
-        if proj_name not in pr_dict:
-            pr_dict[proj_name] = resource_list
-        else:
-            pr_dict[proj_name].extend(resource_list)
+        pr_dict[proj_name].extend(resource_list)
     lr = pr_dict if not vol else {p:[i for i in r if vol in i] for p, r in pr_dict.items()}
     labs_resources = {p:[tuple(rs.split('/')) for rs in r] for p, r in lr.items()}
     return labs_resources
@@ -357,52 +359,52 @@ def pull_sf(volume=None):
     return set(filepaths)
 
 
-def push_cf(filepaths, clean):
-    for f in filepaths:
-        errors = False
-        content = read_json(f)
-        usernames = [d['username'] for d in content['contents']]
-        resource = content['volume'] + '/' + content['tier']
+def push_cf(content):
+    updated_allocationusers = []
+    usernames = [d['username'] for d in content['contents']]
+    resource = content['volume'] + '/' + content['tier']
 
-        user_models, missing_usernames = id_present_missing_users(usernames)
-        log_missing('user', missing_usernames)
+    user_models, missing_usernames = id_present_missing_users(usernames)
+    log_missing('user', missing_usernames)
 
-        project = Project.objects.get(title=content['project'])
-        # find project allocation
-        resource_obj = Resource.objects.get(name__contains=resource)
-        allocation = select_one_project_allocation(project, resource_obj)
-        logger.debug('%s\n usernames: %s\n user_models: %s',
-                project.title, usernames, [u.username for u in user_models])
+    project = Project.objects.get(title=content['project'])
+    # find project allocation
+    resource_obj = Resource.objects.get(name__contains=resource)
+    allocation = select_one_project_allocation(project, resource_obj)
+    logger.debug('%s\n usernames: %s\n user_models: %s',
+            project.title, usernames, [u.username for u in user_models])
+    errors = False
+    for user in user_models:
+        userdict = next(d for d in content['contents'] if d['username'] == user.username)
+        model = user_models.get(username=userdict['username'])
+        try:
+            usage_bytes = userdict['size_sum']
+            usage, unit = split_num_string(userdict['size_sum_hum'])
+            au = update_user_usage(model, usage_bytes, usage, unit, allocation)
+            updated_allocationusers.append(au)
+        except Exception as e:
+            logger.warning('EXCEPTION FOR ENTRY: %s', e, exc_info=True)
+            errors = True
+    AllocationUser.objects.bulk_update(updated_allocationusers, ['usage_bytes', 'usage', 'unit'])
+    return errors
 
-        for user in user_models:
-            userdict = next(d for d in content['contents'] if d['username'] == user.username)
-            model = user_models.get(username=userdict['username'])
-            try:
-                update_user_usage(model, userdict, allocation)
-            except Exception as e:
-                logger.warning('EXCEPTION FOR ENTRY: %s', e, exc_info=True)
-                errors = True
-        if not errors and clean:
-            os.remove(f)
-    logger.debug('push_cf complete')
 
-
-def update_user_usage(user, userdict, allocation):
-    usage, unit = split_num_string(userdict['size_sum_hum'])
-    logger.debug('entering for user: %s', user.username)
+def update_user_usage(user, usage_bytes, usage, unit, allocation):
+    '''get or create an allocationuser object with updated usage values
+    '''
     allocationuser, created = allocation.allocationuser_set.get_or_create(
             user=user,
             defaults={
-                "created": timezone.now(),
-                "status": AllocationUserStatusChoice.objects.get(name='Active')
+                'created': timezone.now(),
+                'status': AllocationUserStatusChoice.objects.get(name='Active')
                 }
             )
     if created:
         logger.info('allocation user %s created', allocationuser)
-    allocationuser.usage_bytes = userdict['size_sum']
+    allocationuser.usage_bytes = usage_bytes
     allocationuser.usage = usage
     allocationuser.unit = unit
-    allocationuser.save()
+    return allocationuser
 
 
 def split_num_string(x):
@@ -480,7 +482,7 @@ def clean_dirs_data(data):
     for user in users:
         user_dirs = [d for d in data if d['username'] == user]
         allpaths = [Path(d['full_path']) for d in user_dirs]
-        # user_entry = {"groupname":user_dirs[0]['groupname'], "username":user, "size_sum":0}
+        # user_entry = {'groupname':user_dirs[0]['groupname'], 'username':user, 'size_sum':0}
         for dir_dict in user_dirs:
             path = Path(dir_dict['full_path'])
             if any(p in path.parents for p in allpaths):# or dir_dict['size_sum'] == 0:
@@ -492,7 +494,7 @@ def clean_dirs_data(data):
     allpaths = [Path(d['full_path']) for d in data2]
     for dir_dict in data2:
         if any(p in path.parents for p in allpaths):
-            print("nested:", dir_dict)
+            print('nested:', dir_dict)
     return data2
 
 def generate_headers(token):
@@ -509,34 +511,128 @@ def zero_out_absent_allocationusers(redash_usernames, allocation):
     Find AllocationUsers that aren't in the StarfishRedash usage
     stats and change their usage to 0.
     '''
-    allocationusers = allocation.allocationuser_set.all()
-    allocationusers_not_in_redash = allocationusers.exclude(user__username__in=redash_usernames)
+    allocationusers_not_in_redash = allocation.allocationuser_set.exclude(
+                                    user__username__in=redash_usernames)
     if allocationusers_not_in_redash:
         logger.info('users no longer in allocation %s: %s', allocation.pk, [user.user.username for user in allocationusers_not_in_redash])
         allocationusers_not_in_redash.update(usage=0, usage_bytes=0)
 
 
-def update_total_usage(allocation, usage_attribute_type, usage_value):
+def update_usage_attr(allocation, usage_attribute_type, usage_value):
     usage_attribute, _ = allocation.allocationattribute_set.get_or_create(
             allocation_attribute_type=usage_attribute_type
         )
     usage_attribute.allocationattributeusage.value = usage_value
-    usage_attribute.allocationattributeusage.save()
+    return usage_attribute.allocationattributeusage
+
+
+class AllocationQueryMatch:
+    '''class to hold Allocations and related query results together.'''
+    def __new__(cls, allocation, total_usage_entries, user_usage_entries):
+        allocation_data = (allocation.pk, allocation.project.title)
+        message = None
+        if not total_usage_entries:
+            message = f'No starfish allocation usage result for allocation {allocation_data}; deactivation suggested'
+        elif len(total_usage_entries) > 1:
+            message = f'too many total_usage_entries for allocation {allocation_data}; investigation required'
+        if message:
+            print(message)
+            slate_for_check([{'error': message, 'program': 'pull_sf_push_cf_redash', 'urls': f'/allocation/{allocation.pk}/'}])
+            return None
+
+        return super().__new__(cls)
+
+    def __init__(self, allocation, total_usage_entries, user_usage_entries):
+        self.allocation = allocation
+        self.volume = allocation.get_parent_resource.name.split('/')[0]
+        self.path = allocation.path
+        self.total_usage_entry = total_usage_entries[0]
+        self.user_usage_entries = user_usage_entries
+
+    @property
+    def lab(self):
+        return self.allocation.project.title
+
+    @property
+    def total_usage_tb(self):
+        return round((self.total_usage_entry['total_size']/1099511627776), 5)
+
+    @property
+    def query_usernames(self):
+        return [u['user_name'] for u in self.user_usage_entries]
+
+    def produce_updated_usage_attr(self, usage_attribute_type, usage_value):
+        usage_attribute, _ = self.allocation.allocationattribute_set.get_or_create(
+                allocation_attribute_type=usage_attribute_type
+            )
+        usage = usage_attribute.allocationattributeusage
+        usage.value = usage_value
+        return usage
+
+    def users_in_list(self, username_list):
+        '''return usage entries for users with usernames in the provided list'''
+        return [u for u in self.user_usage_entries if u['user_name'] in username_list]
+
+    def users_not_in_list(self, username_list):
+        '''return usage entries for users with usernames not in the provided list'''
+        return [u for u in self.user_usage_entries if u['user_name'] not in username_list]
+
+def return_dict_of_groupings(dict_list, sort_key):
+    '''Given a list of dicts, return a dict of lists of dicts grouped by the
+    key(s) given in sort_key.
+    '''
+    grouped = groupby(sorted(dict_list, key=sort_key), key=sort_key)
+    return {k: list(g) for k, g in grouped}
+
+@record_process
+def match_allocations_with_usage_entries(allocations, user_usage, allocation_usage):
+    allocation_list = [(allocation.get_parent_resource.name.split('/')[0], allocation.path)
+        for allocation in allocations
+    ]
+
+    total_sort_key = itemgetter('path','vol_name')
+    allocation_usage_grouped = return_dict_of_groupings(allocation_usage, total_sort_key)
+    missing_allocations = [a for k, a in allocation_usage_grouped if k not in allocation_list]
+
+    user_usage = [user for user in user_usage if user['lab_path'] is not None]
+    user_sort_key = itemgetter('lab_path','vol_name')
+    user_usage_grouped = return_dict_of_groupings(user_usage, user_sort_key)
+
+    missing_users = [u for k, u in user_usage_grouped.items() if k not in allocation_list]
+
+    allocationquerymatch_objs = []
+    for allocation in allocations:
+        a = (str(allocation.path), str(allocation.get_parent_resource.name.split('/')[0]))
+        total_usage_entries = allocation_usage_grouped.get(a, None)
+        user_usage_entries = user_usage_grouped.get(a, [])
+        allocationquerymatch_objs.append(AllocationQueryMatch(allocation, total_usage_entries, user_usage_entries))
+    return [a for a in allocationquerymatch_objs if a]
+
 
 def pull_sf_push_cf_redash():
-    '''
-    Query Starfish Redash API for user usage data and update Coldfront AllocationUser entries.
-
-    Only Allocations for Projects that are already in Coldfront will be updated.
+    '''Query Starfish Redash API for usage data and update Coldfront AllocationUser entries.
+    Only updates Allocations that are already in Coldfront.
+    Log:
+    - users missing from IFX who use allocations that are in in Coldfront
+    - instances of Allocations that don't return usage data from Starfish
     '''
     # 1. grab data from redash
     starfish_server = StarFishServer(STARFISH_SERVER)
     vols_to_collect = starfish_server.get_volumes_in_coldfront()
     redash_api = StarFishRedash(STARFISH_SERVER)
-    user_usage = redash_api.get_usage_stats(query='path_usage_query', volumes=vols_to_collect)
-    allocation_usage = redash_api.get_usage_stats(query='subdirectory', volumes=vols_to_collect)
-    queryset = []
-    issues = {'no_users':[], 'no_total':[], 'no_path':[]}
+
+    user_usage = redash_api.return_query_results(query='path_usage_query', volumes=vols_to_collect)
+    logger.debug('user_usage:\n%s', user_usage)
+
+    allocation_usage = redash_api.return_query_results(query='subdirectory', volumes=vols_to_collect)
+
+    # make master list of all users missing from ifx; don't record them yet,
+    # only do that if they appear for our allocations.
+    user_usernames = {d['user_name'] for d in user_usage}
+    user_models, missing_usernames = id_present_missing_users(user_usernames)
+    missing_username_list = [d['username'] for d in missing_usernames]
+
+    logger.debug('allocation_usage:\n%s', allocation_usage)
 
     # limit allocations to those in the volumes collected
     searched_resources = [Resource.objects.get(name__contains=vol) for vol in vols_to_collect]
@@ -546,82 +642,42 @@ def pull_sf_push_cf_redash():
     allocations = Allocation.objects.filter(resources__in=searched_resources,
         status__name__in=['Active', 'New', 'Updated', 'Ready for Review']
         ).prefetch_related('project','allocationattribute_set', 'allocationuser_set')
-    # allocations.update(is_changeable=True)
+    allocationquerymatch_objects = match_allocations_with_usage_entries(allocations, user_usage, allocation_usage)
+
     # 3. iterate across allocations
-    for allocation in allocations:
-        project = allocation.project
-        lab = project.title
-        resource = allocation.get_parent_resource
-        volume = resource.name.split('/')[0]
-        logger.debug('adding allocation for %s %s (path %s)', lab, resource, allocation.path)
+    attributes_to_update = []
+    updated_allocationusers = []
+    for obj in allocationquerymatch_objects:
+        logger.debug('adding allocation for %s %s (path %s)', obj.lab, obj.volume, obj.allocation.path)
 
-        # select query rows that match allocation volume and lab
-        # confirm that only one allocation is represented by checking the path
-        user_usage_entries = [i for i in user_usage if i['vol_name'] == volume and allocation.path == i['lab_path']]
-        lab_usage_entries = [i for i in allocation_usage if i['vol_name'] == volume and allocation.path == i['path']]
-        if not lab_usage_entries:
-            print('WARNING: No starfish allocation usage found for', allocation.pk, lab, resource)
-            logger.warning('WARNING: No starfish allocation usage result for allocation %s %s %s - check path',
-            allocation.pk, lab, resource)
-            issues['no_total'].append((allocation.pk, project, volume))
-            continue
-        lab_usage_entries = lab_usage_entries[0]
-        update_total_usage(allocation, quota_bytes_attributetype,
-                                        lab_usage_entries['total_size'])
+        bytes_attr = obj.produce_updated_usage_attr(quota_bytes_attributetype,
+                                        obj.total_usage_entry['total_size'])
+        tbs_attr = obj.produce_updated_usage_attr(quota_tbs_attributetype, obj.total_usage_tb)
 
-        tbs = round((lab_usage_entries['total_size']/1099511627776), 5)
         logger.info('allocation usage for allocation %s: %s bytes, %s terabytes',
-                    allocation.pk, lab_usage_entries['total_size'], tbs)
-        update_total_usage(allocation, quota_tbs_attributetype, tbs)
+        obj.allocation.pk, obj.total_usage_entry['total_size'], obj.total_usage_tb)
+        attributes_to_update.extend([bytes_attr, tbs_attr])
 
-        if not user_usage_entries:
-            logger.warning('WARNING: No starfish user usage result for allocation %s %s %s',
-                                                allocation.pk, lab, resource)
-            issues['no_users'].append((allocation.pk, project, volume))
-            usernames = []
-            zero_out_absent_allocationusers(usernames, allocation)
-            continue
+        # identify and remove allocation users that are no longer in the AD group
+        zero_out_absent_allocationusers(obj.query_usernames, obj.allocation)
 
-        usernames = [d['user_name'] for d in user_usage_entries]
-        logger.debug('users returned: %s', usernames)
-
-        # identify and record users that aren't in Coldfront
-        user_models, missing_usernames = id_present_missing_users(usernames)
-        missing_user_list = [d['username'] for d in missing_usernames]
         missing_unames_metadata = [{
                 'username': d['user_name'],
                 'volume': d['vol_name'],
                 'path': d['lab_path'],
             }
-        for d in user_usage_entries if d['user_name'] in missing_user_list]
-
+                for d in obj.users_in_list(missing_username_list)]
         log_missing('user', missing_unames_metadata)
-        logger.debug('%d / %d users are present.\nColdfront users: %s',
-                len(user_models), len(usernames), [u.username for u in user_models])
 
-        # identify and remove allocation users that are no longer in the AD group
-        zero_out_absent_allocationusers(usernames, allocation)
-
-        for user in user_models:
-            userdict = next(d for d in user_usage_entries if d['user_name'].lower() == user.username.lower())
+        for userdict in obj.users_not_in_list(missing_username_list):
+            user = next(u for u in user_models if userdict['user_name'].lower() == u.username.lower())
             logger.debug('entering for user: %s', user.username)
-            allocationuser, created = allocation.allocationuser_set.get_or_create(
-                user=user,
-                defaults={
-                    'status': AllocationUserStatusChoice.objects.get(name='Active'),
-                    'created': timezone.now(),
-                })
-            if created:
-                logger.info('allocation user %s created', allocationuser)
-            size_sum = int(userdict['size_sum'])
+            usage_bytes = int(userdict['size_sum'])
             usage, unit = determine_size_fmt(userdict['size_sum'])
 
-            allocationuser.usage_bytes = size_sum
-            allocationuser.usage = usage
-            allocationuser.unit = unit
-            queryset.append(allocationuser)
+            allocationuser = update_user_usage(user, usage_bytes, usage, unit, obj.allocation)
+            updated_allocationusers.append(allocationuser)
             logger.debug('saving %s', userdict)
 
-    AllocationUser.objects.bulk_update(queryset, ['usage_bytes', 'usage', 'unit'])
-    logger.warning("issues recorded: %s", issues)
-    print(f"issues recorded: {issues}")
+    AllocationUser.objects.bulk_update(updated_allocationusers, ['usage_bytes', 'usage', 'unit'])
+    AllocationAttributeUsage.objects.bulk_update(attributes_to_update, ['value'])

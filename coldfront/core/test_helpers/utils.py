@@ -21,26 +21,6 @@ def collect_all_ids_in_listpage(client, listpage):
             obj_ids.extend([o.id for o in response.context_data['object_list']])
     return obj_ids
 
-def confirm_loads(client, obj_ids, page_url):
-    """Confirm that all pages linked to on a given list page return a 200 status
-    code when accessed.
-
-    Parameters
-    ----------
-    client : django.test Client object. Must be logged in.
-    listpage : url string of the page from which to collect information
-        structure should be something like '/project/?show_all_projects=on'. No
-        '/' character at the end.
-    """
-    for obj_id in obj_ids:
-        url = f"{page_url}{obj_id}/"
-        try:
-            response = client.get(url)
-            # if response.status_code != 200:
-            #     print(f"status_code: {response.status_code} url: {url}")
-        except Exception as e:
-            print(f"ERROR FOR url: {url}   {e}\n{e.__traceback__}")
-
 
 ### Functions for testing library ###
 def login_and_get_page(client, user, page):

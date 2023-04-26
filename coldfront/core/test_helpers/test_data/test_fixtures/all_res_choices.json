@@ -26,7 +26,7 @@
       "name": "New"
     }
   },
-{
+  {
     "model": "allocation.attributetype",
     "pk": 1,
     "fields": {
@@ -34,8 +34,8 @@
         "modified": "2021-07-22T16:52:17.332Z",
         "name": "Date"
     }
-},
-{
+  },
+  {
     "model": "allocation.attributetype",
     "pk": 2,
     "fields": {
@@ -43,8 +43,8 @@
         "modified": "2021-07-22T16:52:25.220Z",
         "name": "Int"
     }
-},
-{
+  },
+  {
     "model": "allocation.attributetype",
     "pk": 3,
     "fields": {
@@ -52,8 +52,8 @@
         "modified": "2021-07-22T16:52:36.649Z",
         "name": "Float"
     }
-},
-{
+  },
+  {
     "model": "allocation.attributetype",
     "pk": 4,
     "fields": {
@@ -61,8 +61,8 @@
         "modified": "2021-07-22T16:52:47.269Z",
         "name": "Text"
     }
-},
-{
+  },
+  {
     "model": "allocation.attributetype",
     "pk": 6,
     "fields": {
@@ -70,8 +70,8 @@
         "modified": "2021-08-20T16:38:18.124Z",
         "name": "Boolean"
     }
-},
-{
+  },
+  {
     "model": "allocation.allocationattributetype",
     "pk": 1,
     "fields": {
@@ -84,8 +84,8 @@
         "is_unique": false,
         "is_private": false
     }
-},
-{
+  },
+  {
     "model": "allocation.allocationattributetype",
     "pk": 2,
     "fields": {
@@ -98,8 +98,8 @@
         "is_unique": false,
         "is_private": false
     }
-},
-{
+  },
+  {
     "model": "allocation.allocationattributetype",
     "pk": 3,
     "fields": {
@@ -112,8 +112,8 @@
         "is_unique": false,
         "is_private": false
     }
-},
-{
+  },
+  {
     "model": "allocation.allocationattributetype",
     "pk": 4,
     "fields": {
@@ -126,8 +126,8 @@
         "is_unique": true,
         "is_private": false
     }
-},
-{
+  },
+  {
     "model": "allocation.allocationattributetype",
     "pk": 5,
     "fields": {
@@ -140,7 +140,21 @@
         "is_unique": false,
         "is_private": true
     }
-},
+  },
+  {
+    "model": "allocation.allocationattributetype",
+    "pk": 8,
+    "fields": {
+        "created": "2021-07-22T16:55:20.800Z",
+        "modified": "2021-09-21T14:18:19.394Z",
+        "attribute_type": 4,
+        "name": "Subdirectory",
+        "has_usage": false,
+        "is_required": false,
+        "is_unique": false,
+        "is_private": false
+    }
+  },
   {
     "model": "resource.resourcetype",
     "pk": 1,
