@@ -139,9 +139,14 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         allocation_submitted = self.request.GET.get('allocation_submitted')
+        after_project_creation_get = self.request.GET.get('after_project_creation')
         context['display_modal'] = 'false'
-        if allocation_submitted:
+        if allocation_submitted == 'true':
             context['display_modal'] = 'true'
+
+        context['display_project_created_modal'] = 'false'
+        if after_project_creation_get == 'true':
+            context['display_project_created_modal'] = 'true'
 
         is_manager = False
         # Can the user update the project?
@@ -902,7 +907,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     def get_success_url(self):
         return self.reverse_with_params(
             reverse(
-                'project-add-users-search', kwargs={'pk': self.object.pk}
+                'allocation-create', kwargs={'project_pk': self.object.pk}
             ),
             after_project_creation='true'
         )
@@ -1426,9 +1431,19 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                     messages.error(request, error)
 
         if after_project_creation == 'true':
-            return HttpResponseRedirect(reverse('allocation-create', kwargs={'project_pk': pk}))
+            return HttpResponseRedirect(
+                self.reverse_with_params(
+                    reverse(
+                        'project-detail', kwargs={'pk': pk}
+                    ),
+                    after_project_creation='true'
+                )
+            )
 
         return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': pk}))
+    
+    def reverse_with_params(self, path, **kwargs):
+        return path + '?' + urllib.parse.urlencode(kwargs)
 
 
 class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -2002,9 +2017,30 @@ class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['project_review_list'] = ProjectReview.objects.filter(status__name='Pending')
-        context['project_request_list'] = Project.objects.filter(
+        projects = Project.objects.filter(
             status__name="Waiting For Admin Approval"
         )
+        context['project_request_list'] = projects
+        pis = set()
+        for project in projects:
+            pis.add(project.pi)
+        
+        pi_project_objs = Project.objects.filter(
+            pi__in=pis,
+            status__name='Active'
+        )
+        pi_projects = []
+        for pi_project_obj in pi_project_objs:
+            pi_projects.append(
+                {
+                    'title': pi_project_obj.title,
+                    'pi': pi_project_obj.pi.username,
+                    'description': pi_project_obj.description,
+                    'display': 'false' 
+                }
+            )
+        context['pi_projects'] = pi_projects
+
         context['EMAIL_ENABLED'] = EMAIL_ENABLED
         return context
 

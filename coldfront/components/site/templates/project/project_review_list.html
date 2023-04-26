@@ -31,7 +31,11 @@ Project Review List
           <tr>
             <td><a target="_target" href="{% url 'project-detail' project_request.pk %}">{{ project_request.title|truncatechars:50 }}</a></td>
             <td>{{ project_request.created|date:"M. d, Y" }}</td>
-            <td>{{ project_request.pi.first_name }} {{project_request.pi.last_name}} ({{ project_request.pi.username }})</td>
+            <td>
+              <a href="#" data-toggle="modal" data-target="#id_pi_projects_modal" data-pi="{{project_request.pi.username}}">
+                {{ project_request.pi.first_name }} {{project_request.pi.last_name}} ({{ project_request.pi.username }})
+              </a>
+            </td>
             <td>{{ project_request.requestor.first_name }} {{ project_request.requestor.last_name }} ({{ project_request.requestor.username }})</td>
             <td>{{ project_request.type.name }}</td>
             <!-- <td>{{ project_request.private }}</td> -->
@@ -105,10 +109,55 @@ Project Review List
   </div>
 {% endif %}
 
+<div id="id_pi_projects_modal"
+  class="modal fade bd-example-modal-lg"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="id_pi_projects_modal_label"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="id_pi_projects_label">PI Projects</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
+  pi_projects = {{ pi_projects | safe }};
+
   $("#navbar-main > ul > li.active").removeClass("active");
   $("#navbar-admin").addClass("active");
   $("#navbar-director").addClass("active");
   $("#navbar-project-reviews").addClass("active");
+
+  $('#id_pi_projects_modal').on('show.bs.modal', function (event) {
+    $('#id_pi_projects_modal .modal-body').html('')
+    var link = $(event.relatedTarget);
+    var pi = link.data('pi');
+    var modal = $(this);
+    for (let i = 0; i < pi_projects.length; i++) {
+      project = pi_projects[i]
+      if (project.pi === pi) {
+        $('#id_pi_projects_modal .modal-body').append(
+        `<div class="card mb-3">\
+          <div class="card-header">\
+            ${project.title}\
+          </div>\
+          <div class="card-body">\
+            ${project.description}\
+          </div>\
+        </div>`
+      );
+      }
+    }
+  })
 </script>
 {% endblock %}

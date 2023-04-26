@@ -1144,13 +1144,24 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         context['resources_with_accounts'] = list(Resource.objects.filter(
             name__in=list(ALLOCATION_ACCOUNT_MAPPING.keys())).values_list('id', flat=True))
 
+        after_project_creation = self.request.GET.get('after_project_creation')
+        if after_project_creation is None:
+            after_project_creation = 'false'
+        context['after_project_creation'] = after_project_creation
+
         return context
 
     def get_form(self, form_class=None):
         """Return an instance of the form to be used in this view."""
+        after_project_creation = self.request.GET.get('after_project_creation')
+        if after_project_creation == 'true':
+            after_project_creation = True
+        else:
+            after_project_creation = False
+
         if form_class is None:
             form_class = self.get_form_class()
-        return form_class(self.request.user, self.kwargs.get('project_pk'), **self.get_form_kwargs())
+        return form_class(self.request.user, self.kwargs.get('project_pk'), after_project_creation, **self.get_form_kwargs())
 
     def calculate_end_date(self, month, day, license_term='current'):
         current_date = datetime.date.today()
@@ -1449,13 +1460,28 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         return path + '?' + urllib.parse.urlencode(kwargs)
 
     def get_success_url(self):
-        return self.reverse_with_params(
-            reverse(
-                'project-detail',
-                kwargs={'pk': self.kwargs.get('project_pk')}
-            ),
-            allocation_submitted=True
-        )
+        after_project_creation = self.request.GET.get('after_project_creation')
+        if after_project_creation is None:
+            after_project_creation = False
+
+        if not after_project_creation:
+            url = self.reverse_with_params(
+                reverse(
+                    'project-detail',
+                    kwargs={'pk': self.kwargs.get('project_pk')}
+                ),
+                allocation_submitted='true'
+            )
+        else:
+            url = self.reverse_with_params(
+                reverse(
+                    'project-add-users-search',
+                    kwargs={'pk': self.kwargs.get('project_pk')}
+                ),
+                after_project_creation='true'
+            )
+
+        return url
 
 
 class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
