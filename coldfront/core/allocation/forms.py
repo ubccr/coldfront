@@ -136,7 +136,7 @@ class AllocationForm(forms.Form):
         widget=forms.CheckboxSelectMultiple, required=False)
     allocation_account = forms.ChoiceField(required=False)
 
-    def __init__(self, request_user, project_pk,  *args, **kwargs):
+    def __init__(self, request_user, project_pk, after_project_creation=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         RESOURCE_CHOICES = [(None, 'Please select a resource...')]
@@ -202,6 +202,17 @@ class AllocationForm(forms.Form):
             if attributes.get('mail'):
                 self.fields['email'].initial = attributes['mail'][0]
 
+        if after_project_creation:
+            form_actions = FormActions(
+                Submit('submit', 'Next'),
+            )
+        else:
+            form_actions = FormActions(
+                Submit('submit', 'Submit'),
+                HTML("""<a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}"
+                    role="button">Back to Project</a><br>"""),
+            )
+
         self.helper = FormHelper()
         self.helper.layout = Layout(
             'resource',
@@ -258,11 +269,7 @@ class AllocationForm(forms.Form):
             'data_management_responsibilities',
             'users',
             'allocation_account',
-            FormActions(
-                Submit('submit', 'Submit'),
-                HTML("""<a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}"
-                     role="button">Back to Project</a><br>"""),
-            )
+            form_actions,
         )
 
     def clean(self):
