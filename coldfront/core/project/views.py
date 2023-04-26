@@ -2002,9 +2002,30 @@ class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['project_review_list'] = ProjectReview.objects.filter(status__name='Pending')
-        context['project_request_list'] = Project.objects.filter(
+        projects = Project.objects.filter(
             status__name="Waiting For Admin Approval"
         )
+        context['project_request_list'] = projects
+        pis = set()
+        for project in projects:
+            pis.add(project.pi)
+        
+        pi_project_objs = Project.objects.filter(
+            pi__in=pis,
+            status__name='Active'
+        )
+        pi_projects = []
+        for pi_project_obj in pi_project_objs:
+            pi_projects.append(
+                {
+                    'title': pi_project_obj.title,
+                    'pi': pi_project_obj.pi.username,
+                    'description': pi_project_obj.description,
+                    'display': 'false' 
+                }
+            )
+        context['pi_projects'] = pi_projects
+
         context['EMAIL_ENABLED'] = EMAIL_ENABLED
         return context
 
