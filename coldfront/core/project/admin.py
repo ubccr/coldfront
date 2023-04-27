@@ -10,7 +10,8 @@ from coldfront.core.project.models import (Project, ProjectAdminComment,
                                            ProjectUserStatusChoice,
                                            ProjectTypeChoice,
                                            ProjectReviewStatusChoice,
-                                           ProjectAdminAction)
+                                           ProjectAdminAction,
+                                           ProjectDescriptionRecord)
 
 
 @admin.register(ProjectStatusChoice)
@@ -181,3 +182,10 @@ class ProjectAdminActionAdmin(admin.ModelAdmin):
 
     def project_title(self, obj):
         return obj.project.title
+
+
+@admin.register(ProjectDescriptionRecord)
+class ProjectDescriptionRecordAdmin(admin.ModelAdmin):
+    list_display = ('pk', 'project', 'user', 'created')
+    readonly_fields = ('project', 'user', 'description')
+    list_filter = ('project', )

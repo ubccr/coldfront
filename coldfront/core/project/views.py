@@ -49,7 +49,8 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectStatusChoice, ProjectUser,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice,
-                                           ProjectUserMessage)
+                                           ProjectUserMessage,
+                                           ProjectDescriptionRecord)
 from coldfront.core.publication.models import Publication
 from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.user.forms import UserSearchForm
@@ -957,6 +958,13 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
     def form_valid(self, form):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         form_data = form.cleaned_data
+
+        ProjectDescriptionRecord.objects.create(
+            project=project_obj,
+            user=self.request.user,
+            description=form_data.get('description')
+        )
+
         project_obj.title = form_data.get('title')
         project_obj.description = form_data.get('description')
         # project_obj.field_of_science = form_data.get('field_of_science')

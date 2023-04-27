@@ -283,3 +283,9 @@ class ProjectAdminAction(TimeStampedModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     action = models.CharField(max_length=64)
+
+
+class ProjectDescriptionRecord(TimeStampedModel):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    description = models.TextField()
