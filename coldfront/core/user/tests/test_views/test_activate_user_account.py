@@ -1,6 +1,10 @@
+from copy import deepcopy
+
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.messages import get_messages
 from django.test import Client
+from django.test import override_settings
 
 from allauth.account.models import EmailAddress
 from flags.state import enable_flag
@@ -9,6 +13,11 @@ from coldfront.core.user.tests.utils import TestUserBase
 from coldfront.core.user.utils import account_activation_url
 
 
+FLAGS_COPY = deepcopy(settings.FLAGS)
+FLAGS_COPY['SSO_ENABLED'] = {'condition': 'boolean', 'value': False}
+
+
+@override_settings(FLAGS=FLAGS_COPY)
 class TestActivateUserAccount(TestUserBase):
     """A class for testing the view for activating a user's account."""
 
