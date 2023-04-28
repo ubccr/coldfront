@@ -8,7 +8,6 @@ from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.contrib.auth.views import PasswordChangeView
 from django.core.exceptions import ImproperlyConfigured
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.db import IntegrityError
 from django.db.models import BooleanField, Prefetch
 from django.db.models.expressions import ExpressionWrapper, Q
 from django.db.models.functions import Lower
@@ -24,24 +23,21 @@ from django.views import View
 from django.views.generic import CreateView, ListView, TemplateView
 from django.views.generic.edit import FormView
 
+from allauth.account.models import EmailAddress
+
+from coldfront.core.account.utils.queries import update_user_primary_email_address
 from coldfront.core.allocation.utils import has_cluster_access
 from coldfront.core.project.models import Project, ProjectUser
 from coldfront.core.user.models import IdentityLinkingRequest, IdentityLinkingRequestStatusChoice
 from coldfront.core.user.models import UserProfile as UserProfileModel
-from coldfront.core.user.forms import EmailAddressAddForm
 from coldfront.core.user.forms import UserReactivateForm
-from coldfront.core.user.forms import PrimaryEmailAddressSelectionForm
 from coldfront.core.user.forms import UserAccessAgreementForm
 from coldfront.core.user.forms import UserProfileUpdateForm
 from coldfront.core.user.forms import UserRegistrationForm
 from coldfront.core.user.forms import UserSearchForm, UserSearchListForm
-from coldfront.core.user.models import EmailAddress
 from coldfront.core.user.utils import CombinedUserSearch
-from coldfront.core.user.utils import ExpiringTokenGenerator
 from coldfront.core.user.utils import send_account_activation_email
 from coldfront.core.user.utils import send_account_already_active_email
-from coldfront.core.user.utils import send_email_verification_email
-from coldfront.core.user.utils import update_user_primary_email_address
 from coldfront.core.user.utils_.host_user_utils import is_lbl_employee
 from coldfront.core.utils.common import (import_from_settings,
                                          utc_now_offset_aware)
@@ -153,37 +149,20 @@ class UserProfile(TemplateView):
         context['change_password_enabled'] = (
             self._flag_basic_auth_enabled and requester_is_viewed_user)
 
-        context['primary_address_updatable'] = (
-            self._flag_basic_auth_enabled and
-            self._flag_multiple_email_addresses_allowed and
-            requester_is_viewed_user)
+        # Only display the "Other Email Addresses" section if multiple email
+        # addresses are allowed.
+        context['email_addresses_visible'] = \
+            self._flag_multiple_email_addresses_allowed
+        if context['email_addresses_visible']:
+            context['email_addresses_updatable'] = requester_is_viewed_user
 
-        # Use coldfront.core.user.models.EmailAddress if basic auth. is
-        # enabled.
-        context['core_user_email_addresses_visible'] = (
-            self._flag_basic_auth_enabled and
-            self._flag_multiple_email_addresses_allowed)
-        if context['core_user_email_addresses_visible']:
-            context['other_emails'] = EmailAddress.objects.filter(
-                user=viewed_user, is_primary=False).order_by('email')
-            context['core_user_email_addresses_updatable'] = \
-                requester_is_viewed_user
-
-        # Use allauth.account.models.EmailAddress if SSO is enabled.
-        context['allauth_email_addresses_visible'] = (
-            self._flag_sso_enabled and
-            self._flag_multiple_email_addresses_allowed)
-        if context['allauth_email_addresses_visible']:
-            context['allauth_email_addresses_updatable'] = \
-                requester_is_viewed_user
-
-        # Display the "Third-Party Accounts" section if SSO is enabled.
+        # Only display the "Third-Party Accounts" section if SSO is enabled and
+        # multiple email addresses are allowed.
         context['third_party_accounts_visible'] = (
             self._flag_sso_enabled and
             self._flag_multiple_email_addresses_allowed)
         if context['third_party_accounts_visible']:
-            context['third_party_accounts_updatable'] = \
-                requester_is_viewed_user
+            context['third_party_accounts_updatable'] = requester_is_viewed_user
 
     def _update_context_with_identity_linking_request_data(self, context):
         """Update the given context dictionary with fields relating to
@@ -462,14 +441,23 @@ class UserSearchAll(LoginRequiredMixin, ListView):
             if data.get('username'):
                 users = users.filter(username__icontains=data.get('username'))
 
-            if data.get('email'):
-                _users = EmailAddress.objects.filter(is_primary=False, email__icontains=data.get('email'))\
-                    .order_by('user').values_list('user__id')
-                users = users.filter(Q(email__icontains=data.get('email')) | Q(id__in=_users))
+            email = data.get('email')
+            if email:
+                users = self._filter_users_by_email(users, email)
+
+            users = users.order_by(order_by)
+
         else:
             users = User.objects.all().order_by(order_by)
 
         return users.distinct()
+
+    @staticmethod
+    def _filter_users_by_email(users, email):
+        user_ids = EmailAddress.objects.filter(
+            primary=False, email__icontains=email).values_list('user__id')
+        user_ids = set(list(user_ids))
+        return users.filter(Q(email__icontains=email) | Q(id__in=user_ids))
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -583,29 +571,57 @@ class CustomPasswordChangeView(PasswordChangeView):
 
 class UserLoginView(View):
     """Redirect to the Basic Auth. login view or the SSO login view
-    based on enabled flags."""
+    based on enabled flags, retaining any provided next URL. If the user
+    is authenticated, redirect to the next URL or the home page."""
 
     def dispatch(self, request, *args, **kwargs):
-        basic_auth_enabled = 'BASIC_AUTH_ENABLED'
-        if flag_enabled(basic_auth_enabled):
-            return redirect(reverse('basic-auth-login'))
-        sso_enabled = 'SSO_ENABLED'
-        if flag_enabled(sso_enabled):
-            return redirect(reverse('sso-login'))
-        raise ImproperlyConfigured(
-            f'One of the following flags must be enabled: '
-            f'{basic_auth_enabled}, {sso_enabled}.')
+        next_url = request.GET.get('next')
+
+        if request.user.is_authenticated:
+            return redirect(next_url or reverse('home'))
+
+        basic_auth_enabled = flag_enabled('BASIC_AUTH_ENABLED')
+        sso_enabled = flag_enabled('SSO_ENABLED')
+        if not basic_auth_enabled ^ sso_enabled:
+            raise ImproperlyConfigured(
+                'One of the following flags must be enabled: '
+                'BASIC_AUTH_ENABLED, SSO_ENABLED.')
+        if basic_auth_enabled:
+            redirect_url = reverse('basic-auth-login')
+        else:
+            redirect_url = reverse('sso-login')
+
+        if next_url:
+            redirect_url = self._url_with_next(redirect_url, next_url)
+        return redirect(redirect_url)
+
+    @staticmethod
+    def _url_with_next(url, next_url):
+        """Return the given URL, with a next parameter set to the given
+        next URL."""
+        return f'{url}?next={next_url}'
 
 
 class SSOLoginView(TemplateView):
     """Display the template for SSO login. If the user is authenticated,
-    redirect to the home page."""
+    redirect to the provided next URL or the home page."""
     template_name = 'user/sso_login.html'
 
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_authenticated:
-            return redirect(reverse('home'))
+            redirect_url = request.GET.get('next') or reverse('home')
+            return redirect(redirect_url)
         return super().dispatch(request, *args, **kwargs)
+
+    def get_template_names(self):
+        if flag_enabled('BRC_ONLY'):
+            return ['user/sso_login_brc.html']
+        elif flag_enabled('LRC_ONLY'):
+            return ['user/sso_login_lrc.html']
+        else:
+            raise ImproperlyConfigured(
+                'One of the following flags must be enabled: BRC_ONLY, '
+                'LRC_ONLY.')
 
 
 class UserRegistrationView(CreateView):
@@ -679,7 +695,7 @@ def activate_user_account(request, uidb64=None, token=None):
                     logger.info(
                         f'Created EmailAddress {email_address.pk} for User '
                         f'{user.pk} and email {email}.')
-                email_address.is_verified = True
+                email_address.verified = True
                 email_address.save()
                 update_user_primary_email_address(email_address)
             except Exception as e:
@@ -745,198 +761,6 @@ def user_access_agreement(request):
     return render(request, template_name, context={'form': form})
 
 
-class EmailAddressAddView(LoginRequiredMixin, FormView):
-    form_class = EmailAddressAddForm
-    template_name = 'user/user_add_email_address.html'
-
-    logger = logging.getLogger(__name__)
-
-    def form_valid(self, form):
-        form_data = form.cleaned_data
-        email = form_data['email']
-        try:
-            email_address = EmailAddress.objects.create(
-                user=self.request.user, email=email, is_verified=False,
-                is_primary=False)
-        except IntegrityError:
-            self.logger.error(
-                f'EmailAddress {email} unexpectedly already exists.')
-            message = (
-                'Unexpected server error. Please contact an administrator.')
-            messages.error(self.request, message)
-        else:
-            self.logger.info(
-                f'Created EmailAddress {email_address.pk} for User '
-                f'{self.request.user.pk}.')
-            try:
-                send_email_verification_email(email_address)
-            except Exception as e:
-                message = 'Failed to send verification email. Details:'
-                logger.error(message)
-                logger.exception(e)
-                message = (
-                    f'Added {email_address.email} to your account, but failed '
-                    f'to send verification email. You may try to resend it '
-                    f'from the User Profile.')
-                messages.warning(self.request, message)
-            else:
-                message = (
-                    f'Added {email_address.email} to your account. Please '
-                    f'verify it by clicking the link sent to your email.')
-                messages.success(self.request, message)
-        return super().form_valid(form)
-
-    def get_success_url(self):
-        return reverse('user-profile')
-
-
-class SendEmailAddressVerificationEmailView(LoginRequiredMixin, View):
-
-    def dispatch(self, request, *args, **kwargs):
-        pk = self.kwargs.get('pk')
-        self.email_address = get_object_or_404(EmailAddress, pk=pk)
-        if self.email_address.user != request.user:
-            message = (
-                'You may not send a verification email to an email address '
-                'not associated with your account.')
-            messages.error(request, message)
-            return HttpResponseRedirect(reverse('user-profile'))
-        if self.email_address.is_verified:
-            logger.error(
-                f'EmailAddress {self.email_address.pk} is unexpectedly '
-                f'already verified.')
-            message = f'{self.email_address.email} is already verified.'
-            messages.warning(request, message)
-            return HttpResponseRedirect(reverse('user-profile'))
-        return super().dispatch(request, *args, **kwargs)
-
-    def post(self, request, *args, **kwargs):
-        try:
-            send_email_verification_email(self.email_address)
-        except Exception as e:
-            message = 'Failed to send verification email. Details:'
-            logger.error(message)
-            logger.exception(e)
-            message = (
-                f'Failed to send verification email to '
-                f'{self.email_address.email}. Please contact an administrator '
-                f'if the problem persists.')
-            messages.error(request, message)
-        else:
-            message = (
-                f'Please click on the link sent to {self.email_address.email} '
-                f'to verify it.')
-            messages.success(request, message)
-        return HttpResponseRedirect(reverse('user-profile'))
-
-
-def verify_email_address(request, uidb64=None, eaidb64=None, token=None):
-    try:
-        user_pk = int(force_text(urlsafe_base64_decode(uidb64)))
-        email_pk = int(force_text(urlsafe_base64_decode(eaidb64)))
-        email_address = EmailAddress.objects.get(pk=email_pk)
-        user = User.objects.get(pk=user_pk)
-        if email_address.user != user:
-            user = None
-    except:
-        user = None
-    if user and token:
-        if ExpiringTokenGenerator().check_token(user, token):
-            email_address.is_verified = True
-            email_address.save()
-            logger.info(f'EmailAddress {email_address.pk} has been verified.')
-            message = f'{email_address.email} has been verified.'
-            messages.success(request, message)
-        else:
-            message = (
-                'Invalid verification token. Please try again, or contact an '
-                'administrator if the problem persists.')
-            messages.error(request, message)
-    else:
-        message = (
-            f'Failed to activate account. Please contact an administrator.')
-        messages.error(request, message)
-    return redirect(reverse('user-profile'))
-
-
-class RemoveEmailAddressView(LoginRequiredMixin, View):
-
-    def dispatch(self, request, *args, **kwargs):
-        pk = self.kwargs.get('pk')
-        self.email_address = get_object_or_404(EmailAddress, pk=pk)
-        if self.email_address.user != request.user:
-            message = (
-                'You may not remove an email address not associated with your '
-                'account.')
-            messages.error(request, message)
-            return HttpResponseRedirect(reverse('user-profile'))
-        return super().dispatch(request, *args, **kwargs)
-
-    def post(self, request, *args, **kwargs):
-        self.email_address.delete()
-        message = (
-            f'{self.email_address.email} has been removed from your account.')
-        messages.success(request, message)
-        return HttpResponseRedirect(reverse('user-profile'))
-
-
-class UpdatePrimaryEmailAddressView(LoginRequiredMixin, FormView):
-
-    form_class = PrimaryEmailAddressSelectionForm
-    template_name = 'user/user_update_primary_email_address.html'
-    login_url = '/'
-
-    error_message = 'Unexpected failure. Please contact an administrator.'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['has_verified_non_primary_emails'] = \
-            EmailAddress.objects.filter(
-                user=self.request.user, is_verified=True, is_primary=False)
-        return context
-
-    def form_valid(self, form):
-        user = self.request.user
-        form_data = form.cleaned_data
-        new_primary = form_data['email_address']
-
-        try:
-            update_user_primary_email_address(new_primary)
-        except TypeError:
-            message = (
-                f'New primary EmailAddress {new_primary} has unexpected type: '
-                f'{type(new_primary)}.')
-            logger.error(message)
-            messages.error(self.request, self.error_message)
-        except ValueError:
-            message = (
-                f'New primary EmailAddress {new_primary.pk} for User '
-                f'{user.pk} is unexpectedly not verified.')
-            logger.error(message)
-            messages.error(self.request, self.error_message)
-        except Exception as e:
-            message = (
-                f'Encountered unexpected exception when updating User '
-                f'{user.pk}\'s primary EmailAddress to {new_primary.pk}. '
-                f'Details:')
-            logger.error(message)
-            logger.exception(e)
-            messages.error(self.request, self.error_message)
-        else:
-            message = f'{new_primary.email} is your new primary email address.'
-            messages.success(self.request, message)
-
-        return super().form_valid(form)
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['user'] = self.request.user
-        return kwargs
-
-    def get_success_url(self):
-        return reverse('user-profile')
-
-
 class EmailAddressExistsView(View):
 
     def get(self, request, *args, **kwargs):
@@ -965,7 +789,6 @@ class UserNameExistsView(View):
 
 @method_decorator(login_required, name='dispatch')
 class IdentityLinkingRequestView(UserPassesTestMixin, View):
-    login_url = '/'
     pending_status = None
 
     def test_func(self):

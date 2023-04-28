@@ -14,9 +14,9 @@ Vagrant.configure("2") do |config|
   config.vm.provision "ansible_local" do |ansible|
     ansible.playbook = "coldfront_app/coldfront/bootstrap/ansible/playbook.yml"
     ansible.galaxy_role_file = "coldfront_app/coldfront/bootstrap/ansible/requirements.yml"
-    ansible.galaxy_roles_path = "/home/vagrant/.ansible"
+    ansible.galaxy_roles_path = "/home/vagrant/.ansible/roles"
     # https://github.com/hashicorp/vagrant/issues/10958#issuecomment-724431455
-    ansible.galaxy_command = "ansible-galaxy collection install --requirements-file %{role_file} --collections-path %{roles_path}/collections --force && ansible-galaxy install --role-file=%{role_file} --roles-path=%{roles_path} --force"
+    ansible.galaxy_command = "ansible-galaxy collection install --requirements-file %{role_file} --collections-path /home/vagrant/.ansible/collections --force && ansible-galaxy install --role-file=%{role_file} --roles-path=%{roles_path} --force"
   end
 
   config.vm.network :forwarded_port, host: 8880, guest: 80

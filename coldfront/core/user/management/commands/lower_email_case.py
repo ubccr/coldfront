@@ -1,6 +1,8 @@
-from coldfront.core.user.models import EmailAddress
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
+
+from allauth.account.models import EmailAddress
+
 import logging
 
 

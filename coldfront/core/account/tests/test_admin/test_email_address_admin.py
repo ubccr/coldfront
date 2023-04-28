@@ -1,15 +1,17 @@
-from django.core.exceptions import ValidationError
-from django.contrib.auth.models import User
 from django.contrib.admin.sites import AdminSite
-from coldfront.core.user.models import EmailAddress
-from coldfront.core.user.admin import EmailAddressAdmin
-from coldfront.core.user.tests.utils import TestUserBase
-from django.http import HttpRequest
-from django.contrib.messages.storage import default_storage
 from django.contrib.messages import get_messages
+from django.contrib.messages.storage import default_storage
+from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+from django.http import HttpRequest
+
+from allauth.account.models import EmailAddress
+
+from coldfront.core.account.admin import EmailAddressAdmin
+from coldfront.core.user.tests.utils import TestUserBase
 
 
-class EmailAddressAdminTest(TestUserBase):
+class TestEmailAddressAdmin(TestUserBase):
     """
     Class for testing methods in EmailAddressAdmin
     """
@@ -35,32 +37,32 @@ class EmailAddressAdminTest(TestUserBase):
         self.email1 = EmailAddress.objects.create(
             user=self.user1,
             email='email1@email.com',
-            is_verified=True,
-            is_primary=True)
+            verified=True,
+            primary=True)
 
         self.email2 = EmailAddress.objects.create(
             user=self.user1,
             email='email2@email.com',
-            is_verified=True,
-            is_primary=False)
+            verified=True,
+            primary=False)
 
         self.email3 = EmailAddress.objects.create(
             user=self.user2,
             email='email3@email.com',
-            is_verified=True,
-            is_primary=True)
+            verified=True,
+            primary=True)
 
         self.email4 = EmailAddress.objects.create(
             user=self.user2,
             email='email4@email.com',
-            is_verified=True,
-            is_primary=False)
+            verified=True,
+            primary=False)
 
         self.email5 = EmailAddress.objects.create(
             user=self.user2,
             email='email5@email.com',
-            is_verified=False,
-            is_primary=False)
+            verified=False,
+            primary=False)
 
         self.request = HttpRequest()
         setattr(self.request, 'session', 'session')
@@ -121,7 +123,7 @@ class EmailAddressAdminTest(TestUserBase):
         query_set = EmailAddress.objects.filter(pk=self.email1.pk)
         self.app_admin.make_primary(self.request, query_set)
         self.email1.refresh_from_db()
-        self.assertTrue(self.email1.is_primary)
+        self.assertTrue(self.email1.primary)
 
         storage = list(get_messages(self.request))
         self.assertEqual(len(storage), 1)
@@ -136,10 +138,10 @@ class EmailAddressAdminTest(TestUserBase):
         query_set = EmailAddress.objects.filter(pk=self.email2.pk)
         self.app_admin.make_primary(self.request, query_set)
         self.email1.refresh_from_db()
-        self.assertFalse(self.email1.is_primary)
+        self.assertFalse(self.email1.primary)
 
         self.email2.refresh_from_db()
-        self.assertTrue(self.email2.is_primary)
+        self.assertTrue(self.email2.primary)
 
         storage = list(get_messages(self.request))
         self.assertEqual(len(storage), 1)
@@ -152,7 +154,7 @@ class EmailAddressAdminTest(TestUserBase):
         Testing EmailAddressAdmin delete_queryset method with only primary emails
         """
 
-        query_set = EmailAddress.objects.filter(is_primary=True)
+        query_set = EmailAddress.objects.filter(primary=True)
         self.app_admin.delete_queryset(self.request, query_set)
 
         self.assertTrue(EmailAddress.objects.filter(pk=self.email1.pk).exists())
@@ -171,7 +173,7 @@ class EmailAddressAdminTest(TestUserBase):
         primary emails
         """
 
-        query_set = EmailAddress.objects.filter(is_primary=False)
+        query_set = EmailAddress.objects.filter(primary=False)
         self.app_admin.delete_queryset(self.request, query_set)
 
         self.assertFalse(EmailAddress.objects.filter(pk=self.email2.pk).exists())

@@ -439,6 +439,17 @@ SOCIALACCOUNT_PROVIDERS = {
 SOCIALACCOUNT_QUERY_EMAIL = True
 
 #------------------------------------------------------------------------------
+# Django Sesame settings
+#------------------------------------------------------------------------------
+
+EXTRA_AUTHENTICATION_BACKENDS += [
+    'coldfront.core.user.auth.SesameBackend',
+]
+
+# The number of seconds a login token is valid for.
+SESAME_MAX_AGE = 300
+
+#------------------------------------------------------------------------------
 # Data import settings
 #------------------------------------------------------------------------------
 

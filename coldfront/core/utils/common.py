@@ -40,9 +40,8 @@ def get_domain_url(request):
 
 
 def project_detail_url(project):
-    domain = import_from_settings('CENTER_BASE_URL')
-    view = reverse('project-detail', kwargs={'pk': project.pk})
-    return urljoin(domain, view)
+    return build_absolute_url(
+        reverse('project-detail', kwargs={'pk': project.pk}))
 
 
 class Echo:
@@ -84,6 +83,13 @@ def assert_obj_type(obj, expected_obj_type, null_allowed=False):
         return
     message = f'{obj} does not have type {expected_obj_type}.'
     assert isinstance(obj, expected_obj_type), message
+
+
+def build_absolute_url(path):
+    """Return the given URL path (e.g., "/users/1/") with the domain
+    (CENTER_BASE_URL) prepended."""
+    domain = import_from_settings('CENTER_BASE_URL')
+    return urljoin(domain, path)
 
 
 def delete_scheduled_tasks(func, *args):

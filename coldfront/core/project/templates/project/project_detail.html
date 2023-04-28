@@ -131,12 +131,6 @@ Project Detail
     <p class="card-text text-justify">
       <strong>Requests to Join: </strong>
       User requests to join the project must be approved by a PI.
-      {% if is_allowed_to_update_project %}
-        <a href="{% url 'project-update' project.pk %}">
-          <span class="accessibility-link-text">Update Project settings</span>
-          <i class="fas fa-edit" aria-hidden="true"></i>
-        </a>
-      {% endif %}
     </p>
   </div>
 </div>

@@ -1,5 +1,8 @@
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
+
+from allauth.account.models import EmailAddress
+
 import logging
 
 
@@ -15,27 +18,9 @@ class Command(BaseCommand):
         'one-time use for existing users loaded in from spreadsheets.')
     logger = logging.getLogger(__name__)
 
-    def add_arguments(self, parser):
-        # TODO: Remove this once all emails are transitioned to
-        # TODO: allauth.account.models.EmailAddress.
-        parser.add_argument(
-            'module',
-            choices=['allauth.account.models', 'coldfront.core.user.models'],
-            help=(
-                'There are temporarily two EmailAddress models, until all can '
-                'be transitioned under allauth.account.models.'),
-            type=str)
-
     def handle(self, *args, **options):
         """For each User that has no EmailAddress, create a verified,
         primary instance using the User's email field."""
-        if options['module'] == 'allauth.account.models':
-            from allauth.account.models import EmailAddress
-            verified_field, primary_field = 'verified', 'primary'
-        else:
-            from coldfront.core.user.models import EmailAddress
-            verified_field, primary_field = 'is_verified', 'is_primary'
-
         user_pks_with_emails = EmailAddress.objects.values_list(
             'user', flat=True)
         users_without_emails = User.objects.exclude(
@@ -46,8 +31,8 @@ class Command(BaseCommand):
             kwargs = {
                 'user': user,
                 'email': email,
-                verified_field: True,
-                primary_field: True,
+                'verified': True,
+                'primary': True,
             }
             if not email:
                 message = f'User {user.pk} email is empty.'

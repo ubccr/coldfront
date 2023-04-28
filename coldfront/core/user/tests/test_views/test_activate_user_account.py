@@ -1,14 +1,23 @@
-from flags.state import enable_flag
+from copy import deepcopy
 
-from coldfront.core.user.models import EmailAddress
-from coldfront.core.user.tests.utils import TestUserBase
-from coldfront.core.user.utils import account_activation_url
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.messages import get_messages
 from django.test import Client
-from django.urls import reverse
+from django.test import override_settings
+
+from allauth.account.models import EmailAddress
+from flags.state import enable_flag
+
+from coldfront.core.user.tests.utils import TestUserBase
+from coldfront.core.user.utils import account_activation_url
 
 
+FLAGS_COPY = deepcopy(settings.FLAGS)
+FLAGS_COPY['SSO_ENABLED'] = {'condition': 'boolean', 'value': False}
+
+
+@override_settings(FLAGS=FLAGS_COPY)
 class TestActivateUserAccount(TestUserBase):
     """A class for testing the view for activating a user's account."""
 
@@ -56,8 +65,8 @@ class TestActivateUserAccount(TestUserBase):
 
         email_address = EmailAddress.objects.get(email=self.user.email)
         self.assertEqual(email_address.user, self.user)
-        self.assertTrue(email_address.is_verified)
-        self.assertTrue(email_address.is_primary)
+        self.assertTrue(email_address.verified)
+        self.assertTrue(email_address.primary)
 
     def test_updates_existing_email_addresses(self):
         """Test that account activation updates EmailAddresses so that
@@ -65,18 +74,18 @@ class TestActivateUserAccount(TestUserBase):
         # Create an unverified, non-primary EmailAddress for the User.
         kwargs = {
             'user': self.user,
-            'is_verified': False,
-            'is_primary': False,
+            'verified': False,
+            'primary': False,
         }
         email_address = EmailAddress.objects.create(
             user=self.user,
             email=self.user.email,
-            is_verified=False,
-            is_primary=False)
+            verified=False,
+            primary=False)
 
         # Create other primary EmailAddresses.
         other_email_addresses = []
-        kwargs['is_verified'] = True
+        kwargs['verified'] = True
         for i in range(3):
             kwargs['email'] = f'{i}@email.com'
             other_email_addresses.append(
@@ -85,7 +94,7 @@ class TestActivateUserAccount(TestUserBase):
         # by using the "update" method.
         EmailAddress.objects.filter(
             pk__in=[ea.pk for ea in other_email_addresses]).update(
-                is_primary=True)
+                primary=True)
 
         url = account_activation_url(self.user)
         response = self.client.get(url)
@@ -95,11 +104,11 @@ class TestActivateUserAccount(TestUserBase):
 
         email_address.refresh_from_db()
         self.assertEqual(email_address.user, self.user)
-        self.assertTrue(email_address.is_verified)
-        self.assertTrue(email_address.is_primary)
+        self.assertTrue(email_address.verified)
+        self.assertTrue(email_address.primary)
 
         for ea in other_email_addresses:
             ea.refresh_from_db()
-            self.assertFalse(ea.is_primary)
+            self.assertFalse(ea.primary)
 
     # TODO

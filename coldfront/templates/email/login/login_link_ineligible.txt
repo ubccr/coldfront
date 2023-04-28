@@ -1,0 +1,12 @@
+Dear {{ PORTAL_NAME }} user,
+
+You requested a link to log in to the portal.
+
+You are ineligible to receive a link for the following reason:
+
+{{ reason }}
+
+Please contact a system administrator if you have any questions.
+
+Thank you,
+{{ signature }}

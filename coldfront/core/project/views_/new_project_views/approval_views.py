@@ -56,7 +56,6 @@ import logging
 
 class SavioProjectRequestListView(LoginRequiredMixin, TemplateView):
     template_name = 'project/project_request/savio/project_request_list.html'
-    login_url = '/'
     # Show completed requests if True; else, show pending requests.
     completed = False
 
@@ -196,7 +195,6 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
                                     SavioProjectRequestMixin, DetailView):
     model = SavioProjectAllocationRequest
     template_name = 'project/project_request/savio/project_request_detail.html'
-    login_url = '/'
 
     logger = logging.getLogger(__name__)
 
@@ -484,7 +482,6 @@ class SavioProjectReviewEligibilityView(LoginRequiredMixin,
     form_class = ReviewStatusForm
     template_name = (
         'project/project_request/savio/project_review_eligibility.html')
-    login_url = '/'
 
     def test_func(self):
         """UserPassesTestMixin tests."""
@@ -552,7 +549,6 @@ class SavioProjectReviewReadinessView(LoginRequiredMixin, UserPassesTestMixin,
     form_class = ReviewStatusForm
     template_name = (
         'project/project_request/savio/project_review_readiness.html')
-    login_url = '/'
 
     logger = logging.getLogger(__name__)
 
@@ -630,7 +626,6 @@ class SavioProjectReviewMemorandumSignedView(LoginRequiredMixin,
     form_class = MemorandumSignedForm
     template_name = (
         'project/project_request/savio/project_review_memorandum_signed.html')
-    login_url = '/'
 
     logger = logging.getLogger(__name__)
 
@@ -699,7 +694,6 @@ class SavioProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
                                   SavioProjectRequestMixin, FormView):
     form_class = SavioProjectReviewSetupForm
     template_name = 'project/project_request/savio/project_review_setup.html'
-    login_url = '/'
 
     def test_func(self):
         """UserPassesTestMixin tests."""
@@ -785,7 +779,6 @@ class SavioProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin,
     form_class = ReviewDenyForm
     template_name = (
         'project/project_request/savio/project_review_deny.html')
-    login_url = '/'
 
     def test_func(self):
         """UserPassesTestMixin tests."""
@@ -844,7 +837,6 @@ class SavioProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin,
 
 class SavioProjectUndenyRequestView(LoginRequiredMixin, UserPassesTestMixin,
                                     SavioProjectRequestMixin, View):
-    login_url = '/'
 
     def test_func(self):
         """UserPassesTestMixin tests."""
@@ -905,7 +897,6 @@ class SavioProjectUndenyRequestView(LoginRequiredMixin, UserPassesTestMixin,
 
 class VectorProjectRequestListView(LoginRequiredMixin, TemplateView):
     template_name = 'project/project_request/vector/project_request_list.html'
-    login_url = '/'
     # Show completed requests if True; else, show pending requests.
     completed = False
 
@@ -995,7 +986,6 @@ class VectorProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
     model = VectorProjectAllocationRequest
     template_name = (
         'project/project_request/vector/project_request_detail.html')
-    login_url = '/'
     context_object_name = 'vector_request'
 
     logger = logging.getLogger(__name__)
@@ -1125,7 +1115,6 @@ class VectorProjectReviewEligibilityView(LoginRequiredMixin,
     form_class = ReviewStatusForm
     template_name = (
         'project/project_request/vector/project_review_eligibility.html')
-    login_url = '/'
 
     def test_func(self):
         """UserPassesTestMixin tests."""
@@ -1190,7 +1179,6 @@ class VectorProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
                                    VectorProjectRequestMixin, FormView):
     form_class = VectorProjectReviewSetupForm
     template_name = 'project/project_request/vector/project_review_setup.html'
-    login_url = '/'
 
     def test_func(self):
         """UserPassesTestMixin tests."""
@@ -1272,7 +1260,6 @@ class VectorProjectReviewSetupView(LoginRequiredMixin, UserPassesTestMixin,
 
 class VectorProjectUndenyRequestView(LoginRequiredMixin, UserPassesTestMixin,
                                      VectorProjectRequestMixin, View):
-    login_url = '/'
 
     def test_func(self):
         """UserPassesTestMixin tests."""

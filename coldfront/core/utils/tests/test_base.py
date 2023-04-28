@@ -2,6 +2,7 @@ from copy import deepcopy
 from http import HTTPStatus
 from io import StringIO
 import os
+import re
 import sys
 
 from django.conf import settings
@@ -149,6 +150,12 @@ class TestBase(TestCase):
         """Return messages included in the given response as a list of
         strings."""
         return [str(m) for m in get_messages(response.wsgi_request)]
+
+    @staticmethod
+    def parse_urls_from_str(s):
+        """Return a list of URLs parsed from the given string, in the
+        order that they appear."""
+        return re.findall('(?P<url>https?://[^\s]+)', s)
 
     @staticmethod
     def sign_user_access_agreement(user):

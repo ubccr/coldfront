@@ -19,7 +19,7 @@ jobs:
 
     services:
       postgres: # Set up a database container with the following specifications
-        image: postgres:9.6.24-alpine3.15
+        image: postgres:15.2-alpine3.17
         env:
           POSTGRES_DB: cf_brc_db
           POSTGRES_PASSWORD: test
