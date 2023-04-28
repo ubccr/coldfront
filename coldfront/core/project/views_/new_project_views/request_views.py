@@ -474,7 +474,7 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
                 first_name=data['first_name'],
                 last_name=data['last_name'],
                 email=email,
-                is_active=False)
+                is_active=True)
         except IntegrityError as e:
             self.logger.error(f'User {email} unexpectedly exists.')
             raise e
