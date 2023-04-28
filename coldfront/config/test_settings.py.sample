@@ -88,6 +88,7 @@ FLAGS = {
     ],
     'BASIC_AUTH_ENABLED': [{'condition': 'boolean', 'value': True}],
     'BRC_ONLY': [{'condition': 'boolean', 'value': True}],
+    'LINK_LOGIN_ENABLED': [{'condition': 'boolean', 'value': False}],
     'LRC_ONLY': [{'condition': 'boolean', 'value': False}],
     'SECURE_DIRS_REQUESTABLE': [{'condition': 'boolean', 'value': True}],
     'SERVICE_UNITS_PURCHASABLE': [{'condition': 'boolean', 'value': True}],
