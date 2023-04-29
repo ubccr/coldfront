@@ -1,9 +1,10 @@
-from coldfront.config.base import SETTINGS_EXPORT
 from coldfront.config.env import ENV
 
 #------------------------------------------------------------------------------
 # Advanced ColdFront configurations
 #------------------------------------------------------------------------------
+
+SETTINGS_EXPORT = []
 
 #------------------------------------------------------------------------------
 # General Center Information
@@ -12,6 +13,13 @@ CENTER_NAME = ENV.str('CENTER_NAME', default='HPC Center')
 CENTER_HELP_URL = ENV.str('CENTER_HELP_URL', default='')
 CENTER_PROJECT_RENEWAL_HELP_URL = ENV.str('CENTER_PROJECT_RENEWAL_HELP_URL', default='')
 CENTER_BASE_URL = ENV.str('CENTER_BASE_URL', default='')
+
+#------------------------------------------------------------------------------
+# Enable Research Outputs, Grants, Publications
+#------------------------------------------------------------------------------
+RESEARCH_OUTPUT_ENABLE = ENV.bool('RESEARCH_OUTPUT_ENABLE', default=False)
+GRANT_ENABLE = ENV.bool('GRANT_ENABLE', default=False)
+PUBLICATION_ENABLE = ENV.bool('PUBLICATION_ENABLE', default=False)
 
 #------------------------------------------------------------------------------
 # Enable Project Review
@@ -38,7 +46,8 @@ ALLOCATION_ACCOUNT_MAPPING = ENV.dict('ALLOCATION_ACCOUNT_MAPPING', default={})
 
 SETTINGS_EXPORT += [
     'ALLOCATION_ACCOUNT_ENABLED',
-    'CENTER_HELP_URL'
+    'CENTER_HELP_URL',
+    
 ]
 
 ADMIN_COMMENTS_SHOW_EMPTY = ENV.bool('ADMIN_COMMENTS_SHOW_EMPTY', default=True)
