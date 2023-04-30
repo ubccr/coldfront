@@ -71,6 +71,10 @@ if EMAIL_ENABLED:
         'EMAIL_DIRECTOR_EMAIL_ADDRESS')
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
 
+from coldfront.core.utils.common import import_from_settings
+RESEARCH_OUTPUT_ENABLE = import_from_settings('RESEARCH_OUTPUT_ENABLE', False)
+PUBLICATION_ENABLE = import_from_settings('PUBLICATION_ENABLE', False)
+
 logger = logging.getLogger(__name__)
 
 class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
@@ -97,6 +101,8 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context['RESEARCH_OUTPUT_ENABLE'] = RESEARCH_OUTPUT_ENABLE
+        context['PUBLICATION_ENABLE'] = PUBLICATION_ENABLE
         # Can the user update the project?
         if self.request.user.is_superuser:
             context['is_allowed_to_update_project'] = True

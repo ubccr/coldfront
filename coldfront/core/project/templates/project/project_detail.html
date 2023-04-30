@@ -43,10 +43,14 @@ Project Detail
     </div>
     <div class="card-body">
       {% if project.status.name != 'Archived' %}
-        <a class="btn btn-success" href="{% url 'project-add-users-search' project.pk %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
+        {% if RESEARCH_OUTPUT_ENABLE or PUBLICATION_ENABLE or GRANT_ENABLE %}
+          <a class="btn btn-success" href="{% url 'project-add-users-search' project.pk %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
+        {% endif %}sssss
         <a class="btn btn-success" href="{% url 'grant-create' project.id %}" role="button"><i class="fas fa-trophy" aria-hidden="true"></i> Add Grant</a>
         <a class="btn btn-success" href="{% url 'publication-search' project.pk %}" role="button"><i class="fas fa-newspaper" aria-hidden="true"></i> Add Publication</a>
-        <a class="btn btn-success" href="{% url 'add-research-output' project.pk %}" role="button"><i class="far fa-newspaper" aria-hidden="true"></i> Add Research Output</a>
+        {% if RESEARCH_OUTPUT_ENABLE %}
+          <a class="btn btn-success" href="{% url 'add-research-output' project.pk %}" role="button"><i class="far fa-newspaper" aria-hidden="true"></i> Add Research Output</a>
+        {% endif %}
       {% endif %}
     </div>
   </div>
@@ -356,6 +360,7 @@ Project Detail
 
 
 <!-- Start Project Publications -->
+{% if PUBLICATION_ENABLE %}
 <div class="card mb-3">
   <div class="card-header">
     <h3 class="d-inline" id="publications"><i class="fas fa-newspaper" aria-hidden="true"></i> Publications</h3> <span class="badge badge-secondary">{{publications.count}}</span>
@@ -404,10 +409,12 @@ Project Detail
     {% endif %}
   </div>
 </div>
+{% endif %}
 <!-- End Project Publications -->
 
 
 <!-- Start Project ResearchOutputs -->
+{% if RESEARCH_OUTPUT_ENABLE %}
 <div class="card mb-3">
   <div class="card-header">
     <h3 class="d-inline" id="research_outputs"><i class="far fa-newspaper" aria-hidden="true"></i> Research Outputs</h3> <span class="badge badge-secondary">{{ research_outputs.count}}</span>
@@ -445,6 +452,7 @@ Project Detail
     {% endif %}
   </div>
 </div>
+{% endif %}
 <!-- End Project ResearchOutputs -->
 
 

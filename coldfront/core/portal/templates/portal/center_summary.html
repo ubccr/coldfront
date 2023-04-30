@@ -27,6 +27,7 @@ Center Summary
 <!-- End Publications -->
 
 <!-- Start  Research Outputs -->
+{% if RESEARCH_OUTPUT_ENABLE %}
 <div class="card mb-3 border-primary">
   <div class="card-header bg-primary text-white">
     <i class="far fa-newspaper" aria-hidden="true"></i> User Entered Research Outputs
@@ -35,6 +36,7 @@ Center Summary
     <strong>Total Publications:</strong> {{total_research_outputs_count}}
   </div>
 </div>
+{% endif %}
 <!-- End Research Outputs -->
 
 <!-- Start  Grants -->

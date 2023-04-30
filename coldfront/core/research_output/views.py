@@ -15,7 +15,8 @@ from coldfront.core.utils.mixins.views import (
     ProjectInContextMixin,
     SnakeCaseTemplateNameMixin,
 )
-
+from coldfront.core.utils.common import import_from_settings
+RESEARCH_OUTPUT_ENABLE = import_from_settings('RESEARCH_OUTPUT_ENABLE', False)
 
 class ResearchOutputCreateView(
         UserActiveManagerOrHigherMixin,
@@ -44,6 +45,11 @@ class ResearchOutputCreateView(
         self.object = obj
 
         return super().form_valid(form)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['RESEARCH_OUTPUT_ENABLE'] = RESEARCH_OUTPUT_ENABLE
+        return context
 
     def get_success_url(self):
         return reverse('project-detail', kwargs={'pk': self.kwargs.get('project_pk')})
@@ -97,3 +103,8 @@ class ResearchOutputDeleteResearchOutputsView(
         messages.success(request, msg)
 
         return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['RESEARCH_OUTPUT_ENABLE'] = RESEARCH_OUTPUT_ENABLE
+        return context

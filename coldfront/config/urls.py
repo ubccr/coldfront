@@ -2,6 +2,7 @@
 ColdFront URL Configuration
 """
 from django.conf import settings
+from coldfront.core.utils.common import import_from_settings
 from django.contrib import admin
 from django.urls import include, path
 from django.views.generic import TemplateView
@@ -10,6 +11,7 @@ import coldfront.core.portal.views as portal_views
 
 admin.site.site_header = 'ColdFront Administration'
 admin.site.site_title = 'ColdFront Administration'
+RESEARCH_OUTPUT_ENABLE = import_from_settings("RESEARCH_OUTPUT_ENABLE", True)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -24,8 +26,10 @@ urlpatterns = [
     path('resource/', include('coldfront.core.resource.urls')),
     path('grant/', include('coldfront.core.grant.urls')),
     path('publication/', include('coldfront.core.publication.urls')),
-    path('research-output/', include('coldfront.core.research_output.urls')),
 ]
+
+if RESEARCH_OUTPUT_ENABLE:
+    urlpatterns.append(path('research-output/', include('coldfront.core.research_output.urls')))
 
 
 if 'coldfront.plugins.iquota' in settings.INSTALLED_APPS:
