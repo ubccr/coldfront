@@ -1,0 +1,60 @@
+services:
+  db:
+    image: coldfront_db:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.db
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: root
+      LOAD_DUMP: true
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "admin", "-d", "${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7
+    ports:
+      - 6379:6379
+    volumes:
+      - redis_data:/data
+    command: --requirepass root
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  coldfront:
+    image: coldfront:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - ${COLDFRONT_PORT}:80
+    volumes:
+      - ./:/vagrant/coldfront_app/coldfront/
+    extra_hosts:
+        - "host.docker.internal:host-gateway"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  db_data:
+    external: false
+  redis_data:
+    external: false
+
