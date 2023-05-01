@@ -16,7 +16,7 @@ from coldfront.core.utils.mixins.views import (
     SnakeCaseTemplateNameMixin,
 )
 from coldfront.core.utils.common import import_from_settings
-RESEARCH_OUTPUT_ENABLE = import_from_settings('RESEARCH_OUTPUT_ENABLE', False)
+RESEARCH_OUTPUT_ENABLE = import_from_settings('RESEARCH_OUTPUT_ENABLE', True)
 
 class ResearchOutputCreateView(
         UserActiveManagerOrHigherMixin,
