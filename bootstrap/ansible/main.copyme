@@ -21,6 +21,7 @@ djangoprojname: coldfront
 # The name of the PostgreSQL database.
 # TODO: For LRC, set this to 'cf_lrc_db'.
 db_name: cf_brc_db
+db_host: localhost
 
 # The credentials for the database admin user.
 # TODO: Replace the username and password.
@@ -30,6 +31,7 @@ db_admin_passwd: ''
 # The password for Redis.
 # TODO: Replace the password.
 redis_passwd: ''
+redis_host: localhost
 
 # Log paths.
 # TODO: For LRC, use the substring 'cf_mylrc'.

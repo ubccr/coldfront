@@ -27,6 +27,7 @@ class RequestListItem:
     Object to keep track of all variables used in for each request type
     in the request hub
     """
+
     def __init__(self):
         num = None
         title = None
@@ -89,12 +90,12 @@ class RequestHubView(LoginRequiredMixin,
         cluster_account_list_complete = \
             ClusterAccessRequest.objects.filter(
                 status__name__in=['Denied', 'Complete'], **kwargs).order_by(
-                'modified')
+                '-modified')
 
         cluster_account_list_pending = \
             ClusterAccessRequest.objects.filter(
                 status__name__in=['Pending - Add', 'Processing'], **kwargs).order_by(
-                'modified')
+                '-modified')
 
         cluster_request_object.num = self.paginators
         cluster_request_object.pending_queryset = \
@@ -130,12 +131,12 @@ class RequestHubView(LoginRequiredMixin,
         removal_request_pending = \
             ProjectUserRemovalRequest.objects.filter(
                 status__name__in=['Pending', 'Processing'], *args).order_by(
-                'modified')
+                '-modified')
 
         removal_request_complete = \
             ProjectUserRemovalRequest.objects.filter(
                 status__name='Complete', *args).order_by(
-                'modified')
+                '-modified')
 
         removal_request_object.num = self.paginators
         removal_request_object.pending_queryset = \
@@ -174,7 +175,7 @@ class RequestHubView(LoginRequiredMixin,
             annotate_queryset_with_allocation_period_not_started_bool(
                 SavioProjectAllocationRequest.objects.filter(
                     status__name__in=pending_status_names, *args
-                ).order_by('request_time'))
+                ).order_by('-request_time'))
 
         complete_status_names = [
             'Approved - Complete', 'Approved - Scheduled', 'Denied']
@@ -182,7 +183,7 @@ class RequestHubView(LoginRequiredMixin,
             annotate_queryset_with_allocation_period_not_started_bool(
                 SavioProjectAllocationRequest.objects.filter(
                     status__name__in=complete_status_names, *args
-                ).order_by('request_time'))
+                ).order_by('-request_time'))
 
         savio_proj_request_object.num = self.paginators
         savio_proj_request_object.pending_queryset = \
@@ -219,14 +220,12 @@ class RequestHubView(LoginRequiredMixin,
         project_request_pending = \
             VectorProjectAllocationRequest.objects.filter(
                 status__name__in=['Under Review', 'Approved - Processing'],
-                *args).order_by(
-                'modified')
+                *args).order_by('-modified')
 
         project_request_complete = \
             VectorProjectAllocationRequest.objects.filter(
                 status__name__in=['Approved - Complete', 'Denied'],
-                *args).order_by(
-                'modified')
+                *args).order_by('-modified')
 
         vector_proj_request_object.num = self.paginators
         vector_proj_request_object.pending_queryset = \
@@ -263,12 +262,12 @@ class RequestHubView(LoginRequiredMixin,
         project_join_request_pending = \
             ProjectUserJoinRequest.objects.filter(
                 project_user__status__name='Pending - Add',
-                *args).order_by('modified')
+                *args).order_by('-modified')
 
         project_join_request_complete = \
             ProjectUserJoinRequest.objects.filter(
                 project_user__status__name__in=['Active', 'Denied'],
-                *args).order_by('modified')
+                *args).order_by('-modified')
 
         proj_join_request_object.num = self.paginators
         proj_join_request_object.pending_queryset = \
@@ -308,14 +307,14 @@ class RequestHubView(LoginRequiredMixin,
             annotate_queryset_with_allocation_period_not_started_bool(
                 AllocationRenewalRequest.objects.filter(
                     status__name__in=pending_status_names, *args
-                ).order_by('request_time'))
+                ).order_by('-request_time'))
 
         complete_status_names = ['Approved', 'Complete', 'Denied']
         project_renewal_request_complete = \
             annotate_queryset_with_allocation_period_not_started_bool(
                 AllocationRenewalRequest.objects.filter(
                     status__name__in=complete_status_names, *args
-                ).order_by('request_time'))
+                ).order_by('-request_time'))
 
         proj_renewal_request_object.num = self.paginators
         proj_renewal_request_object.pending_queryset = \
@@ -347,10 +346,10 @@ class RequestHubView(LoginRequiredMixin,
         user = self.request.user
 
         su_purchase_request_pending = AllocationAdditionRequest.objects.filter(
-            status__name__in=['Under Review']).order_by('modified')
+            status__name__in=['Under Review']).order_by('-modified')
 
         su_purchase_request_complete = AllocationAdditionRequest.objects.filter(
-            status__name__in=['Complete', 'Denied']).order_by('modified')
+            status__name__in=['Complete', 'Denied']).order_by('-modified')
 
         if not self.show_all_requests:
             request_ids = [
@@ -395,10 +394,10 @@ class RequestHubView(LoginRequiredMixin,
         user = self.request.user
 
         secure_dir_join_pending = SecureDirAddUserRequest.objects.filter(
-            status__name__in=['Pending', 'Processing']).order_by('modified')
+            status__name__in=['Pending', 'Processing']).order_by('-modified')
 
         secure_dir_join_complete = SecureDirAddUserRequest.objects.filter(
-            status__name__in=['Complete', 'Denied']).order_by('modified')
+            status__name__in=['Complete', 'Denied']).order_by('-modified')
 
         if not self.show_all_requests:
             # limit secure_dir_requests to objects user is a PI of or user has
@@ -406,22 +405,24 @@ class RequestHubView(LoginRequiredMixin,
             request_pks = [request.pk for request in secure_dir_join_pending if
                            request.allocation.project.projectuser_set.filter(
                                user=user,
-                               role__name='Principle Investigator',
+                               role__name='Principal Investigator',
                                status__name='Active'
                            ).exists()]
             pi_cond = Q(pk__in=request_pks)
 
-            secure_dir_join_pending = secure_dir_join_pending.filter(user_cond | pi_cond)
+            secure_dir_join_pending = secure_dir_join_pending.filter(
+                user_cond | pi_cond)
 
             request_pks = [request.pk for request in secure_dir_join_complete if
                            request.allocation.project.projectuser_set.filter(
                                user=user,
-                               role__name='Principle Investigator',
+                               role__name='Principal Investigator',
                                status__name='Active'
                            ).exists()]
             pi_cond = Q(pk__in=request_pks)
 
-            secure_dir_join_complete = secure_dir_join_complete.filter(user_cond | pi_cond)
+            secure_dir_join_complete = secure_dir_join_complete.filter(
+                user_cond | pi_cond)
 
         secure_dir_join_request_object.num = self.paginators
         secure_dir_join_request_object.pending_queryset = \
@@ -458,10 +459,10 @@ class RequestHubView(LoginRequiredMixin,
         user = self.request.user
 
         secure_dir_remove_pending = SecureDirRemoveUserRequest.objects.filter(
-            status__name__in=['Pending', 'Processing']).order_by('modified')
+            status__name__in=['Pending', 'Processing']).order_by('-modified')
 
         secure_dir_remove_complete = SecureDirRemoveUserRequest.objects.filter(
-            status__name__in=['Complete', 'Denied']).order_by('modified')
+            status__name__in=['Complete', 'Denied']).order_by('-modified')
 
         if not self.show_all_requests:
             # limit secure_dir_requests to objects user is a PI of or user has
@@ -469,22 +470,24 @@ class RequestHubView(LoginRequiredMixin,
             request_pks = [request.pk for request in secure_dir_remove_pending if
                            request.allocation.project.projectuser_set.filter(
                                user=user,
-                               role__name='Principle Investigator',
+                               role__name='Principal Investigator',
                                status__name='Active'
                            ).exists()]
             pi_cond = Q(pk__in=request_pks)
 
-            secure_dir_remove_pending = secure_dir_remove_pending.filter(user_cond | pi_cond)
+            secure_dir_remove_pending = secure_dir_remove_pending.filter(
+                user_cond | pi_cond)
 
             request_pks = [request.pk for request in secure_dir_remove_complete if
                            request.allocation.project.projectuser_set.filter(
                                user=user,
-                               role__name='Principle Investigator',
+                               role__name='Principal Investigator',
                                status__name='Active'
                            ).exists()]
             pi_cond = Q(pk__in=request_pks)
 
-            secure_dir_remove_complete = secure_dir_remove_complete.filter(user_cond | pi_cond)
+            secure_dir_remove_complete = secure_dir_remove_complete.filter(
+                user_cond | pi_cond)
 
         secure_dir_remove_request_object.num = self.paginators
         secure_dir_remove_request_object.pending_queryset = \
@@ -522,10 +525,10 @@ class RequestHubView(LoginRequiredMixin,
         user = self.request.user
 
         secure_dir_pending = SecureDirRequest.objects.filter(
-            status__name__in=['Under Review', 'Approved - Processing']).order_by('modified')
+            status__name__in=['Under Review', 'Approved - Processing']).order_by('-modified')
 
         secure_dir_complete = SecureDirRequest.objects.filter(
-            status__name__in=['Approved - Complete', 'Denied']).order_by('modified')
+            status__name__in=['Approved - Complete', 'Denied']).order_by('-modified')
 
         if not self.show_all_requests:
             # limit secure_dir_requests to objects user is a PI of or user has
@@ -533,7 +536,7 @@ class RequestHubView(LoginRequiredMixin,
             request_pks = [request.pk for request in secure_dir_pending if
                            request.project.projectuser_set.filter(
                                user=user,
-                               role__name='Principle Investigator',
+                               role__name='Principal Investigator',
                                status__name='Active'
                            ).exists()]
             pi_cond = Q(pk__in=request_pks)
@@ -543,12 +546,13 @@ class RequestHubView(LoginRequiredMixin,
             request_pks = [request.pk for request in secure_dir_complete if
                            request.project.projectuser_set.filter(
                                user=user,
-                               role__name='Principle Investigator',
+                               role__name='Principal Investigator',
                                status__name='Active'
                            ).exists()]
             pi_cond = Q(pk__in=request_pks)
 
-            secure_dir_complete = secure_dir_complete.filter(user_cond | pi_cond)
+            secure_dir_complete = secure_dir_complete.filter(
+                user_cond | pi_cond)
 
         secure_dir_request_object.num = self.paginators
         secure_dir_request_object.pending_queryset = \
@@ -604,5 +608,6 @@ class RequestHubView(LoginRequiredMixin,
 
         context['admin_staff'] = (self.request.user.is_superuser or
                                   self.request.user.is_staff)
+        context['hide_table_sorter'] = True
 
         return context

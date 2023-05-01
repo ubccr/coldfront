@@ -43,6 +43,15 @@ class ComputingAllowance(object):
             allowance_names.append(LRCAllowances.LR)
             allowance_names.append(LRCAllowances.RECHARGE)
         return self._name in allowance_names
+    
+    def is_condo(self):
+        """Return whether the allowance is a condo allocation."""
+        allowance_names = []
+        if flag_enabled('BRC_ONLY'):
+            allowance_names.append(BRCAllowances.CO)
+        if flag_enabled('LRC_ONLY'):
+            allowance_names.append(LRCAllowances.LR)
+        return self._name in allowance_names
 
     def is_instructional(self):
         """Return whether the allowance is for a course."""
