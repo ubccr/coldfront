@@ -72,8 +72,9 @@ if EMAIL_ENABLED:
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
 
 from coldfront.core.utils.common import import_from_settings
-RESEARCH_OUTPUT_ENABLE = import_from_settings('RESEARCH_OUTPUT_ENABLE', False)
-PUBLICATION_ENABLE = import_from_settings('PUBLICATION_ENABLE', False)
+RESEARCH_OUTPUT_ENABLE = import_from_settings('RESEARCH_OUTPUT_ENABLE', True)
+PUBLICATION_ENABLE = import_from_settings('PUBLICATION_ENABLE', True)
+GRANT_ENABLE = import_from_settings("GRANT_ENABLE", True)
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +104,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context = super().get_context_data(**kwargs)
         context['RESEARCH_OUTPUT_ENABLE'] = RESEARCH_OUTPUT_ENABLE
         context['PUBLICATION_ENABLE'] = PUBLICATION_ENABLE
+        context["GRANT_ENABLE"] = GRANT_ENABLE
         # Can the user update the project?
         if self.request.user.is_superuser:
             context['is_allowed_to_update_project'] = True
@@ -1013,6 +1015,11 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         return render(request, self.template_name, context)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["GRANT_ENABLE"] = GRANT_ENABLE
+        return context
+
     def post(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         project_review_form = ProjectReviewForm(project_obj.pk, request.POST)
@@ -1048,7 +1055,6 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             messages.error(
                 request, 'There was an error in processing  your project review.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
-
 
 class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
 
@@ -1127,6 +1133,7 @@ class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         pk = self.kwargs.get('pk')
         project_review_obj = get_object_or_404(ProjectReview, pk=pk)
         context['project_review'] = project_review_obj
+        context["GRANT_ENABLE"] = GRANT_ENABLE
 
         return context
 

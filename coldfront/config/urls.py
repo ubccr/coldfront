@@ -12,6 +12,7 @@ import coldfront.core.portal.views as portal_views
 admin.site.site_header = 'ColdFront Administration'
 admin.site.site_title = 'ColdFront Administration'
 RESEARCH_OUTPUT_ENABLE = import_from_settings("RESEARCH_OUTPUT_ENABLE", True)
+GRANT_ENABLE = import_from_settings("GRANT_ENABLE", True)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -24,13 +25,14 @@ urlpatterns = [
     path('project/', include('coldfront.core.project.urls')),
     path('allocation/', include('coldfront.core.allocation.urls')),
     path('resource/', include('coldfront.core.resource.urls')),
-    path('grant/', include('coldfront.core.grant.urls')),
     path('publication/', include('coldfront.core.publication.urls')),
 ]
 
 if RESEARCH_OUTPUT_ENABLE:
     urlpatterns.append(path('research-output/', include('coldfront.core.research_output.urls')))
 
+if GRANT_ENABLE:
+    urlpatterns.append(path('grant/', include('coldfront.core.grant.urls')))
 
 if 'coldfront.plugins.iquota' in settings.INSTALLED_APPS:
     urlpatterns.append(path('iquota/', include('coldfront.plugins.iquota.urls')))

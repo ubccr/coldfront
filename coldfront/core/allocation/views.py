@@ -70,6 +70,7 @@ ALLOCATION_ENABLE_CHANGE_REQUESTS_BY_DEFAULT = import_from_settings(
 
 PROJECT_ENABLE_PROJECT_REVIEW = import_from_settings(
     'PROJECT_ENABLE_PROJECT_REVIEW', False)
+GRANT_ENABLE = import_from_settings("GRANT_ENABLE", True)
 INVOICE_ENABLED = import_from_settings('INVOICE_ENABLED', False)
 if INVOICE_ENABLED:
     INVOICE_DEFAULT_STATUS = import_from_settings(
@@ -939,6 +940,7 @@ class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templat
         context['allocation_status_active'] = AllocationStatusChoice.objects.get(name='Active')
         context['allocation_list'] = allocation_list
         context['PROJECT_ENABLE_PROJECT_REVIEW'] = PROJECT_ENABLE_PROJECT_REVIEW
+        context["GRANT_ENABLE"] = GRANT_ENABLE
         context['ALLOCATION_DEFAULT_ALLOCATION_LENGTH'] = ALLOCATION_DEFAULT_ALLOCATION_LENGTH
         return context
 
