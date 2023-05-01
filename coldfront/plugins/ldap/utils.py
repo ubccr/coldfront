@@ -159,7 +159,8 @@ class LDAPConn:
 
 
 def user_valid(user):
-    return user['accountExpires'][0] > timezone.now() and user['userAccountControl'][0] in [512, 66048]
+    return user['userAccountControl'][0] in [512, 66048]
+    # and (user['accountExpires'][0].year == 1601 or user['accountExpires'][0] > timezone.now())
 
 class GroupUserCollection:
     '''
@@ -290,8 +291,9 @@ def collect_update_project_status_membership():
 
     active_pi_groups, inactive_pi_groups = remove_inactive_disabled_managers(groupusercollections)
     projects_to_deactivate = [g.project for g in inactive_pi_groups]
-    Project.objects.bulk_update([Project(id=p.pk, status=ProjectStatusChoice.objects.get(name='Inactive'))
-                                    for p in projects_to_deactivate], ['status'])
+    logger.info("projects to deactivate:")
+    # Project.objects.bulk_update([Project(id=p.pk, status=ProjectStatusChoice.objects.get(name='Inactive'))
+    #                                 for p in projects_to_deactivate], ['status'])
     logger.debug('projects_to_deactivate %s', projects_to_deactivate)
     if projects_to_deactivate:
         pis_to_deactivate = ProjectUser.objects.filter(
@@ -329,21 +331,26 @@ def collect_update_project_status_membership():
 
         # handle any AD users not in Coldfront
         if ad_users_not_added:
-            logger.debug('ADUsers not in ProjectUsers:\n%s', ad_users_not_added)
+            logger.debug('ad_users_not_added - ADUsers not in ProjectUsers:\n%s', ad_users_not_added)
             # find accompanying ifxusers in the system and add as ProjectUsers
-            ifxusers, missing_users = id_present_missing_users(ad_users_not_added)
+            present_project_ifxusers, missing_users = id_present_missing_users(ad_users_not_added)
+            logger.debug('present_project_ifxusers - ADUsers who have ifxuser accounts:\n%s', ad_users_not_added)
+
             log_missing('users', missing_users) # log missing IFXusers
 
             # If user is missing because status was changed to 'removed', update status
-            present_users = group.project.projectuser_set.filter(user__in=ifxusers)
-            if present_users:
+            present_projectusers = group.project.projectuser_set.filter(user__in=present_project_ifxusers)
+            logger.debug('present_users - ADUsers who have ifxuser accounts:\n%s', ad_users_not_added)
+            if present_projectusers:
                 logger.warning('found reactivated ADUsers for project %s: %s',
-                    group.project.title, [user.user.username for user in present_users])
+                    group.project.title, [user.user.username for user in present_projectusers])
 
-                present_users.update(role=projectuser_role_user,
+                present_projectusers.update(role=projectuser_role_user,
                                     status=projectuserstatus_active)
             # create new entries for all new ProjectUsers
-            missing_projectusers = ifxusers.exclude(id__in=[pu.pk for pu in present_users])
+            missing_projectusers = present_project_ifxusers.exclude(id__in=[
+                                                pu.user.pk for pu in present_projectusers])
+            logger.debug("missing_projectusers - ifxusers in present_project_ifxusers who are not ")
             ProjectUser.objects.bulk_create([ProjectUser(
                                                 project=group.project,
                                                 user=user,
@@ -356,6 +363,7 @@ def collect_update_project_status_membership():
         ### identify inactive ProjectUsers, slate for status change ###
         remove_projusers = group.project.projectuser_set.filter(
                         user__username__in=remove_projuser_names)
+        logger.debug("remove_projusers - projectusers slated for removal:\n %s", remove_projusers)
         projectusers_to_remove.extend(list(remove_projusers))
 
     ### update status of projectUsers slated for removal ###
