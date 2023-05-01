@@ -28,6 +28,8 @@ from coldfront.core.publication.forms import (
 from coldfront.core.publication.models import Publication, PublicationSource
 from doi2bib import crossref
 
+from coldfront.core.utils.common import import_from_settings
+PUBLICATION_ENABLE = import_from_settings("PUBLICATION_ENABLE", True)
 
 MANUAL_SOURCE = 'manual'
 
@@ -64,6 +66,7 @@ class PublicationSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
         context['publication_search_form'] = PublicationSearchForm()
         context['project'] = Project.objects.get(
             pk=self.kwargs.get('project_pk'))
+        context["PUBLICATION_ENABLE"] = PUBLICATION_ENABLE
         return context
 
 
@@ -172,6 +175,7 @@ class PublicationSearchResultView(LoginRequiredMixin, UserPassesTestMixin, Templ
         context['formset'] = formset
         context['search_ids'] = search_ids
         context['pubs'] = pubs
+        context["PUBLICATION_ENABLE"] = PUBLICATION_ENABLE
 
         return render(request, self.template_name, context)
 
@@ -302,6 +306,7 @@ class PublicationAddManuallyView(LoginRequiredMixin, UserPassesTestMixin, FormVi
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
         context['project'] = Project.objects.get(pk=self.kwargs.get('project_pk'))
+        context["PUBLICATION_ENABLE"] = PUBLICATION_ENABLE
         return context
 
     def get_success_url(self):
@@ -354,6 +359,7 @@ class PublicationDeletePublicationsView(LoginRequiredMixin, UserPassesTestMixin,
             context['formset'] = formset
 
         context['project'] = project_obj
+        context["PUBLICATION_ENABLE"] = PUBLICATION_ENABLE
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
@@ -441,6 +447,7 @@ class PublicationExportPublicationsView(LoginRequiredMixin, UserPassesTestMixin,
             context['formset'] = formset
 
         context['project'] = project_obj
+        context["PUBLICATION_ENABLE"] = PUBLICATION_ENABLE
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):

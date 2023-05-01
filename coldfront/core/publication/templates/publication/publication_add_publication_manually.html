@@ -2,7 +2,7 @@
 {% load crispy_forms_tags %}
 {% load static %}
 
-
+{% if PUBLICATION_ENABLE %}
 {% block title %}
 Add Publication to Project Manually
 {% endblock %}
@@ -46,3 +46,4 @@ Add Publication to Project Manually
   </div>
 </div>
 {% endblock %}
+{% endif %}

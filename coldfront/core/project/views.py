@@ -1009,16 +1009,13 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         context = {}
         context['project'] = project_obj
+        context["PUBLICATION_ENABLE"] = PUBLICATION_ENABLE
+        context["GRANT_ENABLE"] = GRANT_ENABLE
         context['project_review_form'] = project_review_form
         context['project_users'] = ', '.join(['{} {}'.format(ele.user.first_name, ele.user.last_name)
                                               for ele in project_obj.projectuser_set.filter(status__name='Active').order_by('user__last_name')])
 
         return render(request, self.template_name, context)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["GRANT_ENABLE"] = GRANT_ENABLE
-        return context
 
     def post(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
@@ -1066,6 +1063,13 @@ class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     def get_queryset(self):
         return ProjectReview.objects.filter(status__name='Pending')
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["GRANT_ENABLE"] = GRANT_ENABLE
+        context["PUBLICATION_ENABLE"] = PUBLICATION_ENABLE
+
+        return context
+
     def test_func(self):
         """ UserPassesTestMixin Tests"""
 
@@ -1111,7 +1115,7 @@ class ProjectReviewCompleteView(LoginRequiredMixin, UserPassesTestMixin, View):
         return HttpResponseRedirect(reverse('project-review-list'))
 
 
-class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
+class ProjectReviewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     form_class = ProjectReviewEmailForm
     template_name = 'project/project_review_email.html'
     login_url = "/"
@@ -1134,6 +1138,7 @@ class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         project_review_obj = get_object_or_404(ProjectReview, pk=pk)
         context['project_review'] = project_review_obj
         context["GRANT_ENABLE"] = GRANT_ENABLE
+        context["PUBLICATION_ENABLE"] = PUBLICATION_ENABLE
 
         return context
 

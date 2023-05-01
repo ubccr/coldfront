@@ -1,5 +1,6 @@
 {% load crispy_forms_tags %}
 
+{% if PUBLICATION_ENABLE %}
 {% if formset %}
   <div class="card border-light">
     <div class="card-body">
@@ -49,6 +50,7 @@
   <div class="alert alert-info">
     No users to remove!
   </div>
+{% endif %}
 {% endif %}
 
 <script>

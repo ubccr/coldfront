@@ -15,6 +15,7 @@ Center Summary
 <hr>
 
 <!-- Start  Publications -->
+{% if PUBLICATION_ENABLE %}
 <div class="card mb-3 border-primary">
   <div class="card-header bg-primary text-white">
     <i class="fas fa-newspaper" aria-hidden="true"></i> User Entered Publications
@@ -23,11 +24,11 @@ Center Summary
     <div id="chartPublications"></div>
     <strong>Total Publications:</strong> {{total_publications_count}}
   </div>
-</div>
+{% endif %}
 <!-- End Publications -->
 
 <!-- Start  Research Outputs -->
-{% if RESEARCH_OUTPUT_ENABLE %}
+{% if RESEARCH_OUTPUT_ENABLE and PUBLICATION_ENABLE %}
 <div class="card mb-3 border-primary">
   <div class="card-header bg-primary text-white">
     <i class="far fa-newspaper" aria-hidden="true"></i> User Entered Research Outputs
