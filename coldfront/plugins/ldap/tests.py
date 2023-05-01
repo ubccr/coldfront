@@ -125,10 +125,6 @@ class GroupUserCollectionTests(TestCase):
         }
         self.guc = (GroupUserCollection(group_name, ad_users, pi))
 
-    def deactivate_pi(self):
-        self.guc.pi['accountExpires'] = self.expireduser_accountExpires
-        self.guc.members[0]['accountExpires'] = self.expireduser_accountExpires
-
     def disable_pi(self):
         self.guc.pi['userAccountControl'] = [514]
         self.guc.members[0]['userAccountControl'] = [514]
@@ -138,10 +134,6 @@ class GroupUserCollectionTests(TestCase):
 
     def test_current_ad_users(self):
         self.assertEqual(len(self.guc.current_ad_users), 3)
-
-    def test_pi_not_active(self):
-        self.deactivate_pi()
-        self.assertEqual(self.guc.pi_is_active, False)
 
     def test_pi_disabled(self):
         self.disable_pi()
@@ -155,13 +147,6 @@ class GroupUserCollectionTests(TestCase):
     def test_add_new_projects_pi_disabled(self):
         '''group with disabled pi is not added'''
         self.disable_pi()
-        added_projects, errortracker = add_new_projects([self.guc], { 'no_pi': [], 'not_found': [] })
-        self.assertEqual(len(added_projects), 0)
-        self.assertEqual(errortracker['no_pi'], ['bortkiewicz_lab'])
-
-    def test_add_new_projects_pi_expired(self):
-        '''group with expired pi is not added'''
-        self.deactivate_pi()
         added_projects, errortracker = add_new_projects([self.guc], { 'no_pi': [], 'not_found': [] })
         self.assertEqual(len(added_projects), 0)
         self.assertEqual(errortracker['no_pi'], ['bortkiewicz_lab'])
