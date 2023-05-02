@@ -208,6 +208,8 @@ def update_csv(new_entries, dirpath, csv_name, date_update='date'):
             df = pd.read_csv(fpath, parse_dates=[date_update])
         except FileNotFoundError:
             df = pd.DataFrame()
+        except ValueError:
+            df = pd.read_csv(fpath)
         new_records = pd.DataFrame(new_entries)
         col_checks = new_records.columns.values.tolist()
         new_records[date_update] = datetime.today()

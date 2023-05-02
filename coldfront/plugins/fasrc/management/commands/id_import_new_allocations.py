@@ -112,13 +112,14 @@ class Command(BaseCommand):
                         'status': AllocationUserStatusChoice.objects.get(name='Active')}
                     )
                 except ValidationError:
-                    logger.debug('adding PI %s to allocation %s failed', pi_obj.pi.username, allocation.pk)
+                    logger.warning('adding PI %s to allocation %s failed', pi_obj.pi.username, allocation.pk)
                     created = None
                 if created:
                     print('PI added: ' + project.pi.username)
         if not added_allocations_df.empty:
             added_allocations_df['billing_code'] = None
-            update_csv(added_allocations_df.to_dict(orient='records'), './local_data/', 'added_allocations.csv')
+            update_csv(added_allocations_df.to_dict(orient='records'),
+                './local_data/', f'added_allocations_{datetime.today().date()}.csv')
         push_quota_data(result_file)
         pull_sf_push_cf_redash()
         return json.dumps(command_report, indent=2)

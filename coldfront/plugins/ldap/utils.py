@@ -291,9 +291,8 @@ def collect_update_project_status_membership():
 
     active_pi_groups, inactive_pi_groups = remove_inactive_disabled_managers(groupusercollections)
     projects_to_deactivate = [g.project for g in inactive_pi_groups]
-    logger.info("projects to deactivate:")
-    # Project.objects.bulk_update([Project(id=p.pk, status=ProjectStatusChoice.objects.get(name='Inactive'))
-    #                                 for p in projects_to_deactivate], ['status'])
+    Project.objects.bulk_update([Project(id=p.pk, status=ProjectStatusChoice.objects.get(name='Inactive'))
+                                    for p in projects_to_deactivate], ['status'])
     logger.debug('projects_to_deactivate %s', projects_to_deactivate)
     if projects_to_deactivate:
         pis_to_deactivate = ProjectUser.objects.filter(

@@ -10,7 +10,7 @@ Request new or update existing allocation
 
 
 {% block content %}
-<h2>Request new or update existing allocation <br><small>Project: {{ project.title }}</small></h2>
+<h2>Request a new allocation <br><small>Project: {{ project.title }}</small></h2>
 <hr>
 
 <p class="text-justify">The following {% settings_value 'CENTER_NAME' %}
@@ -65,6 +65,7 @@ Request new or update existing allocation
   {% csrf_token %}
   {{form |crispy}}
 
+<div id=resource_message></div>
   <div id="eula-div" style="display: none;">
     <textarea style="display:none;min-width:100%" id="eula"  rows="15"></textarea>
     <br>
@@ -74,6 +75,7 @@ Request new or update existing allocation
   <input class="btn btn-primary" type="submit" value="Submit" />
   <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button">Back to Project</a><br>
 </form>
+
 
 <!-- Large modal -->
 <div id="Modal" class="modal fade bd-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
@@ -142,6 +144,25 @@ Request new or update existing allocation
   $('#modal_link').on("click", function () {
     $('#Modal').modal('show');
   });
+  $(function (){
+    //when a resource is selected from the resource dropdown list, if the resource
+    // id is present as a key in resources_with_allocations, display a message
+    // informing the user they already have an allocation containing a link to
+    // the allocation change request form for that allocation.
+    var resources_with_allocations = {{ resources_with_allocations | safe }};
+    $('#id_resource').change(function () {
+      var resource = $(this).val();
+      if (resources_with_allocations.hasOwnProperty(resource)) {
+        let allocation_pk = resources_with_allocations[resource];
+        url = "{% url 'allocation-change' 99999 %}".replace("99999", allocation_pk);
+        message = `<div class="alert alert-warning" role="alert">Warning: you already have an allocation on the selected resource. Did you mean to submit an <a href=${url}>Allocation Change Request<\a> instead?</div>`
+        $('#resource_message').html(message);
+      }
+      else {
+        $('#resource_message').html('<div></div>');
+      }
+    });
+  })
   $(function () {
     $('#myFormSubmit').click(function (e) {
       e.preventDefault();

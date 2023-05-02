@@ -82,7 +82,8 @@ Project Detail
     <span class="badge badge-secondary">{{allocations|length}}</span>
     <div class="float-right">
       {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
-        <a class="btn btn-success" href="{% url 'allocation-create' project.pk %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Request Resource Allocation</a>
+        <a class="btn btn-success" href="{% url 'allocation-create' project.pk %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i>
+          Request New Allocation</a>
       {% endif %}
     </div>
   </div>
@@ -110,7 +111,18 @@ Project Detail
             <td>{{ allocation.size|floatformat:1 }}</td>
             <td>${{allocation.cost|floatformat:2 }}</td>
             <td>
-              <a href="{% url 'allocation-detail' allocation.pk %}">View Details</a>
+              <a href="{% url 'allocation-detail' allocation.pk %}">
+              <span class="badge badge-success"><i class="fas fa-search" aria-hidden="true"></i>
+                View Details
+              </span>
+              </a>
+              {% if is_allowed_to_update_project and allocation.status.name == 'Active' %}
+                <a href="{% url 'allocation-change' allocation.pk %}">
+                <span class="badge badge-info"><i class="fas fa-sync" aria-hidden="true"></i>
+                Request Allocation Change
+                </span>
+                </a>
+              {% endif %}
               {% if is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %}
                 <a href="{% url 'allocation-renew' allocation.pk %}">
                 <span class="badge badge-warning"><i class="fas fa-redo-alt" aria-hidden="true"></i>

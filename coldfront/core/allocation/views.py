@@ -55,7 +55,7 @@ from coldfront.core.allocation.signals import (allocation_activate,
                                                allocation_change_approved,)
 from coldfront.core.allocation.utils import (generate_guauge_data_from_usage,
                                              get_user_resources)
-from coldfront.core.project.models import (Project, ProjectUser,
+from coldfront.core.project.models import (Project,
                                            ProjectPermission,
                                            ProjectUserStatusChoice)
 from coldfront.core.resource.models import Resource
@@ -160,7 +160,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context = super().get_context_data(**kwargs)
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
-        allocation_users = allocation_obj.allocation_users.exclude(
+        allocation_users = allocation_obj.allocationuser_set.exclude(
             usage_bytes__isnull=True).exclude(usage_bytes=0)
 
         # set visible usage attributes
@@ -193,7 +193,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         allocation_usage_tb = float(allocation_quota_tb.allocationattributeusage.value)
 
 
-        allocation_quota_bytes, allocation_usage_bytes = return_allocation_bytes_values(attributes_with_usage, allocation_obj.allocation_users)
+        allocation_quota_bytes, allocation_usage_bytes = return_allocation_bytes_values(attributes_with_usage, allocation_obj.allocationuser_set.all())
         context['allocation_quota_bytes'] = allocation_quota_bytes
         context['allocation_usage_bytes'] = allocation_usage_bytes
         context['allocation_quota_tb'] = 0 if not allocation_quota_bytes else allocation_quota_bytes/1099511627776
@@ -538,6 +538,12 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                     if attr_name == 'eula':
                         resources_with_eula[resource.id] = value
 
+        # create list of resources for which the project already has an allocation
+        project_allocations = project_obj.allocation_set.all()
+        resources_with_allocations = {str(allocation.get_parent_resource.id):allocation.pk
+                                      for allocation in project_allocations}
+
+        context['resources_with_allocations'] = resources_with_allocations
         context['resources_form_default_quantities'] = resources_form_default_quantities
         context['resources_form_label_texts'] = resources_form_label_texts
         context['resources_with_eula'] = resources_with_eula
@@ -577,11 +583,10 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             users.append(project_obj.pi)
 
         if INVOICE_ENABLED and resource_obj.requires_payment:
-            allocation_status_obj = AllocationStatusChoice.objects.get(
-                name=INVOICE_DEFAULT_STATUS)
+            statusname = INVOICE_DEFAULT_STATUS
         else:
-            allocation_status_obj = AllocationStatusChoice.objects.get(
-                name='New')
+            statusname = 'New'
+        allocation_status_obj = AllocationStatusChoice.objects.get(name=statusname)
 
         allocation_obj = Allocation.objects.create(
             project=project_obj,
@@ -848,7 +853,6 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
 class AllocationAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = AllocationAttribute
-    # fields = ['allocation_attribute_type', 'value', 'is_private', ]
     fields = '__all__'
     template_name = 'allocation/allocation_allocationattribute_create.html'
 
@@ -1253,8 +1257,7 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
                             allocation_remove_user.send(
                                 sender=self.__class__, allocation_user_pk=allocation_user_obj.pk)
 
-                        project_user_obj = ProjectUser.objects.get(
-                            project=allocation_obj.project,
+                        project_user_obj = allocation_obj.project.projectuser_set.get(
                             user=user_obj)
                         project_user_obj.status = project_user_remove_status_choice
                         project_user_obj.save()

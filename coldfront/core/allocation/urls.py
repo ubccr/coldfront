@@ -1,5 +1,4 @@
 from django.urls import path
-from . import views
 import coldfront.core.allocation.views as allocation_views
 
 
@@ -51,10 +50,6 @@ urlpatterns = [
          allocation_views.AllocationUpdateInvoiceNoteView.as_view(), name='allocation-update-invoice-note'),
     path('allocation/<int:pk>/delete/',
          allocation_views.AllocationDeleteInvoiceNoteView.as_view(), name='allocation-delete-invoice-note'),
-#     path('', views.index),
-#     path('pdf_view/', views.ViewPDF.as_view(), name="pdf_view"),
-#     path('pdf_download/', views.DownloadPDF.as_view(), name="pdf_download"),
-#     path('', allocation_views.index),
     path('allocation/<int:pk>/invoice/pdf_view/',  allocation_views.ViewPDF.as_view(), name="pdf_view"),
     path('pdf_download/',  allocation_views.DownloadPDF.as_view(), name="pdf_download"),
 ]
