@@ -84,13 +84,10 @@ class ProjectUserUpdateForm(forms.Form):
     enable_notifications = forms.BooleanField(initial=False, required=False)
 
 
-class ProjectReviewForm(forms.Form):
+class ProjectReviewForm(forms.Form):    
     if GRANT_ENABLE or PUBLICATION_ENABLE:
         reason = forms.CharField(label='Reason for not updating project information', widget=forms.Textarea(attrs={
                                 'placeholder': 'If you have no new information to provide, you are required to provide a statement explaining this in this box. Thank you!'}), required=False)
-        acknowledgement = forms.BooleanField(
-            label='By checking this box I acknowledge that I have updated my project to the best of my knowledge', initial=False, required=True)
-
         def __init__(self, project_pk, *args, **kwargs):
             super().__init__(*args, **kwargs)
             project_obj = get_object_or_404(Project, pk=project_pk)
@@ -115,6 +112,10 @@ class ProjectReviewForm(forms.Form):
                 self.fields['reason'].widget = forms.HiddenInput()
             else:
                 self.fields['reason'].required = True
+    else:
+        def __init__(self, project_pk, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+        acknowledgement = forms.BooleanField(label='By checking this box I acknowledge that I have updated my project to the best of my knowledge', initial=False, required=True)
 
 class ProjectReviewEmailForm(forms.Form):
     cc = forms.CharField(
