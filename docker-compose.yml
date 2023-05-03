@@ -34,6 +34,27 @@ services:
       retries: 5
     restart: unless-stopped
 
+  email:
+    image: python:3
+    restart: always
+    volumes:
+      - email_data:/data 
+    environment: 
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "1025:1025"
+    command: python -m smtpd -d -n -c DebuggingServer 0.0.0.0:1025
+    
+    #image: coldfront_email:latest
+    #build:
+    #  context: .
+    #  dockerfile: Dockerfile_email
+    #ports:
+    #  - 1025:1025 
+    #volumes:
+    #  - email_data:/data
+    #restart: unless-stopped
+  
   coldfront:
     image: coldfront:latest
     build:
@@ -50,17 +71,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    restart: unless-stopped
-
-  email:
-    image: coldfront_email:latest
-    build:
-      context: .
-      dockerfile: Dockerfile_email
-    ports:
-      - 1025:1025 
-    volumes:
-      - email_data:/data
     restart: unless-stopped
 
 volumes:
