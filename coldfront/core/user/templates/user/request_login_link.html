@@ -1,0 +1,41 @@
+{% extends "common/base.html" %}
+{% load static %}
+{% load common_tags %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+Request Login Link
+{% endblock %}
+
+{% block content %}
+
+<div class="col-sm-6 offset-sm-3">
+
+  <div class="card border-primary">
+    <div class="card-header bg-primary text-white">
+      <i class="fas fa-lock" aria-hidden="true"></i>
+      Request Login Link
+    </div>
+    <div class="card-body">
+      <p>
+        If you are an existing user, but your institution is not listed in
+        CILogon, you may use this form to request a short-lived link to log in
+        to the portal.
+      </p>
+      <p>
+        New users must select an institution listed in CILogon.
+      </p>
+      <form method="post" action="{{ request.path }}">
+        {% csrf_token %}
+        <p>
+          {{ form|crispy }}
+          <button type="submit" class="btn btn-primary btn-block">
+            <i class="fas fa-paper-plane"></i>
+            Request Login Link
+          </button>
+        </p>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

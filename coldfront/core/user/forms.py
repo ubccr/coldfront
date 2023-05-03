@@ -8,15 +8,16 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.sites.shortcuts import get_current_site
-from django.core.exceptions import ImproperlyConfigured
 from django.urls import reverse
 from django.utils.encoding import force_bytes
 from django.utils.html import mark_safe
 from django.utils.http import urlsafe_base64_encode
 from django.utils.translation import gettext_lazy as _
 
+from allauth.account.models import EmailAddress
+
 from coldfront.core.user.utils import send_account_activation_email
-from coldfront.core.user.models import UserProfile, EmailAddress
+from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.mail import dummy_email_address
 
 from phonenumber_field.formfields import PhoneNumberField
@@ -240,38 +241,9 @@ class UserAccessAgreementForm(forms.Form):
             field.help_text = template.format('LBNL', 'LBNL IT Division')
 
 
-class EmailAddressAddForm(forms.Form):
-
-    email = forms.EmailField(max_length=100, required=True)
-
-    def clean_email(self):
-        cleaned_data = super().clean()
-        email = cleaned_data['email'].lower()
-        if (User.objects.filter(email=email).exists() or
-                EmailAddress.objects.filter(email=email).exists()):
-            raise forms.ValidationError(
-                f'Email address {email} is already in use.')
-        return email
-
-
 class UserReactivateForm(forms.Form):
 
     email = forms.EmailField(max_length=100, required=True)
-
-
-class PrimaryEmailAddressSelectionForm(forms.Form):
-
-    email_address = forms.ModelChoiceField(
-        label='New Primary Email Address',
-        queryset=EmailAddress.objects.none(),
-        required=True,
-        widget=forms.RadioSelect())
-
-    def __init__(self, *args, **kwargs):
-        user = kwargs.pop('user')
-        super().__init__(*args, **kwargs)
-        self.fields['email_address'].queryset = EmailAddress.objects.filter(
-            user=user, is_verified=True, is_primary=False)
 
 
 class VerifiedEmailAddressPasswordResetForm(PasswordResetForm):
@@ -284,7 +256,7 @@ class VerifiedEmailAddressPasswordResetForm(PasswordResetForm):
         if one exists, else None."""
         try:
             return EmailAddress.objects.select_related('user').get(
-                email=email, is_verified=True, user__is_active=True)
+                email=email, verified=True, user__is_active=True)
         except EmailAddress.DoesNotExist:
             return None
 

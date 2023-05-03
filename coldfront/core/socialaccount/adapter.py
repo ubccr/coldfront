@@ -1,10 +1,11 @@
 from allauth.account.models import EmailAddress
-from allauth.account.utils import user_email
+from allauth.account.utils import user_email as user_email_func
 from allauth.account.utils import user_field
 from allauth.account.utils import user_username
 from allauth.exceptions import ImmediateHttpResponse
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from allauth.utils import valid_email_or_none
+from coldfront.core.account.utils.login_activity import LoginActivityVerifier
 from collections import defaultdict
 from django.conf import settings
 from django.http import HttpResponseBadRequest
@@ -45,12 +46,12 @@ class CILogonAccountAdapter(DefaultSocialAccountAdapter):
                     f'Provider {provider} did not provide an email address '
                     f'for User with UID {user_uid}.')
                 logger.error(log_message)
-                self.raise_server_error(self.get_auth_error_message())
+                self._raise_server_error(self._get_auth_error_message())
             validated_email = validated_email.lower()
 
             user = sociallogin.user
             user_username(user, validated_email)
-            user_email(user, validated_email)
+            user_email_func(user, validated_email)
             user_field(user, 'first_name', first_name)
             user_field(user, 'last_name', last_name)
             return user
@@ -64,6 +65,9 @@ class CILogonAccountAdapter(DefaultSocialAccountAdapter):
         connect them. In particular, if there is a User with a verified
         EmailAddress matching one of those given by the provider,
         connect the two accounts.
+
+        Note that login is blocked outside (after) this method if the
+        user is inactive.
 
         Adapted from:
         https://github.com/pennersr/django-allauth/issues/418#issuecomment-137259550
@@ -98,7 +102,7 @@ class CILogonAccountAdapter(DefaultSocialAccountAdapter):
                 f'Provider {provider} did not provide any email addresses for '
                 f'User with email {user_email} and UID {user_uid}.')
             logger.error(log_message)
-            self.raise_server_error(self.get_auth_error_message())
+            self._raise_server_error(self._get_auth_error_message())
 
         # SOCIALACCOUNT_PROVIDERS['cilogon']['VERIFIED_EMAIL'] should be True,
         # so all provider-given addresses should be interpreted as verified.
@@ -110,7 +114,7 @@ class CILogonAccountAdapter(DefaultSocialAccountAdapter):
                 f'None of the email addresses in '
                 f'[{", ".join(provider_addresses)}] are verified.')
             logger.error(log_message)
-            self.raise_server_error(self.get_auth_error_message())
+            self._raise_server_error(self._get_auth_error_message())
 
         # Fetch EmailAddresses matching those given by the provider, divided by
         # the associated User.
@@ -129,44 +133,70 @@ class CILogonAccountAdapter(DefaultSocialAccountAdapter):
         if not matching_addresses_by_user:
             return
         elif len(matching_addresses_by_user) == 1:
-            # If at least one address was verified, connect the two accounts.
-            # Otherwise, raise an error with instructions on how to proceed.
             user = next(iter(matching_addresses_by_user))
             addresses = matching_addresses_by_user[user]
             if any([a.verified for a in addresses]):
-                log_message = (
-                    f'Attempting to connect data for User with email '
-                    f'{user_email} and UID {user_uid} from provider '
-                    f'{provider} to local User {user.pk}.')
-                logger.info(log_message)
-                sociallogin.connect(request, user)
-                log_message = f'Successfully connected data to User {user.pk}.'
-                logger.info(log_message)
+                # After this, allauth.account.adapter.pre_login blocks login if
+                # the user is inactive. Regardless of that, connect the user
+                # (and trigger signals for creating EmailAddresses).
+                self._connect_user(
+                    request, sociallogin, provider, user, user_email, user_uid)
             else:
-                log_message = (
-                    f'Found only unverified email addresses associated with '
-                    f'local User {user.pk} matching those given by provider '
-                    f'{provider} for User with email {user_email} and UID '
-                    f'{user_uid}.')
-                logger.warning(log_message)
-                message = (
-                    'You are attempting to login using an email address '
-                    'associated with an existing User, but it is unverified. '
-                    'Please login to that account using a different provider, '
-                    'verify the email address, and try again.')
-                self.raise_client_error(message)
+                self._block_login_for_verification(
+                    request, sociallogin, provider, user, user_email, user_uid,
+                    addresses)
         else:
-            user_pks = [user.pk for user in matching_addresses_by_user]
+            user_pks = sorted([user.pk for user in matching_addresses_by_user])
             log_message = (
                 f'Unexpectedly found multiple Users ([{", ".join(user_pks)}]) '
                 f'that had email addresses matching those provided by '
                 f'provider {provider} for User with email {user_email} and '
                 f'UID {user_uid}.')
             logger.error(log_message)
-            self.raise_server_error(self.get_auth_error_message())
+            self._raise_server_error(self._get_auth_error_message())
+
+    def _block_login_for_verification(self, request, sociallogin, provider,
+                                      user, user_email, user_uid,
+                                      email_addresses):
+        """Block the login attempt and send verification emails to the
+        given EmailAddresses."""
+        log_message = (
+            f'Found only unverified email addresses associated with local User '
+            f'{user.pk} matching those given by provider {provider} for User '
+            f'with email {user_email} and UID {user_uid}.')
+        logger.warning(log_message)
+
+        try:
+            cilogon_idp = sociallogin.serialize()[
+                'account']['extra_data']['idp_name']
+            request_login_method_str = f'CILogon - {cilogon_idp}'
+        except Exception as e:
+            logger.exception(f'Failed to determine CILogon IDP. Details:\n{e}')
+            request_login_method_str = 'CILogon'
+        for email_address in email_addresses:
+            verifier = LoginActivityVerifier(
+                request, email_address, request_login_method_str)
+            verifier.send_email()
+
+        message = (
+            'You are attempting to log in using an email address associated '
+            'with an existing user, but it is unverified. Please check the '
+            'address for a verification email.')
+        self._raise_client_error(message)
 
     @staticmethod
-    def get_auth_error_message():
+    def _connect_user(request, sociallogin, provider, user, user_email,
+                      user_uid):
+        """Connect the provider account to the User's account in the
+        database."""
+        sociallogin.connect(request, user)
+        log_message = (
+            f'Successfully connected data for User with email {user_email} and '
+            f'UID {user_uid} from provider {provider} to local User {user.pk}.')
+        logger.info(log_message)
+
+    @staticmethod
+    def _get_auth_error_message():
         """Return the generic message the user should receive if
         authentication-related errors occur."""
         return (
@@ -174,7 +204,7 @@ class CILogonAccountAdapter(DefaultSocialAccountAdapter):
             f'{settings.CENTER_HELP_EMAIL} for further assistance.')
 
     @staticmethod
-    def raise_client_error(message):
+    def _raise_client_error(message):
         """Raise an ImmediateHttpResponse with a client error and the
         given message."""
         template = 'error_with_message.html'
@@ -183,7 +213,7 @@ class CILogonAccountAdapter(DefaultSocialAccountAdapter):
         raise ImmediateHttpResponse(response)
 
     @staticmethod
-    def raise_server_error(message):
+    def _raise_server_error(message):
         """Raise an ImmediateHttpResponse with a server error and the
         given message."""
         template = 'error_with_message.html'

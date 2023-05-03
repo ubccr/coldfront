@@ -1,3 +1,5 @@
+from allauth.account.models import EmailAddress
+
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.billing.forms import BillingIDValidationForm
@@ -465,14 +467,14 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
         # Create a new User object intended to be a new PI.
         step_number = self.step_numbers_by_form_name['new_pi']
         data = form_data[step_number]
+        email = data['email']
         try:
-            email = data['email']
             pi = User.objects.create(
                 username=email,
                 first_name=data['first_name'],
                 last_name=data['last_name'],
                 email=email,
-                is_active=False)
+                is_active=True)
         except IntegrityError as e:
             self.logger.error(f'User {email} unexpectedly exists.')
             raise e
@@ -487,6 +489,18 @@ class SavioProjectRequestWizard(LoginRequiredMixin, UserPassesTestMixin,
         pi_profile.middle_name = data['middle_name']
         pi_profile.upgrade_request = utc_now_offset_aware()
         pi_profile.save()
+
+        # Create an unverified, primary EmailAddress for the new User object.
+        try:
+            EmailAddress.objects.create(
+                user=pi,
+                email=email,
+                verified=False,
+                primary=True)
+        except IntegrityError as e:
+            self.logger.error(
+                f'EmailAddress {email} unexpectedly already exists.')
+            raise e
 
         return pi
 

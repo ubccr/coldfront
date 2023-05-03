@@ -185,71 +185,6 @@ User Profile{% if not requester_is_viewed_user %}: {{ viewed_user.username }}{% 
 
   <br>
 
-  {% if core_user_email_addresses_visible %}
-  <div class="card">
-    <div class="card-header">
-      <i class="far fa-envelope"></i>
-      Other Email Addresses{% if not requester_is_viewed_user %}: {{ viewed_user.username }}{% endif %}
-      {% if core_user_email_addresses_updatable %}
-        <div class="float-right">
-          <a class="btn btn-success float-right" href="{% url 'add-email-address' %}" role="button">
-            <i class="fas fa-plus" aria-hidden="true"></i>
-            Add Email Address
-          </a>
-        </div>
-      {% endif %}
-    </div>
-    <div class="card-body">
-      <p>Below are other email addresses associated with your account. You may authenticate to this portal using any verified addresses.</p>
-      <p>You can verify an address by clicking the “Verify” button, which will send a verification email to the address. The address will remain unverified until you have clicked the link provided in that email.</p>
-      <div class="table-responsive">
-        <table class="table table-sm">
-          <thead>
-            <tr>
-              <th scope="col">Email Address</th>
-              <th scope="col">Status</th>
-              <th scope="col">Actions</th>
-            </tr>
-            {% for email in other_emails %}
-              <tr>
-                <td>{{ email.email }}</td>
-                <td>
-                  {% if email.is_verified %}
-                    <span class="badge badge-success">Verified</span>
-                  {% else %}
-                    <span class="badge badge-warning">Verification Pending</span>
-                  {% endif %}
-                </td>
-                <td>
-                  {% if core_user_email_addresses_updatable %}
-                    {% if not email.is_verified %}
-                      <form action="{% url 'send-email-verification-email' email.pk %}" method="post" style="display: inline;">
-                        {% csrf_token %}
-                        <button class="btn btn-primary" type="submit">
-                          Re-Verify
-                        </button>
-                      </form>
-                    {% endif %}
-                    <form action="{% url 'remove-email-address' email.pk %}" method="post" style="display: inline;">
-                      {% csrf_token %}
-                      <button class="btn btn-danger" type="submit">
-                        Remove
-                      </button>
-                    </form>
-                  {% else %}
-                    N/A
-                  {% endif %}
-                </td>
-              </tr>
-            {% endfor %}
-          </thead>
-        </table>
-      </div>
-    </div>
-  </div>
-  <br>
-  {% endif %}
-
   {% if allauth_email_addresses_visible %}
   <div class="card">
     <div class="card-header">
@@ -306,7 +241,7 @@ User Profile{% if not requester_is_viewed_user %}: {{ viewed_user.username }}{% 
                 Request Linking Email
               </a>
             {% else %}
-              <form action="{% url 'identity-linking-request' %}" method="post">
+              <form action="{% url 'identity-linking-request' %}" method="post" id="request-linking-email-form">
                 {% csrf_token %}
                 <button class="btn btn-success float-right" type="submit">
                   <i class="fas fa-paper-plane"></i>

@@ -1,10 +1,12 @@
-from coldfront.core.user.models import EmailAddress
-from coldfront.core.user.tests.utils import TestUserBase
-from coldfront.core.user.utils import update_user_primary_email_address
 from django.contrib.auth.models import User
 
+from allauth.account.models import EmailAddress
 
-class TestUpdateUserPrimaryEmailAddress(TestUserBase):
+from coldfront.core.account.utils.queries import update_user_primary_email_address
+from coldfront.core.utils.tests.test_base import TestBase
+
+
+class TestUpdateUserPrimaryEmailAddress(TestBase):
     """A class for testing the utility method
     update_user_primary_email_address."""
 
@@ -26,8 +28,8 @@ class TestUpdateUserPrimaryEmailAddress(TestUserBase):
         new_primary = EmailAddress.objects.create(
             user=self.user,
             email='new@email.com',
-            is_verified=True,
-            is_primary=False)
+            verified=True,
+            primary=False)
         self.assertEqual(EmailAddress.objects.count(), 1)
 
         with self.assertLogs('', 'WARNING') as cm:
@@ -41,8 +43,8 @@ class TestUpdateUserPrimaryEmailAddress(TestUserBase):
                 f'An EmailAddress for User {self.user} and email {old_email} '
                 f'should have been created.')
         else:
-            self.assertTrue(email_address.is_verified)
-            self.assertFalse(email_address.is_primary)
+            self.assertTrue(email_address.verified)
+            self.assertFalse(email_address.primary)
 
         # Assert that a warning was logged.
         self.assertEqual(len(cm.output), 1)
@@ -65,13 +67,13 @@ class TestUpdateUserPrimaryEmailAddress(TestUserBase):
                 self.fail('A TypeError should have been raised.')
 
     def test_raises_value_error_for_unverified_input(self):
-        """Test that, if the input is an EmailAddress with is_verified
+        """Test that, if the input is an EmailAddress with verified
         set to False, a ValueError is raised."""
         email_address = EmailAddress.objects.create(
             user=self.user,
             email=self.user.email,
-            is_verified=False,
-            is_primary=False)
+            verified=False,
+            primary=False)
         try:
             update_user_primary_email_address(email_address)
         except ValueError as e:
@@ -86,14 +88,14 @@ class TestUpdateUserPrimaryEmailAddress(TestUserBase):
         new_primary = EmailAddress.objects.create(
             user=self.user,
             email='new@email.com',
-            is_verified=True,
-            is_primary=False)
-        self.assertFalse(new_primary.is_primary)
+            verified=True,
+            primary=False)
+        self.assertFalse(new_primary.primary)
 
         update_user_primary_email_address(new_primary)
 
         new_primary.refresh_from_db()
-        self.assertTrue(new_primary.is_primary)
+        self.assertTrue(new_primary.primary)
 
     def test_sets_user_email_field(self):
         """Test that the method sets the User's "email" field to that of
@@ -103,8 +105,8 @@ class TestUpdateUserPrimaryEmailAddress(TestUserBase):
         new_primary = EmailAddress.objects.create(
             user=self.user,
             email='new@email.com',
-            is_verified=True,
-            is_primary=False)
+            verified=True,
+            primary=False)
 
         update_user_primary_email_address(new_primary)
 
@@ -112,32 +114,32 @@ class TestUpdateUserPrimaryEmailAddress(TestUserBase):
         self.assertEqual(self.user.email, new_primary.email)
 
     def test_unsets_other_primary_email_addresses(self):
-        """Test that the method unsets the "is_primary" fields of other
+        """Test that the method unsets the "primary" fields of other
         EmailAddresses belonging to the User."""
         kwargs = {
             'user': self.user,
-            'is_verified': True,
-            'is_primary': False,
+            'verified': True,
+            'primary': False,
         }
         for i in range(3):
             kwargs['email'] = f'{i}@email.com'
             EmailAddress.objects.create(**kwargs)
         # Bypass the "save" method, which prevents multiple primary addresses,
         # by using the "update" method.
-        EmailAddress.objects.filter(user=self.user).update(is_primary=True)
+        EmailAddress.objects.filter(user=self.user).update(primary=True)
         user_primary_emails = EmailAddress.objects.filter(
-            user=self.user, is_primary=True)
+            user=self.user, primary=True)
         self.assertEqual(user_primary_emails.count(), 3)
 
         new_primary = EmailAddress.objects.create(
             user=self.user,
             email='new@email.com',
-            is_verified=True,
-            is_primary=False)
+            verified=True,
+            primary=False)
 
         update_user_primary_email_address(new_primary)
 
         user_primary_emails = EmailAddress.objects.filter(
-            user=self.user, is_primary=True)
+            user=self.user, primary=True)
         self.assertEqual(user_primary_emails.count(), 1)
         self.assertEqual(user_primary_emails.first().pk, new_primary.pk)

@@ -89,21 +89,37 @@ class TestLinkPersonalAccount(TestBase):
         access, or (b) has a pending IdentityLinkingRequest, the button
         to request a new one is disabled."""
 
-        def get_button_html():
-            """Return the HTML of the request button."""
+        def assert_button_html(is_enabled):
+            """Assert that the HTML representing the request button is
+            consistent with whether it should be enabled."""
             url = self.user_profile_url()
             response = self.client.get(url)
             html = response.content.decode('utf-8')
             soup = BeautifulSoup(html, 'html.parser')
-            button = soup.find('a', {'id': 'request-linking-email-button'})
-            return str(button)
+            if not is_enabled:
+                # A disabled link, not a form with a button, should be
+                # displayed.
+                button = soup.find('a', {'id': 'request-linking-email-button'})
+                self.assertIn('disabled', str(button))
+                with self.assertRaises(Exception) as _:
+                    soup.find(
+                        'form',
+                        {'id': 'request-linking-email-form'}).find('button')
+            else:
+                # A form with a button, not a disabled link, should be
+                # displayed.
+                self.assertIsNone(
+                    soup.find('a', {'id': 'request-linking-email-button'}))
+                button = soup.find(
+                    'form', {'id': 'request-linking-email-form'}).find('button')
+            self.assertIn('Request Linking Email', str(button))
 
         # The user has cluster access.
         allocation_user_attribute = \
             grant_user_cluster_access_under_test_project(self.user)
 
         # No requests exist.
-        self.assertNotIn('disabled', get_button_html())
+        assert_button_html(True)
 
         # Exactly one pending request exists.
         pending_status = IdentityLinkingRequestStatusChoice.objects.get(
@@ -112,18 +128,18 @@ class TestLinkPersonalAccount(TestBase):
             requester=self.user,
             request_time=utc_now_offset_aware(),
             status=pending_status)
-        self.assertIn('disabled', get_button_html())
+        assert_button_html(False)
 
         # Exactly one complete request exists.
         complete_status = IdentityLinkingRequestStatusChoice.objects.get(
             name='Complete')
         identity_linking_request.status = complete_status
         identity_linking_request.save()
-        self.assertNotIn('disabled', get_button_html())
+        assert_button_html(True)
 
         # The user no longer has cluster access.
         allocation_user_attribute.delete()
-        self.assertIn('disabled', get_button_html())
+        assert_button_html(False)
 
     def test_section_hidden_if_viewing_other_user_profile(self):
         """Test that, when logged in as one user but viewing another

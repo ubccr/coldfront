@@ -5,11 +5,11 @@ from django.contrib.auth.views import PasswordResetConfirmView
 from django.contrib.auth.views import PasswordResetDoneView
 from django.contrib.auth.views import PasswordResetView
 from django.urls import path, reverse_lazy
-from django.views.generic import TemplateView
 
 from flags.urls import flagged_paths
 
 import coldfront.core.user.views as user_views
+import coldfront.core.user.views_.link_login_views as link_login_views
 import coldfront.core.user.views_.request_hub_views as request_hub_views
 from coldfront.core.user.forms import VerifiedEmailAddressPasswordResetForm
 from coldfront.core.user.forms import UserLoginForm
@@ -78,24 +78,17 @@ with flagged_paths('BASIC_AUTH_ENABLED') as f_path:
                PasswordResetCompleteView.as_view(
                    template_name='user/passwords/password_reset_complete.html'),
                name='password-reset-complete'),
+    ]
 
-        # Email views
-        f_path('add-email-address',
-               user_views.EmailAddressAddView.as_view(),
-               name='add-email-address'),
-        f_path('verify-email-address/<uidb64>/<eaidb64>/<token>/',
-               user_views.verify_email_address,
-               name='verify-email-address'),
-        f_path('send-email-verification-email/<int:pk>',
-               user_views.SendEmailAddressVerificationEmailView.as_view(),
-               name='send-email-verification-email'),
-        f_path('remove-email-address/<int:pk>',
-               user_views.RemoveEmailAddressView.as_view(),
-               name='remove-email-address'),
-        f_path('update-primary-email-address',
-               user_views.UpdatePrimaryEmailAddressView.as_view(),
-               name='update-primary-email-address'),
 
+with flagged_paths('LINK_LOGIN_ENABLED') as f_path:
+    urlpatterns += [
+        f_path('request-login-link/',
+               link_login_views.RequestLoginLinkView.as_view(),
+               name='request-login-link'),
+        f_path('link-login/',
+               link_login_views.LinkLoginView.as_view(),
+               name='link-login'),
     ]
 
 

@@ -9,7 +9,8 @@ from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
 from django.db import transaction
-from django.utils.module_loading import import_string
+
+from allauth.account.models import EmailAddress
 
 from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationRenewalRequest
@@ -40,10 +41,6 @@ class Command(BaseCommand):
 
     logger = logging.getLogger(__name__)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, *kwargs)
-        self.email_module_dict = {}
-
     def add_arguments(self, parser):
         parser.add_argument(
             'json',
@@ -57,15 +54,6 @@ class Command(BaseCommand):
         parser.add_argument(
             'allocation_period_name',
             help='The name of the AllocationPeriod the renewals are under.',
-            type=str)
-        # TODO: Remove this once all emails are transitioned to
-        # TODO: allauth.account.models.EmailAddress.
-        parser.add_argument(
-            'email_module',
-            choices=['allauth.account.models', 'coldfront.core.user.models'],
-            help=(
-                'There are temporarily two EmailAddress models, until all can '
-                'be transitioned under allauth.account.models.'),
             type=str)
         parser.add_argument(
             '--process',
@@ -91,16 +79,6 @@ class Command(BaseCommand):
         except AllocationPeriod.DoesNotExist:
             raise CommandError(
                 f'Invalid AllocationPeriod {allocation_period_name}.')
-
-        email_module = options['email_module']
-        if email_module == 'allauth.account.models':
-            verified_field, primary_field = 'verified', 'primary'
-        else:
-            verified_field, primary_field = 'is_verified', 'is_primary'
-        self.email_module_dict['model'] = import_string(
-            f'{email_module}.EmailAddress')
-        self.email_module_dict['verified_field'] = verified_field
-        self.email_module_dict['primary_field'] = primary_field
 
         valid, already_renewed, invalid = self.parse_input_file(
             file_path, allocation_period)
@@ -347,10 +325,6 @@ class Command(BaseCommand):
         email. If provided (and not already set), set the given first,
         middle, and last names. Also update UserProfile.is_pi if
         requested."""
-        EmailAddress = self.email_module_dict['model']
-        email_verified_field = self.email_module_dict['verified_field']
-        email_primary_field = self.email_module_dict['primary_field']
-
         user = self._get_user_with_email(email)
         if isinstance(user, User):
             user.first_name = user.first_name or first_name
@@ -368,8 +342,8 @@ class Command(BaseCommand):
                     user=user,
                     email=email,
                     defaults={
-                        email_verified_field: True,
-                        email_primary_field: True})
+                        'verified': True,
+                        'primary': True})
             if created:
                 message = (
                     f'Created EmailAddress {email_address.pk} for User '
@@ -390,8 +364,8 @@ class Command(BaseCommand):
                 kwargs = {
                     'user': user,
                     'email': email,
-                    email_verified_field: True,
-                    email_primary_field: True,
+                    'verified': True,
+                    'primary': True,
                 }
                 email_address = EmailAddress.objects.create(**kwargs)
             message = (
@@ -418,7 +392,6 @@ class Command(BaseCommand):
 
     def _get_user_with_email(self, email):
         """Return the User associated with the given email, or None."""
-        EmailAddress = self.email_module_dict['model']
         try:
             return User.objects.get(email__iexact=email)
         except User.DoesNotExist:
