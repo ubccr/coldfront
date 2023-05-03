@@ -244,9 +244,9 @@ class ProjectJoinRequestListView(LoginRequiredMixin, UserPassesTestMixin,
                 direction = ''
             else:
                 direction = '-'
-            order_by = direction + 'created'
+            order_by = direction + order_by
         else:
-            order_by = '-created'
+            order_by = '-modified'
 
         project_join_requests = \
             ProjectUserJoinRequest.objects.filter(

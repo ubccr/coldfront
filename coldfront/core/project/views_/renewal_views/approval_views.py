@@ -55,7 +55,8 @@ class AllocationRenewalRequestListView(LoginRequiredMixin, TemplateView):
                 direction = '-'
             order_by = direction + order_by
         else:
-            order_by = 'id'
+            order_by = '-request_time'
+
         return annotate_queryset_with_allocation_period_not_started_bool(
             AllocationRenewalRequest.objects.order_by(order_by))
 
@@ -110,9 +111,11 @@ class AllocationRenewalRequestMixin(object):
         num_service_units = Decimal(
             ComputingAllowanceInterface().service_units_from_name(
                 self.computing_allowance_obj.get_name()))
-        return prorated_allocation_amount(
-            num_service_units, self.request_obj.request_time,
-            self.allocation_period_obj)
+        if self.computing_allowance_obj.are_service_units_prorated():
+            num_service_units = prorated_allocation_amount(
+                num_service_units, self.request_obj.request_time,
+                self.allocation_period_obj)
+        return num_service_units
 
     def set_common_context_data(self, context):
         """Given a dictionary of context variables to include in the

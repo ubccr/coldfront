@@ -240,7 +240,7 @@ class AllocationAdditionRequestListView(LoginRequiredMixin,
                 direction = '-'
             order_by = direction + order_by
         else:
-            order_by = 'id'
+            order_by = '-modified'
         return order_by
 
     def test_func(self):

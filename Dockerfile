@@ -1,34 +1,33 @@
-FROM centos:8
+FROM centos/python-38-centos7
 
 LABEL description="coldfront"
 
-# install dependencies
-RUN yum -y install epel-release
-RUN yum -y update
-RUN yum -y install python36 python36-devel git memcached redis
-
+USER root
 WORKDIR /root
+COPY requirements.txt ./
+RUN pip install -r requirements.txt && rm requirements.txt
+RUN pip install jinja2 pyyaml
 
-# install coldfront
-RUN mkdir /opt/coldfront_app
+# mybrc or mylrc
+ARG PORTAL="mybrc"
+RUN mkdir -p /var/log/user_portals/cf_${PORTAL} \
+ && touch /var/log/user_portals/cf_${PORTAL}/cf_${PORTAL}_{portal,api}.log \
+ && chmod 775 /var/log/user_portals/cf_${PORTAL} \
+ && chmod 664 /var/log/user_portals/cf_${PORTAL}/cf_${PORTAL}_{portal,api}.log
 
-WORKDIR /opt/coldfront_app
+COPY . /vagrant/coldfront_app/coldfront/
+WORKDIR /vagrant/coldfront_app/coldfront/
 
-RUN cd /opt/coldfront_app
-RUN git clone https://github.com/ubccr/coldfront.git
-RUN python3.6 -mvenv venv
-RUN source venv/bin/activate
+RUN chmod +x ./manage.py
 
-WORKDIR /opt/coldfront_app/coldfront
+CMD ./manage.py initial_setup \
+ && ./manage.py add_accounting_defaults \
+ && ./manage.py add_allowance_defaults \
+ && ./manage.py add_directory_defaults \
+ && ./manage.py create_allocation_periods \
+ && ./manage.py create_staff_group \
+ && ./manage.py collectstatic --noinput \
+ && ./manage.py runserver 0.0.0.0:80
 
-RUN cd /opt/coldfront_app/coldfront
-RUN pip3 install wheel
-RUN pip3 install -r requirements.txt
-RUN cp coldfront/config/local_settings.py.sample coldfront/config/local_settings.py
-RUN cp coldfront/config/local_strings.py.sample coldfront/config/local_strings.py
-
-RUN python3 ./manage.py initial_setup
-RUN python3 ./manage.py load_test_data
-
-EXPOSE 8000
+EXPOSE 80
 STOPSIGNAL SIGINT

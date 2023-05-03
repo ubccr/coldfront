@@ -2,7 +2,6 @@ import logging
 import pytz
 
 from collections import OrderedDict
-from datetime import date
 from datetime import datetime
 from datetime import timedelta
 from decimal import Decimal, InvalidOperation
@@ -36,6 +35,7 @@ from coldfront.core.resource.utils import get_computing_allowance_project_prefix
 from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.statistics.models import Job
+from coldfront.core.statistics.utils_.accounting_utils import validate_job_dates
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import display_time_zone_date_to_utc_datetime
 
@@ -263,7 +263,7 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
             logger.warning(f'Job {jobslurmid} has no amount.')
 
         try:
-            job_dates_valid = self.validate_job_dates(
+            job_dates_valid = validate_job_dates(
                 serializer.validated_data, allocation_objects.allocation,
                 end_date_expected=False)
         except Exception as e:
@@ -374,7 +374,7 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
             logger.warning(f'Job {jobslurmid} has no amount.')
 
         try:
-            job_dates_valid = self.validate_job_dates(
+            job_dates_valid = validate_job_dates(
                 serializer.validated_data, allocation_objects.allocation,
                 end_date_expected=True)
         except Exception as e:
@@ -440,91 +440,6 @@ class JobViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
                 instance._prefetched_objects_cache = {}
 
         return Response(serializer.data)
-
-    @staticmethod
-    def validate_job_dates(job_data, allocation, end_date_expected=False):
-        """Given a dictionary representing a Job, its corresponding
-        Allocation, and whether the Job is expected to include an end
-        date, return whether:
-            (a) The Job has the expected dates,
-            (b) The Job's corresponding Allocation has the expected
-                dates, and
-            (c) The Job started and ended within the Allocation's dates.
-
-        Write errors or warnings to the log if not."""
-        logger = logging.getLogger(__name__)
-
-        jobslurmid = job_data['jobslurmid']
-        account_name = job_data['accountid'].name
-
-        # The Job should have submit, start, and, if applicable, end dates.
-        expected_date_keys = ['submitdate', 'startdate']
-        if end_date_expected:
-            expected_date_keys.append('enddate')
-        expected_dates = {
-            key: job_data.get(key, None) for key in expected_date_keys}
-        for key, expected_date in expected_dates.items():
-            if not isinstance(expected_date, datetime):
-                logger.error(f'Job {jobslurmid} does not have a {key}.')
-                return False
-
-        # The Job's corresponding Allocation should have a start date.
-        allocation_start_date = allocation.start_date
-        if not isinstance(allocation_start_date, date):
-            logger.error(
-                f'Allocation {allocation.pk} (Project {account_name}) does '
-                f'not have a start date.')
-            return False
-
-        # The Job should not have started before its corresponding Allocation's
-        # start date.
-        job_start_dt_utc = expected_dates['startdate']
-        allocation_start_dt_utc = display_time_zone_date_to_utc_datetime(
-            allocation_start_date)
-        if job_start_dt_utc < allocation_start_dt_utc:
-            logger.warning(
-                f'Job {jobslurmid} start date '
-                f'({job_start_dt_utc.strftime(DATE_FORMAT)}) is before '
-                f'Allocation {allocation.pk} (Project {account_name}) start '
-                f'date ({allocation_start_dt_utc.strftime(DATE_FORMAT)}).')
-            return False
-
-        if not end_date_expected:
-            return True
-
-        # The Job's corresponding Allocation may have an end date. (Compare
-        # against the maximum date if not.)
-        computing_allowance_interface = ComputingAllowanceInterface()
-        periodic_project_name_prefixes = tuple([
-            computing_allowance_interface.code_from_name(allowance.name)
-            for allowance in computing_allowance_interface.allowances()
-            if ComputingAllowance(allowance).is_periodic()])
-        if account_name.startswith(periodic_project_name_prefixes):
-            allocation_end_date = allocation.end_date
-            if not isinstance(allocation_end_date, date):
-                logger.error(
-                    f'Allocation {allocation.pk} (Project {account_name}) '
-                    f'does not have an end date.')
-                return False
-            allocation_end_dt_utc = (
-                display_time_zone_date_to_utc_datetime(allocation_end_date) +
-                timedelta(hours=24) -
-                timedelta(microseconds=1))
-        else:
-            allocation_end_dt_utc = datetime.max.replace(tzinfo=pytz.utc)
-
-        # The Job should not have ended after the last microsecond of its
-        # corresponding Allocation's end date.
-        job_end_dt_utc = expected_dates['enddate']
-        if job_end_dt_utc > allocation_end_dt_utc:
-            logger.warning(
-                f'Job {jobslurmid} end date '
-                f'({job_end_dt_utc.strftime(DATE_FORMAT)}) is after '
-                f'Allocation {allocation.pk} (Project {account_name}) end '
-                f'date ({allocation_end_dt_utc.strftime(DATE_FORMAT)}).')
-            return False
-
-        return True
 
 
 job_cost_parameter = openapi.Parameter(

@@ -69,7 +69,7 @@ class SavioProjectRequestListView(LoginRequiredMixin, TemplateView):
                 direction = '-'
             order_by = direction + order_by
         else:
-            order_by = 'id'
+            order_by = '-request_time'
 
         return annotate_queryset_with_allocation_period_not_started_bool(
             SavioProjectAllocationRequest.objects.order_by(order_by))
@@ -910,7 +910,7 @@ class VectorProjectRequestListView(LoginRequiredMixin, TemplateView):
                 direction = '-'
             order_by = direction + order_by
         else:
-            order_by = 'id'
+            order_by = '-modified'
         return VectorProjectAllocationRequest.objects.order_by(order_by)
 
     def get_context_data(self, **kwargs):

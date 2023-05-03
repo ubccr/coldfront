@@ -353,7 +353,7 @@ class SecureDirManageUsersRequestListView(LoginRequiredMixin,
                 direction = '-'
             order_by = direction + order_by
         else:
-            order_by = 'id'
+            order_by = '-modified'
 
         pending_status = self.request_status_obj.objects.filter(
             Q(name__icontains='Pending') | Q(name__icontains='Processing'))
@@ -1091,7 +1091,7 @@ class SecureDirRequestListView(LoginRequiredMixin,
                 direction = '-'
             order_by = direction + order_by
         else:
-            order_by = 'id'
+            order_by = '-modified'
 
         return SecureDirRequest.objects.order_by(order_by)
 

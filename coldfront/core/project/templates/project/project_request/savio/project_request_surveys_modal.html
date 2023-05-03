@@ -1,0 +1,77 @@
+{% load crispy_forms_tags %}
+
+<div
+    id="survey-modal"
+    class="modal fade bd-example-modal-lg"
+    tabindex="-1"
+    role="dialog"
+    aria-labelledby="survey-modal"
+    aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <p class="modal-title">Survey Responses</p>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
+      <!-- survey form tabs -->
+      <div class="modal-nav">
+        <ul class='nav nav-tabs' role='tablist'>
+          {% for allocation_request, survey_form in survey_answers %}
+            <li id="survey-nav-item" class="nav-item">
+              <a data-toggle="tab"
+                class="nav-link {% if forloop.counter == 1 %} active {% endif %}"
+                href="#survey{{forloop.counter}}">
+                Survey #{{forloop.counter}}
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <!-- survey form contents -->
+      <div class="modal-body">
+        <div class="tab-content">
+          {% for allocation_request, survey_form in survey_answers %}
+            <div id="survey{{forloop.counter}}"
+                 class="tab-pane {% if forloop.counter == 1 %} active {% else %} fade {% endif %}" style="background: none">
+              <div class="card" style='margin-bottom: .5em'>
+                <div class="card-body">
+                  <p class="card-text">
+                    <b>Requester:</b>
+                    {{ allocation_request.requester.first_name }}
+                    {{ allocation_request.requester.last_name }}
+                    ({{ allocation_request.requester.username }})
+                  </p>
+
+                  <p class="card-text">
+                    <b>Principal Investigator:</b>
+                    {{ allocation_request.pi.first_name }}
+                    {{ allocation_request.pi.last_name }}
+                    ({{ allocation_request.pi.username }})
+                  </p>
+
+                  <p class="card-text">
+                    <b>Requested:</b>
+                    {{ allocation_request.request_time|date:"M. d, Y"}}
+                  </p>
+                </div>
+              </div>
+
+              {{ survey_form|crispy }}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  $("#view-survey").on("click", function() {
+    $("#survey-modal").modal("show");
+  });
+</script>

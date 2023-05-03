@@ -94,6 +94,7 @@ class UserProfile(TemplateView):
         context['has_cluster_access'] = has_cluster_access(viewed_user)
 
         requester_is_viewed_user = viewed_user == self.request.user
+        context['requester_is_viewed_user'] = requester_is_viewed_user
 
         if requester_is_viewed_user:
             self._update_context_with_identity_linking_request_data(context)

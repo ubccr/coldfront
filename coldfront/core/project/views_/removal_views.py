@@ -52,7 +52,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.status.name not in ['Active', 'New', ]:
+        if project_obj.status.name not in ['Active', 'Inactive', 'New', ]:
             messages.error(
                 request, 'You cannot remove users from an archived project.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
@@ -217,7 +217,7 @@ class ProjectRemovalRequestListView(LoginRequiredMixin,
                 direction = '-'
             order_by = direction + order_by
         else:
-            order_by = 'id'
+            order_by = '-modified'
 
         project_removal_status_complete, _ = \
             ProjectUserRemovalRequestStatusChoice.objects.get_or_create(
