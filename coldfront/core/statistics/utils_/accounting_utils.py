@@ -41,7 +41,7 @@ def set_job_amount(jobslurmid, amount, update_usages=True):
             account = job.accountid
             user = job.userid
             allocation_objects = get_accounting_allocation_objects(
-                account, user=user)
+                account, user=user, enforce_allocation_active=False)
 
             account_usage = (
                 AllocationAttributeUsage.objects.select_for_update().get(
