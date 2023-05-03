@@ -52,9 +52,21 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  email:
+    image: coldfront_email:latest
+    build:
+      context: .
+      dockerfile: Dockerfile_email
+    ports:
+      - 1025:1025 
+    volumes:
+      - email_data:/data
+    restart: unless-stopped
+
 volumes:
   db_data:
     external: false
   redis_data:
     external: false
-
+  email_data:
+    external: false
