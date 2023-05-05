@@ -5,6 +5,7 @@ from allauth.account.utils import user_username
 from allauth.exceptions import ImmediateHttpResponse
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from allauth.socialaccount.models import SocialAccount
+from allauth.socialaccount.providers.base import AuthProcess
 from allauth.utils import valid_email_or_none
 from coldfront.core.account.utils.login_activity import LoginActivityVerifier
 from coldfront.core.utils.context_processors import portal_and_program_names
@@ -110,6 +111,16 @@ class CILogonAccountAdapter(DefaultSocialAccountAdapter):
         if provider != 'cilogon':
             return
 
+        # If users are not allowed to have multiple emails, and the user is
+        # attempting to connect another SocialAccount to their account (as
+        # opposed to logging in with an existing one), raise an error.
+        if not self._flag_multiple_email_addresses_allowed:
+            if sociallogin.state.get('process', None) == AuthProcess.CONNECT:
+                message = (
+                    'You may not connect more than one third-party account to '
+                    'your portal account.')
+                self._raise_client_error(message)
+
         # If a SocialAccount already exists, meaning the provider account is
         # connected to a local account, proceed with login.
         if sociallogin.is_existing:
@@ -157,9 +168,8 @@ class CILogonAccountAdapter(DefaultSocialAccountAdapter):
             addresses = matching_addresses_by_user[user]
             if any([a.verified for a in addresses]):
                 # After this, allauth.account.adapter.pre_login blocks login if
-                # the user is inactive. Regardless of that, (conditionally)
-                # connect the user (and trigger signals for creating
-                # EmailAddresses).
+                # the user is inactive. Regardless of that, connect the user
+                # (and trigger signals for creating EmailAddresses).
                 self._connect_user(
                     request, sociallogin, provider, user, user_email, user_uid)
             else:
@@ -205,21 +215,11 @@ class CILogonAccountAdapter(DefaultSocialAccountAdapter):
             'address for a verification email.')
         self._raise_client_error(message)
 
-    def _connect_user(self, request, sociallogin, provider, user, user_email,
+    @staticmethod
+    def _connect_user(request, sociallogin, provider, user, user_email,
                       user_uid):
         """Connect the provider account to the User's account in the
-        database.
-
-        If users are not allowed to have multiple email addresses, and
-        the user already has a SocialAccount, raise an error.
-        """
-        if not self._flag_multiple_email_addresses_allowed:
-            if SocialAccount.objects.filter(user=user).exists():
-                message = (
-                    'You may not connect more than one third-party account to '
-                    'your portal account.')
-                self._raise_client_error(message)
-
+        database."""
         sociallogin.connect(request, user)
         log_message = (
             f'Successfully connected data for User with email {user_email} and '
