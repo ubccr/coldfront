@@ -4,13 +4,17 @@ from allauth.account.utils import user_field
 from allauth.account.utils import user_username
 from allauth.exceptions import ImmediateHttpResponse
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
+from allauth.socialaccount.models import SocialAccount
 from allauth.utils import valid_email_or_none
 from coldfront.core.account.utils.login_activity import LoginActivityVerifier
+from coldfront.core.utils.context_processors import portal_and_program_names
 from collections import defaultdict
 from django.conf import settings
 from django.http import HttpResponseBadRequest
 from django.http import HttpResponseServerError
 from django.template.loader import render_to_string
+from django.urls import reverse
+from flags.state import flag_enabled
 import logging
 
 
@@ -19,6 +23,11 @@ logger = logging.getLogger(__name__)
 
 class CILogonAccountAdapter(DefaultSocialAccountAdapter):
     """An adapter that adjusts handling for the CILogon provider."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._flag_multiple_email_addresses_allowed = flag_enabled(
+            'MULTIPLE_EMAIL_ADDRESSES_ALLOWED')
 
     def populate_user(self, request, sociallogin, data):
         """Handle logins using the CILogon provider differently. In
@@ -57,6 +66,17 @@ class CILogonAccountAdapter(DefaultSocialAccountAdapter):
             return user
 
         return super().populate_user(request, sociallogin, data)
+
+    def get_connect_redirect_url(self, request, socialaccount):
+        """
+        Returns the default URL to redirect to after successfully
+        connecting a social account.
+        """
+        if self._flag_multiple_email_addresses_allowed:
+            url = reverse('socialaccount_connections')
+        else:
+            url = reverse('home')
+        return url
 
     def pre_social_login(self, request, sociallogin):
         """At this point, the user is authenticated by a provider. If
@@ -137,8 +157,9 @@ class CILogonAccountAdapter(DefaultSocialAccountAdapter):
             addresses = matching_addresses_by_user[user]
             if any([a.verified for a in addresses]):
                 # After this, allauth.account.adapter.pre_login blocks login if
-                # the user is inactive. Regardless of that, connect the user
-                # (and trigger signals for creating EmailAddresses).
+                # the user is inactive. Regardless of that, (conditionally)
+                # connect the user (and trigger signals for creating
+                # EmailAddresses).
                 self._connect_user(
                     request, sociallogin, provider, user, user_email, user_uid)
             else:
@@ -184,11 +205,21 @@ class CILogonAccountAdapter(DefaultSocialAccountAdapter):
             'address for a verification email.')
         self._raise_client_error(message)
 
-    @staticmethod
-    def _connect_user(request, sociallogin, provider, user, user_email,
+    def _connect_user(self, request, sociallogin, provider, user, user_email,
                       user_uid):
         """Connect the provider account to the User's account in the
-        database."""
+        database.
+
+        If users are not allowed to have multiple email addresses, and
+        the user already has a SocialAccount, raise an error.
+        """
+        if not self._flag_multiple_email_addresses_allowed:
+            if SocialAccount.objects.filter(user=user).exists():
+                message = (
+                    'You may not connect more than one third-party account to '
+                    'your portal account.')
+                self._raise_client_error(message)
+
         sociallogin.connect(request, user)
         log_message = (
             f'Successfully connected data for User with email {user_email} and '
@@ -203,20 +234,23 @@ class CILogonAccountAdapter(DefaultSocialAccountAdapter):
             f'Unexpected authentication error. Please contact '
             f'{settings.CENTER_HELP_EMAIL} for further assistance.')
 
-    @staticmethod
-    def _raise_client_error(message):
+    def _raise_client_error(self, message):
         """Raise an ImmediateHttpResponse with a client error and the
         given message."""
-        template = 'error_with_message.html'
-        html = render_to_string(template, context={'message': message})
-        response = HttpResponseBadRequest(html)
-        raise ImmediateHttpResponse(response)
+        self._raise_error(HttpResponseBadRequest, message)
 
     @staticmethod
-    def _raise_server_error(message):
+    def _raise_error(response_class, message):
+        """Raise an ImmediateHttpResponse with an error HttpResponse
+        class (e.g., HttpResponseBadRequest or HttpResponseServerError)
+        error and the given message."""
+        template = 'error_with_message.html'
+        context = {'message': message, **portal_and_program_names(None)}
+        html = render_to_string(template, context=context)
+        response = response_class(html)
+        raise ImmediateHttpResponse(response)
+
+    def _raise_server_error(self, message):
         """Raise an ImmediateHttpResponse with a server error and the
         given message."""
-        template = 'error_with_message.html'
-        html = render_to_string(template, context={'message': message})
-        response = HttpResponseServerError(html)
-        raise ImmediateHttpResponse(response)
+        self._raise_error(HttpResponseServerError, message)
