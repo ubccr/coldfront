@@ -126,14 +126,25 @@ class CILogonAccountAdapter(DefaultSocialAccountAdapter):
         if sociallogin.is_existing:
             return
 
-        # If the provider does not provide any addresses, raise an error.
         provider_addresses = sociallogin.email_addresses
-        if not provider_addresses:
+        num_provider_addresses = len(provider_addresses)
+        # If the provider does not provide any addresses, raise an error.
+        if num_provider_addresses == 0:
             log_message = (
                 f'Provider {provider} did not provide any email addresses for '
                 f'User with email {user_email} and UID {user_uid}.')
             logger.error(log_message)
             self._raise_server_error(self._get_auth_error_message())
+        # In general, it is expected that a provider will only give one address.
+        # If multiple are given, allow all of them to be associated with the
+        # user (agnostic of whether users are allowed to have multiple), but log
+        # a warning.
+        elif num_provider_addresses > 1:
+            log_message = (
+                f'Provider {provider} provided more than one email address for '
+                f'User with email {user_email} and UID {user_uid}: '
+                f'{", ".join(provider_addresses)}.')
+            logger.warning(log_message)
 
         # SOCIALACCOUNT_PROVIDERS['cilogon']['VERIFIED_EMAIL'] should be True,
         # so all provider-given addresses should be interpreted as verified.
