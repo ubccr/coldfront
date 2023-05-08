@@ -9,7 +9,7 @@ RUN pip install -r requirements.txt && rm requirements.txt
 RUN pip install jinja2 pyyaml
 
 # mybrc or mylrc
-ARG PORTAL="mybrc"
+ARG PORTAL="mylrc"
 RUN mkdir -p /var/log/user_portals/cf_${PORTAL} \
  && touch /var/log/user_portals/cf_${PORTAL}/cf_${PORTAL}_{portal,api}.log \
  && chmod 775 /var/log/user_portals/cf_${PORTAL} \
