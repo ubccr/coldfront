@@ -26,5 +26,5 @@ with flagged_paths('MULTIPLE_EMAIL_ADDRESSES_ALLOWED') as f_path:
         if pattern.name in names_to_include_if_multiple_emails_allowed:
             urlpatterns.append(
                 f_path(
-                    pattern.pattern, pattern.callback, pattern.default_args,
-                    pattern.name))
+                    str(pattern.pattern), pattern.callback,
+                    pattern.default_args, pattern.name))
