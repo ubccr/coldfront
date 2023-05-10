@@ -1,0 +1,5 @@
+FROM python:3
+
+LABEL description="coldfront email"
+
+RUN apt update && apt install -y sudo net-tools 
