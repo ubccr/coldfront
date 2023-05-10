@@ -5,6 +5,7 @@ dist
 build
 *._*
 *.DS_Store
+.env
 *.swp
 env/
 venv/
