@@ -46,9 +46,15 @@ of variables used by Ansible to configure the system.
    ```
    cp bootstrap/ansible/main.copyme main.yml
    ```
-7. Customize `main.yml`. In particular, uncomment everything under the `dev_settings` section, and fill in the below variables. Note
+7. Generate a key to be used as the `SECRET_KEY` for Django.
+   ```
+   # This produces two lines: condense them into one.
+   openssl rand -base64 64
+   ```
+8. Customize `main.yml`. In particular, uncomment everything under the `dev_settings` section, and fill in the below variables. Note
 that quotes need not be provided, except in the list variable.
    ```
+   django_secret_key: secret_key_from_previous_step
    db_admin_passwd: password_here
    redis_passwd: password_here
    from_email: you@email.com
@@ -56,18 +62,18 @@ that quotes need not be provided, except in the list variable.
    email_admin_list: ["you@email.com"]
    request_approval_cc_list: ["you@email.com"]
    ```
-8. Provision the VM. This should run the Ansible playbook. Expect this to take
+9. Provision the VM. This should run the Ansible playbook. Expect this to take
 a few minutes on the first run.
    ```
    vagrant up
    ```
-9. SSH into the VM.
+10. SSH into the VM.
    ```
    vagrant ssh
    ```
-10. On the host machine, navigate to `http://localhost:8880`, where the
+11. On the host machine, navigate to `http://localhost:8880`, where the
 application should be served.
-11. (Optional) Load data from a database dump file.
+12. (Optional) Load data from a database dump file.
     ```
     # Clear the Django database to avoid conflicts.
     python manage.py sqlflush | python manage.py dbshell

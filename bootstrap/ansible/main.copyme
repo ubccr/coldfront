@@ -18,6 +18,10 @@ djangoprojname: coldfront
 # BRC/LRC Config
 ###############################################################################
 
+# The secret key used by Django for cryptographic signing.
+# TODO: Generate one using: `openssl rand -base64 64`.
+django_secret_key:
+
 # The name of the PostgreSQL database.
 # TODO: For LRC, set this to 'cf_lrc_db'.
 db_name: cf_brc_db
