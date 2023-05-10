@@ -1,3 +1,5 @@
+import logging
+
 from django import forms
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -12,6 +14,8 @@ from django.views.generic.edit import CreateView
 
 from coldfront.core.resource.forms import ResourceSearchForm, ResourceAttributeDeleteForm
 from coldfront.core.resource.models import Resource, ResourceAttribute
+
+logger = logging.getLogger(__name__)
 
 
 class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -103,6 +107,10 @@ class ResourceAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Creat
         return form
 
     def get_success_url(self):
+        logger.info(
+            f'Admin {self.request.user.username} created a {self.object.resource.name} resource '
+            f'attribute (resource pk={self.kwargs.get("pk")})'
+        )
         return reverse('resource-detail', kwargs={'pk': self.kwargs.get('pk')})
 
 
@@ -177,6 +185,11 @@ class ResourceAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Templ
 
             messages.success(request, 'Deleted {} attributes from resource.'.format(
                 attributes_deleted_count))
+            
+            logger.info(
+                f'Admin {self.request.user.username} deleted {attributes_deleted_count} '
+                f'attribute(s) from the {resource_obj.name} resource (resource pk={resource_obj.pk})'
+            )
         else:
             for error in formset.errors:
                 messages.error(request, error)

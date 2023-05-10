@@ -707,6 +707,10 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
             allocation.status = allocation_status_expired
             allocation.end_date = end_date
             allocation.save()
+
+        logger.info(
+            f'User {request.user.username} archived a project (project pk={project.pk})'
+        )
         return redirect(reverse('project-detail', kwargs={'pk': project.pk}))
 
 
@@ -817,8 +821,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
             if end_date is None:
                 logger.error(
-                    'End date for new project request was set to None on date {}'
-                    .format(datetime.date.today())
+                    f'End date for new project request was set to None on date {datetime.date.today()}'
                 )
                 messages.error(
                     self.request,
@@ -900,6 +903,11 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
                     [project_user_pi_user.user.email, ]
                 )
 
+                logger.info(f'Email sent to pi {form.instance.pi.username} (project pk={project_obj.pk})')
+
+        logger.info(
+            f'User {form.instance.requestor.username} created a new project (project pk={project_obj.pk})'
+        )
         return super().form_valid(form)
 
     def reverse_with_params(self, path, **kwargs):
@@ -970,6 +978,9 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
         # project_obj.field_of_science = form_data.get('field_of_science')
         project_obj.save()
 
+        logger.info(
+            f'User {self.request.user.username} updated a project (project pk={project_obj.pk})'
+        )
         return super().form_valid(form)
 
     def get_success_url(self):
@@ -1419,6 +1430,10 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                             if project_obj.pi.email not in allocations_added_users_emails:
                                 allocations_added_users_emails.append(project_obj.pi.email)
 
+                        logger.info(
+                            f'User {request.user.username} added {len(allocations_added_users)} user(s) to a '
+                            f'{allocation.get_parent_resource.name} allocation (allocation pk={allocation.pk})'
+                        )
                         send_added_user_email(
                             request,
                             allocation,
@@ -1426,7 +1441,10 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                             allocations_added_users_emails
                         )
 
-
+            logger.info(
+                f'User {request.user.username} added {added_users_count} user(s) to a project '
+                f'(project pk={project_obj.pk})'
+            )
             messages.success(
                 request, 'Added {} users to project.'.format(added_users_count))
         else:
@@ -1644,6 +1662,11 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                         removed_users_emails
                     )
 
+                logger.info(
+                    f'User {request.user.username} removed {remove_users_count} user(s) from a '
+                    f'project (project pk={project_obj.pk})'
+                )
+
                 if remove_users_count == 1:
                     messages.success(
                         request, 'Removed {} user from project.'.format(remove_users_count))
@@ -1786,6 +1809,11 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 project_user_obj.role = ProjectUserRoleChoice.objects.get(
                     name=form_data.get('role'))
                 project_user_obj.save()
+
+                logger.info(
+                    f'User {request.user.username} updated {project_user_obj.user.username}\'s '
+                    f'role (project pk={project_obj.pk})'
+                )
 
                 messages.success(request, 'User details updated.')
                 return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_obj.pk, 'project_user_pk': project_user_obj.pk}))
@@ -1952,9 +1980,8 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                             allocation.save()
                 else:
                     logger.error(
-                        'There was an error submitting allocation renewals for PI {}'.format(
-                            project_obj.pi.username
-                        )
+                        f'There was an error submitting allocation renewals for PI '
+                        f'{project_obj.pi.username} (project pk={project_obj.pk})'
                     )
                     messages.error(
                         request, 'There was an error submitting your allocation renewals.'
@@ -1991,6 +2018,10 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                     EMAIL_SENDER,
                     [EMAIL_ALERTS_EMAIL_ADDRESS, ]
                 )
+
+            logger.info(
+                f'User {request.user.username} submitted a project renewal (project pk={project_obj.pk})'
+            )
 
             messages.success(request, 'Project review submitted.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
@@ -2107,6 +2138,9 @@ class ProjectActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
                 email_receiver_list
             )
 
+        logger.info(
+            f'Admin {request.user.username} approved a project request (project pk={project_obj.pk})'
+        )
         return HttpResponseRedirect(reverse('project-review-list'))
 
 
@@ -2184,6 +2218,9 @@ class ProjectDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
                 email_receiver_list
             )
 
+        logger.info(
+            f'Admin {request.user.username} denied a project request (project pk={project_obj.pk})'
+        )
         return HttpResponseRedirect(reverse('project-review-list'))
 
 
@@ -2225,8 +2262,9 @@ class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
 
             if end_date is None:
                 logger.error(
-                    'New end date for project {} was set to None with project review creation date {} during project review approval'
-                    .format(project_obj.title, project_review_obj.created.date())
+                    f'New end date for project {project_obj.title} was set to None with project '
+                    f'review creation date {project_review_obj.created.date()} during project '
+                    f'review approval'
                 )
                 messages.error(request, 'Something went wrong while approving the review.')
                 return HttpResponseRedirect(reverse('project-review-list'))
@@ -2297,6 +2335,9 @@ class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
                 email_receiver_list
             )
 
+        logger.info(
+            f'Admin {request.user.username} approved a project renewal request (project pk={project_obj.pk})'
+        )
         return HttpResponseRedirect(reverse('project-review-list'))
 
 
@@ -2379,6 +2420,9 @@ class ProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin, View):
                 email_receiver_list
             )
 
+        logger.info(
+            f'Admin {request.user.username} denied a project renewal request (project pk={project_obj.pk})'
+        )
         return HttpResponseRedirect(reverse('project-review-list'))
 
 
@@ -2626,10 +2670,8 @@ class ProjectRequestAccessEmailView(LoginRequiredMixin, View):
                 [project_obj.pi.email]
             )
             logger.info(
-                'User {} sent an email to {} requesting access to their project'.format(
-                    request.user.username,
-                    project_obj.pi.email
-                )
+                f'User {request.user.username} sent an email to {project_obj.pi.email} requesting '
+                f'access to their project (project pk={project_obj.pk})'
             )
         else:
             logger.warning(
@@ -2679,6 +2721,9 @@ class ProjectNoteCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView)
         return form
 
     def get_success_url(self):
+        logger.info(
+            f'Admin {self.request.user.username} created a project note (pk={self.kwargs.get("pk")})'
+        )
         return reverse('project-detail', kwargs={'pk': self.kwargs.get('pk')})
 
 
@@ -2766,7 +2811,7 @@ class ProjectExportView(LoginRequiredMixin, UserPassesTestMixin, View):
             )
             response['Content-Disposition'] = f'attachment; filename="{file_name}'
 
-            logger.info(f'User {request.user.username} exported the project list')
+            logger.info(f'Admin {request.user.username} exported the project list')
 
             return response
         else:
@@ -2876,7 +2921,7 @@ class ProjectUserExportView(LoginRequiredMixin, UserPassesTestMixin, View):
             )
             response['Content-Disposition'] = f'attachment; filename="{file_name}"'
 
-            logger.info(f'User {request.user.username} exported the project user list')
+            logger.info(f'Admin {request.user.username} exported the project user list')
 
             return response
         else:

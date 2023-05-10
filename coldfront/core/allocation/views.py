@@ -399,6 +399,11 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                         email_receiver_list
                     )
 
+                logger.info(
+                    f'Admin {request.user.username} approved a {allocation_obj.get_parent_resource.name} '
+                    f'allocation (allocation pk={allocation_obj.pk})'
+                )
+
             elif old_status != 'Denied' and new_status == 'Denied':
                 allocation_disable.send(
                     sender=self.__class__, allocation_pk=allocation_obj.pk)
@@ -438,6 +443,12 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                         EMAIL_TICKET_SYSTEM_ADDRESS,
                         email_receiver_list
                     )
+
+                logger.info(
+                    f'Admin {request.user.username} denied a {allocation_obj.get_parent_resource.name} '
+                    f'allocation (allocation pk={allocation_obj.pk})'
+                )
+
             elif old_status != 'Removed' and new_status == 'Removed':
                 allocation_status_removed_obj = AllocationStatusChoice.objects.get(name='Removed')
                 end_date = datetime.datetime.now()
@@ -471,6 +482,11 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                         EMAIL_TICKET_SYSTEM_ADDRESS,
                         email_receiver_list
                     )
+
+                logger.info(
+                    f'Admin {request.user.username} removed a {allocation_obj.get_parent_resource.name} '
+                    f'allocation (allocation pk={allocation_obj.pk})'
+                )
 
             allocation_obj.refresh_from_db()
 
@@ -576,6 +592,18 @@ class AllocationRemoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
         allocation_obj.status = new_status
         allocation_obj.save()
+
+        if new_status.name == 'Removed':
+            logger.info(
+                f'Admin {request.user.username} removed a {allocation_obj.get_parent_resource.name} '
+                f'allocation (allocation pk={allocation_obj.pk})'
+            )
+        else:
+            logger.info(
+                f'User {request.user.username} sent a removal request for a '
+                f'{allocation_obj.get_parent_resource.name} '
+                f'allocation (allocation pk={allocation_obj.pk})'
+            )
 
         if EMAIL_ENABLED:
             if new_status.name == 'Removed':
@@ -723,6 +751,10 @@ class AllocationApproveRemovalView(LoginRequiredMixin, UserPassesTestMixin, View
                 email_receiver_list
             )
 
+        logger.info(
+            f'Admin {request.user.username} approved a removal request for a '
+            f'{allocation_obj.get_parent_resource.name} allocation (allocation pk={allocation_obj.pk})'
+        )
         return HttpResponseRedirect(reverse('allocation-removal-request-list'))
 
 
@@ -786,6 +818,10 @@ class AllocationDenyRemovalRequest(LoginRequiredMixin, UserPassesTestMixin, View
                 email_receiver_list
             )
 
+        logger.info(
+            f'Admin {request.user.username} denied a removal request for a '
+            f'{allocation_obj.get_parent_resource.name} allocation (allocation pk={allocation_obj.pk})'
+        )
         return HttpResponseRedirect(reverse('allocation-removal-request-list'))
 
 
@@ -1454,6 +1490,10 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                         allocations_added_users_emails
                     )
 
+        logger.info(
+            f'User {self.request.user.username} submitted a request for a '
+            f'{allocation_obj.get_parent_resource.name} allocation (allocation pk={allocation_obj.pk})'
+        )
         return super().form_valid(form)
 
     def reverse_with_params(self, path, **kwargs):
@@ -1676,6 +1716,12 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                         request,
                         'Pending addition of user(s) {} to allocation.'.format(', '.join(added_users))
                     )
+
+                    logger.info(
+                        f'User {request.user.username} requested to add {len(added_users)} user(s) '
+                        f'to a {allocation_obj.get_parent_resource.name} allocation '
+                        f'(allocation pk={allocation_obj.pk})'
+                    )
                 else:
                     if EMAIL_ENABLED:
                         allocation_added_users_emails = []
@@ -1696,6 +1742,12 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                         'Added user(s) {} to allocation.'.format(', '.join(added_users))
                     )
 
+                    logger.info(
+                        f'User {request.user.username} added {len(added_users)} user(s) '
+                        f'to a {allocation_obj.get_parent_resource.name} allocation '
+                        f'(allocation pk={allocation_obj.pk})'
+                    )
+
             if denied_users:
                 user_text = 'user'
                 if len(denied_users) > 1:
@@ -1706,6 +1758,11 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                     <a href="https://access.iu.edu/Accounts/Create">https://access.iu.edu/Accounts/Create</a>\
                     to create one.'.format(user_text, ', '.join(denied_users))
                     )
+                )
+
+                logger.info(
+                    f'Users {", ".join(denied_users)} were missing accounts for a '
+                    f'{allocation_obj.get_parent_resource.name} allocation (allocation pk={allocation_obj.pk})'
                 )
         else:
             for error in formset.errors:
@@ -1916,6 +1973,12 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
                     messages.success(
                         request, 'Pending removal of user(s) {} from allocation.'.format(', '.join(removed_users))
                     )
+
+                    logger.info(
+                        f'User {request.user.username} requested to remove {len(removed_users)} '
+                        f'user(s) from a {allocation_obj.get_parent_resource.name} allocation '
+                        f'(allocation pk={allocation_obj.pk})'
+                    )
                 else:
                     if EMAIL_ENABLED:
                         allocation_removed_users_emails = []
@@ -1932,6 +1995,11 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
                         send_removed_user_email(allocation_obj, removed_users, allocation_removed_users_emails)
                     messages.success(
                         request, 'Removed user(s) {} from allocation.'.format(', '.join(removed_users))
+                    )
+
+                    logger.info(
+                        f'User {request.user.username} removed {len(removed_users)} user(s) from a '
+                        f'{allocation_obj.get_parent_resource.name} allocation (allocation pk={allocation_obj.pk})'
                     )
 
         else:
@@ -2011,13 +2079,18 @@ class AllocationAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Cre
         return form
 
     def get_success_url(self):
+        allocation_obj = Allocation.objects.get(pk=self.kwargs.get('pk'))
+        logger.info(
+            f'Admin {self.request.user.username} created a {allocation_obj.get_parent_resource.name} '
+            f'allocation attribute (allocation pk={allocation_obj.pk})'
+        )
         update_linked_allocation_attribute(self.object)
         create_admin_action_for_creation(
             self.request.user,
             self.object,
-            Allocation.objects.get(pk=self.kwargs.get('pk'))
+            allocation_obj
         )
-        return reverse('allocation-detail', kwargs={'pk': self.kwargs.get('pk')})
+        return reverse('allocation-detail', kwargs={'pk': allocation_obj.pk})
 
 
 class AllocationAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -2103,6 +2176,10 @@ class AllocationAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Tem
                     allocation_attribute = AllocationAttribute.objects.get(
                         pk=form_data['pk'])
 
+                    logger.info(
+                        f'Admin {request.user.username} deleted a {allocation_obj.get_parent_resource.name} '
+                        f'allocation attribute (allocation pk={allocation_obj.pk})'
+                    )
                     create_admin_action_for_deletion(
                         request.user,
                         allocation_attribute,
@@ -2219,6 +2296,10 @@ class AllocationAttributeUpdateView(LoginRequiredMixin, UserPassesTestMixin, Tem
                 )
 
                 if new_value and new_value != allocation_attribute.value:
+                    logger.info(
+                        f'Admin {request.user.username} updated a {allocation_obj.get_parent_resource.name} '
+                        f'allocation attribute (allocation pk={allocation_obj.pk})'
+                    )
                     create_admin_action(
                         request.user,
                         {'new_value': new_value},
@@ -2299,7 +2380,10 @@ class AllocationNoteCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateVi
         return form
 
     def get_success_url(self):
-        return reverse('allocation-detail', kwargs={'pk': self.kwargs.get('pk')})
+        logger.info(
+            f'Admin {self.request.user.username} created an allocation note (allocation pk={self.object.allocation.pk})'
+        )
+        return reverse('allocation-detail', kwargs={'pk': self.object.allocation.pk})
 
 
 class AllocationNoteUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestMixin, UpdateView):
@@ -2346,6 +2430,9 @@ class AllocationNoteUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPass
         return context
 
     def get_success_url(self):
+        logger.info(
+            f'Admin {self.request.user.username} updated an allocation note (allocation pk={self.object.allocation.pk})'
+        )
         return reverse('allocation-detail', kwargs={'pk': self.object.allocation.pk})
 
 
@@ -2510,6 +2597,10 @@ class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
                 email_receiver_list
             )
 
+        logger.info(
+            f'Admin {request.user.username} approved a {allocation_obj.get_parent_resource.name} '
+            f'allocation request (allocation pk={allocation_obj.pk})'
+        )
         if 'request-list' in request.META.get('HTTP_REFERER'):
             return HttpResponseRedirect(reverse('allocation-request-list'))
         else:
@@ -2615,6 +2706,11 @@ class AllocationDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
                 EMAIL_TICKET_SYSTEM_ADDRESS,
                 email_receiver_list
             )
+
+        logger.info(
+            f'Admin {request.user.username} denied a {allocation_obj.get_parent_resource.name} '
+            f'allocation request (allocation pk={allocation_obj.pk})'
+        )
         if 'request-list' in request.path:
             return HttpResponseRedirect(reverse('allocation-request-list'))
         else:
@@ -2739,12 +2835,6 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
         project_user_remove_status_choice = ProjectUserStatusChoice.objects.get(
             name='Removed')
 
-        create_admin_action(
-            request.user,
-            {'status', allocation_renewal_requested_status_choice},
-            allocation_obj
-        )
-
         allocation_obj.status = allocation_renewal_requested_status_choice
         allocation_obj.save()
 
@@ -2815,6 +2905,10 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
                     [email_recipient, ]
                 )
 
+            logger.info(
+                f'User {request.user.username} sent a {allocation_obj.get_parent_resource.name} '
+                f'allocation renewal request (allocation pk={allocation_obj.pk})'
+            )
             messages.success(request, 'Allocation renewed successfully')
         else:
             if not formset.is_valid():
@@ -2935,6 +3029,9 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
                     status=status
                 )
 
+            logger.info(
+                f'Admin {request.user.username} updated an invoice\'s status (allocation pk={allocation_obj.pk})'
+            )
             create_admin_action(
                 request.user,
                 {'status': status},
@@ -3762,6 +3859,10 @@ class AllocationUserApproveRequestView(LoginRequiredMixin, UserPassesTestMixin, 
                     email_receiver_list
                 )
 
+        logger.info(
+            f'Admin {request.user.username} approved a {allocation_user.allocation.get_parent_resource.name} '
+            f'allocation user request (allocation pk={allocation_user.allocation.pk})'
+        )
         messages.success(request, 'User {}\'s status has been APPROVED'.format(allocation_user.user.username))
 
         return HttpResponseRedirect(reverse('allocation-user-request-list'))
@@ -3866,6 +3967,10 @@ class AllocationUserDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
                     email_receiver_list
                 )
 
+        logger.info(
+            f'Admin {request.user.username} denied a {allocation_user.allocation.get_parent_resource.name} '
+            f'allocation user request (allocation pk={allocation_user.allocation.pk})'
+        )
         messages.success(request, 'User {}\'s status has been DENIED'.format(allocation_user.user.username))
 
         return HttpResponseRedirect(reverse('allocation-user-request-list'))
@@ -4143,6 +4248,10 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                                 email_receiver_list
                             )
 
+                        logger.info(
+                            f'Admin {request.user.username} approved a {allocation_obj.get_parent_resource.name} '
+                            f'allocation change request (allocation pk={allocation_obj.pk})'
+                        )
                         return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
                     else:
                         errors = []
@@ -4233,6 +4342,10 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                                     email_receiver_list
                                 )
 
+                            logger.info(
+                                f'Admin {request.user.username} approved a {allocation_obj.get_parent_resource.name} '
+                                f'allocation change request (allocation pk={allocation_obj.pk})'
+                            )
                             return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
 
                         else:
@@ -4318,6 +4431,11 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                         EMAIL_TICKET_SYSTEM_ADDRESS,
                         email_receiver_list
                     )
+
+                logger.info(
+                    f'Admin {request.user.username} denied a {allocation_obj.get_parent_resource.name} '
+                    f'allocation change request (allocation pk={allocation_obj.pk})'
+                )
                 return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
 
             if request.POST.get('choice') == 'update':
@@ -4343,6 +4461,11 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
 
                     messages.success(
                         request, 'Allocation change request updated!')
+                    
+                    logger.info(
+                        f'Admin {request.user.username} updated a {allocation_obj.get_parent_resource.name} '
+                        f'allocation change request (allocation pk={allocation_obj.pk})'
+                    )
                     return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
                 else:
                     if allocation_attributes_to_change:
@@ -4386,6 +4509,11 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
 
                             messages.success(
                                 request, 'Allocation change request updated!')
+                            
+                            logger.info(
+                                f'Admin {request.user.username} updated a {allocation_obj.get_parent_resource.name} '
+                                f'allocation change request (allocation pk={allocation_obj.pk})'
+                            )
                             return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
                         else:
                             attribute_errors = []
@@ -4426,6 +4554,11 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                                 messages.success(
                                     request, 'Allocation change request updated!')
 
+                                
+                                logger.info(
+                                    f'Admin {request.user.username} updated a {allocation_obj.get_parent_resource.name} '
+                                    f'allocation change request (allocation pk={allocation_obj.pk})'
+                                )
                                 return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
 
                             else:
@@ -4622,6 +4755,11 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                             )
                     messages.success(
                         request, 'Allocation change request successfully submitted.')
+
+                    logger.info(
+                        f'User {request.user.username} requested a {allocation_obj.get_parent_resource.name} '
+                        f'allocation change (allocation pk={allocation_obj.pk})'
+                    )
 
                     pi_name = '{} {} ({})'.format(allocation_obj.project.pi.first_name,
                                                 allocation_obj.project.pi.last_name, allocation_obj.project.pi.username)
@@ -4851,6 +4989,10 @@ class AllocationChangeActivateView(LoginRequiredMixin, UserPassesTestMixin, View
                 email_receiver_list
             )
 
+        logger.info(
+            f'Admin {request.user.username} approved a {allocation_change_obj.allocation_obj.get_parent_resource.name} '
+            f'allocation change request (allocation pk={allocation_change_obj.allocation_obj.pk})'
+        )
         return HttpResponseRedirect(reverse('allocation-change-list'))
 
 
@@ -4949,6 +5091,11 @@ class AllocationChangeDenyView(LoginRequiredMixin, UserPassesTestMixin, View):
                 EMAIL_TICKET_SYSTEM_ADDRESS,
                 email_receiver_list
             )
+
+        logger.info(
+            f'Admin {request.user.username} denied a {allocation_change_obj.allocation.get_parent_resource.name} '
+            f'allocation change request (allocation pk={allocation_change_obj.allocation.pk})'
+        )
         return HttpResponseRedirect(reverse('allocation-change-list'))
 
 
@@ -4980,6 +5127,12 @@ class AllocationChangeDeleteAttributeView(LoginRequiredMixin, UserPassesTestMixi
 
         allocation_attribute_change_obj.delete()
 
+        allocation_pk = allocation_attribute_change_obj.allocation_change_request.allocation.pk
+        allocation_resource_name = allocation_attribute_change_obj.allocation_change_request.allocation.get_parent_resource.name
+        logger.info(
+            f'Admin {request.user.username} deleted a {allocation_resource_name} allocation '
+            f'attribute change request (allocation pk={allocation_pk})'
+        )
         messages.success(
             request, 'Allocation attribute change request successfully deleted.')
         return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': allocation_change_pk}))
@@ -5081,7 +5234,7 @@ class AllocationExportView(LoginRequiredMixin, UserPassesTestMixin, View):
             )
             response['Content-Disposition'] = f'attachment; filename="{file_name}"'
 
-            logger.info(f'User {request.user.username} exported the allocation list')
+            logger.info(f'Admin {request.user.username} exported the allocation list')
 
             return response
         else:
