@@ -248,10 +248,10 @@ def check_if_groups_in_review_groups(review_groups, groups, permission=None):
     :param groups: The group query being compared
     :param permission: A permission at least one matching group should have
     """
-    if not review_groups:
+    if not review_groups.exists():
         return True
 
-    if not groups:
+    if not groups.exists():
         return False
 
     matched_groups = groups.intersection(review_groups)
