@@ -539,6 +539,7 @@ class AllocationRemoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         allocation_obj = get_object_or_404(
             Allocation, pk=self.kwargs.get('pk')
         )
+        # This checks if a string exists, do not set from_project if you want this to be false
         if self.request.GET.get('from_project'):
             project_pk = allocation_obj.project.pk
             http_response_redirect = HttpResponseRedirect(
@@ -572,8 +573,10 @@ class AllocationRemoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             users.append(
                 f'{allocation_user.user.first_name} {allocation_user.user.last_name} ({allocation_user.user.username})'
             )
-
-        context['from_project'] = 'project' in self.request.META.get('HTTP_REFERER')
+        context['from_project'] = False 
+        # This checks if a string exists, do not set from_project if you want this to be false
+        if self.request.GET.get('from_project'):
+            context['from_project'] = True
         context['users'] = ', '.join(users)
         context['allocation'] = allocation_obj
         return context
@@ -664,7 +667,7 @@ class AllocationRemoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
         messages.success(request, message)
 
-        # Checking if the string 'true' is there
+        # Checking if the string exists, do not set from_project if you want this to be false
         from_project = self.request.GET.get('from_project')
         if from_project:
             allocation_obj = Allocation.objects.get(pk=pk)
