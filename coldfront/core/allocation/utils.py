@@ -2,6 +2,7 @@ from datetime import datetime
 from django.db.models import Q
 from django.urls import reverse
 from django.forms.models import model_to_dict
+from django.contrib.auth.models import Permission
 
 from coldfront.core.allocation.models import (AllocationUser,
                                               AllocationUserStatusChoice,
@@ -234,3 +235,35 @@ def get_project_managers_in_allocation(allocation_obj):
             project_managers_in_allocation.append(project_manager)
 
     return project_managers_in_allocation
+
+
+def check_if_groups_in_review_groups(review_groups, groups, permission=None):
+    """
+    Returns True if at least one group in a group query is included in a review group query. An
+    additional permission can be given to check if at least one matching group has it. Since this
+    is for determining permissions this returns True if the review group query is empty, meaning
+    open to all groups.
+
+    :param review_groups: The review group query to compare the groups to
+    :param groups: The group query being compared
+    :param permission: A permission at least one matching group should have
+    """
+    if not review_groups:
+        return True
+
+    if not groups:
+        return False
+
+    matched_groups = groups.intersection(review_groups)
+    if matched_groups.exists():
+        if permission is None:
+            return True
+
+        matched_group_ids = matched_groups.values_list('id', flat=True)
+        permission_exists = Permission.objects.filter(
+            group__id__in=matched_group_ids, codename=permission
+        ).exists()
+        if permission_exists:
+            return True
+
+    return False
