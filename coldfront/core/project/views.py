@@ -2090,14 +2090,18 @@ class ProjectActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
         """ UserPassesTestMixin Tests"""
 
-        if self.request.user.is_superuser:
-            return True
+        if not self.request.user.is_superuser:
+            if not self.request.user.has_perm('project.can_review_pending_projects'):
+                return False
 
-        if self.request.user.has_perm('project.can_review_pending_projects'):
-            return True
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+        if project_obj.status.name != 'Waiting For Admin Approval':
+            messages.error(
+                self.request, f'You cannot approve a project with status "{project_obj.status.name}"'
+            )
+            return False
 
-        messages.error(
-            self.request, 'You do not have permission to activate project requests.')
+        return True
 
     def get(self, request, pk):
         project_obj = get_object_or_404(Project, pk=pk)
@@ -2150,14 +2154,18 @@ class ProjectDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
         """ UserPassesTestMixin Tests"""
 
-        if self.request.user.is_superuser:
-            return True
+        if not self.request.user.is_superuser:
+            if not self.request.user.has_perm('project.can_review_pending_projects'):
+                return False
 
-        if self.request.user.has_perm('project.can_review_pending_projects'):
-            return True
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+        if project_obj.status.name != 'Waiting For Admin Approval':
+            messages.error(
+                self.request, f'You cannot deny a project with status "{project_obj.status.name}"'
+            )
+            return False
 
-        messages.error(
-            self.request, 'You do not have permission to deny project requests.')
+        return True
 
     def get(self, request, pk):
         project_obj = get_object_or_404(Project, pk=pk)
@@ -2226,14 +2234,20 @@ class ProjectDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
 
 class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
-        if self.request.user.is_superuser:
-            return True
+        """ UserPassesTestMixin Tests"""
 
-        if self.request.user.has_perm('project.can_review_pending_projects'):
-            return True
+        if not self.request.user.is_superuser:
+            if not self.request.user.has_perm('project.can_review_pending_projects'):
+                return False
 
-        messages.error(
-            self.request, 'You do not have permission to approve a project review.')
+        project_review_obj = get_object_or_404(ProjectReview, pk=self.kwargs.get('pk'))
+        if project_review_obj.status.name != 'Pending':
+            messages.error(
+                self.request, f'You cannot approve a project review with status "{project_review_obj.status.name}"'
+            )
+            return False
+
+        return True
 
     def get(self, request, pk):
         project_review_obj = get_object_or_404(ProjectReview, pk=pk)
@@ -2343,14 +2357,20 @@ class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
 
 class ProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
-        if self.request.user.is_superuser:
-            return True
+        """ UserPassesTestMixin Tests"""
 
-        if self.request.user.has_perm('project.can_review_pending_projects'):
-            return True
+        if not self.request.user.is_superuser:
+            if not self.request.user.has_perm('project.can_review_pending_projects'):
+                return False
 
-        messages.error(
-            self.request, 'You do not have permission to deny a project review.')
+        project_review_obj = get_object_or_404(ProjectReview, pk=self.kwargs.get('pk'))
+        if project_review_obj.status.name != 'Pending':
+            messages.error(
+                self.request, f'You cannot deny a project review with status "{project_review_obj.status.name}"'
+            )
+            return False
+
+        return True
 
     def get(self, request, pk):
         project_review_obj = get_object_or_404(ProjectReview, pk=pk)
@@ -2430,14 +2450,20 @@ class ProjectReviewInfoView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
     template_name = 'project/project_review_info.html'
 
     def test_func(self):
-        if self.request.user.is_superuser:
-            return True
+        """ UserPassesTestMixin Tests"""
 
-        if self.request.user.has_perm('project.can_review_pending_projects'):
-            return True
+        if not self.request.user.is_superuser:
+            if not self.request.user.has_perm('project.can_review_pending_projects'):
+                return False
 
-        messages.error(
-            self.request, 'You do not have permission to deny a project review.')
+        project_review_obj = get_object_or_404(ProjectReview, pk=self.kwargs.get('pk'))
+        if project_review_obj.status.name != 'Pending':
+            messages.error(
+                self.request, f'You cannot view a project review\'s info with status "{project_review_obj.status.name}"'
+            )
+            return False
+
+        return True
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
