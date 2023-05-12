@@ -79,12 +79,12 @@ jobs:
         # Get setting configuration from samples
         cp coldfront/config/local_strings.py.sample coldfront/config/local_strings.py
         cp coldfront/config/local_settings.py.sample coldfront/config/local_settings.py
-        export django_secret_key=`openssl rand -base64 64`
         cp coldfront/config/test_settings.py.sample coldfront/config/test_settings.py
 
     - name: Run Tests
       run: |
         source ~/venv/bin/activate
+        export django_secret_key=`openssl rand -base64 64`
         python manage.py migrate
         python manage.py test
 
