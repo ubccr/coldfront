@@ -2491,33 +2491,32 @@ class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
     def test_func(self):
         """ UserPassesTestMixin Tests"""
 
-        if self.request.user.is_superuser:
-            return True
-        
+        if not self.request.user.is_superuser:
+            allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
+            group_exists = check_if_groups_in_review_groups(
+                allocation_obj.get_parent_resource.review_groups.all(),
+                self.request.user.groups.all(),
+                'can_review_allocation_requests'
+            )
+            if not group_exists:
+                return False
+
         allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
-        group_exists = check_if_groups_in_review_groups(
-            allocation_obj.get_parent_resource.review_groups.all(),
-            self.request.user.groups.all(),
-            'can_review_allocation_requests'
-        )
-        if group_exists:
-            return True
-
-        messages.error(
-            self.request, 'You do not have permission to activate this allocation request.')
-
-    def dispatch(self, request, *args, **kwargs):
-        allocation_obj = get_object_or_404(Allocation, pk=kwargs.get('pk'))
         project_obj = allocation_obj.project
-
         if project_obj.status.name != 'Active':
-            messages.error(request, 'Project must be approved first before you can approve this allocation!')
-            if 'request-list' in request.META.get('HTTP_REFERER'):
-                return HttpResponseRedirect(reverse('allocation-request-list'))
-            else:
-                return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
+            messages.error(
+                self.request, 'Project must be approved first before you can approve this allocation!'
+            )
+            return False
+                
+            
+        if not allocation_obj.status.name in ['New', 'Billing Information Submitted', 'Renewal Requested']:
+            messages.error(
+                self.request, f'You cannot activate an allocation with status "{allocation_obj.status.name}".'
+            )
+            return False
 
-        return super().dispatch(request, *args, **kwargs)
+        return True
 
     def get(self, request, pk):
         allocation_obj = get_object_or_404(Allocation, pk=pk)
@@ -2613,7 +2612,7 @@ class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
             f'Admin {request.user.username} approved a {allocation_obj.get_parent_resource.name} '
             f'allocation request (allocation pk={allocation_obj.pk})'
         )
-        if 'request-list' in request.META.get('HTTP_REFERER'):
+        if request.META.get('HTTP_REFERER') and 'request-list' in request.META.get('HTTP_REFERER'):
             return HttpResponseRedirect(reverse('allocation-request-list'))
         else:
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
@@ -2625,33 +2624,32 @@ class AllocationDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
         """ UserPassesTestMixin Tests"""
 
-        if self.request.user.is_superuser:
-            return True
-        
+        if not self.request.user.is_superuser:
+            allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
+            group_exists = check_if_groups_in_review_groups(
+                allocation_obj.get_parent_resource.review_groups.all(),
+                self.request.user.groups.all(),
+                'can_review_allocation_requests'
+            )
+            if not group_exists:
+                return False
+
         allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
-        group_exists = check_if_groups_in_review_groups(
-            allocation_obj.get_parent_resource.review_groups.all(),
-            self.request.user.groups.all(),
-            'can_review_allocation_requests'
-        )
-        if group_exists:
-            return True
-
-        messages.error(
-            self.request, 'You do not have permission to deny this allocation request.')
-
-    def dispatch(self, request, *args, **kwargs):
-        allocation_obj = get_object_or_404(Allocation, pk=kwargs.get('pk'))
         project_obj = allocation_obj.project
-
         if project_obj.status.name != 'Active':
-            messages.error(request, 'Project must be approved first before you can deny this allocation!')
-            if 'request-list' in request.META.get('HTTP_REFERER'):
-                return HttpResponseRedirect(reverse('allocation-request-list'))
-            else:
-                return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
+            messages.error(
+                self.request, 'Project must be approved first before you can deny this allocation!'
+            )
+            return False
+                
+            
+        if not allocation_obj.status.name in ['New', 'Billing Information Submitted', 'Renewal Requested']:
+            messages.error(
+                self.request, f'You cannot deny an allocation with status "{allocation_obj.status.name}".'
+            )
+            return False
 
-        return super().dispatch(request, *args, **kwargs)
+        return True
 
     def get(self, request, pk):
         allocation_obj = get_object_or_404(Allocation, pk=pk)
@@ -2720,10 +2718,7 @@ class AllocationDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
             f'Admin {request.user.username} denied a {allocation_obj.get_parent_resource.name} '
             f'allocation request (allocation pk={allocation_obj.pk})'
         )
-        if 'request-list' in request.path:
-            return HttpResponseRedirect(reverse('allocation-request-list'))
-        else:
-            return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
+        return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
 
 class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
