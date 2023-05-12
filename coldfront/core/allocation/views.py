@@ -65,8 +65,7 @@ from coldfront.core.allocation.utils import (compute_prorated_amount,
                                              create_admin_action_for_deletion,
                                              create_admin_action_for_creation,
                                              update_linked_allocation_attribute,
-                                             get_project_managers_in_allocation,
-                                             check_if_groups_in_review_groups)
+                                             get_project_managers_in_allocation)
 from coldfront.core.utils.common import Echo
 from coldfront.core.allocation.signals import (allocation_activate,
                                                allocation_activate_user,
@@ -80,6 +79,7 @@ from coldfront.core.resource.models import Resource, ResourceAttributeType
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email_template, get_email_recipient_from_groups
 from coldfront.core.utils.slack import send_message
+from coldfront.core.utils.groups import check_if_groups_in_review_groups
 
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
     'ALLOCATION_ENABLE_ALLOCATION_RENEWAL', True)
@@ -5146,9 +5146,9 @@ class AllocationChangeDeleteAttributeView(LoginRequiredMixin, UserPassesTestMixi
         )
         allocation_obj = allocation_attribute_change_obj.allocation_change_request.allocation
         group_exists = check_if_groups_in_review_groups(
-        allocation_obj.get_parent_resource.review_groups.all(),
-        self.request.user.groups.all(),
-        'delete_allocationattributechangerequest'
+            allocation_obj.get_parent_resource.review_groups.all(),
+            self.request.user.groups.all(),
+            'delete_allocationattributechangerequest'
         )
         if group_exists:
             return True
