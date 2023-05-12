@@ -46,7 +46,7 @@ Allocation Detail
               Request Change
             </a>
           {% endif %}
-          {% if allocation.status.name in 'Active, Billing Information Submitted' %}
+          {% if allocation.status.name in 'Active, Billing Information Submitted' and allocation.get_parent_resource.requires_payment %}
             <a class="btn btn-primary mr-1" href="{% url 'allocation-remove' allocation.pk %}" role="button" style="float: right;">
               Remove Access
             </a>
