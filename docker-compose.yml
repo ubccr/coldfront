@@ -40,8 +40,6 @@ services:
       context: .
       dockerfile: Dockerfile.email 
     restart: always
-    volumes:
-      - email_data:/data 
     environment: 
       - PYTHONUNBUFFERED=1
     ports:
@@ -77,6 +75,4 @@ volumes:
   db_data:
     external: false
   redis_data:
-    external: false
-  email_data:
     external: false
