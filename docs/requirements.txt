@@ -10,7 +10,7 @@ mkdocs-awesome-pages-plugin==2.8.0
 mkdocstrings==0.20.0
 mkdocstrings-python-legacy==0.2.3
 Pygments==2.14.0
-pymdown-extensions==9.9.2
+pymdown-extensions==10.0
 PyYAML==6.0
 six==1.16.0
 importlib-metadata==4.11.3
