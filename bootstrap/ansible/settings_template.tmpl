@@ -3,6 +3,8 @@ import os
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = {{ debug }}
 
+SECRET_KEY = '{{ django_secret_key }}'
+
 ALLOWED_HOSTS = ['0.0.0.0', '{{ hostname }}', '{{ host_ip }}']
 
 PORTAL_NAME = '{{ portal_name }}'

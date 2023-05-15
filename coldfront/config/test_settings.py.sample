@@ -3,6 +3,8 @@ import os
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+SECRET_KEY = os.environ.get('django_secret_key', '')
+
 ALLOWED_HOSTS = ['0.0.0.0', 'localhost', 'localhost']
 
 PORTAL_NAME = 'MyBRC'
