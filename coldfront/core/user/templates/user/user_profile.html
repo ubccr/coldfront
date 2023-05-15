@@ -50,12 +50,6 @@ User Profile{% if not requester_is_viewed_user %}: {{ viewed_user.username }}{% 
           <td>
             <p>
               {{ viewed_user.email }}
-              {% if primary_address_updatable %}
-                <a href="{% url 'update-primary-email-address' %}" class="btn btn-secondary float-right">
-                  <i class="far fa-edit" aria-hidden="true"></i>
-                  Update
-                </a>
-              {% endif %}
             </p>
             <p>Email notifications are sent to this address.</p>
           </td>
@@ -185,12 +179,12 @@ User Profile{% if not requester_is_viewed_user %}: {{ viewed_user.username }}{% 
 
   <br>
 
-  {% if allauth_email_addresses_visible %}
+  {% if email_addresses_visible %}
   <div class="card">
     <div class="card-header">
       <i class="far fa-envelope"></i>
       Other Email Addresses{% if not requester_is_viewed_user %}: {{ viewed_user.username }}{% endif %}
-      {% if allauth_email_addresses_updatable %}
+      {% if email_addresses_updatable %}
         <a class="btn btn-success float-right" href="{% url 'account_email' %}" id="manage-emails-button">
           <i class="fas fa-edit"></i>
           Manage Emails

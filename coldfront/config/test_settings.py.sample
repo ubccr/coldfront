@@ -90,6 +90,7 @@ FLAGS = {
     'BRC_ONLY': [{'condition': 'boolean', 'value': True}],
     'LINK_LOGIN_ENABLED': [{'condition': 'boolean', 'value': False}],
     'LRC_ONLY': [{'condition': 'boolean', 'value': False}],
+    'MULTIPLE_EMAIL_ADDRESSES_ALLOWED': [{'condition': 'boolean', 'value': True}],
     'SECURE_DIRS_REQUESTABLE': [{'condition': 'boolean', 'value': True}],
     'SERVICE_UNITS_PURCHASABLE': [{'condition': 'boolean', 'value': True}],
     'SSO_ENABLED': [{'condition': 'boolean', 'value': False}],

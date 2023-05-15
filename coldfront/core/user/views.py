@@ -56,6 +56,10 @@ if EMAIL_ENABLED:
 class UserProfile(TemplateView):
     template_name = 'user/user_profile.html'
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._get_flag_states()
+
     def dispatch(self, request, *args, viewed_username=None, **kwargs):
         # viewing another user profile requires permissions
         if viewed_username:
@@ -93,44 +97,75 @@ class UserProfile(TemplateView):
         context['requester_is_viewed_user'] = requester_is_viewed_user
 
         if requester_is_viewed_user:
-            self.update_context_with_identity_linking_request_data(context)
+            self._update_context_with_identity_linking_request_data(context)
 
         context['help_email'] = import_from_settings('CENTER_HELP_EMAIL')
 
-        # Only display the "Other Email Addresses" section for
-        # allauth.account.models.EmailAddress if SSO is enabled.
-        is_sso_enabled = flag_enabled('SSO_ENABLED')
-        context['allauth_email_addresses_visible'] = is_sso_enabled
-        if context['allauth_email_addresses_visible']:
-            context['allauth_email_addresses_updatable'] = \
-                requester_is_viewed_user
+        context['requester_is_viewed_user'] = requester_is_viewed_user
 
-        # Only display the "Third-Party Accounts" section if SSO is enabled.
-        context['third_party_accounts_visible'] = is_sso_enabled
-        if context['third_party_accounts_visible']:
-            context['third_party_accounts_updatable'] = \
-                requester_is_viewed_user
+        self._update_context_with_email_and_account_data(context, viewed_user)
 
-        if flag_enabled('LRC_ONLY'):
-            billing_id = 'N/A'
-            try:
-                user_profile = viewed_user.userprofile
-            except UserProfileModel.DoesNotExist:
-                message = (
-                    f'User {viewed_user.username} unexpectedly has no '
-                    f'UserProfile.')
-                logger.error(message)
-            else:
-                billing_activity = user_profile.billing_activity
-                if billing_activity:
-                    billing_id = billing_activity.full_id()
-            context['monthly_user_account_fee_billing_id'] = billing_id
+        if self._flag_lrc_only:
+            self._update_context_with_billing_data(context, viewed_user)
 
         context['is_lbl_employee'] = is_lbl_employee(viewed_user)
 
         return context
 
-    def update_context_with_identity_linking_request_data(self, context):
+    def _get_flag_states(self):
+        """Store the states of various flags needed by the class."""
+        self._flag_basic_auth_enabled = flag_enabled('BASIC_AUTH_ENABLED')
+        self._flag_lrc_only = flag_enabled('LRC_ONLY')
+        self._flag_multiple_email_addresses_allowed = flag_enabled(
+            'MULTIPLE_EMAIL_ADDRESSES_ALLOWED')
+        self._flag_sso_enabled = flag_enabled('SSO_ENABLED')
+
+    @staticmethod
+    def _update_context_with_billing_data(context, viewed_user):
+        """Update the given context dictionary with fields relating to
+        billing IDs. Take the currently-viewed User object as an input
+        to make determinations."""
+        billing_id = 'N/A'
+        try:
+            user_profile = viewed_user.userprofile
+        except UserProfileModel.DoesNotExist:
+            message = (
+                f'User {viewed_user.username} unexpectedly has no '
+                f'UserProfile.')
+            logger.error(message)
+        else:
+            billing_activity = user_profile.billing_activity
+            if billing_activity:
+                billing_id = billing_activity.full_id()
+        context['monthly_user_account_fee_billing_id'] = billing_id
+
+    def _update_context_with_email_and_account_data(self, context,
+                                                    viewed_user):
+        """Update the given context directory with fields relating to
+        user emails, passwords, and third-party accounts. Take the
+        currently-viewed User object as an input to make
+        determinations."""
+        requester_is_viewed_user = viewed_user == self.request.user
+
+        context['change_password_enabled'] = (
+            self._flag_basic_auth_enabled and requester_is_viewed_user)
+
+        # Only display the "Other Email Addresses" section if multiple email
+        # addresses are allowed.
+        context['email_addresses_visible'] = \
+            self._flag_multiple_email_addresses_allowed
+        if context['email_addresses_visible']:
+            context['email_addresses_updatable'] = requester_is_viewed_user
+
+        # Only display the "Third-Party Accounts" section if SSO is enabled and
+        # multiple email addresses are allowed.
+        context['third_party_accounts_visible'] = (
+            self._flag_sso_enabled and
+            self._flag_multiple_email_addresses_allowed)
+        if context['third_party_accounts_visible']:
+            context['third_party_accounts_updatable'] = requester_is_viewed_user
+
+    def _update_context_with_identity_linking_request_data(self, context):
         """Update the given context dictionary with fields relating to
         IdentityLinkingRequests.
 

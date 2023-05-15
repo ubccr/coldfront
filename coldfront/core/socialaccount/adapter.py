@@ -4,13 +4,18 @@ from allauth.account.utils import user_field
 from allauth.account.utils import user_username
 from allauth.exceptions import ImmediateHttpResponse
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
+from allauth.socialaccount.models import SocialAccount
+from allauth.socialaccount.providers.base import AuthProcess
 from allauth.utils import valid_email_or_none
 from coldfront.core.account.utils.login_activity import LoginActivityVerifier
+from coldfront.core.utils.context_processors import portal_and_program_names
 from collections import defaultdict
 from django.conf import settings
 from django.http import HttpResponseBadRequest
 from django.http import HttpResponseServerError
 from django.template.loader import render_to_string
+from django.urls import reverse
+from flags.state import flag_enabled
 import logging
 
 
@@ -19,6 +24,11 @@ logger = logging.getLogger(__name__)
 
 class CILogonAccountAdapter(DefaultSocialAccountAdapter):
     """An adapter that adjusts handling for the CILogon provider."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._flag_multiple_email_addresses_allowed = flag_enabled(
+            'MULTIPLE_EMAIL_ADDRESSES_ALLOWED')
 
     def populate_user(self, request, sociallogin, data):
         """Handle logins using the CILogon provider differently. In
@@ -58,6 +68,17 @@ class CILogonAccountAdapter(DefaultSocialAccountAdapter):
 
         return super().populate_user(request, sociallogin, data)
 
+    def get_connect_redirect_url(self, request, socialaccount):
+        """
+        Returns the default URL to redirect to after successfully
+        connecting a social account.
+        """
+        if self._flag_multiple_email_addresses_allowed:
+            url = reverse('socialaccount_connections')
+        else:
+            url = reverse('home')
+        return url
+
     def pre_social_login(self, request, sociallogin):
         """At this point, the user is authenticated by a provider. If
         the provider is not CILogon, do nothing. Otherwise, if this
@@ -90,19 +111,40 @@ class CILogonAccountAdapter(DefaultSocialAccountAdapter):
         if provider != 'cilogon':
             return
 
+        # If users are not allowed to have multiple emails, and the user is
+        # attempting to connect another SocialAccount to their account (as
+        # opposed to logging in with an existing one), raise an error.
+        if not self._flag_multiple_email_addresses_allowed:
+            if sociallogin.state.get('process', None) == AuthProcess.CONNECT:
+                message = (
+                    'You may not connect more than one third-party account to '
+                    'your portal account.')
+                self._raise_client_error(message)
+
         # If a SocialAccount already exists, meaning the provider account is
         # connected to a local account, proceed with login.
         if sociallogin.is_existing:
             return
 
-        # If the provider does not provide any addresses, raise an error.
         provider_addresses = sociallogin.email_addresses
-        if not provider_addresses:
+        num_provider_addresses = len(provider_addresses)
+        # If the provider does not provide any addresses, raise an error.
+        if num_provider_addresses == 0:
             log_message = (
                 f'Provider {provider} did not provide any email addresses for '
                 f'User with email {user_email} and UID {user_uid}.')
             logger.error(log_message)
             self._raise_server_error(self._get_auth_error_message())
+        # In general, it is expected that a provider will only give one address.
+        # If multiple are given, allow all of them to be associated with the
+        # user (agnostic of whether users are allowed to have multiple), but log
+        # a warning.
+        elif num_provider_addresses > 1:
+            log_message = (
+                f'Provider {provider} provided more than one email address for '
+                f'User with email {user_email} and UID {user_uid}: '
+                f'{", ".join(provider_addresses)}.')
+            logger.warning(log_message)
 
         # SOCIALACCOUNT_PROVIDERS['cilogon']['VERIFIED_EMAIL'] should be True,
         # so all provider-given addresses should be interpreted as verified.
@@ -203,20 +245,23 @@ class CILogonAccountAdapter(DefaultSocialAccountAdapter):
             f'Unexpected authentication error. Please contact '
             f'{settings.CENTER_HELP_EMAIL} for further assistance.')
 
-    @staticmethod
-    def _raise_client_error(message):
+    def _raise_client_error(self, message):
         """Raise an ImmediateHttpResponse with a client error and the
         given message."""
-        template = 'error_with_message.html'
-        html = render_to_string(template, context={'message': message})
-        response = HttpResponseBadRequest(html)
-        raise ImmediateHttpResponse(response)
+        self._raise_error(HttpResponseBadRequest, message)
 
     @staticmethod
-    def _raise_server_error(message):
+    def _raise_error(response_class, message):
+        """Raise an ImmediateHttpResponse with an error HttpResponse
+        class (e.g., HttpResponseBadRequest or HttpResponseServerError)
+        error and the given message."""
+        template = 'error_with_message.html'
+        context = {'message': message, **portal_and_program_names(None)}
+        html = render_to_string(template, context=context)
+        response = response_class(html)
+        raise ImmediateHttpResponse(response)
+
+    def _raise_server_error(self, message):
         """Raise an ImmediateHttpResponse with a server error and the
         given message."""
-        template = 'error_with_message.html'
-        html = render_to_string(template, context={'message': message})
-        response = HttpResponseServerError(html)
-        raise ImmediateHttpResponse(response)
+        self._raise_error(HttpResponseServerError, message)

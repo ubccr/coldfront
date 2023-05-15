@@ -1,6 +1,7 @@
 {% extends "account/base.html" %}
 {% load account %}
 {% load static %}
+{% load feature_flags %}
 
 
 {% block title %}
@@ -26,10 +27,12 @@ Confirm Email Address
     <button class="btn btn-primary" type="submit">Confirm</button>
   </form>
 {% else %}
-  {% url 'account_email' as email_url %}
+  {% flag_enabled 'MULTIPLE_EMAIL_ADDRESSES_ALLOWED' as multiple_email_addresses_allowed %}
   <p>
-    This email confirmation link expired or is invalid. Please
-    <a href="{{ email_url }}">issue a new email confirmation request</a>.
+    This email confirmation link expired or is invalid.
+    {% if multiple_email_addresses_allowed %}
+      Please <a href="{% url 'account_email' %}">issue a new email confirmation request</a>.
+    {% endif %}
   </p>
 {% endif %}
 
