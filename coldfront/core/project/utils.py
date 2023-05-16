@@ -76,3 +76,23 @@ def create_admin_action(user, fields_to_check, project):
                 project=project,
                 action=f'Changed "{key}" from "{project_value}" to "{value}"'
             )
+
+
+def get_project_user_emails(project_obj, only_project_managers=False):
+    """
+    Returns a list of project user emails in the given project. Only emails from users with their
+    notifications enabled will be returned.
+
+    :param allocation_obj: The project to grab the project user emails from
+    :param only_project_managers: Indicates if only the project manager emails should be returned
+    """
+    project_users = project_obj.projectuser_set.filter(
+        enable_notifications=True,
+        status__name__in=['Active', 'Pending - Remove']
+    )
+    if only_project_managers:
+        project_users = project_users.filter(role__name='Manager')
+    project_users = project_users.values_list('user__email', flat=True)
+
+
+    return list(project_users)

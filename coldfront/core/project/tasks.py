@@ -2,7 +2,8 @@ import datetime
 import logging
 
 from coldfront.core.project.models import (Project, ProjectStatusChoice)
-from coldfront.core.utils. common import import_from_settings
+from coldfront.core.project.utils import get_project_user_emails
+from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.mail import send_email_template
 
 logger = logging.getLogger(__name__)
@@ -35,7 +36,7 @@ def update_statuses():
         project.status = expired_status_choice
         project.save()
 
-    logger.info('Projects set to expired: {}'. format(projects_to_expire.count()))
+    logger.info(f'Projects set to expired: {projects_to_expire.count()}')
 
 
 def send_expiry_emails():
@@ -64,11 +65,7 @@ def send_expiry_emails():
                     'signature': EMAIL_SIGNATURE
                 }
 
-                email_receiver_list = []
-                for project_user in project_obj.projectuser_set.exclude(status__name__in=['Removed', 'Denied']):
-                    if project_obj.projectuser_set.get(user=project_user.user).enable_notifications:
-                        email_receiver_list.append(project_user.user.email)
-
+                email_receiver_list = get_project_user_emails(project_obj)
                 send_email_template(
                     'Project {} Expiring In {} Days'.format(project_obj.title, days_remaining),
                     'email/project_expiring.txt',
@@ -77,9 +74,10 @@ def send_expiry_emails():
                     email_receiver_list
                 )
 
-                logger.info('Project {} expiring in {} days email sent to PI {}'.format(
-                    project_obj.title, days_remaining, project_obj.pi.username
-                ))
+                logger.info(
+                    f'Project {project_obj.title} expiring in {days_remaining} days, email sent to '
+                    f'project users (project pk={project_obj.pk})'
+                )
 
         # Projects expiring today
         today = datetime.datetime.today()
@@ -97,11 +95,7 @@ def send_expiry_emails():
                 'signature': EMAIL_SIGNATURE
             }
 
-            email_receiver_list = []
-            for project_user in project_obj.projectuser_set.exclude(status__name__in=['Removed', 'Denied']):
-                if project_obj.projectuser_set.get(user=project_user.user).enable_notifications:
-                    email_receiver_list.append(project_user.user.email)
-
+            email_receiver_list = get_project_user_emails(project_obj)
             send_email_template(
                 'Project {} Expires Today'.format(project_obj.title),
                 'email/project_expires_today.txt',
@@ -110,6 +104,7 @@ def send_expiry_emails():
                 email_receiver_list
             )
 
-            logger.info('Project {} expires today email sent to PI {}'.format(
-                project_obj.title, project_obj.pi.username
-            ))
+            logger.info(
+                f'Project {project_obj.title} expires today, email sent to project users '
+                f'(project pk={project_obj.pk})'
+            )

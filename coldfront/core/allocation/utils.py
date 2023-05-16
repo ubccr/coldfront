@@ -217,20 +217,22 @@ def update_linked_allocation_attribute(allocation_attribute):
         allocation_obj.save()
 
 
-def get_project_managers_in_allocation(allocation_obj):
+def get_allocation_user_emails(allocation_obj, only_project_managers=False):
     """
-    Returns the project managers in the given allocation.
+    Returns a list of allocation user emails in the given allocation. Only emails from users with
+    their notifications enabled will be returned.
 
-    :param allocation_obj: The allocation to grab the project managers from
+    :param allocation_obj: The allocation to grab the allocation user emails from
+    :param only_project_managers: Indicates if only the project manager emails should be returned
     """
-    project_managers_in_allocation=[]
-    project_managers = allocation_obj.project.projectuser_set.filter(
-        role__name='Manager'
-    ).exclude(status__name__in=['Removed', 'Denied'])
-    allocation_users = allocation_obj.allocationuser_set.exclude(status__name__in=['Removed', 'Error'])
-    users = [allocation_user.user for allocation_user in allocation_users]
-    for project_manager in project_managers:
-        if project_manager.user in users:
-            project_managers_in_allocation.append(project_manager)
+    allocation_users = allocation_obj.allocationuser_set.filter(
+        status__name__in=['Active', 'Pending - Remove']
+    ).values_list('user', flat=True)
+    allocation_users = allocation_obj.project.projectuser_set.filter(
+        enable_notifications=True, user__in=list(allocation_users)
+    )
+    if only_project_managers:
+        allocation_users = allocation_users.filter(role__name='Manager')
+    allocation_users = allocation_users.values_list('user__email', flat=True)
 
-    return project_managers_in_allocation
+    return list(allocation_users)

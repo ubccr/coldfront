@@ -4,6 +4,7 @@ import logging
 
 from coldfront.core.allocation.models import (Allocation, AllocationAttribute,
                                               AllocationStatusChoice)
+from coldfront.core.allocation.utils import get_allocation_user_emails
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.mail import send_email_template
 
@@ -37,8 +38,7 @@ def update_statuses():
         sub_obj.status = expired_status_choice
         sub_obj.save()
 
-    logger.info('Allocations set to expired: {}'.format(
-        allocations_to_expire.count()))
+    logger.info(f'Allocations set to expired: {allocations_to_expire.count()}')
 
 
 def send_expiry_emails():
@@ -84,24 +84,18 @@ def send_expiry_emails():
 
             }
 
-            email_receiver_list = []
-            for allocation_user in allocation_obj.project.projectuser_set.all():
-                if (allocation_user.enable_notifications and
-                    allocation_obj.allocationuser_set.filter(
-                        user=allocation_user.user, status__name='Active')
-                        and allocation_user.user.email not in email_receiver_list):
-
-                    email_receiver_list.append(allocation_user.user.email)
-
-            send_email_template('Allocation to {} expiring in {} days'.format(resource_name, days_remaining),
+            email_receiver_list = get_allocation_user_emails(allocation_obj)
+            send_email_template(f'Allocation to {resource_name} expiring in {days_remaining} days',
                                 'email/allocation_expiring.txt',
                                 template_context,
                                 EMAIL_TICKET_SYSTEM_ADDRESS,
                                 email_receiver_list
                                 )
 
-            logger.info('Allocation to {} expiring in {} days email sent to PI {}.'.format(
-                resource_name, days_remaining, allocation_obj.project.pi.username))
+            logger.info(
+                f'Allocation to {resource_name} expiring in {days_remaining} days, email '
+                f'sent to allocation users (allocation pk={allocation_obj.pk}).'
+            )
 
     # Allocations expiring today
     today = datetime.datetime.now().strftime('%Y-%m-%d')
@@ -129,24 +123,18 @@ def send_expiry_emails():
 
         }
 
-        email_receiver_list = []
-        for allocation_user in allocation_obj.project.projectuser_set.all():
-            if (allocation_user.enable_notifications and
-                allocation_obj.allocationuser_set.filter(
-                    user=allocation_user.user, status__name='Active')
-                    and allocation_user.user.email not in email_receiver_list):
-
-                email_receiver_list.append(allocation_user.user.email)
-
-        send_email_template('Allocation to {} expiring in {} days'.format(resource_name, days_remaining),
+        email_receiver_list = get_allocation_user_emails(allocation_obj)
+        send_email_template(f'Allocation to {resource_name} expiring in {days_remaining} days',
                             'email/allocation_expiring.txt',
                             template_context,
                             EMAIL_TICKET_SYSTEM_ADDRESS,
                             email_receiver_list
                             )
 
-        logger.info('Allocation to {} expiring in {} days email sent to PI {}.'.format(
-            resource_name, days_remaining, allocation_obj.project.pi.username))
+        logger.info(
+            f'Allocation to {resource_name} expiring in {days_remaining} days, email sent '
+            f'to allocation users (allocation pk={allocation_obj.pk}).'
+        )
 
     # Expired allocations
 
@@ -180,21 +168,15 @@ def send_expiry_emails():
             'signature': EMAIL_SIGNATURE
         }
 
-        email_receiver_list = []
-        for allocation_user in allocation_obj.project.projectuser_set.all():
-            if (allocation_user.enable_notifications and
-                allocation_obj.allocationuser_set.filter(
-                    user=allocation_user.user, status__name='Active')
-                    and allocation_user.user.email not in email_receiver_list):
-
-                email_receiver_list.append(allocation_user.user.email)
-
-        send_email_template('Allocation to {} has expired'.format(resource_name),
+        email_receiver_list = get_allocation_user_emails(allocation_obj)
+        send_email_template(f'Allocation to {resource_name} has expired',
                             'email/allocation_expired.txt',
                             template_context,
                             EMAIL_TICKET_SYSTEM_ADDRESS,
                             email_receiver_list
                             )
 
-        logger.info('Allocation to {} expired email sent to PI {}.'.format(
-            resource_name, allocation_obj.project.pi.username))
+        logger.info(
+            f'Allocation to {resource_name} expired, email sent to allocation users '
+            f'(allocation pk={allocation_obj.pk}).'
+        )

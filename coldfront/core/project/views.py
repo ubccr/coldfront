@@ -59,7 +59,9 @@ from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import Echo
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email, send_email_template
-from coldfront.core.project.utils import get_new_end_date_from_list, create_admin_action
+from coldfront.core.project.utils import (get_new_end_date_from_list,
+                                          create_admin_action,
+                                          get_project_user_emails)
 from coldfront.core.allocation.utils import send_added_user_email
 from coldfront.core.utils.slack import send_message
 
@@ -2129,11 +2131,7 @@ class ProjectActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
                 'center_name': EMAIL_CENTER_NAME
             }
 
-            email_receiver_list = []
-            for project_user in project_obj.projectuser_set.exclude(status__name__in=['Removed', 'Denied']):
-                if project_obj.projectuser_set.get(user=project_user.user).enable_notifications:
-                    email_receiver_list.append(project_user.user.email)
-
+            email_receiver_list = get_project_user_emails(project_obj)
             send_email_template(
                 'Your Project Request Was Approved',
                 'email/project_request_approved.txt',
@@ -2206,18 +2204,8 @@ class ProjectDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
                 'center_name': EMAIL_CENTER_NAME
             }
 
-            email_receiver_list = []
-            project_managers = project_obj.projectuser_set.filter(
-                role=ProjectUserRoleChoice.objects.get(name='Manager')
-            ).exclude(status__name__in=['Removed', 'Denied'])
-            for project_manager in project_managers:
-                if project_manager.enable_notifications:
-                    email_receiver_list.append(project_manager.user.email)
-
-            # for project_user in project_obj.projectuser_set.exclude(status__name__in=['Removed', 'Denied']):
-            #     if project_obj.projectuser_set.get(user=project_user.user).enable_notifications:
-            #         email_receiver_list.append(project_user.user.email)
-
+            email_receiver_list = get_project_user_emails(project_obj, True)
+            
             send_email_template(
                 'Your Project Request Was Denied',
                 'email/project_request_denied.txt',
@@ -2336,11 +2324,7 @@ class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
                 'renewed_allocation_urls': renewed_allocation_urls
             }
 
-            email_receiver_list = []
-            for project_user in project_obj.projectuser_set.exclude(status__name__in=['Removed', 'Denied']):
-                if project_obj.projectuser_set.get(user=project_user.user).enable_notifications:
-                    email_receiver_list.append(project_user.user.email)
-
+            email_receiver_list = get_project_user_emails(project_obj)
             send_email_template(
                 'Your Project Renewal Was Approved',
                 'email/project_renewal_approved.txt',
@@ -2420,18 +2404,7 @@ class ProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin, View):
                 'signature': EMAIL_SIGNATURE
             }
 
-            email_receiver_list = []
-            project_managers = project_obj.projectuser_set.filter(
-                role=ProjectUserRoleChoice.objects.get(name='Manager')
-            ).exclude(status__name__in=['Removed', 'Denied'])
-            for project_manager in project_managers:
-                if project_manager.enable_notifications:
-                    email_receiver_list.append(project_manager.user.email)
-
-            # for project_user in project_obj.projectuser_set.exclude(status__name__in=['Removed', 'Denied']):
-            #     if project_obj.projectuser_set.get(user=project_user.user).enable_notifications:
-            #         email_receiver_list.append(project_user.user.email)
-
+            email_receiver_list = get_project_user_emails(project_obj, True)
             send_email_template(
                 'Your Project Renewal Was Denied',
                 'email/project_renewal_denied.txt',
