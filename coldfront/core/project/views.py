@@ -2021,8 +2021,18 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                     [EMAIL_ALERTS_EMAIL_ADDRESS, ]
                 )
 
+            if SLACK_MESSAGING_ENABLED:
+                domain_url = get_domain_url(self.request)
+                project_review_url = reverse('project-review-list')
+                url = '{}{}'.format(domain_url, project_review_url)
+                text = (
+                    f'A new review request for project "{project_obj.title}" with id '
+                    f'{project_obj.pk} has been submitted. You can view it here: {url}'
+                )
+                send_message(text)
+
             logger.info(
-                f'User {request.user.username} submitted a project renewal (project pk={project_obj.pk})'
+                f'User {request.user.username} submitted a project review (project pk={project_obj.pk})'
             )
 
             messages.success(request, 'Project review submitted.')
