@@ -149,6 +149,9 @@ required to log onto the site at least once before they can be added.
 
         if self.status.name == 'Active' and self.expires_in <= PROJECT_DAYS_TO_REVIEW_BEFORE_EXPIRING:
             return True
+        
+        if self.status.name == 'Expired' and PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING < 0:
+            return True
 
         if self.status.name == 'Expired' and self.expires_in >= -PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING:
             return True
