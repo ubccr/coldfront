@@ -43,7 +43,7 @@ logging_tree==1.9
 mysqlclient==2.1.0
 pandas==1.1.5
 reportlab==3.6.6
-pisa==3.0.33
+xhtml2pdf==0.2.04
 XlsxWriter
 python-dateutil
 django-extensions
