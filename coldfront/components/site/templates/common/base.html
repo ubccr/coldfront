@@ -1,4 +1,5 @@
 {% load static %}
+{% load common_tags %}
 
 <!DOCTYPE html>
 <html lang="en">
@@ -58,6 +59,12 @@
 
   <!-- Begin page content -->
   <main class="container">
+    {% settings_value 'MAINTENANCE_MODE_ENABLED' as MAINTENANCE_MODE_ENABLED %}
+
+    {% if MAINTENANCE_MODE_ENABLED == 'True' %}
+      {% include 'maintenance_mode/maintenance_notice.html' %}
+    {% endif %}
+
     {% include 'common/messages.html' %} 
     {% block content %} 
       Content goes here! 
