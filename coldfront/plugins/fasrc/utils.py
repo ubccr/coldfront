@@ -111,8 +111,8 @@ class QuotaDataPuller:
         data = pd.read_csv(datafile, names=headers, delim_whitespace=True)
         data = data.loc[data['pool'].str.contains('1')]
         for k, v in translator.items():
-            data['lab'] = data['pool'].str.replace(k, v)
-        data['lab'] = data['lab'].str.replace('1', '')
+            data['pool'] = data['pool'].str.replace(k, v)
+        data['lab'] = data['pool'].str.replace('1', '')
         data['server'] = 'nesetape'
         data['storage_type'] = 'tape'
         data['byte_allocation'] = data['mib_capacity'] * 1048576
@@ -269,8 +269,8 @@ def push_quota_data(result_file):
                             allocation_attribute_type=allocation_attribute_type_obj,
                             defaults={'value': v[0]}
                         )
-                    # allocattribute_obj.allocationattributeusage.value = v[1]
-                    # allocattribute_obj.save()
+                    allocattribute_obj.allocationattributeusage.value = v[1]
+                    allocattribute_obj.allocationattributeusage.save()
 
                 # 5. AllocationAttribute
                 alloc_obj.allocationattribute_set.update_or_create(
