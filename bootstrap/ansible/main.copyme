@@ -174,6 +174,7 @@ sentry_dsn: ""
 # debug_toolbar_ips: []
 
 # # Email settings.
+# email_host: localhost
 # email_port: 25
 # # TODO: Set these addresses to yours.
 # from_email: brc-hpc-help@berkeley.edu
@@ -229,6 +230,7 @@ sentry_dsn: ""
 # debug_toolbar_ips: []
 
 # # Email settings.
+# email_host: localhost
 # email_port: 25
 # # TODO: Set these addresses to yours.
 # from_email: brc-hpc-help@berkeley.edu
@@ -281,6 +283,7 @@ sentry_dsn: ""
 # debug_toolbar_ips: ['10.0.2.2']  # 10.0.2.2 is the vagrant host.
 
 # # Email settings.
+# email_host: localhost
 # email_port: 1025
 # # TODO: Set these addresses to yours.
 # from_email: you@email.com
