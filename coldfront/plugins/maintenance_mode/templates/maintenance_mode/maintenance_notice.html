@@ -1,6 +1,11 @@
-{% block content %}
-  <div class="alert alert-warning" role="alert">
-    <i class="fas fa-info-circle" aria-hidden="true"></i>
-    The site is in maintenance mode.
-  </div>
-{% endblock %}
+{% load common_tags %}
+
+{% settings_value 'MAINTENANCE_MODE_ENABLED' as MAINTENANCE_MODE_ENABLED %}
+{% if MAINTENANCE_MODE_ENABLED == 'True' %}
+  {% block content %}
+    <div class="alert alert-warning" role="alert">
+      <i class="fas fa-info-circle" aria-hidden="true"></i>
+      The site is in maintenance mode.
+    </div>
+  {% endblock %}
+{% endif %}
