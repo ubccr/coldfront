@@ -42,11 +42,6 @@ class TestSavioProjectRequestWizard(TestBase):
             'allocation_period': allocation_period,
         }
 
-        kwargs = {
-            'computing_allowance': computing_allowance,
-            'allocation_period': allocation_period,
-        }
-
         # The PI should not be selectable.
         self.user.is_active = False
         self.user.save()
