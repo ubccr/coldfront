@@ -1,37 +1,31 @@
-{% load common_tags %}
-
-{% settings_value 'PLUGIN_SLATE_PROJECT_INFO' as PLUGIN_SLATE_PROJECT_INFO %}
-
-{% if PLUGIN_SLATE_PROJECT_INFO == 'True' %}
-  <div id="slate_project_info_inner"></div>
-  <script>
-    $(document).ready(function() {
-      $.ajax({
-        url: "{% url 'get-slate-project-info' %}",
-        method: "POST",
-        data: {
-          csrfmiddlewaretoken: "{{ csrf_token }}",
-        },
-        success: function(data) {
-          $('#slate_project_info_inner').html(data);
-        },
-        error: function(data) {
-          $('#slate_project_info_inner').html(
-            '<div class="card mb-3">\
-              <div class="card-header">\
-                <i class="fas fa-server" aria-hidden="true"></i>\
-                Slate Projects\
+<div id="slate_project_info_inner"></div>
+<script>
+  $(document).ready(function() {
+    $.ajax({
+      url: "{% url 'get-slate-project-info' %}",
+      method: "POST",
+      data: {
+        csrfmiddlewaretoken: "{{ csrf_token }}",
+      },
+      success: function(data) {
+        $('#slate_project_info_inner').html(data);
+      },
+      error: function(data) {
+        $('#slate_project_info_inner').html(
+          '<div class="card mb-3">\
+            <div class="card-header">\
+              <i class="fas fa-server" aria-hidden="true"></i>\
+              Slate Projects\
+            </div>\
+            <div class="card-body">\
+              <div class="alert alert-warning">\
+                <i class="fas fa-info-circle" aria-hidden="true"></i>\
+                Error getting slate project information.\
               </div>\
-              <div class="card-body">\
-                <div class="alert alert-warning">\
-                  <i class="fas fa-info-circle" aria-hidden="true"></i>\
-                  Error getting slate project information.\
-                </div>\
-              </div>\
-             </div>'
-          );
-        },
-      });
-    })
-  </script>
-{% endif %}
+            </div>\
+            </div>'
+        );
+      },
+    });
+  })
+</script>

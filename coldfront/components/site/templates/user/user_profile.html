@@ -76,7 +76,9 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
   </div>
 </div>
 
-{% include "slate_project_info/slate_project_info_div.html" %}
+{% if 'coldfront.plugins.slate_project_info' in EXTRA_APPS  %}
+  {% include "slate_project_info/slate_project_info_div.html" %}
+{% endif %}
 
 <!-- Start User Statistics Charts -->
 <div class="card mb-3">
