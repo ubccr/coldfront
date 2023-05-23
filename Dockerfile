@@ -15,10 +15,7 @@ RUN mkdir -p /var/log/user_portals/cf_${PORTAL} \
  && chmod 775 /var/log/user_portals/cf_${PORTAL} \
  && chmod 664 /var/log/user_portals/cf_${PORTAL}/cf_${PORTAL}_{portal,api}.log
 
-COPY . /vagrant/coldfront_app/coldfront/
 WORKDIR /vagrant/coldfront_app/coldfront/
-
-RUN chmod +x ./manage.py
 
 CMD ./manage.py initial_setup \
  && ./manage.py add_accounting_defaults \
