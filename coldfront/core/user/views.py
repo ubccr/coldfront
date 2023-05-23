@@ -85,6 +85,7 @@ class UserProfile(TemplateView):
         context['statistics'] = self.get_statistics(viewed_user)
         context['slate_allocated_storage_chart_data'] = generate_allocated_slate_storage_chart_data(viewed_user)
         context['SLATE_PROJECT_MAX_ALLOCATED_STORAGE'] = SLATE_PROJECT_MAX_ALLOCATED_STORAGE
+        context['EXTRA_APPS'] = settings.INSTALLED_APPS
         return context
 
 

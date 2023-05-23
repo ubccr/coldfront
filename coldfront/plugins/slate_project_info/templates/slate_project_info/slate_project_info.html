@@ -1,0 +1,28 @@
+{% if slate_projects %}
+  <div class="card mb-3">
+    <div class="card-header">
+      <i class="fas fa-server" aria-hidden="true"></i>
+      Slate Projects
+    </div>
+    <div class="card-body">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Project</th>
+            <th scope="col">Owner</th>
+            <th scope="col">Access</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for slate_project in slate_projects %}
+            <tr>
+              <td>{{ slate_project.name }}</td>
+              <td>{{ slate_project.owner }}</td>
+              <td>{{ slate_project.access }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endif %}
