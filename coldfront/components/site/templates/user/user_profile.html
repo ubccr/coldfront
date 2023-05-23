@@ -9,7 +9,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
 <h2>User Profile</h2>
 <hr>
 
-<div class="card">
+<div class="card mb-3">
   <div class="card-header">
     <i class="fas fa-user" aria-hidden="true"></i>
     {{ viewed_user.username }}
@@ -76,7 +76,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
   </div>
 </div>
 
-<br />
+{% include "slate_project_info/slate_project_info_div.html" %}
 
 <!-- Start User Statistics Charts -->
 <div class="card mb-3">
