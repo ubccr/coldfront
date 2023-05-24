@@ -10,8 +10,10 @@ def get_slate_project_info(request):
     slate_project_list = []
     for slate_project in slate_projects:
         name = slate_project.get('cn')[0]
-        access = 'read only' if name[-3:] =='-ro' else 'read/write'
-        name = name.removesuffix('-ro')
+        access = 'read/write'
+        if name.endswith('-ro'):
+            name = name[:-len('-ro')]
+            access = 'read only'
         owner = slate_project.get('description')[0].split(',')[1].strip().split(' ')[0]
 
         slate_project_list.append(
