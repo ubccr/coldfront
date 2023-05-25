@@ -42,7 +42,7 @@ def get_slate_project_info(slate_groups):
     for slate_group in slate_groups:
         gid_number = slate_group.get('gidNumber')[0]
         slate_project_name = slate_project_gid_to_name_mapping.get(gid_number)
-        slate_project_name_read_only = slate_project_gid_to_name_mapping.get(gid_number + 1)
+        slate_project_name_read_only = slate_project_gid_to_name_mapping.get(gid_number - 1)
         if slate_project_name or slate_project_name_read_only:
             name = slate_project_name
             access = 'read/write'
