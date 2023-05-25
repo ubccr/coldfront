@@ -38,9 +38,9 @@ def get_slate_project_info(slate_groups):
 
     slate_project_gid_to_name_mapping = get_slate_project_gid_to_name_mapping()
 
-    slate_project_list = []
+    slate_projects = []
     for slate_group in slate_groups:
-        gid_number = slate_group['gidNumber'][0]
+        gid_number = slate_group.get('gidNumber')[0]
         slate_project_name = slate_project_gid_to_name_mapping.get(gid_number)
         slate_project_name_read_only = slate_project_gid_to_name_mapping.get(gid_number + 1)
         if slate_project_name or slate_project_name_read_only:
@@ -51,7 +51,7 @@ def get_slate_project_info(slate_groups):
                 access = 'read only'
             owner = slate_group.get('description')[0].split(',')[1].strip().split(' ')[0]
 
-            slate_project_list.append(
+            slate_projects.append(
                 {
                     'name': name,
                     'access': access,
@@ -59,13 +59,15 @@ def get_slate_project_info(slate_groups):
                 }
             )
 
-    return slate_project_list
+    return slate_projects
 
 
 def get_slate_project_group_info_from_ldap(username):
     """
     Grabs all the slate project groups the username is in. Returns a list of dictionaries that
     contain a slate project group's name, description, and gid number.
+
+    :param username: Username to use in LDAP search for slate project groups
     """
     server = Server(
         import_from_settings('LDAP_SLATE_PROJECT_SERVER_URI'), use_ssl=True, connect_timeout=1
