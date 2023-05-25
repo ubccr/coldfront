@@ -1,11 +1,13 @@
 <div id="slate_project_info_inner"></div>
 <script>
+  var viewed_username = {{ viewed_username | safe }}
   $(document).ready(function() {
     $.ajax({
       url: "{% url 'get-slate-project-info' %}",
       method: "POST",
       data: {
         csrfmiddlewaretoken: "{{ csrf_token }}",
+        'viewed_username': viewed_username['viewed_username']
       },
       success: function(data) {
         $('#slate_project_info_inner').html(data);
