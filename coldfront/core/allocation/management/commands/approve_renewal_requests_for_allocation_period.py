@@ -91,8 +91,11 @@ class Command(BaseCommand):
 
         message_template = (
             f'{{0}} AllocationRenewalRequest {{1}} for PI {{2}}, scheduling '
-            f'{{3}} to be granted to {{4}} on {allocation_period_start_date}, '
-            f'and emailing the requester and/or PI.')
+            f'{{3}} to be granted to {{4}} on {allocation_period_start_date}')
+        if skip_emails:
+            message_template += '.'
+        else:
+            message_template += ', and emailing the requester and/or PI.'
         for request in requests:
             num_service_units = num_service_units_by_allowance_name[
                 request.computing_allowance.name]
