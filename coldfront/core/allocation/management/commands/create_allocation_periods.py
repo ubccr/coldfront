@@ -4,7 +4,9 @@ from django.core.management.base import BaseCommand
 from django.core.management.base import CommandError
 from flags.state import flag_enabled
 
+import json
 import logging
+import os
 
 """An admin command that creates AllocationPeriods."""
 
@@ -56,6 +58,9 @@ class Command(BaseCommand):
             else:
                 prev_start_date = allocation_period.start_date
                 prev_end_date = allocation_period.end_date
+                if start_date == prev_start_date and end_date == prev_end_date:
+                    # No update needed.
+                    continue
                 message_template = (
                     f'{{0}} AllocationPeriod {allocation_period.pk} with '
                     f'name "{name}" from ({prev_start_date}, {prev_end_date}) '
@@ -94,126 +99,17 @@ class Command(BaseCommand):
         based on the current deployment."""
         periods = []
 
+        relative_json_path = None
         if flag_enabled('BRC_ONLY'):
-            periods.extend(
-                [
-                    {
-                        "name": "Allowance Year 2020 - 2021",
-                        "start_date": "2020-06-01",
-                        "end_date": "2021-05-31"
-                    },
-                    {
-                        "name": "Allowance Year 2021 - 2022",
-                        "start_date": "2021-06-01",
-                        "end_date": "2022-05-31"
-                    },
-                    {
-                        "name": "Allowance Year 2022 - 2023",
-                        "start_date": "2022-06-01",
-                        "end_date": "2023-05-31"
-                    },
-                    {
-                        "name": "Allowance Year 2023 - 2024",
-                        "start_date": "2023-06-01",
-                        "end_date": "2024-05-31"
-                    },
-                    {
-                        "name": "Fall Semester 2021",
-                        "start_date": "2021-08-18",
-                        "end_date": "2021-12-17"
-                    },
-                    {
-                        "name": "Spring Semester 2022",
-                        "start_date": "2022-01-11",
-                        "end_date": "2022-05-13"
-                    },
-                    {
-                        "name": "Summer Sessions 2022 - Session A",
-                        "start_date": "2022-05-23",
-                        "end_date": "2022-07-01"
-                    },
-                    {
-                        "name": "Summer Sessions 2022 - Session B",
-                        "start_date": "2022-06-06",
-                        "end_date": "2022-08-12"
-                    },
-                    {
-                        "name": "Summer Sessions 2022 - Session C",
-                        "start_date": "2022-06-21",
-                        "end_date": "2022-08-12"
-                    },
-                    {
-                        "name": "Summer Sessions 2022 - Session D",
-                        "start_date": "2022-07-05",
-                        "end_date": "2022-08-12"
-                    },
-                    {
-                        "name": "Summer Sessions 2022 - Session E",
-                        "start_date": "2022-07-25",
-                        "end_date": "2022-08-12"
-                    },
-                    {
-                        "name": "Summer Sessions 2022 - Session F",
-                        "start_date": "2022-07-05",
-                        "end_date": "2022-07-22"
-                    },
-                    {
-                        "name": "Fall Semester 2022",
-                        "start_date": "2022-08-17",
-                        "end_date": "2022-12-16"
-                    },
-                    {
-                        "name": "Spring Semester 2023",
-                        "start_date": "2023-01-10",
-                        "end_date": "2023-05-12"
-                    },
-                    {
-                        "name": "Summer Sessions 2023 - Session A",
-                        "start_date": "2023-05-22",
-                        "end_date": "2023-06-30"
-                    },
-                    {
-                        "name": "Summer Sessions 2023 - Session B",
-                        "start_date": "2023-06-05",
-                        "end_date": "2023-08-11"
-                    },
-                    {
-                        "name": "Summer Sessions 2023 - Session C",
-                        "start_date": "2023-06-20",
-                        "end_date": "2023-08-11"
-                    },
-                    {
-                        "name": "Summer Sessions 2023 - Session D",
-                        "start_date": "2023-07-03",
-                        "end_date": "2023-08-11"
-                    },
-                    {
-                        "name": "Summer Sessions 2023 - Session E",
-                        "start_date": "2023-07-24",
-                        "end_date": "2023-08-11"
-                    },
-                    {
-                        "name": "Summer Sessions 2023 - Session F",
-                        "start_date": "2023-07-03",
-                        "end_date": "2023-07-21"
-                    }
-                ]
-            )
-
+            relative_json_path = 'data/brc_allocation_periods.json'
         if flag_enabled('LRC_ONLY'):
-            periods.extend(
-                [
-                    {
-                        "name": "Allowance Year 2021 - 2022",
-                        "start_date": "2021-10-01",
-                        "end_date": "2022-09-30"
-                    },
-                    {
-                        "name": "Allowance Year 2022 - 2023",
-                        "start_date": "2022-10-01",
-                        "end_date": "2023-09-30"
-                    }
-                ]
-            )
+            relative_json_path = 'data/lrc_allocation_periods.json'
+
+        if relative_json_path is not None:
+            absolute_json_path = os.path.join(
+                os.path.dirname(__file__), relative_json_path)
+            with open(absolute_json_path, 'r') as f:
+                period_list = json.load(f)
+            periods.extend(period_list)
 
         return periods
