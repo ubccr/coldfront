@@ -29,9 +29,6 @@ urlpatterns = [
     path('research-output/', include('coldfront.core.research_output.urls')),
 ]
 
-if 'coldfront.plugins.maintenance_mode' in settings.INSTALLED_APPS:
-    urlpatterns.append(path('', include('coldfront.plugins.maintenance_mode.urls')))
-
 if 'coldfront.plugins.iquota' in settings.INSTALLED_APPS:
     urlpatterns.append(path('iquota/', include('coldfront.plugins.iquota.urls')))
 
