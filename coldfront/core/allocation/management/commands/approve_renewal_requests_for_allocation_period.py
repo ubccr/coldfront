@@ -137,7 +137,7 @@ class Command(BaseCommand):
     @staticmethod
     def approve_request(request, num_service_units, skip_emails=False):
         """Instantiate and run the approval runner for the given request
-        and number of service units. Optionally send emails."""
+        and number of service units. Optionally skip sending email."""
         email_strategy = (
             DropEmailStrategy() if skip_emails else SendEmailStrategy())
         approval_runner = AllocationRenewalApprovalRunner(
