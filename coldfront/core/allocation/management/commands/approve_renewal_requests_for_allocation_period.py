@@ -13,6 +13,8 @@ from coldfront.core.utils.common import add_argparse_dry_run_argument
 from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import display_time_zone_date_to_utc_datetime
 from coldfront.core.utils.common import utc_now_offset_aware
+from coldfront.core.utils.email.email_strategy import DropEmailStrategy
+from coldfront.core.utils.email.email_strategy import SendEmailStrategy
 
 
 """An admin command that approves AllocationRenewalRequests for a
@@ -34,12 +36,18 @@ class Command(BaseCommand):
             'allocation_period_id',
             help='The ID of the AllocationPeriod.',
             type=int)
+        parser.add_argument(
+            '--skip_emails',
+            action='store_true',
+            default=False,
+            help='Skip sending notification emails to requesters and PIs.')
         add_argparse_dry_run_argument(parser)
 
     def handle(self, *args, **options):
         """Approve eligible requests if the AllocationPeriod is valid
         and eligible."""
         dry_run = options['dry_run']
+        skip_emails = options['skip_emails']
 
         allocation_period_id = options['allocation_period_id']
         try:
@@ -99,7 +107,8 @@ class Command(BaseCommand):
                 try:
                     self.update_request_state(request)
                     request.refresh_from_db()
-                    self.approve_request(request, num_service_units)
+                    self.approve_request(
+                        request, num_service_units, skip_emails=skip_emails)
                 except Exception as e:
                     message = (
                         f'Failed to approve AllocationRenewalRequest '
@@ -123,9 +132,11 @@ class Command(BaseCommand):
         request.save()
 
     @staticmethod
-    def approve_request(request, num_service_units):
-        """Instantiate and run tne approval runner for the given request
-        and number of service units, sending emails."""
+    def approve_request(request, num_service_units, skip_emails=False):
+        """Instantiate and run the approval runner for the given request
+        and number of service units. Optionally send emails."""
+        email_strategy = (
+            DropEmailStrategy() if skip_emails else SendEmailStrategy())
         approval_runner = AllocationRenewalApprovalRunner(
-            request, num_service_units)
+            request, num_service_units, email_strategy=email_strategy)
         approval_runner.run()
