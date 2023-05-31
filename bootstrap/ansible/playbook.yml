@@ -105,6 +105,37 @@
             name: supervisor
             state: present
 
+        - name: Create a Systemd drop-in directory for overriding Supervisor configuration
+          file:
+            path: /etc/systemd/system/supervisord.service.d
+            state: directory
+            mode: 0755
+
+        - name: Create a Systemd drop-in file for overriding Supervisor configuration
+          file:
+            path: /etc/systemd/system/supervisord.service.d/override.conf
+            state: touch
+            mode: 0644
+
+        - name: Configure Systemd to only start Supervisor after the codebase has been mounted (dev only)
+          ini_file:
+            path: /etc/systemd/system/supervisord.service.d/override.conf
+            section: 'Unit'
+            option: 'After'
+            value: '{{ codebase_mount_systemd_unit }}'
+          when: codebase_mount_systemd_unit is defined
+
+        - name: Configure Systemd Supervisor ExecStop, ExecReload, and Restart behavior
+          ini_file:
+            path: /etc/systemd/system/supervisord.service.d/override.conf
+            section: 'Service'
+            option: '{{ item.option }}'
+            value: '{{ item.value }}'
+          with_items:
+            - { option: 'ExecStop', value: '/usr/bin/supervisorctl shutdown'}
+            - { option: 'ExecReload', value: '/usr/bin/supervisorctl reload'}
+            - { option: 'Restart', value: 'always'}
+
         # ini_file is included in community.general.
         - name: Set django_q command in supervisord.conf
           ini_file:
@@ -127,9 +158,17 @@
             option: 'numprocs'
             value: '1'
 
-        - name: Restart and enable Supervisord
-          service:
+        - name: Set django_q autorestart in supervisord.conf
+          ini_file:
+            path: /etc/supervisord.conf
+            section: 'program:django_q'
+            option: 'autorestart'
+            value: 'true'
+
+        - name: Reload, restart and enable Supervisord
+          systemd:
             name: supervisord
+            daemon_reload: true
             state: restarted
             enabled: true
 
