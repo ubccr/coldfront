@@ -21,7 +21,26 @@ Create Project
   $("#navbar-project-menu").addClass("active");
 
   $(document).ready(function() {
-    $('#id_field_of_science').select2();
+    $("#id_field_of_science").select2();
+
+    class_name_label = $('label[for="id_class_number"]')
+    class_name_label.html('Class Number*')
+
+    var type_text = $("#id_type option:selected").text();
+    if (type_text === "Class") {
+      $("#div_id_class_number").show();
+    } else {
+      $("#div_id_class_number").hide();
+    }
   });
+
+  $("#id_type").change(function () {
+    var type_text = $("#id_type option:selected").text();
+    if (type_text === "Class") {
+      $("#div_id_class_number").show();
+    } else {
+      $("#div_id_class_number").hide();
+    }
+  })
 </script>
 {% endblock %}

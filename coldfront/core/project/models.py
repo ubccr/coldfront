@@ -86,6 +86,7 @@ required to log onto the site at least once before they can be added.
         on_delete=models.CASCADE,
         help_text="This cannot be changed once your project is submitted. Class projects expire at the end of every semester. Research projects expire once a year."
     )
+    class_number = models.CharField(max_length=25, blank=True, null=True)
     private = models.BooleanField(
         default=False,
         help_text="A private project will not show up in the PI search results if someone searchs for you/your PI."

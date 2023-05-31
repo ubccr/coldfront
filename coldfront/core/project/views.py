@@ -719,7 +719,7 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
 class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Project
     template_name_suffix = '_create_form'
-    fields = ['title', 'description', 'pi_username', 'type', ]
+    fields = ['title', 'description', 'pi_username', 'type', 'class_number']
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -832,6 +832,10 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
                 return super().form_invalid(form)
 
             project_obj.end_date = end_date
+
+            if not form.instance.class_number:
+                messages.error(self.request, 'You must provide a class number for a class project.')
+                return super().form_invalid(form)
         else:
             actual_date = datetime.date(datetime.date.today().year, 6, 30)
             end_date = get_new_end_date_from_list(
