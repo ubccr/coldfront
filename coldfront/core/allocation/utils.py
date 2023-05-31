@@ -203,20 +203,6 @@ def create_admin_action_for_creation(user, created_obj, allocation, base_model=N
         )
 
 
-def update_linked_allocation_attribute(allocation_attribute):
-    """
-    Checks if an allocation attribute's type is linked to the allocation attribute and assigns the
-    allocation attribute the new value.
-
-    :param allocation_attribute: The allocation attribute that is being created/modified
-    """
-    linked_allocation_attribute = allocation_attribute.allocation_attribute_type.linked_allocation_attribute
-    allocation_obj = allocation_attribute.allocation
-    if hasattr(allocation_obj, linked_allocation_attribute):
-        setattr(allocation_obj, linked_allocation_attribute, allocation_attribute.value)
-        allocation_obj.save()
-
-
 def get_allocation_user_emails(allocation_obj, only_project_managers=False):
     """
     Returns a list of allocation user emails in the given allocation. Only emails from users with

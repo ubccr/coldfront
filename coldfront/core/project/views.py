@@ -1072,10 +1072,10 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
         Gets a list that determines if an allocation can be selected.
         """
         disable_select_list = [False] * len(allocations)
-        for i, allocation in enumerate(allocations):
-            if allocation.get_parent_resource.name == 'Slate-Project':
-                if allocation.data_manager != request.user.username:
-                    disable_select_list[i] = True
+        # for i, allocation in enumerate(allocations):
+        #     if allocation.get_parent_resource.name == 'Slate-Project':
+        #         if allocation.data_manager != request.user.username:
+        #             disable_select_list[i] = True
 
         return disable_select_list
 
@@ -1210,10 +1210,10 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
         Gets a list that determines if an allocation can be selected.
         """
         disable_select_list = [False] * len(allocations)
-        for i, allocation in enumerate(allocations):
-            if allocation.get_parent_resource.name == 'Slate-Project':
-                if allocation.data_manager != request.user.username:
-                    disable_select_list[i] = True
+        # for i, allocation in enumerate(allocations):
+        #     if allocation.get_parent_resource.name == 'Slate-Project':
+        #         if allocation.data_manager != request.user.username:
+        #             disable_select_list[i] = True
 
         return disable_select_list
 
@@ -1515,25 +1515,25 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
         return users_to_remove
 
-    def get_data_managers(self, project_obj):
-        data_manager_list = [
-            allocation.data_manager for allocation in project_obj.allocation_set.filter(
-                resources__name="Slate-Project"
-            )
-        ]
+    # def get_data_managers(self, project_obj):
+    #     data_manager_list = [
+    #         allocation.data_manager for allocation in project_obj.allocation_set.filter( # TODO - Gone
+    #             resources__name="Slate-Project"
+    #         )
+    #     ]
 
-        return set(data_manager_list)
+    #     return set(data_manager_list)
 
     def get_disable_select_list(self, project_obj, users_to_remove):
         """
         Gets a list that determines if a user can be removed by disabling the
         ProjectRemoveUserForm's selected field.
         """
-        data_manager_list = self.get_data_managers(project_obj)
+        # data_manager_list = self.get_data_managers(project_obj)
         disable_select_list = [False] * len(users_to_remove)
-        for i, user in enumerate(users_to_remove):
-            if user['username'] in data_manager_list:
-                disable_select_list[i] = True
+        # for i, user in enumerate(users_to_remove):
+        #     if user['username'] in data_manager_list:
+        #         disable_select_list[i] = True
 
         return disable_select_list
 
@@ -1561,7 +1561,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
             context['formset'] = formset
 
-        context['data_managers'] = self.get_data_managers(project_obj)
+        # context['data_managers'] = self.get_data_managers(project_obj)
         context['project'] = get_object_or_404(Project, pk=pk)
 
         return render(request, self.template_name, context)
@@ -1705,14 +1705,14 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             return True
 
     def check_user_is_data_manager(self, project_obj, project_user_obj):
-        data_manager_list = [
-            allocation.data_manager for allocation in project_obj.allocation_set.filter(
-                resources__name="Slate-Project"
-            )
-        ]
+        # data_manager_list = [
+        #     allocation.data_manager for allocation in project_obj.allocation_set.filter( # TODO - Gone
+        #         resources__name="Slate-Project"
+        #     )
+        # ]
 
-        if project_user_obj.user.username in set(data_manager_list):
-            return True
+        # if project_user_obj.user.username in set(data_manager_list):
+        #     return True
 
         return False
 
