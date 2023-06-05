@@ -976,7 +976,7 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
         ProjectDescriptionRecord.objects.create(
             project=project_obj,
             user=self.request.user,
-            description=form_data.get('description')
+            description=project_obj.description
         )
 
         project_obj.title = form_data.get('title')
