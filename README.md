@@ -230,8 +230,10 @@ multiple files or directories to omit.
    docker build . -f Dockerfile.email -t coldfront_email
    ```
    Note: The above commands build images meant for a MyBRC instance. To build MyLRC images, include `--build-arg PORTAL=mylrc`.
-4. Configure environment variables to be injected into containers by creating a `.env` file in the root directory (ignored by Git) or by setting them manually.
+4. Configure environment variables to be injected into containers by creating a `.env` file in the root directory (ignored by Git) or by setting them manually. The password should match those generated via `main.yml`
    - `DB_NAME=cf_brc_db`: The name of the database can be customized (e.g., for a MyLRC instance, change it to `cf_lrc_db`).
+   - `DB_PASSWORD=root`: The password for the database admin user.
+   - `REDIS_PASSWORD=root`: The password for redis.
    - `COLDFRONT_PORT=8880`: The port can be customized so that multiple instances can be run without conflicting.
 5. Bring up the stack. In the root directory, run:
    ```bash
