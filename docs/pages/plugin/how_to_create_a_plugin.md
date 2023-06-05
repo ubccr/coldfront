@@ -24,12 +24,12 @@ weeklyreportapp
     │   index.html
 
 ```
-1. Ensure that your **__init__.py** file contents have the following format:
+2. Ensure that your **__init__.py** file contents have the following format:
 ```
 default_app_config = "coldfront.core.weeklyreportapp.apps.WeeklyreportappConfig"
 ```
 
-1. Ensure that your **apps.py** file contents look like this:
+3. Ensure that your **apps.py** file contents look like this:
 ```
 from django.apps import AppConfig
 
@@ -59,7 +59,7 @@ urlpatterns += [
     path('weekly-report/', include('coldfront.core.weeklyreportapp.urls')),
 ]
 ```
-4. Since the example Weekly Report plugin is intended for admins, to add it to the navbar for admins, update the **templates/common/navbar_admin.html** file or its equivalent in your ColdFront setup like so:
+3. Since the example Weekly Report plugin is intended for admins, to add it to the navbar for admins, update the **templates/common/navbar_admin.html** file or its equivalent in your ColdFront setup like so:
 ```
 <li id="navbar-admin" class="nav-item dropdown">
   <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown">Admin</a>
