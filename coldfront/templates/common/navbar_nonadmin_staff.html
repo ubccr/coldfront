@@ -13,8 +13,8 @@
     {% if perms.allocation.can_view_all_allocations %}
       <a class="dropdown-item" href="{% url 'allocation-list' %}?show_all_allocations=on">All Allocations</a>
     {% endif %}
-    {% if perms.department.can_view_all_departments %}
-    <a class="dropdown-item" href="{% url 'department-list' %}?show_all_departments=on">All Departments</a>
+    {% if 'coldfront.core.department' in settings.INSTALLED_APPS and perms.department.can_view_all_departments %}
+      <a class="dropdown-item" href="{% url 'department-list' %}?show_all_departments=on">All Departments</a>
     {% endif %}
     <a class="dropdown-item" href="{% url 'resource-list' %}">All Resources</a>
     {% if perms.project.can_review_pending_project_reviews %}
@@ -24,7 +24,7 @@
       <a id="navbar-allocation-requests" class="dropdown-item" href="{% url 'allocation-request-list' %}">
         Allocation Requests</a>
     {% endif %}
-    {% if perms.grant.can_view_all_grants %}
+    {% if 'coldfront.core.grant' in settings.INSTALLED_APPS and perms.grant.can_view_all_grants %}
       <a id="navbar-grant-report" class="dropdown-item" href="{% url 'grant-report' %}">Grant Report</a>
     {% endif %}
   </div>

@@ -1,6 +1,8 @@
 from django import forms
 
+from coldfront.core.resource.models import ResourceAttribute
 
+from django.db.models.functions import Lower
 class ResourceSearchForm(forms.Form):
     """ Search form for the Resource list page.
     """
@@ -19,11 +21,11 @@ class ResourceSearchForm(forms.Form):
         widget=forms.DateInput(attrs={'class': 'datepicker'}),
         required=False)
     serviceEnd =  forms.DateField(
-        label='Service End', 
-        widget=forms.DateInput(attrs={'class': 'datepicker'}), 
+        label='Service End',
+        widget=forms.DateInput(attrs={'class': 'datepicker'}),
         required=False)
     warrantyExpirationDate = forms.DateField(
-        label='Warranty Expiration Date', 
+        label='Warranty Expiration Date',
         widget=forms.DateInput(attrs={'class': 'datepicker'}),
         required=False)
     show_allocatable_resources = forms.BooleanField(initial=False, required=False)
@@ -38,3 +40,12 @@ class ResourceAttributeDeleteForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['pk'].widget = forms.HiddenInput()
+
+
+class ResourceAttributeCreateForm(forms.ModelForm):
+    class Meta:
+        model = ResourceAttribute
+        fields = '__all__'
+    def __init__(self, *args, **kwargs):
+        super(ResourceAttributeCreateForm, self).__init__(*args, **kwargs)
+        self.fields['resource_attribute_type'].queryset = self.fields['resource_attribute_type'].queryset.order_by(Lower('name'))

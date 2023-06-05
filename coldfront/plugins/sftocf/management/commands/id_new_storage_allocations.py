@@ -1,6 +1,6 @@
-'''
+"""
 Automatically create CSV of Starfish storage allocations not found in Coldfront.
-'''
+"""
 
 import logging
 
@@ -14,9 +14,9 @@ from coldfront.plugins.sftocf.utils import StarFishRedash, STARFISH_SERVER
 logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
-    '''
+    """
     Automatically create CSV of Starfish storage allocations not found in Coldfront.
-    '''
+    """
 
 
     def handle(self, *args, **kwargs):

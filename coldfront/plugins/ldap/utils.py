@@ -1,6 +1,6 @@
-'''
+"""
 utility functions for LDAP interaction
-'''
+"""
 import logging
 import operator
 from functools import reduce
@@ -24,9 +24,9 @@ logger = logging.getLogger(__name__)
 
 
 class LDAPConn:
-    '''
+    """
     LDAP connection object
-    '''
+    """
     def __init__(self):
         self.LDAP_SERVER_URI = import_from_settings('AUTH_LDAP_SERVER_URI', None)
         self.LDAP_BIND_DN = import_from_settings('AUTH_LDAP_BIND_DN', None)
@@ -39,7 +39,7 @@ class LDAPConn:
         self.conn = Connection(self.server, self.LDAP_BIND_DN, self.LDAP_BIND_PASSWORD, auto_bind=True)
 
     def search(self, attr_search_dict, search_base, attributes=ALL_ATTRIBUTES):
-        '''Run an LDAP search.
+        """Run an LDAP search.
 
         Parameters
         ----------
@@ -51,7 +51,7 @@ class LDAPConn:
             should appear similar to 'ou=Domain Users,dc=mydc,dc=domain'
         attributes : list or ALL_ATTRIBUTES object
             attributes to return or ldap search objects (e.g., ALL_ATTRIBUTES)
-        '''
+        """
         search_filter = format_template_assertions(attr_search_dict)
         search_parameters = {
             'search_base': search_base,
@@ -63,7 +63,7 @@ class LDAPConn:
 
 
     def search_users(self, attr_search_dict, attributes=ALL_ATTRIBUTES, return_as='dict'):
-        '''search for users.
+        """search for users.
         Parameters
         ----------
         attr_search_dict : dict
@@ -75,7 +75,7 @@ class LDAPConn:
         return_as : string
             if 'dict', return entry_attributes_as_dict. Otherwise, return ldap3 entries.
 
-        '''
+        """
         user_entries = self.search( attr_search_dict,
                                     self.LDAP_USER_SEARCH_BASE,
                                     attributes=attributes)
@@ -85,7 +85,7 @@ class LDAPConn:
 
 
     def search_groups(self, attr_search_dict, attributes=ALL_ATTRIBUTES, return_as='dict'):
-        '''search for groups.
+        """search for groups.
         Parameters
         ----------
         attr_search_dict : dict
@@ -96,7 +96,7 @@ class LDAPConn:
             attributes to return or ldap search objects (e.g., ALL_ATTRIBUTES)
         return_as : string
             if 'dict', return entry_attributes_as_dict. Otherwise, return ldap3 entries.
-        '''
+        """
         group_entries = self.search(attr_search_dict,
                                     self.LDAP_GROUP_SEARCH_BASE,
                                     attributes=attributes)
@@ -105,8 +105,8 @@ class LDAPConn:
         return group_entries
 
     def return_multi_group_members_manager(self, samaccountname_list):
-        '''return tuples of user and PI entries for each group listed in samaccountname_list
-        '''
+        """return tuples of user and PI entries for each group listed in samaccountname_list
+        """
         group_entries = self.search_groups(
                     {'sAMAccountName': samaccountname_list},
                     attributes=['managedBy', 'distinguishedName',
@@ -118,13 +118,13 @@ class LDAPConn:
         return manager_members_tuples
 
     def return_group_members_manager(self, samaccountname):
-        '''return user entries that are members of the specified group.
+        """return user entries that are members of the specified group.
 
         Parameters
         ----------
         samaccountname : string
             sAMAccountName of the group to search for
-        '''
+        """
         logger.debug('return_group_members_manager for Project %s', samaccountname)
         group_entries = self.search_groups(
                     {'sAMAccountName': samaccountname},
@@ -163,9 +163,9 @@ def user_valid(user):
     # and (user['accountExpires'][0].year == 1601 or user['accountExpires'][0] > timezone.now())
 
 class GroupUserCollection:
-    '''
+    """
     Class to hold a group and its members.
-    '''
+    """
     def __init__(self, group_name, ad_users, pi, project=None):
         self.name = group_name
         self.members = ad_users
@@ -178,12 +178,12 @@ class GroupUserCollection:
 
     @property
     def pi_is_active(self):
-        '''Return true if PI's account is both unexpired and not disabled.'''
+        """Return true if PI's account is both unexpired and not disabled."""
         return user_valid(self.pi)
 
 
     def compare_active_members_projectusers(self):
-        '''Compare ADGroup members to ProjectUsers.
+        """Compare ADGroup members to ProjectUsers.
 
         Returns
         -------
@@ -191,7 +191,7 @@ class GroupUserCollection:
             users present in the members list and not as Coldfront ProjectUsers.
         projuser_only : list
             Coldfront ProjectUsers missing from the members list.
-        '''
+        """
         ### check presence of ADGroup members in Coldfront  ###
         logger.debug('membership data collected for %s\nraw ADUser data for %s users',
         self.name, len(self.members))
@@ -210,7 +210,7 @@ class GroupUserCollection:
 
 
 def format_template_assertions(attr_search_dict, search_operator='and'):
-    '''Format attr_search_string_dict into correct filter_template
+    """Format attr_search_string_dict into correct filter_template
     Parameters
     ----------
     attr_search_dict : dict
@@ -224,7 +224,7 @@ def format_template_assertions(attr_search_dict, search_operator='and'):
     Returns
     -------
     output should be string formatted like '(|(cn=Bob Smith)(company=FAS))'
-    '''
+    """
 
     match_operator = {'and':'&', 'or':'|'}
     val_string = lambda k, v: f'({k}={v})' if is_string(v) else '(|'+ ''.join(f'({k}={i})' for i in v) + ')'
@@ -245,8 +245,8 @@ def is_string(value):
     return isinstance(value, str)
 
 def sort_dict_on_conditional(dict1, condition):
-    '''split one dictionary into two on basis of value's ability to meet a condition
-    '''
+    """split one dictionary into two on basis of value's ability to meet a condition
+    """
     is_true, is_false = {}, {}
     for k, v in dict1.items():
         (is_false, is_true)[condition(v)][k] = v
@@ -260,7 +260,7 @@ def cleaned_membership_query(proj_membs_mans):
     return proj_membs_mans, search_errors
 
 def remove_inactive_disabled_managers(groupusercollections):
-    '''Remove groupusercollections with inactive managers'''
+    """Remove groupusercollections with inactive managers"""
     active_pi_groups, inactive_pi_groups = sort_by(groupusercollections, 'pi_is_active', how='attr')
     if inactive_pi_groups:
         logger.error('LDAP query returns Active Projects with expired PIs: %s',
@@ -272,10 +272,10 @@ def flatten(l):
 
 
 def collect_update_project_status_membership():
-    '''
+    """
     Update Project and ProjectUser entries for existing Coldfront Projects using
     ADGroup and ADUser data.
-    '''
+    """
     # collect commonly used db objects
     projectuser_role_user = ProjectUserRoleChoice.objects.get(name='User')
     projectuserstatus_active = ProjectUserStatusChoice.objects.get(name='Active')
@@ -335,7 +335,7 @@ def collect_update_project_status_membership():
             present_project_ifxusers, missing_users = id_present_missing_users(ad_users_not_added)
             logger.debug('present_project_ifxusers - ADUsers who have ifxuser accounts:\n%s', ad_users_not_added)
 
-            log_missing('users', missing_users) # log missing IFXusers
+            log_missing('user', missing_users) # log missing IFXusers
 
             # If user is missing because status was changed to 'removed', update status
             present_projectusers = group.project.projectuser_set.filter(user__in=present_project_ifxusers)
@@ -376,9 +376,9 @@ def collect_update_project_status_membership():
             [(pu.user.username, pu.project.title) for pu in projectusers_to_remove])
 
 def import_projects_projectusers(projects_list):
-    '''Use AD user and group information to automatically create new
+    """Use AD user and group information to automatically create new
     Coldfront Projects from projects_list.
-    '''
+    """
     errortracker = { 'no_pi': [], 'not_found': [], 'no_fos': [], 'pi_not_projectuser': [], 'pi_active_invalid': [] }
     # if project already exists, end here
     existing_projects = Project.objects.filter(title__in=projects_list)
@@ -397,9 +397,9 @@ def import_projects_projectusers(projects_list):
 
 
 def add_new_projects(groupusercollections, errortracker):
-    '''create new Coldfront Projects and ProjectUsers from PI and AD user data
+    """create new Coldfront Projects and ProjectUsers from PI and AD user data
     already collected from ATT.
-    '''
+    """
     # if PI is inactive, don't add project
     active_pi_groups, _ = remove_inactive_disabled_managers(groupusercollections)
     logger.debug('active_pi_groups: %s', active_pi_groups)

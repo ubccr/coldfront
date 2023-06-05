@@ -1,5 +1,5 @@
-'''A module for fasrc-specific utility functions.
-'''
+"""A module for fasrc-specific utility functions.
+"""
 import os
 import json
 import operator
@@ -16,13 +16,11 @@ from coldfront.config.env import ENV
 
 from ifxbilling.models import Product
 
-from ifxbilling.models import Product
-
 MISSING_DATA_DIR = './local_data/missing/'
 
 
 def sort_by(list1, sorter, how='attr'):
-    '''split one list into two on basis of each item's ability to meet a condition
+    """split one list into two on basis of each item's ability to meet a condition
     Parameters
     ----------
     list1 : list
@@ -31,7 +29,7 @@ def sort_by(list1, sorter, how='attr'):
         attribute or function to be used to sort the list
     how : str
         type of sorter ('attr' or 'condition')
-    '''
+    """
     is_true, is_false = [], []
     for x in list1:
         if how == 'attr':
@@ -43,7 +41,7 @@ def sort_by(list1, sorter, how='attr'):
     return is_true, is_false
 
 def select_one_project_allocation(project_obj, resource_obj, dirpath=None):
-    '''
+    """
     Get one allocation for a given project/resource pairing; handle return of
     zero or multiple allocations.
 
@@ -54,7 +52,7 @@ def select_one_project_allocation(project_obj, resource_obj, dirpath=None):
     ----------
     project_obj
     resource_obj
-    '''
+    """
     allocation_query = project_obj.allocation_set.filter(
                                                 resources__id=resource_obj.id)
     if allocation_query.count() == 1:
@@ -68,8 +66,8 @@ def select_one_project_allocation(project_obj, resource_obj, dirpath=None):
 
 
 def determine_size_fmt(byte_num):
-    '''Return the correct human-readable byte measurement.
-    '''
+    """Return the correct human-readable byte measurement.
+    """
     units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB']
     for u in units:
         unit = u
@@ -92,7 +90,7 @@ def convert_size_fmt(num, target_unit, source_unit='B'):
     return round(num, 3)
 
 def get_resource_rate(resource):
-    '''find Product with the name provided and return the associated rate'''
+    """find Product with the name provided and return the associated rate"""
     prod_obj = Product.objects.get(product_name=resource)
     rate_obj = prod_obj.rate_set.get(is_active=True)
     # return charge per TB, adjusted to dollar value
@@ -103,10 +101,10 @@ def get_resource_rate(resource):
 
 
 def id_present_missing_resources(resourceserver_list):
-    '''
+    """
     Collect all Resource entries with resources in param resourceserver_list;
     return tuple of all matching Resource entries and all servers with no Resource entries.
-    '''
+    """
     present_resources = Resource.objects.filter(reduce(operator.or_,
                     (Q(name__contains=x) for x in resourceserver_list)))
     res_names = [str(r.name).split('/')[0] for r in present_resources]
@@ -115,10 +113,10 @@ def id_present_missing_resources(resourceserver_list):
 
 
 def id_present_missing_projects(title_list):
-    '''
+    """
     Collect all Project entries with titles in param title_list; return tuple
     of all matching Project entries and all titles with no Project entries.
-    '''
+    """
     present_projects = Project.objects.filter(title__in=title_list)
     proj_titles = list(present_projects.values_list('title', flat=True))
     missing_project_titles = [{'title': title} for title in title_list if title not in proj_titles]
@@ -126,7 +124,7 @@ def id_present_missing_projects(title_list):
 
 
 def id_present_missing_projectusers(projectuser_tuple_list):
-    '''
+    """
     Collect all User entries with usernames in position [1] of projectuser_tuple_list
     tuples; return tuple consisting of all matching User entries and a list of
     dicts recording the project and user of missing entries.
@@ -139,7 +137,7 @@ def id_present_missing_projectusers(projectuser_tuple_list):
     -------
     present_users :
     missing_projectusers :
-    '''
+    """
     username_list = [tuple[1] for tuple in projectuser_tuple_list]
     present_users = get_user_model().objects.filter(username__in=username_list)
     present_usernames = list(present_users.values_list('username', flat=True))
@@ -149,10 +147,10 @@ def id_present_missing_projectusers(projectuser_tuple_list):
 
 
 def id_present_missing_users(username_list):
-    '''
+    """
     Collect all User entries with usernames in param username_list; return tuple
     of all matching User entries and all usernames with no User entries.
-    '''
+    """
     present_users = get_user_model().objects.filter(username__in=username_list)
     present_usernames = list(present_users.values_list('username', flat=True))
     missing_usernames = [{'username': name} for name in username_list if name not in present_usernames]
@@ -160,7 +158,7 @@ def id_present_missing_users(username_list):
 
 
 def log_missing(modelname, missing):
-    '''log missing entries for a given Coldfront model.
+    """log missing entries for a given Coldfront model.
     Add or update entries in CSV, order CSV by descending date and save.
 
     Parameters
@@ -172,11 +170,11 @@ def log_missing(modelname, missing):
             for users, "username".
             for projects, "title".
             for allocations, "resource_name", "project_title", and "path".
-    '''
+    """
     update_csv(missing, MISSING_DATA_DIR, f'missing_{modelname}s.csv')
 
 def slate_for_check(log_entries):
-    '''Add an issue encountered during runtime to a CSV for administrative review.
+    """Add an issue encountered during runtime to a CSV for administrative review.
 
     Parameters
     ----------
@@ -184,11 +182,11 @@ def slate_for_check(log_entries):
         keys should be "error" (description of issue encountered),
         "program" (where encountered), "urls" (url(s) to related object detail
         pages), "detail" (exc_info, if necessary)
-    '''
+    """
     update_csv(log_entries, 'local_data/', 'program_error_checks.csv')
 
 def update_csv(new_entries, dirpath, csv_name, date_update='date'):
-    '''Add or update entries in CSV, order CSV by descending date and save.
+    """Add or update entries in CSV, order CSV by descending date and save.
 
     Parameters
     ----------
@@ -200,7 +198,7 @@ def update_csv(new_entries, dirpath, csv_name, date_update='date'):
     dirpath : str
     csv_name : str
     date_update : str
-    '''
+    """
     if new_entries:
         locate_or_create_dirpath(dirpath)
         fpath = f'{dirpath}{csv_name}'

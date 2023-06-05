@@ -84,7 +84,7 @@ class ATTAllocationQuery:
 
 
 class QuotaDataPuller:
-    '''pull and standardize quota data'''
+    """pull and standardize quota data"""
 
     def pull(self, format):
         standardizer = self.get_standardizer(format)
@@ -174,25 +174,25 @@ class AllTheThingsConn:
         return resp_json_formatted
 
     def collect_group_membership(self, groupsearch):
-        '''
+        """
         Collect user, and relationship information for a lab or labs from ATT.
-        '''
+        """
         resp_json_formatted = self.stage_user_member_query(groupsearch)
         return resp_json_formatted
 
 
     def collect_pi_data(self, grouplist):
-        '''collect information on pis for a given list of groups
-        '''
+        """collect information on pis for a given list of groups
+        """
         resp_json_formatted = self.stage_user_member_query(grouplist, pi=True)
         return resp_json_formatted
 
     def pull_quota_data(self, volumes=None):
-        '''Produce JSON file of quota data for LFS and Isilon from AlltheThings.
+        """Produce JSON file of quota data for LFS and Isilon from AlltheThings.
         Parameters
         ----------
         volumes : List of volume names to collect. Optional, default None.
-        '''
+        """
         logger = logging.getLogger('import_quotas')
         query = ATTAllocationQuery()
         if volumes:
@@ -206,8 +206,8 @@ class AllTheThingsConn:
         return resp_json
 
 def push_quota_data(result_file):
-    '''update group quota & usage values in Coldfront from a JSON of quota data.
-    '''
+    """update group quota & usage values in Coldfront from a JSON of quota data.
+    """
     logger = logging.getLogger('import_quotas')
     errored_allocations = {}
     missing_allocations = []
@@ -286,7 +286,7 @@ def push_quota_data(result_file):
 
 
 def match_entries_with_projects(result_json):
-    '''Remove and report allocations for projects not in Coldfront'''
+    """Remove and report allocations for projects not in Coldfront"""
     # produce lists of present labs & labs w/o projects
     lablist = list(set(k for k in result_json))
     proj_models, missing_projs = id_present_missing_projects(lablist)
@@ -311,8 +311,8 @@ def pull_push_quota_data(volumes=None):
 
 
 def generate_headers(token):
-    '''Generate 'headers' attribute by using the 'token' attribute.
-    '''
+    """Generate 'headers' attribute by using the 'token' attribute.
+    """
     headers = {
         'accept': 'application/json',
         'Authorization': f'Bearer {token}',

@@ -10,11 +10,11 @@ from coldfront.plugins.ldap.utils import import_projects_projectusers
 logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
-    '''
+    """
     Create new projects from local_data/ready_to_add/add_projects.csv.
     The CSV must have a column labeled 'title' which contains the names of the
     AD groups for which equivalent projects will be created in Coldfront.
-    '''
+    """
 
 
     def handle(self, *args, **kwargs):

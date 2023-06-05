@@ -1,0 +1,22 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load common_tags %}
+{% load static %}
+
+
+{% block title %}
+Add Notification
+{% endblock %}
+
+
+{% block content %}
+<h2>Adding notification to {{ object_title }}</h2>
+
+<form method="post">
+  {% csrf_token %}
+  {{form |crispy}}
+  <input class="btn btn-success" type="submit" value="Add" />
+  <a class="btn btn-secondary" href="{% url object_page object.pk %}" role="button">Back to
+    Page</a><br>
+</form>
+{% endblock %}

@@ -2,6 +2,7 @@
 Base Django settings for ColdFront project.
 """
 import os
+import sys
 import coldfront
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management.utils import get_random_secret_key
@@ -53,11 +54,14 @@ INSTALLED_APPS = [
 ]
 
 # Additional Apps
+# Hack to fix fontawesome. Will be fixed in version 6
+sys.modules['fontawesome_free'] = __import__('fontawesome-free')
 INSTALLED_APPS += [
     'crispy_forms',
     'sslserver',
     'django_q',
     'simple_history',
+    'fontawesome_free',
     'mathfilters',
     # 'debug_toolbar',
     # 'ifxuser',
@@ -161,7 +165,7 @@ if len(SITE_TEMPLATES) > 0:
         raise ImproperlyConfigured('SITE_TEMPLATES should be a path to a directory')
 
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
-SETTINGS_EXPORT = []
+SETTINGS_EXPORT = ['INSTALLED_APPS']
 
 STATIC_URL = '/static/'
 STATIC_ROOT = ENV.str('STATIC_ROOT', default=PROJECT_ROOT('static_root'))

@@ -16,7 +16,6 @@ coldfront_configs = [
     'email.py',
 ]
 
-
 # ColdFront plugin settings
 plugin_configs = {
     'PLUGIN_SLURM': 'plugins/slurm.py',

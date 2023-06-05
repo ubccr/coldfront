@@ -1,16 +1,17 @@
 """Department views"""
 
-from django.db.models import Count, Sum, Q, Value, F, When, Case, FloatField
-from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.views.generic import DetailView, ListView
-from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.shortcuts import get_object_or_404, render
 from django.conf import settings
-from coldfront.core.utils.fasrc import get_resource_rate
+from django.contrib import messages
+from django.db.models import Sum, Q
+from django.urls import reverse, reverse_lazy
+from django.shortcuts import get_object_or_404
+from django.views.generic import DetailView
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+
+from coldfront.core.utils.views import ColdfrontListView, NoteCreateView, NoteUpdateView
 from coldfront.core.allocation.models import Allocation, AllocationUser
 from coldfront.core.department.forms import DepartmentSearchForm
-from coldfront.core.department.models import Department, DepartmentMember
+from coldfront.core.department.models import Department, DepartmentMember, DepartmentUserNote
 
 
 def return_department_roles(user, department):
@@ -21,7 +22,7 @@ def return_department_roles(user, department):
     if not department.useraffiliation_set.filter(member_conditions).exists():
         return ()
 
-    permissions = ["user"]
+    permissions = ['user']
     for role in ['approver', 'pi', 'lab_manager']:
         if department.members.filter(
                     member_conditions & Q(role=role)).exists():
@@ -29,21 +30,14 @@ def return_department_roles(user, department):
 
     return permissions
 
-class DepartmentListView(LoginRequiredMixin, ListView):
+class DepartmentListView(ColdfrontListView):
     model = Department
     template_name = 'department/department_list.html'
-    context_object_name = 'department_list'
+    context_object_name = 'item_list'
     paginate_by = 25
 
-
     def get_queryset(self):
-        order_by = self.request.GET.get('order_by')
-        if order_by:
-            direction = self.request.GET.get('direction')
-            direction = '-' if direction == 'des' else ''
-            order_by = direction + order_by
-        else:
-            order_by = 'id'
+        order_by = self.return_order()
 
         department_search_form = DepartmentSearchForm(self.request.GET)
         departments = Department.objects.all()# values()
@@ -52,71 +46,24 @@ class DepartmentListView(LoginRequiredMixin, ListView):
             data = department_search_form.cleaned_data
             if not data.get('show_all_departments') or not (self.request.user.is_superuser or
                     self.request.user.has_perm('department.can_view_all_departments')):
-                departments = departments.filter(id__in=user_depts.values_list("organization_id"))
+                departments = departments.filter(
+                        id__in=user_depts.values_list('organization_id'))
             # Department and Rank filters name
             for search in ('name', 'rank'):
                 if data.get(search):
                     departments = departments.filter(name__icontains=data.get(search))
         else:
-            departments = departments.filter(id__in=user_depts.values_list("organization_id"))
+            departments = departments.filter(
+                        id__in=user_depts.values_list('organization_id'))
 
         departments = departments.order_by(order_by).distinct()
-
         return departments
 
 
     def get_context_data(self, **kwargs):
-
-        context = super().get_context_data(**kwargs)
-        departments_count = self.get_queryset().count()
-        context['departments_count'] = departments_count
-
-        department_search_form = DepartmentSearchForm(self.request.GET)
-        if department_search_form.is_valid():
-            data = department_search_form.cleaned_data
-            filter_parameters = ''
-            for key, value in data.items():
-                if value:
-                    if isinstance(value, list):
-                        filter_parameters += "".join([f'{key}={ele}&' for ele in value])
-                    else:
-                        filter_parameters += f'{key}={value}&'
-            context['department_search_form'] = department_search_form
-        else:
-            filter_parameters = None
-            context['department_search_form'] = DepartmentSearchForm()
-
-        order_by = self.request.GET.get('order_by')
-        if order_by:
-            direction = self.request.GET.get('direction')
-            filter_parameters_with_order_by = filter_parameters + \
-                f'order_by={order_by}&direction={direction}&'
-        else:
-            filter_parameters_with_order_by = filter_parameters
-
-        if filter_parameters:
-            context['expand_accordion'] = 'show'
-
-        context['filter_parameters'] = filter_parameters
-        context['filter_parameters_with_order_by'] = filter_parameters_with_order_by
-
-        department_list = context.get('department_list')
-        paginator = Paginator(department_list, self.paginate_by)
-
-        page = self.request.GET.get('page')
-
-        try:
-            department_list = paginator.page(page)
-        except PageNotAnInteger:
-            department_list = paginator.page(1)
-        except EmptyPage:
-            department_list = paginator.page(paginator.num_pages)
-        context['department_list'] = department_list
-
+        context = super().get_context_data(
+                        SearchFormClass=DepartmentSearchForm, **kwargs)
         return context
-
-
-
 
 
 # class DepartmentInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -142,14 +89,40 @@ class DepartmentListView(LoginRequiredMixin, ListView):
 #         return context
 
 
+class DepartmentNoteCreateView(NoteCreateView):
+    model = DepartmentUserNote
+    fields = '__all__'
+    form_obj = 'department'
+    object_model = Department
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['object_page'] = 'department-detail'
+        context['object_title'] = f'Department {context["object"].name}'
+        return context
+
+    def get_success_url(self):
+        return reverse('department-detail', kwargs={'pk': self.kwargs.get('pk')})
+
+
+class DepartmentNoteUpdateView(NoteUpdateView):
+    model = DepartmentUserNote
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['parent_object'] = self.object.department
+        context['object_detail_link'] = 'department-detail'
+        return context
+
+    def get_success_url(self):
+        return reverse_lazy('department-detail', kwargs={'pk': self.object.department.pk})
 
 class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     """Department Stats, Projects, Allocations, and invoice details.
     """
     # should a user need to be a member of the department to see this?
     model = Department
-    template_name = "department/department_detail.html"
+    template_name = 'department/department_detail.html'
     context_object_name = 'department'
 
 
@@ -168,6 +141,11 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             self.request, 'You do not have permission to view this department.')
         return False
 
+    def return_visible_notes(self, department_obj):
+        noteset = department_obj.departmentusernote_set
+        notes = noteset.all() if self.request.user.is_superuser else noteset.filter(
+        is_private=False)
+        return notes
 
     def get_context_data(self, **kwargs):
 
@@ -224,6 +202,8 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 .order_by('user__username')
 
         context['allocation_users'] = allocation_users
+        context['notes'] = self.return_visible_notes(department_obj)
+        context['note_update_link'] = 'department-note-update'
 
         try:
             context['ondemand_url'] = settings.ONDEMAND_URL

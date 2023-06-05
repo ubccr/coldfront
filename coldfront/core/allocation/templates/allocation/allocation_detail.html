@@ -1,7 +1,6 @@
 <head>
     <meta charset="utf-8">
     <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0/css/bootstrap.css">
-    <link rel="stylesheet" href="//cdn.datatables.net/1.10.16/css/dataTables.bootstrap4.min.css">
     <script src="pdf.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.js"></script>
   </head>
@@ -11,7 +10,8 @@
 {% load static %}
 {% load django_tables2 %}
 {% load mathfilters %}
-
+{% load common_tags %}
+{% load fasrc_tags %}
 {% render_table table %}
 
 
@@ -20,11 +20,15 @@
 Allocation Detail
 {% endblock %}
 
-
 {% block content %}
+
 {% if allocation.project.status.name == 'Archived' %}
   <div class="alert alert-warning" role="alert">
-    This is a allocation from an archived project! You cannot make any changes.
+    This is an allocation from an archived project! You cannot make any changes.
+  </div>
+{% elif allocation.status.name in 'Inactive,Denied' %}
+  <div class="alert alert-warning" role="alert">
+    This is an {{ allocation.status.name | lower }} allocation! You cannot make any changes.
   </div>
 {% endif %}
 <div id = "allocation">
@@ -120,8 +124,10 @@ Allocation Detail
             </tr>
             <tr>
                 <th  style="background-color:#D3D3D3" bordercolor="red" scope="row" class="text-nowrap">Total Amount Due:	</th>
-
-                <td style="background-color:#D3D3D3">${{allocation_quota_tb|mul:price|floatformat:2}}</td>
+                  {% cost_tb allocation_quota_tb as cost %}
+                  {% if cost %}
+                    <td style="background-color:#D3D3D3">{{ cost }}</td>
+                  {% endif %}
               </tr>
           <tr>
           <tr>
@@ -161,7 +167,7 @@ Allocation Detail
               {% if request.user.is_superuser %}
                 {{ form.description }}
               {% else %}
-                {{ allocation.description }}
+                {{ allocation.description|default_if_none:"" }}
               {% endif %}
             </td>
           </tr>
@@ -204,10 +210,10 @@ Allocation Detail
       {% if request.user.is_superuser %}
       <div class="float-right">
         {% if allocation.status.name == 'New' or allocation.status.name == 'Renewal Requested' %}
-          <a href="{% url 'allocation-activate-request' allocation.pk %}" class="btn btn-success mr-1 confirm-activate">Approve</a>
-          <a href="{% url 'allocation-deny-request' allocation.pk %}" class="btn btn-danger mr-1 confirm-deny">Deny</a>
+          <button type="submit" name="action" value="approve" class="btn btn-success mr-1 confirm-activate">Approve</button>
+          <button type="submit" name="action" value="deny" class="btn btn-danger mr-1 confirm-deny">Deny</button>
         {% endif %}
-        <button type="submit" class="btn btn-primary"><i class="fas fa-sync" aria-hidden="true"></i> Update</button>
+        <button type="submit" name="action" value="update" class="btn btn-primary"><i class="fas fa-sync" aria-hidden="true"></i> Update</button>
       {% endif %}
     </div>
     </form>
@@ -304,7 +310,6 @@ Allocation Detail
                   {% else %}
                     <td class="text-info">{{ change_request.status.name }}</td>
                   {% endif %}
-                  </td>
                   {% if change_request.notes %}
                     <td>{{change_request.notes}}</td>
                   {% else %}
@@ -331,6 +336,8 @@ Allocation Detail
     <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Users in Allocation</h3>
     <span class="badge badge-secondary">{{allocation_users.count}}</span>
     <div class="float-right">
+
+      {% comment %}
       {% if allocation.project.status.name != 'Archived' and is_allowed_to_update_project and allocation.status.name in 'Active,New,Renewal Requested' and request.user.is_superuser %}
         <a class="btn btn-success" href="{% url 'allocation-add-users' allocation.pk %}" role="button">
           <i class="fas fa-user-plus" aria-hidden="true"></i> Add Users
@@ -339,7 +346,7 @@ Allocation Detail
           <i class="fas fa-user-times" aria-hidden="true"></i> Remove Users
         </a>
       {% endif %}
-
+      {% endcomment %}
 
     </div>
   </div>
@@ -353,14 +360,10 @@ Allocation Detail
             <!-- <th scope="col">Username</th> -->
             <th scope="col">Name</th>
             <!-- <th scope="col">Email</th> -->
-            <!-- <th scope="col">Bytes</th> -->
-
             <th scope="col">Status</th>
             <th scope="col">Logical Usage</th>
             <th scope="col">Percentage Usage</th>
             <th scope="col">Cost Per User (TB/month)</th>
-
-
             <!-- <th scope="col">Status</th> -->
             <!-- <th scope="col">Last Modified</th> -->
           </tr>
@@ -370,7 +373,6 @@ Allocation Detail
         <tbody>
           {% for user in allocation_users %}
             <tr status = "{{ user.status }}">
-
               <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
 
               {% if user.status.name == 'Active' %}
@@ -390,7 +392,10 @@ Allocation Detail
               {% else %}
               <td>{{user.usage_bytes|div:allocation_usage_bytes|mul:100|floatformat:2 }}</td>
               {% endif %}
-              <td>{{user.usage_bytes|div:1099511627776|mul:price|floatformat:2}}</td>
+              {% cost_bytes user.usage_bytes as cost %}
+              {% if cost %}
+                <td>{{ cost }}</td>
+              {% endif %}
             </tr>
 
           {% endfor %}
@@ -407,7 +412,6 @@ Allocation Detail
             }
             document.getElementById('total').value = tot;
         }
-
         </script>
 
       </table>
@@ -468,52 +472,13 @@ Allocation Detail
 
       } );
   </script>
-<div class="html2pdf__page-break"></div>
-<!-- Start Admin Messages -->
-<div class="card mb-3">
-  <div class="card-header">
-    <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Notifications</h3>
-    <span class="badge badge-secondary">{{notes.count}}</span>
-    <div class="float-right">
-      {% if request.user.is_superuser %}
-        <a class="btn btn-success" href="{% url 'allocation-note-add' allocation.pk %}" role="button">
-          <i class="fas fa-plus" aria-hidden="true"></i> Add Notification
-        </a>
-      {% endif %}
-    </div>
-  </div>
-  <div class="card-body">
-    {% if notes %}
-      <div class="table-responsive">
-        <table class="table table-hover">
-          <thead>
-            <tr>
-              <th scope="col">Note</th>
-              <th scope="col">Administrator</th>
-              <th scope="col">Last Modified</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for note in notes %}
-              {% if not note.is_private or request.user.is_superuser %}
-                <tr>
-                  <td>{{ note.note }}</td>
-                  <td>{{ note.author.first_name }} {{ note.author.last_name }}</td>
-                  <td>{{ note.modified }}</td>
-                </tr>
-              {% endif %}
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    {% else %}
-      <div class="alert alert-info" role="alert">
-        <i class="fa fa-info-circle" aria-hidden="true"></i> There are no notes from system administrators.
-      </div>
-    {% endif %}
-  </div>
+  <div class="html2pdf__page-break"></div>
+  <!-- Start Admin Messages -->
+  {% note_table request.user 'allocation-note-add' allocation %}
+  <!-- End Admin Messages -->
+
 </div>
-</div>
+
 <script type="text/javascript">
 window.onload = function () {
     document.getElementById("download")
@@ -546,6 +511,12 @@ window.onload = function () {
         'aTargets': ['nosort']
       }]
     });
+    $('#allocationuser_table').DataTable({
+      'aoColumnDefs': [{
+        'bSortable': false,
+        'aTargets': ['nosort']
+      }]
+    });
   });
 
   function drawGauges(guage_data) {
@@ -562,7 +533,7 @@ window.onload = function () {
       });
     }
   }
-  $(".datepicker").datepicker({ dateFormat: 'yy-mm-dd' });
+  $(".datepicker").flatpickr();
   $(document).on('click', '.confirm-activate', function(){
     var attributes_num = {{ attributes | length }};
     if (attributes_num == 0) {

@@ -1,14 +1,13 @@
-{% extends "common/base.html" %}
-{% load crispy_forms_tags %}
-{% load static %}
-
+{% extends "list_view.html" %}
 
 {% block title %}
 Department List
 {% endblock %}
 
+{% block page_title %}Department Reports{% endblock %}
 
-{% block content %}
+
+{% block presearch %}
 <style>
 .button-container form,
 .button-container form div {
@@ -20,41 +19,33 @@ Department List
     vertical-align: middle;
 }
 </style>
-
-<h2>Department Reports</h2>
-<br/>
+{% endblock %}
 
 
-{% if department_list %}
-  <div class="table-responsive">
-    <table class="table table-sm">
-      <thead>
-        <tr>
-          <th scope="col">ID</th>
-          <th scope="col">Department</th>
-          <th scope="col">Rank</th>
-          <th scope="col">Number of Projects</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for department in department_list %}
-          <tr>
-            <td><a href="{% url 'department-detail' department.id %}">{{department.id}}</td>
-            <td>{{department.name}}</td>
-            <td>{{department.rank }}</td>
-            <td>{{department.project_count }}</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+{% block list_title %}Department{{count|pluralize}}: {{count}}{% endblock %}
 
-  </div>
+{% block table_contents %}
+<thead>
+  <tr>
+    <th scope="col">ID</th>
+    <th scope="col">Department</th>
+    <th scope="col">Rank</th>
+    <th scope="col">Number of Projects</th>
+  </tr>
+</thead>
+<tbody>
+  {% for department in item_list %}
+    <tr>
+      <td><a href="{% url 'department-detail' department.id %}">{{department.id}}</td>
+      <td>{{department.name}}</td>
+      <td>{{department.rank }}</td>
+      <td>{{department.project_count }}</td>
+    </tr>
+  {% endfor %}
+</tbody>
+{% endblock %}
 
-
-{% else %}
-  <div class="alert alert-info">
-    No departments visible!
-  </div>
-{% endif %}
-
+{% block activelink %}
+$("#navbar-project-menu").addClass("active");
+$("#navbar-department").addClass("active");
 {% endblock %}

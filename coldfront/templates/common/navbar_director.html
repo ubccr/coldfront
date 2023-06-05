@@ -3,9 +3,13 @@
   <div class="dropdown-menu">
     <a class="dropdown-item" href="{% url 'project-list' %}?show_all_projects=on">All Projects</a>
     <a class="dropdown-item" href="{% url 'allocation-list' %}?show_all_allocations=on">All Allocations</a>
+    {% if 'coldfront.core.department' in settings.INSTALLED_APPS %}
     <a class="dropdown-item" href="{% url 'department-list' %}?show_all_departments=on">All Departments</a>
+    {% endif %}
     <a class="dropdown-item" href="{% url 'resource-list' %}">All Resources</a>
     <a id="navbar-project-reviews" class="dropdown-item" href="{% url 'project-review-list' %}">Project Reviews</a>
+    {% if 'coldfront.core.grant' in settings.INSTALLED_APPS %}
     <a id="navbar-grant-report" class="dropdown-item" href="{% url 'grant-report' %}">Grant Report</a>
+    {% endif %}
   </div>
 </li>

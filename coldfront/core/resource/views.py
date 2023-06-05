@@ -1,17 +1,18 @@
 from django import forms
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
+from django.db.models.functions import Lower
 from django.forms import formset_factory
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
-from django.views.generic import TemplateView, ListView
+from django.views.generic import TemplateView
 from django.views.generic.edit import CreateView
 
-from coldfront.core.resource.forms import ResourceSearchForm, ResourceAttributeDeleteForm
+from coldfront.core.utils.views import ColdfrontListView
 from coldfront.core.resource.models import Resource, ResourceAttribute
+from coldfront.core.resource.forms import ResourceAttributeCreateForm, ResourceSearchForm, ResourceAttributeDeleteForm
 
 
 class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -59,7 +60,8 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
 class ResourceAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = ResourceAttribute
-    fields = '__all__'
+    form_class = ResourceAttributeCreateForm
+    # fields = '__all__'
     template_name = 'resource_resourceattribute_create.html'
 
     def test_func(self):
@@ -114,7 +116,6 @@ class ResourceAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Templ
              'name': attribute.resource_attribute_type.name,
              'value': attribute.value,
              }
-
             for attribute in resource_attributes_to_delete
         ]
 
@@ -162,36 +163,51 @@ class ResourceAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Templ
                         pk=form_data['pk'])
                     resource_attribute.delete()
 
-            messages.success(request, 'Deleted {} attributes from resource.'.format(
-                attributes_deleted_count))
+            messages.success(request,
+                    f'Deleted {attributes_deleted_count} attributes from resource.')
         else:
             for error in formset.errors:
                 messages.error(request, error)
 
         return HttpResponseRedirect(reverse('resource-detail', kwargs={'pk': pk}))
 
-class ResourceListView(LoginRequiredMixin, ListView):
+class ResourceListView(ColdfrontListView):
 
     model = Resource
     template_name = 'resource_list.html'
-    context_object_name = 'resource_list'
+    context_object_name = 'item_list'
     paginate_by = 25
+
+
+    def return_order(self):
+        order_by = self.request.GET.get('order_by', 'id')
+        direction = self.request.GET.get('direction', 'asc')
+        if order_by != 'name':
+            if direction == 'asc':
+                direction = ''
+            if direction == 'des':
+                direction = '-'
+            order_by = direction + order_by
+        return order_by
 
     def get_queryset(self):
 
-        order_by = self.request.GET.get('order_by')
-        if order_by:
-            direction = self.request.GET.get('direction')
-            direction = '-' if direction == 'des' else ''
-            order_by = direction + order_by
-        else:
-            order_by = 'id'
+        order_by = self.return_order()
 
         resource_search_form = ResourceSearchForm(self.request.GET)
 
+        if order_by == 'name':
+            direction = self.request.GET.get('direction')
+            if direction == 'asc':
+                resources = Resource.objects.all().order_by(Lower('name'))
+            elif direction == 'des':
+                resources = (Resource.objects.all().order_by(Lower('name')).reverse())
+            else:
+                resources = Resource.objects.all().order_by(order_by)
+        else:
+            resources = Resource.objects.all().order_by(order_by)
         if resource_search_form.is_valid():
             data = resource_search_form.cleaned_data
-            resources = Resource.objects.all().order_by(order_by)
 
             if data.get('show_allocatable_resources'):
                 resources = resources.filter(is_allocatable=True)
@@ -230,56 +246,9 @@ class ResourceListView(LoginRequiredMixin, ListView):
                     Q(resourceattribute__resource_attribute_type__name='Vendor') &
                     Q(resourceattribute__value=data.get('vendor'))
                 )
-        else:
-            resources = Resource.objects.all().order_by(order_by)
         return resources.distinct()
 
     def get_context_data(self, **kwargs):
-
-        context = super().get_context_data(**kwargs)
-        resources_count = self.get_queryset().count()
-        context['resources_count'] = resources_count
-
-        resource_search_form = ResourceSearchForm(self.request.GET)
-        if resource_search_form.is_valid():
-            context['resource_search_form'] = resource_search_form
-            data = resource_search_form.cleaned_data
-            filter_parameters = ''
-            for key, value in data.items():
-                if value:
-                    if isinstance(value, list):
-                        for ele in value:
-                            filter_parameters += '{}={}&'.format(key, ele)
-                    else:
-                        filter_parameters += '{}={}&'.format(key, value)
-            context['resource_search_form'] = resource_search_form
-        else:
-            filter_parameters = None
-            context['resource_search_form'] = ResourceSearchForm()
-
-        order_by = self.request.GET.get('order_by')
-        if order_by:
-            direction = self.request.GET.get('direction')
-            filter_parameters_with_order_by = filter_parameters + \
-                'order_by=%s&direction=%s&' % (order_by, direction)
-        else:
-            filter_parameters_with_order_by = filter_parameters
-
-        if filter_parameters:
-            context['expand_accordion'] = 'show'
-
-        context['filter_parameters'] = filter_parameters
-        context['filter_parameters_with_order_by'] = filter_parameters_with_order_by
-
-        resource_list = context.get('resource_list')
-        paginator = Paginator(resource_list, self.paginate_by)
-
-        page = self.request.GET.get('page')
-
-        try:
-            resource_list = paginator.page(page)
-        except PageNotAnInteger:
-            resource_list = paginator.page(1)
-        except EmptyPage:
-            resource_list = paginator.page(paginator.num_pages)
+        context = super().get_context_data(
+                            SearchFormClass=ResourceSearchForm, **kwargs)
         return context

@@ -1,4 +1,4 @@
-'''
+"""
 Identify AD Groups that do not have a corresponding ColdFront Project and add them.
 
 AD groups to be added are identified by the following criteria:
@@ -6,7 +6,7 @@ AD groups to be added are identified by the following criteria:
 - AD group has a manager who is a current AD User
 - AD group is not part of the ColdFront Project Groups
 - AD group name has a suffix of _lab or _l3
-'''
+"""
 import logging
 
 from django.core.management.base import BaseCommand

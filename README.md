@@ -1,28 +1,31 @@
+![ColdFront](docs/pages/images/logo-lg.png)
+
 # ColdFront - Resource Allocation System
 
 [![Documentation Status](https://readthedocs.org/projects/coldfront/badge/?version=latest)](https://coldfront.readthedocs.io/en/latest/?badge=latest)
 
-ColdFront is an open source resource allocation system designed to provide a
+ColdFront is an open source resource and allocation management system designed to provide a
 central portal for administration, reporting, and measuring scientific impact
-of HPC resources. ColdFront was created to help HPC centers manage access to a
-diverse set of resources across large groups of users and provide a rich set of
-extensible meta data for comprehensive reporting. ColdFront is written in
-Python and released under the GPLv3 license.
+of cyberinfrastructure resources. ColdFront was created to help high performance computing (HPC) centers manage access to a diverse set of resources across large groups of users and provide a rich set of
+extensible meta data for comprehensive reporting. The flexiblity of ColdFront allows centers to manage and automate their policies and procedures within the framework provided or extend the functionality with [plugins](docs/pages/index.md#extensibility).  ColdFront is written in Python and released under the GPLv3 license.
 
 ## Features
 
 - Allocation based system for managing access to resources
-- Collect Project, Grant, and Publication data from users
-- Define custom attributes on resources and allocations
+- Self-service portal for users to request access to resources for their research group
+- Collection of Project, Grant, and Publication data from users
+- Center director approval system and annual project review process
 - Email notifications for expiring/renewing access to resources
-- Integration with 3rd party systems for automation and access control
-- Center director approval system and annual project reviews
+- Ability to define custom attributes on resources and allocations 
+- Integration with 3rd party systems for automation, access control, and other system provisioning tasks
+
+[Read more](docs/pages/index.md)  
 
 ## Community Supported Plugins
 
 - [OpenStack Plugin](https://github.com/nerc-project/coldfront-plugin-openstack)
 - [Keycloak User Search](https://github.com/nerc-project/coldfront-plugin-keycloak)
-- [Starfish Plugin](https://github.com/fasrc/coldfront/tree/master/coldfront/plugins/sftocf)
+- [Starfish Plugin](https://github.com/fasrc/sftocf)
 
 _Submit a PR to add your plugin to the list above._
 

@@ -15,7 +15,7 @@
 {% load mathfilters %}
 {% load django_tables2 %}
 {% render_table table %}
-
+{% load common_tags %}
 
 {% block content %}
 
@@ -243,42 +243,9 @@
 </script>
 
 <div class="html2pdf__page-break"></div>
-<div class="card mb-3">
-    <div class="card-header">
-      <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Notes from Staff</h3>
-      <span class="badge badge-secondary">{{allocation.allocationusernote_set.count}}</span>
-    </div>
-    <div class="card-body">
-      {% if allocation.allocationusernote_set.all %}
-        <div class="table-responsive">
-          <table class="table table-hover">
-            <thead>
-              <tr>
-                <th scope="col">Comment</th>
-                <th scope="col">Author</th>
-                <th scope="col">Last Modified</th>
-                <th scope="col">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for note in allocation.allocationusernote_set.all %}
-                <tr>
-                  <td>{{ note.note }}</td>
-                  <td>{{ note.author.first_name }} {{ note.author.last_name }} ({{ note.author.username }})</td>
-                  <td>{{ note.modified }}</td>
-                  <td><a href="{% url 'allocation-update-invoice-note' note.pk %}"><i class="fas fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      {% else %}
-        <div class="alert alert-info" role="alert">
-          <i class="fa fa-info-circle" aria-hidden="true"></i> There are no messages from system administrators.
-        </div>
-      {% endif %}
-    </div>
-  </div>
+
+{% note_table request.user 'department-note-add' department %}
+
 </div>
 
 

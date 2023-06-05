@@ -8,6 +8,7 @@ from django.core.management.base import BaseCommand, CommandError
 from ipalib import api
 from ipalib.errors import NotFound
 
+from coldfront.plugins.freeipa.search import LDAPUserSearch
 from coldfront.core.allocation.models import Allocation, AllocationUser
 from coldfront.plugins.freeipa.utils import (CLIENT_KTNAME, FREEIPA_NOOP,
                                              UNIX_GROUP_ATTRIBUTE_NAME,
@@ -118,11 +119,11 @@ class Command(BaseCommand):
             logger.debug(result)
             freeipa_groups = [str(x) for x in result]
 
-            result = self.ifp.GetUserAttr(user.username, ["nsaccountlock"])
-            if 'nsAccountLock' in result and str(result['nsAccountLock'][0]) == 'TRUE':
-                freeipa_status = 'Disabled'
-            else:
+            users = self.ipa_ldap.search_a_user(user.username, "username_only")
+            if len(users) == 1:
                 freeipa_status = 'Enabled'
+            else:
+                freeipa_status = 'Disabled'
         except dbus.exceptions.DBusException as e:
             if 'No such user' in str(e) or 'NotFound' in str(e):
                 logger.warn("User %s not found in FreeIPA", user.username)
@@ -248,6 +249,7 @@ class Command(BaseCommand):
         if options['header']:
             self.write('\t'.join(header))
 
+        self.ipa_ldap = LDAPUserSearch("", "")
         bus = dbus.SystemBus()
         infopipe_obj = bus.get_object("org.freedesktop.sssd.infopipe", "/org/freedesktop/sssd/infopipe")
         self.ifp = dbus.Interface(infopipe_obj, dbus_interface='org.freedesktop.sssd.infopipe')

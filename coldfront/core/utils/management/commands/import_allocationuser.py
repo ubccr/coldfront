@@ -5,8 +5,7 @@ import logging
 
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
-from django.contrib.auth import get_user, get_user_model
-from django.core.management import call_command
+from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 
 from coldfront.core.allocation.models import (Allocation, AllocationAttribute,
@@ -14,13 +13,10 @@ from coldfront.core.allocation.models import (Allocation, AllocationAttribute,
                                               AllocationStatusChoice,
                                               AllocationUser,
                                               AllocationUserStatusChoice)
-from coldfront.core.field_of_science.models import FieldOfScience
-from coldfront.core.project.models import (Project, ProjectStatusChoice)
+from coldfront.core.project.models import Project
 from coldfront.core.resource.models import (Resource, )
 from coldfront.config.env import ENV
 
-from csv import reader
-from os import walk
 
 logger = logging.getLogger()
 
@@ -30,7 +26,6 @@ def splitString(str):
 
     alpha = ""
     num = ""
-    special = ""
     for i in range(len(str)):
         if (str[i].isdigit()):
             num = num+ str[i]
@@ -65,12 +60,12 @@ class Command(BaseCommand):
             default='tier0',
             help='Storage tier',
         )
-    
+
     def handle(self, *args, **options):
 
         LOCALDATA_ROOT = ENV.str('LOCALDATA_ROOT', default=base_dir)
-        storage = options['stoage'] 
-        tier = options['storagetier']  
+        storage = options['stoage']
+        tier = options['storagetier']
         resource_name = storage + '/' + tier
         print("Loading data for: " + resource_name)
         file_path = os.path.join(LOCALDATA_ROOT, 'local_data/',storage)
@@ -81,7 +76,7 @@ class Command(BaseCommand):
                 lab_name = lab[0]
                 print("Loading LAB: " +lab_name)
                 try:
-                    filtered_query = Project.objects.get(title = lab_name) # find project
+                    filtered_query = Project.objects.get(title=lab_name) # find project
                 except Project.DoesNotExist:
                     # raise Exception(f'Cannot find project {lab_name}')
                     print("Project not found")
@@ -107,11 +102,11 @@ class Command(BaseCommand):
                 #     end_date = datetime.datetime.now() + relativedelta(days=365)
 
                 # else: # found project
-                allocations = Allocation.objects.filter(project = filtered_query, resources__name=resource_name, status__name='Active')
-                if(allocations.count() == 0):
+                allocations = Allocation.objects.filter(project=filtered_query, resources__name=resource_name, status__name='Active')
+                if allocations.count() == 0:
                     print("creating allocation" + lab_name)
-                    project_obj = Project.objects.get(title = lab_name)
-                    if (project_obj != ""):
+                    project_obj = Project.objects.get(title=lab_name)
+                    if project_obj != "":
                         start_date = datetime.datetime.now()
                         end_date = datetime.datetime.now() + relativedelta(days=365)
                             # import allocations
@@ -125,8 +120,10 @@ class Command(BaseCommand):
                         allocation_obj.resources.add(
                             Resource.objects.get(name=resource_name))
                         allocation_obj.save()
-                        allocations = Allocation.objects.filter(project = filtered_query,resources__name=resource_name, status__name='Active')
-                
+                        allocations = Allocation.objects.filter(
+                            project=filtered_query,resources__name=resource_name,
+                            status__name='Active')
+
                 lab_data = data[0]
                 data = data[1:] # skip the usage information
 
@@ -163,17 +160,18 @@ class Command(BaseCommand):
                             allocation=allocation,
                             value = lab_allocation_in_tb_str)
                         allocation_attribute_type_obj.save()
-                    
+
 
                     allocation_attribute_obj.allocationattributeusage.value = lab_usage_in_tb
                     allocation_attribute_obj.allocationattributeusage.save()
-                    allocation_users = allocation.allocationuser_set.filter(status__name='Active').order_by('user__username')
+                    allocation_users = allocation.allocationuser_set.filter(
+                                status__name='Active').order_by('user__username')
 
                     user_json_dict = dict() #key: username, value paid: user_lst dictionary
                     # store every user from JSON in a dictionary
                     for user_lst in data: #user_lst is lst
                         user_json_dict[user_lst['user']] = user_lst
-                        
+
                     # checking my user_json_dictinary
                     # loop through my allocation_users set
                     for allocation_user in allocation_users:
@@ -208,7 +206,7 @@ class Command(BaseCommand):
 
                     for json_user in user_json_dict:
                         try:
-                            user_obj = get_user_model().objects.get(username = json_user)
+                            user_obj = get_user_model().objects.get(username=json_user)
                         except get_user_model().DoesNotExist:
                             print('Cannot find user: ' +json_user)
                             # fullname = user_json_dict[json_user]['name']

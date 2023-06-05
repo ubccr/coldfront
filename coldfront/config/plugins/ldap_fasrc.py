@@ -1,6 +1,6 @@
-'''
+"""
 FASRC-specific LDAP plugin settings
-'''
+"""
 from django.core.exceptions import ImproperlyConfigured
 
 from coldfront.config.env import ENV

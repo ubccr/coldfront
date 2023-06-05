@@ -2,6 +2,7 @@
 {% load crispy_forms_tags %}
 {% load humanize %}
 {% load static %}
+{% load common_tags %}
 
 
 {% block title %}
@@ -79,7 +80,7 @@ Project Detail
 <div class="card mb-3">
   <div class="card-header">
     <h3 class="d-inline"><i class="fas fa-file-invoice-dollar" aria-hidden="true"></i> Project Invoice</h3>
-    <span class="badge badge-secondary">{{allocations|length}}</span>
+    <span class="badge badge-secondary">{{allocations.count}}</span>
     <div class="float-right">
       {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
         <a class="btn btn-success" href="{% url 'allocation-create' project.pk %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i>
@@ -107,7 +108,7 @@ Project Detail
             <td>{{ allocation.get_parent_resource.name }}</td>
             <td>{{ allocation.get_parent_resource.resource_type.name }}</td>
             <td>{{ allocation.path }}</td>
-            <td>{{ allocation.allocation_users.count }}</td>
+            <td>{{ allocation.allocationuser_set.count }}</td>
             <td>{{ allocation.size|floatformat:1 }}</td>
             <td>${{allocation.cost|floatformat:2 }}</td>
             <td>
@@ -192,20 +193,20 @@ Project Detail
   </div>
   <div class="card-body">
     <div class="table-responsive">
-      <table id="projectusertable" class="table table-hover" filter="off">
+      <table id="projectuser_table" class="table table-hover" filter="off">
         <thead>
           <tr>
             <th scope="col">Username</th>
             <th scope="col">Name</th>
             <th scope="col">Email</th>
-            <th scope="col">Role <a href="#" data-toggle="popover" title="Role" data-trigger="hover" data-content="Manager role grants user access to add/remove users, allocations, grants, and publications to the project.">
+            <th scope="col" class="text-nowrap">Role <a href="#" data-toggle="popover" title="Role" data-trigger="hover" data-content="Manager role grants user access to add/remove users, allocations, grants, and publications to the project.">
               <i class="fas fa-info-circle" aria-hidden="true"></i>
               <span class="sr-only">Manager role grants user access to add/remove users, allocations, grants, and publications to the project.</span></a>
             </th>
-            <th scope="col">Status</th>
+            <th scope="col" class="text-nowrap">Status</th>
             <!-- This is what I want to add - a usage column; -->
-           <th scope="col">
-             <input type="checkbox" class="check" id="selectAll" style="margin-right: 5px;">Enable Notifications
+           <th scope="col" class="nosort">
+             <input type="checkbox" class="check" id="selectAll" style="margin-right: 5px;">Notifications On
                <a href="#" title="Enable Notifications" data-toggle="popover" data-trigger="hover" data-content="When disabled, user will not receive notifications for allocation requests and expirations or cloud usage (if applicable).">
                  <i class="fas fa-info-circle" aria-hidden="true"></i>
                  <span class="sr-only">When disabled, user will not receive notifications for allocation requests and expirations or cloud usage (if applicable).</span>
@@ -272,6 +273,73 @@ Project Detail
 </div>
 <!-- End Project Users -->
 
+<!-- Start Project Attributes -->
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Attributes</h3> <span class="badge badge-secondary">{{attributes.count}}</span>
+    <div class="float-right">
+      {% if project.status.name != 'Archived' and request.user.is_superuser %}
+        <a class="btn btn-success" href="{% url 'project-attribute-create' project.pk %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add Attribute</a>
+        {% if attributes %}
+          <a class="btn btn-danger" href="{% url 'project-attribute-delete' project.pk %}" role="button"><i class="fas fa-minus" aria-hidden="true"></i> Delete Attributes</a>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+  <div class="card-body">
+    {% if attributes %}
+      <div class="table-responsive">
+        <table id="attribute_table" class="table table-hover">
+          <thead>
+            <tr>
+              <th scope="col">Attribute Type</th>
+              <th scope="col">Attribute Value</th>
+              {% if is_allowed_to_update_project %}
+              <th scope="col" class="nosort">Actions</th>
+              {% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for attribute in attributes %}
+                {% if attribute.proj_attr_type.is_private and is_allowed_to_update_project %}
+                  <tr style="background-color:#eee">
+                    <td><i class="fas fa-lock" aria-hidden="true"></i> {{attribute}}</td>
+                    <td>{{attribute.value}}</td>
+                    <td><a href="{% url 'project-attribute-update' project.pk attribute.pk %}"><i class="far fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
+                  </tr>
+                {% else %}
+                  <tr>
+                    <td>{{attribute}}</td>
+                    <td>
+                      {{attribute.value}}
+                    </td>
+                    {% if is_allowed_to_update_project %}
+                    <td><a href="{% url 'project-attribute-update' project.pk attribute.pk %}"><i class="far fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
+                    {% endif %}
+                  </tr>
+                {% endif %}
+              {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if attributes_with_usage %}
+      <hr>
+      {% for attribute in attributes_with_usage %}
+        <div class="card mb-3 mr-1">
+          <div class="card-body">
+            <h4 class="card-title">{{attribute}}</h4>
+            <div id="gauge-{{forloop.counter0}}"></div>
+          </div>
+        </div>
+      {% endfor %}
+      {% endif %}
+    {% else %}
+      <div class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i> There are no attributes to display.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- End Project Attributes -->
 
 <!-- Start Project Grants -->
 <div style="display:none" class="card mb-3">
@@ -433,46 +501,7 @@ Project Detail
 
 
 <!-- Start Admin Messages -->
-<div class="card mb-3">
-  <div class="card-header">
-    <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Notifications </h3> <span class="badge badge-secondary">{{project.projectusermessage_set.count}}</span>
-    <div class="float-right">
-      {% if request.user.is_superuser %}
-        <a class="btn btn-success" href="{% url 'project-note-add' project.pk %}" role="button">
-          <i class="fas fa-plus" aria-hidden="true"></i> Add Notification
-        </a>
-      {% endif %}
-    </div>
-  </div>
-  <div class="card-body">
-    {% if project.projectusermessage_set.all %}
-      <div class="table-responsive">
-        <table class="table table-hover">
-          <thead>
-            <tr>
-              <th scope="col">Comment</th>
-              <th scope="col">Administrator</th>
-              <th scope="col">Last Modified</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for message in project.projectusermessage_set.all %}
-              {% if not message.is_private or request.user.is_superuser %}
-            <tr>
-              <td>{{ message.message }}</td>
-              <td>{{ message.author.first_name }} {{ message.author.last_name }}</td>
-              <td>{{ message.modified }}</td>
-            </tr>
-              {% endif %}
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    {% else %}
-      <div class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i> There are no messages from system administrators.</div>
-    {% endif %}
-  </div>
-</div>
+{% note_table request.user 'project-note-add' project %}
 <!-- End Admin Messages -->
 
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.24/af-2.3.5/b-1.7.0/b-colvis-1.7.0/b-html5-1.7.0/b-print-1.7.0/cr-1.5.3/date-1.0.2/fc-3.3.2/kt-2.6.1/r-2.2.7/rg-1.1.2/rr-1.2.7/sl-1.3.2/datatables.min.css"/>
@@ -535,6 +564,9 @@ Project Detail
 
     $('[data-toggle="popover"]').popover();
 
+    var guage_data = {{ guage_data | safe }};
+    drawGauges(guage_data);
+
     $('#publication-table').DataTable({
       "aLengthMenu": [
         [10, 25, 50, 100, -1],
@@ -544,21 +576,25 @@ Project Detail
       "order": [[ 1, "desc" ]]
     });
 
-    $('#projectusertable').DataTable({
-     "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
-     "pageLength": 25,
-     dom: 'B<"clear">lfrtip',
-     order: [[ 3, "desc" ]],
-     buttons: [
+    $('#projectuser_table').DataTable({
+       'lengthMenu': [[10, 25, 50, -1], [10, 25, 50, 'All']],
+       'pageLength': 25,
+       'aoColumnDefs': [{
+         'bSortable': false,
+         'aTargets': ['nosort']
+       }],
+       dom: 'B<"clear">lfrtip',
+       order: [[ 3, "desc" ]],
+       buttons: [
         {
           name: 'toggleusers',
           text: function() {
-              return $('#projectusertable').attr('filter') == "on" ? 'Show All Users' : "Show Active Users"
+              return $('#projectuser_table').attr('filter') == "on" ? 'Show All Users' : "Show Active Users"
             },
           action: function(e, dt, node, config) {
-            var table = $('#projectusertable');
+            var table = $('#projectuser_table');
             var filter = table.attr('filter') === "on" ? 'off' : "on";
-            document.querySelector('#projectusertable').setAttribute('filter', filter);
+            document.querySelector('#projectuser_table').setAttribute('filter', filter);
             if (filter == 'on') {
               $.fn.dataTable.ext.search.push(
                 function(settings, data, dataIndex) {
@@ -612,5 +648,20 @@ Project Detail
       });
     });
   });
+
+  function drawGauges(guage_data) {
+    var arrayLength = guage_data.length;
+    for (var i = 0; i < arrayLength; i++) {
+      c3.generate({
+        bindto: '#gauge-' + i,
+        data: guage_data[i],
+        legend: {
+          item: {
+            onclick: function (id) { }
+          }
+        }
+      });
+    }
+  }
 </script>
 {% endblock %}

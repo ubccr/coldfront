@@ -14,7 +14,7 @@ def set_allocation_user_status_to_error(allocation_user_pk):
 
 def generate_guauge_data_from_usage(name, value, usage):
 
-    label = "%s: %.2f of %.2f" % (name, usage, value)
+    label = '%s: %.2f of %.2f' % (name, usage, value)
 
     try:
         percent = (usage/value)*100
@@ -24,18 +24,18 @@ def generate_guauge_data_from_usage(name, value, usage):
         percent = 100
 
     if percent < 80:
-        color = "#6da04b"
+        color = '#6da04b'
     elif 80 <= percent < 90:
-        color = "#ffc72c"
+        color = '#ffc72c'
     else:
-        color = "#e56a54"
+        color = '#e56a54'
 
     usage_data = {
-        "columns": [
+        'columns': [
             [label, percent],
         ],
-        "type": 'gauge',
-        "colors": {
+        'type': 'gauge',
+        'colors': {
             label: color
         }
     }

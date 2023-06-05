@@ -35,7 +35,7 @@ svp = read_json('coldfront/plugins/sftocf/servers.json')
 
 
 def record_process(func):
-    '''Wrapper function for logging'''
+    """Wrapper function for logging"""
     def call(*args, **kwargs):
         funcdata = '{} {}'.format(func.__name__, func.__code__.co_firstlineno)
         logger.debug('\n%s START.', funcdata)
@@ -46,8 +46,8 @@ def record_process(func):
 
 
 class StarFishServer:
-    '''Class for interacting with StarFish API.
-    '''
+    """Class for interacting with StarFish API.
+    """
 
     def __init__(self, server):
         self.name = server
@@ -58,8 +58,8 @@ class StarFishServer:
 
     @record_process
     def get_auth_token(self):
-        '''Obtain a token through the auth endpoint.
-        '''
+        """Obtain a token through the auth endpoint.
+        """
         username = import_from_settings('SFUSER')
         password = import_from_settings('SFPASS')
         auth_url = self.api_url + 'auth/'
@@ -74,8 +74,8 @@ class StarFishServer:
     # 2A. Generate list of volumes to search, along with top-level paths
     @record_process
     def get_volume_names(self):
-        '''Generate a list of the volumes available on the server.
-        '''
+        """Generate a list of the volumes available on the server.
+        """
         url = self.api_url + 'storage/'
         response = return_get_json(url, self.headers)
         volnames = [i['name'] for i in response['items']]
@@ -97,8 +97,8 @@ class StarFishServer:
         return response
 
     def get_scans(self):
-        '''Collect scans of all volumes in Coldfront
-        '''
+        """Collect scans of all volumes in Coldfront
+        """
         volumes = '&'.join([f'volume={volume}' for volume in self.get_volumes_in_coldfront()])
         url = self.api_url + 'scan/?' + volumes
         r = requests.get(url, headers=self.headers)
@@ -106,9 +106,9 @@ class StarFishServer:
         return response
 
     def get_most_recent_scans(self):
-        '''Narrow scan data to the most recent and last successful scan for each
+        """Narrow scan data to the most recent and last successful scan for each
         Coldfront volume.
-        '''
+        """
         scans_narrowed = []
         scans = self.get_scans()
         volumes = self.get_volumes_in_coldfront()
@@ -125,7 +125,7 @@ class StarFishServer:
 
     @record_process
     def get_subpaths(self, volpath):
-        '''Generate list of directories in top layer of designated volpath.
+        """Generate list of directories in top layer of designated volpath.
 
         Parameters
         ----------
@@ -135,7 +135,7 @@ class StarFishServer:
         Returns
         -------
         subpaths : list of strings
-        '''
+        """
         getsubpaths_url = self.api_url + 'storage/' + volpath
         request = return_get_json(getsubpaths_url, self.headers)
         pathdicts = request['items']
@@ -143,7 +143,7 @@ class StarFishServer:
         return subpaths
 
     def create_query(self, query, group_by, volpath, sec=3):
-        '''Produce a Query class object.
+        """Produce a Query class object.
         Parameters
         ----------
         query : string
@@ -154,7 +154,7 @@ class StarFishServer:
         Returns
         -------
         query : Query class object
-        '''
+        """
         query = AsyncQuery(
             self.headers, self.api_url, query, group_by, volpath, sec=sec
         )
@@ -188,8 +188,8 @@ class StarFishRedash:
 
 
     def submit_query(self, queryname):
-        '''submit a query and return a json of the results.
-        '''
+        """submit a query and return a json of the results.
+        """
         query = self.queries[queryname]
         query_url = f'{self.base_url}queries/{query[0]}/results?api_key={query[1]}'
         result = return_get_json(query_url, headers={})
@@ -206,8 +206,8 @@ class StarFishRedash:
 
 
     def return_query_results(self, query='path_usage_query', volumes=None):
-        '''
-        '''
+        """
+        """
         result = self.submit_query(query)
         # print(result)
         if result['query_result']:
@@ -230,7 +230,7 @@ class AsyncQuery:
 
     @record_process
     def post_async_query(self, query, group_by, volpath, q_format='parent_path +rec_aggrs'):
-        '''Post an async query to the Starfish API.'''
+        """Post an async query to the Starfish API."""
         query_url = self.api_url + 'async/query/'
 
         params = {
@@ -272,7 +272,7 @@ class AsyncQuery:
 
 @record_process
 def produce_lab_dict(vol):
-    '''Create dict of labs to collect and the volumes/tiers associated with them.
+    """Create dict of labs to collect and the volumes/tiers associated with them.
     Parameters
     ----------
     vol : string
@@ -283,7 +283,7 @@ def produce_lab_dict(vol):
     labs_resources: dict
         Structured as follows:
         'lab_name': [('volume', 'tier'),('volume', 'tier')]
-    '''
+    """
     pr_objs = Allocation.objects.only('id', 'project')
     pr_dict = {alloc.project.title: [] for alloc in pr_objs}
     for alloc in pr_objs:
@@ -296,7 +296,7 @@ def produce_lab_dict(vol):
 
 
 def check_volume_collection(lr, homepath='./coldfront/plugins/sftocf/data/'):
-    '''
+    """
     for each lab-resource combination in parameter lr, check existence of
     corresponding file in data path. If a file for that lab-resource combination
     that is <2 days old exists, mark it as collected. If not, slate lab-resource
@@ -313,7 +313,7 @@ def check_volume_collection(lr, homepath='./coldfront/plugins/sftocf/data/'):
         List of lab usage files that have already been created.
     to_collect : list
         list of tuples - (labname, volume, tier, filename)
-    '''
+    """
     filepaths = []
     to_collect = []
     labs_resources = [(l, res[0], res[1]) for l, r in lr.items() for res in r]
@@ -337,9 +337,9 @@ def check_volume_collection(lr, homepath='./coldfront/plugins/sftocf/data/'):
 
 
 def pull_sf(volume=None):
-    '''Query Starfish to produce json files of lab usage data.
+    """Query Starfish to produce json files of lab usage data.
     Return a set of produced filepaths.
-    '''
+    """
     # 1. produce dict of all labs to be collected and the volumes on which their data is located
     lr = produce_lab_dict(volume)
     # 2. produce list of files that have been collected and list of lab/volume/filename tuples to collect
@@ -390,8 +390,8 @@ def push_cf(content):
 
 
 def update_user_usage(user, usage_bytes, usage, unit, allocation):
-    '''get or create an allocationuser object with updated usage values
-    '''
+    """get or create an allocationuser object with updated usage values
+    """
     allocationuser, created = allocation.allocationuser_set.get_or_create(
             user=user,
             defaults={
@@ -419,7 +419,7 @@ def return_get_json(url, headers):
 
 @record_process
 def collect_starfish_usage(server, volume, volumepath, projects):
-    '''
+    """
     Parameters
     ----------
     server : object
@@ -430,7 +430,7 @@ def collect_starfish_usage(server, volume, volumepath, projects):
     Returns
     -------
     filepaths : list of strings
-    '''
+    """
     filepaths = []
     datestr = datetime.today().strftime('%Y%m%d')
     locate_or_create_dirpath('./coldfront/plugins/sftocf/data/')
@@ -498,8 +498,8 @@ def clean_dirs_data(data):
     return data2
 
 def generate_headers(token):
-    '''Generate 'headers' attribute by using the 'token' attribute.
-    '''
+    """Generate 'headers' attribute by using the 'token' attribute.
+    """
     headers = {
         'accept': 'application/json',
         'Authorization': 'Bearer {}'.format(token),
@@ -507,10 +507,10 @@ def generate_headers(token):
     return headers
 
 def zero_out_absent_allocationusers(redash_usernames, allocation):
-    '''
+    """
     Find AllocationUsers that aren't in the StarfishRedash usage
     stats and change their usage to 0.
-    '''
+    """
     allocationusers_not_in_redash = allocation.allocationuser_set.exclude(
                                     user__username__in=redash_usernames)
     if allocationusers_not_in_redash:
@@ -527,7 +527,7 @@ def update_usage_attr(allocation, usage_attribute_type, usage_value):
 
 
 class AllocationQueryMatch:
-    '''class to hold Allocations and related query results together.'''
+    """class to hold Allocations and related query results together."""
     def __new__(cls, allocation, total_usage_entries, user_usage_entries):
         allocation_data = (allocation.pk, allocation.project.title)
         message = None
@@ -570,17 +570,17 @@ class AllocationQueryMatch:
         return usage
 
     def users_in_list(self, username_list):
-        '''return usage entries for users with usernames in the provided list'''
+        """return usage entries for users with usernames in the provided list"""
         return [u for u in self.user_usage_entries if u['user_name'] in username_list]
 
     def users_not_in_list(self, username_list):
-        '''return usage entries for users with usernames not in the provided list'''
+        """return usage entries for users with usernames not in the provided list"""
         return [u for u in self.user_usage_entries if u['user_name'] not in username_list]
 
 def return_dict_of_groupings(dict_list, sort_key):
-    '''Given a list of dicts, return a dict of lists of dicts grouped by the
+    """Given a list of dicts, return a dict of lists of dicts grouped by the
     key(s) given in sort_key.
-    '''
+    """
     grouped = groupby(sorted(dict_list, key=sort_key), key=sort_key)
     return {k: list(g) for k, g in grouped}
 
@@ -592,7 +592,7 @@ def match_allocations_with_usage_entries(allocations, user_usage, allocation_usa
 
     total_sort_key = itemgetter('path','vol_name')
     allocation_usage_grouped = return_dict_of_groupings(allocation_usage, total_sort_key)
-    missing_allocations = [a for k, a in allocation_usage_grouped if k not in allocation_list]
+    missing_allocations = [(k,a) for k, a in allocation_usage_grouped if k not in allocation_list]
 
     user_usage = [user for user in user_usage if user['lab_path'] is not None]
     user_sort_key = itemgetter('lab_path','vol_name')
@@ -610,12 +610,12 @@ def match_allocations_with_usage_entries(allocations, user_usage, allocation_usa
 
 
 def pull_sf_push_cf_redash():
-    '''Query Starfish Redash API for usage data and update Coldfront AllocationUser entries.
+    """Query Starfish Redash API for usage data and update Coldfront AllocationUser entries.
     Only updates Allocations that are already in Coldfront.
     Log:
     - users missing from IFX who use allocations that are in in Coldfront
     - instances of Allocations that don't return usage data from Starfish
-    '''
+    """
     # 1. grab data from redash
     starfish_server = StarFishServer(STARFISH_SERVER)
     vols_to_collect = starfish_server.get_volumes_in_coldfront()

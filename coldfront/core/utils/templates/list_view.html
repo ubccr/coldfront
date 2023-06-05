@@ -1,0 +1,124 @@
+{% extends "common/base.html" %}
+{% load common_tags %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Item List
+{% endblock %}
+
+
+{% block content %}
+
+<h2>{% block page_title %}Items{% endblock %}</h2>
+<hr>
+
+{% block presearch %}{% endblock %}
+
+{% block search %}
+<div class="mb-3" id="accordion">
+  <div class="card">
+    <div class="card-header">
+      <a id="expand_button" role="button" class="card-link " data-toggle="collapse" href="#collapseOne">
+        <i class="fas fa-filter" aria-hidden="true"></i> Filter
+        <i id="plus_minus" class="fas {{expand_accordion|get_icon}} float-right"></i>
+      </a>
+    </div>
+    <div id="collapseOne" class="collapse {{expand_accordion}}" data-parent="#accordion">
+      <div class="card-body">
+        <form id="filter_form" method="GET" action="{{ request.path }}" autocomplete="off">
+          {{ search_form|crispy }}
+          <input type="submit" class="btn btn-primary" value="Search">
+          <button id="form_reset_button" type="button" class="btn btn-secondary">Reset</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<hr>
+{% endblock %}
+
+{% if item_list %}
+<strong>{% block list_title %}List Title{% endblock %}</strong>
+
+  <div class="table-responsive">
+    <table id="itemtable" class="table table-sm">
+      {% block table_contents %}{% endblock %}
+    </table>
+
+    {% if is_paginated %} Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+      <ul class="pagination float-right mr-3">
+        {% if page_obj.has_previous %}
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{filter_parameters_with_order_by}}">Previous</a></li>
+        {% else %}
+          <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
+        {% endif %}
+        {% if page_obj.has_next %}
+          <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{filter_parameters_with_order_by}}">Next</a></li>
+        {% else %}
+          <li class="page-item disabled"><a class="page-link" href="#">Next</a></li>
+        {% endif %}
+      </ul>
+    {% endif %}
+  </div>
+{% elif expand_accordion == "show" %}
+  <div class="alert alert-secondary">
+    No search results!
+  </div>
+{% else %}
+  <div class="alert alert-secondary">
+    Nothing to display!
+  </div>
+{% endif %}
+<script type="text/javascript" src="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.24/af-2.3.5/b-1.7.0/b-colvis-1.7.0/b-html5-1.7.0/b-print-1.7.0/cr-1.5.3/date-1.0.2/fc-3.3.2/kt-2.6.1/r-2.2.7/rg-1.1.2/rr-1.2.7/sl-1.3.2/datatables.min.js"></script>
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.24/af-2.3.5/b-1.7.0/b-colvis-1.7.0/b-html5-1.7.0/b-print-1.7.0/cr-1.5.3/date-1.0.2/fc-3.3.2/kt-2.6.1/r-2.2.7/rg-1.1.2/rr-1.2.7/sl-1.3.2/datatables.min.css"/>
+
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  {% block activelink %}{% endblock %}
+  $(".datepicker").flatpickr();
+
+  $(document).on('click', '#form_reset_button', function() {
+    resetForm($('#filter_form'));
+  });
+
+  $("#expand_button").click(function() {
+    $('#collapseOne').collapse();
+    icon = $("#plus_minus");
+    icon.toggleClass("fa-plus fa-minus");
+  });
+
+  function resetForm($form) {
+    $form.find('input:text, input:password, input:file, select, textarea').val('');
+    $form.find('input:radio, input:checkbox').removeAttr('checked').removeAttr('selected');
+  };
+
+
+  $(document).ready(
+  function () {
+  $('#itemtable').DataTable({
+    lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
+    pageLength: 25,
+    // ordering: false,
+    dom: 'B<"clear">lrtip',
+    order: [[ 3, "desc" ]],
+    {% if user.is_superuser %}
+    buttons: [
+      {
+        name: 'primary',
+        extend: 'collection',
+        background: false,
+        autoClose: true,
+        text: 'Export',
+        buttons: [ 'csv', 'excel', 'pdf' ]
+
+        }
+    ]
+    {% endif %}
+  }
+  );
+
+  } );
+</script>
+{% endblock %}

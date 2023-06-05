@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
 
-'''
+"""
 Views
-'''
+"""
 import os
 from datetime import datetime
 
 import pandas as pd
 from django.http import Http404
 from django.db.models import Count
-from django.shortcuts import render
 from django.views.generic.base import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 
@@ -21,12 +20,12 @@ if ENV.bool('PLUGIN_SFTOCF', default=False):
     from coldfront.plugins.sftocf.utils import STARFISH_SERVER, StarFishServer
 
 class MonitorView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
-    '''
-    '''
+    """
+    """
     template_name = 'monitor.html'
 
     def test_func(self):
-        '''UserPassesTestMixin Tests'''
+        """UserPassesTestMixin Tests"""
         if self.request.user.is_superuser:
             return True
         raise Http404

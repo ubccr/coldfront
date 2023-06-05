@@ -6,26 +6,68 @@ from simple_history.models import HistoricalRecords
 
 from coldfront.core.project.models import Project
 
-
 class GrantFundingAgency(TimeStampedModel):
-    name = models.CharField(max_length=255)
+    """ A grant funding agency is an agency that funds projects. Examples include Department of Defense (DoD) and National Aeronautics and Space Administration (NASA).
+
+    Attributes:
+        name (str): agency name
+    """
+
+    class GrantFundingAgencyManager(models.Manager):
+        def get_by_natural_key(self, name):
+            return self.get(name=name)
+
+    name = models.CharField(max_length=255, unique=True)
+    objects = GrantFundingAgencyManager()
 
     def __str__(self):
         return self.name
 
+    def natural_key(self):
+        return [self.name]
 
 class GrantStatusChoice(TimeStampedModel):
-    name = models.CharField(max_length=64)
+    """ A grant status choice is an option a user has when setting the status of a grant. Examples include Active, Archived, and Pending.
 
-    def __str__(self):
-        return self.name
-
+    Attributes:
+        name (str): status name
+    """
     class Meta:
         ordering = ('name',)
 
+    class GrantStatusManager(models.Manager):
+        def get_by_natural_key(self, name):
+            return self.get(name=name)
+
+    name = models.CharField(max_length=64, unique=True)
+    objects = GrantStatusManager()
+
+    def __str__(self):
+        return self.name
+
+    def natural_key(self):
+        return [self.name]
 
 class Grant(TimeStampedModel):
-    """ Grant model """
+    """ A grant is funding that a PI receives for their project.
+
+    Attributes:
+        project (Project): links the project to the grant
+        title (str): grant title
+        grant_number (str): grant number from agency used for identification
+        role (str): role of the user in charge of the grant
+        grant_pi_full_name (str): PI's name
+        funding_agency (GrantFundingAgency): represents the agency funding the grant
+        other_funding_agency (GrantFundingAgency): optional field indicating any other agency that funded the grant
+        other_award_number (str): indicates an alternate grant ID number that a PI might have for an award
+        grant_start (Date): represents grant start date
+        grant_end (Date): represents the grant end date
+        percent_credit (float): indicates how much of the grant is awarded as credit
+        direct_funding (float): indicates how much of the grant is directly funded
+        total_amount_awarded (float): indicates the total amount awarded
+        status (GrantStatusChoice): represents the status of the grant
+    """
+
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     title = models.CharField(
         validators=[MinLengthValidator(3), MaxLengthValidator(255)],
@@ -59,6 +101,11 @@ class Grant(TimeStampedModel):
 
     @property
     def grant_pi(self):
+        """
+        Returns:
+            str: the grant's PI's full name
+        """
+
         if self.role == 'PI':
             return '{} {}'.format(self.project.pi.first_name, self.project.pi.last_name)
         return self.grant_pi_full_name

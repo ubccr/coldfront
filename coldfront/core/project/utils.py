@@ -1,6 +1,5 @@
 from datetime import date
 
-from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.db.models import Q
 from ifxbilling.models import BillingRecord
 
@@ -28,14 +27,14 @@ def add_project_user_status_choices(apps, schema_editor):
         ProjectUserStatusChoice.objects.get_or_create(name=choice)
 
 def generate_usage_history_graph(project):
-    '''Create a Project billing record graph.
+    """Create a Project billing record graph.
 
     Returns
     -------
     data : dict
         contains
         columns : list
-    '''
+    """
     current_year = date.today().year
     previous_year = current_year - 1
     current_month = date.today().month

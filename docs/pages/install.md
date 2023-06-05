@@ -12,7 +12,7 @@ ColdFront releases can be downloaded from
 
 ## Requirements
 
-ColdFront requires Python 3.6.
+ColdFront requires Python 3+
 
 ## Installation Methods
 
@@ -102,6 +102,8 @@ Run the command below to create a new super user account:
 ```
 $ coldfront createsuperuser
 ```
+!!! Tip  
+    This command should prompt you to select a username, password, and email address for your super user account.  
 
 ## Running ColdFront server
 

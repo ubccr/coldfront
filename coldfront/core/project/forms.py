@@ -1,9 +1,10 @@
 import datetime
 
 from django import forms
+from django.db.models.functions import Lower
 from django.shortcuts import get_object_or_404
 
-from coldfront.core.project.models import (Project, ProjectReview,
+from coldfront.core.project.models import (Project, ProjectAttribute, ProjectReview,
                                            ProjectUserRoleChoice)
 from coldfront.core.utils.common import import_from_settings
 
@@ -17,10 +18,14 @@ EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
 class ProjectSearchForm(forms.Form):
     """ Search form for the Project list page.
     """
+    PROJECT_TITLE = 'Project Title'
     LAST_NAME = 'Last Name'
     USERNAME = 'Username'
     FIELD_OF_SCIENCE = 'Field of Science'
 
+    title = forms.CharField(
+        label = PROJECT_TITLE, max_length=100, required=False
+        )
     last_name = forms.CharField(
         label=LAST_NAME, max_length=100, required=False)
     username = forms.CharField(label=USERNAME, max_length=100, required=False)
@@ -31,7 +36,7 @@ class ProjectSearchForm(forms.Form):
 
 class ProjectAddUserForm(forms.Form):
     username = forms.CharField(max_length=150, disabled=True)
-    first_name = forms.CharField(max_length=30, required=False, disabled=True)
+    first_name = forms.CharField(max_length=150, required=False, disabled=True)
     last_name = forms.CharField(max_length=150, required=False, disabled=True)
     email = forms.EmailField(max_length=100, required=False, disabled=True)
     source = forms.CharField(max_length=16, disabled=True)
@@ -52,9 +57,11 @@ class ProjectAddUsersToAllocationForm(forms.Form):
             resources__is_allocatable=True, is_locked=False, status__name__in=['Active', 'New', 'Renewal Requested', 'Payment Pending', 'Payment Requested', 'Paid'])
         allocation_choices = [(allocation.id, "%s (%s) %s" % (allocation.get_parent_resource.name, allocation.get_parent_resource.resource_type.name,
                                                               allocation.description if allocation.description else '')) for allocation in allocation_query_set]
+        allocation_choices_sorted = []
+        allocation_choices_sorted = sorted(allocation_choices, key=lambda x: x[1][0].lower())
         allocation_choices.insert(0, ('__select_all__', 'Select All'))
         if allocation_query_set:
-            self.fields['allocation'].choices = allocation_choices
+            self.fields['allocation'].choices = allocation_choices_sorted
             self.fields['allocation'].help_text = '<br/>Select allocations to add selected users to.'
         else:
             self.fields['allocation'].widget = forms.HiddenInput()
@@ -62,7 +69,7 @@ class ProjectAddUsersToAllocationForm(forms.Form):
 
 class ProjectRemoveUserForm(forms.Form):
     username = forms.CharField(max_length=150, disabled=True)
-    first_name = forms.CharField(max_length=30, required=False, disabled=True)
+    first_name = forms.CharField(max_length=150, required=False, disabled=True)
     last_name = forms.CharField(max_length=150, required=False, disabled=True)
     email = forms.EmailField(max_length=100, required=False, disabled=True)
     role = forms.CharField(max_length=30, disabled=True)
@@ -123,3 +130,64 @@ class ProjectReviewEmailForm(forms.Form):
             project_review_obj.project.pi.first_name, project_review_obj.project.pi.last_name, EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL)
         self.fields['cc'].initial = ', '.join(
             [EMAIL_DIRECTOR_EMAIL_ADDRESS] + EMAIL_ADMIN_LIST)
+
+class ProjectAttributeAddForm(forms.ModelForm):
+    class Meta:
+        fields = '__all__'
+        model = ProjectAttribute
+        labels = {
+            'proj_attr_type' : "Project Attribute Type",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super(ProjectAttributeAddForm, self).__init__(*args, **kwargs)
+        user =(kwargs.get('initial')).get('user')
+        self.fields['proj_attr_type'].queryset = self.fields['proj_attr_type'].queryset.order_by(Lower('name'))
+        if not user.is_superuser:
+            self.fields['proj_attr_type'].queryset = self.fields['proj_attr_type'].queryset.filter(is_private=False)
+
+class ProjectAttributeDeleteForm(forms.Form):
+    pk = forms.IntegerField(required=False, disabled=True)
+    name = forms.CharField(max_length=150, required=False, disabled=True)
+    attr_type = forms.CharField(max_length=150, required=False, disabled=True)
+    value = forms.CharField(max_length=150, required=False, disabled=True)
+    selected = forms.BooleanField(initial=False, required=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['pk'].widget = forms.HiddenInput()
+
+# class ProjectAttributeChangeForm(forms.Form):
+#     pk = forms.IntegerField(required=False, disabled=True)
+#     name = forms.CharField(max_length=150, required=False, disabled=True)
+#     value = forms.CharField(max_length=150, required=False, disabled=True)
+#     new_value = forms.CharField(max_length=150, required=False, disabled=False)
+
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         self.fields['pk'].widget = forms.HiddenInput()
+
+#     def clean(self):
+#         cleaned_data = super().clean()
+
+#         if cleaned_data.get('new_value') != "":
+#             proj_attr = ProjectAttribute.objects.get(pk=cleaned_data.get('pk'))
+#             proj_attr.value = cleaned_data.get('new_value')
+#             proj_attr.clean()
+
+
+class ProjectAttributeUpdateForm(forms.Form):
+    pk = forms.IntegerField(required=False, disabled=True)
+    new_value = forms.CharField(max_length=150, required=True, disabled=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['pk'].widget = forms.HiddenInput()
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        if cleaned_data.get('new_value') != "":
+            proj_attr = ProjectAttribute.objects.get(pk=cleaned_data.get('pk'))
+            proj_attr.value = cleaned_data.get('new_value')
+            proj_attr.clean()

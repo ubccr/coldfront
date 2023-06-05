@@ -47,7 +47,7 @@ Project User Detail
               <td>{{project_user_obj.role}}</td>
             </tr>
             <tr>
-              <th scope="row">Notifications Enabled:</th>
+              <th scope="row">Notifications On:</th>
               <td>{{project_user_obj.enable_notifications|yesno:"Yes,No"}}</td>
             </tr>
           {% else %}
@@ -56,13 +56,13 @@ Project User Detail
               <td>{{project_user_update_form.role}}</td>
             </tr>
             <tr>
-              <th scope="row">Enable Notifications:</th>
+              <th scope="row">Notifications On:</th>
               <td>{{project_user_update_form.enable_notifications}}</td>
             </tr>
           {% endif %}
         </table>
       </div>
-    </div> 
+    </div>
     <div class="card-footer">
       {% if project_user_obj.user != project_user_obj.project.pi %}
         <button type="submit" class="btn btn-primary">Update</button>

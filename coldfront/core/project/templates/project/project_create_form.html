@@ -9,7 +9,8 @@ Create Project
 
 
 {% block content %}
-{% comment %}
+<h2>Creating a new Project</h2>
+
  <form method="post">
   {% csrf_token %}
   {{ form|crispy }}
@@ -22,5 +23,4 @@ Create Project
     $('#id_field_of_science').select2();
   });
 </script>
-{% endcomment %}
 {% endblock %}

@@ -1,5 +1,25 @@
+{% load mathfilters %}
 An allocation change request for has been made for {{pi}} - {{resource}}.
-Requested size: {{quantity}} TB.
+
+{% if quantity %}
+Requested total size: {{quantity}} TB.
+This will require adding {{difference}} TB to the current size of {{current_size}} TB.
+{% endif %}
+
+{% if nese %}
+Here is a draft ticket to send to NESE:
+
+To: help@nese.mghpcc.org
+Subject: TB Globus tape setup for HU
+
+Service (access type) = S3 vs Globus:
+If Globus, short description for Globus Share:
+Tennant name (8 char max - Ex. acohen): {{pi.username}}
+Size in 20TB allotments: {{quantity|div:20}} (This is a difference of {{difference|div:20}} 20TB units from the current size of {{current_size|div:20}})
+Any additional details:
+Any additional administrators (iff applicable):
+{% endif %}
+
 Justification:
 {{justification}}
 Please review the change request:

@@ -1,0 +1,21 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Update Note
+{% endblock %}
+
+
+{% block content %}
+<h2>{% block note_title %}Update note{% endblock %}</h2>
+<hr>
+
+<form method="post">
+  {% csrf_token %}
+  {{ form|crispy }}
+  <input class="btn btn-success" type="submit" value="Update">
+  <a class="btn btn-secondary" href={% block return_url %}"{% url object_detail_link parent_object.pk %}"{% endblock %} role="button">Cancel</a>
+</form>
+{% endblock %}

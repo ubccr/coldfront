@@ -21,7 +21,6 @@ EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS'
 EMAIL_OPT_OUT_INSTRUCTION_URL = import_from_settings('EMAIL_OPT_OUT_INSTRUCTION_URL')
 EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
 EMAIL_CENTER_NAME = import_from_settings('CENTER_NAME')
-
 CENTER_BASE_URL = import_from_settings('CENTER_BASE_URL')
 
 def send_email(subject, body, sender, receiver_list, cc=[]):
@@ -75,7 +74,6 @@ def send_email_template(subject, template_name, template_context, sender, receiv
 
     return send_email(subject, body, sender, receiver_list)
 
-
 def email_template_context():
     """Basic email template context used as base for all templates
     """
@@ -120,7 +118,6 @@ def send_allocation_admin_email(allocation_obj, subject, template_name, url_path
         ctx,
     )
 
-
 def send_allocation_customer_email(allocation_obj, subject, template_name, url_path='', domain_url=''):
     """Send allocation customer emails
     """
@@ -141,6 +138,9 @@ def send_allocation_customer_email(allocation_obj, subject, template_name, url_p
                 email_receiver_list.append(allocation_user.user.email)
         except:
             pass
+        # if allocation_user.allocation.project.projectuser_set.get(
+        #                         user=allocation_user.user).enable_notifications:
+        #     email_receiver_list.append(allocation_user.user.email)
 
     send_email_template(
         subject,

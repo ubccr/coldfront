@@ -8,6 +8,15 @@ from coldfront.core.project.models import Project
 
 
 class ResearchOutput(TimeStampedModel):
+    """ A research output represents anything related a project that would not fall under the publication section. Examples include magazine or newspaper articles, media coverage, databases, software, or other products created.
+    
+    Attributes:
+        project (Project): links project to research output
+        title (str): title of research output
+        description (str): description of output
+        created_by (User): represents the User model of the user creating the output
+    """
+
     # core fields
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     title = models.CharField(max_length=128, blank=True)
@@ -28,6 +37,7 @@ class ResearchOutput(TimeStampedModel):
     history = HistoricalRecords()
 
     def save(self, *args, **kwargs):
+        """ Saves the research output. """
         if not self.pk:
             # ensure that created_by is set initially - preventing most
             # accidental omission

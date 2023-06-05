@@ -17,7 +17,8 @@ from coldfront.core.grant.models import (Grant, GrantFundingAgency,
                                          GrantStatusChoice)
 from coldfront.core.project.models import (Project, ProjectStatusChoice,
                                            ProjectUser, ProjectUserRoleChoice,
-                                           ProjectUserStatusChoice)
+                                           ProjectUserStatusChoice, ProjectAttribute
+                                           , ProjectAttributeType, AttributeType)
 from coldfront.core.publication.models import Publication, PublicationSource
 from coldfront.core.resource.models import (Resource, ResourceAttribute,
                                             ResourceAttributeType,
@@ -200,6 +201,34 @@ class Command(BaseCommand):
             force_review=True
         )
 
+        AttributeType.objects.get_or_create(
+            name='Int'
+        )
+
+        ProjectAttributeType.objects.get_or_create(
+            attribute_type=AttributeType.objects.get(name='Text'),
+            name='Project ID',
+            is_private=False,
+        )
+
+        ProjectAttributeType.objects.get_or_create(
+            attribute_type=AttributeType.objects.get(name='Int'),
+            name='Account Number',
+            is_private=True,
+        )
+
+        ProjectAttribute.objects.get_or_create(
+            proj_attr_type=ProjectAttributeType.objects.get(name='Project ID'),
+            project=project_obj,
+            value=1242021,
+        )
+
+        ProjectAttribute.objects.get_or_create(
+            proj_attr_type=ProjectAttributeType.objects.get(name='Account Number'),
+            project=project_obj,
+            value=1756522,
+        )
+
         univ_hpc = Resource.objects.get(name='University HPC')
         for scavanger in ('Chemistry-scavenger', 'Physics-scavenger', 'Industry-scavenger', ):
             resource_obj = Resource.objects.get(name=scavanger)
@@ -225,6 +254,7 @@ class Command(BaseCommand):
             status=AllocationStatusChoice.objects.get(name='Active'),
             start_date=start_date,
             end_date=end_date,
+            is_changeable=True,
             justification='I need access to my nodes.'
         )
 
@@ -257,6 +287,7 @@ class Command(BaseCommand):
             status=AllocationStatusChoice.objects.get(name='Active'),
             start_date=start_date,
             end_date=datetime.datetime.now() + relativedelta(days=10),
+            is_changeable=True,
             justification='I need access to university cluster.'
         )
 
@@ -311,6 +342,7 @@ class Command(BaseCommand):
             start_date=start_date,
             end_date=end_date,
             quantity=10,
+            is_changeable=True,
             justification='I need extra storage.'
         )
 
@@ -331,6 +363,7 @@ class Command(BaseCommand):
             status=AllocationStatusChoice.objects.get(name='Active'),
             start_date=start_date,
             end_date=end_date,
+            is_changeable=True,
             justification='I need compute time on metered cluster.'
         )
         allocation_obj.resources.add(
@@ -436,6 +469,7 @@ class Command(BaseCommand):
             status=AllocationStatusChoice.objects.get(name='Active'),
             start_date=start_date,
             end_date=end_date,
+            is_changeable=True,
             justification='Need to host my own site.'
         )
 
@@ -472,6 +506,7 @@ class Command(BaseCommand):
             status=AllocationStatusChoice.objects.get(name='Active'),
             start_date=start_date,
             end_date=end_date,
+            is_changeable=True,
             justification='Need extra storage for webserver.'
         )
 

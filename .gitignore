@@ -31,3 +31,5 @@ coldfront.db-journal
 django-q.log
 *.csv
 media/reports*
+.devcontainer/*
+.bin/*

@@ -9,9 +9,9 @@ class UIChecker:
         self.client = utils.login_return_client(username, password)
 
     def check_page_loads(self, url):
-        '''try to load page from url with self.client.
+        """try to load page from url with self.client.
         If successful, return response. If not, return error message.
-        '''
+        """
         try:
             response = self.client.get(url)
             return response
@@ -19,10 +19,10 @@ class UIChecker:
             return str(e)
 
     def check_project_page(self, url):
-        '''Run a series of checks on project pages.
+        """Run a series of checks on project pages.
         - page loads
         - billing graph loads correctly
-        '''
+        """
         lines = []
         response = self.check_page_loads(url)
         if isinstance(response, str):
@@ -36,11 +36,11 @@ class UIChecker:
         return lines
 
     def check_allocation_page(self, url):
-        '''Run checks on allocation pages.
+        """Run checks on allocation pages.
         - page loads
         - total allocation usage doesn't exceed allocation quota
         - sum of all user usage doesn't exceed total allocation usage
-        '''
+        """
         lines = []
         response = self.check_page_loads(url)
         if isinstance(response, str):
@@ -113,9 +113,9 @@ class UIChecker:
 
 
 def simultaneous_checks(function, url_list, max_workers=4):
-    '''run a checking function on a list of urls.
+    """run a checking function on a list of urls.
     Return a combined list of the outputs. Function must return a list.
-    '''
+    """
     rows = []
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:

@@ -17,13 +17,13 @@ def make_error_csv(filename, errors):
     error_df.to_csv(csv_path, index=False)
 
 class Command(BaseCommand):
-    '''
+    """
     collect LFS and Isilon subdir values from starfish redash query; assign them
     to respective allocations' Subdirectory allocationattribute.
 
     If a group/user pairing has 0 or >1 allocation, log in an error csv to
     handle manually.
-    '''
+    """
 
     def handle(self, *args, **kwargs):
         errors = []

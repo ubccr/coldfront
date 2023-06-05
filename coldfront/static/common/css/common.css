@@ -62,9 +62,13 @@ main {
   color: #ffffff;
 }
 
+.banner-name {
+    padding-top: 25px;
+}
+
 .banner-logo {
     margin-top: 5px;
-    max-height: 58px !important;
+    max-height: 75px !important;
     margin-bottom: 5px;
 }
 
@@ -77,7 +81,7 @@ body > main > form > div.alert.alert-block.alert-danger > ul > li {
 body > main > div > div.card.border-primary > div.card-body > form > div.alert.alert-block.alert-danger > ul > li {
   list-style: none;
   margin-top: 14px;
-  
+
 }
 
 /*
@@ -140,15 +144,15 @@ body > main > div > div.card.border-primary > div.card-body > form > div.alert.a
 	top:1px;
 }
 .bg-primary {
-  
+
   background-color: #A51C30 !important;
 }
 .page-item.active {
-  
+
   background-color: #A51C30 !important;
 }
 .btn-primary {
-  
+
   background-color: #A51C30 !important;
   border-color: white;
 }
@@ -161,10 +165,26 @@ body > main > div > div.card.border-primary > div.card-body > form > div.alert.a
 }
 .btn-success {
   background-color:#007bff !important;
-}  
+}
 .btn-danger {
   background-color:#ffc107 !important;
 }
+
+/* status-triggered button styles */
+.btn-pending {
+  background-color:#ffc107 !important;
+}
+
+.btn-approved {
+  background-color:#28a745 !important;
+}
+
+.btn-denied {
+  background-color:#dc3545 !important;
+}
+
+
+
 #expand_button {
   color:#A51C30 !important;
 }

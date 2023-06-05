@@ -1,21 +1,17 @@
 import re
 import uuid
 import requests
-import os
 import io
-from io import StringIO
 from bibtexparser.bibdatabase import as_text
 from bibtexparser.bparser import BibTexParser
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.db import IntegrityError
 from django.forms import formset_factory
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
-from django.views.generic import DetailView, ListView, TemplateView, View
+from django.views.generic import TemplateView, View
 from django.views.generic.edit import FormView
-from django.views.static import serve
 
 from coldfront.core.project.models import Project
 from coldfront.core.publication.forms import (
@@ -215,7 +211,7 @@ class PublicationAddView(LoginRequiredMixin, UserPassesTestMixin, View):
         if formset.is_valid():
             for form in formset:
                 form_data = form.cleaned_data
-                
+
                 if form_data['selected']:
                     source_obj = PublicationSource.objects.get(
                         pk=form_data.get('source_pk'))
@@ -229,8 +225,8 @@ class PublicationAddView(LoginRequiredMixin, UserPassesTestMixin, View):
                             'author':author,
                             'year':form_data.get('year'),
                             'journal':form_data.get('journal'),
-                            'source':source_obj                            
-                        }                        
+                            'source':source_obj
+                        }
                     )
                     if created:
                         publications_added += 1

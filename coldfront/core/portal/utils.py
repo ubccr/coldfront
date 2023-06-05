@@ -4,6 +4,8 @@ from coldfront.core.allocation.models import Allocation
 
 
 def generate_publication_by_year_chart_data(publications_by_year):
+    """Generate the data for the publication by year chart
+    """
 
     if publications_by_year:
         years, publications = zip(*publications_by_year)

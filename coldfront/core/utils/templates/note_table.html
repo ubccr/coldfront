@@ -1,0 +1,46 @@
+
+<!-- Start Admin Messages -->
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Notifications</h3>
+    <span class="badge badge-secondary">{{notes.count}}</span>
+    <div class="float-right">
+      {% if user.is_superuser %}
+        <a class="btn btn-success" href="{% url note_addition_url object.pk %}" role="button">
+          <i class="fas fa-plus" aria-hidden="true"></i> Add Notification
+        </a>
+      {% endif %}
+    </div>
+  </div>
+  <div class="card-body">
+    {% if notes %}
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th scope="col">Note</th>
+              <th scope="col">Administrator</th>
+              <th scope="col">Last Modified</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for note in notes %}
+                <tr>
+                  <td>{{ note.note }}</td>
+                  <td>{{ note.author.first_name }} {{ note.author.last_name }}</td>
+                  <td>{{ note.modified }}</td>
+                  <td><a href="{% url note_update_link note.pk %}"><i class="fas fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
+                </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="alert alert-info" role="alert">
+        <i class="fa fa-info-circle" aria-hidden="true"></i> There are no notes from system administrators.
+      </div>
+    {% endif %}
+  </div>
+</div>
+<!-- End Admin Messages -->

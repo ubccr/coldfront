@@ -14,7 +14,7 @@ Allocation Review New and Pending Change Requests
 
 <hr>
 
-<p class="text-justify"> 
+<p class="text-justify">
   For each allocation change request below, there is the option to activate the allocation request and to view the allocation change's detail page.
   If a change request is only for an extension to the allocation, they can be approved on this page. However if the change request includes changes to
   the allocation's attributes, the request must be reviewed and acted upon in its detail page.
@@ -49,19 +49,22 @@ Allocation Review New and Pending Change Requests
               {% endif %}
             </td>
             <td class="text-nowrap">
+                <form method="post" action="{% url 'allocation-change-detail' change.pk %}">
               {% if change.allocationattributechangerequest_set.all %}
-                <a href="{% url 'allocation-activate-change' change.pk %}" class="btn btn-success mr-1" aria-disabled="true" 
-                style="color:white !important;
+                <button class="btn btn-success mr-1" aria-disabled="true"
+                style="
                       cursor: not-allowed;
                       opacity: 0.6;
                       pointer-events: none;">
                       Approve
-                </a>
-                <a href="{% url 'allocation-change-detail' change.pk %}" class="btn btn-primary mr-1" style="color:white !important">Details</a>
+                </button>
               {% else %}
-                <a href="{% url 'allocation-activate-change' change.pk %}" class="btn btn-success mr-1" style="color:white !important">Approve</a>
-                <a href="{% url 'allocation-change-detail' change.pk %}" class="btn btn-primary mr-1" style="color:white !important">Details</a>
+                  {% csrf_token %}
+                  <input type="hidden" name="end_date_extension" value="{{ change.end_date_extension }}" />
+                  <button type="submit" name="action" value="approve" class="btn btn-success mr-1">Approve</button>
               {% endif %}
+                <a href="{% url 'allocation-change-detail' change.pk %}"><button class="btn btn-primary mr-1">Details</button></a>
+                </form>
             </td>
           </tr>
         {% endfor %}

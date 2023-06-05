@@ -22,7 +22,7 @@
       </ul>
     {% else %}
       <div class="alert alert-info" role="alert"><i class="fa fa-info-circle" aria-hidden="true"></i> There are no projects to display.</div>
-      {% if user.userprofile.is_pi or user.is_superuser %}
+      {% if user.is_superuser %}
         <a class="btn btn-primary btn-block " style = "background-color:#A51C30; border-color: white" href="{% url 'project-create' %}" role="button">Add a project</a>
         <hr>
       {% endif %}
@@ -50,7 +50,7 @@
             <td>{{allocation.get_parent_resource}}
               {% if allocation.get_parent_resource.get_ondemand_status == 'Yes' and ondemand_url %}
               <a href = "{{ondemand_url}}"> {% load static %}  <img src="/static/core/portal/imgs/ondemand.png" alt="ondemand cta" width="25" height="25"></a>
-            {% endif %} 
+            {% endif %}
             </td>
             {%  if allocation.status.name == "Expired" and allocation.expires_in < 0 %}
             <td><a href="{% url 'allocation-detail' allocation.id %}" class="btn btn-danger btn-block">Expired</a></td>
@@ -62,18 +62,23 @@
                   class="badge badge-light">{{allocation.expires_in}}</span> day{{allocation.expires_in|pluralize }}</a>
             </td>
             {% elif allocation.expires_in > 30 and allocation.expires_in <= 90 %}
-            <td><a href="{% url 'allocation-detail' allocation.id %}" class="btn btn-warning btn-block">Expires in <span
-                  class="badge badge-light">{{allocation.expires_in}}</span> day{{allocation.expires_in|pluralize }}</a>
+            <td><a href="{% url 'allocation-detail' allocation.id %}">
+              <button class="btn btn-warning btn-block">Expires in <span
+                  class="badge badge-light">{{allocation.expires_in}}</span> day{{allocation.expires_in|pluralize }}</button>
+                </a>
             </td>
             {% elif allocation.status.name == "Pending" %}
-            <td><a href="{% url 'allocation-detail' allocation.id %}"
-                class="btn btn-info btn-block">{{allocation.status}}</a></td>
+            <td><a href="{% url 'allocation-detail' allocation.id %}">
+              <button class="btn btn-info btn-block">{{allocation.status}}</button>
+            </a></td>
             {% elif allocation.status.name == "Active" %}
-            <td><a href="{% url 'allocation-detail' allocation.id %}"
-                class="btn btn-success btn-block">{{allocation.status}}</a></td>
+            <td><a href="{% url 'allocation-detail' allocation.id %}">
+              <button class="btn btn-success btn-block">{{allocation.status}}</button>
+            </a></td>
             {% else %}
-            <td><a href="{% url 'allocation-detail' allocation.id %}"
-                class="btn btn-info btn-block">{{allocation.status}}</a></td>
+            <td><a href="{% url 'allocation-detail' allocation.id %}">
+              <button class="btn btn-info btn-block">{{allocation.status}}</button>
+            </a></td>
             {% endif %}
           </tr>
           {% endfor %}
@@ -85,6 +90,46 @@
       </div>
     {% endif %}
   </div>
+
+  {% if allocation_request_list %}
+  <div class="col-lg-6 mt-2">
+    <h2><a href="{% url 'allocation-list' %}">Requests &raquo;</a></h2>
+    <hr>
+
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Allocation</th>
+            <th scope="col">Request</th>
+            <th scope="col">Justification</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for change in allocation_request_list %}
+          <tr>
+            <td><a href="{% url 'allocation-detail' change.allocation.id %}">
+              {{change.allocation.project.title}}{{change.allocation.get_parent_resource}}
+            </a></td>
+            <td>
+              {% for attr_change in change.allocationattributechangerequest_set.all %}
+                Change {{attr_change}} to {{attr_change.new_value}}
+              {% endfor %}
+            </td>
+            <td>{{change.justification}}</td>
+
+            <td>
+              <a href="{% url 'allocation-change-detail' change.id %}"><button class="btn btn-{{change.status|lower}} btn-block">
+                {{change.status}}
+              </button></a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+  </div>
+  {% endif %}
+
 </div>
 <div class="row">
   {% include "portal/extra_app_templates.html" %}

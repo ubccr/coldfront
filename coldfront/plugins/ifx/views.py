@@ -33,5 +33,4 @@ def run_report(request):
     '''
     if request.method == 'POST':
         return ifxreport_run_report(request)
-    else:
-        raise Exception('Only POST allowed')
+    raise Exception('Only POST allowed')

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-'''
+"""
 reports for coldfront
 
 Created on  2023-03-27
@@ -9,24 +9,24 @@ Created on  2023-03-27
 @copyright: 2023 The Presidents and Fellows of Harvard College.
 All rights reserved.
 @license: GPL v2.0
-'''
+"""
 from decimal import Decimal
 from ifxreport.report import BaseReportRunner, excel_date
 
 class StandardReportRunner(BaseReportRunner):
-    '''Run a standard report for storage'''
+    """Run a standard report for storage"""
 
     def __init__(self, report, file_root, url_root):
-        '''Setup some formats'''
+        """Setup some formats"""
         super().__init__(report, file_root, url_root)
         self.xls_tb_format_str = '#,##0.00'
 
     def get_sql(self):
-        '''
+        """
         The sql
-        '''
+        """
 
-        sql = '''
+        sql = """
             select
                 p.title as 'Project',
                 s.name as 'Project Status',
@@ -62,12 +62,12 @@ class StandardReportRunner(BaseReportRunner):
             where
                 storage_attribute_type.name = 'Storage Quota (TB)' and
                 pu.start_date >= %s and pu.start_date < %s
-        '''
+        """
 
         return sql
 
     def write_xls_cell(self, workbook, worksheet, row, col, field_name, field_value):
-        '''
+        """
         Write an XLS cell.  Overridable to apply formatting.
         This implementation writes anything with "date" in the field name as a date,
         anything with "charge" in the field name as a money field, and
@@ -90,7 +90,7 @@ class StandardReportRunner(BaseReportRunner):
 
         :param field_value: Value being written
         :type row: obj
-        '''
+        """
         date_format = workbook.add_format({'num_format': self.xls_date_format_str})
         money_format = workbook.add_format({'num_format': self.xls_accounting_format_str})
         tb_format = workbook.add_format({'num_format': self.xls_tb_format_str})

@@ -6,6 +6,13 @@ from coldfront.core.project.models import Project
 
 
 class PublicationSource(TimeStampedModel):
+    """ A publication source is a source that a publication is cited/ derived from. Examples include doi and adsabs.
+
+    Attributes:
+        name (str): source name
+        url (URL): links to the url of the source
+    """
+
     name = models.CharField(max_length=255, unique=True)
     url = models.URLField(null=True, blank=True)
 
@@ -14,6 +21,19 @@ class PublicationSource(TimeStampedModel):
 
 
 class Publication(TimeStampedModel):
+    """ A publication source is a source that a publication is cited/ derived from. Examples include doi and adsabs.
+
+    Attributes:
+        project (Project): links the publication to its project
+        title (str): publication title
+        author (str): publication author's name
+        year (int): year of publication
+        journal (str): journal name
+        unique_id (str): publication ID
+        source (PublicationSource): represents the source of the publication
+        status (str): publication status
+    """
+
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     title = models.CharField(max_length=1024)
     author = models.CharField(max_length=1024)

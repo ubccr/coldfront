@@ -1,5 +1,9 @@
+"""department models"""
+
 from django.db import models
+from django.conf import settings
 from ifxuser.models import Organization, OrgRelation, UserAffiliation
+from model_utils.models import TimeStampedModel
 
 from coldfront.core.project.models import Project
 from coldfront.plugins.ifx.models import ProjectOrganization
@@ -135,3 +139,37 @@ class DepartmentMember(UserAffiliation):
     @property
     def department(self):
         return self.organization
+
+class DepartmentAdminNote(TimeStampedModel):
+    """ An department admin note is a note that an admin makes on an department.
+
+    Attributes:
+        department (Department): links the department to the note
+        author (User): represents the User class of the admin who authored the note
+        note (str): text input from the user containing the note
+    """
+
+    department = models.ForeignKey(Department, on_delete=models.CASCADE)
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    note = models.TextField()
+
+    def __str__(self):
+        return self.note
+
+class DepartmentUserNote(TimeStampedModel):
+    """ A department note is a note that a user makes on a department.
+
+    Attributes:
+        department (Department): links the department to the note
+        author (User): the user who authored the note
+        is_private (bool): indicates whether the note is private
+        note (str): text input from the user containing the note
+    """
+
+    department = models.ForeignKey(Department, on_delete=models.CASCADE)
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    is_private = models.BooleanField(default=True)
+    note = models.TextField()
+
+    def __str__(self):
+        return self.note
