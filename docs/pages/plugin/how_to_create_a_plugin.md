@@ -59,27 +59,44 @@ urlpatterns += [
     path('weekly-report/', include('coldfront.core.weeklyreportapp.urls')),
 ]
 ```
-3. Since the example Weekly Report plugin is intended for admins, to add it to the navbar for admins, update the **templates/common/navbar_admin.html** file or its equivalent in your ColdFront setup like so:
+4. Add your app's folder to the **coldfront/core** directory.
+5. Import ColdFront models in the following manner:
+   ```
+   from coldfront.core.allocation.models import *
+   from coldfront.core.project.models import *
+   from coldfront.core.resource.models import *
+   from coldfront.core.user.models import *
+   ```
+6. Add ColdFront's skeleton HTML/CSS by adding the following lines to all of your template files:
 ```
-<li id="navbar-admin" class="nav-item dropdown">
-  <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown">Admin</a>
-  <div class="dropdown-menu">
-    <a class="dropdown-item" href="/admin">ColdFront Administration</a>
-    <a id="navbar-user-search" class="dropdown-item" href="{% url 'user-search-home' %}">User Search</a>
-    <a class="dropdown-item" href="{% url 'project-list' %}?show_all_projects=on">All Projects</a>
-    <a class="dropdown-item" href="{% url 'allocation-list' %}?show_all_allocations=on">All Allocations</a>
-    <a class="dropdown-item" href="{% url 'resource-list' %}">All Resources</a>
-    <a id="navbar-project-reviews" class="dropdown-item" href="{% url 'project-review-list' %}">Project Reviews</a>
-    <a id="navbar-allocation-requests" class="dropdown-item" href="{% url 'allocation-request-list' %}">
-      Allocation Requests</a>
-    <a id="navbar-allocation-change-requests" class="dropdown-item" href="{% url 'allocation-change-list' %}">
-      Allocation Change Requests</a>
-    <a id="navbar-grant-report" class="dropdown-item" href="{% url 'grant-report' %}">Grant Report</a>
-
-    <!-- Add the Weekly Report url to the navbar here -->
-    <a id="navbar-weekly-report" class="dropdown-item" href="{% url 'weeklyreportapp:weekly-report' %}">Weekly Report</a>
-
-  </div>
-</li>
+ {% extends "common/base.html" %}
+ {% load crispy_forms_tags %}
+ {% load humanize %}
+ {% load static %}
 ```
-   
+7. *(Optional)* Since the example Weekly Report plugin is intended for admins, to add it to the navbar for admins, update the **templates/common/navbar_admin.html** file or its equivalent in your ColdFront setup like so:
+  ```
+  <li id="navbar-admin" class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown">Admin</a>
+    <div class="dropdown-menu">
+      <a class="dropdown-item" href="/admin">ColdFront Administration</a>
+      <a id="navbar-user-search" class="dropdown-item" href="{% url 'user-search-home' %}">User Search</a>
+      <a class="dropdown-item" href="{% url 'project-list' %}?show_all_projects=on">All Projects</a>
+      <a class="dropdown-item" href="{% url 'allocation-list' %}?show_all_allocations=on">All Allocations</a>
+      <a class="dropdown-item" href="{% url 'resource-list' %}">All Resources</a>
+      <a id="navbar-project-reviews" class="dropdown-item" href="{% url 'project-review-list' %}">Project Reviews</a>
+      <a id="navbar-allocation-requests" class="dropdown-item" href="{% url 'allocation-request-list' %}">
+        Allocation Requests</a>
+      <a id="navbar-allocation-change-requests" class="dropdown-item" href="{% url 'allocation-change-list' %}">
+        Allocation Change Requests</a>
+      <a id="navbar-grant-report" class="dropdown-item" href="{% url 'grant-report' %}">Grant Report</a>
+
+      <!-- Add the Weekly Report url to the navbar here -->
+      <a id="navbar-weekly-report" class="dropdown-item" href="{% url 'weeklyreportapp:weekly-report' %}">Weekly Report</a>
+
+    </div>
+  </li>
+  ```
+
+!!! Tip
+    Note: To override any default ColdFront templates, follow [these instructions](../../config/#custom-branding) from our docs.
