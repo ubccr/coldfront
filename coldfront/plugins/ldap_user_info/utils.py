@@ -42,8 +42,6 @@ class LDAPSearch:
 
         if not self.conn.bind():
             logger.error('LDAPSearch: Failed to bind to LDAP server: {}'.format(self.conn.result))
-        else:
-            logger.info('LDAPSearch: LDAP bind successful: %s', self.conn.extend.standard.who_am_i())
 
     def search_a_user(self, user_search_string=None, search_attributes_list=None):
         # Add check if debug is true to run this. If debug is not then write an error to log file.
@@ -60,7 +58,13 @@ class LDAPSearch:
         attributes = {}
         if self.conn.entries:
             attributes = json.loads(self.conn.entries[0].entry_to_json()).get('attributes')
+            logger.info(
+                f'LDAPSearch: Attributes {search_attributes_list} found for user {user_search_string}'
+            )
         else:
             attributes = dict.fromkeys(search_attributes_list, [''])
+            logger.info(
+                f'LDAPSearch: Attributes {search_attributes_list} not found for user {user_search_string}'
+            )
 
         return attributes

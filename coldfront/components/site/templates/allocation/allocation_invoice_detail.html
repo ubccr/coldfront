@@ -53,12 +53,6 @@ Allocation Invoice Detail
             </td>
           </tr>
           <tr>
-            <th scope="row" class="text-nowrap">Fiscal Officer:</th>
-            <td>
-              {{ allocation.fiscal_officer }}
-            </td>
-          </tr>
-          <tr>
             <th scope="row" class="text-nowrap">Resource{{ allocation.resources.all|pluralize }} in allocation:</th>
             <td>{{ allocation.get_resources_as_string }}</td>
           </tr>
@@ -68,19 +62,6 @@ Allocation Invoice Detail
               {{ allocation.justification }}
             </td>
           </tr> -->
-          <tr>
-            <th scope="row" class="text-nowrap">Account Number:</th>
-            <td>
-              {{ allocation.account_number }}
-            </td>
-          </tr>
-          <tr>
-            <th scope="row" class="text-nowrap">Sub-Account Number:</th>
-            <td>
-              {{ allocation.sub_account_number }}
-            </td>
-          </tr>
-          <tr>
             <th scope="row" class=""text-nowrap>Status:</th>
             <td>
               {{ allocation.status }}

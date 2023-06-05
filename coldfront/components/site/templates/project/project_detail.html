@@ -18,12 +18,16 @@ Project Detail
     </div>
   {% elif project.can_be_reviewed and project.status.name == 'Expired' %}
     <div class="alert alert-warning">
-      This project has expired. You cannot make any changes. You have {{ project.expires_in|add:PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING }} days left to
-      <a href="{% url 'project-review' project.pk %}">review your project</a>.
+      {% if PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING < 0 %}
+        This project has expired. <a href="{% url 'project-review' project.pk %}">Click to renew</a>.
+      {% else %}
+        This project has expired. You cannot make any changes. You have {{ project.expires_in|add:PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING }} days left to
+        <a href="{% url 'project-review' project.pk %}">renew your project</a>.
+      {% endif %}
     </div>
   {% elif project.can_be_reviewed %}
     <div class="alert alert-warning">
-      This project expires in {{ project.expires_in }} day{{ project.expires_in|pluralize }}. <a href="{% url 'project-review' project.pk %}">Review Project</a>
+      This project expires in {{ project.expires_in }} day{{ project.expires_in|pluralize }}. <a href="{% url 'project-review' project.pk %}">Renew Project</a>
     </div>
   {% endif %}
 {% endif %}
@@ -143,6 +147,9 @@ Project Detail
     {% endif %}
     <!-- <p class="card-text text-justify"><strong>Field of Science: </strong>{{ project.field_of_science}}</p> -->
     <p class="card-text text-justify"><strong>Project Type: </strong>{{ project.type.name }}</p>
+    {% if project.class_number %}
+      <p class="card-text text-justify"><strong>Class Number</strong> {{ project.class_number }}</p>
+    {% endif %}
     <p class="card-text text-justify"><strong>Project Status: </strong>
     {% if project.status.name == 'Active' %}
       {% if project.can_be_reviewed or project.needs_review%}

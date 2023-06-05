@@ -49,7 +49,8 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectStatusChoice, ProjectUser,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice,
-                                           ProjectUserMessage)
+                                           ProjectUserMessage,
+                                           ProjectDescriptionRecord)
 from coldfront.core.publication.models import Publication
 from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.user.forms import UserSearchForm
@@ -58,7 +59,9 @@ from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import Echo
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email, send_email_template
-from coldfront.core.project.utils import get_new_end_date_from_list, create_admin_action
+from coldfront.core.project.utils import (get_new_end_date_from_list,
+                                          create_admin_action,
+                                          get_project_user_emails)
 from coldfront.core.allocation.utils import send_added_user_email
 from coldfront.core.utils.slack import send_message
 
@@ -706,13 +709,17 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
             allocation.status = allocation_status_expired
             allocation.end_date = end_date
             allocation.save()
+
+        logger.info(
+            f'User {request.user.username} archived a project (project pk={project.pk})'
+        )
         return redirect(reverse('project-detail', kwargs={'pk': project.pk}))
 
 
 class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Project
     template_name_suffix = '_create_form'
-    fields = ['title', 'description', 'pi_username', 'type', ]
+    fields = ['title', 'description', 'pi_username', 'type', 'class_number']
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -816,8 +823,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
             if end_date is None:
                 logger.error(
-                    'End date for new project request was set to None on date {}'
-                    .format(datetime.date.today())
+                    f'End date for new project request was set to None on date {datetime.date.today()}'
                 )
                 messages.error(
                     self.request,
@@ -826,6 +832,10 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
                 return super().form_invalid(form)
 
             project_obj.end_date = end_date
+
+            if not form.instance.class_number:
+                messages.error(self.request, 'You must provide a class number for a class project.')
+                return super().form_invalid(form)
         else:
             actual_date = datetime.date(datetime.date.today().year, 6, 30)
             end_date = get_new_end_date_from_list(
@@ -899,6 +909,11 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
                     [project_user_pi_user.user.email, ]
                 )
 
+                logger.info(f'Email sent to pi {form.instance.pi.username} (project pk={project_obj.pk})')
+
+        logger.info(
+            f'User {form.instance.requestor.username} created a new project (project pk={project_obj.pk})'
+        )
         return super().form_valid(form)
 
     def reverse_with_params(self, path, **kwargs):
@@ -957,11 +972,21 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
     def form_valid(self, form):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         form_data = form.cleaned_data
+
+        ProjectDescriptionRecord.objects.create(
+            project=project_obj,
+            user=self.request.user,
+            description=form_data.get('description')
+        )
+
         project_obj.title = form_data.get('title')
         project_obj.description = form_data.get('description')
         # project_obj.field_of_science = form_data.get('field_of_science')
         project_obj.save()
 
+        logger.info(
+            f'User {self.request.user.username} updated a project (project pk={project_obj.pk})'
+        )
         return super().form_valid(form)
 
     def get_success_url(self):
@@ -1051,10 +1076,10 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
         Gets a list that determines if an allocation can be selected.
         """
         disable_select_list = [False] * len(allocations)
-        for i, allocation in enumerate(allocations):
-            if allocation.get_parent_resource.name == 'Slate-Project':
-                if allocation.data_manager != request.user.username:
-                    disable_select_list[i] = True
+        # for i, allocation in enumerate(allocations):
+        #     if allocation.get_parent_resource.name == 'Slate-Project':
+        #         if allocation.data_manager != request.user.username:
+        #             disable_select_list[i] = True
 
         return disable_select_list
 
@@ -1189,10 +1214,10 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
         Gets a list that determines if an allocation can be selected.
         """
         disable_select_list = [False] * len(allocations)
-        for i, allocation in enumerate(allocations):
-            if allocation.get_parent_resource.name == 'Slate-Project':
-                if allocation.data_manager != request.user.username:
-                    disable_select_list[i] = True
+        # for i, allocation in enumerate(allocations):
+        #     if allocation.get_parent_resource.name == 'Slate-Project':
+        #         if allocation.data_manager != request.user.username:
+        #             disable_select_list[i] = True
 
         return disable_select_list
 
@@ -1411,6 +1436,10 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                             if project_obj.pi.email not in allocations_added_users_emails:
                                 allocations_added_users_emails.append(project_obj.pi.email)
 
+                        logger.info(
+                            f'User {request.user.username} added {len(allocations_added_users)} user(s) to a '
+                            f'{allocation.get_parent_resource.name} allocation (allocation pk={allocation.pk})'
+                        )
                         send_added_user_email(
                             request,
                             allocation,
@@ -1418,7 +1447,10 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                             allocations_added_users_emails
                         )
 
-
+            logger.info(
+                f'User {request.user.username} added {added_users_count} user(s) to a project '
+                f'(project pk={project_obj.pk})'
+            )
             messages.success(
                 request, 'Added {} users to project.'.format(added_users_count))
         else:
@@ -1487,25 +1519,25 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
         return users_to_remove
 
-    def get_data_managers(self, project_obj):
-        data_manager_list = [
-            allocation.data_manager for allocation in project_obj.allocation_set.filter(
-                resources__name="Slate-Project"
-            )
-        ]
+    # def get_data_managers(self, project_obj):
+    #     data_manager_list = [
+    #         allocation.data_manager for allocation in project_obj.allocation_set.filter( # TODO - Gone
+    #             resources__name="Slate-Project"
+    #         )
+    #     ]
 
-        return set(data_manager_list)
+    #     return set(data_manager_list)
 
     def get_disable_select_list(self, project_obj, users_to_remove):
         """
         Gets a list that determines if a user can be removed by disabling the
         ProjectRemoveUserForm's selected field.
         """
-        data_manager_list = self.get_data_managers(project_obj)
+        # data_manager_list = self.get_data_managers(project_obj)
         disable_select_list = [False] * len(users_to_remove)
-        for i, user in enumerate(users_to_remove):
-            if user['username'] in data_manager_list:
-                disable_select_list[i] = True
+        # for i, user in enumerate(users_to_remove):
+        #     if user['username'] in data_manager_list:
+        #         disable_select_list[i] = True
 
         return disable_select_list
 
@@ -1533,7 +1565,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
             context['formset'] = formset
 
-        context['data_managers'] = self.get_data_managers(project_obj)
+        # context['data_managers'] = self.get_data_managers(project_obj)
         context['project'] = get_object_or_404(Project, pk=pk)
 
         return render(request, self.template_name, context)
@@ -1636,6 +1668,11 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                         removed_users_emails
                     )
 
+                logger.info(
+                    f'User {request.user.username} removed {remove_users_count} user(s) from a '
+                    f'project (project pk={project_obj.pk})'
+                )
+
                 if remove_users_count == 1:
                     messages.success(
                         request, 'Removed {} user from project.'.format(remove_users_count))
@@ -1672,14 +1709,14 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             return True
 
     def check_user_is_data_manager(self, project_obj, project_user_obj):
-        data_manager_list = [
-            allocation.data_manager for allocation in project_obj.allocation_set.filter(
-                resources__name="Slate-Project"
-            )
-        ]
+        # data_manager_list = [
+        #     allocation.data_manager for allocation in project_obj.allocation_set.filter( # TODO - Gone
+        #         resources__name="Slate-Project"
+        #     )
+        # ]
 
-        if project_user_obj.user.username in set(data_manager_list):
-            return True
+        # if project_user_obj.user.username in set(data_manager_list):
+        #     return True
 
         return False
 
@@ -1778,6 +1815,11 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 project_user_obj.role = ProjectUserRoleChoice.objects.get(
                     name=form_data.get('role'))
                 project_user_obj.save()
+
+                logger.info(
+                    f'User {request.user.username} updated {project_user_obj.user.username}\'s '
+                    f'role (project pk={project_obj.pk})'
+                )
 
                 messages.success(request, 'User details updated.')
                 return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_obj.pk, 'project_user_pk': project_user_obj.pk}))
@@ -1944,9 +1986,8 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                             allocation.save()
                 else:
                     logger.error(
-                        'There was an error submitting allocation renewals for PI {}'.format(
-                            project_obj.pi.username
-                        )
+                        f'There was an error submitting allocation renewals for PI '
+                        f'{project_obj.pi.username} (project pk={project_obj.pk})'
                     )
                     messages.error(
                         request, 'There was an error submitting your allocation renewals.'
@@ -1983,6 +2024,20 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                     EMAIL_SENDER,
                     [EMAIL_ALERTS_EMAIL_ADDRESS, ]
                 )
+
+            if SLACK_MESSAGING_ENABLED:
+                domain_url = get_domain_url(self.request)
+                project_review_url = reverse('project-review-list')
+                url = '{}{}'.format(domain_url, project_review_url)
+                text = (
+                    f'A new review request for project "{project_obj.title}" with id '
+                    f'{project_obj.pk} has been submitted. You can view it here: {url}'
+                )
+                send_message(text)
+
+            logger.info(
+                f'User {request.user.username} submitted a project review (project pk={project_obj.pk})'
+            )
 
             messages.success(request, 'Project review submitted.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
@@ -2051,14 +2106,18 @@ class ProjectActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
         """ UserPassesTestMixin Tests"""
 
-        if self.request.user.is_superuser:
-            return True
+        if not self.request.user.is_superuser:
+            if not self.request.user.has_perm('project.can_review_pending_projects'):
+                return False
 
-        if self.request.user.has_perm('project.can_review_pending_projects'):
-            return True
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+        if project_obj.status.name != 'Waiting For Admin Approval':
+            messages.error(
+                self.request, f'You cannot approve a project with status "{project_obj.status.name}"'
+            )
+            return False
 
-        messages.error(
-            self.request, 'You do not have permission to activate project requests.')
+        return True
 
     def get(self, request, pk):
         project_obj = get_object_or_404(Project, pk=pk)
@@ -2086,11 +2145,7 @@ class ProjectActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
                 'center_name': EMAIL_CENTER_NAME
             }
 
-            email_receiver_list = []
-            for project_user in project_obj.projectuser_set.exclude(status__name__in=['Removed', 'Denied']):
-                if project_obj.projectuser_set.get(user=project_user.user).enable_notifications:
-                    email_receiver_list.append(project_user.user.email)
-
+            email_receiver_list = get_project_user_emails(project_obj)
             send_email_template(
                 'Your Project Request Was Approved',
                 'email/project_request_approved.txt',
@@ -2099,6 +2154,9 @@ class ProjectActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
                 email_receiver_list
             )
 
+        logger.info(
+            f'Admin {request.user.username} approved a project request (project pk={project_obj.pk})'
+        )
         return HttpResponseRedirect(reverse('project-review-list'))
 
 
@@ -2108,14 +2166,18 @@ class ProjectDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
         """ UserPassesTestMixin Tests"""
 
-        if self.request.user.is_superuser:
-            return True
+        if not self.request.user.is_superuser:
+            if not self.request.user.has_perm('project.can_review_pending_projects'):
+                return False
 
-        if self.request.user.has_perm('project.can_review_pending_projects'):
-            return True
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+        if project_obj.status.name != 'Waiting For Admin Approval':
+            messages.error(
+                self.request, f'You cannot deny a project with status "{project_obj.status.name}"'
+            )
+            return False
 
-        messages.error(
-            self.request, 'You do not have permission to deny project requests.')
+        return True
 
     def get(self, request, pk):
         project_obj = get_object_or_404(Project, pk=pk)
@@ -2156,18 +2218,8 @@ class ProjectDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
                 'center_name': EMAIL_CENTER_NAME
             }
 
-            email_receiver_list = []
-            project_managers = project_obj.projectuser_set.filter(
-                role=ProjectUserRoleChoice.objects.get(name='Manager')
-            ).exclude(status__name__in=['Removed', 'Denied'])
-            for project_manager in project_managers:
-                if project_manager.enable_notifications:
-                    email_receiver_list.append(project_manager.user.email)
-
-            # for project_user in project_obj.projectuser_set.exclude(status__name__in=['Removed', 'Denied']):
-            #     if project_obj.projectuser_set.get(user=project_user.user).enable_notifications:
-            #         email_receiver_list.append(project_user.user.email)
-
+            email_receiver_list = get_project_user_emails(project_obj, True)
+            
             send_email_template(
                 'Your Project Request Was Denied',
                 'email/project_request_denied.txt',
@@ -2176,19 +2228,28 @@ class ProjectDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
                 email_receiver_list
             )
 
+        logger.info(
+            f'Admin {request.user.username} denied a project request (project pk={project_obj.pk})'
+        )
         return HttpResponseRedirect(reverse('project-review-list'))
 
 
 class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
-        if self.request.user.is_superuser:
-            return True
+        """ UserPassesTestMixin Tests"""
 
-        if self.request.user.has_perm('project.can_review_pending_projects'):
-            return True
+        if not self.request.user.is_superuser:
+            if not self.request.user.has_perm('project.can_review_pending_projects'):
+                return False
 
-        messages.error(
-            self.request, 'You do not have permission to approve a project review.')
+        project_review_obj = get_object_or_404(ProjectReview, pk=self.kwargs.get('pk'))
+        if project_review_obj.status.name != 'Pending':
+            messages.error(
+                self.request, f'You cannot approve a project review with status "{project_review_obj.status.name}"'
+            )
+            return False
+
+        return True
 
     def get(self, request, pk):
         project_review_obj = get_object_or_404(ProjectReview, pk=pk)
@@ -2217,8 +2278,9 @@ class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
 
             if end_date is None:
                 logger.error(
-                    'New end date for project {} was set to None with project review creation date {} during project review approval'
-                    .format(project_obj.title, project_review_obj.created.date())
+                    f'New end date for project {project_obj.title} was set to None with project '
+                    f'review creation date {project_review_obj.created.date()} during project '
+                    f'review approval'
                 )
                 messages.error(request, 'Something went wrong while approving the review.')
                 return HttpResponseRedirect(reverse('project-review-list'))
@@ -2276,11 +2338,7 @@ class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
                 'renewed_allocation_urls': renewed_allocation_urls
             }
 
-            email_receiver_list = []
-            for project_user in project_obj.projectuser_set.exclude(status__name__in=['Removed', 'Denied']):
-                if project_obj.projectuser_set.get(user=project_user.user).enable_notifications:
-                    email_receiver_list.append(project_user.user.email)
-
+            email_receiver_list = get_project_user_emails(project_obj)
             send_email_template(
                 'Your Project Renewal Was Approved',
                 'email/project_renewal_approved.txt',
@@ -2289,19 +2347,28 @@ class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
                 email_receiver_list
             )
 
+        logger.info(
+            f'Admin {request.user.username} approved a project renewal request (project pk={project_obj.pk})'
+        )
         return HttpResponseRedirect(reverse('project-review-list'))
 
 
 class ProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
-        if self.request.user.is_superuser:
-            return True
+        """ UserPassesTestMixin Tests"""
 
-        if self.request.user.has_perm('project.can_review_pending_projects'):
-            return True
+        if not self.request.user.is_superuser:
+            if not self.request.user.has_perm('project.can_review_pending_projects'):
+                return False
 
-        messages.error(
-            self.request, 'You do not have permission to deny a project review.')
+        project_review_obj = get_object_or_404(ProjectReview, pk=self.kwargs.get('pk'))
+        if project_review_obj.status.name != 'Pending':
+            messages.error(
+                self.request, f'You cannot deny a project review with status "{project_review_obj.status.name}"'
+            )
+            return False
+
+        return True
 
     def get(self, request, pk):
         project_review_obj = get_object_or_404(ProjectReview, pk=pk)
@@ -2351,18 +2418,7 @@ class ProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin, View):
                 'signature': EMAIL_SIGNATURE
             }
 
-            email_receiver_list = []
-            project_managers = project_obj.projectuser_set.filter(
-                role=ProjectUserRoleChoice.objects.get(name='Manager')
-            ).exclude(status__name__in=['Removed', 'Denied'])
-            for project_manager in project_managers:
-                if project_manager.enable_notifications:
-                    email_receiver_list.append(project_manager.user.email)
-
-            # for project_user in project_obj.projectuser_set.exclude(status__name__in=['Removed', 'Denied']):
-            #     if project_obj.projectuser_set.get(user=project_user.user).enable_notifications:
-            #         email_receiver_list.append(project_user.user.email)
-
+            email_receiver_list = get_project_user_emails(project_obj, True)
             send_email_template(
                 'Your Project Renewal Was Denied',
                 'email/project_renewal_denied.txt',
@@ -2371,6 +2427,9 @@ class ProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin, View):
                 email_receiver_list
             )
 
+        logger.info(
+            f'Admin {request.user.username} denied a project renewal request (project pk={project_obj.pk})'
+        )
         return HttpResponseRedirect(reverse('project-review-list'))
 
 
@@ -2378,14 +2437,20 @@ class ProjectReviewInfoView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
     template_name = 'project/project_review_info.html'
 
     def test_func(self):
-        if self.request.user.is_superuser:
-            return True
+        """ UserPassesTestMixin Tests"""
 
-        if self.request.user.has_perm('project.can_review_pending_projects'):
-            return True
+        if not self.request.user.is_superuser:
+            if not self.request.user.has_perm('project.can_review_pending_projects'):
+                return False
 
-        messages.error(
-            self.request, 'You do not have permission to deny a project review.')
+        project_review_obj = get_object_or_404(ProjectReview, pk=self.kwargs.get('pk'))
+        if project_review_obj.status.name != 'Pending':
+            messages.error(
+                self.request, f'You cannot view a project review\'s info with status "{project_review_obj.status.name}"'
+            )
+            return False
+
+        return True
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -2618,10 +2683,8 @@ class ProjectRequestAccessEmailView(LoginRequiredMixin, View):
                 [project_obj.pi.email]
             )
             logger.info(
-                'User {} sent an email to {} requesting access to their project'.format(
-                    request.user.username,
-                    project_obj.pi.email
-                )
+                f'User {request.user.username} sent an email to {project_obj.pi.email} requesting '
+                f'access to their project (project pk={project_obj.pk})'
             )
         else:
             logger.warning(
@@ -2671,6 +2734,9 @@ class ProjectNoteCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView)
         return form
 
     def get_success_url(self):
+        logger.info(
+            f'Admin {self.request.user.username} created a project note (pk={self.kwargs.get("pk")})'
+        )
         return reverse('project-detail', kwargs={'pk': self.kwargs.get('pk')})
 
 
@@ -2758,7 +2824,7 @@ class ProjectExportView(LoginRequiredMixin, UserPassesTestMixin, View):
             )
             response['Content-Disposition'] = f'attachment; filename="{file_name}'
 
-            logger.info(f'User {request.user.username} exported the project list')
+            logger.info(f'Admin {request.user.username} exported the project list')
 
             return response
         else:
@@ -2868,7 +2934,7 @@ class ProjectUserExportView(LoginRequiredMixin, UserPassesTestMixin, View):
             )
             response['Content-Disposition'] = f'attachment; filename="{file_name}"'
 
-            logger.info(f'User {request.user.username} exported the project user list')
+            logger.info(f'Admin {request.user.username} exported the project user list')
 
             return response
         else:

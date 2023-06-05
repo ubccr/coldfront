@@ -203,34 +203,22 @@ def create_admin_action_for_creation(user, created_obj, allocation, base_model=N
         )
 
 
-def update_linked_allocation_attribute(allocation_attribute):
+def get_allocation_user_emails(allocation_obj, only_project_managers=False):
     """
-    Checks if an allocation attribute's type is linked to the allocation attribute and assigns the
-    allocation attribute the new value.
+    Returns a list of allocation user emails in the given allocation. Only emails from users with
+    their notifications enabled will be returned.
 
-    :param allocation_attribute: The allocation attribute that is being created/modified
+    :param allocation_obj: The allocation to grab the allocation user emails from
+    :param only_project_managers: Indicates if only the project manager emails should be returned
     """
-    linked_allocation_attribute = allocation_attribute.allocation_attribute_type.linked_allocation_attribute
-    allocation_obj = allocation_attribute.allocation
-    if hasattr(allocation_obj, linked_allocation_attribute):
-        setattr(allocation_obj, linked_allocation_attribute, allocation_attribute.value)
-        allocation_obj.save()
+    allocation_users = allocation_obj.allocationuser_set.filter(
+        status__name__in=['Active', 'Pending - Remove']
+    ).values_list('user', flat=True)
+    allocation_users = allocation_obj.project.projectuser_set.filter(
+        enable_notifications=True, user__in=list(allocation_users)
+    )
+    if only_project_managers:
+        allocation_users = allocation_users.filter(role__name='Manager')
+    allocation_users = allocation_users.values_list('user__email', flat=True)
 
-
-def get_project_managers_in_allocation(allocation_obj):
-    """
-    Returns the project managers in the given allocation.
-
-    :param allocation_obj: The allocation to grab the project managers from
-    """
-    project_managers_in_allocation=[]
-    project_managers = allocation_obj.project.projectuser_set.filter(
-        role__name='Manager'
-    ).exclude(status__name__in=['Removed', 'Denied'])
-    allocation_users = allocation_obj.allocationuser_set.exclude(status__name__in=['Removed', 'Error'])
-    users = [allocation_user.user for allocation_user in allocation_users]
-    for project_manager in project_managers:
-        if project_manager.user in users:
-            project_managers_in_allocation.append(project_manager)
-
-    return project_managers_in_allocation
+    return list(allocation_users)
