@@ -2030,7 +2030,7 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 project_review_url = reverse('project-review-list')
                 url = '{}{}'.format(domain_url, project_review_url)
                 text = (
-                    f'A new review request for project "{project_obj.title}" with id '
+                    f'A new renewal request for project "{project_obj.title}" with id '
                     f'{project_obj.pk} has been submitted. You can view it here: {url}'
                 )
                 send_message(text)
