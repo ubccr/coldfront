@@ -43,7 +43,6 @@ class WeeklyreportappConfig(AppConfig):
 ```
 app_name = "weeklyreportapp"
 ```
-
 ## Link Your App to ColdFront
 
 1. Add the following app to your list of ```INSTALLED_APPS``` in your ColdFront **base.py** file:
@@ -59,8 +58,12 @@ urlpatterns += [
     path('weekly-report/', include('coldfront.core.weeklyreportapp.urls')),
 ]
 ```
-4. Add your app's folder to the **coldfront/core** directory.
-5. Import ColdFront models in the following manner:
+3. Add your app's folder to the **coldfront/core** directory.
+4. In your apps' **views.py** file, add this line:
+   ```
+   from .models import *
+   ```
+5. Import ColdFront models in the following manner in your **models.py** file in your app:
    ```
    from coldfront.core.allocation.models import *
    from coldfront.core.project.models import *
@@ -69,10 +72,10 @@ urlpatterns += [
    ```
 6. Add ColdFront's skeleton HTML/CSS by adding the following lines to all of your template files:
 ```
- {% extends "common/base.html" %}
- {% load crispy_forms_tags %}
- {% load humanize %}
- {% load static %}
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+{% load static %}
 ```
 7. *(Optional)* Since the example Weekly Report plugin is intended for admins, to add it to the navbar for admins, update the **templates/common/navbar_admin.html** file or its equivalent in your ColdFront setup like so:
   ```
@@ -100,3 +103,5 @@ urlpatterns += [
 
 !!! Tip
     Note: To override any default ColdFront templates, follow [these instructions](../../config/#custom-branding) from our docs.
+
+Your app should now be linked to ColdFront.
