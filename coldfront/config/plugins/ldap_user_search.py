@@ -6,9 +6,9 @@ try:
 except ImportError:
     raise ImproperlyConfigured('Please run: pip install ldap3')
 
-#------------------------------------------------------------------------------
-# This enables searching for users via LDAP
-#------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
+#  This enables searching for users via LDAP
+# ----------------------------------------------------------------------------
 
 LDAP_USER_SEARCH_SERVER_URI = ENV.str('LDAP_USER_SEARCH_SERVER_URI')
 LDAP_USER_SEARCH_BASE = ENV.str('LDAP_USER_SEARCH_BASE')
@@ -20,6 +20,5 @@ LDAP_USER_SEARCH_USE_TLS = ENV.bool('LDAP_USER_SEARCH_USE_TLS', default=False)
 LDAP_USER_SEARCH_PRIV_KEY_FILE = ENV.str("LDAP_USER_SEARCH_PRIV_KEY_FILE", default=None)
 LDAP_USER_SEARCH_CERT_FILE = ENV.str("LDAP_USER_SEARCH_CERT_FILE", default=None)
 LDAP_USER_SEARCH_CACERT_FILE = ENV.str("LDAP_USER_SEARCH_CACERT_FILE", default=None)
-LDAP_USER_SEARCH_MAPPING_CALLBACK = None
 
 ADDITIONAL_USER_SEARCH_CLASSES = ['coldfront.plugins.ldap_user_search.utils.LDAPUserSearch']
