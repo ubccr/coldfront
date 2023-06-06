@@ -104,6 +104,7 @@ Project Detail
         </thead>
         <tbody>
           {% for allocation in allocations %}
+          {% if allocation.status.name == 'Active' %}
           <tr style="background-color:#FFFFFF">
             <td>{{ allocation.get_parent_resource.name }}</td>
             <td>{{ allocation.get_parent_resource.resource_type.name }}</td>
@@ -136,6 +137,7 @@ Project Detail
             {% endif %}
             </td>
           </tr>
+          {% endif %}
           {% endfor %}
         </tbody>
         <tfoot>
@@ -158,8 +160,70 @@ Project Detail
 <!-- End Project Invoice/Allocations -->
 
 
-<!-- Start Project Invoice/Allocations -->
-{% if time_chart_data %}
+<!-- Start Allocations -->
+<div class="html2pdf__page-break"></div>
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="d-inline"><i class="fas fa-file-invoice-dollar" aria-hidden="true"></i> Allocation History</h3>
+    <span class="badge badge-secondary">{{allocation_history_records.count}}</span>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+        <table id="invoice_table" class="table table-hover">
+        <thead>
+          <tr>
+            <th scope="col">Resource Name</th>
+            <th scope="col">Resource Type</th>
+            <th scope="col">Path</th>
+            <th scope="col">User Count</th>
+            <th scope="col">Total Space (TB)</th>
+            <th scope="col">Status</th>
+            <th scope="col">Created</th>
+            <th scope="col">Deactivated</th>
+            <!-- <th scope="col" class="nosort">Actions</th> -->
+          </tr>
+        </thead>
+        <tbody>
+          {% for allocation, record in allocation_history_records %}
+          <tr style="background-color:#FFFFFF">
+            <td>{{ allocation.get_parent_resource.name }}</td>
+            <td>{{ allocation.get_parent_resource.resource_type.name }}</td>
+            <td>{{ allocation.path }}</td>
+            <td>{{ allocation.allocationuser_set.count }}</td>
+            <td>{{ allocation.size|floatformat:1 }}</td>
+
+            {% if allocation.status.name == 'New' %}
+              <td class="text-info">{{ Requested }}</td>
+            {% elif allocation.status.name == 'Active' %}
+              <td class="text-success">{{ allocation.status.name }}</td>
+            {% elif allocation.status.name in 'Denied,Inactive' %}
+              <td class="text-danger">Inactive</td>
+            {% else %}
+              <td class="text-info">{{ allocation.status.name }}</td>
+            {% endif %}
+            <td>
+              {% if allocation.status.name not in 'New,Denied' %}
+                {{ allocation.start_date|date }}
+              {% endif %}
+            </td>
+            <td>
+              {% if allocation.status.name == 'Inactive' %}
+                {{ record.history_date|date }}
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+<!-- End Allocations -->
+
+
+<!-- Start Invoice History Chart -->
+<!-- {% if time_chart_data %}
 <div class="html2pdf__page-break"></div>
 <div class="card mb-3">
   <div class="card-header">
@@ -172,8 +236,8 @@ Project Detail
 
   </div>
 </div>
-{% endif %}
-
+{% endif %} -->
+<!-- End Invoice History Chart -->
 
 
 

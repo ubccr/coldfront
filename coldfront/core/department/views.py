@@ -17,7 +17,6 @@ from coldfront.core.department.models import (
     DepartmentUserNote,
 )
 
-
 def return_department_roles(user, department):
     """Return list of a user's permissions for the specified department.
     possible roles are: manager, pi, or member.
@@ -122,10 +121,7 @@ class DepartmentNoteUpdateView(NoteUpdateView):
         return context
 
     def get_success_url(self):
-        return reverse_lazy(
-            'department-detail', kwargs={'pk': self.object.department.pk}
-        )
-
+        return reverse_lazy('department-detail', kwargs={'pk': self.object.department.pk})
 
 class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     """Department Stats, Projects, Allocations, and invoice details."""
