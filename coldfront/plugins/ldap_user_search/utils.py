@@ -43,10 +43,8 @@ class LDAPUserSearch(UserSearch):
         self.server = Server(self.LDAP_SERVER_URI, use_ssl=self.LDAP_USE_SSL, connect_timeout=self.LDAP_CONNECT_TIMEOUT, tls=tls)
         self.conn = Connection(self.server, self.LDAP_BIND_DN, self.LDAP_BIND_PASSWORD, auto_bind=True)
 
-    def parse_ldap_entry(search_source, attribute_map, entry):
-        entry_dict = json.loads(entry.entry_to_json()).get('attributes')
-
-        user_dict = {'source': search_source}
+    def parse_ldap_entry(attribute_map, entry_dict):
+        user_dict = {}
         for user_attr, ldap_attr in attribute_map:
             user_dict[user_attr] = entry_dict.get(ldap_attr)[0] if entry_dict.get(ldap_attr) else ''
 
@@ -73,14 +71,14 @@ class LDAPUserSearch(UserSearch):
                             'search_filter': filter,
                             'attributes': ldap_attrs,
                             'size_limit': size_limit}
-        logger.debug(f"search params:{searchParameters}")
+        logger.debug(f"search params: {searchParameters}")
         self.conn.search(**searchParameters)
         users = []
-        logger.debug(self.conn.result)
         for idx, entry in enumerate(self.conn.entries, 1):
             entry_dict = json.loads(entry.entry_to_json()).get('attributes')
             logger.debug(f"Entry dict: {entry_dict}")
-            user_dict = self.MAPPING_CALLBACK(self.search_source, self.ATTRIBUTE_MAP, entry_dict)
+            user_dict = self.MAPPING_CALLBACK(self.ATTRIBUTE_MAP, entry_dict)
+            user_dict["source"] = self.search_source
             users.append(user_dict)
         logger.info("LDAP user search for %s found %s results", user_search_string, len(users))
         return users
