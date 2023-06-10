@@ -56,7 +56,6 @@ class MoneyField(models.CharField):
                            'Invalid input.')
         ]
         def to_python(self, value):
-        # Remove commas from the input value
             if value:
                 value = value.replace(',', '')
                 value = round(float(value.replace('$', '')), 2)
@@ -69,7 +68,6 @@ class PercentField(models.CharField):
                         'Invalid input.')
     ]
     def to_python(self, value):
-    # Remove commas from the input value
         if value:
             value = round(float(value.replace('%', '')), 2)
         return super().to_python(value)
