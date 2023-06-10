@@ -21,3 +21,4 @@ db.json
 .env
 .devcontainer/*
 .bin/*
+coldfront/core/allocation/migrations/0006_auto_20230607_1719.py

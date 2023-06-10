@@ -331,12 +331,12 @@ Project Detail
               <td>{{ grant.title }}</td>
               <td class="text-nowrap">{{ grant.grant_pi }}</td>
               <td>{{ grant.role}}</td>
-              <td>{{ grant.total_amount_awarded|intcomma}}</td>
+              <td>{{ grant.total_amount_awarded|floatformat:2}}</td>
               <td>{{ grant.grant_start|date:"Y-m-d" }}</td>
               <td>{{ grant.grant_end|date:"Y-m-d" }}</td>
               {% if grant.status.name == 'Active' %}
                 <td class="text-success">{{ grant.status.name }}</td>
-              {% elif  grant.status.name == 'Archived' %}
+              {% elif grant.status.name == 'Archived' %}
                 <td class="text-danger">{{ grant.status.name }}</td>
               {% else %}
                 <td class="text-info">{{ grant.status.name }}</td>
