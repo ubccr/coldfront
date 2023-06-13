@@ -331,7 +331,7 @@ Project Detail
               <td>{{ grant.title }}</td>
               <td class="text-nowrap">{{ grant.grant_pi }}</td>
               <td>{{ grant.role}}</td>
-              <td>{{ grant.total_amount_awarded|floatformat:2}}</td>
+              <td>{{ grant.total_amount_awarded|floatformat:2|intcomma }}</td>
               <td>{{ grant.grant_start|date:"Y-m-d" }}</td>
               <td>{{ grant.grant_end|date:"Y-m-d" }}</td>
               {% if grant.status.name == 'Active' %}
