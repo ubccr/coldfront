@@ -12,7 +12,8 @@ All rights reserved.
 '''
 
 import logging
-from django.db import transaction, Q
+from django.db import transaction
+from django.db.models import Q
 from ifxbilling.models import ProductUsage, ProductUsageProcessing
 
 logger = logging.getLogger(__name__)
@@ -32,7 +33,7 @@ def march_april_2023_dr():
             pup = pu.productusageprocessing_set.first()
             if not pup:
                 pup = ProductUsageProcessing(product_usage=pu)
-            pup.error_message = f'Billing Record removed for {month}/{year} due to tier1 disaster recovery issues'
+            pup.error_message = f'Billing Record removed for March / April 2023 due to tier1 disaster recovery issues'
             pup.resolved = True
             pup.save()
             delete_result = pu.billingrecord_set.all().delete()
