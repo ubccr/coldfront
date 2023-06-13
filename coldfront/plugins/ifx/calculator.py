@@ -648,8 +648,8 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
         Adjust march 2023 due to bad DR issues
         '''
         results = super().calculate_billing_month(year, month, organizations, recalculate, verbosity)
-        if year == 2023 and month == 3:
-            adjust.march_2023_dr()
+        if year == 2023 and (month == 3 or month == 4):
+            adjust.march_april_2023_dr()
 
         return results
 

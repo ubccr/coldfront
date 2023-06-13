@@ -12,23 +12,22 @@ All rights reserved.
 '''
 
 import logging
-from django.db import transaction
+from django.db import transaction, Q
 from ifxbilling.models import ProductUsage, ProductUsageProcessing
 
 logger = logging.getLogger(__name__)
 
-def march_2023_dr():
+def march_april_2023_dr():
     '''
     Remove all charges for bos-isilon/tier1 and holy-isilon/tier1 storage due to disaster recovery failure
     Set PUP message
     '''
 
     year = 2023
-    month = 3
     products = ['holy-isilon/tier1', 'bos-isilon/tier1']
     count = 0
     billing_record_count = 0
-    for pu in ProductUsage.objects.filter(year=year, month=month, product__product_name__in=products):
+    for pu in ProductUsage.objects.filter(year=year, product__product_name__in=products).filter(Q(month=3) | Q(month=4)):
         with transaction.atomic():
             pup = pu.productusageprocessing_set.first()
             if not pup:
