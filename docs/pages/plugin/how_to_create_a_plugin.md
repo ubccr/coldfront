@@ -58,7 +58,7 @@ urlpatterns += [
     path('weekly-report/', include('coldfront.core.weeklyreportapp.urls')),
 ]
 ```
-3. Add your app's folder to the **coldfront/core** directory or **pip install [package_name]** in your virtual environment to make upgrading ColdFront more efficient (if applicable). In the case of the example plugin, run:
+3. Add your app's folder to the **coldfront/core** directory or **pip install [package_name]** in your virtual environment to make upgrading ColdFront more efficient (if applicable). To learn how to create a pip package from a GitHub repo, check out [this link](https://dev.to/rf_schubert/how-to-create-a-pip-package-and-host-on-private-github-repo-58pa). In the case of the example plugin, run:
 ```
 pip install git+https://github.com/rg663/weeklyreportapp
 ```
