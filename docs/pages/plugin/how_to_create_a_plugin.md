@@ -58,7 +58,10 @@ urlpatterns += [
     path('weekly-report/', include('coldfront.core.weeklyreportapp.urls')),
 ]
 ```
-3. Add your app's folder to the **coldfront/core** directory.
+3. Add your app's folder to the **coldfront/core** directory or **pip install [package_name]** in your virtual environment to make upgrading ColdFront more efficient (if applicable). In the case of the example plugin, run:
+```
+pip install git+https://github.com/rg663/weeklyreportapp
+```
 4. In your apps' **views.py** file, add this line:
    ```
    from .models import *
