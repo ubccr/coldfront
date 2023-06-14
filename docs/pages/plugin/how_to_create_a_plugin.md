@@ -2,7 +2,7 @@
 
 ColdFront plugins are synonymous to Django apps. To create a plugin, all you have to do is create a Django app and link it to ColdFront by editing configuration settings.
 
-The tutorial below assumes that you are comfortable with Django. If not, check out [these docs]("https://docs.djangoproject.com/en/4.2/intro/tutorial01/") for an introduction to how to build a Django app.
+The tutorial below assumes that you are comfortable with Django. If not, check out [these docs](https://docs.djangoproject.com/en/4.2/intro/tutorial01/) for an introduction to how to build a Django app.
 
 Throughout this tutorial, to effectively illustrate the structure of a linked ColdFront plugin, the Weekly Report plugin [linked here](https://github.com/rg663/weeklyreportapp) will be used as an example.
 
