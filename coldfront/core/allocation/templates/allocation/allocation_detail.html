@@ -60,9 +60,18 @@ Allocation Detail
                 {% for resource in allocation.get_resources_as_list %}
                   <a href="{% url 'resource-detail' resource.pk %}">{{ resource }}</a> <br>
                 {% endfor %}
-              {% else %}
-                None
-              {% endif %}
+            {% else %}
+              None
+            {% endif %}
+              <!-- {% if resources_with_eula %}
+                {% for res, value in resources_with_eula.items %}
+                  {% if res in allocation.get_resources_as_list %}
+                    <a href="{% url 'resource-detail' res.pk %}">{{ res }}</a><br>
+                    EULA agreement:
+                  {{ value }}
+                  {% endif %}
+                {% endfor %}
+              {% endif %} -->
             </td>
           </tr>
           {% if request.user.is_superuser %}
@@ -172,6 +181,55 @@ Allocation Detail
     </form>
   </div>
 </div>
+<!-- 
+{% if resources_with_eula %}
+  <div class="card mb-3">
+    <div class="card-header">
+      <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> EULA Agreements </h3>
+      <div class="float-right">
+  {% for res, value in resources_with_eula.items %}
+    {% if res in allocation.get_resources_as_list %}
+      <a href="{% url 'resource-detail' res.pk %}">{{ res }}</a><br>
+      EULA agreement:
+    {{ value }}
+    {% endif %}
+  {% endfor %}
+{% endif %}
+</div>
+</div>
+</div> -->
+
+{% if resources_with_eula %}
+  <div class="card mb-3">
+    <div class="card-header">
+      <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> EULA Agreements </h3>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-bordered table-sm">
+            <thead>
+              <tr>
+                <th scope="col">Resource</th>
+                <th scope="col">EULA Agreement</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for res, value in resources_with_eula.items %}
+                  <tr>
+                    <td>
+                      <a href="{% url 'resource-detail' res.pk %}">{{ res }}</a><br>
+                    </td>
+                    <td>
+                      {{ value }}
+                    </td>
+                  </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  {% endif %}
 
 {% if eulas %}
 <div class="card mb-3">
