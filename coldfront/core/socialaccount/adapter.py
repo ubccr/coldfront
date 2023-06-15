@@ -33,43 +33,25 @@ class CILogonAccountAdapter(DefaultSocialAccountAdapter):
 
     def populate_user(self, request, sociallogin, data):
         """Handle logins using the CILogon provider differently. In
-        particular, use the given email address as the username; raise
-        an error if one is not provided. Handle logins using other
-        providers normally."""
-        # Attempt to retrieve identifying information for logging purposes.
-        try:
-            provider = sociallogin.account.provider
-        except AttributeError:
-            provider = 'unknown'
-        try:
-            user_uid = sociallogin.account.uid
-        except AttributeError:
-            user_uid = 'unknown'
+        particular, raise an error if no email address is provided,
+        ensure that it is set in lowercase, and use it as the username.
+        Handle logins using other providers normally."""
+        user = super().populate_user(request, sociallogin, data)
 
+        provider = sociallogin.account.provider
         if provider == 'cilogon':
-            first_name = data.get('first_name')
-            last_name = data.get('last_name')
-            email = data.get('email')
-            name = data.get('name')
-
-            validated_email = valid_email_or_none(email)
+            validated_email = valid_email_or_none(user.email)
             if not validated_email:
                 log_message = (
-                    f'Provider {provider} did not provide an email address '
-                    f'for user with UID {user_uid}.')
+                    f'Provider {provider} did not provide an email address for '
+                    f'user with UID {sociallogin.account.uid}.')
                 logger.error(log_message)
                 self._raise_server_error(self._get_auth_error_message())
             validated_email = validated_email.lower()
-
-            user = sociallogin.user
-            user_username(user, validated_email)
             user_email_func(user, validated_email)
-            name_parts = (name or '').partition(' ')
-            user_field(user, 'first_name', first_name or name_parts[0])
-            user_field(user, 'last_name', last_name or name_parts[2])
-            return user
+            user_username(user, validated_email)
 
-        return super().populate_user(request, sociallogin, data)
+        return user
 
     def get_connect_redirect_url(self, request, socialaccount):
         """
