@@ -26,12 +26,12 @@ if ENV.bool('PLUGIN_IFX', default=False):
 logger = logging.getLogger(__name__)
 
 ALLOCATION_ATTRIBUTE_VIEW_LIST = import_from_settings(
-    'ALLOCATION_ATTRIBUTE_VIEW_LIST', [])
-ALLOCATION_FUNCS_ON_EXPIRE = import_from_settings(
-    'ALLOCATION_FUNCS_ON_EXPIRE', [])
+    'ALLOCATION_ATTRIBUTE_VIEW_LIST', []
+)
+ALLOCATION_FUNCS_ON_EXPIRE = import_from_settings('ALLOCATION_FUNCS_ON_EXPIRE', [])
 ALLOCATION_RESOURCE_ORDERING = import_from_settings(
-    'ALLOCATION_RESOURCE_ORDERING',
-    ['-is_allocatable', 'name'])
+    'ALLOCATION_RESOURCE_ORDERING', ['-is_allocatable', 'name']
+)
 
 class AllocationPermission(Enum):
     """ A project permission stores the user and manager fields of a project. """
@@ -83,15 +83,15 @@ class Allocation(TimeStampedModel):
 
         permissions = (
             ('can_view_all_allocations', 'Can view all allocations'),
-            ('can_review_allocation_requests',
-             'Can review allocation requests'),
+            ('can_review_allocation_requests', 'Can review allocation requests'),
             ('can_manage_invoice', 'Can manage invoice'),
         )
 
     project = models.ForeignKey(Project, on_delete=models.CASCADE,)
     resources = models.ManyToManyField(Resource)
     status = models.ForeignKey(
-        AllocationStatusChoice, on_delete=models.CASCADE, verbose_name='Status')
+        AllocationStatusChoice, on_delete=models.CASCADE, verbose_name='Status'
+    )
     quantity = models.IntegerField(default=1)
     start_date = models.DateField(blank=True, null=True)
     end_date = models.DateField(blank=True, null=True)
@@ -140,7 +140,10 @@ class Allocation(TimeStampedModel):
 
     @property
     def usage(self):
-        return self.allocationattribute_set.get(allocation_attribute_type_id=1).allocationattributeusage.value
+        try:
+            return self.allocationattribute_set.get(allocation_attribute_type_id=1).allocationattributeusage.value
+        except:
+            return None
 
     @property
     def path(self):
@@ -237,12 +240,10 @@ class Allocation(TimeStampedModel):
             Resource: the parent resource for the allocation
         """
         if self.resources.count() == 0:
-            print('no parent resource')
             return None
         if self.resources.count() == 1:
             return self.resources.first()
-        parent = self.resources.order_by(
-            *ALLOCATION_RESOURCE_ORDERING).first()
+        parent = self.resources.order_by(*ALLOCATION_RESOURCE_ORDERING).first()
         if parent:
             return parent
         # Fallback

@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'django_tables2',
     'table',
     'rest_framework_datatables',
+    'rest_framework',
     'easy_pdf',
 ]
 
