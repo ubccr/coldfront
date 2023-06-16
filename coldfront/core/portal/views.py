@@ -8,28 +8,31 @@ from django.shortcuts import render
 from django.views.decorators.cache import cache_page
 
 from coldfront.core.allocation.models import Allocation, AllocationUser, AllocationChangeRequest
-from coldfront.core.portal.utils import (generate_allocations_chart_data,
-                                         generate_publication_by_year_chart_data,
-                                         generate_resources_chart_data
-                                         )
+from coldfront.core.portal.utils import (
+    generate_allocations_chart_data,
+    generate_publication_by_year_chart_data,
+    generate_resources_chart_data
+)
 from coldfront.core.project.models import Project
 from coldfront.core.publication.models import Publication
 from coldfront.core.resource.models import Resource
 from coldfront.config.env import ENV
+from coldfront.core.department.models import Department, DepartmentMember
 
 if ENV.bool('PLUGIN_SFTOCF', default=False):
     from coldfront.plugins.sftocf.utils import StarFishRedash, STARFISH_SERVER
 
 
 def home(request):
-
     context = {}
     if request.user.is_authenticated:
         template_name = 'portal/authorized_home.html'
         project_list = Project.objects.filter(
             Q(status__name__in=['New', 'Active', ]) & (
-                    Q(pi=request.user) |
-                (Q(projectuser__user=request.user) & Q(projectuser__status__name='Active'))
+                Q(pi=request.user) | (
+                    Q(projectuser__user=request.user)
+                    & Q(projectuser__status__name='Active')
+                )
             )
         ).distinct().order_by('-created')[:5]
 
@@ -44,22 +47,31 @@ def home(request):
         ).distinct().order_by('-created')[:5]
 
         managed_allocations = Allocation.objects.filter(
-            Q(status__name__in=['Active', 'New', 'Renewal Requested', ]) &
-            Q(project__status__name__in=['Active', 'New']) &
-            (Q(project__pi=request.user) |
-                    (Q(project__projectuser__user=request.user) & Q(project__projectuser__role__name='Manager')))
+            Q(status__name__in=['Active', 'New', 'Renewal Requested', ])
+            & Q(project__status__name__in=['Active', 'New']) & (
+                Q(project__pi=request.user) | (
+                    Q(project__projectuser__user=request.user)
+                    & Q(project__projectuser__role__name='Manager')
                 )
+            )
+        )
 
         if managed_allocations:
             allocation_request_list = AllocationChangeRequest.objects.filter(
-                        Q(allocation__in=managed_allocations) &
-                        (
-                            Q(status__name='Pending') |
-                            Q(modified__gt=timezone.now()-timezone.timedelta(days=30))
-                        )
-                ).distinct().order_by('-created')
+                Q(allocation__in=managed_allocations) & (
+                    Q(status__name='Pending') |
+                    Q(modified__gt=timezone.now()-timezone.timedelta(days=30))
+                )
+            ).distinct().order_by('-created')
         else:
             allocation_request_list = None
+
+        user_depts = DepartmentMember.objects.filter(user=request.user)
+        department_list = Department.objects.filter(
+            id__in=user_depts.values_list('organization_id')
+        )
+
+        context['department_list'] = department_list
         context['project_list'] = project_list
         context['allocation_list'] = allocation_list
         context['allocation_request_list'] = allocation_request_list

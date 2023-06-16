@@ -43,16 +43,22 @@ class DepartmentListViewTest(DepartmentViewTest):
         """
         # admins can see all departments.
         response = utils.login_and_get_page(
-                self.client, self.admin_user, "/department/?show_all_departments=on")
+            self.client, self.admin_user, "/department/?show_all_departments=on"
+        )
         self.assertEqual(len(response.context['object_list']), 2)
-        self.assertEqual([i.name for i in response.context['object_list'].all()],
-                        ['School of Maths and Sciences', 'Computational Chemistry'])
+        self.assertEqual(
+            [i.name for i in response.context['object_list'].all()],
+            ['School of Maths and Sciences', 'Computational Chemistry']
+        )
 
         # non-admins can only see departments they belong to.
         response = utils.login_and_get_page(
-                self.client, self.dept_manager_user, "/department/?show_all_departments=on")
+            self.client, self.dept_manager_user, "/department/?show_all_departments=on"
+        )
         self.assertEqual(len(response.context['object_list']), 1)
-        self.assertEqual(response.context['object_list'].first().name, 'School of Maths and Sciences')
+        self.assertEqual(
+            response.context['object_list'].first().name, 'School of Maths and Sciences'
+        )
 
 
 class DepartmentDetailViewTest(DepartmentViewTest):
@@ -97,7 +103,6 @@ class DepartmentDetailViewTest(DepartmentViewTest):
         # print("response ADMIN:", [f'{i}\n' for i in response.context], "\n\n")
         # confirm that all projects are visible
         self.assertEqual(len(response.context['projects']), 2)
-
         # department members who are not administrators cannot update department details
         # or review bills
 

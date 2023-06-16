@@ -93,13 +93,13 @@ def setup_departments(test_case):
     test_case.school = OrganizationFactory(
         name='School of Maths and Sciences',
         rank='school',
-        org_tree='Harvard',
-        )
+        org_tree='Research Computing Storage Billing',
+    )
     test_case.dept = OrganizationFactory(
         name='Computational Chemistry',
         rank='department',
-        org_tree='Harvard',
-        )
+        org_tree='Research Computing Storage Billing',
+    )
 
 
     test_case.dept_member_user = UserFactory(
@@ -107,20 +107,21 @@ def setup_departments(test_case):
         first_name='John',
         last_name='Doe',
         full_name='John Doe',
-        )
+    )
     ProjectFactory(title=fake.unique.project_title())
     for project in Project.objects.all():
         project_title = project.title
-        org = OrganizationFactory(name=project_title,
-                                            rank='lab',
-                                            org_tree='Harvard'
-                                            )
+        org = OrganizationFactory(
+            name=project_title, rank='lab', org_tree='Harvard'
+        )
         ProjectOrganizationFactory(project=project, organization=org)
 
         OrgRelationFactory(parent=test_case.school, child=org)
 
     dept2_proj = ProjectFactory(title=fake.unique.project_title(), pi=test_case.dept_member_user)
-    dept2_proj_org = OrganizationFactory(name=dept2_proj.title, rank='lab', org_tree='Harvard')
+    dept2_proj_org = OrganizationFactory(
+        name=dept2_proj.title, rank='lab', org_tree='Harvard'
+    )
     ProjectOrganizationFactory(project=dept2_proj, organization=dept2_proj_org)
     OrgRelationFactory(parent=test_case.dept, child=dept2_proj_org)
     ProjectUserFactory(project=dept2_proj, user=test_case.dept_member_user)
@@ -130,10 +131,10 @@ def setup_departments(test_case):
         organization=test_case.school,
         role='approver',
         active=True,
-        )
+    )
     UserAffiliationFactory(
         user=test_case.dept_member_user,
         organization=test_case.dept,
         role='user',
         active=True,
-        )
+    )
