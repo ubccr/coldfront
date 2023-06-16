@@ -58,7 +58,7 @@ urlpatterns += [
     path('weekly-report/', include('coldfront.core.weeklyreportapp.urls')),
 ]
 ```
-3. Add your app's folder to the **coldfront/core** directory or **pip install [package_name]** in your virtual environment to make upgrading ColdFront more efficient (if applicable). To learn how to create a pip package from a GitHub repo, check out [this link](https://dev.to/rf_schubert/how-to-create-a-pip-package-and-host-on-private-github-repo-58pa). In the case of the example plugin, run:
+3. Add your app's folder to the **coldfront/core** directory or **pip install [package_name]** in your virtual environment to make upgrading ColdFront more efficient (if applicable). To learn how to create a pip package, check out [this link](https://packaging.python.org/en/latest/tutorials/packaging-projects/). If you are creating a pip package from a GitHub repo, we found [this blog](https://dev.to/rf_schubert/how-to-create-a-pip-package-and-host-on-private-github-repo-58pa) information useful in doing so. To pip install the example plugin, run:
 ```
 pip install git+https://github.com/rg663/weeklyreportapp
 ```
@@ -80,7 +80,7 @@ pip install git+https://github.com/rg663/weeklyreportapp
 {% load humanize %}
 {% load static %}
 ```
-7. *(Optional)* Since the example Weekly Report plugin is intended for admins, to add it to the navbar for admins, update the **templates/common/navbar_admin.html** file or its equivalent in your ColdFront setup like so:
+7. Since the example Weekly Report plugin is intended for admins, to add it to the navbar for admins, update the **templates/common/navbar_admin.html** file or its equivalent in your ColdFront setup like so:
   ```
   <li id="navbar-admin" class="nav-item dropdown">
     <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown">Admin</a>
