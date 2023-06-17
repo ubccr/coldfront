@@ -1,9 +1,7 @@
 {% load common_tags %}
 
 <li id="navbar-plugins" class="nav-item">
-    {% for dict in settings.EXTRA_PLUGIN_LINKS %}
-        {% for nav_name, url_value in dict.items %}
-            <a class="nav-link" href="{% url url_value %}">{{nav_name}}</a>
-        {% endfor %}
+    {% for nav_name, url_value in settings.EXTRA_PLUGIN_LINKS.items %}
+        <a class="nav-link" href="{% url url_value %}">{{nav_name}}</a>
     {% endfor %}
 </li>
