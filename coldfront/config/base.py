@@ -154,3 +154,12 @@ if len(SITE_STATIC) > 0:
 # Add system site static files
 if os.path.isdir('/usr/share/coldfront/site/static'):
     STATICFILES_DIRS.insert(0, '/usr/share/coldfront/site/static')
+
+#------------------------------------------------------------------------------
+# Add Plugin Links for Navbar Here
+
+# SETTINGS_EXPORT (list[dict])
+# Each dictionary has a key which represents the name of the url to show on the navbar, and a value that represents the url. The recommended format for the url is "[namespace]:[url_name_inside_namespace]".
+#------------------------------------------------------------------------------
+EXTRA_PLUGIN_LINKS = []
+SETTINGS_EXPORT += ["EXTRA_PLUGIN_LINKS"]
