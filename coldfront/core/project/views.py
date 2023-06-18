@@ -21,7 +21,7 @@ from django.http import (HttpResponse, HttpResponseForbidden,
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
-from coldfront.core.allocation.utils import generate_guauge_data_from_usage
+from coldfront.core.allocation.utils import generate_guauge_data_from_usage, get_user_resources
 from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from django.views.generic.base import TemplateView
@@ -43,7 +43,8 @@ from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectReviewForm,
                                           ProjectSearchForm,
                                           ProjectUserUpdateForm,
-                                          ProjectAttributeUpdateForm)
+                                          ProjectAttributeUpdateForm,
+                                          ProjectEULAApprovalForm)
 from coldfront.core.project.models import (Project,
                                            ProjectAttribute,
                                            ProjectReview,
@@ -604,6 +605,44 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
                     users_already_in_project.append(ele)
             context['users_already_in_project'] = users_already_in_project
 
+        def get_eula(alloc):
+            if alloc.get_resources_as_list:
+                for res in alloc.get_resources_as_list:
+                    if res.get_attribute(name='eula'):
+                        return res.get_attribute(name='eula')
+            else:
+                return None
+
+        allocations_with_eula = {}
+        allocation_query_set = project_obj.allocation_set.filter(
+            resources__is_allocatable=True, is_locked=False, status__name__in=['Active', 'New', 'Renewal Requested', 'Payment Pending', 'Payment Requested', 'Paid'])
+        # allocation_choices = [allocation for allocation in allocation_query_set]
+        # allocation_choices_sorted = []
+        allocation_choices_sorted = sorted(allocation_query_set, key=lambda x: x.__str__())
+        # allocation_choices.insert(0, ('__select_all__', 'Select All'))
+        for index in range(len(list(allocation_choices_sorted))):
+            if get_eula(list(allocation_choices_sorted)[index]):
+                allocations_with_eula[f"id_allocationform-allocation_{index}"] = get_eula(list(allocation_choices_sorted)[index])
+
+        allocations_with_eula_values = []
+        for allocation in list(allocation_choices_sorted):
+            if get_eula(allocation):
+                allocations_with_eula_values.append(get_eula(allocation))
+        context["allocations_with_eula_values"] = allocations_with_eula_values
+
+        # formset_eula = formset_factory(ProjectEULAApprovalForm, max_num=len(allocations_with_eula))
+        # formset_eula = formset_eula(request.POST, initial=[{"eula": False}], prefix='eulaform')
+        # formset_eula = formset(initial=matches, prefix='userform')
+        # context['formset_eula'] = formset_eula
+        # user_resources = get_user_resources(self.request.user)
+        # allocations_with_eula = {}
+        # for res in user_resources:
+        #     if res.get_attribute_list(name='eula'):
+        #         for attr_value in res.get_attribute_list(name='eula'):
+        #             allocations_with_eula[res.__str__()] = attr_value
+
+        context['allocations_with_eula'] = allocations_with_eula
+
         # The following block of code is used to hide/show the allocation div in the form.
         if project_obj.allocation_set.filter(status__name__in=['Active', 'New', 'Renewal Requested']).exists():
             div_allocation_class = 'placeholder_div_class'
@@ -614,8 +653,10 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
 
         allocation_form = ProjectAddUsersToAllocationForm(
             request.user, project_obj.pk, prefix='allocationform')
+        eula_form = ProjectEULAApprovalForm(request.user, project_obj.pk)
         context['pk'] = pk
         context['allocation_form'] = allocation_form
+        context['eula_form'] = eula_form
         return render(request, self.template_name, context)
 
 
