@@ -54,7 +54,7 @@ class ProjectAddUsersToAllocationForm(forms.Form):
             return None
                 
     allocation = forms.MultipleChoiceField(
-        widget=forms.CheckboxSelectMultiple(attrs={'checked': 'checked'}), required=False)
+        widget=forms.CheckboxSelectMultiple(), required=False)
 
     def __init__(self, request_user, project_pk, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -67,11 +67,9 @@ class ProjectAddUsersToAllocationForm(forms.Form):
         allocation_choices_sorted = []
         allocation_choices_sorted = sorted(allocation_choices, key=lambda x: x[1][0].lower())
         allocation_choices.insert(0, ('__select_all__', 'Select All'))
-        # eulas = [self.get_eula(allocation) for allocation in allocation_query_set]
         if allocation_query_set:
             self.fields['allocation'].choices = allocation_choices_sorted
             self.fields['allocation'].help_text = '<br/>Select allocations to add selected users to.'
-            # self.fields['eula'].label = eulas
         else:
             self.fields['allocation'].widget = forms.HiddenInput()
 
@@ -97,13 +95,7 @@ class ProjectEULAApprovalForm(forms.Form):
         allocation_choices_sorted = []
         allocation_choices_sorted = sorted(allocation_choices, key=lambda x: x[1][0].lower())
         allocation_choices.insert(0, ('__select_all__', 'Select All'))
-        # if allocation_query_set:
-            # for allocation in allocation_query_set:
-                # self.fields['eula'].help_text = self.get_eula(allocation)
-        # else:
-        #     self.fields['allocation'].widget = forms.HiddenInput()
-
-
+       
 class ProjectRemoveUserForm(forms.Form):
     username = forms.CharField(max_length=150, disabled=True)
     first_name = forms.CharField(max_length=150, required=False, disabled=True)

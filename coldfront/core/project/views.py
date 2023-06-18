@@ -614,34 +614,22 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
                 return None
 
         allocations_with_eula = {}
+        allocations_with_eula_names = {}
         allocation_query_set = project_obj.allocation_set.filter(
             resources__is_allocatable=True, is_locked=False, status__name__in=['Active', 'New', 'Renewal Requested', 'Payment Pending', 'Payment Requested', 'Paid'])
-        # allocation_choices = [allocation for allocation in allocation_query_set]
-        # allocation_choices_sorted = []
         allocation_choices_sorted = sorted(allocation_query_set, key=lambda x: x.__str__())
-        # allocation_choices.insert(0, ('__select_all__', 'Select All'))
         for index in range(len(list(allocation_choices_sorted))):
             if get_eula(list(allocation_choices_sorted)[index]):
                 allocations_with_eula[f"id_allocationform-allocation_{index}"] = get_eula(list(allocation_choices_sorted)[index])
+                allocations_with_eula_names[f"id_allocationform-allocation_{index}"] = allocation_choices_sorted[index].__str__()
 
         allocations_with_eula_values = []
         for allocation in list(allocation_choices_sorted):
             if get_eula(allocation):
                 allocations_with_eula_values.append(get_eula(allocation))
         context["allocations_with_eula_values"] = allocations_with_eula_values
-
-        # formset_eula = formset_factory(ProjectEULAApprovalForm, max_num=len(allocations_with_eula))
-        # formset_eula = formset_eula(request.POST, initial=[{"eula": False}], prefix='eulaform')
-        # formset_eula = formset(initial=matches, prefix='userform')
-        # context['formset_eula'] = formset_eula
-        # user_resources = get_user_resources(self.request.user)
-        # allocations_with_eula = {}
-        # for res in user_resources:
-        #     if res.get_attribute_list(name='eula'):
-        #         for attr_value in res.get_attribute_list(name='eula'):
-        #             allocations_with_eula[res.__str__()] = attr_value
-
         context['allocations_with_eula'] = allocations_with_eula
+        context['allocations_with_eula_names'] = allocations_with_eula_names
 
         # The following block of code is used to hide/show the allocation div in the form.
         if project_obj.allocation_set.filter(status__name__in=['Active', 'New', 'Renewal Requested']).exists():

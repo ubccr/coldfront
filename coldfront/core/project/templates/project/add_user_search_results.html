@@ -27,19 +27,16 @@
       <div class="card-header">Available Allocations</div>
       <div class="card-body">
         {{allocation_form|crispy}}
-        <div id="modalEula" class="modal" style="position:relative;background-color:transparent">
-          <div class="modal-content" style="border:none">
-            <span id="close" style="font-weight:bolder">&times;</span>
-            {% comment %} <p>EULA Agreement for [resource] in [allocation]</p>
-            <p id="eulaText"></p>
-            <button>Agree to EULA</button> {% endcomment %}
-            {% comment %} {% for form_eula in formset_eula %}
-              {{ form_eula.eula }}
-            {% endfor %} {% endcomment %}
-            {{eula_form|crispy}}
-            <p id="eulaText"></p>
+        {% for allocid, val in allocations_with_eula_names.items %}
+          <div id="modalEula{{allocid}}" class="modal" style="position:relative;background-color:transparent">
+            <div class="modal-content" style="border:none">
+              <span id="close" style="font-weight:bolder">&times;</span>
+              <p style="font-weight:bolder">Allocation: {{val}}</p>
+              {{eula_form|crispy}}
+              <p id="eulaText{{allocid}}"></p>
+            </div>
           </div>
-        </div>
+        {% endfor %}
       </div>
     </div>
 
@@ -49,7 +46,7 @@
           <tr>
             <th><input type="checkbox" class="check" id="selectAll"></th>
             <th scope="col">#</th>
-            <th scope="col">{{allocations_with_eula_values}}</th>
+            <th scope="col">Username</th>
             <th scope="col">First Name</th>
             <th scope="col">Last Name</th>
             <th scope="col">Email</th>
@@ -101,25 +98,18 @@
     }
   });
 
-  $("#id_allocationform-allocation_0").click(function () {
-    //$("input[name^='allocationform-']").prop('checked', $(this).prop('checked'));
-  });
-
   $("input[name^='allocationform-']").click(function (ele) {
     var id = $(this).attr('id');
-    /*if ( id != "id_allocationform-allocation_0") {
-      $("#id_allocationform-allocation_0").prop('checked', false);
-    }*/
-    if (Object.keys(allocations_with_eula).includes(id) && ($("#modalEula").is(':checked')) == false) {
-      $("#modalEula").show();
-      let eulaText = document.getElementById("eulaText");
+    if (Object.keys(allocations_with_eula).includes(id) && ($(this).is(':checked')) == true) {
+      $("#modalEula"+id).show();
+      let eulaText = document.getElementById("eulaText"+id);
       eulaText.innerHTML = allocations_with_eula[id];
     }
     else {
-      $("#modalEula").hide();
+      $("#modalEula"+id).hide();
     }
   });
   $("#close").click(function () {
-    $("#modalEula").hide();
+    $("#modalEula"+id).hide();
   })
 </script>
