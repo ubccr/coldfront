@@ -1,0 +1,85 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+{% load humanize %}
+
+
+{% block title %}
+Project Output Report
+{% endblock %}
+
+
+{% block content %}
+<!-- Start Research Report -->
+<div class="card">
+  <div class="card-header">
+    <h4 class="d-inline"><i class="fas fa-trophy" aria-hidden="true"></i> Research Outputs</h4>
+    <button type="submit" form="download_form" class="btn btn-success float-right"><i class="fas fa-download" aria-hidden="true"></i> Export to CSV</button>
+  </div>
+  <div class="card-body">
+    {% if formset %}
+    <form id="download_form" action="{% url 'research-output-report' %}" method="post">
+      {% csrf_token %}
+      <div class="table-responsive">
+        <table id="research-reports-table" class="table table-hover table-sm">
+          <thead>
+            <tr>
+              <th scope="col"><input type="checkbox" class="check" id="selectAll"></th>
+              <th scope="col">Title</th>
+              <th scope="col">Description</th>
+              <th scope="col">Created By</th>
+              <th scope="col">Project</th>
+              <th scope="col">Created</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for form in formset %}
+              <tr>
+                <td>{{ form.selected }}</td>
+                <td class="text-nowrap" style="min-width: 200px">{{ form.title.value }}</td>
+                <td class="text-nowrap" style="min-width: 200px">{{ form.description.value }}</td>
+                <td class="text-nowrap">{{ form.created_by.value }}</td>
+                <td class="text-nowrap">{{ form.project.value }}</td>
+                <td class="text-nowrap">{{ form.created.value|date:"M. d, Y" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {{ formset.management_form }}
+    </form>
+    {% else %}
+      <div class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i> There are no reports to display.</div>
+    {% endif %}
+  </div>
+</div>
+<!-- End Research Output Report -->
+<!--Table Script-->
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active")
+  $("#navbar-admin").addClass("active")
+  $("#navbar-director").addClass("active")
+  $("#navbar-research-output-report").addClass("active")
+  $(document).ready(function() {
+    $('#research-reports-table').DataTable({
+      "iDisplayLength": 50,
+      "bSortClasses": false,
+      "order": [[ 5, "desc" ]],
+      "columnDefs": [{ 'orderable': false, 'targets': 0 }],
+      "aaSorting": [[1, 'asc']] 
+    });
+  });
+
+  $("#selectAll").click(function () {
+    $("input[name^='researchoutputform-']").prop('checked', $(this).prop('checked'));
+  });
+
+  $("input[name^='researchoutputform-']").click(function (ele) {
+    var id = $(this).attr('id');
+    if (id != "selectAll") {
+      $("#selectAll").prop('checked', false);
+    }
+  });
+</script>
+{% endblock %}
+<!--End Table Script-->
