@@ -20,31 +20,6 @@ from coldfront.core.utils.mixins.views import (
 )
 
 
-# class ResearchOutputAdmin(SimpleHistoryAdmin):
-#     list_display = [
-#         field.name for field in ResearchOutput._meta.get_fields()
-#         if field.name not in _research_output_fields_for_end
-#     ] + _research_output_fields_for_end
-#     list_filter = (
-#         'project',
-#         'created_by',
-#     )
-#     ordering = (
-#         'project',
-#         '-created',
-#     )
-
-#     # display the noneditable fields on the "change" form
-#     readonly_fields = [
-#         field.name for field in ResearchOutput._meta.get_fields()
-#         if not field.editable
-#     ]
-
-#     # the view implements some Add logic that we need not replicate here
-#     # to simplify: remove ability to add via admin interface
-#     def has_add_permission(self, request):
-#         return False
-
 class ResearchOutputReportView(ListView):
     template_name = 'research_output/research_output_report.html'
 
