@@ -45,6 +45,14 @@ class ProjectAddUserForm(forms.Form):
 
 
 class ProjectAddUsersToAllocationForm(forms.Form):
+    def get_eula(self, alloc):
+        if alloc.get_resources_as_list:
+            for res in alloc.get_resources_as_list:
+                if res.get_attribute(name='eula'):
+                    return res.get_attribute(name='eula')
+        else:
+            return None
+                
     allocation = forms.MultipleChoiceField(
         widget=forms.CheckboxSelectMultiple(attrs={'checked': 'checked'}), required=False)
 
@@ -59,11 +67,41 @@ class ProjectAddUsersToAllocationForm(forms.Form):
         allocation_choices_sorted = []
         allocation_choices_sorted = sorted(allocation_choices, key=lambda x: x[1][0].lower())
         allocation_choices.insert(0, ('__select_all__', 'Select All'))
+        # eulas = [self.get_eula(allocation) for allocation in allocation_query_set]
         if allocation_query_set:
             self.fields['allocation'].choices = allocation_choices_sorted
             self.fields['allocation'].help_text = '<br/>Select allocations to add selected users to.'
+            # self.fields['eula'].label = eulas
         else:
             self.fields['allocation'].widget = forms.HiddenInput()
+
+class ProjectEULAApprovalForm(forms.Form):
+    def get_eula(self, alloc):
+        if alloc.get_resources_as_list:
+            for res in alloc.get_resources_as_list:
+                if res.get_attribute(name='eula'):
+                    return res.get_attribute(name='eula')
+        else:
+            return None
+                
+    eula = forms.BooleanField(initial=False,required=True,label="Agree to EULA: ")
+
+    def __init__(self, request_user, project_pk, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        project_obj = get_object_or_404(Project, pk=project_pk)
+
+        allocation_query_set = project_obj.allocation_set.filter(
+            resources__is_allocatable=True, is_locked=False, status__name__in=['Active', 'New', 'Renewal Requested', 'Payment Pending', 'Payment Requested', 'Paid'])
+        allocation_choices = [(allocation.id, "%s (%s) %s" % (allocation.get_parent_resource.name, allocation.get_parent_resource.resource_type.name,
+                                                              allocation.description if allocation.description else '')) for allocation in allocation_query_set]
+        allocation_choices_sorted = []
+        allocation_choices_sorted = sorted(allocation_choices, key=lambda x: x[1][0].lower())
+        allocation_choices.insert(0, ('__select_all__', 'Select All'))
+        # if allocation_query_set:
+            # for allocation in allocation_query_set:
+                # self.fields['eula'].help_text = self.get_eula(allocation)
+        # else:
+        #     self.fields['allocation'].widget = forms.HiddenInput()
 
 
 class ProjectRemoveUserForm(forms.Form):
