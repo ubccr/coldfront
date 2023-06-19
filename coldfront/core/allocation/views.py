@@ -1103,6 +1103,26 @@ class AllocationInvoiceListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
 
         allocations = Allocation.objects.filter(
             status__name__in=['Paid', 'Payment Pending', 'Payment Requested', 'Payment Declined', ])
+        
+        allocations = [
+            {
+                "pk":allocation.pk,
+                "get_resources_as_string":allocation.get_resources_as_string,
+                "status":allocation.status,
+                "project":allocation.project
+            }
+            for allocation in allocations
+        ]
+        allocation_change_requests=AllocationChangeRequest.objects.all()
+        allocations += [
+            {
+                "pk":allocation.pk,
+                "get_resources_as_string":allocation.allocation.get_resources_as_string,
+                "status":allocation.status,
+                "project":allocation.allocation.project
+            }
+            for allocation in allocation_change_requests
+        ]
         return allocations
 
 # this is the view class thats rendering allocation_invoice_detail.
