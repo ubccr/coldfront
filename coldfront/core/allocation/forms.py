@@ -239,6 +239,9 @@ class AllocationChangeForm(forms.Form):
         widget=forms.Textarea,
         required=True,
         help_text='Justification for requesting this allocation change request.')
+    payment_status = forms.ModelChoiceField(queryset=AllocationStatusChoice.objects.filter(name__in=[
+        'Payment Pending', 'Payment Requested', 'Payment Declined', 'Paid']).order_by(Lower("name")), empty_label=None)
+
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

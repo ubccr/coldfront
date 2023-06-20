@@ -634,6 +634,10 @@ class AllocationChangeRequest(TimeStampedModel):
     allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE,)
     status = models.ForeignKey(
         AllocationChangeStatusChoice, on_delete=models.CASCADE, verbose_name='Status')
+    
+    payment_status = models.ForeignKey(
+        AllocationChangeStatusChoice, on_delete=models.CASCADE, verbose_name='Ptatus', related_name= "Payment", null=True)
+
     end_date_extension = models.IntegerField(blank=True, null=True)
     justification = models.TextField()
     notes = models.CharField(max_length=512, blank=True, null=True)
