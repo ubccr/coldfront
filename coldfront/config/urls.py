@@ -29,6 +29,8 @@ urlpatterns = [
     path('research-output/', include('coldfront.core.research_output.urls')),
 ]
 
+if 'coldfront.plugins.advanced_exporting' in settings.INSTALLED_APPS:
+    urlpatterns.append(path('advanced_exporting/', include('coldfront.plugins.advanced_exporting.urls')))
 
 if 'coldfront.plugins.iquota' in settings.INSTALLED_APPS:
     urlpatterns.append(path('iquota/', include('coldfront.plugins.iquota.urls')))

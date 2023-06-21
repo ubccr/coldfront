@@ -1,0 +1,10 @@
+{% load crispy_forms_tags %}
+
+<div id="id_{{ label }}" class="formset" label="{{ label }}">
+  {% if helper %}
+    {% crispy formset helper %}
+  {% else %}
+    {{ formset|crispy }}
+    {{ formset.management_form|crispy }}
+  {% endif %}
+</div>

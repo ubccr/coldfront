@@ -28,6 +28,7 @@ plugin_configs = {
     'PLUGIN_LDAP_USER_SEARCH': 'plugins/ldap_user_search.py',
     'PLUGIN_LDAP_USER_INFO': 'plugins/ldap_user_info.py',
     'PLUGIN_CAS': 'plugins/cas_login.py',
+    'PLUGIN_ADVANCED_EXPORTING': 'plugins/advanced_exporting.py'
 }
 
 # This allows plugins to be enabled via environment variables. Can alternatively

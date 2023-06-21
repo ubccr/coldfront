@@ -1,0 +1,195 @@
+from django import forms
+from django.template.loader import render_to_string
+
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import Field, Layout, Submit, HTML, Row, Column, Fieldset, Reset, LayoutObject, Div
+from crispy_forms.bootstrap import InlineRadios, FormActions, PrependedText, AccordionGroup, Accordion
+
+from coldfront.core.project.models import ProjectTypeChoice, ProjectStatusChoice
+from coldfront.core.allocation.models import AllocationStatusChoice, AllocationAttributeType
+from coldfront.core.resource.models import Resource, ResourceType
+
+
+class AllocationAttributeFormSetHelper(FormHelper):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.layout = Layout(
+            Row(
+                Column('allocationattribute__name'),
+                Column('allocationattribute__value'),
+            )
+        )
+        self.form_show_labels = False
+
+
+class AllocationSearchForm(forms.Form):
+    allocationattribute__name = forms.ModelChoiceField(
+        label='Allocation Attribute Name',
+        queryset=AllocationAttributeType.objects.all().order_by('name'),
+        required=False,
+    )
+    allocationattribute__value = forms.CharField(
+        label='Allocation Attribute Value',
+        max_length=50,
+        required=False
+    )
+
+
+class SearchForm(forms.Form):
+    """ Search form for the Project list page.
+    """
+    only_search_projects = forms.BooleanField(required=False)
+    display__project__id = forms.BooleanField(required=False)
+    project__title = forms.CharField(
+        label='Project Title Contains', max_length=100, required=False
+    )
+    display__project__title = forms.BooleanField(required=False)
+    project__description = forms.CharField(
+        label='Project Description Contains', max_length=100, required=False
+    )
+    display__project__description = forms.BooleanField(required=False)
+    project__pi__username = forms.CharField(
+        label='PI Username Contains', max_length=25, required=False
+    )
+    display__project__pi__username = forms.BooleanField(required=False)
+    project__requestor__username = forms.CharField(
+        label='Requestor Username Contains', max_length=25, required=False
+    )
+    display__project__requestor__username = forms.BooleanField(required=False)
+    project__status__name = forms.ModelMultipleChoiceField(
+        label='Project Status',
+        queryset=ProjectStatusChoice.objects.all().order_by('name'),
+        required=False
+    )
+    display__project__status__name = forms.BooleanField(required=False)
+    project__type__name = forms.ModelMultipleChoiceField(
+        label='Project Type',
+        queryset=ProjectTypeChoice.objects.all().order_by('name'),
+        required=False
+    )
+    display__project__type__name = forms.BooleanField(required=False)
+    project__class_number = forms.CharField(
+        label='Class Number', max_length=25, required=False
+    )
+    display__project__class_number = forms.BooleanField(required=False)
+
+    display__allocation__id = forms.BooleanField(required=False)
+    allocation__status__name = forms.ModelMultipleChoiceField(
+        label='Allocation Status',
+        queryset=AllocationStatusChoice.objects.all().order_by('name'),
+        required=False
+    )
+    display__allocation__status__name = forms.BooleanField(required=False)
+
+    resources__name = forms.ModelMultipleChoiceField(
+        label='Resource Name',
+        queryset=Resource.objects.filter(is_allocatable=True).order_by('name'),
+        required=False
+    )
+    display__resources__name = forms.BooleanField(required=False)
+    resources__resource_type__name = forms.ModelMultipleChoiceField(
+        label='Resource Type',
+        queryset=ResourceType.objects.all().order_by('name'),
+        required=False
+    )
+    display__resources__resource_type__name = forms.BooleanField(required=False)
+
+    # allocationattribute__name__1 = forms.ModelChoiceField(
+    #     label='Allocation Attribute Name 1',
+    #     queryset=AllocationAttributeType.objects.all().order_by('name'),
+    #     required=False,
+    # )
+    # allocationattribute__value__1 = forms.CharField(
+    #     label='Allocation Attribute Value 1',
+    #     max_length=50,
+    #     required=False
+    # )
+    allocationattribute_form = AllocationSearchForm()
+    allocationattribute_helper = AllocationAttributeFormSetHelper()
+    # display__allocationattribute__name_1 = forms.BooleanField(required=False)
+    # allocationattribute_allow_null_1 = forms.BooleanField(
+    #     label='Allow null',
+    #     required=False
+    # )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.helper = FormHelper(self)
+        self.helper.use_custom_control = False 
+        self.helper.layout = Layout(
+            Accordion(
+                AccordionGroup('Projects',
+                    'only_search_projects',
+                    'project__title',
+                    'project__description',
+                    'project__pi__username',
+                    'project__requestor__username',
+                    'project__status__name',
+                    'project__type__name',
+                    'project__class_number',
+                    'display__project__id',
+                    'display__project__title',
+                    'display__project__description',
+                    'display__project__pi__username',
+                    'display__project__requestor__username',
+                    'display__project__status__name',
+                    'display__project__type__name',
+                    'display__project__class_number',
+                ),
+            ),
+            Accordion(
+                AccordionGroup('Allocations',
+                    'allocation__status__name',
+                    'display__allocation__id',
+                    'display__allocation__status__name'
+                )
+            ),
+            Accordion(
+                AccordionGroup('Resources',
+                    'resources__name',
+                    'resources__resource_type__name',
+                    'display__resources__name',
+                    'display__resources__resource_type__name'
+                )
+            ),
+            Accordion(
+                AccordionGroup('Allocation Attributes',
+                    Formset('allocationattribute_form', 'allocationattribute_helper', label='allocationattribute_formset'),
+                    HTML(
+                    '<button id="id_formset_add_allocation_attribute_button" type="button" class="btn btn-primary">Add Allocation Attribute</button>'
+                    )
+                )
+            ),
+            FormActions(
+                Submit('submit', 'Search'),
+                Reset('reset', 'Reset')
+            ),
+        )
+
+class Formset(LayoutObject):
+    template = "advanced_exporting/formset.html"
+
+    def __init__(self, formset_context_name, helper_context_name=None,
+                 template=None, label=None):
+
+        self.formset_context_name = formset_context_name
+        self.helper_context_name = helper_context_name
+        self.label = label
+
+        # crispy_forms/layout.py:302 requires us to have a fields property
+        self.fields = []
+
+        # Overrides class variable with an instance level variable
+        if template:
+            self.template = template
+
+    def render(self, form, form_style, context, **kwargs):
+        formset = context.get(self.formset_context_name)
+        helper = context.get(self.helper_context_name)
+        # closes form prematurely if this isn't explicitly stated
+        if helper:
+            helper.form_tag = False
+
+        context.update({'formset': formset, 'helper': helper, 'label': self.label})
+        return render_to_string(self.template, context.flatten())
