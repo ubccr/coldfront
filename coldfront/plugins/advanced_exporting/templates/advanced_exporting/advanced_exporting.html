@@ -111,9 +111,11 @@ Project and Allocation Export List
   var form_count = {{ allocationattribute_form.total_form_count | safe}}
 
   $("#id_formset_add_allocation_attribute_button").on('click', function() {
+    // The formset must have at least one initial form for this to work.
+    let row = $("#id_allocationattribute_formset > div:nth-child(3)")[0].cloneNode(true);
+    row.innerHTML = row.innerHTML.replaceAll('-0-', '-' + form_count + '-');
+    $("#id_allocationattribute_formset").append(row);
     form_count++;
-    var form = '{{allocationattribute_form.empty_form|escapejs}}'.replace(/__prefix__/g, form_count);
-    $("#id_allocationattribute_formset").append(form);
     $('#id_allocationattribute-TOTAL_FORMS').val(form_count);
   })
 
