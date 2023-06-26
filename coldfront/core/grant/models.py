@@ -56,8 +56,9 @@ class MoneyField(models.CharField):
                         'Invalid input.')
     ]
     def to_python(self, value):
-        if "," in value or "$" in value:
+        if "," in value:
             value = value.replace(',', '')
+        if "$" in value:
             value = round(float(value.replace('$', '')), 2)
         if " " in value:
             value = value.replace(' ', '')
@@ -72,6 +73,7 @@ class PercentField(models.CharField):
     def to_python(self, value):
         if "%" in value:
             value = round(float(value.replace('%', '')), 2)
+        if " " in value:
             value = value.replace(" ", "")
         return super().to_python(value)
 

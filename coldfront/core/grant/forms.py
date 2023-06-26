@@ -33,7 +33,6 @@ class GrantDeleteForm(forms.Form):
     grant_end = forms.CharField(max_length=150, required=False, disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
 
-
 class GrantDownloadForm(forms.Form):
     pk = forms.IntegerField(required=False, disabled=True)
     title = forms.CharField(required=False, disabled=True)
