@@ -111,20 +111,30 @@ Project and Allocation Export List
   var form_count = {{ allocationattribute_form.total_form_count | safe}}
   var allocation_attribute_type_ids = {{ allocation_attribute_type_ids | safe}}
 
-  function toggleUsageFields(value, form_id) {
+  function toggleUsageFields(value, base_div_id) {
     if (allocation_attribute_type_ids.includes(value)) {
-      $(form_id + 'allocationattribute__has_usage').show();
-      $(form_id + 'allocationattribute__equality').show();
-      $(form_id + 'allocationattribute__usage').show();
-      $(form_id + 'allocationattribute__usage__format').show();
+      $(base_div_id + 'allocationattribute__has_usage').show();
+      $(base_div_id + 'allocationattribute__equality').show();
+      $(base_div_id + 'allocationattribute__usage').show();
+      $(base_div_id + 'allocationattribute__usage__format').show();
     }
     else {
-      $(form_id + 'allocationattribute__has_usage').hide();
-      $(form_id + 'allocationattribute__equality').hide();
-      $(form_id + 'allocationattribute__usage').hide();
-      $(form_id + 'allocationattribute__usage__format').hide();
+      $(base_div_id + 'allocationattribute__has_usage').hide();
+      $(base_div_id + 'allocationattribute__equality').hide();
+      $(base_div_id + 'allocationattribute__usage').hide();
+      $(base_div_id + 'allocationattribute__usage__format').hide();
     }
   }
+
+  function resetAllocationAttributeFieldsToDefaults(base_div_id) {
+    $(base_div_id + 'allocationattribute__name').val(null);
+    $(base_div_id + 'allocationattribute__value').val('');
+    $(base_div_id + 'allocationattribute__has_usage').val('0');
+    $(base_div_id + 'allocationattribute__equality').val('lt');
+    $(base_div_id + 'allocationattribute__usage').val('');
+    $(base_div_id + 'allocationattribute__usage__format').val('whole');
+  }
+
   $(document).ready(function () {
     $("[id*='allocationattribute__name']").each(function (data) {
       id = $(this)[0].id
@@ -134,12 +144,12 @@ Project and Allocation Export List
 
       $(this).on('change', function (evt) {
         id = evt.target.id
-        form_id = '#div_' + id.slice(0, id.indexOf('-', id.indexOf('-') + 1) + 1)
-        toggleUsageFields(parseInt(evt.target.value), form_id);
+        base_div_id = '#div_' + id.slice(0, id.indexOf('-', id.indexOf('-') + 1) + 1)
+        toggleUsageFields(parseInt(evt.target.value), base_div_id);
       })
 
-      form_id = '#div_' + id.slice(0, id.indexOf('-', id.indexOf('-') + 1) + 1)
-      toggleUsageFields(parseInt(id = $(this)[0].value), form_id);
+      base_div_id = '#div_' + id.slice(0, id.indexOf('-', id.indexOf('-') + 1) + 1)
+      toggleUsageFields(parseInt(id = $(this)[0].value), base_div_id);
     })
   })
 
@@ -153,13 +163,15 @@ Project and Allocation Export List
 
     allocationattribute__name_field.on('change', function (evt) {
       id = evt.target.id
-      form_id = '#div_' + id.slice(0, id.indexOf('-', id.indexOf('-') + 1) + 1)
-      toggleUsageFields(parseInt(evt.target.value), form_id);
+      base_div_id = '#div_' + id.slice(0, id.indexOf('-', id.indexOf('-') + 1) + 1)
+      toggleUsageFields(parseInt(evt.target.value), base_div_id);
     })
 
 
-    form_id = '#div_id_allocationattribute-' + form_count + '-';
-    toggleUsageFields(parseInt(id = allocationattribute__name_field.val()), form_id);
+    base_div_id = '#div_id_allocationattribute-' + form_count + '-';
+    base_id = '#id_allocationattribute-' + form_count + '-';
+    resetAllocationAttributeFieldsToDefaults(base_id);
+    toggleUsageFields(parseInt(id = allocationattribute__name_field.val()), base_div_id);
 
     form_count++;
     $('#id_allocationattribute-TOTAL_FORMS').val(form_count);
