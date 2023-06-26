@@ -29,7 +29,7 @@ weeklyreportapp
 default_app_config = "coldfront.core.weeklyreportapp.apps.WeeklyreportappConfig"
 ```
 
-3. Ensure that your **apps.py** file contents look like this:
+3. Ensure that your app's **apps.py** file contents look like this:
 ```
 from django.apps import AppConfig
 
