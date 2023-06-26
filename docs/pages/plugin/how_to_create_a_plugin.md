@@ -52,7 +52,7 @@ INSTALLED_APPS += [
     'coldfront.core.weeklyreportapp',
 ]
 ```
-2. Edit your main ColdFront **urls.py** file to include the new urls:
+2. Edit the ColdFront **urls.py** (`coldfront/config/urls.py`) file to include the new urls info:
 ```
 urlpatterns += [
     path('weekly-report/', include('coldfront.core.weeklyreportapp.urls')),
