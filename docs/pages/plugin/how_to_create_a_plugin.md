@@ -45,17 +45,17 @@ app_name = "weeklyreportapp"
 ```
 
 5. In your app's **views.py** file, add this line:
-   ```
-   from .models import *
-   ```
+```
+from .models import *
+```
    
 6. Import ColdFront models in the following manner in your **models.py** file in your app:
-   ```
-   from coldfront.core.allocation.models import *
-   from coldfront.core.project.models import *
-   from coldfront.core.resource.models import *
-   from coldfront.core.user.models import *
-   ```
+```
+from coldfront.core.allocation.models import *
+from coldfront.core.project.models import *
+from coldfront.core.resource.models import *
+from coldfront.core.user.models import *
+```
    
 7. Add ColdFront's skeleton HTML/CSS by adding the following lines to all of your template files:
 ```
