@@ -45,7 +45,7 @@ app_name = "weeklyreportapp"
 ```
 ## Link Your App to ColdFront
 
-1. Add the following app to your list of ```INSTALLED_APPS``` in your ColdFront **base.py** file:
+1. Add the following app to your list of ```INSTALLED_APPS``` in the ColdFront **base.py** (`coldfront/config/base.py`) file:
 ```
 # ColdFront Apps
 INSTALLED_APPS += [
