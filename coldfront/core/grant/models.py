@@ -56,12 +56,13 @@ class MoneyField(models.CharField):
                         'Invalid input.')
     ]
     def to_python(self, value):
-        if "," in value:
-            value = value.replace(',', '')
-        if "$" in value:
-            value = round(float(value.replace('$', '')), 2)
-        if " " in value:
-            value = value.replace(' ', '')
+        if "," or "$" or " " in value:
+            if "," in value:
+                value = value.replace(',', '')
+            if "$" in value:
+                value = round(float(value.replace('$', '')), 2)
+            if " " in value:
+                value = value.replace(' ', '')
         return super().to_python(value)
         
 class PercentField(models.CharField):
@@ -71,10 +72,11 @@ class PercentField(models.CharField):
                         'Invalid input.')
     ]
     def to_python(self, value):
-        if "%" in value:
-            value = round(float(value.replace('%', '')), 2)
-        if " " in value:
-            value = value.replace(" ", "")
+        if "%" or " " in value:
+            if "%" in value:
+                value = round(float(value.replace('%', '')), 2)
+            if " " in value:
+                value = value.replace(" ", "")
         return super().to_python(value)
 
 class Grant(TimeStampedModel):
