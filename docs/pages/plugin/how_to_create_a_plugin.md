@@ -26,7 +26,7 @@ weeklyreportapp
 ```
 2. Ensure that your app's **__init__.py** file contents have the following format:
 ```
-default_app_config = "coldfront.core.weeklyreportapp.apps.WeeklyreportappConfig"
+default_app_config = "coldfront.plugins.weeklyreportapp.apps.WeeklyreportappConfig"
 ```
 
 3. Ensure that your app's **apps.py** file contents look like this:
@@ -36,7 +36,7 @@ from django.apps import AppConfig
 
 class WeeklyreportappConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'coldfront.core.weeklyreportapp'
+    name = 'coldfront.plugins.weeklyreportapp'
 ```
 
 4. Make sure to include this line in your app's **urls.py** file:
@@ -67,20 +67,21 @@ from coldfront.core.user.models import *
 
 ## Link Your App to ColdFront
 
-1. Add the following app to your list of ```INSTALLED_APPS``` in the ColdFront **base.py** (`coldfront/config/base.py`) file:
+1. Add the following app to your list of ```INSTALLED_APPS``` by creating a new file in the ColdFront plugins directory (`coldfront/plugins`) and adding these lines to the new file:
 ```
-# ColdFront Apps
+from coldfront.config.base import INSTALLED_APPS
+
 INSTALLED_APPS += [
-    'coldfront.core.weeklyreportapp',
+    'coldfront.plugins.weeklyreportapp',
 ]
 ```
 2. Edit the ColdFront **urls.py** (`coldfront/config/urls.py`) file to include the new urls info:
 ```
 urlpatterns += [
-    path('weeklyreportapp/', include('coldfront.core.weeklyreportapp.urls')),
+    path('weeklyreportapp/', include('coldfront.plugins.weeklyreportapp.urls')),
 ]
 ```
-3. Add your app's folder to the **coldfront/core** directory or **pip install [package_name]** in your virtual environment to make upgrading ColdFront more efficient (if applicable). To learn how to create a pip package, check out [this link](https://packaging.python.org/en/latest/tutorials/packaging-projects/). If you are creating a pip package from a GitHub repo, we found [this blog](https://dev.to/rf_schubert/how-to-create-a-pip-package-and-host-on-private-github-repo-58pa) information useful in doing so. To pip install the example plugin, run:
+3. Add your app's folder to the **coldfront/plugins** directory or **pip install [package_name]** in your virtual environment to make upgrading ColdFront more efficient (if applicable). To learn how to create a pip package, check out [this link](https://packaging.python.org/en/latest/tutorials/packaging-projects/). If you are creating a pip package from a GitHub repo, we found [this blog](https://dev.to/rf_schubert/how-to-create-a-pip-package-and-host-on-private-github-repo-58pa) information useful in doing so. To pip install the example plugin, run:
 ```
 pip install git+https://github.com/rg663/weeklyreportapp
 ```
