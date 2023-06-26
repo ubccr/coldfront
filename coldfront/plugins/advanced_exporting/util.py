@@ -156,6 +156,9 @@ def filter_by_allocation_attribute_parameters(allocationattribute_data, allocati
             )
 
         if allocation_attribute_type and allocation_attribute_has_usage and allocation_attribute_usage:
+            allocation_queryset = allocation_queryset.filter(
+                allocationattribute__allocation_attribute_type=allocation_attribute_type
+            )
             if allocation_attribute_usage_format == 'whole':
                 if allocation_attribute_equality == 'lt':
                     allocation_queryset = allocation_queryset.filter(
