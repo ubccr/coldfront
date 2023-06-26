@@ -8,6 +8,7 @@ from django.db.models.query import QuerySet
 from django.http.response import StreamingHttpResponse
 from django.forms import formset_factory
 
+from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.plugins.advanced_exporting.forms import SearchForm, AllocationSearchForm, AllocationAttributeFormSetHelper
 from coldfront.core.utils.common import Echo
 from coldfront.plugins.advanced_exporting.util import build_table
@@ -24,6 +25,9 @@ class AdvancedExportingView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        allocation_attribute_types_with_usage = list(AllocationAttributeType.objects.filter(
+            has_usage=True
+        ).values_list('id', flat=True))
 
         allocation_search_formset = formset_factory(AllocationSearchForm, extra=1)
         if not self.request.GET:
@@ -33,6 +37,11 @@ class AdvancedExportingView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
         allocationattribute_data = []
         for form in formset:
             if form.is_valid():
+                data = form.cleaned_data
+                name = data['allocationattribute__name']
+                if not name or not name.id in allocation_attribute_types_with_usage: 
+                    data['allocationattribute__has_usage'] = '0'
+
                 allocationattribute_data.append(form.cleaned_data)
         context['allocationattribute_form'] = formset
         helper = AllocationAttributeFormSetHelper()
@@ -81,6 +90,7 @@ class AdvancedExportingView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
             num_rows = len(rows)
         context['entries'] = num_rows
         context['rows'] = rows
+        context['allocation_attribute_type_ids'] = allocation_attribute_types_with_usage
         return context
 
 

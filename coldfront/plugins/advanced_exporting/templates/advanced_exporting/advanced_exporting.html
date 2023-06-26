@@ -109,12 +109,58 @@ Project and Allocation Export List
   var columns = {{ columns | safe }}
   var rows = {{ rows | safe }}
   var form_count = {{ allocationattribute_form.total_form_count | safe}}
+  var allocation_attribute_type_ids = {{ allocation_attribute_type_ids | safe}}
+
+  function toggleUsageFields(value, form_id) {
+    if (allocation_attribute_type_ids.includes(value)) {
+      $(form_id + 'allocationattribute__has_usage').show();
+      $(form_id + 'allocationattribute__equality').show();
+      $(form_id + 'allocationattribute__usage').show();
+      $(form_id + 'allocationattribute__usage__format').show();
+    }
+    else {
+      $(form_id + 'allocationattribute__has_usage').hide();
+      $(form_id + 'allocationattribute__equality').hide();
+      $(form_id + 'allocationattribute__usage').hide();
+      $(form_id + 'allocationattribute__usage__format').hide();
+    }
+  }
+  $(document).ready(function () {
+    $("[id*='allocationattribute__name']").each(function (data) {
+      id = $(this)[0].id
+      if (id.includes('div')) {
+        return;
+      }
+
+      $(this).on('change', function (evt) {
+        id = evt.target.id
+        form_id = '#div_' + id.slice(0, id.indexOf('-', id.indexOf('-') + 1) + 1)
+        toggleUsageFields(parseInt(evt.target.value), form_id);
+      })
+
+      form_id = '#div_' + id.slice(0, id.indexOf('-', id.indexOf('-') + 1) + 1)
+      toggleUsageFields(parseInt(id = $(this)[0].value), form_id);
+    })
+  })
 
   $("#id_formset_add_allocation_attribute_button").on('click', function() {
     // The formset must have at least one initial form for this to work.
     let row = $("#id_allocationattribute_formset > div:nth-child(3)")[0].cloneNode(true);
     row.innerHTML = row.innerHTML.replaceAll('-0-', '-' + form_count + '-');
     $("#id_allocationattribute_formset").append(row);
+
+    var allocationattribute__name_field = $('#id_allocationattribute-' + form_count + '-allocationattribute__name')
+
+    allocationattribute__name_field.on('change', function (evt) {
+      id = evt.target.id
+      form_id = '#div_' + id.slice(0, id.indexOf('-', id.indexOf('-') + 1) + 1)
+      toggleUsageFields(parseInt(evt.target.value), form_id);
+    })
+
+
+    form_id = '#div_id_allocationattribute-' + form_count + '-';
+    toggleUsageFields(parseInt(id = allocationattribute__name_field.val()), form_id);
+
     form_count++;
     $('#id_allocationattribute-TOTAL_FORMS').val(form_count);
   })

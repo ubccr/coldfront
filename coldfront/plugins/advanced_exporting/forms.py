@@ -13,16 +13,41 @@ from coldfront.core.resource.models import Resource, ResourceType
 class AllocationAttributeFormSetHelper(FormHelper):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.use_custom_control = False 
         self.layout = Layout(
-            Row(
-                Column('allocationattribute__name'),
-                Column('allocationattribute__value'),
+            Div(
+                Div(
+                    Row(
+                        Column('allocationattribute__name'),
+                        Column('allocationattribute__value'),
+                    ),
+                    Row(
+                        Column('allocationattribute__has_usage'),
+                        Column('allocationattribute__equality'),
+                        Column('allocationattribute__usage'),
+                        Column('allocationattribute__usage__format')
+                    ),
+                    css_class='card-body'
+                ),
+                css_class='card mb-3'
             )
         )
-        self.form_show_labels = False
 
 
 class AllocationSearchForm(forms.Form):
+    EQUALITY_CHOICES = (
+        ('lt', '<'),
+        ('gt', '>')
+    )
+    FORMAT_CHOICES = (
+        ('whole', '.00'),
+        ('percent', '%')
+    )
+    YES_NO_CHOICES = (
+        (1, 'Yes'),
+        (0, 'No')
+    )
+
     allocationattribute__name = forms.ModelChoiceField(
         label='Allocation Attribute Name',
         queryset=AllocationAttributeType.objects.all().order_by('name'),
@@ -33,47 +58,68 @@ class AllocationSearchForm(forms.Form):
         max_length=50,
         required=False
     )
+    allocationattribute__has_usage = forms.ChoiceField(
+        initial=0, label='Has usage', choices=YES_NO_CHOICES, required=False,
+    )
+    allocationattribute__equality = forms.ChoiceField(
+        label='Equality', choices=EQUALITY_CHOICES, required=False
+    )
+    allocationattribute__usage = forms.FloatField(label='Usage' , required=False)
+    allocationattribute__usage__format = forms.ChoiceField(
+        label='Format', choices=FORMAT_CHOICES, required=False
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # self.initial['allocationattribute__has_usage'] = 'no'
 
 
 class SearchForm(forms.Form):
-    """ Search form for the Project list page.
-    """
     only_search_projects = forms.BooleanField(required=False)
+
     display__project__id = forms.BooleanField(required=False)
+
     project__title = forms.CharField(
         label='Project Title Contains', max_length=100, required=False
     )
     display__project__title = forms.BooleanField(required=False)
+
     project__description = forms.CharField(
         label='Project Description Contains', max_length=100, required=False
     )
     display__project__description = forms.BooleanField(required=False)
+
     project__pi__username = forms.CharField(
         label='PI Username Contains', max_length=25, required=False
     )
     display__project__pi__username = forms.BooleanField(required=False)
+
     project__requestor__username = forms.CharField(
         label='Requestor Username Contains', max_length=25, required=False
     )
     display__project__requestor__username = forms.BooleanField(required=False)
+
     project__status__name = forms.ModelMultipleChoiceField(
         label='Project Status',
         queryset=ProjectStatusChoice.objects.all().order_by('name'),
         required=False
     )
     display__project__status__name = forms.BooleanField(required=False)
+
     project__type__name = forms.ModelMultipleChoiceField(
         label='Project Type',
         queryset=ProjectTypeChoice.objects.all().order_by('name'),
         required=False
     )
     display__project__type__name = forms.BooleanField(required=False)
+
     project__class_number = forms.CharField(
         label='Class Number', max_length=25, required=False
     )
     display__project__class_number = forms.BooleanField(required=False)
 
     display__allocation__id = forms.BooleanField(required=False)
+
     allocation__status__name = forms.ModelMultipleChoiceField(
         label='Allocation Status',
         queryset=AllocationStatusChoice.objects.all().order_by('name'),
@@ -87,6 +133,7 @@ class SearchForm(forms.Form):
         required=False
     )
     display__resources__name = forms.BooleanField(required=False)
+
     resources__resource_type__name = forms.ModelMultipleChoiceField(
         label='Resource Type',
         queryset=ResourceType.objects.all().order_by('name'),
@@ -94,23 +141,8 @@ class SearchForm(forms.Form):
     )
     display__resources__resource_type__name = forms.BooleanField(required=False)
 
-    # allocationattribute__name__1 = forms.ModelChoiceField(
-    #     label='Allocation Attribute Name 1',
-    #     queryset=AllocationAttributeType.objects.all().order_by('name'),
-    #     required=False,
-    # )
-    # allocationattribute__value__1 = forms.CharField(
-    #     label='Allocation Attribute Value 1',
-    #     max_length=50,
-    #     required=False
-    # )
     allocationattribute_form = AllocationSearchForm()
     allocationattribute_helper = AllocationAttributeFormSetHelper()
-    # display__allocationattribute__name_1 = forms.BooleanField(required=False)
-    # allocationattribute_allow_null_1 = forms.BooleanField(
-    #     label='Allow null',
-    #     required=False
-    # )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -157,7 +189,7 @@ class SearchForm(forms.Form):
                 AccordionGroup('Allocation Attributes',
                     Formset('allocationattribute_form', 'allocationattribute_helper', label='allocationattribute_formset'),
                     HTML(
-                    '<button id="id_formset_add_allocation_attribute_button" type="button" class="btn btn-primary">Add Allocation Attribute</button>'
+                        '<button id="id_formset_add_allocation_attribute_button" type="button" class="btn btn-primary">Add Allocation Attribute</button>'
                     )
                 )
             ),

@@ -1,5 +1,5 @@
 from coldfront.core.project.models import Project
-from coldfront.core.allocation.models import Allocation, AllocationAttribute
+from coldfront.core.allocation.models import Allocation, AllocationAttribute, AllocationAttributeUsage
 from coldfront.core.resource.models import Resource
 
 from django.contrib import messages
@@ -17,7 +17,8 @@ def build_table( data, allocationattribute_data, get_request):
     queryset = build_queryset(data, allocationattribute_data, get_request)
     columns = build_columns(data, allocationattribute_data)
     additional_data = get_allocation_attribute_data(allocationattribute_data)
-    rows = build_rows(columns, queryset, additional_data)
+    additional_usage_data = get_allocation_attribute_usage(additional_data)
+    rows = build_rows(columns, queryset, additional_data, additional_usage_data)
 
     return rows, columns
 
@@ -49,16 +50,28 @@ def build_columns(data, allocationattribute_data):
                 'id': key.id
             })
 
+            has_usage = int(entry.get('allocationattribute__has_usage'))
+            if has_usage and int(has_usage):
+                display_name = key.name + ' Usage'
+                field_name = 'allocationattribute__has_usage'
+                enable_sorting = 'false'
+                columns.append({
+                    'enable_sorting': enable_sorting,
+                    'display_name': display_name,
+                    'field_name': field_name,
+                    'id': key.id
+                })
+
     return columns
 
-def build_rows(columns, queryset, additional_data):
+def build_rows(columns, queryset, additional_data, additional_usage_data):
     rows_dict = {}
     for i, result in enumerate(queryset):
         rows_dict[i] = []
 
         for column in columns:
             field_name = column.get('field_name')
-            if 'allocationattribute' in field_name:
+            if 'allocationattribute__name' in field_name:
                 allocation_id = result.id
                 allocation_attributes = additional_data.get(allocation_id)
                 if allocation_attributes is not None:
@@ -71,6 +84,22 @@ def build_rows(columns, queryset, additional_data):
                     value = ''
                 rows_dict[i].append(value)
                 continue
+            elif 'allocationattribute__has_usage' in field_name:
+                allocation_id = result.id
+                allocation_attribute_usages = additional_usage_data.get(allocation_id)
+                if allocation_attribute_usages is not None:
+                    value = ''
+                    for allocation_attribute_usage in allocation_attribute_usages:
+                        if allocation_attribute_usage.allocation_attribute.allocation_attribute_type.id == column.get('id'):
+                            value = allocation_attribute_usage.value
+                            break
+
+                else:
+                    value = ''
+
+                rows_dict[i].append(value)
+                continue
+                        
 
             split = field_name.split('__')
             nested_attribute = ""
@@ -84,8 +113,6 @@ def build_rows(columns, queryset, additional_data):
                 attribute = getattr(project, attribute)
             elif 'resources' == model:
                 resource = result.get_parent_resource
-                # if attribute == 'type':
-                #     attribute = 'resource_type'
                 attribute = getattr(resource, attribute)
             else:
                 attribute = getattr(result, attribute)
@@ -115,11 +142,56 @@ def filter_by_allocation_attribute_parameters(allocationattribute_data, allocati
     for entry in allocationattribute_data:
         allocation_attribute_type = entry.get('allocationattribute__name')
         allocation_attribute_value = entry.get('allocationattribute__value')
+        allocation_attribute_has_usage = entry.get('allocationattribute__has_usage')
+        if allocation_attribute_has_usage is not None:
+            allocation_attribute_has_usage = int(entry.get('allocationattribute__has_usage'))
+        allocation_attribute_usage = entry.get('allocationattribute__usage')
+        allocation_attribute_equality = entry.get('allocationattribute__equality')
+        allocation_attribute_usage_format = entry.get('allocationattribute__usage__format')
+
         if allocation_attribute_type and allocation_attribute_value:
             allocation_queryset = allocation_queryset.filter(
                 allocationattribute__allocation_attribute_type=allocation_attribute_type,
                 allocationattribute__value__icontains=allocation_attribute_value
             )
+
+        if allocation_attribute_type and allocation_attribute_has_usage and allocation_attribute_usage:
+            if allocation_attribute_usage_format == 'whole':
+                if allocation_attribute_equality == 'lt':
+                    allocation_queryset = allocation_queryset.filter(
+                        allocationattribute__allocationattributeusage__value__lt=allocation_attribute_usage
+                    )
+                elif allocation_attribute_equality == 'gt':
+                    allocation_queryset = allocation_queryset.filter(
+                        allocationattribute__allocationattributeusage__value__gt=allocation_attribute_usage
+                    )
+            elif allocation_attribute_usage_format == 'percent':
+                allocation_attribute_ids = allocation_queryset.values_list(
+                    'allocationattribute__allocationattributeusage', flat=True
+                )
+                allocation_attribute_ids = [
+                    allocation_attribute_id 
+                    for allocation_attribute_id in allocation_attribute_ids 
+                    if allocation_attribute_id is not None
+                ]
+                allocation_attribute_usages = AllocationAttributeUsage.objects.filter(
+                    allocation_attribute__id__in=allocation_attribute_ids
+                )
+                remaining_entries = []
+                for allocation_attribute_usage_result in allocation_attribute_usages:
+                    allocation_attribute_obj = allocation_attribute_usage_result.allocation_attribute
+                    allocation_attribute_value_with_usage = float(allocation_attribute_obj.value)
+                    allocation_attribute_usage_value = allocation_attribute_usage_result.value
+
+                    fraction = allocation_attribute_usage_value / allocation_attribute_value_with_usage * 100
+                    if allocation_attribute_equality == 'lt' and fraction < allocation_attribute_usage:
+                        remaining_entries.append(allocation_attribute_obj.id)
+                    elif allocation_attribute_equality == 'gt' and fraction > allocation_attribute_usage:
+                        remaining_entries.append(allocation_attribute_obj.id)
+
+                allocation_queryset = allocation_queryset.filter(
+                    allocationattribute__id__in = remaining_entries
+                )
 
     return allocation_queryset
 
@@ -128,14 +200,43 @@ def get_allocation_attribute_data(data):
     for entry in data:
         allocation_attribute_type = entry.get('allocationattribute__name')
         if allocation_attribute_type:
-            allocation_attributes = AllocationAttribute.objects.filter(allocation_attribute_type=allocation_attribute_type)
+            allocation_attributes = AllocationAttribute.objects.filter(
+                allocation_attribute_type=allocation_attribute_type
+            )
             for allocation_attribute in allocation_attributes:
                 if all_allocation_attributes.get(allocation_attribute.allocation.id) is None:
-                    all_allocation_attributes[allocation_attribute.allocation.id] = [allocation_attribute]
+                    all_allocation_attributes[allocation_attribute.allocation.id] = [
+                        allocation_attribute
+                    ]
                 else:
-                    all_allocation_attributes[allocation_attribute.allocation.id].append(allocation_attribute)
+                    all_allocation_attributes[allocation_attribute.allocation.id].append(
+                        allocation_attribute
+                    )
 
     return all_allocation_attributes
+
+def get_allocation_attribute_usage(data):
+    all_allocation_attribute_usages = {}
+    allocation_attributes = [
+        allocation_attribute 
+        for allocation_attributes in data.values() 
+        for allocation_attribute in allocation_attributes
+    ]
+    allocation_attribute_usages = AllocationAttributeUsage.objects.filter(
+        allocation_attribute__in=allocation_attributes
+    )
+    for allocation_attribute_usage in allocation_attribute_usages:
+        allocation_attribute = allocation_attribute_usage.allocation_attribute
+        if all_allocation_attribute_usages.get(allocation_attribute.id) is None:
+            all_allocation_attribute_usages[allocation_attribute.allocation.id] = [
+                allocation_attribute_usage
+            ]
+        else:
+            all_allocation_attribute_usages[allocation_attribute.allocation.id].append(
+                allocation_attribute_usage
+            )
+
+    return all_allocation_attribute_usages
 
 def build_allocation_queryset(data, request):
     order_by = request.get('order_by')
