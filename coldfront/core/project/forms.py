@@ -82,7 +82,7 @@ class ProjectEULAApprovalForm(forms.Form):
         else:
             return None
                 
-    eula = forms.BooleanField(initial=False,required=True,label="Agree to EULA: ")
+    eula = forms.BooleanField(initial=False,required=False,label="Agree to EULA: ")
 
     def __init__(self, request_user, project_pk, *args, **kwargs):
         super().__init__(*args, **kwargs)
