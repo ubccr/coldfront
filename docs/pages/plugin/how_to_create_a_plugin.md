@@ -43,6 +43,28 @@ class WeeklyreportappConfig(AppConfig):
 ```
 app_name = "weeklyreportapp"
 ```
+
+5. In your app's **views.py** file, add this line:
+   ```
+   from .models import *
+   ```
+   
+6. Import ColdFront models in the following manner in your **models.py** file in your app:
+   ```
+   from coldfront.core.allocation.models import *
+   from coldfront.core.project.models import *
+   from coldfront.core.resource.models import *
+   from coldfront.core.user.models import *
+   ```
+   
+7. Add ColdFront's skeleton HTML/CSS by adding the following lines to all of your template files:
+```
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+{% load static %}
+```
+
 ## Link Your App to ColdFront
 
 1. Add the following app to your list of ```INSTALLED_APPS``` in the ColdFront **base.py** (`coldfront/config/base.py`) file:
@@ -62,25 +84,8 @@ urlpatterns += [
 ```
 pip install git+https://github.com/rg663/weeklyreportapp
 ```
-4. In your apps' **views.py** file, add this line:
-   ```
-   from .models import *
-   ```
-5. Import ColdFront models in the following manner in your **models.py** file in your app:
-   ```
-   from coldfront.core.allocation.models import *
-   from coldfront.core.project.models import *
-   from coldfront.core.resource.models import *
-   from coldfront.core.user.models import *
-   ```
-6. Add ColdFront's skeleton HTML/CSS by adding the following lines to all of your template files:
-```
-{% extends "common/base.html" %}
-{% load crispy_forms_tags %}
-{% load humanize %}
-{% load static %}
-```
-7. Since the example Weekly Report plugin is intended for admins, to add it to the navbar for admins, update the **templates/common/navbar_admin.html** file or its equivalent in your ColdFront setup like so:
+
+4. Since the example Weekly Report plugin is intended for admins, to add it to the navbar for admins, update the **templates/common/navbar_admin.html** file or its equivalent in your ColdFront setup like so:
   ```
   <li id="navbar-admin" class="nav-item dropdown">
     <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown">Admin</a>
