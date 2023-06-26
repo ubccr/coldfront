@@ -29,8 +29,7 @@
         {{allocation_form|crispy}}
         {% for allocid, val in allocations_with_eula_names.items %}
           <div id="modalEula{{allocid}}" class="modal" style="position:relative;background-color:transparent">
-            <div class="modal-content" style="border:none">
-              <span id="close" style="font-weight:bolder">&times;</span>
+            <div class="modal-content">
               <p style="font-weight:bolder">Allocation: {{val}}</p>
               {{eula_form|crispy}}
               <p id="eulaText{{allocid}}"></p>
@@ -109,7 +108,6 @@
       $("#modalEula"+id).hide();
     }
   });
-  $("#close").click(function () {
-    $("#modalEula"+id).hide();
-  })
 </script>
+
+{% comment %} if eula box is in focus, then required {% endcomment %}
