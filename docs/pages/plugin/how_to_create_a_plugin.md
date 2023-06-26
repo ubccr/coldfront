@@ -24,7 +24,7 @@ weeklyreportapp
     │   index.html
 
 ```
-2. Ensure that your **__init__.py** file contents have the following format:
+2. Ensure that your app's **__init__.py** file contents have the following format:
 ```
 default_app_config = "coldfront.core.weeklyreportapp.apps.WeeklyreportappConfig"
 ```
