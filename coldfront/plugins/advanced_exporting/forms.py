@@ -69,9 +69,12 @@ class AllocationSearchForm(forms.Form):
         label='Format', choices=FORMAT_CHOICES, required=False
     )
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, resources=None, **kwargs):
         super().__init__(*args, **kwargs)
-        # self.initial['allocationattribute__has_usage'] = 'no'
+        if resources:
+            self.fields['allocationattribute__name'].queryset = AllocationAttributeType.objects.filter(
+                linked_resources__in=resources
+            ).distinct()
 
 
 class SearchForm(forms.Form):
@@ -129,6 +132,11 @@ class SearchForm(forms.Form):
 
     resources__name = forms.ModelMultipleChoiceField(
         label='Resource Name',
+        help_text= (
+            f'Selecting a resource will reduce the selection of allocation attributes to only '
+            f'include those that belong to the selected resources. The selection is only updated '
+            f'after the search form is submitted.'
+        ),
         queryset=Resource.objects.filter(is_allocatable=True).order_by('name'),
         required=False
     )

@@ -25,32 +25,13 @@ class AdvancedExportingView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        allocation_attribute_types_with_usage = list(AllocationAttributeType.objects.filter(
-            has_usage=True
-        ).values_list('id', flat=True))
-
-        allocation_search_formset = formset_factory(AllocationSearchForm, extra=1)
-        if not self.request.GET:
-            formset = allocation_search_formset(prefix='allocationattribute')
-        else:
-            formset = allocation_search_formset(self.request.GET, prefix='allocationattribute')
-        allocationattribute_data = []
-        for form in formset:
-            if form.is_valid():
-                data = form.cleaned_data
-                name = data['allocationattribute__name']
-                if not name or not name.id in allocation_attribute_types_with_usage: 
-                    data['allocationattribute__has_usage'] = '0'
-
-                allocationattribute_data.append(form.cleaned_data)
-        context['allocationattribute_form'] = formset
-        helper = AllocationAttributeFormSetHelper()
-        context['allocationattribute_helper'] = helper
         search_form = SearchForm(self.request.GET, prefix='full_search')
 
+        selected_resources = None
         if search_form.is_valid():
             context['export_form'] = search_form
             data = search_form.cleaned_data
+            selected_resources = data.get('resources__name')
             filter_parameters = ''
             for key, value in data.items():
                 if value:
@@ -65,6 +46,33 @@ class AdvancedExportingView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
         else:
             filter_parameters = ''
             context['export_form'] = SearchForm(prefix='full_search')
+
+        allocation_attribute_types_with_usage = list(AllocationAttributeType.objects.filter(
+            has_usage=True
+        ).values_list('id', flat=True))
+
+        allocation_search_formset = formset_factory(AllocationSearchForm, extra=1)
+        if not self.request.GET:
+            formset = allocation_search_formset(prefix='allocationattribute')
+        else:
+            formset = allocation_search_formset(
+                self.request.GET,
+                prefix='allocationattribute',
+                form_kwargs={'resources': selected_resources}
+            )
+
+        allocationattribute_data = []
+        for form in formset:
+            if form.is_valid():
+                data = form.cleaned_data
+                name = data['allocationattribute__name']
+                if not name or not name.id in allocation_attribute_types_with_usage: 
+                    data['allocationattribute__has_usage'] = '0'
+
+                allocationattribute_data.append(form.cleaned_data)
+        context['allocationattribute_form'] = formset
+        helper = AllocationAttributeFormSetHelper()
+        context['allocationattribute_helper'] = helper
 
         # print(filter_parameters)
 
