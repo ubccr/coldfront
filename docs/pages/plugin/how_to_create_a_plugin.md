@@ -39,7 +39,7 @@ class WeeklyreportappConfig(AppConfig):
     name = 'coldfront.core.weeklyreportapp'
 ```
 
-4. Make sure to include this line in your **urls.py** file!
+4. Make sure to include this line in your app's **urls.py** file:
 ```
 app_name = "weeklyreportapp"
 ```
