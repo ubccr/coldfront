@@ -50,26 +50,29 @@ class GrantStatusChoice(TimeStampedModel):
         return [self.name]
     
 class MoneyField(models.CharField):
-        validators = [
-            RegexValidator(r'^[0-9,.$]+$',
-                           'Enter a valid number with commas and/or dollar signs.',
-                           'Invalid input.')
-        ]
-        def to_python(self, value):
-            if value:
-                value = value.replace(',', '')
-                value = round(float(value.replace('$', '')), 2)
-            return super().to_python(value)
-        
-class PercentField(models.CharField):
     validators = [
-        RegexValidator(r'^[0-9,%]',
-                        'Enter a valid number with a percent symbol.',
+        RegexValidator(r'^[0-9,.$]+$',
+                        'Enter only digits, commas, dollar signs, or spaces.',
                         'Invalid input.')
     ]
     def to_python(self, value):
-        if value:
+        if "," in value or "$" in value:
+            value = value.replace(',', '')
+            value = round(float(value.replace('$', '')), 2)
+        if " " in value:
+            value = value.replace(' ', '')
+        return super().to_python(value)
+        
+class PercentField(models.CharField):
+    validators = [
+        RegexValidator(r'^[0-9,%]+%',
+                        'Enter only digits, percent symbols, or spaces.',
+                        'Invalid input.')
+    ]
+    def to_python(self, value):
+        if "%" in value:
             value = round(float(value.replace('%', '')), 2)
+            value = value.replace(" ", "")
         return super().to_python(value)
 
 class Grant(TimeStampedModel):
