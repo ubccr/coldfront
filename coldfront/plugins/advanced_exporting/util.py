@@ -66,28 +66,28 @@ def build_columns(data, allocationattribute_data):
             })
 
     for entry in allocationattribute_data:
-        key = entry.get('allocationattribute__name')
-        if key:
-            display_name = key.name
+        allocation_attribute_type = entry.get('allocationattribute__name')
+        if allocation_attribute_type:
+            display_name = allocation_attribute_type.name
             field_name = 'allocationattribute__name'
             enable_sorting = 'false'
             columns.append({
                 'enable_sorting': enable_sorting,
                 'display_name': display_name,
                 'field_name': field_name,
-                'id': key.id
+                'id': allocation_attribute_type.id
             })
 
             has_usage = int(entry.get('allocationattribute__has_usage'))
             if has_usage and int(has_usage):
-                display_name = key.name + ' Usage'
+                display_name += ' Usage'
                 field_name = 'allocationattribute__has_usage'
                 enable_sorting = 'false'
                 columns.append({
                     'enable_sorting': enable_sorting,
                     'display_name': display_name,
                     'field_name': field_name,
-                    'id': key.id
+                    'id': allocation_attribute_type.id
                 })
 
     return columns
@@ -112,36 +112,6 @@ def build_rows(columns, queryset, additional_data, additional_usage_data):
 
         for column in columns:
             field_name = column.get('field_name')
-            if 'allocationattribute__name' in field_name:
-                allocation_id = result.id
-                allocation_attributes = additional_data.get(allocation_id)
-                if allocation_attributes is not None:
-                    value = ''
-                    for allocation_attribute in allocation_attributes:
-                        if allocation_attribute.allocation_attribute_type.id == column.get('id'):
-                            value = allocation_attribute.value
-                            break
-                else:
-                    value = ''
-                rows_dict[i].append(value)
-                continue
-            elif 'allocationattribute__has_usage' in field_name:
-                allocation_id = result.id
-                allocation_attribute_usages = additional_usage_data.get(allocation_id)
-                if allocation_attribute_usages is not None:
-                    value = ''
-                    for allocation_attribute_usage in allocation_attribute_usages:
-                        if allocation_attribute_usage.allocation_attribute.allocation_attribute_type.id == column.get('id'):
-                            value = allocation_attribute_usage.value
-                            break
-
-                else:
-                    value = ''
-
-                rows_dict[i].append(value)
-                continue
-                        
-
             split = field_name.split('__')
             nested_attribute = ""
             if len(split) == 3:
@@ -157,6 +127,29 @@ def build_rows(columns, queryset, additional_data, additional_usage_data):
                 attribute = getattr(resource, attribute)
             else:
                 attribute = getattr(result, attribute)
+
+            elif 'allocationattribute' == model:
+                nested_attribute = ''
+                allocation_id = result.id
+                value = ''
+                if attribute == 'name':
+                    allocation_attributes = additional_data.get(allocation_id)
+                    if allocation_attributes is not None:
+                        for allocation_attribute in allocation_attributes:
+                            # Assumes no duplicate allocation attribute types in list
+                            if allocation_attribute.allocation_attribute_type.id == column.get('id'):
+                                value = allocation_attribute.value
+                                break
+                elif attribute == 'has_usage':
+                    allocation_attribute_usages = additional_usage_data.get(allocation_id)
+                    if allocation_attribute_usages is not None:
+                        for allocation_attribute_usage in allocation_attribute_usages:
+                            # Assumes no duplicate allocation attribute types in list
+                            if allocation_attribute_usage.allocation_attribute.allocation_attribute_type.id == column.get('id'):
+                                value = allocation_attribute_usage.value
+                                break
+
+                attribute = value
 
             if nested_attribute:
                 attribute = getattr(attribute, nested_attribute)
@@ -208,7 +201,7 @@ def filter_by_allocation_attribute_parameters(allocationattribute_data, allocati
             allocation_attribute_has_usage = int(entry.get('allocationattribute__has_usage'))
         allocation_attribute_usage = entry.get('allocationattribute__usage')
         allocation_attribute_equality = entry.get('allocationattribute__equality')
-        allocation_attribute_usage_format = entry.get('allocationattribute__usage__format')
+        allocation_attribute_usage_format = entry.get('allocationattribute__usage_format')
 
         if allocation_attribute_type and allocation_attribute_value:
             allocation_queryset = allocation_queryset.filter(

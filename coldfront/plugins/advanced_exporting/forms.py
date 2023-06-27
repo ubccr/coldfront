@@ -25,7 +25,7 @@ class AllocationAttributeFormSetHelper(FormHelper):
                         Column('allocationattribute__has_usage'),
                         Column('allocationattribute__equality'),
                         Column('allocationattribute__usage'),
-                        Column('allocationattribute__usage__format')
+                        Column('allocationattribute__usage_format')
                     ),
                     css_class='card-body'
                 ),
@@ -65,7 +65,7 @@ class AllocationSearchForm(forms.Form):
         label='Equality', choices=EQUALITY_CHOICES, required=False
     )
     allocationattribute__usage = forms.FloatField(label='Usage' , required=False)
-    allocationattribute__usage__format = forms.ChoiceField(
+    allocationattribute__usage_format = forms.ChoiceField(
         label='Format', choices=FORMAT_CHOICES, required=False
     )
 
