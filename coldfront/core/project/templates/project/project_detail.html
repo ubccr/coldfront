@@ -97,7 +97,8 @@ Project Detail
             <th scope="col">Resource Type</th>
             <th scope="col">Location</th>
             <th scope="col">User Count</th>
-            <th scope="col">Total Space (TB)</th>
+            <th scope="col">Space (TB)</th>
+            <th scope="col">Used (TB)</th>
             <th scope="col">Monthly Cost</th>
             <th scope="col" class="nosort">Actions</th>
           </tr>
@@ -111,6 +112,7 @@ Project Detail
             <td>{{ allocation.path }}</td>
             <td>{{ allocation.allocationuser_set.count }}</td>
             <td>{{ allocation.size|floatformat:1 }}</td>
+            <td>{{ allocation.usage|floatformat:1 }}</td>
             <td>${{allocation.cost|floatformat:2 }}</td>
             <td>
               <a href="{% url 'allocation-detail' allocation.pk %}">
@@ -337,6 +339,7 @@ Project Detail
 </div>
 <!-- End Project Users -->
 
+{% comment %}
 <!-- Start Project Attributes -->
 <div class="card mb-3">
   <div class="card-header">
@@ -414,14 +417,12 @@ Project Detail
         <span class="badge badge-info">Last Updated: {{project.latest_grant.modified|date:"M. d, Y"}}</span>
       {% endif %}
 
-      {% comment %}
       {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
         <a class="btn btn-success" href="{% url 'grant-create' project.id %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add Grant</a>
         {% if grants %}
           <a class="btn btn-danger" href="{% url 'grant-delete-grants' project.pk %}" role="button"><i class="fas fa-minus" aria-hidden="true"></i> Delete Grants</a>
         {% endif %}
       {% endif %}
-      {% endcomment %}
 
     </div>
   </div>
@@ -563,6 +564,7 @@ Project Detail
 </div>
 <!-- End Project ResearchOutputs -->
 
+{% endcomment %}
 
 <!-- Start Admin Messages -->
 {% note_table request.user 'project-note-add' project %}

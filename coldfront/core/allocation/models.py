@@ -5,7 +5,7 @@ from ast import literal_eval
 from enum import Enum
 
 from django.conf import settings
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db import models
 from django.db.models import Q
 from django.utils.html import mark_safe
@@ -136,17 +136,27 @@ class Allocation(TimeStampedModel):
 
     @property
     def size(self):
-        return self.allocationattribute_set.get(allocation_attribute_type_id=1).value
+        try:
+            return self.allocationattribute_set.get(allocation_attribute_type_id=1).value
+        except ObjectDoesNotExist:
+            return None
+
 
     @property
     def usage(self):
-        return self.allocationattribute_set.get(allocation_attribute_type_id=1).allocationattributeusage.value
+        try:
+            return self.allocationattribute_set.get(
+                allocation_attribute_type_id=1
+            ).allocationattributeusage.value
+        except ObjectDoesNotExist:
+            return None
 
     @property
     def path(self):
         subdir_attribute = AllocationAttributeType.objects.get(name='Subdirectory')
-        attr_filter = ( Q(allocation_id=self.id) &
-                        Q(allocation_attribute_type_id=subdir_attribute.pk))
+        attr_filter = (
+            Q(allocation_id=self.id) & Q(allocation_attribute_type_id=subdir_attribute.pk)
+        )
         if AllocationAttribute.objects.filter(attr_filter):
             return AllocationAttribute.objects.get(attr_filter).value
         return ''

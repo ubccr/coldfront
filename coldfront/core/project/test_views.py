@@ -142,13 +142,13 @@ class ProjectDetailViewTest(ProjectViewTestBase):
         utils.page_does_not_contain_for_user(self, self.project_user, self.url, 'fa-user-edit') # non-manager user cannot see edit button
 
 
-    def test_projectdetail_addattribute_button_visibility(self):
-        """Test visibility of project detail add attribute button to different projectuser levels"""
-        utils.page_contains_for_user(self, self.admin_user, self.url, 'Add Attribute') # admin can see add attribute button
-
-        utils.page_does_not_contain_for_user(self, self.pi_user, self.url, 'Add Attribute') # pi cannot see add attribute button
-
-        utils.page_does_not_contain_for_user(self, self.project_user, self.url, 'Add Attribute') # non-manager user cannot see add attribute button
+    # def test_projectdetail_addattribute_button_visibility(self):
+    #     """Test visibility of project detail add attribute button to different projectuser levels"""
+    #     utils.page_contains_for_user(self, self.admin_user, self.url, 'Add Attribute') # admin can see add attribute button
+    #
+    #     utils.page_does_not_contain_for_user(self, self.pi_user, self.url, 'Add Attribute') # pi cannot see add attribute button
+    #
+    #     utils.page_does_not_contain_for_user(self, self.project_user, self.url, 'Add Attribute') # non-manager user cannot see add attribute button
 
     def test_projectdetail_addnotification_button_visibility(self):
         """Test visibility of project detail add notification button to different projectuser levels"""
