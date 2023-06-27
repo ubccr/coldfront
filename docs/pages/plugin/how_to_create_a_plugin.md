@@ -117,7 +117,7 @@ pip install git+https://github.com/rg663/weeklyreportapp
       <a id="navbar-grant-report" class="dropdown-item" href="{% url 'grant-report' %}">Grant Report</a>
 
       <!-- Add the Weekly Report url to the navbar here -->
-      <a id="navbar-weekly-report" class="nav-link" href="{% url 'weeklyreportapp:weekly-report' %}">Weekly Report</a>
+      <a id="navbar-weekly-report" class="nav-link" href="{% url 'weeklyreportapp:weeklyreportapp' %}">Weekly Report</a>
 
     </div>
   </li>
