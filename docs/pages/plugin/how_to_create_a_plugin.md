@@ -38,7 +38,7 @@ class WeeklyreportappConfig(AppConfig):
     name = 'coldfront.plugins.weeklyreportapp'
 ```
 
-4. Make sure to include this line in your app's **urls.py** file:
+4. Make sure to include these lines (or similar for your app) in your app's **urls.py** file:
 ```
 from django.urls import path
 
