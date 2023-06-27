@@ -638,6 +638,8 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
             allocation_user_active_status_choice = AllocationUserStatusChoice.objects.get(
                 name='Active')
+            allocation_user_pending_status_choice = AllocationUserStatusChoice.objects.get(
+                name='Pending')
 
             for form in formset:
                 user_form_data = form.cleaned_data
@@ -647,14 +649,29 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
                     user_obj = get_user_model().objects.get(
                         username=user_form_data.get('username'))
+                    
+                    def get_eula(alloc):
+                        if alloc.get_resources_as_list:
+                            for res in alloc.get_resources_as_list:
+                                if res.get_attribute(name='eula'):
+                                    return res.get_attribute(name='eula')
+                        else:
+                            return None
 
                     if allocation_obj.allocationuser_set.filter(user=user_obj).exists():
                         allocation_user_obj = allocation_obj.allocationuser_set.get(
                             user=user_obj)
-                        allocation_user_obj.status = allocation_user_active_status_choice
+                        if get_eula(allocation_obj):
+                            allocation_user_obj.status = allocation_user_pending_status_choice
+                        else:
+                            allocation_user_obj.status = allocation_user_active_status_choice
                         allocation_user_obj.save()
                     else:
-                        allocation_user_obj = AllocationUser.objects.create(
+                        if get_eula(allocation_obj):
+                            allocation_user_obj = AllocationUser.objects.create(
+                            allocation=allocation_obj, user=user_obj, status=allocation_user_pending_status_choice)
+                        else:
+                            allocation_user_obj = AllocationUser.objects.create(
                             allocation=allocation_obj, user=user_obj, status=allocation_user_active_status_choice)
 
                     allocation_activate_user.send(sender=self.__class__,
