@@ -74,28 +74,12 @@ class ProjectAddUsersToAllocationForm(forms.Form):
             self.fields['allocation'].widget = forms.HiddenInput()
 
 class ProjectEULAApprovalForm(forms.Form):
-    def get_eula(self, alloc):
-        if alloc.get_resources_as_list:
-            for res in alloc.get_resources_as_list:
-                if res.get_attribute(name='eula'):
-                    return res.get_attribute(name='eula')
-        else:
-            return None
-                
     eula = forms.BooleanField(initial=False,required=False,label="Agree to EULA: ")
 
     def __init__(self, request_user, project_pk, *args, **kwargs):
         super().__init__(*args, **kwargs)
         project_obj = get_object_or_404(Project, pk=project_pk)
 
-        allocation_query_set = project_obj.allocation_set.filter(
-            resources__is_allocatable=True, is_locked=False, status__name__in=['Active', 'New', 'Renewal Requested', 'Payment Pending', 'Payment Requested', 'Paid'])
-        allocation_choices = [(allocation.id, "%s (%s) %s" % (allocation.get_parent_resource.name, allocation.get_parent_resource.resource_type.name,
-                                                              allocation.description if allocation.description else '')) for allocation in allocation_query_set]
-        allocation_choices_sorted = []
-        allocation_choices_sorted = sorted(allocation_choices, key=lambda x: x[1][0].lower())
-        allocation_choices.insert(0, ('__select_all__', 'Select All'))
-       
 class ProjectRemoveUserForm(forms.Form):
     username = forms.CharField(max_length=150, disabled=True)
     first_name = forms.CharField(max_length=150, required=False, disabled=True)
