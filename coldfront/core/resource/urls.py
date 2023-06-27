@@ -11,4 +11,7 @@ urlpatterns = [
          resource_views.ResourceAttributeCreateView.as_view(), name='resource-attribute-add'),
     path('<int:pk>/resourceattribute/delete',
          resource_views.ResourceAttributeDeleteView.as_view(), name='resource-attribute-delete'),
+    path('<int:pk>/eula',
+         resource_views.ResourceEULAView.as_view(), name='resource-eula'),
+     
 ]
