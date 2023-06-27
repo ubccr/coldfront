@@ -80,12 +80,17 @@ urlpatterns += [
     path('weeklyreportapp/', include('coldfront.plugins.weeklyreportapp.urls')),
 ]
 ```
-3. Add your app's folder to the **coldfront/plugins** directory or **pip install [package_name]** in your virtual environment to make upgrading ColdFront more efficient (if applicable). To learn how to create a pip package, check out [this link](https://packaging.python.org/en/latest/tutorials/packaging-projects/). If you are creating a pip package from a GitHub repo, we found [this blog](https://dev.to/rf_schubert/how-to-create-a-pip-package-and-host-on-private-github-repo-58pa) information useful in doing so. To pip install the example plugin, run:
+3. In the ColdFront **settings.py** (`coldfront/settings/config.py`) file, add the following lines:
+```
+plugin_configs['PLUGIN_WEEKLYREPORTAPP'] =  'plugins/weeklyreportapp.py'
+``` 
+
+5. Add your app's folder to the **coldfront/plugins** directory or **pip install [package_name]** in your virtual environment to make upgrading ColdFront more efficient (if applicable). To learn how to create a pip package, check out [this link](https://packaging.python.org/en/latest/tutorials/packaging-projects/). If you are creating a pip package from a GitHub repo, we found [this blog](https://dev.to/rf_schubert/how-to-create-a-pip-package-and-host-on-private-github-repo-58pa) information useful in doing so. To pip install the example plugin, run:
 ```
 pip install git+https://github.com/rg663/weeklyreportapp
 ```
 
-4. Since the example Weekly Report plugin is intended for admins, to add it to the navbar for admins, update the **templates/common/navbar_admin.html** file or its equivalent in your ColdFront setup like so:
+5. Since the example Weekly Report plugin is intended for admins, to add it to the navbar for admins, update the **templates/common/navbar_admin.html** file or its equivalent in your ColdFront setup like so:
   ```
   <li id="navbar-admin" class="nav-item dropdown">
     <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown">Admin</a>
