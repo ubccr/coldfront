@@ -89,7 +89,7 @@ urlpatterns += [
 ```
 3. In the ColdFront **settings.py** (`coldfront/settings/config.py`) file, add the following lines:
 ```
-plugin_configs['PLUGIN_WEEKLYREPORTAPP'] =  'plugins/weeklyreportapp.py'
+plugin_configs['PLUGIN_WEEKLYREPORTAPP'] = 'plugins/weeklyreportapp.py'
 ``` 
 
 5. Add your app's folder to the **coldfront/plugins** directory or **pip install [package_name]** in your virtual environment to make upgrading ColdFront more efficient (if applicable). To learn how to create a pip package, check out [this link](https://packaging.python.org/en/latest/tutorials/packaging-projects/). If you are creating a pip package from a GitHub repo, we found [this blog](https://dev.to/rf_schubert/how-to-create-a-pip-package-and-host-on-private-github-repo-58pa) information useful in doing so. To pip install the example plugin, run:
@@ -115,7 +115,7 @@ pip install git+https://github.com/rg663/weeklyreportapp
       <a id="navbar-grant-report" class="dropdown-item" href="{% url 'grant-report' %}">Grant Report</a>
 
       <!-- Add the Weekly Report url to the navbar here -->
-      <a id="navbar-weekly-report" class="dropdown-item" href="{% url 'weeklyreportapp:weekly-report' %}">Weekly Report</a>
+      <a id="navbar-weekly-report" class="dropdown-item" href="{% url 'weeklyreportapp:weeklyreportapp' %}">Weekly Report</a>
 
     </div>
   </li>
