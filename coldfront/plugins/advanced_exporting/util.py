@@ -7,7 +7,18 @@ from django.utils.html import format_html
 from django.http import QueryDict
 
 
-def build_table( data, allocationattribute_data, get_request):
+def build_table(data, allocationattribute_data, get_request):
+    """
+    Creates a the rows and columns for the table.
+
+    Params:
+        allocationattribute_data (dict): Information filled out on the allocation attribute search form.
+        request (dict): GET request sent by the server.
+
+    Returns:
+        rows (dict): Rows of the table.
+        columns (list): Columns of the table.
+    """
     if data.get('only_search_projects'):
         queryset = build_project_queryset(data, get_request)
         columns = build_project_columns(data)
@@ -23,6 +34,23 @@ def build_table( data, allocationattribute_data, get_request):
     return rows, columns
 
 def build_columns(data, allocationattribute_data):
+    """
+    Creates the columns for the table. If a field containing 'display' has been selected then a new
+    column is created for the corresponding data.
+
+    Params:
+        data (dict): Contains all the fields in the search form.
+        allocationattribute_data (dict): Contains all the fields in the allocation attribute forms.
+
+    Returns:
+        list[dict]: entries for each column of the format:
+
+        {'enable_sorting': bool, 'display_name': str, 'field_name': str}
+
+        if the data is from an allocation attribute form the dictionary has an additional entry:
+
+        { 'id': int } # ID of allocation attribute type in the allocation attribute
+    """
     columns = []
     for key, value in data.items():
         if 'display' in key and value:
@@ -65,6 +93,19 @@ def build_columns(data, allocationattribute_data):
     return columns
 
 def build_rows(columns, queryset, additional_data, additional_usage_data):
+    """
+    Creates the rows for the table. Rows are the length of the number of columns. The length of the
+    Queryset is the number of rows.
+
+    Params:
+        columns (dict): Columns in the table.
+        queryset (QuerySet): Allocation queryset to grab the information from.
+
+    Returns:
+        dict: Each entry is a row in the format:
+
+        {'row number': [column 1 data, column 2 data, ...], ...}
+    """
     rows_dict = {}
     for i, result in enumerate(queryset):
         rows_dict[i] = []
@@ -126,6 +167,16 @@ def build_rows(columns, queryset, additional_data, additional_usage_data):
     return rows_dict
 
 def build_queryset(data, allocationattribute_data, request):
+    """
+    Creates an allocation queryset.
+
+    Params:
+        allocationattribute_data (dict): Information filled out on the allocation attribute search form.
+        request (dict): GET request sent by the server.
+
+    Returns:
+        QuerySet: Allocation queryset.
+    """
     allocation_queryset = build_allocation_queryset(data, request)
 
     project_queryset = build_project_queryset(data, request)
@@ -139,6 +190,16 @@ def build_queryset(data, allocationattribute_data, request):
     return allocation_queryset
 
 def filter_by_allocation_attribute_parameters(allocationattribute_data, allocation_queryset):
+    """
+    Filters the allocation queryset base on provided allocation attribute data.
+
+    Params:
+        allocationattribute_data (dict): Information filled out on the allocation attribute search form.
+        allocation_queryset (QuerySet): Allocation queryset.
+
+    Returns:
+        QuerySet: Allocation queryset.
+    """
     for entry in allocationattribute_data:
         allocation_attribute_type = entry.get('allocationattribute__name')
         allocation_attribute_value = entry.get('allocationattribute__value')
@@ -199,6 +260,17 @@ def filter_by_allocation_attribute_parameters(allocationattribute_data, allocati
     return allocation_queryset
 
 def get_allocation_attribute_data(data):
+    """
+    Grabs the desired information on the selected allocation attributes.
+
+    Params:
+        data (list[dict]): Fields filled out in each allocation attribute form.
+
+    Returns:
+        dict: Allocation attribute information with the format:
+
+        {allocation_id: [allocation attribute object, ...], ...}
+    """
     all_allocation_attributes = {}
     for entry in data:
         allocation_attribute_type = entry.get('allocationattribute__name')
@@ -219,6 +291,17 @@ def get_allocation_attribute_data(data):
     return all_allocation_attributes
 
 def get_allocation_attribute_usage(data):
+    """
+    Grabs the usage data on the selected allocation attributes if applicable.
+
+    Params:
+        data (dict): Fields filled out in each allocation attribute form.
+
+    Returns:
+        dict: Allocation attribute usage numbers with the format:
+
+        { allocation_id: [allocation attribute usage number, ...], ...}
+    """
     all_allocation_attribute_usages = {}
     allocation_attributes = [
         allocation_attribute 
@@ -242,6 +325,16 @@ def get_allocation_attribute_usage(data):
     return all_allocation_attribute_usages
 
 def build_allocation_queryset(data, request):
+    """
+    Creates an allocation queryset.
+
+    Params:
+        data (dict): Information filled out on the search form.
+        request (dict): GET request sent by the server.
+
+    Returns:
+        QuerySet: Allocation queryset.
+    """
     order_by = request.get('order_by')
     if order_by:
         direction = request.get('direction')
@@ -269,6 +362,15 @@ def build_allocation_queryset(data, request):
     return allocations
 
 def build_resource_queryset(data):
+    """
+    Creates a resource queryset.
+
+    Params:
+        data (dict): Information filled out on the search form.
+
+    Returns:
+        QuerySet: Resource queryset.
+    """
     resources = Resource.objects.prefetch_related('resource_type',).filter(is_allocatable=True)
 
     if data.get('resources__name'):
@@ -276,7 +378,6 @@ def build_resource_queryset(data):
             id__in=data.get('resources__name').values_list('id')
         )
     if data.get('resources__resource_type__name'):
-        print(data.get('resources__resource_type__name'))
         resources = resources.filter(
             resource_type__in=data.get('resources__resource_type__name')
         )
@@ -284,6 +385,16 @@ def build_resource_queryset(data):
     return resources
     
 def build_project_queryset(data, request):
+    """
+    Creates a project queryset.
+
+    Params:
+        data (dict): Information filled out on the search form.
+        request (dict): GET request sent by the server.
+
+    Returns:
+        QuerySet: Project queryset.
+    """
     order_by = 'id'
     if data.get('only_search_projects'):
         order_by = request.get('order_by')
@@ -326,6 +437,18 @@ def build_project_queryset(data, request):
     return projects
 
 def build_project_columns(data):
+    """
+    Creates the columns for the projects table. If a field containing 'display' has been selected
+    then a new column is created for the corresponding data.
+
+    Params:
+        data (dict): Contains all the fields in the search form.
+
+    Returns:
+        list[dict]: entries for each column of the format:
+
+        {'enable_sorting': bool, 'display_name': str, 'field_name': str}
+    """
     columns = []
     for key, value in data.items():
         if 'display' in key and 'project' in key and value:
@@ -343,6 +466,19 @@ def build_project_columns(data):
     return columns
 
 def build_project_rows(columns, queryset):
+    """
+    Creates the rows for the projects table. Rows are the length of the number of columns. The
+    length of the Queryset is the number of rows.
+
+    Params:
+        columns (dict): Columns in the table.
+        queryset (QuerySet): Project queryset to grab the information from.
+
+    Returns:
+        dict: Each entry is a row in the format:
+
+        {'row number': [column 1 data, column 2 data, ...], ...}
+    """
     column_field_names = [column.get('field_name') for column in columns]
     rows_dict = {}
     for i, result in enumerate(queryset):
