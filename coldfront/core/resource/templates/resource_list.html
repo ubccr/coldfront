@@ -67,7 +67,11 @@ Resource List
       <tbody>
         {% for resource in resource_list %}
           <tr>
+            {% if EULA_AGREEMENT %}
+            <td><a href="{% url 'resource-eula' resource.pk %}">{{ resource.id }}</a></td>
+            {% else %}
             <td><a href="/resource/{{resource.id}}/">{{ resource.id }}</a></td>
+            {% endif %}
             <td>{{ resource }}</td>
             <td>{{ resource.parent_resource }}</td>
             <td>{{ resource.resource_type.name }}</td>

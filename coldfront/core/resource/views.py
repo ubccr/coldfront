@@ -13,7 +13,32 @@ from django.views.generic.edit import CreateView
 
 from coldfront.core.resource.forms import ResourceAttributeCreateForm, ResourceSearchForm, ResourceAttributeDeleteForm
 from coldfront.core.resource.models import Resource, ResourceAttribute
+from coldfront.core.utils.common import import_from_settings
 
+EULA_AGREEMENT = import_from_settings(
+    'EULA_AGREEMENT', True)
+
+class ResourceEULAView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    model = Resource
+    template_name = 'resource_eula.html'
+    context_object_name = 'resource'
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        return True
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        pk = self.kwargs.get('pk')
+        resource_obj = get_object_or_404(Resource, pk=pk)
+
+        attributes = [attribute for attribute in resource_obj.resourceattribute_set.all(
+        ).order_by('resource_attribute_type__name')]
+
+        context['resource'] = resource_obj
+        context['attributes'] = attributes
+
+        return context
 
 class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     model = Resource
@@ -294,6 +319,7 @@ class ResourceListView(LoginRequiredMixin, ListView):
 
         context['filter_parameters'] = filter_parameters
         context['filter_parameters_with_order_by'] = filter_parameters_with_order_by
+        context['EULA_AGREEMENT'] = EULA_AGREEMENT
 
         resource_list = context.get('resource_list')
         paginator = Paginator(resource_list, self.paginate_by)
