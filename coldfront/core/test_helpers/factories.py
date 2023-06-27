@@ -341,8 +341,8 @@ def setup_models(test_case):
         AAttributeTypeFactory(name=attribute_type)
     for status in ['Pending', 'Approved', 'Denied']:
         AllocationChangeStatusChoiceFactory(name=status)
-    for allocation_attribute_type in ['Storage Quota (TB)']:
-        AllocationAttributeTypeFactory(name=allocation_attribute_type, is_private=False, is_changeable=True)
+    for alloc_attr_type in ['Storage Quota (TB)']:
+        AllocationAttributeTypeFactory(name=alloc_attr_type, is_private=False, is_changeable=True)
     # users
     test_case.admin_user = UserFactory(username='gvanrossum', is_staff=True, is_superuser=True)
     # pi is a project admin but not an AllocationUser.
