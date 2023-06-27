@@ -66,7 +66,7 @@ from coldfront.core.user.models import *
 
 ## Link Your App to ColdFront
 
-1. Add the following app to your list of ```INSTALLED_APPS``` by creating a new file in the ColdFront plugins directory (`coldfront/plugins`) and adding these lines to the new file:
+1. Add the following app to your list of ```INSTALLED_APPS``` by creating a new file in the ColdFront plugins directory (`coldfront/config/plugins`) and adding these lines to the new file:
 ```
 from coldfront.config.base import INSTALLED_APPS
 
