@@ -1,4 +1,5 @@
 from django.core.management.base import BaseCommand
+from coldfront.config.core import EULA_AGREEMENT
 
 from coldfront.core.allocation.models import (AttributeType,
                                               AllocationAttributeType,
@@ -25,7 +26,9 @@ class Command(BaseCommand):
         for choice in ('Pending', 'Approved', 'Denied',):
             AllocationChangeStatusChoice.objects.get_or_create(name=choice)
 
-        for choice in ('Active', 'Error', 'Removed', 'Pending'):
+        for choice in ('Active', 'Error', 'Removed'):
+            if EULA_AGREEMENT:
+                AllocationUserStatusChoice.objects.get_or_create(name='Pending')
             AllocationUserStatusChoice.objects.get_or_create(name=choice)
 
         for name, attribute_type, has_usage, is_private in (

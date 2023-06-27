@@ -13,10 +13,6 @@ from django.views.generic.edit import CreateView
 
 from coldfront.core.resource.forms import ResourceAttributeCreateForm, ResourceSearchForm, ResourceAttributeDeleteForm
 from coldfront.core.resource.models import Resource, ResourceAttribute
-from coldfront.core.utils.common import import_from_settings
-
-EULA_AGREEMENT = import_from_settings(
-    'EULA_AGREEMENT', True)
 
 class ResourceEULAView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     model = Resource

@@ -20,6 +20,7 @@ from django.utils.html import format_html, mark_safe
 from django.views import View
 from django.views.generic import ListView, TemplateView
 from django.views.generic.edit import CreateView, FormView, UpdateView
+from coldfront.config.core import EULA_AGREEMENT
 
 from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationAddUserForm,
@@ -628,7 +629,8 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
             allocation_user_active_status_choice = AllocationUserStatusChoice.objects.get(
                 name='Active')
-            allocation_user_pending_status_choice = AllocationUserStatusChoice.objects.get(
+            if EULA_AGREEMENT:
+                allocation_user_pending_status_choice = AllocationUserStatusChoice.objects.get(
                 name='Pending')
 
             for form in formset:
@@ -651,16 +653,18 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                     if allocation_obj.allocationuser_set.filter(user=user_obj).exists():
                         allocation_user_obj = allocation_obj.allocationuser_set.get(
                             user=user_obj)
-                        if get_eula(allocation_obj):
-                            allocation_user_obj.status = allocation_user_pending_status_choice
-                            send_allocation_customer_email(allocation_obj, f'Agree to EULA for {allocation_obj}', 'email/allocation_agree_to_eula.txt', domain_url=get_domain_url(self.request))
+                        if EULA_AGREEMENT:
+                            if get_eula(allocation_obj):
+                                allocation_user_obj.status = allocation_user_pending_status_choice
+                                send_allocation_customer_email(allocation_obj, f'Agree to EULA for {allocation_obj}', 'email/allocation_agree_to_eula.txt', domain_url=get_domain_url(self.request))
                         else:
                             allocation_user_obj.status = allocation_user_active_status_choice
                         allocation_user_obj.save()
                     else:
-                        if get_eula(allocation_obj):
-                            allocation_user_obj = AllocationUser.objects.create(
-                            allocation=allocation_obj, user=user_obj, status=allocation_user_pending_status_choice)
+                        if EULA_AGREEMENT:
+                            if get_eula(allocation_obj):
+                                allocation_user_obj = AllocationUser.objects.create(
+                                allocation=allocation_obj, user=user_obj, status=allocation_user_pending_status_choice)
                         else:
                             allocation_user_obj = AllocationUser.objects.create(
                             allocation=allocation_obj, user=user_obj, status=allocation_user_active_status_choice)
