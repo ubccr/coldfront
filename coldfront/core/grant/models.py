@@ -51,33 +51,31 @@ class GrantStatusChoice(TimeStampedModel):
     
 class MoneyField(models.CharField):
     validators = [
-        RegexValidator(r'^[0-9,.$]+$',
-                        'Enter only digits, commas, dollar signs, or spaces.',
+        RegexValidator(r'\$*[\d,.]{1,}$',
+                        'Enter only digits, decimals, commas, dollar signs, or spaces.',
                         'Invalid input.')
     ]
     def to_python(self, value):
-        if "," or "$" or " " in value:
-            if "," in value:
-                value = value.replace(',', '')
-            if "$" in value:
-                value = round(float(value.replace('$', '')), 2)
-            if " " in value:
-                value = value.replace(' ', '')
-        return super().to_python(value)
+        value = super().to_python(value)
+        if value:
+            value = value.replace(" ", "")
+            value = value.replace(".", "")
+            value = value.replace(",", "")
+            value = value.replace("$", "")
+        return value
         
 class PercentField(models.CharField):
     validators = [
-        RegexValidator(r'^[0-9,%]+%',
-                        'Enter only digits, percent symbols, or spaces.',
+        RegexValidator(r'^[\d,.]{1,6}\%*$',
+                        'Enter only digits, decimals, percent symbols, or spaces.',
                         'Invalid input.')
     ]
     def to_python(self, value):
-        if "%" or " " in value:
-            if "%" in value:
-                value = round(float(value.replace('%', '')), 2)
-            if " " in value:
-                value = value.replace(" ", "")
-        return super().to_python(value)
+        value = super().to_python(value)
+        if value:
+            value = value.replace(" ", "")
+            value = value.replace("%", "")
+        return value
 
 class Grant(TimeStampedModel):
     """ A grant is funding that a PI receives for their project.

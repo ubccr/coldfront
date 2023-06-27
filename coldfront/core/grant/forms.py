@@ -17,9 +17,9 @@ class GrantForm(ModelForm):
             'direct_funding': 'Direct funding to {}'.format(CENTER_NAME)
         }
         help_texts = {
-            'percent_credit': 'Percent credit as entered in the sponsored projects form for grant submission as financial credit to the department/unit in the credit distribution section. Only digits, spaces, and percent symbols can be entered.',
-            'direct_funding': 'Funds budgeted specifically for {} services, hardware, software, and/or personnel. Only digits, spaces, commas, and dollar signs can be entered.'.format(CENTER_NAME),
-            'total_amount_awarded': 'Only digits, commas, and dollar signs can be entered.'
+            'percent_credit': 'Percent credit as entered in the sponsored projects form for grant submission as financial credit to the department/unit in the credit distribution section. Enter only digits, decimals, percent symbols, or spaces.',
+            'direct_funding': 'Funds budgeted specifically for {} services, hardware, software, and/or personnel. Enter only digits, decimals, commas, dollar signs, or spaces.'.format(CENTER_NAME),
+            'total_amount_awarded': 'Enter only digits, decimals, commas, dollar signs, or spaces.'
         }
 
     def __init__(self, *args, **kwargs):
