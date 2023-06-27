@@ -663,6 +663,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                             user=user_obj)
                         if get_eula(allocation_obj):
                             allocation_user_obj.status = allocation_user_pending_status_choice
+                            send_allocation_customer_email(allocation_obj, f'Agree to EULA for {allocation_obj}', 'email/allocation_agree_to_eula.txt', domain_url=get_domain_url(self.request))
                         else:
                             allocation_user_obj.status = allocation_user_active_status_choice
                         allocation_user_obj.save()
