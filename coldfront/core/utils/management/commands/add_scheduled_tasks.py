@@ -23,3 +23,7 @@ class Command(BaseCommand):
         schedule('coldfront.core.allocation.tasks.send_expiry_emails',
                  schedule_type=Schedule.DAILY,
                  next_run=date)
+        
+        schedule('coldfront.core.allocation.tasks.send_eula_reminders',
+                 schedule_type=Schedule.WEEKLY,
+                 next_run=date)
