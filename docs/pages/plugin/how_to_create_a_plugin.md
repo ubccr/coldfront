@@ -47,7 +47,8 @@ from . import views
 app_name = "weeklyreportapp"
 urlpatterns = [
     path("", views.index, name="weeklyreportapp"),
-]```
+]
+```
 
 5. In your app's **views.py** file, add this line:
 ```
