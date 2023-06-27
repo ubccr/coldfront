@@ -40,8 +40,14 @@ class WeeklyreportappConfig(AppConfig):
 
 4. Make sure to include this line in your app's **urls.py** file:
 ```
+from django.urls import path
+
+from . import views
+
 app_name = "weeklyreportapp"
-```
+urlpatterns = [
+    path("", views.index, name="weeklyreportapp"),
+]```
 
 5. In your app's **views.py** file, add this line:
 ```
