@@ -8,7 +8,8 @@ Throughout this tutorial, to effectively illustrate the structure of a linked Co
 
 ## Option 1: Connect Your App Manually
 
-!!! Info Note: To override any other default ColdFront templates, follow these instructions from our docs. This option is best if you would not like to use pip to install your app. It is important to note, however, that when updating your ColdFront version, that you would need to keep in mind that these files are placed within the app's own files.
+!!! info
+    Note: To override any other default ColdFront templates, follow these instructions from our docs. This option is best if you would not like to use pip to install your app. It is important to note, however, that when updating your ColdFront version, that you would need to keep in mind that these files are placed within the app's own files.
 
 ### Set Up Your App
 
@@ -27,7 +28,7 @@ weeklyreportapp
 └───templates (you can include as many as needed)
     │   index.html
 ```
-2. Ensure that your app's **__init__.py** file contents have the following format:
+2. Ensure that your app's __\_\_init\_\_.py__ file contents have the following format:
 ```
 default_app_config = "coldfront.plugins.weeklyreportapp.apps.WeeklyreportappConfig"
 ```
@@ -77,7 +78,7 @@ from coldfront.core.user.models import *
 
 ### Link Your App to ColdFront
 
-1. Add the following app to your list of ```INSTALLED_APPS``` by creating a new file in the ColdFront plugins directory (`coldfront/config/plugins`) and adding these lines to the new file:
+1. Add the following app to your list of ```INSTALLED_APPS``` by creating a new file in the ColdFront plugins directory (`coldfront/config/plugins`) and adding these lines to the new file (i.e. `weeklyreportapp.py`):
 ```
 from coldfront.config.base import INSTALLED_APPS
 
@@ -133,13 +134,14 @@ Your app should now be linked to ColdFront.
 
 ## Option 2: Connect Your App Using Pip
 
-!!! Info Note: This option is recommended since it does not interfere with your ColdFront files and the process feels familiar for many, much like downloading an app to your phone or laptop.
+!!! info 
+    Note: This option is recommended since it does not interfere with your ColdFront files and the process feels familiar for many, much like downloading an app to your phone or laptop.
 
 ### Download Your App
 To use pip, **pip install [package_name]** in your virtual environment to make upgrading ColdFront more efficient (if applicable). To learn how to create a pip package, check out [this link](https://packaging.python.org/en/latest/tutorials/packaging-projects/). If you are creating a pip package from a GitHub repo, we found [this blog](https://dev.to/rf_schubert/how-to-create-a-pip-package-and-host-on-private-github-repo-58pa) information useful in doing so. To pip install the example plugin, run the following command in your terminal (preferably in a [Python virtual environment](https://docs.python.org/3/library/venv.html) to install it specifically for your instance of ColdFront):
-```
-pip install -e git+https://github.com/rg663/weeklyreportapppip#egg=weeklyreportapp
-```
+  ```
+  pip install -e git+https://github.com/rg663/weeklyreportapppip#egg=weeklyreportapp
+  ```
 
 ### Link Your App to ColdFront
 
@@ -192,5 +194,5 @@ plugin_configs['PLUGIN_WEEKLYREPORTAPP'] = 'plugins/weeklyreportapp.py'
 
 !!! Tip
     Note: To override any other default ColdFront templates, follow [these instructions](../../config/#custom-branding) from our docs.
-    
+
 Your app should now be linked to ColdFront.
