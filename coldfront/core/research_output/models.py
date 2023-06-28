@@ -16,8 +16,10 @@ class ResearchOutput(TimeStampedModel):
         description (str): description of output
         created_by (User): represents the User model of the user creating the output
     """
-
     # core fields
+    class Meta:
+        permissions = (("can_view_research_output_report","Can view research output report"),)
+    
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     title = models.CharField(max_length=128, blank=True)
     description = models.TextField(

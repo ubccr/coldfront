@@ -12,6 +12,7 @@ In addition to this, you will need to add the following permissions:
 - publication|publication|Can view publication
 - allocation|allocation|Can manage invoice (optional)    
 - allocation|allocation|Can view all allocation requests (optional)  
+- research output|research output|Can view research output report(optional)
 
 ![DirectorPerms](../../images/directorperms.PNG)
 
