@@ -6,9 +6,9 @@ The tutorial below assumes that you are comfortable with Django. If not, check o
 
 Throughout this tutorial, to effectively illustrate the structure of a linked ColdFront plugin, the Weekly Report plugin [linked here](https://github.com/rg663/weeklyreportapp) will be used as an example.
 
-## Set Up Your App
+## Set Up Your App Manually
 
-1. Create your app, complete with a file structure as demonstrated below:
+1. Create your app, complete with a file structure as demonstrated below (for the example app, download the Git repository):
 ```
 weeklyreportapp
 │   README.md  
@@ -81,12 +81,14 @@ INSTALLED_APPS += [
     'coldfront.plugins.weeklyreportapp',
 ]
 ```
+
 2. Edit the ColdFront **urls.py** (`coldfront/config/urls.py`) file to include the new urls info:
 ```
 urlpatterns += [
     path('weeklyreportapp/', include('coldfront.plugins.weeklyreportapp.urls')),
 ]
 ```
+
 3. In the ColdFront **settings.py** (`coldfront/settings/config.py`) file, add the following lines:
 ```
 plugin_configs['PLUGIN_WEEKLYREPORTAPP'] = 'plugins/weeklyreportapp.py'
@@ -94,10 +96,7 @@ plugin_configs['PLUGIN_WEEKLYREPORTAPP'] = 'plugins/weeklyreportapp.py'
 
 4. Set the ```PLUGIN_WEEKLYREPORTAPP``` config variable to TRUE in your environment file.
 
-5. Add your app's folder to the **coldfront/plugins** directory or **pip install [package_name]** in your virtual environment to make upgrading ColdFront more efficient (if applicable). To learn how to create a pip package, check out [this link](https://packaging.python.org/en/latest/tutorials/packaging-projects/). If you are creating a pip package from a GitHub repo, we found [this blog](https://dev.to/rf_schubert/how-to-create-a-pip-package-and-host-on-private-github-repo-58pa) information useful in doing so. To pip install the example plugin, run:
-```
-pip install git+https://github.com/rg663/weeklyreportapp
-```
+5. Add your app's folder to the **coldfront/plugins** directory.
 
 5. Since the example Weekly Report plugin is intended for admins, to add it to the navbar for admins, update the **templates/common/navbar_admin.html** file or its equivalent in your ColdFront setup like so:
   ```
@@ -117,7 +116,70 @@ pip install git+https://github.com/rg663/weeklyreportapp
       <a id="navbar-grant-report" class="dropdown-item" href="{% url 'grant-report' %}">Grant Report</a>
 
       <!-- Add the Weekly Report url to the navbar here -->
-      <a id="navbar-weekly-report" class="nav-link" href="{% url 'weeklyreportapp:weekly-report' %}">Weekly Report</a>
+      <a id="navbar-weekly-report" class="nav-link" href="{% url 'weeklyreportapp:weeklyreportapp' %}">Weekly Report</a>
+
+    </div>
+  </li>
+  ```
+
+!!! Tip
+    Note: To override any default ColdFront templates, follow [these instructions](../../config/#custom-branding) from our docs.
+
+Your app should now be linked to ColdFront.
+
+## Set Up Your App Using Pip
+
+1. To use pip, **pip install [package_name]** in your virtual environment to make upgrading ColdFront more efficient (if applicable). To learn how to create a pip package, check out [this link](https://packaging.python.org/en/latest/tutorials/packaging-projects/). If you are creating a pip package from a GitHub repo, we found [this blog](https://dev.to/rf_schubert/how-to-create-a-pip-package-and-host-on-private-github-repo-58pa) information useful in doing so. 
+
+To pip install the example plugin, run the following command in your terminal (preferably in a [Python virtual environment](https://docs.python.org/3/library/venv.html) to install it specifically for your instance of ColdFront):
+```
+pip install -e git+https://github.com/rg663/weeklyreportapppip#egg=weeklyreportapp
+```
+
+## Link Your App to ColdFront Using Pip
+
+1. Add the following app to your list of ```INSTALLED_APPS``` by creating a new file in the ColdFront plugins directory (`coldfront/config/plugins`) and adding these lines to the new file:
+```
+from coldfront.config.base import INSTALLED_APPS
+
+INSTALLED_APPS += [
+    'weeklyreportapp',
+]
+```
+
+2. Edit the ColdFront **urls.py** (`coldfront/config/urls.py`) file to include the new urls info:
+```
+urlpatterns += [
+    path('weeklyreportapp/', include('weeklyreportapp.urls')),
+]
+```
+
+3. In the ColdFront **settings.py** (`coldfront/settings/config.py`) file, add the following lines:
+```
+plugin_configs['PLUGIN_WEEKLYREPORTAPP'] = 'plugins/weeklyreportapp.py'
+``` 
+
+4. Set the ```PLUGIN_WEEKLYREPORTAPP``` config variable to TRUE in your environment file.
+
+5. Since the example Weekly Report plugin is intended for admins, to add it to the navbar for admins, update the **templates/common/navbar_admin.html** file or its equivalent in your ColdFront setup like so:
+  ```
+  <li id="navbar-admin" class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown">Admin</a>
+    <div class="dropdown-menu">
+      <a class="dropdown-item" href="/admin">ColdFront Administration</a>
+      <a id="navbar-user-search" class="dropdown-item" href="{% url 'user-search-home' %}">User Search</a>
+      <a class="dropdown-item" href="{% url 'project-list' %}?show_all_projects=on">All Projects</a>
+      <a class="dropdown-item" href="{% url 'allocation-list' %}?show_all_allocations=on">All Allocations</a>
+      <a class="dropdown-item" href="{% url 'resource-list' %}">All Resources</a>
+      <a id="navbar-project-reviews" class="dropdown-item" href="{% url 'project-review-list' %}">Project Reviews</a>
+      <a id="navbar-allocation-requests" class="dropdown-item" href="{% url 'allocation-request-list' %}">
+        Allocation Requests</a>
+      <a id="navbar-allocation-change-requests" class="dropdown-item" href="{% url 'allocation-change-list' %}">
+        Allocation Change Requests</a>
+      <a id="navbar-grant-report" class="dropdown-item" href="{% url 'grant-report' %}">Grant Report</a>
+
+      <!-- Add the Weekly Report url to the navbar here -->
+      <a id="navbar-weekly-report" class="nav-link" href="{% url 'weeklyreportapp:weeklyreportapp' %}">Weekly Report</a>
 
     </div>
   </li>
