@@ -47,10 +47,6 @@ class AdvancedExportingView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
             filter_parameters = ''
             context['export_form'] = SearchForm(prefix='full_search')
 
-        allocation_attribute_types_with_usage = list(AllocationAttributeType.objects.filter(
-            has_usage=True
-        ).values_list('id', flat=True))
-
         allocation_search_formset = formset_factory(AllocationSearchForm, extra=1)
         if not self.request.GET:
             formset = allocation_search_formset(prefix='allocationattribute')
@@ -61,6 +57,9 @@ class AdvancedExportingView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
                 form_kwargs={'resources': selected_resources}
             )
 
+        allocation_attribute_types_with_usage = list(AllocationAttributeType.objects.filter(
+            has_usage=True
+        ).values_list('id', flat=True))
         allocationattribute_data = []
         for form in formset:
             if form.is_valid():

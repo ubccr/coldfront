@@ -121,6 +121,8 @@ class SearchForm(forms.Form):
     )
     display__project__class_number = forms.BooleanField(required=False)
 
+    display__project__total_users = forms.BooleanField(required=False)
+
     display__allocation__id = forms.BooleanField(required=False)
 
     allocation__status__name = forms.ModelMultipleChoiceField(
@@ -129,6 +131,8 @@ class SearchForm(forms.Form):
         required=False
     )
     display__allocation__status__name = forms.BooleanField(required=False)
+
+    display__allocation__total_users = forms.BooleanField(required=False)
 
     resources__name = forms.ModelMultipleChoiceField(
         label='Resource Name',
@@ -176,13 +180,15 @@ class SearchForm(forms.Form):
                     'display__project__status__name',
                     'display__project__type__name',
                     'display__project__class_number',
+                    'display__project__total_users',
                 ),
             ),
             Accordion(
                 AccordionGroup('Allocations',
                     'allocation__status__name',
                     'display__allocation__id',
-                    'display__allocation__status__name'
+                    'display__allocation__status__name',
+                    'display__allocation__total_users'
                 )
             ),
             Accordion(

@@ -107,6 +107,7 @@ def build_rows(columns, queryset, additional_data, additional_usage_data):
         {'row number': [column 1 data, column 2 data, ...], ...}
     """
     rows_dict = {}
+    total_project_users_cache = {}
     for i, result in enumerate(queryset):
         rows_dict[i] = []
 
@@ -121,12 +122,26 @@ def build_rows(columns, queryset, additional_data, additional_usage_data):
 
             if 'project' == model:
                 project = getattr(result, model)
-                attribute = getattr(project, attribute)
+                field_name = column.get('field_name')
+                if 'total_users' in field_name:
+                    attribute = total_project_users_cache.get(project.id)
+                    if attribute is None:
+                        print(project.projectuser_set.filter(status__name='Active').explain())
+                        attribute = len(project.projectuser_set.filter(status__name='Active'))
+                        total_project_users_cache[project.id] = attribute
+                else:
+                    attribute = getattr(project, attribute)
+
             elif 'resources' == model:
                 resource = result.get_parent_resource
                 attribute = getattr(resource, attribute)
-            else:
-                attribute = getattr(result, attribute)
+
+            elif 'allocation' == model:
+                field_name = column.get('field_name')
+                if 'total_users' in field_name:
+                    attribute = len(result.allocationuser_set.filter(status__name='Active'))
+                else:
+                    attribute = getattr(result, attribute)
 
             elif 'allocationattribute' == model:
                 nested_attribute = ''
@@ -485,7 +500,11 @@ def build_project_rows(columns, queryset):
             else:
                 attribute = split[0]
 
-            attribute = getattr(result, attribute)
+            if 'total_active_users' in column:
+                attribute = len(result.projectuser_set.filter(status__name='Active'))
+            else:
+                attribute = getattr(result, attribute)
+
             if nested_attribute:
                 attribute = getattr(attribute, nested_attribute)
 
