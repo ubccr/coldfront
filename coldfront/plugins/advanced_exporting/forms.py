@@ -50,7 +50,10 @@ class AllocationSearchForm(forms.Form):
 
     allocationattribute__name = forms.ModelChoiceField(
         label='Allocation Attribute Name',
-        queryset=AllocationAttributeType.objects.all().order_by('name'),
+        queryset=AllocationAttributeType.objects.none() ,
+        help_text=(
+            f'To display the list of allocation attributes at least one resource must be selected.'
+        ),
         required=False,
     )
     allocationattribute__value = forms.CharField(
@@ -74,7 +77,9 @@ class AllocationSearchForm(forms.Form):
         if resources:
             self.fields['allocationattribute__name'].queryset = AllocationAttributeType.objects.filter(
                 linked_resources__in=resources
-            ).distinct()
+            ).distinct().order_by('name')
+        else:
+            self.fields['allocationattribute__name'].queryset = AllocationAttributeType.objects.none() 
 
 
 class SearchForm(forms.Form):
@@ -137,9 +142,8 @@ class SearchForm(forms.Form):
     resources__name = forms.ModelMultipleChoiceField(
         label='Resource Name',
         help_text= (
-            f'Selecting a resource will reduce the selection of allocation attributes to only '
-            f'include those that belong to the selected resources. The selection is only updated '
-            f'after the search form is submitted.'
+            f'The selection of allocation attributes is only updated of after the search form is '
+            f'submitted.'
         ),
         queryset=Resource.objects.filter(is_allocatable=True).order_by('name'),
         required=False
