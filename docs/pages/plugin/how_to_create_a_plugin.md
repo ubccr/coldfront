@@ -138,7 +138,7 @@ pip install -e git+https://github.com/rg663/weeklyreportapppip#egg=weeklyreporta
 
 ## Link Your App to ColdFront Using Pip
 
-1. Add the following app to your list of ```INSTALLED_APPS``` by creating a new file in the ColdFront plugins directory (`coldfront/config/plugins`) and adding these lines to the new file:
+1. Add the following app to your list of ```INSTALLED_APPS``` by creating a new file in the ColdFront plugins directory (`coldfront/config/plugins`) and adding these lines to the new file (i.e. `weeklyreportapp.py`):
 ```
 from coldfront.config.base import INSTALLED_APPS
 
