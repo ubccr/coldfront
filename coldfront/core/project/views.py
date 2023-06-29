@@ -64,6 +64,8 @@ from coldfront.core.utils.views import ColdfrontListView, NoteCreateView, NoteUp
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email, send_email_template
 
+if 'django_q' in settings.INSTALLED_APPS:
+    from django_q.tasks import Task
 
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
     'ALLOCATION_ENABLE_ALLOCATION_RENEWAL', True)
@@ -217,6 +219,16 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         if time_chart_data:
             if not time_chart_data['groups'][0]:
                 time_chart_data = None
+
+
+        if 'django_q' in settings.INSTALLED_APPS:
+            # get last successful runs of djangoq task responsible for projectuser data pull
+            user_sync_dt = Task.objects.filter(
+                func__contains="update_group_membership_ldap", success=True
+            ).order_by('started').last().started
+        else:
+            user_sync_dt = None
+        context['user_sync_dt'] = user_sync_dt
 
         context['notes'] = self.return_visible_notes()
 
