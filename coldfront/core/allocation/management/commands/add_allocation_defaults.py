@@ -29,6 +29,7 @@ class Command(BaseCommand):
         for choice in ('Active', 'Error', 'Removed'):
             if EULA_AGREEMENT:
                 AllocationUserStatusChoice.objects.get_or_create(name='Pending')
+                AllocationUserStatusChoice.objects.get_or_create(name='Declined')
             AllocationUserStatusChoice.objects.get_or_create(name=choice)
 
         for name, attribute_type, has_usage, is_private in (
