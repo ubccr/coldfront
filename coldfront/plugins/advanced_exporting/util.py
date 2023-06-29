@@ -55,6 +55,7 @@ def build_columns(data, allocationattribute_data):
     for key, value in data.items():
         if 'display' in key and value:
             display_name = ' '.join(key.split('__')[1:])
+            display_name = ' '.join(display_name.split('_'))
             field_name = key[len('display') + 2:]
             enable_sorting = 'false'
             if 'title' in field_name or 'description' in field_name:
