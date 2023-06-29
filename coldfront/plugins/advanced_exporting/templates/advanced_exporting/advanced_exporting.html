@@ -72,7 +72,7 @@ Project and Allocation Export List
             <tr>
               {% for data in row %}
                 <td>
-                  {{ data }}
+                  {{ data|truncatechars:30 }}
                 </td>
               {% endfor %}
             </tr>
