@@ -36,19 +36,22 @@
   {% endif %}
   {% flag_enabled 'SSO_ENABLED' as sso_enabled %}
   {% if sso_enabled %}
-  <a class="btn btn-primary btn-lg" href="{% provider_login_url 'cilogon' process='login' auth_params='idphint=urn:mace:incommon:lbl.gov' %}" role="button">
-    <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
     {% flag_enabled 'BRC_ONLY' as brc_only %}
     {% if brc_only %}
-    CalNet: Log In
+    <a class="btn btn-primary btn-lg" href="{% provider_login_url 'cilogon' process='login' auth_params='idphint=urn:mace:incommon:berkeley.edu' %}" role="button">
+      <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
+      CalNet: Log In
+    </a>
     {% else %}
-    Berkeley Lab: Log In
+    <a class="btn btn-primary btn-lg" href="{% provider_login_url 'cilogon' process='login' auth_params='idphint=urn:mace:incommon:lbl.gov' %}" role="button">
+      <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
+      Berkeley Lab: Log In
+    </a>
     {% endif %}
-  </a>
-  <a class="btn btn-secondary btn-lg" href="{% url 'login' %}" role="button">
-    <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
-    Other: Log In
-  </a>
+    <a class="btn btn-secondary btn-lg" href="{% url 'login' %}" role="button">
+      <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
+      Other: Log In
+    </a>
   {% endif %}
 </p>
 
