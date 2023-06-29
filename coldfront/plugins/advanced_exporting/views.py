@@ -9,7 +9,7 @@ from django.http.response import StreamingHttpResponse
 from django.forms import formset_factory
 
 from coldfront.core.allocation.models import AllocationAttributeType
-from coldfront.plugins.advanced_exporting.forms import SearchForm, AllocationSearchForm, AllocationAttributeFormSetHelper
+from coldfront.plugins.advanced_exporting.forms import SearchForm, AllocationAttributeSearchForm, AllocationAttributeFormSetHelper
 from coldfront.core.utils.common import Echo
 from coldfront.plugins.advanced_exporting.util import build_table
 
@@ -47,7 +47,7 @@ class AdvancedExportingView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
             filter_parameters = ''
             context['export_form'] = SearchForm(prefix='full_search')
 
-        allocation_search_formset = formset_factory(AllocationSearchForm, extra=1)
+        allocation_search_formset = formset_factory(AllocationAttributeSearchForm, extra=1)
         if not self.request.GET:
             formset = allocation_search_formset(prefix='allocationattribute')
         else:
@@ -72,8 +72,6 @@ class AdvancedExportingView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
         context['allocationattribute_form'] = formset
         helper = AllocationAttributeFormSetHelper()
         context['allocationattribute_helper'] = helper
-
-        # print(filter_parameters)
 
         order_by = self.request.GET.get('order_by')
         # if order_by:

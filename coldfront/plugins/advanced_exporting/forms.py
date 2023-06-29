@@ -34,7 +34,7 @@ class AllocationAttributeFormSetHelper(FormHelper):
         )
 
 
-class AllocationSearchForm(forms.Form):
+class AllocationAttributeSearchForm(forms.Form):
     EQUALITY_CHOICES = (
         ('lt', '<'),
         ('gt', '>')
@@ -157,7 +157,7 @@ class SearchForm(forms.Form):
     )
     display__resources__resource_type__name = forms.BooleanField(required=False)
 
-    allocationattribute_form = AllocationSearchForm()
+    allocationattribute_form = AllocationAttributeSearchForm()
     allocationattribute_helper = AllocationAttributeFormSetHelper()
 
     def __init__(self, *args, **kwargs):
