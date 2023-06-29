@@ -442,8 +442,11 @@ def build_project_queryset(data, request):
 
     projects = Project.objects.prefetch_related(
         'pi',
+        'requestor',
         'status',
-        'type'
+        'type',
+        'projectuser_set',
+        'projectuser_set__status'
     ).all().order_by(order_by)
 
     if data.get('project__title'):
@@ -515,19 +518,26 @@ def build_project_rows(columns, queryset):
 
         for column in column_field_names:
             split = column.split('__')[1:]
-            nested_attribute = ""
+            nested_attribute = ''
             if len(split) == 2:
                 attribute, nested_attribute = split
             else:
                 attribute = split[0]
 
-            if 'total_active_users' in column:
-                attribute = len(result.projectuser_set.filter(status__name='Active'))
+            if 'total_users' in column:
+                all_project_users = result.projectuser_set.all()
+                filtered_project_users_count = 0
+                for project_user in all_project_users:
+                    if project_user.status.name == 'Active':
+                        filtered_project_users_count += 1
+                attribute = filtered_project_users_count
             else:
                 attribute = getattr(result, attribute)
 
             if nested_attribute:
                 attribute = getattr(attribute, nested_attribute)
+            if attribute is None:
+                attribute = ''
 
             rows_dict[i].append(attribute)
 
