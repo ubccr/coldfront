@@ -22,18 +22,22 @@ def handle_social_account_added_or_updated(sender, **kwargs):
     """When a SocialAccount (previously-connected or otherwise) is
     connected to a user's local account, create or update EmailAddress
     instances for the addresses given by the provider, setting them as
-    verified."""
+    verified.
+
+    During sign up, SocialLogin.save() handles EmailAddress creation.
+    However, they are not created/updated when connecting SocialAccounts
+    to existing users (using AuthProcess.CONNECT or by manually calling
+    SocialLogin.connect), so they are created/updated here."""
     request = kwargs['request']
     social_login = kwargs['sociallogin']
-    if social_login.state['process'] == AuthProcess.CONNECT:
-        try:
-            set_verified_email_addresses_from_social_login(social_login)
-        except Exception as e:
-            message = (
-                'Failed to automatically create verified email addresses '
-                'from the connected account. Please do so in the User '
-                'Profile.')
-            messages.error(request, message)
+    try:
+        set_verified_email_addresses_from_social_login(social_login)
+    except Exception as e:
+        message = (
+            'Failed to automatically create verified email addresses '
+            'from the connected account. Please do so in the User '
+            'Profile.')
+        messages.error(request, message)
 
 
 def set_verified_email_addresses_from_social_login(social_login):

@@ -1,6 +1,5 @@
 from allauth.account.models import EmailAddress
 from allauth.account.utils import user_email as user_email_func
-from allauth.account.utils import user_field
 from allauth.account.utils import user_username
 from allauth.exceptions import ImmediateHttpResponse
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
