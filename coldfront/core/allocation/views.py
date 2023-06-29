@@ -176,6 +176,14 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             messages.success(
                 request, 'You do not have permission to update the allocation')
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
+        
+        allocation_user_active_status_choice = AllocationUserStatusChoice.objects.get(
+                name='Active')
+        if EULA_AGREEMENT:
+                allocation_user_pending_status_choice = AllocationUserStatusChoice.objects.get(
+                name='Pending')
+        
+                
 
         initial_data = {
             'status': allocation_obj.status,
