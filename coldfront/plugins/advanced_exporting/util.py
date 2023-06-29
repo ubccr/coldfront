@@ -122,12 +122,15 @@ def build_rows(columns, queryset, additional_data, additional_usage_data):
 
             if 'project' == model:
                 project = getattr(result, model)
-                field_name = column.get('field_name')
                 if 'total_users' in field_name:
                     attribute = total_project_users_cache.get(project.id)
                     if attribute is None:
-                        print(project.projectuser_set.filter(status__name='Active').explain())
-                        attribute = len(project.projectuser_set.filter(status__name='Active'))
+                        all_project_users = project.projectuser_set.all()
+                        filtered_project_users_count = 0
+                        for project_user in all_project_users:
+                            if project_user.status.name == 'Active':
+                                filtered_project_users_count += 1
+                        attribute = filtered_project_users_count
                         total_project_users_cache[project.id] = attribute
                 else:
                     attribute = getattr(project, attribute)
@@ -137,9 +140,13 @@ def build_rows(columns, queryset, additional_data, additional_usage_data):
                 attribute = getattr(resource, attribute)
 
             elif 'allocation' == model:
-                field_name = column.get('field_name')
                 if 'total_users' in field_name:
-                    attribute = len(result.allocationuser_set.filter(status__name='Active'))
+                    all_allocation_users = result.allocationuser_set.all()
+                    filtered_allocation_users_count = 0
+                    for allocation_user in all_allocation_users:
+                        if allocation_user.status.name == 'Active':
+                            filtered_allocation_users_count += 1
+                    attribute = filtered_allocation_users_count
                 else:
                     attribute = getattr(result, attribute)
 
@@ -283,9 +290,9 @@ def get_allocation_attribute_data(data):
     for entry in data:
         allocation_attribute_type = entry.get('allocationattribute__name')
         if allocation_attribute_type:
-            allocation_attributes = AllocationAttribute.objects.filter(
-                allocation_attribute_type=allocation_attribute_type
-            )
+            allocation_attributes = AllocationAttribute.objects.prefetch_related(
+                'allocation', 'allocation_attribute_type'
+            ).filter(allocation_attribute_type=allocation_attribute_type)
             for allocation_attribute in allocation_attributes:
                 if all_allocation_attributes.get(allocation_attribute.allocation.id) is None:
                     all_allocation_attributes[allocation_attribute.allocation.id] = [
@@ -316,9 +323,9 @@ def get_allocation_attribute_usage(data):
         for allocation_attributes in data.values() 
         for allocation_attribute in allocation_attributes
     ]
-    allocation_attribute_usages = AllocationAttributeUsage.objects.filter(
-        allocation_attribute__in=allocation_attributes
-    )
+    allocation_attribute_usages = AllocationAttributeUsage.objects.prefetch_related(
+        'allocation_attribute'
+    ).filter(allocation_attribute__in=allocation_attributes)
     for allocation_attribute_usage in allocation_attribute_usages:
         allocation_attribute = allocation_attribute_usage.allocation_attribute
         if all_allocation_attribute_usages.get(allocation_attribute.id) is None:
@@ -360,7 +367,20 @@ def build_allocation_queryset(data, request):
             order_by = direction + order_by.split('__')[1]
     else:
         order_by = 'project__id'
-    allocations = Allocation.objects.prefetch_related('project', 'status',).all().order_by(order_by)
+    allocations = Allocation.objects.prefetch_related(
+        'project',
+        'project__pi',
+        'project__requestor',
+        'project__status',
+        'project__type',
+        'project__projectuser_set',
+        'project__projectuser_set__status',
+        'allocationuser_set',
+        'allocationuser_set__status',
+        'status',
+        'resources',
+        'resources__resource_type'
+    ).all().order_by(order_by)
 
     if data.get('allocation__status__name'):
         allocations = allocations.filter(

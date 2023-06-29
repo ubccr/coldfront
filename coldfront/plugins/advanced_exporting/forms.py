@@ -75,9 +75,9 @@ class AllocationSearchForm(forms.Form):
     def __init__(self, *args, resources=None, **kwargs):
         super().__init__(*args, **kwargs)
         if resources:
-            self.fields['allocationattribute__name'].queryset = AllocationAttributeType.objects.filter(
-                linked_resources__in=resources
-            ).distinct().order_by('name')
+            self.fields['allocationattribute__name'].queryset = AllocationAttributeType.objects.prefetch_related(
+                'attribute_type'
+            ).filter(linked_resources__in=resources).distinct().order_by('name')
         else:
             self.fields['allocationattribute__name'].queryset = AllocationAttributeType.objects.none() 
 
@@ -126,7 +126,7 @@ class SearchForm(forms.Form):
     )
     display__project__class_number = forms.BooleanField(required=False)
 
-    display__project__total_users = forms.BooleanField(required=False)
+    display__project__total_users = forms.BooleanField(required=False, help_text='Active users')
 
     display__allocation__id = forms.BooleanField(required=False)
 
@@ -137,7 +137,7 @@ class SearchForm(forms.Form):
     )
     display__allocation__status__name = forms.BooleanField(required=False)
 
-    display__allocation__total_users = forms.BooleanField(required=False)
+    display__allocation__total_users = forms.BooleanField(required=False, help_text='Active users')
 
     resources__name = forms.ModelMultipleChoiceField(
         label='Resource Name',
