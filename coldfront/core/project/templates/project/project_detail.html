@@ -247,6 +247,7 @@ Project Detail
 <div class="card mb-3">
   <div class="card-header">
     <h3 class="d-inline" id="users"><i class="fas fa-users" aria-hidden="true"></i> Users</h3> <span class="badge badge-secondary">{{project_users.count}}</span>
+    <span class="float-right">Last Sync: {{user_sync_dt}}</span>
     <div class="float-right">
       {% comment %}
       {% if project.status.name != 'Archived' and is_allowed_to_update_project %}

@@ -7,6 +7,7 @@ from xhtml2pdf import pisa
 
 from dateutil.relativedelta import relativedelta
 from django import forms
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -63,6 +64,9 @@ from coldfront.core.project.models import (Project, ProjectPermission,
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_allocation_admin_email, send_allocation_customer_email
+
+if 'django_q' in settings.INSTALLED_APPS:
+    from django_q.tasks import Task
 
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
     'ALLOCATION_ENABLE_ALLOCATION_RENEWAL', True)
@@ -202,6 +206,17 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         quota_bytes, usage_bytes = return_allocation_bytes_values(
             attributes_with_usage, allocation_obj.allocationuser_set.all()
         )
+
+
+        if 'django_q' in settings.INSTALLED_APPS:
+            # get last successful runs of djangoq task responsible for allocationuser data pull
+            user_sync_task = Task.objects.filter(
+                func__contains="pull_sf_push_cf_redash", success=True
+            ).order_by('started').last()
+            user_sync_dt = None if not user_sync_task else user_sync_task.started
+        else:
+            user_sync_dt = None
+        context['user_sync_dt'] = user_sync_dt
 
         context['allocation_quota_bytes'] = quota_bytes
         context['allocation_usage_bytes'] = usage_bytes
