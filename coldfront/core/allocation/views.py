@@ -210,9 +210,10 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
         if 'django_q' in settings.INSTALLED_APPS:
             # get last successful runs of djangoq task responsible for allocationuser data pull
-            user_sync_dt = Task.objects.filter(
+            user_sync_task = Task.objects.filter(
                 func__contains="pull_sf_push_cf_redash", success=True
-            ).order_by('started').last().started
+            ).order_by('started').last()
+            user_sync_dt = None if not user_sync_task else user_sync_task.started
         else:
             user_sync_dt = None
         context['user_sync_dt'] = user_sync_dt
