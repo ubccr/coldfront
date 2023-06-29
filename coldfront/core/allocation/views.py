@@ -106,12 +106,34 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         allocation_obj = get_object_or_404(Allocation, pk=pk)
         allocation_users = allocation_obj.allocationuser_set.exclude(
             status__name__in=['Removed']).order_by('user__username')
+        
+        user_resources = get_user_resources(self.request.user)
+        resources_with_eula = {}
+        for res in user_resources:
+            if res.get_attribute_list(name='eula'):
+                for attr_value in res.get_attribute_list(name='eula'):
+                    resources_with_eula[res] = attr_value
+
+        context['resources_with_eula'] = resources_with_eula
 
         # set visible usage attributes
         alloc_attr_set = allocation_obj.get_attribute_set(self.request.user)
         attributes_with_usage = [a for a in alloc_attr_set if hasattr(a, 'allocationattributeusage')]
         attributes = alloc_attr_set
 
+
+        allocation_user_active_status_choice = AllocationUserStatusChoice.objects.get(
+                name='Active')
+        if EULA_AGREEMENT:
+            allocation_user_pending_status_choice = AllocationUserStatusChoice.objects.get(name='Pending')
+        
+        allocation_user_status = get_object_or_404(AllocationUser, allocation=allocation_obj, user=self.request.user).status
+        context["allocation_user_status"] = allocation_user_status
+        context["user_is_active"] = allocation_user_status==allocation_user_active_status_choice
+        context["user_is_pending"] = False
+        if EULA_AGREEMENT:
+            context["user_is_pending"] = allocation_user_status==allocation_user_pending_status_choice
+        
         allocation_changes = allocation_obj.allocationchangerequest_set.all().order_by('-pk')
 
         guage_data = []
@@ -178,14 +200,6 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                 request, 'You do not have permission to update the allocation')
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
         
-        allocation_user_active_status_choice = AllocationUserStatusChoice.objects.get(
-                name='Active')
-        if EULA_AGREEMENT:
-                allocation_user_pending_status_choice = AllocationUserStatusChoice.objects.get(
-                name='Pending')
-        
-                
-
         initial_data = {
             'status': allocation_obj.status,
             'end_date': allocation_obj.end_date,
@@ -674,7 +688,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                         if EULA_AGREEMENT:
                             if get_eula(allocation_obj):
                                 allocation_user_obj.status = allocation_user_pending_status_choice
-                                send_allocation_customer_email(allocation_obj, f'Agree to EULA for {allocation_obj}', 'email/allocation_agree_to_eula.txt', domain_url=get_domain_url(self.request))
+                                send_allocation_customer_email(allocation_obj, f'Agree to EULA for {allocation_obj.__str__()}', 'email/allocation_agree_to_eula.txt', domain_url=get_domain_url(self.request))
                         else:
                             allocation_user_obj.status = allocation_user_active_status_choice
                         allocation_user_obj.save()
