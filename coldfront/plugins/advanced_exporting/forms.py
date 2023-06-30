@@ -126,6 +126,10 @@ class SearchForm(forms.Form):
     )
     display__project__class_number = forms.BooleanField(required=False)
 
+    display__project__users = forms.BooleanField(
+        required=False, help_text='Ignored if "only search projects" is not selected'
+    )
+
     display__project__total_users = forms.BooleanField(required=False, help_text='Active users')
 
     display__allocation__id = forms.BooleanField(required=False)
@@ -184,6 +188,7 @@ class SearchForm(forms.Form):
                     'display__project__status__name',
                     'display__project__type__name',
                     'display__project__class_number',
+                    'display__project__users',
                     'display__project__total_users',
                 ),
             ),

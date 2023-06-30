@@ -51,9 +51,15 @@ def build_columns(data, allocationattribute_data):
 
         { 'id': int } # ID of allocation attribute type in the allocation attribute
     """
+    only_projects = data.get('only_search_projects')
+
     columns = []
     for key, value in data.items():
         if 'display' in key and value:
+            if not only_projects:
+                if key == 'display__project__users':
+                    continue
+
             display_name = ' '.join(key.split('__')[1:])
             display_name = ' '.join(display_name.split('_'))
             field_name = key[len('display') + 2:]
@@ -446,7 +452,8 @@ def build_project_queryset(data, request):
         'status',
         'type',
         'projectuser_set',
-        'projectuser_set__status'
+        'projectuser_set__status',
+        'projectuser_set__user'
     ).all().order_by(order_by)
 
     if data.get('project__title'):
@@ -513,32 +520,49 @@ def build_project_rows(columns, queryset):
     """
     column_field_names = [column.get('field_name') for column in columns]
     rows_dict = {}
-    for i, result in enumerate(queryset):
-        rows_dict[i] = []
+    row_idx = 0
+    for project_obj in queryset:
+        if 'project__users' in column_field_names:
+            all_project_users = project_obj.projectuser_set.all()
+            for project_user in all_project_users:
+                if project_user.status.name == 'Active':
+                    row = build_project_row(
+                        project_obj, column_field_names, project_user.user.username
+                    )
+                    rows_dict[row_idx] = row
+                    row_idx += 1
+        else:
+            row = build_project_row(project_obj, column_field_names)
+            rows_dict[row_idx] = row
+            row_idx += 1
 
-        for column in column_field_names:
-            split = column.split('__')[1:]
-            nested_attribute = ''
-            if len(split) == 2:
-                attribute, nested_attribute = split
-            else:
-                attribute = split[0]
+    return rows_dict
 
-            if 'total_users' in column:
-                all_project_users = result.projectuser_set.all()
+def build_project_row(project_obj, columns, username=None):
+    row = []
+    for column in columns:
+        attributes = column.split('__')[1:]
+
+        current_attribute = project_obj
+        for attribute in attributes:
+            if hasattr(current_attribute, attribute):
+                current_attribute = getattr(current_attribute, attribute)
+                continue
+
+            if 'project__total_users' in column:
+                all_project_users = project_obj.projectuser_set.all()
                 filtered_project_users_count = 0
                 for project_user in all_project_users:
                     if project_user.status.name == 'Active':
                         filtered_project_users_count += 1
-                attribute = filtered_project_users_count
-            else:
-                attribute = getattr(result, attribute)
+                current_attribute = filtered_project_users_count
 
-            if nested_attribute:
-                attribute = getattr(attribute, nested_attribute)
-            if attribute is None:
-                attribute = ''
+            elif 'project__users' in column:
+                current_attribute = username
 
-            rows_dict[i].append(attribute)
+        if current_attribute is None:
+            current_attribute = ''
 
-    return rows_dict
+        row.append(current_attribute)
+
+    return row
