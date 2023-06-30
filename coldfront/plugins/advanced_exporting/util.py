@@ -113,80 +113,115 @@ def build_rows(columns, queryset, additional_data, additional_usage_data):
 
         {'row number': [column 1 data, column 2 data, ...], ...}
     """
+    column_field_names = [column.get('field_name') for column in columns]
     rows_dict = {}
-    total_project_users_cache = {}
-    for i, allocation_obj in enumerate(queryset):
-        rows_dict[i] = []
+    cache = {'total_project_users': {}, 'total_allocation_users': {}}
+    row_idx = 0
+    for allocation_obj in queryset:
+        if 'allocation__users' in column_field_names:
+            all_allocation_users = allocation_obj.allocationuser_set.all()
+            for allocation_user in all_allocation_users:
+                if allocation_user.status.name == 'Active':
+                    row, cache = build_row(
+                        allocation_obj,
+                        column_field_names,
+                        cache,
+                        additional_data,
+                        additional_usage_data,
+                        username=allocation_user.user.username
+                    )
+                    rows_dict[row_idx] = row
+                    row_idx += 1
+        else:
+            row, cache = build_row(
+                allocation_obj,
+                column_field_names,
+                cache,
+                additional_data,
+                additional_usage_data
+            )
+            rows_dict[row_idx] = row
+            row_idx += 1
 
-        for column in columns:
-            field_name = column.get('field_name')
-            split = field_name.split('__')
-            model = split[0]
-            attributes = split[1:]
-            if model == 'allocation':
-                model = allocation_obj
-            elif model == 'project':
-                model = getattr(allocation_obj, model)
-            elif model == 'resources':
-                model = allocation_obj.get_parent_resource
-            elif model == 'allocationattribute':
-                model = None
+    return rows_dict
 
-            if model is not None:
-                current_attribute = model
-                for attribute in attributes:
-                    if hasattr(current_attribute, attribute):
-                        current_attribute = getattr(current_attribute, attribute)
-                        continue
+def build_row(allocation_obj, column_field_names, cache, additional_data, additional_usage_data, username=None):
+    row = []
+    for column in column_field_names:
+        split = column.split('__')
+        model = split[0]
+        attributes = split[1:]
+        if model == 'allocation':
+            model = allocation_obj
+        elif model == 'project':
+            model = getattr(allocation_obj, model)
+        elif model == 'resources':
+            model = allocation_obj.get_parent_resource
+        elif model == 'allocationattribute':
+            model = None
 
-                    if 'project__total_users' in field_name:
-                        current_attribute = total_project_users_cache.get(model.id)
-                        if current_attribute is None:
-                            all_project_users = model.projectuser_set.all()
-                            filtered_project_users_count = 0
-                            for project_user in all_project_users:
-                                if project_user.status.name == 'Active':
-                                    filtered_project_users_count += 1
-                            current_attribute = filtered_project_users_count
-                            total_project_users_cache[model.id] = current_attribute
-                        break
+        if model is not None:
+            current_attribute = model
+            for attribute in attributes:
+                if hasattr(current_attribute, attribute):
+                    current_attribute = getattr(current_attribute, attribute)
+                    continue
 
-                    if 'allocation__total_users' in field_name:
+                if 'project__total_users' == column:
+                    current_attribute = cache['total_project_users'].get(model.id)
+                    if current_attribute is None:
+                        all_project_users = model.projectuser_set.all()
+                        filtered_project_users_count = 0
+                        for project_user in all_project_users:
+                            if project_user.status.name == 'Active':
+                                filtered_project_users_count += 1
+                        current_attribute = filtered_project_users_count
+                        cache['total_project_users'][model.id] = current_attribute
+                    break
+
+                if 'allocation__total_users' == column:
+                    current_attribute = cache['total_allocation_users'].get(model.id)
+                    if current_attribute is None:
                         all_allocation_users = model.allocationuser_set.all()
                         filtered_allocation_users_count = 0
                         for allocation_user in all_allocation_users:
                             if allocation_user.status.name == 'Active':
                                 filtered_allocation_users_count += 1
                         current_attribute = filtered_allocation_users_count
-                        break
-            else:
-                allocation_id = allocation_obj.id
-                value = ''
-                attribute = attributes[0]
-                if attribute == 'name':
-                    allocation_attributes = additional_data.get(allocation_id)
-                    if allocation_attributes is not None:
-                        for allocation_attribute in allocation_attributes:
-                            # Assumes no duplicate allocation attribute types in list
-                            if allocation_attribute.allocation_attribute_type.id == column.get('id'):
-                                value = allocation_attribute.value
-                                break
-                elif attribute == 'has_usage':
-                    allocation_attribute_usages = additional_usage_data.get(allocation_id)
-                    if allocation_attribute_usages is not None:
-                        for allocation_attribute_usage in allocation_attribute_usages:
-                            # Assumes no duplicate allocation attribute types in list
-                            if allocation_attribute_usage.allocation_attribute.allocation_attribute_type.id == column.get('id'):
-                                value = allocation_attribute_usage.value
-                                break
+                        cache['total_allocation_users'][model.id] = current_attribute
+                    break
 
-                current_attribute = value
+                if 'allocation__users' == column:
+                    current_attribute = username
 
-            if current_attribute is None:
-                current_attribute = ""
-            rows_dict[i].append(current_attribute)
+        else:
+            allocation_id = allocation_obj.id
+            value = ''
+            attribute = attributes[0]
+            if attribute == 'name':
+                allocation_attributes = additional_data.get(allocation_id)
+                if allocation_attributes is not None:
+                    for allocation_attribute in allocation_attributes:
+                        # Assumes no duplicate allocation attribute types in list
+                        if allocation_attribute.allocation_attribute_type.id == column.get('id'):
+                            value = allocation_attribute.value
+                            break
+            elif attribute == 'has_usage':
+                allocation_attribute_usages = additional_usage_data.get(allocation_id)
+                if allocation_attribute_usages is not None:
+                    for allocation_attribute_usage in allocation_attribute_usages:
+                        # Assumes no duplicate allocation attribute types in list
+                        if allocation_attribute_usage.allocation_attribute.allocation_attribute_type.id == column.get('id'):
+                            value = allocation_attribute_usage.value
+                            break
 
-    return rows_dict
+            current_attribute = value
+
+        if current_attribute is None:
+            current_attribute = ""
+        row.append(current_attribute)
+
+    return row, cache
 
 def build_queryset(data, allocationattribute_data, request):
     """
@@ -384,6 +419,7 @@ def build_allocation_queryset(data, request):
         'project__projectuser_set__status',
         'allocationuser_set',
         'allocationuser_set__status',
+        'allocationuser_set__user',
         'status',
         'resources',
         'resources__resource_type'
