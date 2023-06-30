@@ -32,19 +32,7 @@ class AdvancedExportingView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
             context['export_form'] = search_form
             data = search_form.cleaned_data
             selected_resources = data.get('resources__name')
-            filter_parameters = ''
-            for key, value in data.items():
-                if value:
-                    if isinstance(value, QuerySet):
-                        for ele in value:
-                            filter_parameters += '{}={}&'.format(key, ele.pk)
-                    elif hasattr(value, 'pk'):
-                        filter_parameters += '{}={}&'.format(key, value.pk)
-                    else:
-                        filter_parameters += '{}={}&'.format(key, value)
-            context['export_form'] = search_form
         else:
-            filter_parameters = ''
             context['export_form'] = SearchForm(prefix='full_search')
 
         allocation_search_formset = formset_factory(AllocationAttributeSearchForm, extra=1)
@@ -73,22 +61,11 @@ class AdvancedExportingView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
         helper = AllocationAttributeFormSetHelper()
         context['allocationattribute_helper'] = helper
 
-        order_by = self.request.GET.get('order_by')
-        # if order_by:
-        #     direction = self.request.GET.get('direction')
-        #     filter_parameters_with_order_by = filter_parameters + \
-        #         'order_by=%s&direction=%s&' % (order_by, direction)
-        # else:
-        #     filter_parameters_with_order_by = filter_parameters
-
-        # context['filter_parameters_with_order_by'] = filter_parameters_with_order_by
-        # print(self.request.GET)
         if search_form.is_valid():
             data = search_form.cleaned_data
             rows, columns = build_table(data, allocationattribute_data, self.request.GET)
         else:
             rows, columns = [], []
-        context['filter_parameters'] = filter_parameters
         context['columns'] = columns
         num_rows = 0
         if columns:
@@ -105,9 +82,6 @@ class AdvancedExportView(LoginRequiredMixin, UserPassesTestMixin, View):
             return True
         
     def post(self, request):
-        # print('POST')
-        # print(request.POST)
-        # print(request.POST.get('data'))
         data = json.loads(request.POST.get('data'))
         columns = data.get('columns')
         column_names = [column.get('display_name') for column in columns]

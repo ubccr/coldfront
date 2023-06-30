@@ -45,7 +45,7 @@ def build_columns(data, allocationattribute_data):
     Returns:
         list[dict]: entries for each column of the format:
 
-        {'enable_sorting': bool, 'display_name': str, 'field_name': str}
+        {'display_name': str, 'field_name': str}
 
         if the data is from an allocation attribute form the dictionary has an additional entry:
 
@@ -63,11 +63,7 @@ def build_columns(data, allocationattribute_data):
             display_name = ' '.join(key.split('__')[1:])
             display_name = ' '.join(display_name.split('_'))
             field_name = key[len('display') + 2:]
-            enable_sorting = 'false'
-            if 'title' in field_name or 'description' in field_name:
-                enable_sorting = 'false'
             columns.append({
-                'enable_sorting': enable_sorting,
                 'display_name': display_name.title(),
                 'field_name': field_name
             })
@@ -77,9 +73,7 @@ def build_columns(data, allocationattribute_data):
         if allocation_attribute_type:
             display_name = allocation_attribute_type.name
             field_name = 'allocationattribute__name'
-            enable_sorting = 'false'
             columns.append({
-                'enable_sorting': enable_sorting,
                 'display_name': display_name,
                 'field_name': field_name,
                 'id': allocation_attribute_type.id
@@ -89,9 +83,7 @@ def build_columns(data, allocationattribute_data):
             if has_usage and int(has_usage):
                 display_name += ' Usage'
                 field_name = 'allocationattribute__has_usage'
-                enable_sorting = 'false'
                 columns.append({
-                    'enable_sorting': enable_sorting,
                     'display_name': display_name,
                     'field_name': field_name,
                     'id': allocation_attribute_type.id
@@ -393,23 +385,6 @@ def build_allocation_queryset(data, request):
     Returns:
         QuerySet: Allocation queryset.
     """
-    order_by = request.get('order_by')
-    if order_by:
-        direction = request.get('direction')
-        if direction == 'asc':
-            direction = ''
-        else:
-            direction = '-'
-        if 'project' in order_by:
-            order_by = direction + order_by
-        elif 'resources' in order_by:
-            split = order_by.split('__') # TODO - remove
-            order_by = '__'.join(split) # TODO - remove
-            order_by = direction + order_by
-        else:
-            order_by = direction + order_by.split('__')[1]
-    else:
-        order_by = 'project__id'
     allocations = Allocation.objects.prefetch_related(
         'project',
         'project__pi',
@@ -424,7 +399,7 @@ def build_allocation_queryset(data, request):
         'status',
         'resources',
         'resources__resource_type'
-    ).all().order_by(order_by)
+    ).all().order_by('project__id')
 
     if data.get('allocation__user_username'):
         allocations = allocations.filter(
@@ -473,22 +448,6 @@ def build_project_queryset(data, request):
     Returns:
         QuerySet: Project queryset.
     """
-    order_by = 'id'
-    if data.get('only_search_projects'):
-        order_by = request.get('order_by')
-        if order_by:
-            direction = request.get('direction')
-            if direction == 'asc':
-                direction = ''
-            else:
-                direction = '-'
-
-            split = order_by.split('__')[1:]
-            order_by = '__'.join(split)
-            order_by = direction + order_by
-        else:
-            order_by = 'id'
-
     projects = Project.objects.prefetch_related(
         'pi',
         'requestor',
@@ -497,7 +456,7 @@ def build_project_queryset(data, request):
         'projectuser_set',
         'projectuser_set__status',
         'projectuser_set__user'
-    ).all().order_by(order_by)
+    ).all().order_by('id')
 
     if data.get('project__title'):
         projects = projects.filter(title__icontains= data.get('project__title'))
@@ -534,18 +493,14 @@ def build_project_columns(data):
     Returns:
         list[dict]: entries for each column of the format:
 
-        {'enable_sorting': bool, 'display_name': str, 'field_name': str}
+        {'display_name': str, 'field_name': str}
     """
     columns = []
     for key, value in data.items():
         if 'display' in key and 'project' in key and value:
             display_name = ' '.join(key.split('_')[1:])
             field_name = key[len('display') + 2:]
-            enable_sorting = 'false'
-            if 'title' in field_name or 'description' in field_name:
-                enable_sorting = 'false'
             columns.append({
-                'enable_sorting': enable_sorting,
                 'display_name': display_name.title(),
                 'field_name': field_name
             })
