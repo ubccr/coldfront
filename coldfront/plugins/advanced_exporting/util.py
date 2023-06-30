@@ -105,18 +105,17 @@ def build_rows(columns, queryset, additional_data, additional_usage_data):
 
         {'row number': [column 1 data, column 2 data, ...], ...}
     """
-    column_field_names = [column.get('field_name') for column in columns]
     rows_dict = {}
     cache = {'total_project_users': {}, 'total_allocation_users': {}}
     row_idx = 0
-    if 'allocation__users' in column_field_names:
+    if 'allocation__users' in columns:
         for allocation_obj in queryset:
             all_allocation_users = allocation_obj.allocationuser_set.all()
             for allocation_user in all_allocation_users:
                 if allocation_user.status.name == 'Active':
                     row, cache = build_row(
                         allocation_obj,
-                        column_field_names,
+                        columns,
                         cache,
                         additional_data,
                         additional_usage_data,
@@ -128,7 +127,7 @@ def build_rows(columns, queryset, additional_data, additional_usage_data):
         for allocation_obj in queryset:
             row, cache = build_row(
                 allocation_obj,
-                column_field_names,
+                columns,
                 cache,
                 additional_data,
                 additional_usage_data
@@ -138,10 +137,11 @@ def build_rows(columns, queryset, additional_data, additional_usage_data):
 
     return rows_dict
 
-def build_row(allocation_obj, column_field_names, cache, additional_data, additional_usage_data, username=None):
+def build_row(allocation_obj, columns, cache, additional_data, additional_usage_data, username=None):
     row = []
-    for column in column_field_names:
-        split = column.split('__')
+    for column in columns:
+        field_name = column.get('field_name')
+        split = field_name.split('__')
         model = split[0]
         attributes = split[1:]
         if model == 'allocation':
@@ -160,7 +160,7 @@ def build_row(allocation_obj, column_field_names, cache, additional_data, additi
                     current_attribute = getattr(current_attribute, attribute)
                     continue
 
-                if 'project__total_users' == column:
+                if 'project__total_users' == field_name:
                     current_attribute = cache['total_project_users'].get(model.id)
                     if current_attribute is None:
                         all_project_users = model.projectuser_set.all()
@@ -172,7 +172,7 @@ def build_row(allocation_obj, column_field_names, cache, additional_data, additi
                         cache['total_project_users'][model.id] = current_attribute
                     break
 
-                if 'allocation__total_users' == column:
+                if 'allocation__total_users' == field_name:
                     current_attribute = cache['total_allocation_users'].get(model.id)
                     if current_attribute is None:
                         all_allocation_users = model.allocationuser_set.all()
@@ -184,7 +184,7 @@ def build_row(allocation_obj, column_field_names, cache, additional_data, additi
                         cache['total_allocation_users'][model.id] = current_attribute
                     break
 
-                if 'allocation__users' == column:
+                if 'allocation__users' == field_name:
                     current_attribute = username
 
         else:
