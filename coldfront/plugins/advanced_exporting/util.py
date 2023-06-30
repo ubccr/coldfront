@@ -115,52 +115,54 @@ def build_rows(columns, queryset, additional_data, additional_usage_data):
     """
     rows_dict = {}
     total_project_users_cache = {}
-    for i, result in enumerate(queryset):
+    for i, allocation_obj in enumerate(queryset):
         rows_dict[i] = []
 
         for column in columns:
             field_name = column.get('field_name')
             split = field_name.split('__')
-            nested_attribute = ""
-            if len(split) == 3:
-                model, attribute, nested_attribute = split
+            model = split[0]
+            attributes = split[1:]
+            if model == 'allocation':
+                model = allocation_obj
+            elif model == 'project':
+                model = getattr(allocation_obj, model)
+            elif model == 'resources':
+                model = allocation_obj.get_parent_resource
+            elif model == 'allocationattribute':
+                model = None
+
+            if model is not None:
+                current_attribute = model
+                for attribute in attributes:
+                    if hasattr(current_attribute, attribute):
+                        current_attribute = getattr(current_attribute, attribute)
+                        continue
+
+                    if 'project__total_users' in field_name:
+                        current_attribute = total_project_users_cache.get(model.id)
+                        if current_attribute is None:
+                            all_project_users = model.projectuser_set.all()
+                            filtered_project_users_count = 0
+                            for project_user in all_project_users:
+                                if project_user.status.name == 'Active':
+                                    filtered_project_users_count += 1
+                            current_attribute = filtered_project_users_count
+                            total_project_users_cache[model.id] = current_attribute
+                        break
+
+                    if 'allocation__total_users' in field_name:
+                        all_allocation_users = model.allocationuser_set.all()
+                        filtered_allocation_users_count = 0
+                        for allocation_user in all_allocation_users:
+                            if allocation_user.status.name == 'Active':
+                                filtered_allocation_users_count += 1
+                        current_attribute = filtered_allocation_users_count
+                        break
             else:
-                model, attribute = split
-
-            if 'project' == model:
-                project = getattr(result, model)
-                if 'total_users' in field_name:
-                    attribute = total_project_users_cache.get(project.id)
-                    if attribute is None:
-                        all_project_users = project.projectuser_set.all()
-                        filtered_project_users_count = 0
-                        for project_user in all_project_users:
-                            if project_user.status.name == 'Active':
-                                filtered_project_users_count += 1
-                        attribute = filtered_project_users_count
-                        total_project_users_cache[project.id] = attribute
-                else:
-                    attribute = getattr(project, attribute)
-
-            elif 'resources' == model:
-                resource = result.get_parent_resource
-                attribute = getattr(resource, attribute)
-
-            elif 'allocation' == model:
-                if 'total_users' in field_name:
-                    all_allocation_users = result.allocationuser_set.all()
-                    filtered_allocation_users_count = 0
-                    for allocation_user in all_allocation_users:
-                        if allocation_user.status.name == 'Active':
-                            filtered_allocation_users_count += 1
-                    attribute = filtered_allocation_users_count
-                else:
-                    attribute = getattr(result, attribute)
-
-            elif 'allocationattribute' == model:
-                nested_attribute = ''
-                allocation_id = result.id
+                allocation_id = allocation_obj.id
                 value = ''
+                attribute = attributes[0]
                 if attribute == 'name':
                     allocation_attributes = additional_data.get(allocation_id)
                     if allocation_attributes is not None:
@@ -178,13 +180,11 @@ def build_rows(columns, queryset, additional_data, additional_usage_data):
                                 value = allocation_attribute_usage.value
                                 break
 
-                attribute = value
+                current_attribute = value
 
-            if nested_attribute:
-                attribute = getattr(attribute, nested_attribute)
-            if attribute is None:
-                attribute = ""
-            rows_dict[i].append(attribute)
+            if current_attribute is None:
+                current_attribute = ""
+            rows_dict[i].append(current_attribute)
 
     return rows_dict
 
