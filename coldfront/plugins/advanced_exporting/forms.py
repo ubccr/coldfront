@@ -83,7 +83,10 @@ class AllocationAttributeSearchForm(forms.Form):
 
 
 class SearchForm(forms.Form):
-    only_search_projects = forms.BooleanField(required=False)
+    only_search_projects = forms.BooleanField(
+        required=False,
+        help_text='Enables only filtering projects. Disables all other filters and selections.'
+    )
 
     display__project__id = forms.BooleanField(required=False)
 
