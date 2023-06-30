@@ -2,10 +2,6 @@ from coldfront.core.project.models import Project
 from coldfront.core.allocation.models import Allocation, AllocationAttribute, AllocationAttributeUsage
 from coldfront.core.resource.models import Resource
 
-from django.contrib import messages
-from django.utils.html import format_html
-from django.http import QueryDict
-
 
 def build_table(data, allocationattribute_data, get_request):
     """

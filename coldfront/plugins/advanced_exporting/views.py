@@ -4,7 +4,6 @@ import json
 
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import  TemplateView, View
-from django.db.models.query import QuerySet
 from django.http.response import StreamingHttpResponse
 from django.forms import formset_factory
 
