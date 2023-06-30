@@ -117,8 +117,8 @@ def build_rows(columns, queryset, additional_data, additional_usage_data):
     rows_dict = {}
     cache = {'total_project_users': {}, 'total_allocation_users': {}}
     row_idx = 0
-    for allocation_obj in queryset:
-        if 'allocation__users' in column_field_names:
+    if 'allocation__users' in column_field_names:
+        for allocation_obj in queryset:
             all_allocation_users = allocation_obj.allocationuser_set.all()
             for allocation_user in all_allocation_users:
                 if allocation_user.status.name == 'Active':
@@ -132,7 +132,8 @@ def build_rows(columns, queryset, additional_data, additional_usage_data):
                     )
                     rows_dict[row_idx] = row
                     row_idx += 1
-        else:
+    else:
+        for allocation_obj in queryset:
             row, cache = build_row(
                 allocation_obj,
                 column_field_names,
@@ -557,8 +558,8 @@ def build_project_rows(columns, queryset):
     column_field_names = [column.get('field_name') for column in columns]
     rows_dict = {}
     row_idx = 0
-    for project_obj in queryset:
-        if 'project__users' in column_field_names:
+    if 'project__users' in column_field_names:
+        for project_obj in queryset:
             all_project_users = project_obj.projectuser_set.all()
             for project_user in all_project_users:
                 if project_user.status.name == 'Active':
@@ -567,7 +568,8 @@ def build_project_rows(columns, queryset):
                     )
                     rows_dict[row_idx] = row
                     row_idx += 1
-        else:
+    else:
+        for project_obj in queryset:
             row = build_project_row(project_obj, column_field_names)
             rows_dict[row_idx] = row
             row_idx += 1
