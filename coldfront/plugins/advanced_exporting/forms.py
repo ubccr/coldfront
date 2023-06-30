@@ -107,6 +107,10 @@ class SearchForm(forms.Form):
     )
     display__project__requestor__username = forms.BooleanField(required=False)
 
+    project__user_username = forms.CharField(
+        label='Username Contains', max_length=25, required=False, help_text='Active user'
+    )
+
     project__status__name = forms.ModelMultipleChoiceField(
         label='Project Status',
         queryset=ProjectStatusChoice.objects.all().order_by('name'),
@@ -133,6 +137,10 @@ class SearchForm(forms.Form):
     display__project__total_users = forms.BooleanField(required=False, help_text='Active users')
 
     display__allocation__id = forms.BooleanField(required=False)
+
+    allocation__user_username = forms.CharField(
+        label='Username Contains', max_length=25, required=False, help_text='Active user'
+    )
 
     allocation__status__name = forms.ModelMultipleChoiceField(
         label='Allocation Status',
@@ -179,6 +187,7 @@ class SearchForm(forms.Form):
                     'project__description',
                     'project__pi__username',
                     'project__requestor__username',
+                    'project__user_username',
                     'project__status__name',
                     'project__type__name',
                     'project__class_number',
@@ -196,6 +205,7 @@ class SearchForm(forms.Form):
             ),
             Accordion(
                 AccordionGroup('Allocations',
+                    'allocation__user_username',
                     'allocation__status__name',
                     'display__allocation__id',
                     'display__allocation__status__name',

@@ -426,6 +426,12 @@ def build_allocation_queryset(data, request):
         'resources__resource_type'
     ).all().order_by(order_by)
 
+    if data.get('allocation__user_username'):
+        allocations = allocations.filter(
+            allocationuser__user__username=data.get('allocation__user_username'),
+            allocationuser__status__name='Active'
+        )
+
     if data.get('allocation__status__name'):
         allocations = allocations.filter(
             status__in=data.get('allocation__status__name')
@@ -509,6 +515,11 @@ def build_project_queryset(data, request):
         projects = projects.filter(type__in= data.get('project__type__name'))
     if data.get('project__class_number'):
         projects = projects.filter(class_number__icontains= data.get('project__class_number'))
+    if data.get('project__user_username'):
+        projects = projects.filter(
+            projectuser__user__username=data.get('project__user_username'),
+            projectuser__status__name='Active'
+        )
 
     return projects
 
