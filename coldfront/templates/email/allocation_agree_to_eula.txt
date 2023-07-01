@@ -1,6 +1,6 @@
 Dear {{center_name}} user,
 
-Your allocation request for {{eula_allocation}} has been activated. To enable access to this resource, agree to the EULA agreement at {{url}}.
+Your allocation request for {{resource}} has been activated. To enable access to this resource, agree to the EULA agreement at {{url}}.
 
 Thank you,
 {{signature}}

@@ -187,9 +187,7 @@ Allocation Detail
                   <tr>
                     <th scope="col">Resource</th>
                     <th scope="col">EULA</th>
-                    {% if user_is_pending %}
-                      <th scope="col">Agreement</th>
-                    {% endif %}
+                    {% comment %} <th scope="col">Agreement</th> {% endcomment %}
                   </tr>
                 </thead>
                 <tbody>
@@ -202,14 +200,21 @@ Allocation Detail
                         <td>
                           {{ value }}
                         </td>
-                        {% if user_is_pending %}
-                          {% comment %} add form here {% endcomment %}
-                        {% endif %}
+                        {% comment %} <td> {% endcomment %}
+                        {% comment %} </td> {% endcomment %}
                       </tr>
                     {% endif %}
                   {% endfor %}
                 </tbody>
               </table>
+              {% if user_is_pending %}
+              <div class="d-inline-flex">
+                Agree to the above EULA to access this allocation:  {{ eula_form|crispy }}
+              </div>
+              <div class="d-inline-flex">
+                <input class="btn btn-dark" type="submit" value="Submit">
+              </div>
+              {% endif %}
             </div>
           </div>
         </div>
@@ -365,8 +370,10 @@ Allocation Detail
               <td>{{ user.user.first_name }}</td>
               <td>{{ user.user.last_name }}</td>
               <td>{{ user.user.email }}</td>
-              {% if user.status.name == 'Active' %}
+              {% if user.status.name == 'Active'%}
                 <td class="text-success">{{ user.status.name }}</td>
+              {% elif user.status.name == 'Pending' %}
+                <td class="text-info">{{ user.status.name }}</td>
               {% elif user.status.name == 'Denied' or user.status.name == 'Error' %}
                 <td class="text-danger">{{ user.status.name }}</td>
               {% else %}
