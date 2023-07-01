@@ -29,7 +29,7 @@ from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationChangeForm,
                                              AllocationChangeNoteForm,
                                              AllocationAttributeChangeForm,
-                                             AllocationAttributeUpdateForm,
+                                             AllocationAttributeUpdateForm, AllocationEULAAgreeForm,
                                              AllocationForm,
                                              AllocationInvoiceNoteDeleteForm,
                                              AllocationInvoiceUpdateForm,
@@ -132,7 +132,8 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context["user_is_pending"] = False
         if EULA_AGREEMENT:
             context["user_is_pending"] = allocation_user_status==allocation_user_pending_status_choice
-        
+        context["eula_form"] = AllocationEULAAgreeForm()
+
         allocation_changes = allocation_obj.allocationchangerequest_set.all().order_by('-pk')
 
         guage_data = []
@@ -326,7 +327,7 @@ class AllocationListView(LoginRequiredMixin, ListView):
 
                     (Q(project__projectuser__role__name='Manager') |
                     Q(allocationuser__user=self.request.user) &
-                    Q(allocationuser__status__name='Active'))
+                    Q(allocationuser__status__name__in=['Active'] ))
                 ).distinct().order_by(order_by)
 
             # Project Title
@@ -339,7 +340,7 @@ class AllocationListView(LoginRequiredMixin, ListView):
                 allocations = allocations.filter(
                     Q(project__pi__username__icontains=data.get('username')) |
                     Q(allocationuser__user__username__icontains=data.get('username')) &
-                    Q(allocationuser__status__name='Active')
+                    Q(allocationuser__status__name__in=['Pending', 'Active'])
                 )
 
             # Resource Type
@@ -380,7 +381,7 @@ class AllocationListView(LoginRequiredMixin, ListView):
         else:
             allocations = Allocation.objects.prefetch_related('project', 'project__pi', 'status',).filter(
                 Q(allocationuser__user=self.request.user) &
-                Q(allocationuser__status__name='Active')
+                Q(allocationuser__status__name__in=['Pending', 'Active'])
             ).order_by(order_by)
 
         return allocations.distinct()
@@ -675,18 +676,19 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                     if allocation_obj.allocationuser_set.filter(user=user_obj).exists():
                         allocation_user_obj = allocation_obj.allocationuser_set.get(
                             user=user_obj)
-                        if EULA_AGREEMENT:
+                        if EULA_AGREEMENT and not user_obj.userprofile.is_pi:
                             if get_eula(allocation_obj):
                                 allocation_user_obj.status = allocation_user_pending_status_choice
-                                send_allocation_customer_email(allocation_obj, f'Agree to EULA for {allocation_obj.__str__()}', 'email/allocation_agree_to_eula.txt', domain_url=get_domain_url(self.request))
+                                send_allocation_customer_email(allocation_obj, f'Agree to EULA for {allocation_obj.get_parent_resource.__str__()}', 'email/allocation_agree_to_eula.txt', domain_url=get_domain_url(self.request))
                         else:
                             allocation_user_obj.status = allocation_user_active_status_choice
                         allocation_user_obj.save()
                     else:
-                        if EULA_AGREEMENT:
+                        if EULA_AGREEMENT and not user_obj.userprofile.is_pi:
                             if get_eula(allocation_obj):
                                 allocation_user_obj = AllocationUser.objects.create(
                                 allocation=allocation_obj, user=user_obj, status=allocation_user_pending_status_choice)
+                                send_allocation_customer_email(allocation_obj, f'Agree to EULA for {allocation_obj.get_parent_resource.__str__()}', 'email/allocation_agree_to_eula.txt', domain_url=get_domain_url(self.request))
                         else:
                             allocation_user_obj = AllocationUser.objects.create(
                             allocation=allocation_obj, user=user_obj, status=allocation_user_active_status_choice)

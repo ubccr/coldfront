@@ -259,3 +259,6 @@ class AllocationAttributeCreateForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(AllocationAttributeCreateForm, self).__init__(*args, **kwargs) 
         self.fields['allocation_attribute_type'].queryset = self.fields['allocation_attribute_type'].queryset.order_by(Lower('name'))
+
+class AllocationEULAAgreeForm(forms.Form):
+    EULAchoice = forms.ChoiceField(choices=[(1, "I agree"), (2, "I disagree")], label="")
