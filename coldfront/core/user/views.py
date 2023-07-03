@@ -456,7 +456,8 @@ class UserSearchAll(LoginRequiredMixin, ListView):
     @staticmethod
     def _filter_users_by_email(users, email):
         user_ids = EmailAddress.objects.filter(
-            primary=False, email__icontains=email).values_list('user__id')
+            primary=False, email__icontains=email).values_list(
+                'user__id', flat=True)
         user_ids = set(list(user_ids))
         return users.filter(Q(email__icontains=email) | Q(id__in=user_ids))
 
