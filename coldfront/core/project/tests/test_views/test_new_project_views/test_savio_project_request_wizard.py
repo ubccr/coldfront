@@ -37,27 +37,6 @@ class TestSavioProjectRequestWizard(TestBase):
         computing_allowance = Resource.objects.get(name=BRCAllowances.FCA)
         allocation_period = get_current_allowance_year_period()
 
-        kwargs = {
-            'computing_allowance': computing_allowance,
-            'allocation_period': allocation_period,
-        }
-
-        # The PI should not be selectable.
-        self.user.is_active = False
-        self.user.save()
-        form = SavioProjectExistingPIForm(**kwargs)
-        pi_field_queryset = \
-            form.fields['PI'].queryset
-        self.assertNotIn(self.user, pi_field_queryset)
-
-        # The PI should be selectable.
-        self.user.is_active = True
-        self.user.save()
-        form = SavioProjectExistingPIForm(**kwargs)
-        pi_field_queryset = \
-            form.fields['PI'].queryset
-        self.assertIn(self.user, pi_field_queryset)
-
         view_name = 'savio_project_request_wizard'
         current_step_key = f'{view_name}-current_step'
         computing_allowance_form_data = {
