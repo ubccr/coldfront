@@ -100,6 +100,30 @@ class TestSavioProjectExistingPIForm(TestBase):
             form.fields['PI'].widget.disabled_choices
         self.assertIn(self.user.pk, pi_field_disabled_choices)
 
+    def test_inactive_users_not_selectable(self):
+        """Test that Users who have is_active set to False may not be
+        selected in the 'PI' field."""
+        allocation_period = get_current_allowance_year_period()
+
+        kwargs = {
+            'computing_allowance': self.fca_computing_allowance,
+            'allocation_period': allocation_period,
+        }
+
+        # The PI should not be selectable.
+        self.user.is_active = False
+        self.user.save()
+        form = SavioProjectExistingPIForm(**kwargs)
+        pi_field_queryset = form.fields['PI'].queryset
+        self.assertNotIn(self.user, pi_field_queryset)
+
+        # The PI should be selectable.
+        self.user.is_active = True
+        self.user.save()
+        form = SavioProjectExistingPIForm(**kwargs)
+        pi_field_queryset = form.fields['PI'].queryset
+        self.assertIn(self.user, pi_field_queryset)
+
     def test_pis_with_inactive_fc_projects_disabled(self):
         """Test that PIs of Projects with the 'Inactive' status are
         disabled in the 'PI' field."""
@@ -217,4 +241,3 @@ class TestSavioProjectExistingPIForm(TestBase):
     # TODO: Test LRC-only functionality.
     # TODO: PIs are only shown/allowed if they have an lbl.gov email.
     # TODO: PIs are limited for LRC - PCA.
-
