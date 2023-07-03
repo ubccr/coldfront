@@ -262,6 +262,9 @@ sentry_dsn: ""
 # # The path to the parent directory containing the Git repository.
 # git_prefix: /vagrant/coldfront_app
 
+# The name of the Systemd unit responsible for mounting the codebase.
+codebase_mount_systemd_unit: vagrant-coldfront_app-coldfront.mount
+
 # # Host settings.
 # hostname: localhost
 # host_ip: localhost
