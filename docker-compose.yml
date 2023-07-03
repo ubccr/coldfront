@@ -9,7 +9,7 @@ services:
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: admin
-      POSTGRES_PASSWORD: root
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
       LOAD_DUMP: true
     volumes:
       - db_data:/var/lib/postgresql/data
@@ -26,7 +26,7 @@ services:
       - 6379:6379
     volumes:
       - redis_data:/data
-    command: --requirepass root
+    command: --requirepass ${REDIS_PASSWORD}
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s

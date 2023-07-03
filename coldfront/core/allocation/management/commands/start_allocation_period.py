@@ -13,6 +13,8 @@ from coldfront.core.resource.utils_.allowance_utils.computing_allowance import C
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import add_argparse_dry_run_argument
 from coldfront.core.utils.common import display_time_zone_current_date
+from coldfront.core.utils.email.email_strategy import DropEmailStrategy
+from coldfront.core.utils.email.email_strategy import SendEmailStrategy
 
 from decimal import Decimal
 
@@ -52,6 +54,11 @@ class Command(BaseCommand):
                 'Do not deactivate Projects prior to processing requests. '
                 'This is useful in case any outstanding requests need to be '
                 'processed by re-running the command.'))
+        parser.add_argument(
+            '--skip_emails',
+            action='store_true',
+            default=False,
+            help='Skip sending notification emails to requesters and PIs.')
         add_argparse_dry_run_argument(parser)
 
     def handle(self, *args, **options):
@@ -66,6 +73,7 @@ class Command(BaseCommand):
                 f'AllocationPeriod {allocation_period_id} does not exist.')
 
         skip_deactivations = options['skip_deactivations']
+        skip_emails = options['skip_emails']
         dry_run = options['dry_run']
 
         if not dry_run:
@@ -76,7 +84,7 @@ class Command(BaseCommand):
                     f'{allocation_period.end_date}) is not current.')
 
         self.handle_allocation_period(
-            allocation_period, skip_deactivations, dry_run)
+            allocation_period, skip_deactivations, skip_emails, dry_run)
 
     def deactivate_projects(self, projects, dry_run):
         """Deactivate the given queryset of Projects. Return the number
@@ -166,10 +174,11 @@ class Command(BaseCommand):
         return Project.objects.filter(pk__in=expired_project_pks)
 
     def handle_allocation_period(self, allocation_period, skip_deactivations,
-                                 dry_run):
+                                 skip_emails, dry_run):
         """Optionally deactivate eligible projects associated with the
         given period. Then, process all requests for new projects and
         allocation renewals that are scheduled for the period.
+        Optionally skip emails during processing.
 
         If any deactivations fail, do not proceed with processing
         requests.
@@ -196,8 +205,10 @@ class Command(BaseCommand):
 
         # New project requests should be processed prior to renewal requests,
         # since a renewal request may depend on a new project request.
-        self.process_new_project_requests(allocation_period, dry_run)
-        self.process_allocation_renewal_requests(allocation_period, dry_run)
+        self.process_new_project_requests(
+            allocation_period, skip_emails, dry_run)
+        self.process_allocation_renewal_requests(
+            allocation_period, skip_emails, dry_run)
 
     @staticmethod
     def is_allocation_period_current(allocation_period):
@@ -207,32 +218,38 @@ class Command(BaseCommand):
                 display_time_zone_current_date() <=
                 allocation_period.end_date)
 
-    def process_allocation_renewal_requests(self, allocation_period, dry_run):
+    def process_allocation_renewal_requests(self, allocation_period,
+                                            skip_emails, dry_run):
         """Process the "Approved" AllocationRenewalRequests for the
-        given AllocationPeriod and allowance. Optionally display updates
-        instead of performing them."""
+        given AllocationPeriod and allowance. Optionally skip emails.
+        Optionally display updates instead of performing them."""
         model = AllocationRenewalRequest
         runner_class = AllocationRenewalProcessingRunner
         eligible_requests = model.objects.filter(
             allocation_period=allocation_period, status__name='Approved')
-        self.process_requests(model, runner_class, eligible_requests, dry_run)
+        self.process_requests(
+            model, runner_class, eligible_requests, skip_emails, dry_run)
 
-    def process_new_project_requests(self, allocation_period, dry_run):
+    def process_new_project_requests(self, allocation_period, skip_emails,
+                                     dry_run):
         """Process the "Approved - Scheduled"
         SavioProjectAllocationRequests for the given AllocationPeriod.
-        Optionally display updates instead of performing them."""
+        Optionally skip emails. Optionally display updates instead of
+        performing them."""
         model = SavioProjectAllocationRequest
         runner_class = SavioProjectProcessingRunner
         eligible_requests = model.objects.filter(
             allocation_period=allocation_period,
             status__name='Approved - Scheduled')
-        self.process_requests(model, runner_class, eligible_requests, dry_run)
+        self.process_requests(
+            model, runner_class, eligible_requests, skip_emails, dry_run)
 
-    def process_requests(self, model, runner_class, requests, dry_run):
+    def process_requests(self, model, runner_class, requests, skip_emails,
+                         dry_run):
         """Given a request model, a runner class for processing
         instances of that model, and a queryset of instances to process,
-        run the runner on each instance. Optionally display updates
-        instead of performing them."""
+        run the runner on each instance. Optionally skip sending emails.
+        Optionally display updates instead of performing them."""
         model_name = model.__name__
         num_successes, num_failures = 0, 0
 
@@ -265,7 +282,19 @@ class Command(BaseCommand):
                 continue
 
             try:
-                runner = runner_class(request, num_service_units)
+                email_strategy = (
+                    DropEmailStrategy() if skip_emails else SendEmailStrategy())
+            except Exception as e:
+                num_failures = num_failures + 1
+                message = (
+                    f'Failed to instantiate email strategy for {model_name} '
+                    f'{request.pk}: {e}')
+                self.stderr.write(self.style.ERROR(message))
+                continue
+
+            try:
+                runner = runner_class(
+                    request, num_service_units, email_strategy=email_strategy)
             except Exception as e:
                 num_failures = num_failures + 1
                 message = (
