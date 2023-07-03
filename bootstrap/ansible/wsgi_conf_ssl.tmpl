@@ -54,7 +54,7 @@ WSGIPassAuthorization On
     ErrorLog /var/log/httpd/{{ wsgi_conf_log_prefix }}.error.log
     CustomLog /var/log/httpd/{{ wsgi_conf_log_prefix }}.custom.log combined
 
-    {% if ip_range_with_api_access | bool %}
+    {% if ip_range_with_api_access %}
     <LocationMatch /(api(/|$))>
         Require ip {{ ip_range_with_api_access }}
     </LocationMatch>
