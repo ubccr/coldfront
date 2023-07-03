@@ -1,7 +1,6 @@
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
-from coldfront.core.project.forms_.new_project_forms.request_forms import SavioProjectExistingPIForm
 from coldfront.core.resource.models import Resource
 from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
