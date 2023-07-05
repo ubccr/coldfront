@@ -708,8 +708,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                         if EULA_AGREEMENT and not user_obj.userprofile.is_pi:
                             if get_eula(allocation_obj):
                                 allocation_user_obj.status = allocation_user_pending_status_choice
-                                # send_email_template(f'Agree to EULA for {allocation_obj.get_parent_resource.__str__()}', 'email/allocation_agree_to_eula.txt', domain_url=get_domain_url(self.request))
-                                send_email_template(f'Agree to EULA for {allocation_obj.get_parent_resource.__str__()}', 'email/allocation_agree_to_eula.txt', {"resource": allocation_obj.get_parent_resource, "url": build_link(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))}, self.request.user.email, [user_obj])
+                                send_email_template(f'Agree to EULA for {allocation_obj.get_parent_resource.__str__()}', 'email/allocation_agree_to_eula.txt', {"resource": allocation_obj.get_parent_resource, "url": build_link(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}), domain_url=get_domain_url(self.request))}, self.request.user.email, [user_obj])
                         else:
                             allocation_user_obj.status = allocation_user_active_status_choice
                         allocation_user_obj.save()
@@ -718,9 +717,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                             if get_eula(allocation_obj):
                                 allocation_user_obj = AllocationUser.objects.create(
                                 allocation=allocation_obj, user=user_obj, status=allocation_user_pending_status_choice)
-                                send_email_template(f'Agree to EULA for {allocation_obj.get_parent_resource.__str__()}', 'email/allocation_agree_to_eula.txt', {"resource": allocation_obj.get_parent_resource, "url": build_link(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))}, self.request.user.email, [user_obj])
-
-                                # send_email_template(allocation_obj, f'Agree to EULA for {allocation_obj.get_parent_resource.__str__()}', 'email/allocation_agree_to_eula.txt', domain_url=get_domain_url(self.request))
+                                send_email_template(f'Agree to EULA for {allocation_obj.get_parent_resource.__str__()}', 'email/allocation_agree_to_eula.txt', {"resource": allocation_obj.get_parent_resource, "url": build_link(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}), domain_url=get_domain_url(self.request))}, self.request.user.email, [user_obj])
                         else:
                             allocation_user_obj = AllocationUser.objects.create(
                             allocation=allocation_obj, user=user_obj, status=allocation_user_active_status_choice)
