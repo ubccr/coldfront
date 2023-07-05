@@ -198,9 +198,25 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
     def post(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
+        allocation_user = get_object_or_404(AllocationUser, allocation=allocation_obj, user=self.request.user)
+        eula_choice = request.POST.get('eula_choice')
+        allocation_user_active_status_choice = AllocationUserStatusChoice.objects.get(name='Active')
+        if EULA_AGREEMENT:
+            allocation_user_pending_status_choice = AllocationUserStatusChoice.objects.get(name='Pending')
+            allocation_user_declined_status_choice = AllocationUserStatusChoice.objects.get(name='Declined')
         if not self.request.user.is_superuser:
-            messages.success(
-                request, 'You do not have permission to update the allocation')
+            if allocation_user.status == allocation_user_pending_status_choice and EULA_AGREEMENT:
+                if eula_choice == "agree":
+                    allocation_user.status = allocation_user_active_status_choice
+                    messages.success(request, 'You now have access to the allocation.')
+                elif eula_choice == "disagree":
+                    allocation_user.status = allocation_user_declined_status_choice
+                    messages.warning(request, 'You have declined access to the allocation. To attempt to access it again, contact your manager.')
+                allocation_obj.save()
+                allocation_user.save()
+            else:
+                messages.success(
+                    request, 'You do not have permission to update the allocation')
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
         
         initial_data = {
