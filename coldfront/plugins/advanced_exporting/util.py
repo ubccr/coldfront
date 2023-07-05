@@ -104,7 +104,8 @@ def build_rows(columns, queryset, additional_data, additional_usage_data):
     rows_dict = {}
     cache = {'total_project_users': {}, 'total_allocation_users': {}}
     row_idx = 0
-    if 'allocation__users' in columns:
+    column_field_names = [column.get('field_name') for column in columns]
+    if 'allocation__users' in column_field_names:
         for allocation_obj in queryset:
             all_allocation_users = allocation_obj.allocationuser_set.all()
             for allocation_user in all_allocation_users:
@@ -182,6 +183,7 @@ def build_row(allocation_obj, columns, cache, additional_data, additional_usage_
 
                 if 'allocation__users' == field_name:
                     current_attribute = username
+                    break
 
         else:
             allocation_id = allocation_obj.id
