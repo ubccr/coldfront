@@ -105,6 +105,6 @@ class AdvancedExportView(LoginRequiredMixin, UserPassesTestMixin, View):
         file_name = 'data'
         response['Content-Disposition'] = f'attachment; filename="{file_name}.csv"'
 
-        logger.info(f'Admin {request.user.username} exported the project user list')
+        logger.info(f'Admin {request.user.username} exported the advanced search list')
 
         return response
