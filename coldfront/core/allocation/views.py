@@ -211,7 +211,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                     messages.success(request, 'You now have access to the allocation.')
                 elif eula_choice == "disagree":
                     allocation_user.status = allocation_user_declined_status_choice
-                    messages.warning(request, 'You have declined access to the allocation. To attempt to access it again, contact your manager.')
+                    messages.error(request, 'You have declined access to the allocation. To attempt to access it again, contact your manager.')
                 allocation_obj.save()
                 allocation_user.save()
             else:
