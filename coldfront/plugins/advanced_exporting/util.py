@@ -399,7 +399,7 @@ def build_allocation_queryset(data, request):
 
     if data.get('allocation__user_username'):
         allocations = allocations.filter(
-            allocationuser__user__username=data.get('allocation__user_username'),
+            allocationuser__user__username__icontains=data.get('allocation__user_username'),
             allocationuser__status__name='Active'
         )
 
@@ -472,7 +472,7 @@ def build_project_queryset(data, request):
         projects = projects.filter(class_number__icontains= data.get('project__class_number'))
     if data.get('project__user_username'):
         projects = projects.filter(
-            projectuser__user__username=data.get('project__user_username'),
+            projectuser__user__username__icontains=data.get('project__user_username'),
             projectuser__status__name='Active'
         )
 
