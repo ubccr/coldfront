@@ -19,7 +19,11 @@ class AdvancedExportingView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
     template_name='advanced_exporting/advanced_exporting.html'
 
     def test_func(self):
-        if self.request.user.is_superuser:
+        user = self.request.user
+        if user.is_superuser:
+            return True
+        
+        if user.has_perms(['project.can_view_all_projects', 'allocation.can_view_all_allocations']):
             return True
 
     def get_context_data(self, **kwargs):

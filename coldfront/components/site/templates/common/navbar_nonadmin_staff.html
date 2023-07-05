@@ -35,5 +35,10 @@
     {% if perms.grant.can_view_all_grants %}
       <a id="navbar-grant-report" class="dropdown-item" href="{% url 'grant-report' %}">Grant Report</a>
     {% endif %}
+    {% if perms.project.can_view_all_projects and perms.allocation.can_view_all_allocations %}
+      <a id="navbar-advanced_exporting" class="dropdown-item" href="{% url 'advanced-exporting' %}">
+        Advanced Exporting
+      </a>
+    {% endif %}
   </div>
 </li>
