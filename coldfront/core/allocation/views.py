@@ -57,11 +57,11 @@ from coldfront.core.allocation.signals import (allocation_new,
                                                allocation_change_approved,)
 from coldfront.core.allocation.utils import (generate_guauge_data_from_usage,
                                              get_user_resources)
-from coldfront.core.project.models import (Project, ProjectUser, ProjectPermission,
+from coldfront.core.project.models import (Project, ProjectUser, ProjectPermission, ProjectUserRoleChoice,
                                            ProjectUserStatusChoice)
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import get_domain_url, import_from_settings
-from coldfront.core.utils.mail import build_link, send_allocation_admin_email, send_allocation_customer_email, send_email_template
+from coldfront.core.utils.mail import build_link, send_allocation_admin_email, send_allocation_customer_email, send_email, send_email_template
 
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
     'ALLOCATION_ENABLE_ALLOCATION_RENEWAL', True)
@@ -107,17 +107,18 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         allocation_users = allocation_obj.allocationuser_set.exclude(
             status__name__in=['Removed']).order_by('user__username')
         
-        def get_eula(alloc):
-            if alloc.get_resources_as_list:
-                for res in alloc.get_resources_as_list:
-                    if res.get_attribute(name='eula'):
-                        return res.get_attribute(name='eula')
-            else:
-                return None
-            
-        context['eulas'] = get_eula(allocation_obj)
-        context['res'] = allocation_obj.get_parent_resource.pk
-        context['res_obj'] = allocation_obj.get_parent_resource
+        if EULA_AGREEMENT:
+            def get_eula(alloc):
+                if alloc.get_resources_as_list:
+                    for res in alloc.get_resources_as_list:
+                        if res.get_attribute(name='eula'):
+                            return res.get_attribute(name='eula')
+                else:
+                    return None
+                
+            context['eulas'] = get_eula(allocation_obj)
+            context['res'] = allocation_obj.get_parent_resource.pk
+            context['res_obj'] = allocation_obj.get_parent_resource
 
         # set visible usage attributes
         alloc_attr_set = allocation_obj.get_attribute_set(self.request.user)
@@ -206,10 +207,12 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             allocation_user_pending_status_choice = AllocationUserStatusChoice.objects.get(name='Pending')
             allocation_user_declined_status_choice = AllocationUserStatusChoice.objects.get(name='Declined')
         if not self.request.user.is_superuser:
-            if allocation_user.status == allocation_user_pending_status_choice and EULA_AGREEMENT:
+            if allocation_user.status == allocation_user_pending_status_choice and EULA_AGREEMENT and eula_choice:
                 if eula_choice == "agree":
                     allocation_user.status = allocation_user_active_status_choice
                     messages.success(request, 'You now have access to the allocation.')
+                    project_pi = [lambda allocation_user_iter: allocation_user_iter in allocation_obj.allocationuser_set if allocation_obj.has_perm(allocation_user_iter, ProjectPermission.MANAGER) else None]
+                    send_email(f'EULA agreement complete for user {allocation_user.user.get_full_name()} on allocation {allocation_obj.__str__()}', f'User {allocation_user.user.get_full_name()} on {allocation_obj} has agreed to EULA for {allocation_obj.get_parent_resource.__str__()}. {allocation_user.user.get_full_name()} is now an active user on the allocation. Check out the allocation at {build_link(reverse("allocation-detail", kwargs={"pk": allocation_obj.pk}), domain_url=get_domain_url(self.request))}.', self.request.user.email, [allocation_user], cc=project_pi)
                 elif eula_choice == "disagree":
                     allocation_user.status = allocation_user_declined_status_choice
                     messages.error(request, 'You have declined access to the allocation. To attempt to access it again, contact your manager.')
