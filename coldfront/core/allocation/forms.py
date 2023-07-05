@@ -261,4 +261,4 @@ class AllocationAttributeCreateForm(forms.ModelForm):
         self.fields['allocation_attribute_type'].queryset = self.fields['allocation_attribute_type'].queryset.order_by(Lower('name'))
 
 class AllocationEULAAgreeForm(forms.Form):
-    EULAchoice = forms.ChoiceField(choices=[(1, "I agree"), (2, "I disagree")], label="")
+    eula_choice = forms.ChoiceField(choices=[("agree", "I agree"), ("disagree", "I disagree")], label="", widget=forms.RadioSelect())
