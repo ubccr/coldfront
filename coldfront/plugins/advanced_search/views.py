@@ -8,15 +8,15 @@ from django.http.response import StreamingHttpResponse
 from django.forms import formset_factory
 
 from coldfront.core.allocation.models import AllocationAttributeType
-from coldfront.plugins.advanced_exporting.forms import SearchForm, AllocationAttributeSearchForm, AllocationAttributeFormSetHelper
+from coldfront.plugins.advanced_search.forms import SearchForm, AllocationAttributeSearchForm, AllocationAttributeFormSetHelper
 from coldfront.core.utils.common import Echo
-from coldfront.plugins.advanced_exporting.util import build_table
+from coldfront.plugins.advanced_search.util import build_table
 
 logger = logging.getLogger(__name__)
 
 
-class AdvancedExportingView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
-    template_name='advanced_exporting/advanced_exporting.html'
+class AdvancedSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name='advanced_search/advanced_search.html'
 
     def test_func(self):
         user = self.request.user

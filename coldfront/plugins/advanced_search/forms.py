@@ -239,7 +239,7 @@ class SearchForm(forms.Form):
         )
 
 class Formset(LayoutObject):
-    template = "advanced_exporting/formset.html"
+    template = "advanced_search/formset.html"
 
     def __init__(self, formset_context_name, helper_context_name=None,
                  template=None, label=None):

@@ -36,8 +36,8 @@
       <a id="navbar-grant-report" class="dropdown-item" href="{% url 'grant-report' %}">Grant Report</a>
     {% endif %}
     {% if perms.project.can_view_all_projects and perms.allocation.can_view_all_allocations %}
-      <a id="navbar-advanced_exporting" class="dropdown-item" href="{% url 'advanced-exporting' %}">
-        Advanced Exporting
+      <a id="navbar-advanced-search" class="dropdown-item" href="{% url 'advanced-search' %}">
+        Advanced Search
       </a>
     {% endif %}
   </div>

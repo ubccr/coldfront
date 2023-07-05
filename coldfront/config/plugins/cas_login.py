@@ -10,6 +10,9 @@ MIDDLEWARE += [
     'django_cas_ng.middleware.CASMiddleware',
 ]
 
+INSTALLED_APPS += [
+    'django_extensions'
+]
 
 
 AUTHENTICATION_BACKENDS += [
