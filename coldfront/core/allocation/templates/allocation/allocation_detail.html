@@ -173,53 +173,42 @@ Allocation Detail
   </div>
 </div>
 
-{% if resources_with_eula.items %}
-  {% for res, value in resources_with_eula.items %}
-    {% if res in allocation.get_resources_as_list %}
-      <div class="card mb-3">
-        <div class="card-header">
-          <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> EULA Agreements </h3>
+{% if eulas %}
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> EULA Agreements </h3>
+  </div>
+  <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-bordered table-sm">
+          <thead>
+            <tr>
+              <th scope="col">Resource</th>
+              <th scope="col">EULA</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <a href="{% url 'resource-detail' res %}">{{res_obj}}</a><br>
+              </td>
+              <td>
+                {{eulas}}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        {% if user_is_pending %}
+        <div class="d-inline-flex">
+          Agree to the above EULA to access this allocation:  {{ eula_form|crispy }}
         </div>
-        <div class="card-body">
-            <div class="table-responsive">
-              <table class="table table-bordered table-sm">
-                <thead>
-                  <tr>
-                    <th scope="col">Resource</th>
-                    <th scope="col">EULA</th>
-                    {% comment %} <th scope="col">Agreement</th> {% endcomment %}
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for res, value in resources_with_eula.items %}
-                    {% if res in allocation.get_resources_as_list %}
-                      <tr>
-                        <td>
-                          <a href="{% url 'resource-detail' res.pk %}">{{ res }}</a><br>
-                        </td>
-                        <td>
-                          {{ value }}
-                        </td>
-                        {% comment %} <td> {% endcomment %}
-                        {% comment %} </td> {% endcomment %}
-                      </tr>
-                    {% endif %}
-                  {% endfor %}
-                </tbody>
-              </table>
-              {% if user_is_pending %}
-              <div class="d-inline-flex">
-                Agree to the above EULA to access this allocation:  {{ eula_form|crispy }}
-              </div>
-              <div class="d-inline-flex">
-                <input class="btn btn-dark" type="submit" value="Submit">
-              </div>
-              {% endif %}
-            </div>
-          </div>
+        <div class="d-inline-flex">
+          <input class="btn btn-dark" type="submit" value="Submit">
         </div>
-      {% endif %}
-    {% endfor %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
   {% endif %}
 
 {% if attributes or attributes_with_usage or request.user.is_superuser %}
