@@ -81,7 +81,11 @@ class AdvancedExportingView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
 
 class AdvancedExportView(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
-        if self.request.user.is_superuser:
+        user = self.request.user
+        if user.is_superuser:
+            return True
+        
+        if user.has_perms(['project.can_view_all_projects', 'allocation.can_view_all_allocations']):
             return True
         
     def post(self, request):
