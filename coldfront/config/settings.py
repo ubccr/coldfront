@@ -28,6 +28,7 @@ plugin_configs = {
     'PLUGIN_LDAP_USER_SEARCH': 'plugins/ldap_user_search.py',
     'PLUGIN_LDAP_USER_INFO': 'plugins/ldap_user_info.py',
     'PLUGIN_CAS': 'plugins/cas_login.py',
+    'PLUGIN_ADVANCED_SEARCH': 'plugins/advanced_search.py',
     'PLUGIN_MAINTENANCE_MODE': 'plugins/maintenance_mode.py',
     'PLUGIN_SLATE_PROJECT_INFO':'plugins/slate_project_info.py',
 }

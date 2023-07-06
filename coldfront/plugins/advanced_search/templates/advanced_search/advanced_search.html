@@ -1,0 +1,156 @@
+{% extends "common/base.html" %}
+{% load common_tags %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Project and Allocation Export List
+{% endblock %}
+
+{% block content %}
+
+  <div class="mb-3" id="accordion">
+    <div class="card">
+      <div class="card-header">
+        <a id="expand_button" role="button" class="card-link" data-toggle="collapse" href="#collapseOne">
+          <i class="fas fa-filter" aria-hidden="true"></i> Filter
+          <i id="plus_minus" class="fas {{expand_accordion|get_icon}} float-right"></i>
+        </a>
+      </div>
+      <div id="collapseOne" class="collapse {{expand_accordion}}" data-parent="#accordion">
+        <div class="card-body">
+          <form method="GET" action="{% url 'advanced-search' %}" autocomplete="off">
+            {% crispy export_form %}
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="row">
+      <div class="col">
+        <h3 style="margin-bottom: 0;"><strong>Entries: {{ entries }}</strong></h3>
+      </div>
+      <div class="col float-right">
+        <div class="float-right">
+          <form id="export_form" method="POST" action="{% url 'export' %}">
+            {% csrf_token %}
+            <input id="export_data" type="hidden" name="data" value="{{ data }}">
+            <button id="export_button" type="submit" class="btn btn-success" value="Export">Export to CSV</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            {% for column in columns %}
+            <th scope="col" class="text-nowrap">
+              {{ column.display_name }}
+            </th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows.values %}
+            <tr>
+              {% for data in row %}
+                <td>
+                  {{ data|truncatechars:30 }}
+                </td>
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  var columns = {{ columns | safe }}
+  var rows = {{ rows | safe }}
+  var form_count = {{ allocationattribute_form.total_form_count | safe}}
+  var allocation_attribute_type_ids = {{ allocation_attribute_type_ids | safe}}
+
+  function toggleUsageFields(value, base_div_id) {
+    if (allocation_attribute_type_ids.includes(value)) {
+      $(base_div_id + 'allocationattribute__has_usage').show();
+      $(base_div_id + 'allocationattribute__equality').show();
+      $(base_div_id + 'allocationattribute__usage').show();
+      $(base_div_id + 'allocationattribute__usage_format').show();
+    }
+    else {
+      $(base_div_id + 'allocationattribute__has_usage').hide();
+      $(base_div_id + 'allocationattribute__equality').hide();
+      $(base_div_id + 'allocationattribute__usage').hide();
+      $(base_div_id + 'allocationattribute__usage_format').hide();
+    }
+  }
+
+  function resetAllocationAttributeFieldsToDefaults(base_div_id) {
+    $(base_div_id + 'allocationattribute__name').val(null);
+    $(base_div_id + 'allocationattribute__value').val('');
+    $(base_div_id + 'allocationattribute__has_usage').val('0');
+    $(base_div_id + 'allocationattribute__equality').val('lt');
+    $(base_div_id + 'allocationattribute__usage').val('');
+    $(base_div_id + 'allocationattribute__usage_format').val('whole');
+  }
+
+  $(document).ready(function () {
+    $("[id*='allocationattribute__name']").each(function (data) {
+      id = $(this)[0].id
+      if (id.includes('div')) {
+        return;
+      }
+
+      $(this).on('change', function (evt) {
+        id = evt.target.id
+        base_div_id = '#div_' + id.slice(0, id.indexOf('-', id.indexOf('-') + 1) + 1)
+        toggleUsageFields(parseInt(evt.target.value), base_div_id);
+      })
+
+      base_div_id = '#div_' + id.slice(0, id.indexOf('-', id.indexOf('-') + 1) + 1)
+      toggleUsageFields(parseInt(id = $(this)[0].value), base_div_id);
+    })
+  })
+
+  $("#id_formset_add_allocation_attribute_button").on('click', function() {
+    // The formset must have at least one initial form for this to work.
+    let row = $("#id_allocationattribute_formset > div:nth-child(3)")[0].cloneNode(true);
+    row.innerHTML = row.innerHTML.replaceAll('-0-', '-' + form_count + '-');
+    $("#id_allocationattribute_formset").append(row);
+
+    var allocationattribute__name_field = $('#id_allocationattribute-' + form_count + '-allocationattribute__name')
+
+    allocationattribute__name_field.on('change', function (evt) {
+      id = evt.target.id
+      base_div_id = '#div_' + id.slice(0, id.indexOf('-', id.indexOf('-') + 1) + 1)
+      toggleUsageFields(parseInt(evt.target.value), base_div_id);
+    })
+
+
+    base_div_id = '#div_id_allocationattribute-' + form_count + '-';
+    base_id = '#id_allocationattribute-' + form_count + '-';
+    resetAllocationAttributeFieldsToDefaults(base_id);
+    toggleUsageFields(parseInt(id = allocationattribute__name_field.val()), base_div_id);
+
+    form_count++;
+    $('#id_allocationattribute-TOTAL_FORMS').val(form_count);
+  })
+
+  $("#export_button").on('click', function () {
+    data = {
+      'columns': columns,
+      'rows': rows,
+    };
+    $("#export_data").val(JSON.stringify(data));
+  })
+</script>
+{% endblock %}
