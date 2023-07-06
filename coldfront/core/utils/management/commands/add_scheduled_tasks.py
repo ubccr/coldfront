@@ -4,6 +4,7 @@ import os
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
+from coldfront.config.email import EMAIL_EULA_REMINDER_DAYS
 from django_q.models import Schedule
 from django_q.tasks import schedule
 from coldfront.core.utils.common import import_from_settings
@@ -20,14 +21,14 @@ class Command(BaseCommand):
         date = timezone.now() + datetime.timedelta(days=1)
         date = date.replace(hour=0, minute=0, second=0, microsecond=0)
         schedule('coldfront.core.allocation.tasks.update_statuses',
-                 schedule_type=Schedule.DAILY,
+                 schedule_type=Schedule.HOURLY,
                  next_run=date)
 
         schedule('coldfront.core.allocation.tasks.send_expiry_emails',
                  schedule_type=Schedule.DAILY,
                  next_run=date)
         
-        if EULA_AGREEMENT:
+        if EULA_AGREEMENT and EMAIL_EULA_REMINDER_DAYS:
             schedule('coldfront.core.allocation.tasks.send_eula_reminders',
-                    schedule_type=Schedule.WEEKLY,
-                    next_run=date)
+                    schedule_type=Schedule.HOURLY,
+                    next_run=timezone.now())
