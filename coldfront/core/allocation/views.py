@@ -107,18 +107,17 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         allocation_users = allocation_obj.allocationuser_set.exclude(
             status__name__in=['Removed']).order_by('user__username')
         
-        if EULA_AGREEMENT:
-            def get_eula(alloc):
-                if alloc.get_resources_as_list:
-                    for res in alloc.get_resources_as_list:
-                        if res.get_attribute(name='eula'):
-                            return res.get_attribute(name='eula')
-                else:
-                    return None
-                
-            context['eulas'] = get_eula(allocation_obj)
-            context['res'] = allocation_obj.get_parent_resource.pk
-            context['res_obj'] = allocation_obj.get_parent_resource
+        def get_eula(alloc):
+            if alloc.get_resources_as_list:
+                for res in alloc.get_resources_as_list:
+                    if res.get_attribute(name='eula'):
+                        return res.get_attribute(name='eula')
+            else:
+                return None
+            
+        context['eulas'] = get_eula(allocation_obj)
+        context['res'] = allocation_obj.get_parent_resource.pk
+        context['res_obj'] = allocation_obj.get_parent_resource
 
         # set visible usage attributes
         alloc_attr_set = allocation_obj.get_attribute_set(self.request.user)
