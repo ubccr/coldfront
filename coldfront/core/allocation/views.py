@@ -2712,6 +2712,12 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
     def dispatch(self, request, *args, **kwargs):
         allocation_obj = get_object_or_404(
             Allocation, pk=self.kwargs.get('pk'))
+        
+        if not allocation_obj.project.requires_review:
+            messages.error(
+                request, 'Your allocation does not need to be renewed.'
+            )
+            return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
         if not ALLOCATION_ENABLE_ALLOCATION_RENEWAL:
             messages.error(
@@ -2741,7 +2747,7 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
                 request, 'It is too soon to renew your allocation.')
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
-        if allocation_obj.expires_in < -ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING:
+        if ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING > 0 and allocation_obj.expires_in < -ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING:
             messages.error(
                 request, 'It is too late to renew your allocation.'
             )
