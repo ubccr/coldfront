@@ -3,7 +3,7 @@ import datetime
 import logging
 
 from coldfront.core.allocation.models import (Allocation,
-                                              AllocationStatusChoice)
+                                              AllocationStatusChoice, AllocationUserStatusChoice)
 from coldfront.core.allocation.utils import get_user_resources
 from coldfront.core.user.models import User
 from coldfront.core.utils.common import import_from_settings
@@ -41,30 +41,25 @@ def update_statuses():
         allocations_to_expire.count()))
 
 def send_eula_reminders():
+    # add days config
     email_receiver_list = []
-    for user in User.objects.all():
-        for allocationuser in user.allocationuser_set.all():
-            allocation = allocationuser.allocation
-            if allocation.get_attribute(name='eula'):
-                if (user.email not in email_receiver_list):
+    for allocation in Allocation.objects.all():
+        for user in allocation.allocationuser_set:
+            if user.status == AllocationUserStatusChoice.objects.get(name='Pending'):
+                if user.email not in email_receiver_list:
                     email_receiver_list.append(user.email)
 
             template_context = {
-                    'center_name': CENTER_NAME,
-                    'eula_allocation': allocation,
-                    'url': f'{CENTER_BASE_URL.strip("/")}/{"allocation"}/{allocation.pk}/',
-                    'signature': EMAIL_SIGNATURE
+                'center_name': CENTER_NAME,
+                'resource': allocation.get_parent_resource,
+                'url': f'{CENTER_BASE_URL.strip("/")}/{"allocation"}/{allocation.pk}/',
+                'signature': EMAIL_SIGNATURE
             }
 
         if email_receiver_list:
-            send_email_template(f'Reminder: Agree to EULA for {allocation}',
-                        'email/allocation_agree_to_eula.txt',
-                        template_context,
-                        EMAIL_SENDER,
-                        email_receiver_list
-                        ) 
+            send_email_template(f'Reminder: Agree to EULA for {allocation}', 'email/allocation_agree_to_eula.txt', template_context, EMAIL_SENDER, email_receiver_list)
 
-            logger.debug(f'Allocation(s) EULA reminder sent to user {user}.')
+        logger.debug(f'Allocation(s) EULA reminder sent to user {user}.')
 
 def send_expiry_emails():
     #Allocations expiring soon
