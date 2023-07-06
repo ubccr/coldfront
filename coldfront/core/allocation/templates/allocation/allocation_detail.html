@@ -276,7 +276,7 @@ Allocation Detail
   </div>
 {% endif %}
 
-{% if not user_is_pending %}
+{% if not user_is_pending or eulas %}
 <!-- Start Allocation Change Requests -->
 <div class="card mb-3">
   <div class="card-header">
