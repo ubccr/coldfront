@@ -25,6 +25,15 @@ ALLOCATION_FUNCS_ON_EXPIRE = import_from_settings(
 ALLOCATION_RESOURCE_ORDERING = import_from_settings(
     'ALLOCATION_RESOURCE_ORDERING',
     ['-is_allocatable', 'name'])
+ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING = import_from_settings(
+    'ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING', 30
+)
+ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING = import_from_settings(
+    'ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING', 60
+)
+ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
+    'ALLOCATION_ENABLE_ALLOCATION_RENEWAL', True
+)
 
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 if EMAIL_ENABLED:
@@ -247,6 +256,28 @@ class Allocation(TimeStampedModel):
     @property
     def expires_in(self):
         return (self.end_date - datetime.date.today()).days
+    
+    @property
+    def can_be_renewed(self):
+        if not ALLOCATION_ENABLE_ALLOCATION_RENEWAL:
+            return False
+
+        if self.status.name not in ['Active', 'Expired']:
+            return False
+
+        if self.project.needs_review or self.project.can_be_reviewed or self.project.status.name not in ['Active']:
+            return False
+
+        if self.status.name == 'Active' and self.expires_in <= ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING  and self.expires_in >= 0:
+            return True
+        
+        if self.status.name == 'Expired' and ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING < 0:
+            return True
+
+        if self.status.name == 'Expired' and self.expires_in >= -ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING:
+            return True
+
+        return False
 
     @property
     def get_information(self):

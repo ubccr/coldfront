@@ -976,7 +976,7 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
         ProjectDescriptionRecord.objects.create(
             project=project_obj,
             user=self.request.user,
-            description=form_data.get('description')
+            description=project_obj.description
         )
 
         project_obj.title = form_data.get('title')
@@ -1918,7 +1918,7 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             for allocation in allocations:
                 if allocation.end_date is None:
                     continue
-                if allocation.expires_in < -ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING:
+                if ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING >= 0 and allocation.expires_in < -ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING:
                     continue
 
                 data = {
@@ -2030,7 +2030,7 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 project_review_url = reverse('project-review-list')
                 url = '{}{}'.format(domain_url, project_review_url)
                 text = (
-                    f'A new review request for project "{project_obj.title}" with id '
+                    f'A new renewal request for project "{project_obj.title}" with id '
                     f'{project_obj.pk} has been submitted. You can view it here: {url}'
                 )
                 send_message(text)

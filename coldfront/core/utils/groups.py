@@ -17,12 +17,13 @@ def check_if_groups_in_review_groups(review_groups, groups, permission=None):
     if not review_groups.exists():
         return True
 
-    matched_groups = groups.intersection(review_groups)
-    if matched_groups.exists():
+    # Intersection is not supported on the database backend we use (MySql)
+    matched_groups = [group for group in groups if group in review_groups]
+    if matched_groups:
         if permission is None:
             return True
 
-        matched_group_ids = matched_groups.values_list('id', flat=True)
+        matched_group_ids = [group.id for group in matched_groups]
         permission_exists = Permission.objects.filter(
             group__id__in=matched_group_ids, codename=permission
         ).exists()

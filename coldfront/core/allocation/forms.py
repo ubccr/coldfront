@@ -332,12 +332,12 @@ class AllocationForm(forms.Form):
                 if field_value <= date.today():
                     errors[name] = 'Please select a start date later than today'
                     continue
-                end_date = resource_attribute_objs.filter(resource_attribute_type__name='end_date')
+                end_date = cleaned_data.get('end_date')
                 use_indefinitely = resource_attribute_objs.filter(
                     resource_attribute_type__name='use_indefinitely'
                 )
                 if not use_indefinitely.exists() or not cleaned_data.get(use_indefinitely):
-                    if end_date.exists() and field_value >= cleaned_data.get('end_date'):
+                    if end_date and field_value >= end_date:
                         errors[name] = 'Start date must be earlier than end date'
                         continue
             elif name == 'end_date' and field_value:

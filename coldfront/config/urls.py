@@ -32,6 +32,9 @@ urlpatterns = [
 if 'coldfront.plugins.advanced_search' in settings.INSTALLED_APPS:
     urlpatterns.append(path('advanced_search/', include('coldfront.plugins.advanced_search.urls')))
 
+if 'coldfront.plugins.slate_project_info' in settings.INSTALLED_APPS:
+    urlpatterns.append(path('slate_project_info/', include('coldfront.plugins.slate_project_info.urls')))
+
 if 'coldfront.plugins.iquota' in settings.INSTALLED_APPS:
     urlpatterns.append(path('iquota/', include('coldfront.plugins.iquota.urls')))
 
