@@ -30,5 +30,5 @@ class Command(BaseCommand):
         
         if EULA_AGREEMENT and EMAIL_EULA_REMINDER_DAYS:
             schedule('coldfront.core.allocation.tasks.send_eula_reminders',
-                    schedule_type=Schedule.HOURLY,
-                    next_run=timezone.now())
+                    schedule_type=Schedule.MINUTES,
+                    next_run=date)
