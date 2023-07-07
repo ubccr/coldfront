@@ -212,7 +212,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             allocation_obj.status = AllocationStatusChoice.objects.get(name='Active')
         elif action == 'deny':
             allocation_obj.status = AllocationStatusChoice.objects.get(name='Denied')
-           
+
         if old_status != 'Active' == allocation_obj.status.name:
             if not allocation_obj.start_date:
                 allocation_obj.start_date = datetime.datetime.now()
@@ -430,15 +430,24 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
 
+        err = None
         if project_obj.needs_review:
-            messages.error(request, 'You cannot request a new allocation because you have to review your project first.')
-            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
-
-        if project_obj.status.name not in ['Active', 'New', ]:
-            messages.error(request, 'You cannot request a new allocation to an archived project.')
-            return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
+            err = 'You cannot request a new allocation because you have to review your project first.'
+        elif project_obj.status.name not in ['Active', 'New']:
+            err = 'You cannot request a new allocation to an archived project.'
+        if err:
+            messages.error(request, err)
+            return HttpResponseRedirect(
+                reverse('project-detail', kwargs={'pk': project_obj.pk})
+            )
 
         return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        post = super().post(request, *args, **kwargs)
+        msg = 'Allocation requested. It will be available once it is approved.'
+        messages.success(self.request, msg)
+        return post
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -1670,10 +1679,8 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
 
 
 
-
 class AllocationChangeListView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'allocation/allocation_change_list.html'
-    login_url = '/'
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
