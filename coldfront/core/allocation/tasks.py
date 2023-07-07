@@ -44,17 +44,17 @@ def send_eula_reminders():
     # add days config
     email_receiver_list = []
     for allocation in Allocation.objects.all():
-        for user in allocation.allocationuser_set:
+        for user in allocation.allocationuser_set.all():
             if user.status == AllocationUserStatusChoice.objects.get(name='Pending'):
-                if user.email not in email_receiver_list:
-                    email_receiver_list.append(user.email)
+                if user.user.email not in email_receiver_list:
+                    email_receiver_list.append(user.user.email)
 
-            template_context = {
-                'center_name': CENTER_NAME,
-                'resource': allocation.get_parent_resource,
-                'url': f'{CENTER_BASE_URL.strip("/")}/{"allocation"}/{allocation.pk}/',
-                'signature': EMAIL_SIGNATURE
-            }
+        template_context = {
+            'center_name': CENTER_NAME,
+            'resource': allocation.get_parent_resource,
+            'url': f'{CENTER_BASE_URL.strip("/")}/{"allocation"}/{allocation.pk}/',
+            'signature': EMAIL_SIGNATURE
+        }
 
         if email_receiver_list:
             send_email_template(f'Reminder: Agree to EULA for {allocation}', 'email/allocation_agree_to_eula.txt', template_context, EMAIL_SENDER, email_receiver_list)
