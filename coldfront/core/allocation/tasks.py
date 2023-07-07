@@ -41,7 +41,6 @@ def update_statuses():
         allocations_to_expire.count()))
 
 def send_eula_reminders():
-    # add days config
     email_receiver_list = []
     for allocation in Allocation.objects.all():
         for user in allocation.allocationuser_set.all():
@@ -57,7 +56,7 @@ def send_eula_reminders():
         }
 
         if email_receiver_list:
-            send_email_template(f'Reminder: Agree to EULA for {allocation}', 'email/allocation_agree_to_eula.txt', template_context, EMAIL_SENDER, email_receiver_list)
+            send_email_template(f'Reminder: Agree to EULA for {allocation}', 'email/allocation_eula_reminder.txt', template_context, EMAIL_SENDER, email_receiver_list)
 
         logger.debug(f'Allocation(s) EULA reminder sent to user {user}.')
 
