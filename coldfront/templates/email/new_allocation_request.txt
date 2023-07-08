@@ -3,6 +3,11 @@ A new allocation has been requested for {{pi}} - {{resource}}.
 Requested size: {{quantity}} TB.
 Justification:
 {{justification}}
+{% if used_percentage %}
+
+{{resource}} was last recorded as {{used_percentage}}% allocated.
+{% endif %}
+
 {% if nese %}
 Here is a draft ticket to send to NESE:
 
@@ -12,9 +17,9 @@ Subject: TB Globus tape setup for HU
 Service (access type) = S3 vs Globus:
 If Globus, short description for Globus Share:
 Tennant name (8 char max - Ex. acohen): {{pi.username}}
-Size in 20TB allotments: {{quantity|div:20}}
+Size in 20TB allotments: {{quantity|div:19.48|floatformat:"0"}}
 Any additional details:
-Any additional administrators (iff applicable):
+Any additional administrators (if applicable):
 {% endif %}
 
 To activate the allocation, go to:

@@ -3,7 +3,11 @@ An allocation change request for has been made for {{pi}} - {{resource}}.
 
 {% if quantity %}
 Requested total size: {{quantity}} TB.
-This will require adding {{difference}} TB to the current size of {{current_size}} TB.
+This will require adding {{difference|floatformat}} TB to the current size of {{current_size|floatformat}} TB.
+{% if used_percentage %}
+
+{{resource}} was last recorded as {{used_percentage}}% allocated.
+{% endif %}
 {% endif %}
 
 {% if nese %}
@@ -15,9 +19,9 @@ Subject: TB Globus tape setup for HU
 Service (access type) = S3 vs Globus:
 If Globus, short description for Globus Share:
 Tennant name (8 char max - Ex. acohen): {{pi.username}}
-Size in 20TB allotments: {{quantity|div:20}} (This is a difference of {{difference|div:20}} 20TB units from the current size of {{current_size|div:20}})
+Size in 20TB allotments: {{quantity|div:19.48|floatformat:"0"}} (This is a difference of {{difference|div:19.48|floatformat:"0"}} 20TB units from the current size of {{current_size|div:19.48|floatformat:"0"}} 20TB units)
 Any additional details:
-Any additional administrators (iff applicable):
+Any additional administrators (if applicable):
 {% endif %}
 
 Justification:

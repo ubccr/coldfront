@@ -417,6 +417,14 @@ class AllocationChangeListViewTest(AllocationViewBaseTest):
     def test_allocationchangelistview_access(self):
         self.allocation_access_tstbase(self.url)
 
+    def test_allocationchangelistview_changetypes(self):
+        """
+        Produce allocationchangerequests with all different change types 
+        and test that they all display properly
+        """
+        # create a new allocationchangerequest for each attribute that is changeable
+
+
 
 class AllocationNoteCreateViewTest(AllocationViewBaseTest):
     """Tests for the AllocationNoteCreateView"""

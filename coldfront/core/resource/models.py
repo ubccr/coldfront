@@ -3,7 +3,7 @@ from datetime import datetime
 from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import Group
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
@@ -154,6 +154,30 @@ class Resource(TimeStampedModel):
                 missing_resource_attributes.append(attribute)
         return missing_resource_attributes
 
+
+    @property
+    def capacity(self):
+        """Returns value of capacity_tb resourceattribute object"""
+        try:
+            return float(self.resourceattribute_set.get(resource_attribute_type__name='capacity_tb').value)
+        except ObjectDoesNotExist:
+            return None
+
+    @property
+    def free_capacity(self):
+        """Returns value of free_tb resourceattribute object"""
+        try:
+            return float(self.resourceattribute_set.get(resource_attribute_type__name='free_tb').value)
+        except ObjectDoesNotExist:
+            return None
+
+    @property
+    def used_percentage(self):
+        """calculates percentage of used capacity from free_tb and capacity_tb resourceattribute objects"""
+        if self.free_capacity and self.capacity:
+            return round(100 - (self.free_capacity / self.capacity * 100), 2)
+        return None
+
     @property
     def status(self):
         """
@@ -171,6 +195,9 @@ class Resource(TimeStampedModel):
     def expiry(self):
         return self.get_attribute('WarrantyExpirationDate')
 
+    def predicted_used_percentage(self, added_tb):
+        """predict usage percentage after adding a given number of TB"""
+        return round(100 - ((self.free_capacity - added_tb) / self.capacity * 100), 2)
 
     def get_attribute(self, name, expand=True, typed=True,
         extra_allocations=[]):

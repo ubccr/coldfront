@@ -144,25 +144,43 @@ Request new or update existing allocation
   $('#modal_link').on("click", function () {
     $('#Modal').modal('show');
   });
+
+
   $(function (){
-    //when a resource is selected from the resource dropdown list, if the resource
-    // id is present as a key in resources_with_allocations, display a message
-    // informing the user they already have an allocation containing a link to
-    // the allocation change request form for that allocation.
+    // display messages under the following conditions when a resource is selected
+    // from the resource dropdown list:
+    // 1. if the resource id is present as a key in resources_form_default_quantities,
+    // display a message informing the user that they already have an allocation
+    // and containing a link to the allocation change request form for that allocation.
+    // 2. if the resource's used_percentage is greater than 80, display a message
+    // informing the user that the resource is almost full.
     var resources_with_allocations = {{ resources_with_allocations | safe }};
+    var overfull_resources = {{ overfull_resources | safe }};
     $('#id_resource').change(function () {
       var resource = $(this).val();
+      var messages = [];
       if (resources_with_allocations.hasOwnProperty(resource)) {
         let allocation_pk = resources_with_allocations[resource];
         url = "{% url 'allocation-change' 99999 %}".replace("99999", allocation_pk);
         message = `<div class="alert alert-warning" role="alert">Warning: you already have an allocation on the selected resource. Did you mean to submit an <a href=${url}>Allocation Change Request<\a> instead?</div>`
-        $('#resource_message').html(message);
+        messages.push(message);
+       // $('#resource_message').html(message);
+      }
+      if (overfull_resources.hasOwnProperty(resource)) {
+        let used_percentage = overfull_resources[resource];
+          message = `<div class="alert alert-warning" role="alert">Warning: the selected resource is ${used_percentage} percent allocated. Requests for allocations on this resource may be subject to delay. If possible, consider choosing a different resource.</div>`
+          messages.push(message);
+         // $('#resource_message').html(message);
+      }
+      if (messages.length > 0) {
+        $('#resource_message').html(messages.join(''));
       }
       else {
         $('#resource_message').html('<div></div>');
       }
     });
-  })
+  });
+
   $(function () {
     $('#myFormSubmit').click(function (e) {
       e.preventDefault();

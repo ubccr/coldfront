@@ -1,8 +1,11 @@
-from coldfront.plugins.sftocf.utils import pull_sf, push_cf, pull_sf_push_cf_redash
+from coldfront.plugins.sftocf import utils
 
 def pullsf_pushcf_redash():
-    pull_sf_push_cf_redash()
+    utils.pull_sf_push_cf_redash()
 
 def pull_sf_push_cf(volume=None, clean=False):
-    filepaths = pull_sf(volume=volume)
-    push_cf(filepaths, clean)
+    filepaths = utils.pull_sf(volume=volume)
+    utils.push_cf(filepaths)
+
+def pull_resource_data():
+    utils.pull_resource_data()
