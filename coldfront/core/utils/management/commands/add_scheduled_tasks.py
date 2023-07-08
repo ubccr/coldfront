@@ -19,7 +19,7 @@ class Command(BaseCommand):
         date = timezone.now() + datetime.timedelta(days=1)
         date = date.replace(hour=0, minute=0, second=0, microsecond=0)
         schedule('coldfront.core.allocation.tasks.update_statuses',
-                 schedule_type=Schedule.HOURLY,
+                 schedule_type=Schedule.DAILY,
                  next_run=date)
 
         schedule('coldfront.core.allocation.tasks.send_expiry_emails',
