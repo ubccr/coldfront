@@ -1,3 +1,4 @@
+from django.test import Client
 from math import isclose
 from concurrent.futures import ThreadPoolExecutor
 
@@ -6,7 +7,8 @@ from coldfront.core.test_helpers import utils
 
 class UIChecker:
     def __init__(self, username, password):
-        self.client = utils.login_return_client(username, password)
+        self.client = Client()
+        self.client.login(username=username, password=password)
 
     def check_page_loads(self, url):
         """try to load page from url with self.client.

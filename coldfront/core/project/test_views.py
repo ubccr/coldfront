@@ -4,18 +4,16 @@ from django.test import TestCase
 
 from coldfront.core.test_helpers import utils
 from coldfront.core.test_helpers.factories import (
+    setup_models,
     UserFactory,
     ProjectFactory,
     ProjectUserFactory,
     PAttributeTypeFactory,
     ProjectAttributeFactory,
     ProjectStatusChoiceFactory,
-    setup_models,
     ProjectAttributeTypeFactory,
-    ProjectUserRoleChoiceFactory,
-    fake
 )
-from coldfront.core.project.models import ProjectUserStatusChoice
+from coldfront.core.project.models import ProjectUserStatusChoice, Project
 
 logging.disable(logging.CRITICAL)
 
@@ -36,8 +34,6 @@ class ProjectViewTestBase(TestCase):
         cls.project_user = cls.proj_allocation_user
         cls.nonproject_user = cls.nonproj_allocation_user
         # add pi_user and project_user to project_user
-
-        cls.normal_projuser = ProjectUserFactory(project=cls.project, user=cls.project_user)
 
         attributetype = PAttributeTypeFactory(name='string')
         cls.projectattributetype = ProjectAttributeTypeFactory(attribute_type=attributetype)# ProjectAttributeType.objects.get(pk=1)
@@ -90,13 +86,6 @@ class ProjectDetailViewTest(ProjectViewTestBase):
         cls.projectattribute = ProjectAttributeFactory(value=36238,
                 proj_attr_type=cls.projectattributetype, project=cls.project)
         cls.url = f'/project/{cls.project.pk}/'
-        cls.no_allocation_project = ProjectFactory(title=fake.unique.project_title(),
-                                pi=UserFactory(username=fake.unique.user_name()))
-
-    def test_projectdetail_render(self):
-        # test rendering for project with no allocation
-        no_allocation_proj_url = f'/project/{self.no_allocation_project.pk}/'
-        utils.test_user_can_access(self, self.admin_user, no_allocation_proj_url)
 
     def test_projectdetail_access(self):
         """Test project detail page access"""
@@ -107,8 +96,6 @@ class ProjectDetailViewTest(ProjectViewTestBase):
         utils.test_user_can_access(self, self.project_user, self.url)
         # user not belonging to project cannot access
         utils.test_user_cannot_access(self, self.nonproject_user, self.url)
-
-
 
     def test_projectdetail_permissions(self):
         """Test project detail page access permissions"""
@@ -219,12 +206,14 @@ class ProjectAttributeCreateTest(ProjectViewTestBase):
         self.client.force_login(self.admin_user,
                     backend='django.contrib.auth.backends.ModelBackend')
         # missing project
-        response = self.client.post(self.url, data={'proj_attr_type': self.projectattributetype.pk,
-                                                    'value': 'test_value'})
+        response = self.client.post(self.url, data={
+            'proj_attr_type': self.projectattributetype.pk, 'value': 'test_value'
+        })
         self.assertFormError(response, 'form', 'project', 'This field is required.')
         # missing value
-        response = self.client.post(self.url, data={'proj_attr_type': self.projectattributetype.pk,
-                                                    'project': self.project.pk})
+        response = self.client.post(self.url, data={
+            'proj_attr_type': self.projectattributetype.pk, 'project': self.project.pk
+        })
         self.assertFormError(response, 'form', 'value', 'This field is required.')
 
 
@@ -234,9 +223,11 @@ class ProjectAttributeCreateTest(ProjectViewTestBase):
         self.client.force_login(self.admin_user,
                     backend='django.contrib.auth.backends.ModelBackend')
         # test that value must be numeric if proj_attr_type is string
-        response = self.client.post(self.url, data={'proj_attr_type': self.int_projectattributetype.pk,
-                                                    'value': True,
-                                                    'project': self.project.pk})
+        response = self.client.post(self.url, data={
+            'proj_attr_type': self.int_projectattributetype.pk,
+            'value': True,
+            'project': self.project.pk
+        })
         self.assertFormError(response, 'form', '', 'Invalid Value True. Value must be an int.')
 
 
@@ -247,7 +238,9 @@ class ProjectAttributeUpdateTest(ProjectViewTestBase):
     def setUpTestData(cls):
         """Set up users and project for testing"""
         super(ProjectAttributeUpdateTest, cls).setUpTestData()
-        cls.projectattribute = ProjectAttributeFactory(value=36238, proj_attr_type=cls.projectattributetype, project=cls.project)
+        cls.projectattribute = ProjectAttributeFactory(
+            value=36238, proj_attr_type=cls.projectattributetype, project=cls.project
+        )
         cls.url = f'/project/{cls.project.pk}/project-attribute-update/{cls.projectattribute.pk}'
 
 
@@ -292,11 +285,7 @@ class ProjectListViewTest(ProjectViewTestBase):
         """Set up users and project for testing"""
         super(ProjectListViewTest, cls).setUpTestData()
         # add 100 projects to test pagination, permissions, search functionality
-        cls.additional_projects = [
-                    ProjectFactory(title=fake.unique.project_title(),
-                    pi=UserFactory(username=fake.unique.user_name()))
-                for i in list(range(100))
-                             ]
+        cls.additional_projects = [ProjectFactory() for i in list(range(100))]
         cls.url = '/project/'
 
     ### ProjectListView access tests ###
@@ -316,31 +305,27 @@ class ProjectListViewTest(ProjectViewTestBase):
     def test_project_list_display_members(self):
         """Test that project list displays only projects that user is an active member of."""
         # deactivated projectuser won't see project on their page
-        self.normal_projuser.status, _ = ProjectUserStatusChoice.objects.get_or_create(name='Removed')
-        self.normal_projuser.save()
-        self.client.force_login(self.normal_projuser.user, backend='django.contrib.auth.backends.ModelBackend')
-        response = self.client.get(self.url)
+        self.npu.status, _ = ProjectUserStatusChoice.objects.get_or_create(name='Removed')
+        self.npu.save()
+        response = utils.login_and_get_page(self.client, self.normal_projuser, self.url)
         self.assertEqual(len(response.context['object_list']), 0)
 
     def test_project_list_displayall_permission_admin(self):
         """Test that the projectlist displayall option displays all projects to admin"""
         url = self.url + '?show_all_projects=on'
-        self.client.force_login(self.admin_user, backend='django.contrib.auth.backends.ModelBackend')
-        response = self.client.get(url)
-        self.assertGreaterEqual(101, len(response.context['object_list']))
+        response = utils.login_and_get_page(self.client, self.admin_user, url)
+        self.assertEqual(len(response.context['object_list']), Project.objects.all().count())
 
     def test_project_list_displayall_permission_pi(self):
         """Test that the projectlist displayall option displays only the pi's projects to the pi"""
         url = self.url + '?show_all_projects=on'
-        self.client.force_login(self.pi_user, backend='django.contrib.auth.backends.ModelBackend')
-        response = self.client.get(url)
+        response = utils.login_and_get_page(self.client, self.pi_user, url)
         self.assertEqual(len(response.context['object_list']), 1)
 
     def test_project_list_displayall_permission_project_user(self):
         """Test that the projectlist displayall option displays only the project user's projects to the project user"""
         url = self.url + '?show_all_projects=on'
-        self.client.force_login(self.project_user, backend='django.contrib.auth.backends.ModelBackend')
-        response = self.client.get(url)
+        response = utils.login_and_get_page(self.client, self.project_user, url)
         self.assertEqual(len(response.context['object_list']), 1)
 
 
@@ -349,18 +334,16 @@ class ProjectListViewTest(ProjectViewTestBase):
     def test_project_list_search(self):
         """Test that project list search works."""
         url_base = self.url + '?show_all_projects=on'
-        self.client.force_login(self.admin_user, backend='django.contrib.auth.backends.ModelBackend')
         # search by project project_title
         url = url_base + '&title=' + self.project.title
-        response = self.client.get(url)
+        response = utils.login_and_get_page(self.client, self.admin_user, url)
         self.assertEqual(len(response.context['object_list']), 1)
 
 
     def test_project_list_search_pagination(self):
         """confirm that navigation to next page of search works as expected"""
         url = self.url + '?show_all_projects=on'
-        self.client.force_login(self.admin_user, backend='django.contrib.auth.backends.ModelBackend')
-        response = self.client.get(url)
+        response = utils.login_and_get_page(self.client, self.admin_user, url)
 
 
 

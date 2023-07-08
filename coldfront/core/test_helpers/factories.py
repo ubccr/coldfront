@@ -1,41 +1,48 @@
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import User
-
 import factory
+from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from factory import SubFactory
+from factory.fuzzy import FuzzyChoice
+from factory.django import DjangoModelFactory
 from faker import Faker
 from faker.providers import BaseProvider, DynamicProvider
-from factory.django import DjangoModelFactory
 
 from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.resource.models import ResourceType, Resource
-# from coldfront.core.department.models import Department
-from coldfront.core.project.models import (Project,
-                                            ProjectUser,
-                                            ProjectAttribute,
-                                            ProjectAttributeType,
-                                            ProjectUserRoleChoice,
-                                            ProjectUserStatusChoice,
-                                            ProjectStatusChoice,
-                                            AttributeType as PAttributeType
-                                        )
-from coldfront.core.allocation.models import (Allocation,
-                                            AllocationUser,
-                                            AllocationUserNote,
-                                            AllocationAttribute,
-                                            AllocationStatusChoice,
-                                            AllocationAttributeType,
-                                            AllocationChangeRequest,
-                                            AllocationChangeStatusChoice,
-                                            AllocationAttributeUsage,
-                                            AllocationUserStatusChoice,
-                                            AllocationAttributeChangeRequest,
-                                            AttributeType as AAttributeType
-                                        )
+from coldfront.core.project.models import (
+    Project,
+    ProjectUser,
+    ProjectAttribute,
+    ProjectAttributeType,
+    ProjectUserRoleChoice,
+    ProjectUserStatusChoice,
+    ProjectStatusChoice,
+    AttributeType as PAttributeType,
+)
+from coldfront.core.allocation.models import (
+    Allocation,
+    AllocationUser,
+    AllocationUserNote,
+    AllocationAttribute,
+    AllocationStatusChoice,
+    AllocationAttributeType,
+    AllocationChangeRequest,
+    AllocationChangeStatusChoice,
+    AllocationAttributeUsage,
+    AllocationUserStatusChoice,
+    AllocationAttributeChangeRequest,
+    AttributeType as AAttributeType,
+)
 from coldfront.core.grant.models import GrantFundingAgency, GrantStatusChoice
 from coldfront.core.publication.models import PublicationSource
 
 
+### Default values and Faker provider setup ###
+
+project_status_choice_names = ['New', 'Active', 'Archived']
+project_user_role_choice_names = ['User', 'Manager']
+field_of_science_names = ['Physics', 'Chemistry', 'Economics', 'Biology', 'Sociology']
+attr_types = ['Date', 'Int', 'Float', 'Text', 'Boolean']
 
 fake = Faker()
 
@@ -52,12 +59,13 @@ class ColdfrontProvider(BaseProvider):
         return f'{first_name}{last_name}'.lower()
 
 field_of_science_provider = DynamicProvider(
-     provider_name="fieldofscience",
-     elements=['Chemistry', 'Physics', 'Economics', 'Biology', 'Statistics', 'Astrophysics'],
+    provider_name="fieldofscience", elements=field_of_science_names,
 )
+attr_type_provider = DynamicProvider(provider_name="attr_types", elements=attr_types)
 
-fake.add_provider(ColdfrontProvider)
-fake.add_provider(field_of_science_provider)
+for provider in [ColdfrontProvider, field_of_science_provider, attr_type_provider]:
+    factory.Faker.add_provider(provider)
+
 
 
 ### User factories ###
@@ -66,7 +74,9 @@ class UserFactory(DjangoModelFactory):
     class Meta:
         model = get_user_model()
         django_get_or_create = ('username',)
-    username = fake.unique.username()
+    first_name = factory.Faker('first_name')
+    last_name = factory.Faker('last_name')
+    username = factory.LazyAttribute(lambda o: f'{o.first_name}{o.last_name}')
     email = factory.LazyAttribute(lambda obj: '%s@example.com' % obj.username)
     is_staff = False
     is_active = True
@@ -80,15 +90,7 @@ class FieldOfScienceFactory(DjangoModelFactory):
         model = FieldOfScience
         django_get_or_create = ('description',)
 
-    description = fake.fieldofscience()
-
-
-### Department factories ###
-
-# class DepartmentFactory(DjangoModelFactory):
-#     class Meta:
-#         model = Department
-
+    description = factory.Faker('fieldofscience')
 
 
 
@@ -104,12 +106,16 @@ class GrantStatusChoiceFactory(DjangoModelFactory):
         model = GrantStatusChoice
 
 
+
 ### Project factories ###
 
 class ProjectStatusChoiceFactory(DjangoModelFactory):
     class Meta:
         model = ProjectStatusChoice
+        # ensure that names are unique
         django_get_or_create = ('name',)
+    # randomly generate names from list of default values
+    # name = FuzzyChoice(project_status_choice_names)
     name = 'Active'
 
 
@@ -119,14 +125,13 @@ class ProjectFactory(DjangoModelFactory):
         django_get_or_create = ('title',)
 
     pi = SubFactory(UserFactory)
-    title = fake.unique.project_title()
-    description = fake.sentence()
+    title = factory.Faker('project_title')
+    description = factory.Faker('sentence')
     field_of_science = SubFactory(FieldOfScienceFactory)
     status = SubFactory(ProjectStatusChoiceFactory)
     force_review = False
     requires_review = False
-    # force_review = fake.boolean()
-    # requires_review = fake.boolean()
+
 
 class ProjectUserRoleChoiceFactory(DjangoModelFactory):
     class Meta:
@@ -134,11 +139,13 @@ class ProjectUserRoleChoiceFactory(DjangoModelFactory):
         django_get_or_create = ('name',)
     name = 'User'
 
+
 class ProjectUserStatusChoiceFactory(DjangoModelFactory):
     class Meta:
         model = ProjectUserStatusChoice
         django_get_or_create = ('name',)
     name = 'Active'
+
 
 class ProjectUserFactory(DjangoModelFactory):
     class Meta:
@@ -158,7 +165,8 @@ class PAttributeTypeFactory(DjangoModelFactory):
     class Meta:
         model = PAttributeType
         # django_get_or_create = ('name',)
-    name='Text'
+    name = factory.Faker('attr_type')
+
 
 class ProjectAttributeTypeFactory(DjangoModelFactory):
     class Meta:
@@ -176,8 +184,8 @@ class ProjectAttributeFactory(DjangoModelFactory):
 
 
 
+    ### Publication factories ###
 
-### Publication factories ###
 class PublicationSourceFactory(DjangoModelFactory):
     class Meta:
         model = PublicationSource
@@ -198,17 +206,14 @@ class ResourceFactory(DjangoModelFactory):
     class Meta:
         model = Resource
         django_get_or_create = ('name',)
-    name = fake.unique.resource_name()
+    name = factory.Faker('resource_name')
 
-    description = fake.sentence()
+    description = factory.Faker('sentence')
     resource_type = SubFactory(ResourceTypeFactory)
 
 
 
-
-
 ### Allocation factories ###
-
 
 class AllocationStatusChoiceFactory(DjangoModelFactory):
     class Meta:
@@ -221,20 +226,11 @@ class AllocationFactory(DjangoModelFactory):
     class Meta:
         model = Allocation
         django_get_or_create = ('project',)
-    justification = fake.sentence()
+    justification = factory.Faker('sentence')
     status = SubFactory(AllocationStatusChoiceFactory)
     project = SubFactory(ProjectFactory)
-    # definition of the many-to-many "resources" field using the ResourceFactory
-    # to automatically generate one or more of the required Resource objects
-    # @post_generation
-    # def resources(self, create, extracted, **kwargs):
-    #     if not create:
-    #         return
-    #     if extracted:
-    #         for resource in extracted:
-    #             self.resources.add(resource)
-    #     else:
-    #         self.resources.add(ResourceFactory())
+    is_changeable = True
+
 
 
 ### Allocation Attribute factories ###
@@ -245,12 +241,15 @@ class AAttributeTypeFactory(DjangoModelFactory):
         django_get_or_create = ('name',)
     name='Int'
 
+
 class AllocationAttributeTypeFactory(DjangoModelFactory):
     class Meta:
         model = AllocationAttributeType
         django_get_or_create = ('name',)
     name = 'Test attribute type'
     attribute_type = SubFactory(AAttributeTypeFactory)
+    is_changeable=True
+
 
 class AllocationAttributeFactory(DjangoModelFactory):
     class Meta:
@@ -283,13 +282,15 @@ class AllocationChangeStatusChoiceFactory(DjangoModelFactory):
         django_get_or_create = ('name',)
     name = 'Pending'
 
+
 class AllocationChangeRequestFactory(DjangoModelFactory):
     class Meta:
         model = AllocationChangeRequest
 
     allocation = SubFactory(AllocationFactory)
     status = SubFactory(AllocationChangeStatusChoiceFactory)
-    justification = fake.sentence()
+    justification = factory.Faker('sentence')
+
 
 class AllocationAttributeChangeRequestFactory(DjangoModelFactory):
     class Meta:
@@ -298,6 +299,8 @@ class AllocationAttributeChangeRequestFactory(DjangoModelFactory):
     allocation_change_request = SubFactory(AllocationChangeRequestFactory)
     allocation_attribute = SubFactory(AllocationAttributeFactory)
     new_value = 1000
+
+
 
 ### Allocation User factories ###
 
@@ -326,7 +329,7 @@ class AllocationUserNoteFactory(DjangoModelFactory):
         django_get_or_create = ('allocation')
     allocation = SubFactory(AllocationFactory)
     author = SubFactory(AllocationUserFactory)
-    note = fake.sentence()
+    note = factory.Faker('sentence')
 
 
 
@@ -341,45 +344,49 @@ def setup_models(test_case):
         AAttributeTypeFactory(name=attribute_type)
     for status in ['Pending', 'Approved', 'Denied']:
         AllocationChangeStatusChoiceFactory(name=status)
-    for alloc_attr_type in ['Storage Quota (TB)']:
-        AllocationAttributeTypeFactory(name=alloc_attr_type, is_private=False, is_changeable=True)
+
+    quota_tb_type = AllocationAttributeTypeFactory(name='Storage Quota (TB)')
     # users
-    test_case.admin_user = UserFactory(username='gvanrossum', is_staff=True, is_superuser=True)
+    test_case.admin_user = UserFactory(
+        username='gvanrossum', is_staff=True, is_superuser=True
+    )
     # pi is a project admin but not an AllocationUser.
-    test_case.pi_user = UserFactory(username='sdpoisson',
-                                            is_staff=False, is_superuser=False)
-    test_case.proj_allocation_user = UserFactory(username='ljbortkiewicz',
-                                            is_staff=False, is_superuser=False)
-    test_case.proj_nonallocation_user = UserFactory(username='wkohn',
-                                            is_staff=False, is_superuser=False)
-    test_case.nonproj_allocation_user = UserFactory(username='jsaul',
-                                            is_staff=False, is_superuser=False)
+    test_case.pi_user = UserFactory(username='sdpoisson')
+    test_case.proj_allocation_user = UserFactory(username='ljbortkiewicz')
+    test_case.proj_nonallocation_user = UserFactory(username='wkohn')
+    test_case.nonproj_allocation_user = UserFactory(username='jsaul')
     test_case.project = ProjectFactory(pi=test_case.pi_user, title="poisson_lab")
 
     # allocations
-    test_case.proj_allocation = AllocationFactory(
-                    project=test_case.project,
-                    is_changeable=True,
-                )
-    test_case.proj_allocation.resources.add(ResourceFactory(name='holylfs10/tier1', id=1))
+    test_case.proj_allocation = AllocationFactory(project=test_case.project)
+    resource = ResourceFactory(name='holylfs10/tier1', id=1)
+    test_case.proj_allocation.resources.add(resource)
 
     # make a quota_bytes allocation attribute
-    allocation_quota = AllocationQuotaFactory(allocation=test_case.proj_allocation, value=109951162777600)
-    AllocationAttributeUsageFactory(allocation_attribute=allocation_quota, value=10995116277760)
+    allocation_quota = AllocationQuotaFactory(
+        allocation=test_case.proj_allocation, value=109951162777600
+    )
+    AllocationAttributeUsageFactory(
+        allocation_attribute=allocation_quota, value=10995116277760
+    )
     # make a quota TB allocation attribute
-    allocation_quota_tb = AllocationAttributeFactory(allocation=test_case.proj_allocation,
+    allocation_quota_tb = AllocationAttributeFactory(
+        allocation=test_case.proj_allocation,
         value = 100,
-        allocation_attribute_type=AllocationAttributeTypeFactory(name='Storage Quota (TB)'),
-                     )
+        allocation_attribute_type=quota_tb_type,
+    )
     AllocationAttributeUsageFactory(allocation_attribute=allocation_quota_tb, value=10)
     # relationships
-    AllocationUserFactory(user=test_case.proj_allocation_user, allocation=test_case.proj_allocation)
-    AllocationUserFactory(user=test_case.nonproj_allocation_user, allocation=test_case.proj_allocation)
-
+    for user in [test_case.proj_allocation_user, test_case.nonproj_allocation_user]:
+        AllocationUserFactory(user=user, allocation=test_case.proj_allocation)
 
     manager_role = ProjectUserRoleChoiceFactory(name='Manager')
 
-    ProjectUserFactory(user=test_case.pi_user, project=test_case.project, role=manager_role)
-    test_case.normal_projuser = ProjectUserFactory(user=test_case.proj_allocation_user,
-                                                    project=test_case.project)
-    ProjectUserFactory(user=test_case.proj_nonallocation_user, project=test_case.project)
+    ProjectUserFactory(
+        user=test_case.pi_user, project=test_case.project, role=manager_role
+    )
+    test_case.npu = ProjectUserFactory(user=test_case.proj_allocation_user, project=test_case.project)
+    test_case.normal_projuser = test_case.npu.user
+    ProjectUserFactory(
+        user=test_case.proj_nonallocation_user, project=test_case.project
+    )

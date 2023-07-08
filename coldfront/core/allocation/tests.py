@@ -12,11 +12,10 @@ from coldfront.core.allocation.models import (
     AllocationChangeRequest,
 )
 from coldfront.core.test_helpers.factories import (
-    fake,
     setup_models,
-    ResourceFactory,
     UserFactory,
     ProjectFactory,
+    ResourceFactory,
     AllocationFactory,
     AllocationChangeRequestFactory,
 )
@@ -72,19 +71,11 @@ class AllocationListViewTest(AllocationViewBaseTest):
         """Set up users and project for testing"""
         super(AllocationListViewTest, cls).setUpTestData()
         cls.additional_allocations = [
-            AllocationFactory(
-                project=ProjectFactory(
-                    title=fake.unique.project_title(),
-                    pi=UserFactory(username=fake.unique.username()),
-                )
-            )
-            for i in list(range(100))
+            AllocationFactory() for i in list(range(50))
         ]
         for allocation in cls.additional_allocations:
             allocation.resources.add(ResourceFactory(name='holylfs09/tier1', id=2))
-        cls.nonproj_nonallocation_user = UserFactory(
-            username='rdrake', is_staff=False, is_superuser=False
-        )
+        cls.nonproj_nonallocation_user = UserFactory(username='rdrake')
 
     def test_allocation_list_access_admin(self):
         """Confirm that AllocationList access control works for admin"""
@@ -92,7 +83,8 @@ class AllocationListViewTest(AllocationViewBaseTest):
 
         # confirm that show_all_allocations=on enables admin to view all allocations
         response = self.client.get("/allocation/?show_all_allocations=on")
-        self.assertEqual(len(response.context['item_list']), 101)
+
+        self.assertEqual(len(response.context['item_list']), Allocation.objects.all().count())
 
     def test_allocation_list_access_pi(self):
         """Confirm that AllocationList access control works for pi
@@ -198,7 +190,6 @@ class AllocationChangeViewTest(AllocationViewBaseTest):
 
     def test_allocationchangeview_access(self):
         """Test get request"""
-        kwargs = {'pk': 1}
         self.allocation_access_tstbase(self.url)
         utils.test_user_can_access(self, self.pi_user, self.url)  # Manager can access
         utils.test_user_cannot_access(self, self.proj_allocation_user, self.url)  # user can't access
