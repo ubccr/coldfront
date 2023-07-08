@@ -480,13 +480,13 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
 
-        message = None
+        err = None
         if project_obj.needs_review:
             err = 'You cannot request a new allocation because you have to review your project first.'
         elif project_obj.status.name not in ['Active', 'New']:
             err = 'You cannot request a new allocation to an archived project.'
 
-        if message:
+        if err:
             messages.error(request, err)
             return HttpResponseRedirect(
                 reverse('project-detail', kwargs={'pk': project_obj.pk})
