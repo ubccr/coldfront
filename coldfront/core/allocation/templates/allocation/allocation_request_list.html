@@ -58,8 +58,8 @@ Allocation Review New and Pending Requests
                   {% csrf_token %}
                   <input type="hidden" name="status" value="{{ allocation_status_active.id }}" />
                   <button type="submit" name="action" value="auto-approve" class="btn btn-success mr-1{% if allocation.get_information == '' %} confirm-activate{% endif %}">Approve</button>
+                  <a href="{% url 'allocation-detail' allocation.pk %}"><button type="button" class="btn btn-primary mr-1">Details</button></a>
                 </form>
-                  <a href="{% url 'allocation-detail' allocation.pk %}"><button class="btn btn-primary mr-1">Details</button></a>
               </div>
             </td>
           </tr>
