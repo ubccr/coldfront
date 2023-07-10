@@ -1513,7 +1513,6 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
         return context
 
     def get(self, request, *args, **kwargs):
-
         allocation_change_obj = get_object_or_404(
             AllocationChangeRequest, pk=self.kwargs.get('pk'))
 
@@ -1855,12 +1854,14 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         end_date_extension = form_data.get('end_date_extension')
         justification = form_data.get('justification')
         change_request_status_obj = AllocationChangeStatusChoice.objects.get(name='Pending')
+        payment_status_change = AllocationStatusChoice.objects.get(name = str(form_data["payment_status"]))
 
         allocation_change_request_obj = AllocationChangeRequest.objects.create(
             allocation=allocation_obj,
             end_date_extension=end_date_extension,
             justification=justification,
-            status=change_request_status_obj
+            status=change_request_status_obj,
+            payment_status=payment_status_change
             )
 
 
