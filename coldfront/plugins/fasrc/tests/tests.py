@@ -1,14 +1,15 @@
 from django.test import TestCase
 
-from coldfront.plugins.fasrc.utils import (AllTheThingsConn, push_quota_data)
-from coldfront.core.test_helpers.factories import (setup_models,
-                                            UserFactory,
-                                            ProjectFactory,
-                                            ResourceFactory,
-                                            AllocationFactory,
-                                            AAttributeTypeFactory,
-                                            AllocationAttributeTypeFactory
-                                            )
+from coldfront.plugins.fasrc.utils import AllTheThingsConn, push_quota_data
+from coldfront.core.test_helpers.factories import (
+    setup_models,
+    UserFactory,
+    ProjectFactory,
+    ResourceFactory,
+    AllocationFactory,
+    AAttributeTypeFactory,
+    AllocationAttributeTypeFactory,
+)
 
 
 UTIL_FIXTURES = [
@@ -30,7 +31,12 @@ class UploadTests(TestCase):
         gordon_lab = ProjectFactory(pi=aalice, title="gordon_lab")
         gordon_alloc = AllocationFactory(project=gordon_lab)
         gordon_alloc.resources.add(ResourceFactory(name='holylfs10/tier1', id=1))
-        AllocationAttributeTypeFactory(name='RequiresPayment', attribute_type=AAttributeTypeFactory(name='Boolean'))
+        AllocationAttributeTypeFactory(
+            name='RequiresPayment', attribute_type=AAttributeTypeFactory(name='Boolean')
+        )
+        AllocationAttributeTypeFactory(
+            name='Subdirectory', attribute_type=AAttributeTypeFactory(name='Text')
+        )
 
     def setUp(self):
         self.attconn = AllTheThingsConn()
@@ -39,5 +45,6 @@ class UploadTests(TestCase):
         self.testusers = self.pref + 'att_users_dummy.json'
 
     def test_push_quota_data(self):
+        """Ensure that push runs successfully"""
         push_quota_data(self.testfiles)
         # assert AllocationAttribute.
