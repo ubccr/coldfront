@@ -42,3 +42,9 @@ class AllocationViewSet(viewsets.ReadOnlyModelViewSet):
             ).distinct().order_by('project')
 
         return allocations
+
+class ProjectUserViewSet(viewsets.ReadOnlyModelViewSet):
+    """Produce a report of users for each project that includes
+    name, usage, status, and usage for all allocations they have space on
+    """
+    serializer_class = serializers.ProjectUserSerializer

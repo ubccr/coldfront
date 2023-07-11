@@ -3,7 +3,11 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
 from coldfront.core.allocation.models import Allocation, AllocationStatusChoice
-from coldfront.core.project.models import Project, ProjectStatusChoice
+from coldfront.core.project.models import (
+    Project,
+    ProjectUser,
+    ProjectStatusChoice,
+)
 from coldfront.core.resource.models import Resource
 
 
@@ -21,6 +25,15 @@ class ProjectSerializer(serializers.ModelSerializer):
         model = Project
         fields = ('id', 'title', 'pi', 'status')
 
+class ProjectUserSerializer(serializers.ModelSerializer):
+    user = serializers.SlugRelatedField(slug_field='full_name', read_only=True)
+    project = serializers.SlugRelatedField(slug_field='title', read_only=True)
+    status = serializers.SlugRelatedField(slug_field='name', read_only=True)
+    role = serializers.SlugRelatedField(slug_field='name', read_only=True)
+
+    class Meta:
+        model = ProjectUser
+        fields = ('id', 'project', 'user', 'role', 'status')
 
 class ResourceSerializer(serializers.ModelSerializer):
     resource_type = serializers.SlugRelatedField(slug_field='name', read_only=True)
