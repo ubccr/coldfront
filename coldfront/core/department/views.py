@@ -142,9 +142,8 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         if department_obj.members.filter(user=self.request.user).exists():
             return True
 
-        messages.error(
-            self.request, 'You do not have permission to view this department.'
-        )
+        err = 'You do not have permission to view this department.'
+        messages.error(self.request, err)
         return False
 
     def return_visible_notes(self, department_obj):
@@ -172,9 +171,8 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             )
 
         attribute_filter = (
-            Q(
-                allocation__allocationattribute__allocation_attribute_type_id=1
-            ) & Q(allocation__status_id__in=[1, 2])
+            Q(allocation__allocationattribute__allocation_attribute_type_id=1)
+            & Q(allocation__status_id__in=[1, 2])
         )
         attribute_string = 'allocation__allocationattribute__value'
         project_objs = list(
@@ -182,26 +180,32 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 total_quota=Sum(attribute_string, filter=attribute_filter)
             )
         )
-        child_depts = Department.objects.filter(parents=department_obj)
-        if child_depts:
-            for dept in child_depts:
-                child_projs = list(
-                    dept.projects.filter(projectview_filter).annotate(
-                        total_quota=Sum(attribute_string, filter=attribute_filter)
-                    )
-                )
-                project_objs.extend(child_projs)
+        # invalidated by dependence on new org tree
+        # child_depts = Department.objects.filter(parents=department_obj)
+        # if child_depts:
+        #     for dept in child_depts:
+        #         child_projs = list(
+        #             dept.projects.filter(projectview_filter).annotate(
+        #                 total_quota=Sum(attribute_string, filter=attribute_filter)
+        #             )
+        #         )
+        #         project_objs.extend(child_projs)
 
         allocationuser_filter = (Q(status__name='Active') & ~Q(usage_bytes__isnull=True))
 
+        pi_dict = {p.pi: [] for p in project_objs}
         for p in project_objs:
             p.allocs = p.allocation_set.filter(
                 allocationattribute__allocation_attribute_type_id=1,
                 status__name__in=['Active', 'New'],
             )
-            p.total_price = sum(float(a.cost) for a in p.allocs.all())
+            pi_dict[p.pi].extend(list(p.allocs))
+        pi_dict = {pi:allocs for pi, allocs in pi_dict.items() if allocs}
+        for pi, allocs in pi_dict.items():
+            pi.total_price = sum(float(a.cost) for a in allocs)
 
-        context['full_price'] = sum(p.total_price for p in project_objs)
+        context['pi_dict'] = pi_dict
+        context['full_price'] = sum(pi.total_price for pi in pi_dict.keys())
         context['projects'] = project_objs
         context['department'] = department_obj
 
@@ -215,7 +219,6 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         allocation_users = AllocationUser.objects.filter(
             Q(allocation_id__in=[o.id for o in allocation_objs]) & allocationuser_filter
         ).order_by('user__username')
-
         context['allocation_users'] = allocation_users
         context['notes'] = self.return_visible_notes(department_obj)
         context['note_update_link'] = 'department-note-update'

@@ -9,7 +9,7 @@
       "byte_usage": 8183568264,
       "fs_path": "/n/holylfs10",
       "storage_type": "Quota",
-      "server": "/n/holylfs10"
+      "server": "holylfs10"
     },
     {
       "begin_date": "2022-03-29T15:16:37.170349700-04:00",
@@ -33,7 +33,7 @@
       "tb_usage": 24.757998044826,
       "fs_path": "/n/holylfs10",
       "storage_type": "Quota",
-      "server": "/n/holylfs10"
+      "server": "holylfs10"
     }
   ]
 }

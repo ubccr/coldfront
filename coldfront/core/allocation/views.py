@@ -7,6 +7,7 @@ from xhtml2pdf import pisa
 
 from dateutil.relativedelta import relativedelta
 from django import forms
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -63,6 +64,9 @@ from coldfront.core.project.models import (Project, ProjectPermission,
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_allocation_admin_email, send_allocation_customer_email
+
+if 'django_q' in settings.INSTALLED_APPS:
+    from django_q.tasks import Task
 
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
     'ALLOCATION_ENABLE_ALLOCATION_RENEWAL', True)
@@ -202,6 +206,17 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         quota_bytes, usage_bytes = return_allocation_bytes_values(
             attributes_with_usage, allocation_obj.allocationuser_set.all()
         )
+
+
+        if 'django_q' in settings.INSTALLED_APPS:
+            # get last successful runs of djangoq task responsible for allocationuser data pull
+            user_sync_task = Task.objects.filter(
+                func__contains="pull_sf_push_cf_redash", success=True
+            ).order_by('started').last()
+            user_sync_dt = None if not user_sync_task else user_sync_task.started
+        else:
+            user_sync_dt = None
+        context['user_sync_dt'] = user_sync_dt
 
         context['allocation_quota_bytes'] = quota_bytes
         context['allocation_usage_bytes'] = usage_bytes
@@ -480,13 +495,13 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
 
-        message = None
+        err = None
         if project_obj.needs_review:
             err = 'You cannot request a new allocation because you have to review your project first.'
         elif project_obj.status.name not in ['Active', 'New']:
             err = 'You cannot request a new allocation to an archived project.'
 
-        if message:
+        if err:
             messages.error(request, err)
             return HttpResponseRedirect(
                 reverse('project-detail', kwargs={'pk': project_obj.pk})
@@ -524,15 +539,23 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         # create list of resources for which the project already has an allocation
         project_allocations = project_obj.allocation_set.all()
-        resources_with_allocations = {str(allocation.get_parent_resource.id):allocation.pk
-                                      for allocation in project_allocations}
+        resources_with_allocations = {
+            str(allo.get_parent_resource.id):allo.pk for allo in project_allocations
+        }
+        overfull_resources = {
+            str(r.pk): r.used_percentage
+            for r in Resource.objects.all()
+            if r.used_percentage and r.used_percentage > 79.5
+        }
 
+        context['overfull_resources'] = overfull_resources
         context['resources_with_allocations'] = resources_with_allocations
         context['resources_form_default_quantities'] = resources_form_default_quantities
         context['resources_form_label_texts'] = resources_form_label_texts
         context['resources_with_eula'] = resources_with_eula
         context['resources_with_accounts'] = list(Resource.objects.filter(
-            name__in=list(ALLOCATION_ACCOUNT_MAPPING.keys())).values_list('id', flat=True))
+            name__in=list(ALLOCATION_ACCOUNT_MAPPING.keys())
+        ).values_list('id', flat=True))
 
         return context
 
@@ -630,7 +653,14 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         # if requested resource is on NESE, add to vars
         nese = bool(allocation_obj.resources.filter(name__contains="nesetape"))
-        other_vars = {'justification':justification, 'quantity':quantity, 'nese': nese}
+        used_percentage = allocation_obj.get_parent_resource.used_percentage
+
+        other_vars = {
+            'justification':justification,
+            'quantity':quantity,
+            'nese': nese,
+            'used_percentage': used_percentage,
+        }
         send_allocation_admin_email(allocation_obj,
             'New Allocation Request',
             'email/new_allocation_request.txt',
@@ -695,7 +725,6 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             }
             for user in missing_users
         ]
-
         return users_to_add
 
     def get(self, request, *args, **kwargs):
@@ -766,7 +795,6 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
     def dispatch(self, request, *args, **kwargs):
         allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
-
         err = None
         if allocation_obj.is_locked and not self.request.user.is_superuser:
             err = 'You cannot modify this allocation because it is locked! Contact support for details.'
@@ -804,7 +832,6 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
     def get(self, request, *args, **kwargs):
         allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
-
         users_to_remove = self.get_users_to_remove(allocation_obj)
         context = {}
 
@@ -829,7 +856,6 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
         formset = formset(request.POST, initial=users_to_remove, prefix='userform')
 
         remove_users_count = 0
-
         if formset.is_valid():
             removed_allocuser_status = AllocationUserStatusChoice.objects.get(
                 name='Removed'
@@ -952,7 +978,6 @@ class AllocationAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Tem
         formset = formset(request.POST, initial=attrs_to_delete, prefix='attributeform')
 
         attributes_deleted_count = 0
-
         if formset.is_valid():
             cleaned_forms = [form.cleaned_data for form in formset]
             selected_cleaned_forms = [
@@ -1000,9 +1025,8 @@ class AllocationNoteUpdateView(NoteUpdateView):
         return context
 
     def get_success_url(self):
-        return reverse_lazy(
-            'allocation-detail', kwargs={'pk': self.object.allocation.pk}
-        )
+        pk = self.object.allocation.pk
+        return reverse_lazy('allocation-detail', kwargs={'pk': pk})
 
 
 class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -1826,22 +1850,20 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         errs = []
         if allocation_obj.project.needs_review:
-            errs.append(
-                'You cannot request a change to this allocation because you have to review your project first.'
-            )
+            err = 'You cannot request a change to this allocation because you have to review your project first.'
+            errs.append(err)
         if allocation_obj.project.status.name not in ['Active', 'New']:
-            errs.append(
-                'You cannot request a change to an allocation in an archived project.'
-            )
+            err = 'You cannot request a change to an allocation in an archived project.'
+            errs.append(err)
         if allocation_obj.is_locked:
-            errs.append('You cannot request a change to a locked allocation.')
+            err = 'You cannot request a change to a locked allocation.'
+            errs.append(err)
         changeable_status_list = [
             'Active', 'Renewal Requested', 'Payment Pending', 'Payment Requested', 'Paid'
         ]
         if allocation_obj.status.name not in changeable_status_list:
-            errs.append(
-                f'You cannot request a change to an allocation with status "{allocation_obj.status.name}"'
-            )
+            err = f'You cannot request a change to an allocation with status "{allocation_obj.status.name}"'
+            errs.append(err)
 
         if errs:
             for err in errs:
@@ -1874,13 +1896,14 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         context['form'] = form
 
         attrs_to_change = self.get_allocation_attrs_to_change(allocation_obj)
-
         if attrs_to_change:
             formset = formset_factory(self.formset_class, max_num=len(attrs_to_change))
             formset = formset(initial=attrs_to_change, prefix='attributeform')
             context['formset'] = formset
+
         context['allocation'] = allocation_obj
         context['attributes'] = attrs_to_change
+        context['used_percentage'] = allocation_obj.get_parent_resource.used_percentage
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
@@ -1970,10 +1993,12 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         if quantity:
             quantity_num = int(float(quantity[0][1]))
             difference = quantity_num - int(float(allocation_obj.size))
+            used_percentage = allocation_obj.get_parent_resource.used_percentage
             email_vars['quantity'] = quantity_num
             email_vars['nese'] = nese
             email_vars['current_size'] = allocation_obj.size
             email_vars['difference'] = difference
+            email_vars['used_percentage'] = used_percentage
 
         send_allocation_admin_email(
             allocation_obj,

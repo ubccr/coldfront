@@ -10,22 +10,29 @@ import requests
 from django.utils import timezone
 
 from coldfront.core.utils.common import import_from_settings
-from coldfront.core.utils.fasrc import (determine_size_fmt,
-                                        locate_or_create_dirpath,
-                                        read_json,
-                                        save_json,
-                                        slate_for_check,
-                                        select_one_project_allocation,
-                                        id_present_missing_users,
-                                        log_missing)
+from coldfront.core.utils.fasrc import (
+    read_json,
+    save_json,
+    log_missing,
+    slate_for_check,
+    determine_size_fmt,
+    id_present_missing_users,
+    locate_or_create_dirpath,
+    select_one_project_allocation,
+)
 from coldfront.core.project.models import Project
-from coldfront.core.resource.models import Resource
-from coldfront.core.allocation.models import (Allocation,
-                                            AllocationUser,
-                                            AllocationAttribute,
-                                            AllocationAttributeUsage,
-                                            AllocationAttributeType,
-                                            AllocationUserStatusChoice)
+from coldfront.core.resource.models import (
+    Resource,
+    ResourceAttribute,
+    ResourceAttributeType,
+)
+from coldfront.core.allocation.models import (
+    Allocation,
+    AllocationUser,
+    AllocationAttributeType,
+    AllocationAttributeUsage,
+    AllocationUserStatusChoice,
+)
 
 datestr = datetime.today().strftime('%Y%m%d')
 logger = logging.getLogger('sftocf')
@@ -113,12 +120,25 @@ class StarFishServer:
         scans = self.get_scans()
         volumes = self.get_volumes_in_coldfront()
         for volume in volumes:
-            latest_time = max([s['creation_time'] for s in scans['scans'] if s['volume'] == volume])
-            latest_scan = next(s for s in scans['scans'] if s['creation_time'] == latest_time and s['volume'] == volume)
+            latest_time = max([
+                s['creation_time'] for s in scans['scans'] if s['volume'] == volume
+            ])
+            latest_scan = next(
+                s for s in scans['scans']
+                if s['creation_time'] == latest_time and s['volume'] == volume
+            )
             scans_narrowed.append(latest_scan)
             if latest_scan['state']['is_running'] or latest_scan['state']['is_successful']:
-                last_completed_time = max([s['creation_time'] for s in scans['scans'] if not s['state']['is_running'] and s['state']['is_successful'] and s['volume'] == volume])
-                last_completed = next(s for s in scans['scans'] if s['creation_time'] == last_completed_time and s['volume'] == volume)
+                last_completed_time = max([
+                    s['creation_time'] for s in scans['scans']
+                    if not s['state']['is_running']
+                    and s['state']['is_successful'] and s['volume'] == volume
+                ])
+                last_completed = next(
+                    s for s in scans['scans']
+                    if s['creation_time'] == last_completed_time
+                    and s['volume'] == volume
+                )
                 scans_narrowed.append(last_completed)
         return scans_narrowed
 
@@ -199,8 +219,12 @@ class StarFishRedash:
     def get_vol_stats(self):
         result = self.submit_query('vol_query')
         result = result['query_result']['data']['rows']
-        result = [{k.replace(' ', '_').replace('(','').replace(')','') : v for k, v in d.items()} for d in result]
-        resource_names = [re.sub(r'\/.+','',n) for n in Resource.objects.values_list('name',flat=True)]
+        result = [{
+            k.replace(' ', '_').replace('(','').replace(')','') : v for k, v in d.items()
+        } for d in result]
+        resource_names = [
+            re.sub(r'\/.+','',n) for n in Resource.objects.values_list('name',flat=True)
+        ]
         result = [r for r in result if r['volume_name'] in resource_names]
         return result
 
@@ -346,7 +370,9 @@ def pull_sf(volume=None):
     filepaths, to_collect = check_volume_collection(lr)
     # 3. produce set of all volumes to be queried
     vol_set = {i[1] for i in to_collect}
-    servers_vols = [(k, vol) for k, v in svp.items() for vol in vol_set if vol in v.keys()]
+    servers_vols = [
+        (k, vol) for k, v in svp.items() for vol in vol_set if vol in v.keys()
+    ]
     for server_vol in servers_vols:
         s = server_vol[0]
         vol = server_vol[1]
@@ -371,8 +397,10 @@ def push_cf(content):
     # find project allocation
     resource_obj = Resource.objects.get(name__contains=resource)
     allocation = select_one_project_allocation(project, resource_obj)
-    logger.debug('%s\n usernames: %s\n user_models: %s',
-            project.title, usernames, [u.username for u in user_models])
+    logger.debug(
+        '%s\n usernames: %s\n user_models: %s',
+        project.title, usernames, [u.username for u in user_models]
+    )
     errors = False
     for user in user_models:
         userdict = next(d for d in content['contents'] if d['username'] == user.username)
@@ -385,7 +413,9 @@ def push_cf(content):
         except Exception as e:
             logger.warning('EXCEPTION FOR ENTRY: %s', e, exc_info=True)
             errors = True
-    AllocationUser.objects.bulk_update(updated_allocationusers, ['usage_bytes', 'usage', 'unit'])
+    AllocationUser.objects.bulk_update(
+        updated_allocationusers, ['usage_bytes', 'usage', 'unit']
+    )
     return errors
 
 
@@ -393,12 +423,12 @@ def update_user_usage(user, usage_bytes, usage, unit, allocation):
     """get or create an allocationuser object with updated usage values
     """
     allocationuser, created = allocation.allocationuser_set.get_or_create(
-            user=user,
-            defaults={
-                'created': timezone.now(),
-                'status': AllocationUserStatusChoice.objects.get(name='Active')
-                }
-            )
+        user=user,
+        defaults={
+            'created': timezone.now(),
+            'status': AllocationUserStatusChoice.objects.get(name='Active')
+        }
+    )
     if created:
         logger.info('allocation user %s created', allocationuser)
     allocationuser.usage_bytes = usage_bytes
@@ -512,16 +542,20 @@ def zero_out_absent_allocationusers(redash_usernames, allocation):
     stats and change their usage to 0.
     """
     allocationusers_not_in_redash = allocation.allocationuser_set.exclude(
-                                    user__username__in=redash_usernames)
+        user__username__in=redash_usernames
+    )
     if allocationusers_not_in_redash:
-        logger.info('users no longer in allocation %s: %s', allocation.pk, [user.user.username for user in allocationusers_not_in_redash])
+        logger.info(
+            'users no longer in allocation %s: %s',
+            allocation.pk, [user.user.username for user in allocationusers_not_in_redash]
+        )
         allocationusers_not_in_redash.update(usage=0, usage_bytes=0)
 
 
 def update_usage_attr(allocation, usage_attribute_type, usage_value):
     usage_attribute, _ = allocation.allocationattribute_set.get_or_create(
-            allocation_attribute_type=usage_attribute_type
-        )
+        allocation_attribute_type=usage_attribute_type
+    )
     usage_attribute.allocationattributeusage.value = usage_value
     return usage_attribute.allocationattributeusage
 
@@ -537,7 +571,11 @@ class AllocationQueryMatch:
             message = f'too many total_usage_entries for allocation {allocation_data}; investigation required'
         if message:
             print(message)
-            slate_for_check([{'error': message, 'program': 'pull_sf_push_cf_redash', 'urls': f'/allocation/{allocation.pk}/'}])
+            slate_for_check([{
+                'error': message,
+                'program': 'pull_sf_push_cf_redash',
+                'urls': f'/allocation/{allocation.pk}/'
+            }])
             return None
 
         return super().__new__(cls)
@@ -563,8 +601,8 @@ class AllocationQueryMatch:
 
     def produce_updated_usage_attr(self, usage_attribute_type, usage_value):
         usage_attribute, _ = self.allocation.allocationattribute_set.get_or_create(
-                allocation_attribute_type=usage_attribute_type
-            )
+            allocation_attribute_type=usage_attribute_type
+        )
         usage = usage_attribute.allocationattributeusage
         usage.value = usage_value
         return usage
@@ -586,13 +624,16 @@ def return_dict_of_groupings(dict_list, sort_key):
 
 @record_process
 def match_allocations_with_usage_entries(allocations, user_usage, allocation_usage):
-    allocation_list = [(allocation.get_parent_resource.name.split('/')[0], allocation.path)
+    allocation_list = [
+        (allocation.get_parent_resource.name.split('/')[0], allocation.path)
         for allocation in allocations
     ]
 
     total_sort_key = itemgetter('path','vol_name')
     allocation_usage_grouped = return_dict_of_groupings(allocation_usage, total_sort_key)
-    missing_allocations = [(k,a) for k, a in allocation_usage_grouped if k not in allocation_list]
+    missing_allocations = [
+        (k,a) for k, a in allocation_usage_grouped if k not in allocation_list
+    ]
 
     user_usage = [user for user in user_usage if user['lab_path'] is not None]
     user_sort_key = itemgetter('lab_path','vol_name')
@@ -605,12 +646,43 @@ def match_allocations_with_usage_entries(allocations, user_usage, allocation_usa
         a = (str(allocation.path), str(allocation.get_parent_resource.name.split('/')[0]))
         total_usage_entries = allocation_usage_grouped.get(a, None)
         user_usage_entries = user_usage_grouped.get(a, [])
-        allocationquerymatch_objs.append(AllocationQueryMatch(allocation, total_usage_entries, user_usage_entries))
+        allocationquerymatch_objs.append(
+            AllocationQueryMatch(allocation, total_usage_entries, user_usage_entries)
+        )
     return [a for a in allocationquerymatch_objs if a]
 
 
+def pull_resource_data():
+    starfish_redash = StarFishRedash(STARFISH_SERVER)
+    volumes = starfish_redash.get_vol_stats()
+    volumes = [
+        {
+            'name': vol['volume_name'],
+            'attrs': {
+                'capacity_tb': vol['capacity_TB'],
+                'free_tb': vol['free_TB'],
+                'file_count': vol['regular_files'],
+            }
+        }
+        for vol in volumes
+    ]
+    # collect user and lab counts, allocation sizes for each volume
+
+    res_attr_types = ResourceAttributeType.objects.all()
+
+    for volume in volumes:
+        resource = Resource.objects.get(name__contains=volume['name'])
+
+        for attr_name, attr_val in volume['attrs'].items():
+            attr_type_obj = res_attr_types.get(name=attr_name)
+            resource.resourceattribute_set.update_or_create(
+                resource_attribute_type=attr_type_obj,
+                defaults={'value': attr_val}
+            )
+
+
 def pull_sf_push_cf_redash():
-    """Query Starfish Redash API for usage data and update Coldfront AllocationUser entries.
+    """Query Starfish Redash API for usage data and AllocationUser roster.
     Only updates Allocations that are already in Coldfront.
     Log:
     - users missing from IFX who use allocations that are in in Coldfront
@@ -621,10 +693,14 @@ def pull_sf_push_cf_redash():
     vols_to_collect = starfish_server.get_volumes_in_coldfront()
     redash_api = StarFishRedash(STARFISH_SERVER)
 
-    user_usage = redash_api.return_query_results(query='path_usage_query', volumes=vols_to_collect)
+    user_usage = redash_api.return_query_results(
+        query='path_usage_query', volumes=vols_to_collect
+    )
     logger.debug('user_usage:\n%s', user_usage)
 
-    allocation_usage = redash_api.return_query_results(query='subdirectory', volumes=vols_to_collect)
+    allocation_usage = redash_api.return_query_results(
+        query='subdirectory', volumes=vols_to_collect
+    )
 
     # make master list of all users missing from ifx; don't record them yet,
     # only do that if they appear for our allocations.
@@ -639,20 +715,29 @@ def pull_sf_push_cf_redash():
     allocation_attribute_types = AllocationAttributeType.objects.all()
     quota_bytes_attributetype = allocation_attribute_types.get(name='Quota_In_Bytes')
     quota_tbs_attributetype = allocation_attribute_types.get(name='Storage Quota (TB)')
-    allocations = Allocation.objects.filter(resources__in=searched_resources,
+    allocations = Allocation.objects.filter(
+        resources__in=searched_resources,
         status__name__in=['Active', 'New', 'Updated', 'Ready for Review']
-        ).prefetch_related('project','allocationattribute_set', 'allocationuser_set')
-    allocationquerymatch_objects = match_allocations_with_usage_entries(allocations, user_usage, allocation_usage)
+    ).prefetch_related('project','allocationattribute_set', 'allocationuser_set')
+    allocationquerymatch_objects = match_allocations_with_usage_entries(
+        allocations, user_usage, allocation_usage
+    )
 
     # 3. iterate across allocations
     attributes_to_update = []
     updated_allocationusers = []
     for obj in allocationquerymatch_objects:
-        logger.debug('adding allocation for %s %s (path %s)', obj.lab, obj.volume, obj.allocation.path)
+        logger.debug(
+            'adding allocation for %s %s (path %s)',
+            obj.lab, obj.volume, obj.allocation.path
+        )
 
-        bytes_attr = obj.produce_updated_usage_attr(quota_bytes_attributetype,
-                                        obj.total_usage_entry['total_size'])
-        tbs_attr = obj.produce_updated_usage_attr(quota_tbs_attributetype, obj.total_usage_tb)
+        bytes_attr = obj.produce_updated_usage_attr(
+            quota_bytes_attributetype, obj.total_usage_entry['total_size']
+        )
+        tbs_attr = obj.produce_updated_usage_attr(
+            quota_tbs_attributetype, obj.total_usage_tb
+        )
 
         logger.info('allocation usage for allocation %s: %s bytes, %s terabytes',
         obj.allocation.pk, obj.total_usage_entry['total_size'], obj.total_usage_tb)
@@ -661,23 +746,31 @@ def pull_sf_push_cf_redash():
         # identify and remove allocation users that are no longer in the AD group
         zero_out_absent_allocationusers(obj.query_usernames, obj.allocation)
 
-        missing_unames_metadata = [{
+        missing_unames_metadata = [
+            {
                 'username': d['user_name'],
                 'volume': d['vol_name'],
                 'path': d['lab_path'],
             }
-                for d in obj.users_in_list(missing_username_list)]
+            for d in obj.users_in_list(missing_username_list)
+        ]
         log_missing('user', missing_unames_metadata)
 
         for userdict in obj.users_not_in_list(missing_username_list):
-            user = next(u for u in user_models if userdict['user_name'].lower() == u.username.lower())
+            user = next(
+                u for u in user_models if userdict['user_name'].lower() == u.username.lower()
+            )
             logger.debug('entering for user: %s', user.username)
             usage_bytes = int(userdict['size_sum'])
             usage, unit = determine_size_fmt(userdict['size_sum'])
 
-            allocationuser = update_user_usage(user, usage_bytes, usage, unit, obj.allocation)
+            allocationuser = update_user_usage(
+                user, usage_bytes, usage, unit, obj.allocation
+            )
             updated_allocationusers.append(allocationuser)
             logger.debug('saving %s', userdict)
 
-    AllocationUser.objects.bulk_update(updated_allocationusers, ['usage_bytes', 'usage', 'unit'])
+    AllocationUser.objects.bulk_update(
+        updated_allocationusers, ['usage_bytes', 'usage', 'unit']
+    )
     AllocationAttributeUsage.objects.bulk_update(attributes_to_update, ['value'])

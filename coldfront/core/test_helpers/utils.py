@@ -1,13 +1,4 @@
-"""Functions for testing the same basic principle across different applications"""
-from django.test import Client
-
-
-### Functions for in-situ error checks from command line ###
-def login_return_client(username, password):
-    """return a logged-in client object"""
-    client = Client()
-    client.login(username=username, password=password)
-    return client
+"""utility functions for unit and integration testing"""
 
 def page_contains_for_user(test_case, user, url, text):
     """Check that page contains text for user"""
@@ -31,8 +22,6 @@ def collect_all_ids_in_listpage(client, listpage):
             obj_ids.extend([o.id for o in response.context_data['object_list']])
     return obj_ids
 
-
-### Functions for testing library ###
 def login_and_get_page(client, user, page):
     """force login and return get response for page"""
     client.force_login(user, backend="django.contrib.auth.backends.ModelBackend")

@@ -19,9 +19,10 @@ Request Allocation Change
 </p>
 
 <form action="{% url 'allocation-change' allocation.pk %}" method="post">
+<div id=resource_message></div>
   <div class="card mb-3">
     <div class="card-header">
-        <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>   
+        <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>
     </div>
 
     <div class="card-body">
@@ -133,5 +134,18 @@ Request Allocation Change
 </form>
 
 <script>
+    $(function (){
+    // if the resource's used_percentage is greater than 80, display a message
+    // informing the user that the resource is almost full.
+    var used_percentage = {{ used_percentage | safe }};
+      if (used_percentage > 80) {
+        message = `<div class="alert alert-warning" role="alert">Warning: the selected resource is over 80% allocated. Requests for additional space on this resource may be subject to delay. For more information, please contact <a href="mailto:rchelp@rc.fas.harvard.edu">rchelp@rc.fas.harvard.edu</a>.</div>`
+          $('#resource_message').html(message);
+      }
+      else {
+        $('#resource_message').html('<div>EMPTY</div>');
+      }
+  });
+
 </script>
 {% endblock %}
