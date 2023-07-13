@@ -53,6 +53,10 @@ def home(request):
         from coldfront.plugins.system_monitor.utils import get_system_monitor_context
         context.update(get_system_monitor_context())
 
+    if 'coldfront.plugins.scale_management' in settings.INSTALLED_APPS:
+        from coldfront.plugins.scale_management.utils import get_scale_management_context
+        context.update(get_scale_management_context())
+
     return render(request, template_name, context)
 
 

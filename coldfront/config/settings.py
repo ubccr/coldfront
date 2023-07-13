@@ -17,11 +17,12 @@ plugin_configs = {
     'PLUGIN_SLURM': 'plugins/slurm.py',
     'PLUGIN_IQUOTA': 'plugins/iquota.py',
     'PLUGIN_FREEIPA': 'plugins/freeipa.py',
-    'PLUGIN_SYSMON': 'plugins/system_montior.py',
+    'PLUGIN_SYSMON': 'plugins/system_monitor.py',
     'PLUGIN_XDMOD': 'plugins/xdmod.py',
     'PLUGIN_AUTH_OIDC': 'plugins/openid.py',
     'PLUGIN_AUTH_LDAP': 'plugins/ldap.py',
     'PLUGIN_LDAP_USER_SEARCH': 'plugins/ldap_user_search.py',
+    'PLUGIN_SCALE_MAN': 'plugins/scale_management.py'
 }
 
 # This allows plugins to be enabled via environment variables. Can alternatively
