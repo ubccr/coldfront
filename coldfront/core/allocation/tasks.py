@@ -39,26 +39,32 @@ def update_statuses():
 
     logger.info('Allocations set to expired: {}'.format(
         allocations_to_expire.count()))
+    
+def get_eula(alloc):
+    if alloc.get_resources_as_list:
+        for res in alloc.get_resources_as_list:
+            if res.get_attribute(name='eula'):
+                return True
 
 def send_eula_reminders():
-    email_receiver_list = []
     for allocation in Allocation.objects.all():
-        for user in allocation.allocationuser_set.all():
-            if user.status == AllocationUserStatusChoice.objects.get(name='Pending'):
-                if user.user.email not in email_receiver_list:
-                    email_receiver_list.append(user.user.email)
+        if get_eula(allocation):
+            email_receiver_list = []
+            for allocation_user in allocation.allocationuser_set.all():
+                if allocation_user.status == AllocationUserStatusChoice.objects.get(name='Pending'):
+                    if allocation_user.user.email not in email_receiver_list:
+                        email_receiver_list.append(allocation_user.user.email)
 
-        template_context = {
-            'center_name': CENTER_NAME,
-            'resource': allocation.get_parent_resource,
-            'url': f'{CENTER_BASE_URL.strip("/")}/{"allocation"}/{allocation.pk}/',
-            'signature': EMAIL_SIGNATURE
-        }
+            template_context = {
+                'center_name': CENTER_NAME,
+                'resource': allocation.get_parent_resource,
+                'url': f'{CENTER_BASE_URL.strip("/")}/{"allocation"}/{allocation.pk}/',
+                'signature': EMAIL_SIGNATURE
+            }
 
-        if email_receiver_list:
-            send_email_template(f'Reminder: Agree to EULA for {allocation}', 'email/allocation_eula_reminder.txt', template_context, EMAIL_SENDER, email_receiver_list)
-
-        logger.debug(f'Allocation(s) EULA reminder sent to user {user}.')
+            if email_receiver_list:
+                send_email_template(f'Reminder: Agree to EULA for {allocation}', 'email/allocation_eula_reminder.txt', template_context, EMAIL_SENDER, email_receiver_list)
+                logger.debug(f'Allocation(s) EULA reminder sent to users {email_receiver_list}.')
 
 def send_expiry_emails():
     #Allocations expiring soon
