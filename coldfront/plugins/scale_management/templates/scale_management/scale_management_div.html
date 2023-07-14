@@ -1,14 +1,61 @@
-
 {% load static %}
 
 <div class="col">
   <h1>Hello</h1>
+  <label for="username">Username</label>
+  <input id="username" name="username" type="text">
+  <label for="password">Password</label>
+  <input id="password" name="password" type="password">
+  <button id="get-data" type="button">Get Data</button>
 
-  <p>{{ data }}</p>
+  <div id="data">
+    <table id="quota-table">
+      <tr>
+        <th>blockQuota</th>
+        <th>blockUsage</th>
+        <th>filesystemName</th>
+        <th>objectName</th>
+        <th>quotaType</th>
+      </tr>
+    </table>
+  </div>
 </div>
 
 <script>
-    
-  console.log('Hi')
+  $("#get-data").click(() => {
+    const username = $("#username").val()
+    const password = $("#password").val()
 
+    console.log("Getting Data")
+
+    $.ajax({
+      url: 'https://storage1-gui1.ris.wustl.edu/scalemgmt/v2/filesystems/rdcw-fs1/quotas?fields=blockQuota,blockUsage,objectName',
+      method: 'GET',
+      dataType: 'json',
+      headers: {
+        "Authorization": "Basic " + btoa(username + ":" + password)
+      },
+      success: (data) => {
+        console.log(data)
+
+        const dataSlice = data.quotas.slice(0,25)
+
+        for (const quota of dataSlice) {
+          const {blockQuota, blockUsage, filesystemName, objectName, quotaType} = quota
+          $('#quota-table').append(
+            `<tr>
+              <td>${blockQuota}</td>
+              <td>${blockUsage}</td>
+              <td>${filesystemName}</td>
+              <td>${objectName}</td>
+              <td>${quotaType}</td>
+            </tr>`
+          );
+        }
+      },
+      error: (error) => {
+        console.log(error)
+      }
+    })
+  })
 </script>
