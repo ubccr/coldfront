@@ -49,6 +49,13 @@ LDAP_USER_SEARCH_ATTRIBUTE_MAP = {
 }
 ```
 
+You can also set the attribute to search by through the variable `LDAP_USER_SEARCH_USERNAME_ONLY_ATTR`. This might be useful if you wish to instead search LDAP with an email instead of username.
+```py
+# this will make the call to search_a_user("john.doe@example.com", "email") search
+# for "john.doe@example.com" with the LDAP attribute "mail" if you're using the above map.
+LDAP_USER_SEARCH_USERNAME_ONLY_ATTR = "email"
+```
+
 To set a custom mapping, define an `LDAP_USER_SEARCH_MAPPING_CALLBACK` function with parameters `attr_map` and `entry_dict` that returns a dictionary mapping ColdFront User attributes to their values. `attr_map` is just `LDAP_USER_SEARCH_ATTRIBUTE_MAP`, and `entry_dict` is further explained below.
 
 For example, if your LDAP schema provides a full name and no first and last name attributes, you can define `LDAP_USER_SEARCH_ATTRIBUTE_MAP` and `LDAP_USER_SEARCH_MAPPING_CALLBACK` as follows:
@@ -88,3 +95,6 @@ user_dict = {
     "last_name": "Doe",
 }
 ```
+
+## Details
+The `search_a_user` function also allows searching for a specific attribute. Providing the `search_by` parameter with a key to the attribute map will have it search for the corresponding attribute.
