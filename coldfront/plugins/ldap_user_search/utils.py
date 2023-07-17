@@ -4,7 +4,7 @@ import logging
 import ldap.filter
 from coldfront.core.user.utils import UserSearch
 from coldfront.core.utils.common import import_from_settings
-from ldap3 import Connection, Server, Tls, get_config_parameter, set_config_parameter
+from ldap3 import Connection, Server, Tls, get_config_parameter, set_config_parameter, SASL
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +21,8 @@ class LDAPUserSearch(UserSearch):
         self.LDAP_CONNECT_TIMEOUT = import_from_settings('LDAP_USER_SEARCH_CONNECT_TIMEOUT', 2.5)
         self.LDAP_USE_SSL = import_from_settings('LDAP_USER_SEARCH_USE_SSL', True)
         self.LDAP_USE_TLS = import_from_settings("LDAP_USER_SEARCH_USE_TLS", False)
+        self.LDAP_SASL_MECHANISM = import_from_settings("LDAP_USER_SEARCH_SASL_MECHANISM", None)
+        self.LDAP_SASL_CREDENTIALS = import_from_settings("LDAP_USER_SEARCH_SASL_CREDENTIALS", None)     
         self.LDAP_PRIV_KEY_FILE = import_from_settings('LDAP_USER_SEARCH_PRIV_KEY_FILE', None)
         self.LDAP_CERT_FILE = import_from_settings('LDAP_USER_SEARCH_CERT_FILE', None)
         self.LDAP_CACERT_FILE = import_from_settings('LDAP_USER_SEARCH_CACERT_FILE', None)
@@ -42,7 +44,12 @@ class LDAPUserSearch(UserSearch):
             )
 
         self.server = Server(self.LDAP_SERVER_URI, use_ssl=self.LDAP_USE_SSL, connect_timeout=self.LDAP_CONNECT_TIMEOUT, tls=tls)
-        self.conn = Connection(self.server, self.LDAP_BIND_DN, self.LDAP_BIND_PASSWORD, auto_bind=True)
+        conn_params = {"auto_bind": True}
+        if self.LDAP_SASL_MECHANISM:
+            conn_params["sasl_mechanism"] = self.LDAP_SASL_MECHANISM
+            conn_params["sasl_credentials"] = self.LDAP_SASL_CREDENTIALS
+            conn_params["authentication"] = SASL
+        self.conn = Connection(self.server, self.LDAP_BIND_DN, self.LDAP_BIND_PASSWORD, **conn_params)
 
     @staticmethod
     def parse_ldap_entry(attribute_map, entry_dict):

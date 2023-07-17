@@ -25,17 +25,32 @@ ColdFront users.
 
 To enable this plugin set the following applicable environment variables:
 
-```env
-PLUGIN_LDAP_USER_SEARCH=True
-LDAP_USER_SEEACH_SERVER_URI=ldap://example.com
-LDAP_USER_SEARCH_BASE="dc=example,dc=com"
-LDAP_USER_SEARCH_BIND_DN="cn=Manager,dc=example,dc=com"
-LDAP_USER_SEARCH_BASE="dc=example,dc=com"
-LDAP_USER_SEARCH_USE_SSL=True
-LDAP_USER_SEARCH_USE_TLS=True
-LDAP_USER_SEARCH_CACERT_FILE=/path/to/cacert
-LDAP_USER_SEARCH_CERT_FILE=/path/to/cert
-LDAP_USER_SEARCH_PRIV_KEY_FILE=/path/to/key
+| Option | Default | Description |
+| --- | --- | --- |
+| `LDAP_USER_SEARCH_SERVER_URI` | N/A | URI for the LDAP server, required |
+| `LDAP_USER_SEARCH_BASE` | N/A | Search base, required |
+| `LDAP_USER_SEARCH_BIND_DN` | None | Bind DN |
+| `LDAP_USER_SEARCH_BIND_PASSWORD` | None | Bind Password |
+| `LDAP_USER_SEARCH_CONNECT_TIMEOUT` | 2.5 | Time in seconds before the connection times out |
+| `LDAP_USER_SEARCH_USE_SSL` | True | Whether or not to use SSL |
+| `LDAP_USER_SEARCH_USE_TLS` | False | Whether or not to use TLS |
+| `LDAP_USER_SEARCH_SASL_MECHANISM` | None | One of `"EXTERNAL"`, `"DIGEST-MD5"`, `"GSSAPI"`, or `None` |
+| `LDAP_USER_SEARCH_SASL_CREDENTIALS` | None | SASL authorization identity string. If you don't have one and `None` doesn't work, try `""`. |
+| `LDAP_USER_SEARCH_PRIV_KEY_FILE` | None | Path to the private key file |
+| `LDAP_USER_SEARCH_CERT_FILE` | None | Path to the certificate file |
+| `LDAP_USER_SEARCH_CACERT_FILE` | None | Path to the CA certificate file |
+
+The following can be set in your local settings:
+| `LDAP_USER_SEARCH_ATTRIBUTE_MAP` | `{"username": "uid", "last_name": "sn", "first_name": "givenName", "email": "mail"}` | A mapping from ColdFront user attributes to LDAP attributes. |
+| `LDAP_USER_SEARCH_MAPPING_CALLBACK` | See below. | Function that maps LDAP search results to ColdFront user attributes. See more below. |
+
+`LDAP_USER_SEARCH_MAPPING_CALLBACK` default:
+```py
+def parse_ldap_entry(attribute_map, entry_dict):
+    user_dict = {}
+    for user_attr, ldap_attr in attribute_map.items():
+        user_dict[user_attr] = entry_dict.get(ldap_attr)[0] if entry_dict.get(ldap_attr) else ''
+    return user_dict
 ```
 
 For custom attributes, set the Django variable `LDAP_USER_SEARCH_ATTRIBUTE_MAP` in ColdFront's [local settings](https://coldfront.readthedocs.io/en/latest/config/#configuration-files). This dictionary maps from ColdFront User attributes to LDAP attributes:
