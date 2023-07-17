@@ -17,6 +17,8 @@ from coldfront.core.publication.models import Publication
 from coldfront.core.publication.views import PublicationSearchResultView
 import coldfront.core.publication
 
+from django.test import LiveServerTestCase
+from selenium import webdriver
 
 class TestPublication(TestCase):
     class Data:

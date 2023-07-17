@@ -12,7 +12,7 @@ Create Grant
 {% block content %}
   <form method="post">{% csrf_token %}
     {{ form|crispy }}
-    <input class="btn btn-primary" type="submit" value="Save" />
+    <input class="btn btn-primary" type="submit" value="Save" id="grant_save"/>
     <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button">Cancel</a><br>
 </form>
 

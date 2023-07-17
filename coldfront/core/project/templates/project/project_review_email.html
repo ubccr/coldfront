@@ -52,7 +52,7 @@ Email User
 <form method="post">
     {% csrf_token %}
     {{form|crispy}}
-    <input class="btn btn-primary" type="submit" value="Email" />
+    <input class="btn btn-primary" type="submit" value="Email" id="send_email"/>
     <a class="btn btn-secondary" href="{% url 'project-review-list' %}" role="button">Cancel</a>
 </form>
 {% endblock %}

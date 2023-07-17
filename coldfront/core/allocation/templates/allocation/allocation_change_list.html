@@ -51,7 +51,7 @@ Allocation Review New and Pending Change Requests
             <td class="text-nowrap">
                 <form method="post" action="{% url 'allocation-change-detail' change.pk %}">
               {% if change.allocationattributechangerequest_set.all %}
-                <button class="btn btn-success mr-1" aria-disabled="true" 
+                <button class="btn btn-success mr-1" aria-disabled="true" id="change_approve"
                 style="
                       cursor: not-allowed;
                       opacity: 0.6;
@@ -61,9 +61,9 @@ Allocation Review New and Pending Change Requests
               {% else %}
                   {% csrf_token %}
                   <input type="hidden" name="end_date_extension" value="{{ change.end_date_extension }}" />
-                  <button type="submit" name="action" value="approve" class="btn btn-success mr-1">Approve</button>
+                  <button type="submit" name="action" value="approve" class="btn btn-success mr-1" id="change_approve">Approve</button>
               {% endif %}
-                <a href="{% url 'allocation-change-detail' change.pk %}" class="btn btn-primary mr-1">Details</a>
+                <a href="{% url 'allocation-change-detail' change.pk %}" class="btn btn-primary mr-1" id="change_details">Details</a>
                 </form>
             </td>
           </tr>

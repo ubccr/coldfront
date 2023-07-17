@@ -7,6 +7,9 @@ from coldfront.core.test_helpers.factories import (
     UserFactory,
 )
 
+from django.test import LiveServerTestCase
+from selenium import webdriver
+
 from coldfront.core.project.models import Project
 
 class TestProject(TestCase):

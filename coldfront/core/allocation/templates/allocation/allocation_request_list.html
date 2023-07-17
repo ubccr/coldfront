@@ -55,9 +55,9 @@ Allocation Review New and Pending Requests
             <td class="text-nowrap">
                 <form method="post" action="{% url 'allocation-detail' allocation.pk %}">
                   {% csrf_token %}
-                  <input type="hidden" name="status" value="{{ allocation_status_active.id }}" />
-                  <button type="submit" name="action" value="auto-approve" class="btn btn-success mr-1{% if allocation.get_information == '' %} confirm-activate{% endif %}">Approve</button>
-                  <a href="{% url 'allocation-detail' allocation.pk %}" class="btn btn-primary mr-1">Details</a>
+                   <input type="hidden" name="status" value="{{ allocation_status_active.id }}" />
+                   <button type="submit" name="action" value="auto-approve" class="btn btn-success mr-1{% if allocation.get_information == '' %} confirm-activate{% endif %}" id="approve_button">Approve</button>
+                   <a href="{% url 'allocation-detail' allocation.pk %}" class="btn btn-primary mr-1" id="details_button">Details</a>
                 </form>
             </td>
           </tr>

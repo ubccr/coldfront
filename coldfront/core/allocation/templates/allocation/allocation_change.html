@@ -126,7 +126,7 @@ Request Allocation Change
 
     <div>
       {{form.justification | as_crispy_field }}
-      <input class="btn btn-success" type="submit" value="Submit" />
+      <input class="btn btn-success" type="submit" value="Submit" id="submit_change"/>
       <a class="btn btn-secondary" href="{% url 'allocation-detail' allocation.pk %}" role="button">Back to
         Allocation</a><br>
     </div>

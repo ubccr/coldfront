@@ -7,7 +7,7 @@
       <strong>Found {{number_of_usernames_found}} of
       {{number_of_usernames_searched}} usernames searched.</strong>
     {% elif matches %}
-      <strong>Found {{matches|length}} match{{matches|length|pluralize}}.</strong>
+      <strong>Found {{matches|length}} match{{matches|pluralize:"es"}}.</strong>
     {% endif %}
     <br>
     {% if usernames_not_found %}
@@ -64,7 +64,7 @@
     <input id="search_by" type="hidden" name="search_by" value="{{search_by}}">
     <div class="mb-3">
       {% if matches %}
-        <button type="submit" class="btn btn-primary"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Selected Users to Project</button>
+        <button id="submit_user_add" type="submit" class="btn btn-primary"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Selected Users to Project</button>
       {% endif %}
       <a class="btn btn-secondary" href="{% url 'project-detail' pk %}" role="button">Back to Project</a><br>
     </div>
