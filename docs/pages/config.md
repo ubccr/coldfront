@@ -300,6 +300,12 @@ environment variable:
 SITE_STATIC=/path/to/static/files
 ```
 
+To apply changes in a production environment (where the static files are served through an nginx or apache server), rerun `collectstatic`. Be sure to activate your virtual environment first if you're using one.
+```sh
+source /srv/coldfront/venv/bin/activate
+coldfront collectstatic
+```
+
 As a simple example, to change the default background color from blue to black, create a common.css file with the following styles and set the SITE_STATIC environment variable when starting ColdFront:
 
 ```
