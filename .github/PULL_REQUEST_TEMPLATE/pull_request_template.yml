@@ -1,0 +1,35 @@
+name: Pull Request
+title: "PR: "
+body:
+  - type: input
+    id: issue
+    attributes:
+      label: Issue Fixed By Pull Request
+      description: If applicable, link the issue to this PR below (e.g. #1 for Issue #1)
+      value: #
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe what your PR fixes.
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      multiple: true
+      description: What component of the website does this PR fix?
+      options:
+        - Projects
+        - Allocations
+        - Resources
+        - Administration
+        - Users
+        - Other
+  - type: textarea
+    id: tests
+    attributes:
+      label: Tests
+      description: If relevant, add a list of tests for anyone reviewing this PR to run to simplify the testing process.
+      value: "- [ ] "
