@@ -1,6 +1,6 @@
 name: Bug Report
 description: Tell us about the bug/ error that you are seeing. If you want to request a feature, create a Feature Request instead.
-title: "[Bug]: "
+title: "Bug: "
 labels: ["bug"]
 body:
   - type: input
