@@ -58,3 +58,12 @@ body:
       label: Relevant log output
       description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
       render: shell
+  - type: textarea
+    id: tasks
+    attributes:
+      label: Tasks/ user tests when bug is fixed
+      description: If relevant, add a list of tasks for anyone working on this issue and/ or tests for them to use when fixing the issue.
+      value: |
+      - []
+      - []
+      - []
