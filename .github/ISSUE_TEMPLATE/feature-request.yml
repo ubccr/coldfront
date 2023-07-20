@@ -1,6 +1,6 @@
 name: Feature Request
 description: Tell us about what new feature you want to see added to ColdFront! If you want to request a bug fix instead, create a Bug Fix Report.
-title: "[Feature]: "
+title: "Feature: "
 labels: ["documentation", "enhancement"]
 body:
   - type: input
