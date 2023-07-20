@@ -29,7 +29,7 @@ body:
         - 1.1.2
         - 1.1.1
         - 1.1.0 or before
-  - type: checkboxes
+  - type: dropdown
     id: component
     attributes:
       label: Component
