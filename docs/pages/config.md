@@ -253,6 +253,10 @@ exist in your backend LDAP to show up in the ColdFront user search.
 | LDAP_USER_SEARCH_BASE       | User search base dn                     |
 | LDAP_USER_SEARCH_CONNECT_TIMEOUT  | Time in seconds to wait before timing out. Default 2.5  |
 | LDAP_USER_SEARCH_USE_SSL  | Whether to use ssl when connecting to LDAP server. Default True |
+| LDAP_USER_SEARCH_USE_TLS  | Whether to use tls when connecting to LDAP server. Default False |
+| LDAP_USER_SEARCH_PRIV_KEY_FILE  | Path to the private key file.       |
+| LDAP_USER_SEARCH_CERT_FILE  | Path to the certificate file.           |
+| LDAP_USER_SEARCH_CACERT_FILE  | Path to the CA cert file.             |
 
 ## Advanced Configuration
 
