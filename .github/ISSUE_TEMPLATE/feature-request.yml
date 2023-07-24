@@ -3,12 +3,6 @@ description: Tell us about what new feature you want to see added to ColdFront!
 title: "Feature: "
 labels: ["documentation", "enhancement"]
 body:
-  - type: input
-    id: contact
-    attributes:
-      label: Contact Details
-      description: How can we get in touch with you if we need more info?
-      placeholder: ex. email@example.com
   - type: textarea
     id: description
     attributes:
