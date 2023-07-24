@@ -59,7 +59,6 @@ class MoneyField(models.CharField):
         value = super().to_python(value)
         if value:
             value = value.replace(" ", "")
-            value = value.replace(".", "")
             value = value.replace(",", "")
             value = value.replace("$", "")
         return value
