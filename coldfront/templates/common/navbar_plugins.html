@@ -1,5 +1,5 @@
 {% load common_tags %}
 
 {% for nav_name, url_value in settings.EXTRA_PLUGIN_LINKS.items %}
-    <a class="nav-link" href="{% url url_value %}">{{nav_name}}</a>
+    <a class="nav-link" href="{{ url_value }}">{{nav_name}}</a>
 {% endfor %}
