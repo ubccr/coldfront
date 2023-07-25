@@ -1,6 +1,9 @@
+from coldfront.core.test_helpers.factories import UserFactory
 from django.test import TestCase
 
-from coldfront.core.test_helpers.factories import UserFactory
+from coldfront.core.test_helpers.factories import (
+    UserFactory,
+)
 
 from coldfront.core.user.models import UserProfile
 
@@ -16,9 +19,9 @@ class TestUserProfile(TestCase):
                 'is_pi': True,
                 'id': user.id
             }
-
+            
             self.unsaved_object = UserProfile(**self.initial_fields)
-
+    
     def setUp(self):
         self.data = self.Data()
 
