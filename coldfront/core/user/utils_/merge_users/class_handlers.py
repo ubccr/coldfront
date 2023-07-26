@@ -179,8 +179,6 @@ class AllocationUserHandler(ClassHandler):
         assert resource.name.endswith(' Compute')
 
         if self._dst_obj:
-            self._src_obj.delete()
-
             active_allocation_user_status = \
                 AllocationUserStatusChoice.objects.get(name='Active')
             if (self._dst_obj.status != active_allocation_user_status and
@@ -268,8 +266,6 @@ class ProjectUserHandler(ClassHandler):
                     self._src_obj.status == active_project_user_status):
                 self._dst_obj.status = self._src_obj.status
                 self._dst_obj.save()
-
-            self._src_obj.delete()
         else:
             self._src_obj.user = self._dst_user
             self._src_obj.save()
