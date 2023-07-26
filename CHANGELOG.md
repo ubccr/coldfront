@@ -1,5 +1,10 @@
 # ColdFront Changelog
 
+## [1.1.5] - 2023-07-12
+
+- SECURITY BUG FIX: Unprotected eval when adding publication. [#551](https://github.com/ubccr/coldfront/pull/551)
+- Documentation improvements
+
 ## [1.1.4] - 2023-02-11
 
 - Datepicker changed to flatpickr. Remove jquery-ui [#438](https://github.com/ubccr/coldfront/issues/438)
