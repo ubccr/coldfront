@@ -4,7 +4,7 @@ import sys
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
 
-from coldfront.core.user.utils_.user_merge_utils import UserMergeRunner
+from coldfront.core.user.utils_.merge_users import UserMergeRunner
 from coldfront.core.utils.common import add_argparse_dry_run_argument
 
 
@@ -58,5 +58,7 @@ class Command(BaseCommand):
 
         print(f'Src: {user_merge_runner.src_user}')
         print(f'Dst: {user_merge_runner.dst_user}')
+
+        # TODO: Call run or dry_run.
 
         user_merge_runner.run()

@@ -4,100 +4,16 @@ import logging
 from abc import ABC
 from abc import abstractmethod
 
-from django.contrib.auth.models import User
-from django.contrib.admin.utils import NestedObjects
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import DEFAULT_DB_ALIAS
 from django.db import transaction
 
 from flags.state import flag_enabled
 
 from coldfront.core.allocation.models import AllocationUser
 from coldfront.core.allocation.models import AllocationUserStatusChoice
-from coldfront.core.allocation.utils import has_cluster_access
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.utils import higher_project_user_role
-
-
-class UserMergeRunner(object):
-    """TODO"""
-
-    def __init__(self, user_1, user_2):
-        """TODO"""
-        # Merge src_user's data into dst_user.
-        self._src_user = None
-        self._dst_user = None
-        self._identify_src_and_dst_users(user_1, user_2)
-        # TODO:
-        #  Error out if both users have cluster access.
-        #  Warn if the destination user is inactive.
-
-    @property
-    def dst_user(self):
-        return self._dst_user
-
-    @property
-    def src_user(self):
-        return self._src_user
-
-    def run(self):
-        """TODO"""
-        with transaction.atomic():
-            self._process_dependencies()
-            self._src_user.delete()
-            # TODO: Remove this.
-            raise Exception('Rolling back.')
-
-    def _identify_src_and_dst_users(self, user_1, user_2):
-        """Given two Users, determine which should be the source (the
-        one having its data merged and then deleted) and which should be
-        the destination (the one having data merged into it)."""
-        user_1_has_cluster_access = has_cluster_access(user_1)
-        user_2_has_cluster_access = has_cluster_access(user_2)
-        if not (user_1_has_cluster_access or user_2_has_cluster_access):
-            src, dst = user_2, user_1
-        elif user_1_has_cluster_access and not user_2_has_cluster_access:
-            src, dst = user_2, user_1
-        elif not user_1_has_cluster_access and user_2_has_cluster_access:
-            src, dst = user_1, user_2
-        else:
-            raise NotImplementedError(
-                'Both Users have cluster access. This case is not currently '
-                'handled.')
-        self._src_user = src
-        self._dst_user = dst
-
-    def _process_dependencies(self):
-        """TODO"""
-        collector = NestedObjects(using=DEFAULT_DB_ALIAS)
-        collector.collect([self._src_user])
-        objects = collector.nested()
-
-        assert len(objects) == 2
-        assert isinstance(objects[0], User)
-        assert isinstance(objects[1], list)
-
-        for obj in self._yield_nested_objects(objects[1]):
-            class_handler_factory = ClassHandlerFactory()
-            try:
-                handler = class_handler_factory.get_handler(
-                    obj.__class__, self._src_user, self._dst_user, obj)
-                handler.run()
-            except ValueError:
-                print(
-                    f'Found no handler for object with class {obj.__class__}.')
-            except Exception as e:
-                # TODO
-                print(e)
-
-    def _yield_nested_objects(self, objects):
-        """TODO"""
-        for obj in objects:
-            if isinstance(obj, list):
-                yield from self._yield_nested_objects(obj)
-            else:
-                yield obj
 
 
 class ClassHandlerFactory(object):
@@ -134,12 +50,12 @@ class ClassHandler(ABC):
         self._dst_obj = None
 
         self._logger = logging.getLogger(__name__)
+        self._dry = False
 
     def dry_run(self):
         """TODO"""
-        # TODO: Display what would(n't) happen.
-        #   # E.g., not overriding an existing billing_activity.
-        pass
+        self._dry = True
+        self.run()
 
     def run(self):
         """TODO"""
@@ -148,6 +64,8 @@ class ClassHandler(ABC):
             if self._dst_obj:
                 self._set_falsy_attrs()
             self._run_special_handling()
+            if self._dst_obj:
+                self._dst_obj.save()
 
     def _get_settable_if_falsy_attrs(self):
         """TODO"""
@@ -157,7 +75,7 @@ class ClassHandler(ABC):
         """TODO"""
         raise NotImplementedError
 
-    def _set_attr_if_falsy(self, attr_name, dry=False):
+    def _set_attr_if_falsy(self, attr_name):
         """TODO"""
         assert hasattr(self._src_obj, attr_name)
         assert hasattr(self._dst_obj, attr_name)
@@ -166,7 +84,7 @@ class ClassHandler(ABC):
         dst_attr = getattr(self._dst_obj, attr_name)
 
         if src_attr and not dst_attr:
-            if dry:
+            if self._dry:
                 # TODO: Print.
                 pass
             else:
@@ -184,8 +102,9 @@ class ClassHandler(ABC):
 
     def _transfer_src_obj_to_dst_user(self):
         """TODO"""
-        self._src_obj.user = self._dst_user
-        self._src_obj.save()
+        if not self._dry:
+            self._src_obj.user = self._dst_user
+            self._src_obj.save()
 
 
 class UserProfileHandler(ClassHandler):
