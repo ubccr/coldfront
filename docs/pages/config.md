@@ -142,7 +142,7 @@ disabled:
 | EMAIL_ADMINS_ON_ALLOCATION_EXPIRE | Setting this to True will send a daily email notification to administrators with a list of allocations that have expired that day. |
 
 ### Plugin settings
-For more info on [ColdFront plugins](plugin.md) (Django apps)
+For more info on [ColdFront plugins](../../plugin/existing_plugins/) (Django apps)
 
 #### LDAP Auth
 
