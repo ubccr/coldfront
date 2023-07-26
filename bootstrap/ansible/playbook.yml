@@ -271,6 +271,22 @@
           environment: # needed as pg_config isn't in PATH by default
             PATH: "{{ ansible_env.PATH }}:/usr/pgsql-{{ postgres_version }}/bin"
 
+        - name: Add Oracle yum repository
+          yum_repository:
+            name: oracle-repository
+            description: oracle repository
+            baseurl: https://yum.oracle.com/repo/OracleLinux/OL7/oracle/instantclient21/x86_64/
+            # https://linux.oracle.com/security/gpg/
+            gpgkey: https://yum.oracle.com/RPM-GPG-KEY-oracle-ol7
+          when: install_billing_validation_package
+
+        - name: Install Oracle dependency for Python package for validating LBL billing IDs
+          yum:
+            name:
+              - oracle-instantclient-basic.x86_64
+            state: present
+          when: install_billing_validation_package
+
         # TODO: If this raises an error, the token is exposed in stderr.
         - name: Install the Python package for validating LBL billing IDs
           pip:
