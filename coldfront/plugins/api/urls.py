@@ -3,8 +3,9 @@ from rest_framework import routers
 from coldfront.plugins.api import views
 
 router = routers.DefaultRouter()
-router.register(r'allocation', views.AllocationViewSet, basename='allocation')
-router.register(r'resource', views.ResourceViewSet, basename='resource')
+router.register(r'allocations', views.AllocationViewSet, basename='allocations')
+router.register(r'resources', views.ResourceViewSet, basename='resources')
+router.register(r'projects', views.ProjectViewSet, basename='projects')
 
 urlpatterns = [
     path('', include(router.urls)),
