@@ -4,6 +4,7 @@ from django.db import DEFAULT_DB_ALIAS
 from django.db import transaction
 
 from coldfront.core.allocation.utils import has_cluster_access
+from coldfront.core.user.models import EmailAddress as OldEmailAddress
 from coldfront.core.user.utils_.merge_users.class_handlers import ClassHandlerFactory
 
 
@@ -41,13 +42,20 @@ class UserMergeRunner(object):
             with transaction.atomic():
                 self._process_src_user_dependencies()
                 self._src_user.delete()
-
                 self._dst_user.refresh_from_db()
                 self._display_dst_user_dependencies()
                 raise Exception('Rolling back.')
         except Exception as e:
             # TODO
             print(e)
+
+    @staticmethod
+    def _classes_to_ignore():
+        """Return a set of classes for which no processing should be
+        done."""
+        return {
+            OldEmailAddress,
+        }
 
     def _identify_src_and_dst_users(self, user_1, user_2):
         """Given two Users, determine which should be the source (the
@@ -79,7 +87,13 @@ class UserMergeRunner(object):
         assert isinstance(objects[0], User)
         assert isinstance(objects[1], list)
 
+        classes_to_ignore = self._classes_to_ignore()
+
         for obj in self._yield_nested_objects(objects[1]):
+
+            if obj.__class__ in classes_to_ignore:
+                continue
+
             class_handler_factory = ClassHandlerFactory()
 
             # Block other threads from retrieving this object until the end of
