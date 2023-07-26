@@ -1,20 +1,23 @@
 import logging
 
-from django.core.exceptions import ValidationError
 from django.test import TestCase
+from django.core.exceptions import ValidationError
 
+from coldfront.core.test_helpers.utils import CommandTestBase
+from coldfront.config.defaults import PROJECT_DEFAULTS as defaults
 from coldfront.core.test_helpers.factories import (
     UserFactory,
     ProjectFactory,
     FieldOfScienceFactory,
+    PAttributeTypeFactory,
     ProjectAttributeFactory,
     ProjectStatusChoiceFactory,
     ProjectAttributeTypeFactory,
-    PAttributeTypeFactory,
 )
 from coldfront.core.project.models import (
     Project,
     ProjectAttribute,
+    ProjectStatusChoice,
     ProjectAttributeType,
 )
 
@@ -205,3 +208,13 @@ class TestProjectAttribute(TestCase):
         )
         with self.assertRaises(ValidationError):
             new_attr.clean()
+
+
+class TestProjectCommands(CommandTestBase):
+    """Test the custom commands for projects"""
+
+    def test_add_default_project_choices(self):
+        """Test that the import_projects command works"""
+        self.assertEqual(ProjectStatusChoice.objects.count(), 0)
+        self.call_command('add_default_project_choices')
+        self.assertEqual(ProjectStatusChoice.objects.count(), len(defaults['statuschoices']))

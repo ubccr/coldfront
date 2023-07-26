@@ -2,7 +2,10 @@
 
 from django.test import TestCase
 
+from coldfront.config.defaults import ALLOCATION_DEFAULTS as defaults
+from coldfront.core.allocation.models import AllocationStatusChoice, AllocationAttributeType
 from coldfront.core.test_helpers.factories import AllocationFactory, ResourceFactory
+from coldfront.core.test_helpers.utils import CommandTestBase
 
 
 class AllocationModelTests(TestCase):
@@ -21,3 +24,21 @@ class AllocationModelTests(TestCase):
             self.allocation.project.pi
         )
         self.assertEqual(str(self.allocation), allocation_str)
+
+
+class AllocationCommandTests(CommandTestBase):
+    """tests for Allocation commands"""
+
+    def test_add_allocation_defaults_basic(self):
+        """Test that add_allocation_defaults adds allocation defaults"""
+        self.assertEqual(AllocationStatusChoice.objects.count(), 0)
+        self.assertEqual(AllocationAttributeType.objects.count(), 0)
+        self.call_command('add_allocation_defaults')
+        self.assertEqual(
+            AllocationStatusChoice.objects.count(),
+            len(defaults['statuschoices'])
+        )
+        self.assertEqual(
+            AllocationAttributeType.objects.count(),
+            len(defaults['allocationattrtypes'])
+        )

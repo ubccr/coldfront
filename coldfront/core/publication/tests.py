@@ -1,21 +1,20 @@
-import contextlib
-import itertools
 from unittest.mock import Mock, sentinel, patch
-import bibtexparser.bibdatabase
-import bibtexparser.bparser
-from django.test import TestCase
-import doi2bib
+import itertools
+import contextlib
 
+import doi2bib
+from django.test import TestCase
+from bibtexparser import bibdatabase, bparser
+
+from coldfront.config.defaults import PUBLICATION_DEFAULTS as defaults
+from coldfront.core.test_helpers.utils import CommandTestBase
 from coldfront.core.test_helpers.factories import (
     ProjectFactory,
     PublicationSourceFactory,
 )
-from coldfront.core.test_helpers.decorators import (
-    makes_remote_requests,
-)
-from coldfront.core.publication.models import Publication
-from coldfront.core.publication.views import PublicationSearchResultView
-import coldfront.core.publication
+from coldfront.core.publication import views
+from coldfront.core.publication.models import Publication, PublicationSource
+from coldfront.core.test_helpers.decorators import makes_remote_requests
 
 
 class TestPublication(TestCase):
@@ -154,15 +153,15 @@ class TestDataRetrieval(TestCase):
             def mock_parse(thing_to_parse):
                 # ensure bib_str from get_bib() is used
                 if thing_to_parse is sentinel.bib_str:
-                    bibdatabase_cls = Mock(spec_set=bibtexparser.bibdatabase.BibDatabase)
+                    bibdatabase_cls = Mock(spec_set=bibdatabase.BibDatabase)
                     db = bibdatabase_cls()
                     db.entries = [self._bibdatabase_first_entry.copy()]
                     return db
-            bibtexparser_cls = Mock(spec_set=bibtexparser.bparser.BibTexParser)
+            bibtexparser_cls = Mock(spec_set=bparser.BibTexParser)
             bibtexparser_cls.return_value.parse.side_effect = mock_parse
 
-            as_text = Mock(spec_set=bibtexparser.bibdatabase.as_text)
-            as_text.side_effect = lambda bib_entry: 'as_text({})'.format(bib_entry)
+            as_text = Mock(spec_set=bibdatabase.as_text)
+            as_text.side_effect = lambda bib_entry: f'as_text({bib_entry})'
 
             self.crossref = crossref
             self.bibtexparser_cls = bibtexparser_cls
@@ -171,8 +170,8 @@ class TestDataRetrieval(TestCase):
         @contextlib.contextmanager
         def patch(self):
             def dotpath(qualname):
-                module_under_test = coldfront.core.publication.views
-                return '{}.{}'.format(module_under_test.__name__, qualname)
+                module_under_test = views
+                return f'{module_under_test.__name__}.{qualname}'
 
             with contextlib.ExitStack() as stack:
                 patches = [
@@ -188,7 +187,7 @@ class TestDataRetrieval(TestCase):
         self.data = self.Data()
 
     def run_target_method(self, unique_id, *args, **kwargs):
-        target_method = PublicationSearchResultView._search_id
+        target_method = views.PublicationSearchResultView._search_id
 
         # this method is defined as an instance method but doesn't use any instance data
         # thus, we use None for its 'self' argument
@@ -258,3 +257,13 @@ class TestDataRetrieval(TestCase):
                 with mocks.patch():
                     retrieved_data = self.run_target_method(unique_id)
                 self.assertEqual(expected_data, retrieved_data)
+
+
+class PublicationCommandTests(CommandTestBase):
+    """Tests for publication commands"""
+
+    def test_add_default_project_choices(self):
+        """Test that the import_projects command works"""
+        self.assertEqual(PublicationSource.objects.count(), 1)
+        self.call_command('add_default_publication_sources')
+        self.assertEqual(PublicationSource.objects.count(), len(defaults['publicationsources']))
