@@ -48,7 +48,8 @@ from coldfront.core.allocation.models import (Allocation,
                                               AllocationUser,
                                               AllocationUserNote,
                                               AllocationUserStatusChoice)
-from coldfront.core.allocation.signals import (allocation_activate,
+from coldfront.core.allocation.signals import (allocation_new,
+                                               allocation_activate,
                                                allocation_activate_user,
                                                allocation_disable,
                                                allocation_remove_user,
@@ -541,6 +542,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                                             status=allocation_user_active_status)
 
         send_allocation_admin_email(allocation_obj, 'New Allocation Request', 'email/new_allocation_request.txt', domain_url=get_domain_url(self.request))
+        allocation_new.send(sender=self.__class__,
+                            allocation_pk=allocation_obj.pk)
         return super().form_valid(form)
 
     def get_success_url(self):

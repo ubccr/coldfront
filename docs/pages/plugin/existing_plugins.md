@@ -1,4 +1,4 @@
-# Plugins
+# Existing Plugins
 
 ColdFront ships with several plugins (Django Apps) that can be enabled to
 provide additional functionality and integration with other applications.

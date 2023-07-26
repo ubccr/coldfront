@@ -3,6 +3,7 @@ from django.core.validators import (MaxLengthValidator, MaxValueValidator,
 from django.db import models
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
+from django.core.validators import RegexValidator
 
 from coldfront.core.project.models import Project
 
@@ -47,6 +48,33 @@ class GrantStatusChoice(TimeStampedModel):
 
     def natural_key(self):
         return [self.name]
+    
+class MoneyField(models.CharField):
+    validators = [
+        RegexValidator(r'\$*[\d,.]{1,}$',
+                        'Enter only digits, decimals, commas, dollar signs, or spaces.',
+                        'Invalid input.')
+    ]
+    def to_python(self, value):
+        value = super().to_python(value)
+        if value:
+            value = value.replace(" ", "")
+            value = value.replace(",", "")
+            value = value.replace("$", "")
+        return value
+        
+class PercentField(models.CharField):
+    validators = [
+        RegexValidator(r'^[\d,.]{1,6}\%*$',
+                        'Enter only digits, decimals, percent symbols, or spaces.',
+                        'Invalid input.')
+    ]
+    def to_python(self, value):
+        value = super().to_python(value)
+        if value:
+            value = value.replace(" ", "")
+            value = value.replace("%", "")
+        return value
 
 class Grant(TimeStampedModel):
     """ A grant is funding that a PI receives for their project.
@@ -87,15 +115,16 @@ class Grant(TimeStampedModel):
         max_length=10,
         choices=ROLE_CHOICES,
     )
+
     grant_pi_full_name = models.CharField('Grant PI Full Name', max_length=255, blank=True)
     funding_agency = models.ForeignKey(GrantFundingAgency, on_delete=models.CASCADE)
     other_funding_agency = models.CharField(max_length=255, blank=True)
     other_award_number = models.CharField(max_length=255, blank=True)
     grant_start = models.DateField('Grant Start Date')
     grant_end = models.DateField('Grant End Date')
-    percent_credit = models.FloatField(validators=[MaxValueValidator(100)])
-    direct_funding = models.FloatField()
-    total_amount_awarded = models.FloatField()
+    percent_credit = PercentField(max_length=100, validators=[MaxValueValidator(100)])
+    direct_funding = MoneyField(max_length=100)
+    total_amount_awarded = MoneyField(max_length=100)
     status = models.ForeignKey(GrantStatusChoice, on_delete=models.CASCADE)
     history = HistoricalRecords()
 

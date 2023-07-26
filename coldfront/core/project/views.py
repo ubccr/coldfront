@@ -904,10 +904,14 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
             if project_user_update_form.is_valid():
                 form_data = project_user_update_form.cleaned_data
-                project_user_obj.enable_notifications = form_data.get(
-                    'enable_notifications')
                 project_user_obj.role = ProjectUserRoleChoice.objects.get(
                     name=form_data.get('role'))
+                
+                if(project_user_obj.role.name=="Manager"):
+                    project_user_obj.enable_notifications = True
+                else:
+                    project_user_obj.enable_notifications = form_data.get(
+                        'enable_notifications')
                 project_user_obj.save()
 
                 messages.success(request, 'User details updated.')

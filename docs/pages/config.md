@@ -142,7 +142,7 @@ disabled:
 | EMAIL_ADMINS_ON_ALLOCATION_EXPIRE | Setting this to True will send a daily email notification to administrators with a list of allocations that have expired that day. |
 
 ### Plugin settings
-For more info on [ColdFront plugins](plugin.md) (Django apps)
+For more info on [ColdFront plugins](../../plugin/existing_plugins/) (Django apps)
 
 #### LDAP Auth
 
@@ -253,6 +253,10 @@ exist in your backend LDAP to show up in the ColdFront user search.
 | LDAP_USER_SEARCH_BASE       | User search base dn                     |
 | LDAP_USER_SEARCH_CONNECT_TIMEOUT  | Time in seconds to wait before timing out. Default 2.5  |
 | LDAP_USER_SEARCH_USE_SSL  | Whether to use ssl when connecting to LDAP server. Default True |
+| LDAP_USER_SEARCH_USE_TLS  | Whether to use tls when connecting to LDAP server. Default False |
+| LDAP_USER_SEARCH_PRIV_KEY_FILE  | Path to the private key file.       |
+| LDAP_USER_SEARCH_CERT_FILE  | Path to the certificate file.           |
+| LDAP_USER_SEARCH_CACERT_FILE  | Path to the CA cert file.             |
 
 ## Advanced Configuration
 
@@ -298,6 +302,12 @@ environment variable:
 
 ```
 SITE_STATIC=/path/to/static/files
+```
+
+To apply changes in a production environment (where the static files are served through an nginx or apache server), rerun `collectstatic`. Be sure to activate your virtual environment first if you're using one.
+```sh
+source /srv/coldfront/venv/bin/activate
+coldfront collectstatic
 ```
 
 As a simple example, to change the default background color from blue to black, create a common.css file with the following styles and set the SITE_STATIC environment variable when starting ColdFront:
