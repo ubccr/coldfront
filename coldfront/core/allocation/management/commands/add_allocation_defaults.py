@@ -1,5 +1,4 @@
 from django.core.management.base import BaseCommand
-from coldfront.config.core import EULA_AGREEMENT
 
 from coldfront.core.allocation.models import (AttributeType,
                                               AllocationAttributeType,
