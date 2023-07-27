@@ -57,15 +57,16 @@ $ COLDFRONT_ENV=coldfront.env coldfront runserver
 The following settings allow overriding basic ColdFront Django settings. For
 more advanced configuration use `local_settings.py`.
 
-| Name                 | Description                          |
-| :--------------------|:-------------------------------------|
-| ALLOWED_HOSTS        | A list of strings representing the host/domain names that ColdFront can serve. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#allowed-hosts) |
-| DEBUG                | Turn on/off debug mode. Never deploy a site into production with DEBUG turned on. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#debug) |
-| SECRET_KEY           | This is used to provide cryptographic signing, and should be set to a unique, unpredictable value. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#secret-key). If you don't provide this one will be generated each time ColdFront starts. |
-| LANGUAGE_CODE        | A string representing the language code. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#language-code)
-| TIME_ZONE            | A string representing the time zone for this installation. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#std:setting-TIME_ZONE) |
-| Q_CLUSTER_RETRY    | The number of seconds Django Q broker will wait for a cluster to finish a task. [See here](https://django-q.readthedocs.io/en/latest/configure.html#retry) |
-| Q_CLUSTER_TIMEOUT    | The number of seconds a Django Q worker is allowed to spend on a task before it’s terminated. IMPORTANT NOTE: Q_CLUSTER_TIMEOUT must be less than Q_CLUSTER_RETRY. [See here](https://django-q.readthedocs.io/en/latest/configure.html#timeout) |
+| Name                       | Description                          |
+| :------------------------- |:-------------------------------------|
+| ALLOWED_HOSTS              | A list of strings representing the host/domain names that ColdFront can serve. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#allowed-hosts) |
+| DEBUG                      | Turn on/off debug mode. Never deploy a site into production with DEBUG turned on. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#debug) |
+| SECRET_KEY                 | This is used to provide cryptographic signing, and should be set to a unique, unpredictable value. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#secret-key). If you don't provide this one will be generated each time ColdFront starts. |
+| LANGUAGE_CODE              | A string representing the language code. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#language-code)
+| TIME_ZONE                  | A string representing the time zone for this installation. [See here](https://docs.djangoproject.com/en/3.1/ref/settings/#std:setting-TIME_ZONE) |
+| Q_CLUSTER_RETRY            | The number of seconds Django Q broker will wait for a cluster to finish a task. [See here](https://django-q.readthedocs.io/en/latest/configure.html#retry) |
+| Q_CLUSTER_TIMEOUT          | The number of seconds a Django Q worker is allowed to spend on a task before it’s terminated. IMPORTANT NOTE: Q_CLUSTER_TIMEOUT must be less than Q_CLUSTER_RETRY. [See here](https://django-q.readthedocs.io/en/latest/configure.html#timeout) |
+| SESSION_INACTIVITY_TIMEOUT | Seconds of inactivity after which sessions will expire (default 1hr). This value sets the `SESSION_COOKIE_AGE` and the session is saved on every request. [See here](https://docs.djangoproject.com/en/4.1/topics/http/sessions/#when-sessions-are-saved) |
 
 ### Template settings
 
@@ -141,7 +142,7 @@ disabled:
 | EMAIL_ADMINS_ON_ALLOCATION_EXPIRE | Setting this to True will send a daily email notification to administrators with a list of allocations that have expired that day. |
 
 ### Plugin settings
-For more info on [ColdFront plugins](plugin.md) (Django apps)
+For more info on [ColdFront plugins](../../plugin/existing_plugins/) (Django apps)
 
 #### LDAP Auth
 
@@ -252,6 +253,10 @@ exist in your backend LDAP to show up in the ColdFront user search.
 | LDAP_USER_SEARCH_BASE       | User search base dn                     |
 | LDAP_USER_SEARCH_CONNECT_TIMEOUT  | Time in seconds to wait before timing out. Default 2.5  |
 | LDAP_USER_SEARCH_USE_SSL  | Whether to use ssl when connecting to LDAP server. Default True |
+| LDAP_USER_SEARCH_USE_TLS  | Whether to use tls when connecting to LDAP server. Default False |
+| LDAP_USER_SEARCH_PRIV_KEY_FILE  | Path to the private key file.       |
+| LDAP_USER_SEARCH_CERT_FILE  | Path to the certificate file.           |
+| LDAP_USER_SEARCH_CACERT_FILE  | Path to the CA cert file.             |
 
 ## Advanced Configuration
 
@@ -297,6 +302,12 @@ environment variable:
 
 ```
 SITE_STATIC=/path/to/static/files
+```
+
+To apply changes in a production environment (where the static files are served through an nginx or apache server), rerun `collectstatic`. Be sure to activate your virtual environment first if you're using one.
+```sh
+source /srv/coldfront/venv/bin/activate
+coldfront collectstatic
 ```
 
 As a simple example, to change the default background color from blue to black, create a common.css file with the following styles and set the SITE_STATIC environment variable when starting ColdFront:

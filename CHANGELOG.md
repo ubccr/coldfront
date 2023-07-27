@@ -1,12 +1,25 @@
 # ColdFront Changelog
 
-## [1.1.4] - 
+## [1.1.5] - 2023-07-12
 
-- Fix bug in slurm plugin include allocations in 'pending renewal' status [#176](https://github.com/ubccr/coldfront/issues/176)
-- Datepicker changed to flatpickr. Remove jquery-ui [#443](https://github.com/ubccr/coldfront/pull/443)
+- SECURITY BUG FIX: Unprotected eval when adding publication. [#551](https://github.com/ubccr/coldfront/pull/551)
+- Documentation improvements
+
+## [1.1.4] - 2023-02-11
+
+- Datepicker changed to flatpickr. Remove jquery-ui [#438](https://github.com/ubccr/coldfront/issues/438)
 - Combined email expiry notifications [#413](https://github.com/ubccr/coldfront/pull/413)
 - Remove obsolete arguments in signal defs [#422](https://github.com/ubccr/coldfront/pull/422)
-- Fix bug in freeipa plugin [#416](https://github.com/ubccr/coldfront/issues/416)  
+- Allow sorting of users on detail page [#408](https://github.com/ubccr/coldfront/issues/408)
+- Fix approve button deleting description text [#433](https://github.com/ubccr/coldfront/issues/433)
+- Add Project Attributes [#466](https://github.com/ubccr/coldfront/pull/466)
+- Slurm plugin: fix allocations in pending renewal status [#176](https://github.com/ubccr/coldfront/issues/176)
+- Update list displayes to sort case insensitive throughout front end [#393](https://github.com/ubccr/coldfront/issues/393)
+- Fix FreeIPA plugin not recognizing usernames greater than 11 characters [#416](https://github.com/ubccr/coldfront/issues/416)
+- Send signal if allocation status is revoked [#474](https://github.com/ubccr/coldfront/issues/474)
+- Upgrade to Django 3.2.17
+- Allow configuration of session timeout [#452](https://github.com/ubccr/coldfront/issues/452)
+- Increase max length for user first_name [#490](https://github.com/ubccr/coldfront/pull/490)
 
 ## [1.1.3] - 2022-07-07
 
@@ -117,4 +130,5 @@
 [1.1.1]: https://github.com/ubccr/coldfront/releases/tag/v1.1.1
 [1.1.2]: https://github.com/ubccr/coldfront/releases/tag/v1.1.2
 [1.1.3]: https://github.com/ubccr/coldfront/releases/tag/v1.1.3
-[Unreleased]: https://github.com/ubccr/coldfront/compare/v1.1.3...HEAD
+[1.1.4]: https://github.com/ubccr/coldfront/releases/tag/v1.1.4
+[Unreleased]: https://github.com/ubccr/coldfront/compare/v1.1.4...HEAD
