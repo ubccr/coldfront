@@ -576,8 +576,14 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         quantity = form_data.get('quantity', 1)
         allocation_account = form_data.get('allocation_account', None)
         # A resource is selected that requires an account name selection but user has no account names
-        if ALLOCATION_ACCOUNT_ENABLED and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING and AllocationAttributeType.objects.filter(
-            name=ALLOCATION_ACCOUNT_MAPPING[resource_obj.name]).exists() and not allocation_account:
+        if (
+            ALLOCATION_ACCOUNT_ENABLED
+            and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING
+            and AllocationAttributeType.objects.filter(
+                name=ALLOCATION_ACCOUNT_MAPPING[resource_obj.name]
+            ).exists()
+            and not allocation_account
+        ):
             err = 'You need to create an account name. Create it by clicking the link under the "Allocation account" field.'
             form.add_error(None, format_html(err))
             return self.form_invalid(form)
@@ -640,7 +646,9 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         )
         for user in users:
             AllocationUser.objects.create(
-                allocation=allocation_obj, user=user, status=allocation_user_active_status
+                allocation=allocation_obj,
+                user=user,
+                status=allocation_user_active_status
             )
 
         # if requested resource is on NESE, add to vars
