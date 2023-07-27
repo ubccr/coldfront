@@ -142,6 +142,36 @@ disabled:
 | EMAIL_ADMINS_ON_ALLOCATION_EXPIRE | Setting this to True will send a daily email notification to administrators with a list of allocations that have expired that day. |
 
 ### Plugin settings
+
+This setting can be used to add links from ColdFront plugins to the navigation bar:
+
+| Name                 | Description                          |
+| :--------------------|:-------------------------------------|
+| EXTRA_PLUGIN_LINKS               | A dictionary mapping the URL's display text to the URL's path |
+
+Examples:
+
+Using the example plugin, described in [the plugin creation docs](plugin/how_to_create_a_plugin.md), this is what the environment variable would look like:
+```
+EXTRA_PLUGIN_LINKS='Weekly Report=weeklyreportapp:weeklyreportapp'
+```
+
+If your app has the following format in its urls.py file:
+```
+urlpatterns = [
+    path("weeklyreportpage/", views.index),
+]
+```
+and your ColdFront urls.py file follows this format:
+```
+urlpatterns += [path('weeklyreportapp/', include('coldfront.plugins.weeklyreportapp.urls'))]
+```
+the environment variable would be formatted as:
+```
+EXTRA_PLUGIN_LINKS='Weekly Report=weeklyreportapp/weeklyreportpage/'
+```
+and the above changes would add the url to the authorized navbar menu.
+
 For more info on [ColdFront plugins](../../plugin/existing_plugins/) (Django apps)
 
 #### LDAP Auth

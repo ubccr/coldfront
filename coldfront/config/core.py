@@ -15,10 +15,8 @@ CENTER_BASE_URL = ENV.str('CENTER_BASE_URL', default='')
 
 #------------------------------------------------------------------------------
 # Add Plugin Links for Navbar Here
-
-# SETTINGS_EXPORT is a dictionary with keys representing names of urls to show on the navbar, and values that represents the actual urls. The recommended format for the url is "[namespace]:[url_name_inside_namespace]".
 #------------------------------------------------------------------------------
-ENV.dict('EXTRA_PLUGIN_LINKS', default={})
+EXTRA_PLUGIN_LINKS = ENV.dict('EXTRA_PLUGIN_LINKS', default={})
 
 #------------------------------------------------------------------------------
 # Enable Project Review

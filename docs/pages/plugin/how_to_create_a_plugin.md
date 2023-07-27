@@ -168,7 +168,12 @@ plugin_configs['PLUGIN_WEEKLYREPORTAPP'] = 'plugins/weeklyreportapp.py'
 
 4. Set the ```PLUGIN_WEEKLYREPORTAPP``` config variable to TRUE in your environment file.
 
-5. Since the example Weekly Report plugin is intended for admins, to add it to the navbar for admins, update the **navbar_admin.html** (```templates/common/navbar_admin.html```) file or its equivalent in your ColdFront setup like so:
+5.
+
+Option 1 (Add Navbar Links Using Config Variables):
+Check out [the plugin section of config docs](../config.md#plugin-settings) to add extra links to the navbar via a config variable.
+
+Option 2 (Manual Navbar Setup): Since the example Weekly Report plugin is intended for admins, to add it to the navbar for admins, update the **navbar_admin.html** (```templates/common/navbar_admin.html```) file or its equivalent in your ColdFront setup like so:
   ```
   <li id="navbar-admin" class="nav-item dropdown">
     <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown">Admin</a>
