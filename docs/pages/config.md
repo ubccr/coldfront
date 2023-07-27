@@ -153,7 +153,7 @@ Examples:
 
 Using the example plugin, described in [the plugin creation docs](plugin/how_to_create_a_plugin.md), this is what the environment variable would look like:
 ```
-EXTRA_PLUGIN_LINKS='Weekly Report=weeklyreportapp:weeklyreportapp'
+EXTRA_PLUGIN_LINKS='Weekly Report=weeklyreportapp'
 ```
 
 If your app has the following format in its urls.py file:
