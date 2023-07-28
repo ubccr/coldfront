@@ -263,11 +263,11 @@ exist in your backend LDAP to show up in the ColdFront user search.
 ColdFront uses the [Django
 settings](https://docs.djangoproject.com/en/3.1/topics/settings/). In most
 cases, you can set custom configurations via environment variables above. If
-you need more control over the configuration you can use a `local_settings.py`
-file and override any Django settings. For example, instead of setting the
-`DB_URL` environment variable above, we can create
-`/etc/coldfront/local_settings.py` or create a `local_settings.py` file
-in the coldfront project root and add our custom database configs as follows:
+you need more control over the configuration you can create `/etc/coldfront/local_settings.py` 
+or create a `local_settings.py` file in the coldfront project root 
+to override any Django settings. Some examples:
+
+Instead of setting the `DB_URL` environment variable, we can add a custom database configuration:
 
 ```python
 DATABASES = {
@@ -280,6 +280,30 @@ DATABASES = {
         'PORT': '',
     },
 }
+```
+
+To authenticate against Active Directory, it's not uncommon to need 
+the `OPT_REFERRALS` set to `0`. Likewise, we should look for users based 
+on their `sAMAccountName` attribute, rather than `uid`.
+
+```python
+AUTH_LDAP_CONNECTION_OPTIONS={ldap.OPT_REFERRALS: 0}
+AUTH_LDAP_BASE_DN = 'dc=example,dc=org' # same value as AUTH_LDAP_USER_SEARCH
+AUTH_LDAP_USER_SEARCH = LDAPSearch(
+    AUTH_LDAP_BASE_DN, ldap.SCOPE_SUBTREE, '(sAMAccountName=%(user)s)')
+```
+
+Additional debug logging can be configured for troubleshooting. This example
+attaches the `django_auth_ldap` logs to the primary Django logger so you 
+can see debug those logs in your main log output.
+
+```python
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {"console": {"class": "logging.StreamHandler"}},
+    "loggers": {"django_auth_ldap": {"level": "DEBUG", "handlers": ["console"]}
+},
 ```
 
 ## Custom Branding
