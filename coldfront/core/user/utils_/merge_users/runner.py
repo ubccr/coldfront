@@ -8,6 +8,14 @@ from coldfront.core.user.models import EmailAddress as OldEmailAddress
 from coldfront.core.user.utils_.merge_users.class_handlers import ClassHandlerFactory
 
 
+class UserMergeError(Exception):
+    pass
+
+
+class UserMergeRollback(Exception):
+    pass
+
+
 class UserMergeRunner(object):
     """A class that merges two User objects into one.
 
@@ -21,9 +29,11 @@ class UserMergeRunner(object):
 
     def __init__(self, user_1, user_2):
         """Identify which of the two Users should be merged into."""
+        self._dry = False
         # src_user's data will be merged into dst_user.
         self._src_user = None
         self._dst_user = None
+        self._src_user_pk = None
         self._identify_src_and_dst_users(user_1, user_2)
 
     @property
@@ -34,20 +44,29 @@ class UserMergeRunner(object):
     def src_user(self):
         return self._src_user
 
+    def dry_run(self):
+        """Attempt to run the merge, but rollback before committing
+        changes."""
+        self._dry = True
+        self.run()
+
     @transaction.atomic
     def run(self):
         """Transfer dependencies from the source User to the destination
         User, then delete the source User."""
         try:
             with transaction.atomic():
+                self._select_users_for_update()
                 self._process_src_user_dependencies()
                 self._src_user.delete()
-                self._dst_user.refresh_from_db()
-                self._display_dst_user_dependencies()
-                raise Exception('Rolling back.')
+                if self._dry:
+                    self._rollback()
+        except UserMergeRollback:
+            # The dry run succeeded, and the transaction was rolled back.
+            self._reset_users()
         except Exception as e:
-            # TODO
-            print(e)
+            self._reset_users()
+            raise e
 
     @staticmethod
     def _classes_to_ignore():
@@ -75,6 +94,9 @@ class UserMergeRunner(object):
                 'handled.')
         self._src_user = src
         self._dst_user = dst
+        # Store the primary key of src_user, used to restore the object after
+        # dry run rollback.
+        self._src_user_pk = self._src_user.pk
 
     def _process_src_user_dependencies(self):
         """Process each database object associated with the source User
@@ -105,20 +127,34 @@ class UserMergeRunner(object):
                     obj.__class__, self._src_user, self._dst_user, obj)
                 handler.run()
             except ValueError:
-                print(
-                    f'Found no handler for object with class {obj.__class__}.')
+                raise UserMergeError(
+                    f'No handler for object with class {obj.__class__}.')
             except Exception as e:
-                # TODO
-                print(e)
+                raise UserMergeError(
+                    f'Failed to process object with class {obj.__class__} and '
+                    f'primary key {obj.pk}. Details:\n{e}')
 
-    def _display_dst_user_dependencies(self):
-        """TODO"""
-        collector = NestedObjects(using=DEFAULT_DB_ALIAS)
-        collector.collect([self._dst_user])
-        objects = collector.nested()
+    def _reset_users(self):
+        """Reset user objects because the values of a model's fields
+        won't be reverted when a transaction rollback happens.
 
-        for obj in self._yield_nested_objects(objects[1]):
-            print(obj.__class__, obj, obj.__dict__)
+        Source: https://docs.djangoproject.com/en/3.2/topics/db/transactions/#controlling-transactions-explicitly
+        """
+        self._src_user = User.objects.get(pk=self._src_user_pk)
+        self._dst_user.refresh_from_db()
+
+    def _rollback(self):
+        """Raise a UserMergeRollback exception to roll the enclosing
+        transaction back."""
+        raise UserMergeRollback('Rolling back.')
+
+    def _select_users_for_update(self):
+        """Block other threads from retrieving the users until the end
+        of the transaction."""
+        self._src_user = User.objects.select_for_update().get(
+            pk=self._src_user.pk)
+        self._dst_user = User.objects.select_for_update().get(
+            pk=self._dst_user.pk)
 
     def _yield_nested_objects(self, objects):
         """Given a list that contains objects and lists of potentially-

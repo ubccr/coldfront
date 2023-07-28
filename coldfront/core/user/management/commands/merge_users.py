@@ -52,13 +52,14 @@ class Command(BaseCommand):
                 self.style.ERROR(f'User "{username_2}" does not exist.'))
             return
 
-        # TODO: Check that the first and last names of the two users match.
-
         user_merge_runner = UserMergeRunner(user_1, user_2)
 
-        print(f'Src: {user_merge_runner.src_user}')
-        print(f'Dst: {user_merge_runner.dst_user}')
+        self.stdout.write(
+            self.style.WARNING(f'Source: {user_merge_runner.src_user}'))
+        self.stdout.write(
+            self.style.WARNING(f'Destination: {user_merge_runner.dst_user}'))
 
-        # TODO: Call run or dry_run.
-
-        user_merge_runner.run()
+        if dry_run:
+            user_merge_runner.dry_run()
+        else:
+            user_merge_runner.run()
