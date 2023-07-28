@@ -6,6 +6,8 @@ from django.core.management.base import BaseCommand
 
 from coldfront.core.user.utils_.merge_users import UserMergeRunner
 from coldfront.core.utils.common import add_argparse_dry_run_argument
+from coldfront.core.utils.reporting.report_message_strategy import EnqueueForLoggingStrategy
+from coldfront.core.utils.reporting.report_message_strategy import WriteViaCommandStrategy
 
 
 """An admin command that merges two Users into one."""
@@ -52,14 +54,27 @@ class Command(BaseCommand):
                 self.style.ERROR(f'User "{username_2}" does not exist.'))
             return
 
-        user_merge_runner = UserMergeRunner(user_1, user_2)
+        write_via_command_strategy = WriteViaCommandStrategy(self)
+        enqueue_for_logging_strategy = EnqueueForLoggingStrategy(self.logger)
+        reporting_strategies = [
+            write_via_command_strategy, enqueue_for_logging_strategy]
 
+        user_merge_runner = UserMergeRunner(
+            user_1, user_2, reporting_strategies=reporting_strategies)
+
+        src_user = user_merge_runner.src_user
+        dst_user = user_merge_runner.dst_user
         self.stdout.write(
-            self.style.WARNING(f'Source: {user_merge_runner.src_user}'))
+            self.style.WARNING(
+                f'Source: {src_user.username} ({src_user.first_name} '
+                f'{src_user.last_name})'))
         self.stdout.write(
-            self.style.WARNING(f'Destination: {user_merge_runner.dst_user}'))
+            self.style.WARNING(
+                f'Destination: {dst_user.username} ({dst_user.first_name} '
+                f'{dst_user.last_name})'))
 
         if dry_run:
             user_merge_runner.dry_run()
         else:
             user_merge_runner.run()
+            enqueue_for_logging_strategy.log_queued_messages()

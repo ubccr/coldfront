@@ -1,5 +1,4 @@
 import inspect
-import logging
 
 from abc import ABC
 from abc import abstractmethod
@@ -17,9 +16,8 @@ from coldfront.core.project.utils import higher_project_user_role
 
 
 class ClassHandlerFactory(object):
-    """A factory for returning a class that handles merging data from a
-    source object into a destination object of a given class when
-    merging User accounts."""
+    """A factory for returning a concrete instance of ClassHandler for a
+    particular class."""
 
     def get_handler(self, klass, *args, **kwargs):
         """Return an instantiated handler for the given class with the
@@ -39,28 +37,31 @@ class ClassHandlerFactory(object):
 
 
 class ClassHandler(ABC):
-    """TODO"""
+    """A class that handles transferring data from a source object of a
+    particular class, and which belongs to a source user, to a
+    destination user, when merging User accounts."""
 
     @abstractmethod
-    def __init__(self, src_user, dst_user, src_obj):
-        """TODO"""
+    def __init__(self, src_user, dst_user, src_obj, reporting_strategies=None):
         self._src_user = src_user
         self._dst_user = dst_user
         self._src_obj = src_obj
+        # A corresponding object may or may not exist for the destination User.
+        # Attempt to retrieve it in each concrete child class.
         self._dst_obj = None
 
-        self._logger = logging.getLogger(__name__)
-        self._dry = False
+        self._class_name = self._src_obj.__class__.__name__
 
-    def dry_run(self):
-        """TODO"""
-        self._dry = True
-        self.run()
+        # Report messages using each of the given strategies.
+        self._reporting_strategies = []
+        if isinstance(reporting_strategies, list):
+            for strategy in reporting_strategies:
+                self._reporting_strategies.append(strategy)
 
     def run(self):
-        """TODO"""
+        """Transfer the source object from the source user to the
+        destination user."""
         with transaction.atomic():
-            # TODO: Consider whether special handling may need to happen first.
             if self._dst_obj:
                 self._set_falsy_attrs()
             self._run_special_handling()
@@ -68,31 +69,60 @@ class ClassHandler(ABC):
                 self._dst_obj.save()
 
     def _get_settable_if_falsy_attrs(self):
-        """TODO"""
+        """Return a list of attributes that, if falsy in the
+        destination, should be updated to the value of the corresponding
+        attribute in the source object."""
         return []
 
+    def _handle_associated_object(self):
+        """An object B may be associated with a User through a different
+        object A. When A is deleted, B may be deleted with it. When A is
+        transferred, B is transferred with it. Record that this has
+        occurred."""
+        try:
+            self._src_obj.refresh_from_db()
+        except ObjectDoesNotExist:
+            # The object was deleted.
+            message = (
+                f'{self._class_name}({self._src_obj.pk}): indirectly deleted')
+            self._report_success_message(message)
+        else:
+            # The object was transferred to the destination user.
+            self._record_update(
+                self._src_obj.pk, 'user (indirectly associated)',
+                self._src_user, self._dst_user)
+
+    def _report_success_message(self, message):
+        """Record a success message with the given text to each of the
+        reporting strategies."""
+        for strategy in self._reporting_strategies:
+            strategy.success(message)
+
+    def _record_update(self, pk, attr_name, pre_value, post_value):
+        """Record that the object of this class and with the given
+        primary key had its attribute with the given name updated from
+        pre_value to post_value."""
+        message = (
+            f'{self._class_name}({pk}).{attr_name}: {pre_value} --> '
+            f'{post_value}')
+        self._report_success_message(message)
+
     def _run_special_handling(self):
-        """TODO"""
+        """Run handling specific to a particular class, implemented by
+        each child class."""
         raise NotImplementedError
 
     def _set_attr_if_falsy(self, attr_name):
-        """TODO"""
+        """If the attribute with the given name is falsy in the
+        destination object but not in the source object, update the
+        former's value to the latter's."""
         assert hasattr(self._src_obj, attr_name)
         assert hasattr(self._dst_obj, attr_name)
-
         src_attr = getattr(self._src_obj, attr_name)
         dst_attr = getattr(self._dst_obj, attr_name)
-
         if src_attr and not dst_attr:
-            if self._dry:
-                # TODO: Print.
-                pass
-            else:
-                setattr(self._dst_obj, attr_name, src_attr)
-                # TODO: Log.
-                #  Only flush to the log at the end of the transaction, or
-                #  Log that the transaction is being rolled back.
-                #  Include a UUID in each log message to identify the merge.
+            setattr(self._dst_obj, attr_name, src_attr)
+            self._record_update(self._dst_obj.pk, attr_name, dst_attr, src_attr)
 
     def _set_falsy_attrs(self):
         """TODO"""
@@ -100,11 +130,12 @@ class ClassHandler(ABC):
             self._set_attr_if_falsy(attr_name)
         self._dst_obj.save()
 
-    def _transfer_src_obj_to_dst_user(self):
+    def _transfer_src_obj_to_dst_user(self, attr_name='user'):
         """TODO"""
-        if not self._dry:
-            self._src_obj.user = self._dst_user
-            self._src_obj.save()
+        setattr(self._src_obj, attr_name, self._dst_user)
+        self._src_obj.save()
+        self._record_update(
+            self._src_obj.pk, attr_name, self._src_user, self._dst_user)
 
 
 class UserProfileHandler(ClassHandler):
@@ -124,15 +155,15 @@ class UserProfileHandler(ClassHandler):
         ]
 
     def _run_special_handling(self):
-        """TODO"""
         self._set_host_user()
 
     def _set_host_user(self):
         if flag_enabled('LRC_ONLY'):
+            raise NotImplementedError
             # TODO
             #  Deal with conflicts.
             #  Handle LBL users.
-            self._set_attr_if_falsy('host_user')
+            # self._set_attr_if_falsy('host_user')
 
 
 class SocialAccountHandler(ClassHandler):
@@ -141,7 +172,6 @@ class SocialAccountHandler(ClassHandler):
         super().__init__(*args, **kwargs)
 
     def _run_special_handling(self):
-        """TODO"""
         self._transfer_src_obj_to_dst_user()
 
 
@@ -151,9 +181,6 @@ class EmailAddressHandler(ClassHandler):
         super().__init__(*args, **kwargs)
 
     def _run_special_handling(self):
-        """TODO"""
-        # TODO
-        #  Consider allowing a new primary to be set.
         self._src_obj.primary = False
         self._transfer_src_obj_to_dst_user()
 
@@ -169,7 +196,6 @@ class AllocationUserHandler(ClassHandler):
             self._dst_obj = None
 
     def _run_special_handling(self):
-        """TODO"""
         allocation = self._src_obj.allocation
 
         # TODO: Note that only compute Allocations are handled for now.
@@ -179,15 +205,26 @@ class AllocationUserHandler(ClassHandler):
         assert resource.name.endswith(' Compute')
 
         if self._dst_obj:
-            active_allocation_user_status = \
-                AllocationUserStatusChoice.objects.get(name='Active')
-            if (self._dst_obj.status != active_allocation_user_status and
-                    self._dst_obj.status == active_allocation_user_status):
-                self._dst_obj.status = self._src_obj.status
+            status_updated = self._update_status()
+            if status_updated:
                 self._dst_obj.save()
         else:
-            self._src_obj.user = self._dst_user
-            self._src_obj.save()
+            self._transfer_src_obj_to_dst_user()
+
+    def _update_status(self):
+        """Update the status of the destination if it is not "Active"
+        but the source's is. Return whether an update occurred."""
+        active_allocation_user_status = \
+            AllocationUserStatusChoice.objects.get(name='Active')
+        dst_obj_status = self._dst_obj.status
+        if (dst_obj_status != active_allocation_user_status and
+                self._src_obj.status == active_allocation_user_status):
+            self._dst_obj.status = self._src_obj.status
+            self._record_update(
+                self._dst_obj.pk, 'status', dst_obj_status.name,
+                'Active')
+            return True
+        return False
 
 
 class AllocationUserAttributeHandler(ClassHandler):
@@ -196,17 +233,7 @@ class AllocationUserAttributeHandler(ClassHandler):
         super().__init__(*args, **kwargs)
 
     def _run_special_handling(self):
-        # TODO: This block is duplicated. Factor it out.
-        try:
-            self._src_obj.refresh_from_db()
-        except ObjectDoesNotExist:
-            # The object was deleted.
-            # TODO: Log and write to output.
-            return
-        else:
-            # The object was transferred to the destination user.
-            # TODO: Log and write to output.
-            return
+        self._handle_associated_object()
 
 
 class AllocationUserAttributeUsageHandler(ClassHandler):
@@ -215,16 +242,7 @@ class AllocationUserAttributeUsageHandler(ClassHandler):
         super().__init__(*args, **kwargs)
 
     def _run_special_handling(self):
-        try:
-            self._src_obj.refresh_from_db()
-        except ObjectDoesNotExist:
-            # The object was deleted.
-            # TODO: Log and write to output.
-            return
-        else:
-            # The object was transferred to the destination user.
-            # TODO: Log and write to output.
-            return
+        self._handle_associated_object()
 
 
 class ClusterAccessRequestHandler(ClassHandler):
@@ -233,16 +251,7 @@ class ClusterAccessRequestHandler(ClassHandler):
         super().__init__(*args, **kwargs)
 
     def _run_special_handling(self):
-        try:
-            self._src_obj.refresh_from_db()
-        except ObjectDoesNotExist:
-            # The object was deleted.
-            # TODO: Log and write to output.
-            return
-        else:
-            # The object was transferred to the destination user.
-            # TODO: Log and write to output.
-            return
+        self._handle_associated_object()
 
 
 class ProjectUserHandler(ClassHandler):
@@ -257,20 +266,42 @@ class ProjectUserHandler(ClassHandler):
 
     def _run_special_handling(self):
         if self._dst_obj:
-            self._dst_obj.role = higher_project_user_role(
-                self._dst_obj.role, self._src_obj.role)
-
-            active_project_user_status = ProjectUserStatusChoice.objects.get(
-                name='Active')
-            if (self._dst_obj.status != active_project_user_status and
-                    self._src_obj.status == active_project_user_status):
-                self._dst_obj.status = self._src_obj.status
+            role_updated = self._update_role()
+            status_updated = self._update_status()
+            if role_updated or status_updated:
                 self._dst_obj.save()
         else:
-            self._src_obj.user = self._dst_user
-            self._src_obj.save()
+            self._transfer_src_obj_to_dst_user()
 
         # TODO: Run the runner?
+
+    def _update_role(self):
+        """Update the role of the destination if the source's is higher.
+        Return whether an update occurred."""
+        dst_obj_role = self._dst_obj.role
+        self._dst_obj.role = higher_project_user_role(
+            dst_obj_role, self._src_obj.role)
+        if self._dst_obj.role != dst_obj_role:
+            self._record_update(
+                self._dst_obj.pk, 'role', dst_obj_role.name,
+                self._dst_obj.role.name)
+            return True
+        return False
+
+    def _update_status(self):
+        """Update the status of the destination if it is not "Active"
+        but the source's is. Return whether an update occurred."""
+        active_project_user_status = ProjectUserStatusChoice.objects.get(
+            name='Active')
+        dst_obj_status = self._dst_obj.status
+        if (self._dst_obj.status != active_project_user_status and
+                self._src_obj.status == active_project_user_status):
+            self._dst_obj.status = self._src_obj.status
+            self._record_update(
+                self._dst_obj.pk, 'status', dst_obj_status.name,
+                'Active')
+            return True
+        return False
 
 
 class ProjectUserJoinRequestHandler(ClassHandler):
@@ -279,16 +310,7 @@ class ProjectUserJoinRequestHandler(ClassHandler):
         super().__init__(*args, **kwargs)
 
     def _run_special_handling(self):
-        try:
-            self._src_obj.refresh_from_db()
-        except ObjectDoesNotExist:
-            # The object was deleted.
-            # TODO: Log and write to output.
-            return
-        else:
-            # The object was transferred to the destination user.
-            # TODO: Log and write to output.
-            return
+        self._handle_associated_object()
 
 
 class SavioProjectAllocationRequestHandler(ClassHandler):
@@ -298,7 +320,6 @@ class SavioProjectAllocationRequestHandler(ClassHandler):
 
     def _run_special_handling(self):
         if self._src_obj.requester == self._src_user:
-            self._src_obj.requester = self._dst_user
+            self._transfer_src_obj_to_dst_user(attr_name='requester')
         if self._src_obj.pi == self._src_user:
-            self._src_obj.pi = self._dst_user
-        self._src_obj.save()
+            self._transfer_src_obj_to_dst_user(attr_name='pi')

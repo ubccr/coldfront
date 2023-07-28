@@ -27,7 +27,7 @@ class UserMergeRunner(object):
     has cluster access.
     """
 
-    def __init__(self, user_1, user_2):
+    def __init__(self, user_1, user_2, reporting_strategies=None):
         """Identify which of the two Users should be merged into."""
         self._dry = False
         # src_user's data will be merged into dst_user.
@@ -35,6 +35,12 @@ class UserMergeRunner(object):
         self._dst_user = None
         self._src_user_pk = None
         self._identify_src_and_dst_users(user_1, user_2)
+
+        # Report messages using each of the given strategies.
+        self._reporting_strategies = []
+        if isinstance(reporting_strategies, list):
+            for strategy in reporting_strategies:
+                self._reporting_strategies.append(strategy)
 
     @property
     def dst_user(self):
@@ -124,7 +130,8 @@ class UserMergeRunner(object):
 
             try:
                 handler = class_handler_factory.get_handler(
-                    obj.__class__, self._src_user, self._dst_user, obj)
+                    obj.__class__, self._src_user, self._dst_user, obj,
+                    reporting_strategies=self._reporting_strategies)
                 handler.run()
             except ValueError:
                 raise UserMergeError(
