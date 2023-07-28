@@ -233,6 +233,4 @@ def higher_project_user_role(role_1, role_2):
     assert role_2.name in roles_ascending
     role_1_index = roles_ascending.index(role_1.name)
     role_2_index = roles_ascending.index(role_2.name)
-    if roles_ascending[role_1_index] >= roles_ascending[role_2_index]:
-        return role_1
-    return role_2
+    return role_1 if role_1_index >= role_2_index else role_2
