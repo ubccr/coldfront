@@ -142,7 +142,7 @@ disabled:
 | EMAIL_ADMINS_ON_ALLOCATION_EXPIRE | Setting this to True will send a daily email notification to administrators with a list of allocations that have expired that day. |
 
 ### Plugin settings
-For more info on [ColdFront plugins](plugin.md) (Django apps)
+For more info on [ColdFront plugins](../../plugin/existing_plugins/) (Django apps)
 
 #### LDAP Auth
 
@@ -253,17 +253,21 @@ exist in your backend LDAP to show up in the ColdFront user search.
 | LDAP_USER_SEARCH_BASE       | User search base dn                     |
 | LDAP_USER_SEARCH_CONNECT_TIMEOUT  | Time in seconds to wait before timing out. Default 2.5  |
 | LDAP_USER_SEARCH_USE_SSL  | Whether to use ssl when connecting to LDAP server. Default True |
+| LDAP_USER_SEARCH_USE_TLS  | Whether to use tls when connecting to LDAP server. Default False |
+| LDAP_USER_SEARCH_PRIV_KEY_FILE  | Path to the private key file.       |
+| LDAP_USER_SEARCH_CERT_FILE  | Path to the certificate file.           |
+| LDAP_USER_SEARCH_CACERT_FILE  | Path to the CA cert file.             |
 
 ## Advanced Configuration
 
 ColdFront uses the [Django
 settings](https://docs.djangoproject.com/en/3.1/topics/settings/). In most
 cases, you can set custom configurations via environment variables above. If
-you need more control over the configuration you can use a `local_settings.py`
-file and override any Django settings. For example, instead of setting the
-`DB_URL` environment variable above, we can create
-`/etc/coldfront/local_settings.py` or create a `local_settings.py` file
-in the coldfront project root and add our custom database configs as follows:
+you need more control over the configuration you can create `/etc/coldfront/local_settings.py` 
+or create a `local_settings.py` file in the coldfront project root 
+to override any Django settings. Some examples:
+
+Instead of setting the `DB_URL` environment variable, we can add a custom database configuration:
 
 ```python
 DATABASES = {
@@ -276,6 +280,30 @@ DATABASES = {
         'PORT': '',
     },
 }
+```
+
+To authenticate against Active Directory, it's not uncommon to need 
+the `OPT_REFERRALS` set to `0`. Likewise, we should look for users based 
+on their `sAMAccountName` attribute, rather than `uid`.
+
+```python
+AUTH_LDAP_CONNECTION_OPTIONS={ldap.OPT_REFERRALS: 0}
+AUTH_LDAP_BASE_DN = 'dc=example,dc=org' # same value as AUTH_LDAP_USER_SEARCH
+AUTH_LDAP_USER_SEARCH = LDAPSearch(
+    AUTH_LDAP_BASE_DN, ldap.SCOPE_SUBTREE, '(sAMAccountName=%(user)s)')
+```
+
+Additional debug logging can be configured for troubleshooting. This example
+attaches the `django_auth_ldap` logs to the primary Django logger so you 
+can see debug those logs in your main log output.
+
+```python
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {"console": {"class": "logging.StreamHandler"}},
+    "loggers": {"django_auth_ldap": {"level": "DEBUG", "handlers": ["console"]}
+},
 ```
 
 ## Custom Branding
@@ -298,6 +326,12 @@ environment variable:
 
 ```
 SITE_STATIC=/path/to/static/files
+```
+
+To apply changes in a production environment (where the static files are served through an nginx or apache server), rerun `collectstatic`. Be sure to activate your virtual environment first if you're using one.
+```sh
+source /srv/coldfront/venv/bin/activate
+coldfront collectstatic
 ```
 
 As a simple example, to change the default background color from blue to black, create a common.css file with the following styles and set the SITE_STATIC environment variable when starting ColdFront:

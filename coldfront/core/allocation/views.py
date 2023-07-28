@@ -48,7 +48,8 @@ from coldfront.core.allocation.models import (Allocation,
                                               AllocationUser,
                                               AllocationUserNote,
                                               AllocationUserStatusChoice)
-from coldfront.core.allocation.signals import (allocation_activate,
+from coldfront.core.allocation.signals import (allocation_new,
+                                               allocation_activate,
                                                allocation_activate_user,
                                                allocation_disable,
                                                allocation_remove_user,
@@ -212,7 +213,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             allocation_obj.status = AllocationStatusChoice.objects.get(name='Active')
         elif action == 'deny':
             allocation_obj.status = AllocationStatusChoice.objects.get(name='Denied')
-           
+
         if old_status != 'Active' == allocation_obj.status.name:
             if not allocation_obj.start_date:
                 allocation_obj.start_date = datetime.datetime.now()
@@ -540,11 +541,24 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             AllocationUser.objects.create(allocation=allocation_obj, user=user,
                                             status=allocation_user_active_status)
 
-        send_allocation_admin_email(allocation_obj, 'New Allocation Request', 'email/new_allocation_request.txt', domain_url=get_domain_url(self.request))
+        send_allocation_admin_email(
+            allocation_obj,
+            'New Allocation Request',
+            'email/new_allocation_request.txt',
+            domain_url=get_domain_url(self.request)
+        )
+        allocation_new.send(sender=self.__class__,
+                            allocation_pk=allocation_obj.pk)
         return super().form_valid(form)
 
     def get_success_url(self):
         return reverse('project-detail', kwargs={'pk': self.kwargs.get('project_pk')})
+
+    def post(self, request, *args, **kwargs):
+        post = super().post(request, *args, **kwargs)
+        msg = 'Allocation requested. It will be available once it is approved.'
+        messages.success(self.request, msg)
+        return post
 
 
 class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -1673,7 +1687,6 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
 
 class AllocationChangeListView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'allocation/allocation_change_list.html'
-    login_url = '/'
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
