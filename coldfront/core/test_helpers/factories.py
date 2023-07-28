@@ -232,7 +232,6 @@ class AllocationFactory(DjangoModelFactory):
     is_changeable = True
 
 
-
 ### Allocation Attribute factories ###
 
 class AAttributeTypeFactory(DjangoModelFactory):
@@ -340,12 +339,26 @@ def setup_models(test_case):
         AllocationStatusChoiceFactory(name=status)
     for status in ['Active', 'Inactive', 'New', 'Archived']:
         ProjectStatusChoiceFactory(name=status)
-    for attribute_type in ['Date', 'Int', 'Float', 'Text', 'Boolean']:
+    for attribute_type in ['Date', 'Int', 'Float', 'Text', 'Yes/No']:
         AAttributeTypeFactory(name=attribute_type)
     for status in ['Pending', 'Approved', 'Denied']:
         AllocationChangeStatusChoiceFactory(name=status)
 
     quota_tb_type = AllocationAttributeTypeFactory(name='Storage Quota (TB)')
+    for name, attribute_type, has_usage, is_private in (
+        ('Offer Letter Code', 'Text', False, True),
+        ('Heavy IO',  'Yes/No', False, False),
+        ('Mounted',  'Yes/No', False, False),
+        ('High Security', 'Yes/No', False, False),
+        ('DUA', 'Yes/No', False, False),
+        ('External Sharing', 'Yes/No', False, False),
+    ):
+        AllocationAttributeTypeFactory(
+            name=name,
+            attribute_type=AAttributeType.objects.get(name=attribute_type),
+            has_usage=has_usage,
+            is_private=is_private
+        )
     # users
     test_case.admin_user = UserFactory(
         username='gvanrossum', is_staff=True, is_superuser=True

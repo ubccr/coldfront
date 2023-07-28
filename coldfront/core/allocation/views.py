@@ -1,5 +1,6 @@
-import datetime
+import re
 import logging
+import datetime
 from datetime import date
 
 from io import BytesIO
@@ -274,7 +275,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         allocation_obj = get_object_or_404(Allocation, pk=pk)
         if not self.request.user.is_superuser:
             msg = 'You do not have permission to update the allocation'
-            messages.success(request, msg)
+            messages.error(request, msg)
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
         initial_data = {
@@ -509,12 +510,6 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         return super().dispatch(request, *args, **kwargs)
 
-    def post(self, request, *args, **kwargs):
-        post = super().post(request, *args, **kwargs)
-        msg = 'Allocation requested. It will be available once it is approved.'
-        messages.success(self.request, msg)
-        return post
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
@@ -556,7 +551,6 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         context['resources_with_accounts'] = list(Resource.objects.filter(
             name__in=list(ALLOCATION_ACCOUNT_MAPPING.keys())
         ).values_list('id', flat=True))
-
         return context
 
     def get_form(self, form_class=None):
@@ -571,10 +565,12 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         form_data = form.cleaned_data
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
 
+        # pull data from form
         resource_obj = form_data.get('resource')
         justification = form_data.get('justification')
         quantity = form_data.get('quantity', 1)
         allocation_account = form_data.get('allocation_account', None)
+
         # A resource is selected that requires an account name selection but user has no account names
         if ALLOCATION_ACCOUNT_ENABLED and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING and AllocationAttributeType.objects.filter(
             name=ALLOCATION_ACCOUNT_MAPPING[resource_obj.name]).exists() and not allocation_account:
@@ -582,9 +578,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             form.add_error(None, format_html(err))
             return self.form_invalid(form)
 
-        usernames = form_data.get('users')
-        if not usernames:
-            usernames = []
+        usernames = form_data.get('users', [])
         usernames.append(project_obj.pi.username)
         usernames = list(set(usernames))
 
@@ -625,11 +619,35 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 value=allocation_account,
             )
 
-        AllocationAttribute.objects.create(
-            allocation=allocation_obj,
-            value=quantity,
-            allocation_attribute_type=AllocationAttributeType.objects.get(pk=1),
-        )
+
+        offer_letter_code = form_data.get('offer_letter_code', None)
+        if offer_letter_code:
+            insert_dashes = lambda d: '-'.join([d[:3], d[3:8], d[8:12], d[12:18], d[18:24], d[24:28], d[28:33]])
+            offer_letter_code = insert_dashes(re.sub(r'\D', '', offer_letter_code))
+        dua = form_data.get('dua', None)
+        heavy_io = form_data.get('heavy_io', None)
+        mounted = form_data.get('mounted', None)
+        external_sharing = form_data.get('external_sharing', None)
+        high_security = form_data.get('high_security', None)
+
+        for value, attr_name in (
+            (quantity, 'Storage Quota (TB)'),
+            (offer_letter_code, 'Offer Letter Code'),
+            (dua, "DUA"),
+            (heavy_io, "Heavy IO"),
+            (mounted, 'Mounted'),
+            (external_sharing, 'Mounted'),
+            (high_security, 'High Security'),
+        ):
+            if value:
+                AllocationAttribute.objects.create(
+                    allocation=allocation_obj,
+                    value=value,
+                    allocation_attribute_type=AllocationAttributeType.objects.get(
+                        name=attr_name
+                    )
+                )
+
         allocation_obj.set_usage('Storage Quota (TB)', 0)
 
         for linked_resource in resource_obj.linked_resources.all():
@@ -653,7 +671,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             'nese': nese,
             'used_percentage': used_percentage,
         }
-        send_allocation_admin_email(allocation_obj,
+        send_allocation_admin_email(
+            allocation_obj,
             'New Allocation Request',
             'email/new_allocation_request.txt',
             domain_url=get_domain_url(self.request),
@@ -662,6 +681,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         return super().form_valid(form)
 
     def get_success_url(self):
+        msg = 'Allocation requested. It will be available once it is approved.'
+        messages.success(self.request, msg)
         return reverse('project-detail', kwargs={'pk': self.kwargs.get('project_pk')})
 
 

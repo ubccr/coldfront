@@ -37,6 +37,11 @@ class Command(BaseCommand):
             ('RequiresPayment', 'Yes/No', False, True),
             ('Offer Letter Code', 'Text', False, True),
             ('Subdirectory', 'Text', False, False),
+            ('Heavy IO',  'Yes/No', False, False),
+            ('Mounted',  'Yes/No', False, False),
+            ('High Security', 'Yes/No', False, False),
+            ('DUA', 'Yes/No', False, False),
+            ('External Sharing', 'Yes/No', False, False),
             # UBCCR defaults
             # ('Cloud Account Name', 'Text', False, False),
             # ('CLOUD_USAGE_NOTIFICATION', 'Yes/No', False, True),

@@ -14,7 +14,6 @@ from coldfront.core.allocation.models import (
 from coldfront.core.test_helpers.factories import (
     setup_models,
     UserFactory,
-    ProjectFactory,
     ResourceFactory,
     AllocationFactory,
     AllocationChangeRequestFactory,
@@ -216,7 +215,6 @@ class AllocationChangeViewTest(AllocationViewBaseTest):
         response = self.client.post(
             '/allocation/1/change-request', data=self.post_data, follow=True
         )
-        self.assertEqual(response.status_code, 200)
         self.assertContains(response, "You must request a change")
         self.assertEqual(len(AllocationChangeRequest.objects.all()), 0)
 
@@ -228,7 +226,6 @@ class AllocationChangeViewTest(AllocationViewBaseTest):
         response = self.client.post(
             '/allocation/1/change-request', data=self.post_data, follow=True
         )
-        self.assertEqual(response.status_code, 200)
         self.assertContains(
             response, "Allocation change request successfully submitted."
         )
@@ -242,7 +239,6 @@ class AllocationChangeViewTest(AllocationViewBaseTest):
         response = self.client.post(
             '/allocation/1/change-request', data=self.post_data, follow=True
         )
-        self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Value must be an integer.")
         self.assertEqual(len(AllocationChangeRequest.objects.all()), 0)
 
@@ -351,18 +347,41 @@ class AllocationCreateViewTest(AllocationViewBaseTest):
         """Test POST to the AllocationCreateView"""
         self.assertEqual(len(self.project.allocation_set.all()), 1)
         response = self.client.post(self.url, data=self.post_data, follow=True)
-        self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Allocation requested.")
         self.assertEqual(len(self.project.allocation_set.all()), 2)
 
     def test_allocationcreateview_post_zeroquantity(self):
-        """Test POST to the AllocationCreateView"""
+        """Test POST to the AllocationCreateView with default post_data:
+        No offer_letter_code, dua, heavy_io, mounted, external_sharing, high_security
+        """
         self.post_data['quantity'] = '0'
         self.assertEqual(len(self.project.allocation_set.all()), 1)
         response = self.client.post(self.url, data=self.post_data, follow=True)
-        self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Allocation requested.")
         self.assertEqual(len(self.project.allocation_set.all()), 2)
+
+    def test_allocationcreateview_post_offerlettercode_valid(self):
+        """ensure 33-digit codes go through and get formatted"""
+        # correct # of digits with no dashes
+        aa_objs = AllocationAttribute.objects.all()
+        aa_obj = aa_objs.filter(allocation_attribute_type__name='Offer Letter Code')
+        self.assertEqual(len(aa_obj), 0)
+        self.post_data['offer_letter_code'] = '123' * 11
+        response = self.client.post(self.url, data=self.post_data, follow=True)
+        self.assertContains(response, "Allocation requested.")
+        aa_obj = aa_objs.filter(allocation_attribute_type__name='Offer Letter Code')
+        self.assertEqual(len(aa_obj), 1)
+
+    def test_allocationcreateview_post_bools(self):
+        """ensure booleans are properly saved"""
+        for val in ['dua', 'heavy_io', 'mounted', 'external_sharing', 'high_security']:
+            self.post_data[val] = True
+        response = self.client.post(self.url, data=self.post_data, follow=True)
+        aa_names = ['Heavy IO', 'Mounted', 'High Security', 'DUA', 'External Sharing']
+        aa_objs = AllocationAttribute.objects.filter(
+            allocation_attribute_type__name__in=aa_names
+        )
+        self.assertEqual(len(aa_objs), 5)
 
 
 class AllocationAddUsersViewTest(AllocationViewBaseTest):
@@ -419,7 +438,7 @@ class AllocationChangeListViewTest(AllocationViewBaseTest):
 
     def test_allocationchangelistview_changetypes(self):
         """
-        Produce allocationchangerequests with all different change types 
+        Produce allocationchangerequests with all different change types
         and test that they all display properly
         """
         # create a new allocationchangerequest for each attribute that is changeable

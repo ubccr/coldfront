@@ -1,11 +1,16 @@
+import re
+
 from django import forms
 from django.db.models.functions import Lower
 from django.shortcuts import get_object_or_404
+from django.core.exceptions import ValidationError
 
-from coldfront.core.allocation.models import (Allocation, AllocationAccount,
-                                              AllocationAttributeType,
-                                              AllocationAttribute,
-                                              AllocationStatusChoice)
+from coldfront.core.allocation.models import (
+    AllocationAccount,
+    AllocationAttributeType,
+    AllocationAttribute,
+    AllocationStatusChoice
+)
 from coldfront.core.allocation.utils import get_user_resources
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource, ResourceType
@@ -17,13 +22,61 @@ ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS = import_from_settings(
     'ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS', [])
 
 
+class OfferLetterCodeField(forms.CharField):
+    """custom field for offer_letter_code"""
+
+    def validate(self, value):
+        if value:
+            digits_only = re.sub(r'\D', '', value)
+            if not re.fullmatch(r'^(\d+-?)*[\d-]+$', value):
+                raise ValidationError("Input must consist only of digits and dashes.")
+            if len(digits_only) != 33:
+                raise ValidationError("Input must contain exactly 33 digits.")
+
+    def clean(self, value):
+        # Remove all dashes from the input string to count the number of digits
+        value = super().clean(value)
+        digits_only = re.sub(r'\D', '', value)
+        insert_dashes = lambda d: '-'.join(
+            [d[:3], d[3:8], d[8:12], d[12:18], d[18:24], d[24:28], d[28:33]]
+        )
+        formatted_value = insert_dashes(digits_only)
+        return formatted_value
+
+
 class AllocationForm(forms.Form):
     DEFAULT_DESCRIPTION = """
 We do not have information about your research. Please provide a detailed description of your work and update your field of science. Thank you!
         """
     resource = forms.ModelChoiceField(queryset=None, empty_label=None)
-    quantity = forms.IntegerField(required=True)
-    justification = forms.CharField(widget=forms.Textarea)
+    quantity = forms.IntegerField(required=True, initial=1)
+    offer_letter_code = OfferLetterCodeField(
+        label="Lab's 33 digit billing code", required=False
+    )
+    heavy_io = forms.BooleanField(
+        label='My lab will perform heavy I/O from the cluster against this space (more than 100 cores)',
+        required=False
+    )
+    mounted = forms.BooleanField(
+        label='My lab intends to mount the storage to our local machine as an additional drive',
+        required=False
+    )
+    external_sharing = forms.BooleanField(
+        label='My lab intends to share some of this data with collaborators outside of Harvard',
+        required=False
+    )
+    high_security = forms.BooleanField(
+        label='This allocation will store secure information (security level three or greater)',
+        required=False
+    )
+    dua = forms.BooleanField(
+        label="Some or all of my lab’s data is governed by DUAs", required=False
+    )
+    justification = forms.CharField(
+        widget=forms.Textarea,
+        help_text = '<br/>Justification for requesting this allocation. Please provide details about the usecase or datacenter choices'
+    )
+
     #users = forms.MultipleChoiceField(
     #    widget=forms.CheckboxSelectMultiple, required=False)
 
@@ -31,7 +84,6 @@ We do not have information about your research. Please provide a detailed descri
         super().__init__(*args, **kwargs)
         project_obj = get_object_or_404(Project, pk=project_pk)
         self.fields['resource'].queryset = get_user_resources(request_user).order_by(Lower("name"))
-        self.fields['quantity'].initial = 1
         user_query_set = project_obj.projectuser_set.select_related('user').filter(
             status__name__in=['Active', ]).order_by("user__username")
         user_query_set = user_query_set.exclude(user=project_obj.pi)
@@ -42,7 +94,6 @@ We do not have information about your research. Please provide a detailed descri
         # else:
         #     self.fields['users'].widget = forms.HiddenInput()
 
-        self.fields['justification'].help_text = '<br/>Justification for requesting this allocation. Please provide details about the usecase or datacenter choices'
 
 
 class AllocationUpdateForm(forms.Form):
@@ -68,14 +119,13 @@ class AllocationUpdateForm(forms.Form):
         end_date = cleaned_data.get("end_date")
 
         if start_date and end_date and end_date < start_date:
-            raise forms.ValidationError(
-                'End date cannot be less than start date'
-            )
+            raise forms.ValidationError('End date cannot be less than start date')
 
 
 class AllocationInvoiceUpdateForm(forms.Form):
-    status = forms.ModelChoiceField(queryset=AllocationStatusChoice.objects.filter(name__in=[
-        'Payment Pending', 'Payment Requested', 'Payment Declined', 'Paid']).order_by(Lower("name")), empty_label=None)
+    status = forms.ModelChoiceField(queryset=AllocationStatusChoice.objects.filter(
+        name__in=['Payment Pending', 'Payment Requested', 'Payment Declined', 'Paid']
+    ).order_by(Lower("name")), empty_label=None)
 
 
 class AllocationAddUserForm(forms.Form):
@@ -108,8 +158,7 @@ class AllocationAttributeDeleteForm(forms.Form):
 class AllocationSearchForm(forms.Form):
     project = forms.CharField(label='Project Title',
                               max_length=100, required=False)
-    username = forms.CharField(
-        label='Username', max_length=100, required=False)
+    username = forms.CharField(label='Username', max_length=100, required=False)
     resource_type = forms.ModelChoiceField(
         label='Resource Type',
         queryset=ResourceType.objects.all().order_by(Lower("name")),
@@ -157,8 +206,7 @@ class AllocationReviewUserForm(forms.Form):
 class AllocationInvoiceNoteDeleteForm(forms.Form):
     pk = forms.IntegerField(required=False, disabled=True)
     note = forms.CharField(widget=forms.Textarea, disabled=True)
-    author = forms.CharField(
-        max_length=512, required=False, disabled=True)
+    author = forms.CharField(max_length=512, required=False, disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
 
     def __init__(self, *args, **kwargs):
@@ -236,7 +284,7 @@ class AllocationChangeForm(forms.Form):
 
 
 class AllocationChangeNoteForm(forms.Form):
-        notes = forms.CharField(
+    notes = forms.CharField(
             max_length=512,
             label='Notes',
             required=False,
