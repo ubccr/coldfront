@@ -552,13 +552,9 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         return super().form_valid(form)
 
     def get_success_url(self):
-        return reverse('project-detail', kwargs={'pk': self.kwargs.get('project_pk')})
-
-    def post(self, request, *args, **kwargs):
-        post = super().post(request, *args, **kwargs)
         msg = 'Allocation requested. It will be available once it is approved.'
         messages.success(self.request, msg)
-        return post
+        return reverse('project-detail', kwargs={'pk': self.kwargs.get('project_pk')})
 
 
 class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -1233,54 +1229,6 @@ class AllocationAddInvoiceNoteView(LoginRequiredMixin, UserPassesTestMixin, Crea
 
         messages.error(self.request, 'You do not have permission to manage invoices.')
         return False
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        pk = self.kwargs.get('pk')
-        allocation_obj = get_object_or_404(Allocation, pk=pk)
-        allocation_users = allocation_obj.allocationuser_set.exclude(
-            status__name__in=['Removed']).order_by('user__username')
-
-        # set visible usage attributes
-        alloc_attr_set = allocation_obj.get_attribute_set(self.request.user)
-
-        attributes_with_usage = [a for a in alloc_attr_set if hasattr(a, 'allocationattributeusage')]
-        attributes = list(alloc_attr_set)
-
-        guage_data = []
-        invalid_attributes = []
-        for attribute in attributes_with_usage:
-            try:
-                guage_data.append(generate_guauge_data_from_usage(
-                            attribute.allocation_attribute_type.name,
-                            float(attribute.value),
-                            float(attribute.allocationattributeusage.value)))
-            except ValueError:
-                logger.error("Allocation attribute '%s' is not an int but has a usage",
-                             attribute.allocation_attribute_type.name)
-                invalid_attributes.append(attribute)
-
-        for a in invalid_attributes:
-            attributes_with_usage.remove(a)
-
-        context['guage_data'] = guage_data
-        context['attributes_with_usage'] = attributes_with_usage
-        context['attributes'] = attributes
-
-        # Can the user update the project?
-        context['is_allowed_to_update_project'] = allocation_obj.project.has_perm(self.request.user, ProjectPermission.UPDATE)
-
-        context['allocation_users'] = allocation_users
-
-        if self.request.user.is_superuser:
-            notes = allocation_obj.allocationusernote_set.all()
-        else:
-            notes = allocation_obj.allocationusernote_set.filter(is_private=False)
-
-        context['notes'] = notes
-        context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
-        return context
-
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
