@@ -45,8 +45,16 @@ class ProjectAddUserForm(forms.Form):
 
 
 class ProjectAddUsersToAllocationForm(forms.Form):
+    def get_eula(self, alloc):
+        if alloc.get_resources_as_list:
+            for res in alloc.get_resources_as_list:
+                if res.get_attribute(name='eula'):
+                    return res.get_attribute(name='eula')
+        else:
+            return None
+                
     allocation = forms.MultipleChoiceField(
-        widget=forms.CheckboxSelectMultiple(attrs={'checked': 'checked'}), required=False)
+        widget=forms.CheckboxSelectMultiple(), required=False)
 
     def __init__(self, request_user, project_pk, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -65,6 +73,12 @@ class ProjectAddUsersToAllocationForm(forms.Form):
         else:
             self.fields['allocation'].widget = forms.HiddenInput()
 
+class ProjectEULAApprovalForm(forms.Form):
+    eula = forms.BooleanField(initial=False,required=False,label="Agree to EULA: ")
+
+    def __init__(self, request_user, project_pk, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        project_obj = get_object_or_404(Project, pk=project_pk)
 
 class ProjectRemoveUserForm(forms.Form):
     username = forms.CharField(max_length=150, disabled=True)

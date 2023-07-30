@@ -47,7 +47,7 @@ Add Users to Allocation
         </div>
         {{ formset.management_form }}
         <div>
-          <button type="submit" class="btn btn-primary"><i class="fas
+          <button type="submit" class="btn btn-primary confirm-add"><i class="fas
               fa-user-plus"></i> Add Selected Users to Allocation</button>
           <a class="btn btn-secondary" href="{% url 'allocation-detail' allocation.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i>
             Back to Allocation</a>
@@ -74,5 +74,12 @@ Add Users to Allocation
       $("#selectAll").prop('checked', false);
     }
   });
+  $(document).on('click', '.confirm-add', function(){
+    var eula = {{ resources_with_eula | length }};
+    var e = "Click OK below to agree to the EULA agreement(s) associated with the following resource(s):\n\n{{ compiled_eula | escapejs }}"
+    if (eula > 0 && ($("input[name^='userform-']").is(':checked')) == true) {
+      return confirm(e);
+    }
+  })
 </script>
 {% endblock %}
