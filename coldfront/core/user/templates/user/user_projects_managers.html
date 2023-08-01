@@ -27,19 +27,19 @@ User Projects and Managers{% if not user == viewed_user %}: {{ viewed_user.usern
           <div class="card-body">
             {# support non-default roles #}
             {% if not association.is_project_manager and not association.role.name == 'User' %}
-              <p class="card-text text-justify">User role in project: {{ association.role }}</p>
+              <p class="card-text">User role in project: {{ association.role }}</p>
             {% endif %}
             {# a few Pending statuses may be displayed here #}
-            <p class="card-text text-justify">User status in project:
+            <p class="card-text">User status in project:
               {% if association.status.name == 'Active' %}
                 <span class="text-success">{{ association.status.name }}</span>
               {% else %}
                 {{ association.status.name }}
               {% endif %}
             </p>
-            <p class="card-text text-justify"><strong>Description: </strong>{{ project.description }}</p>
-            <p class="card-text text-justify"><strong>Field of Science: </strong>{{ project.field_of_science }}</p>
-            <p class="card-text text-justify"><strong>Project Status: </strong>{{ project.status }} </p>
+            <p class="card-text"><strong>Description: </strong>{{ project.description }}</p>
+            <p class="card-text"><strong>Field of Science: </strong>{{ project.field_of_science }}</p>
+            <p class="card-text"><strong>Project Status: </strong>{{ project.status }} </p>
             <p class="card-text"><strong>Principal Investigator: </strong>{{ project.pi.first_name }} {{ project.pi.last_name }} ({{ project.pi.username }})
               <a href="mailto:{{ project.pi.email }} "><i class="far fa-envelope" aria-hidden="true"></i><span class="sr-only">Email</span></a>
               {% if association.is_project_pi %}

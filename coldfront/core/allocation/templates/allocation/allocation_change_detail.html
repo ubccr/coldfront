@@ -170,7 +170,7 @@ Allocation Change Detail
     </div>
   </div>
 
-  <p class="card-text text-justify">{{allocation_change_form.justification | as_crispy_field}}</p>
+  <p class="card-text">{{allocation_change_form.justification | as_crispy_field}}</p>
 
   <hr/>
 
@@ -184,7 +184,7 @@ Allocation Change Detail
           
             {% csrf_token %}
             {{note_form.notes | as_crispy_field}}
-            <div style="float: right;">
+            <div style="float: end;">
               {% if allocation_change.status.name == 'Pending' %}
                 <button type="submit" name="action" value="approve" class="btn btn-success me-1">Approve</button>
                 <button type="submit" name="action" value="deny" class="btn btn-danger me-1">Deny</button>
