@@ -133,6 +133,37 @@ class Allocation(TimeStampedModel):
 
         super().save(*args, **kwargs)
 
+    def pull_allocationattribute(self, attr_name):
+        try:
+            return self.allocationattribute_set.get(
+                allocation_attribute_type__name=attr_name
+            ).value
+        except ObjectDoesNotExist:
+            return None
+
+    @property
+    def offer_letter_code(self):
+        return self.pull_allocationattribute('Offer Letter Code')
+
+    @property
+    def heavy_io(self):
+        return self.pull_allocationattribute('Heavy IO')
+
+    @property
+    def mounted(self):
+        return self.pull_allocationattribute('Mounted')
+
+    @property
+    def external_sharing(self):
+        return self.pull_allocationattribute('External Sharing')
+
+    @property
+    def high_security(self):
+        return self.pull_allocationattribute('High Security')
+
+    @property
+    def dua(self):
+        return self.pull_allocationattribute('DUA')
 
     @property
     def size(self):
@@ -184,7 +215,8 @@ class Allocation(TimeStampedModel):
         """
         html_string = ''
         if public_only:
-            allocationattribute_set = self.allocationattribute_set.filter(allocation_attribute_type__is_private=False)
+            allocationattribute_set = self.allocationattribute_set.filter(
+                allocation_attribute_type__is_private=False)
         else:
             allocationattribute_set = self.allocationattribute_set.all()
         for attribute in allocationattribute_set:

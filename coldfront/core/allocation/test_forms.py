@@ -14,8 +14,6 @@ UTIL_FIXTURES = [
     "coldfront/core/test_helpers/test_data/test_fixtures/ifx.json",
 ]
 
-BACKEND = "django.contrib.auth.backends.ModelBackend"
-
 class AllocationFormBaseTest(TestCase):
     """Base class for allocation view tests."""
 

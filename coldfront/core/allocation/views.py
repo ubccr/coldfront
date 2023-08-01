@@ -172,7 +172,6 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             allocation_obj.allocationuser_set.exclude(usage_bytes__isnull=True)
             .exclude(usage_bytes=0).order_by('user__username')
         )
-
         # set visible usage attributes
         alloc_attr_set = allocation_obj.get_attribute_set(self.request.user)
         attributes_with_usage = [
@@ -202,12 +201,9 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
         allocation_quota_tb = next((a for a in attributes_with_usage if \
             a.allocation_attribute_type.name == 'Storage Quota (TB)'), None)
-        if allocation_quota_tb :
-            allocation_usage_tb = float(allocation_quota_tb.allocationattributeusage.value)
         quota_bytes, usage_bytes = return_allocation_bytes_values(
             attributes_with_usage, allocation_obj.allocationuser_set.all()
         )
-
 
         if 'django_q' in settings.INSTALLED_APPS:
             # get last successful runs of djangoq task responsible for allocationuser data pull
@@ -258,6 +254,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             'description': allocation_obj.description,
             'is_locked': allocation_obj.is_locked,
             'is_changeable': allocation_obj.is_changeable,
+            'heavy_io': allocation_obj.heavy_io,
         }
 
         form = AllocationUpdateForm(initial=initial_data)
@@ -622,7 +619,9 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         offer_letter_code = form_data.get('offer_letter_code', None)
         if offer_letter_code:
-            insert_dashes = lambda d: '-'.join([d[:3], d[3:8], d[8:12], d[12:18], d[18:24], d[24:28], d[28:33]])
+            insert_dashes = lambda d: '-'.join(
+                [d[:3], d[3:8], d[8:12], d[12:18], d[18:24], d[24:28], d[28:33]]
+            )
             offer_letter_code = insert_dashes(re.sub(r'\D', '', offer_letter_code))
         dua = form_data.get('dua', None)
         heavy_io = form_data.get('heavy_io', None)
@@ -633,10 +632,10 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         for value, attr_name in (
             (quantity, 'Storage Quota (TB)'),
             (offer_letter_code, 'Offer Letter Code'),
-            (dua, "DUA"),
-            (heavy_io, "Heavy IO"),
+            (dua, 'DUA'),
+            (heavy_io, 'Heavy IO'),
             (mounted, 'Mounted'),
-            (external_sharing, 'Mounted'),
+            (external_sharing, 'External Sharing'),
             (high_security, 'High Security'),
         ):
             if value:
