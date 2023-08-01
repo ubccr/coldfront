@@ -8,7 +8,7 @@ from django.db.models.functions import Lower
 from cProfile import label
 
 from coldfront.core.project.models import (Project, ProjectAttribute, ProjectAttributeType, ProjectReview,
-                                           ProjectUserRoleChoice)
+                                           ProjectUserRoleChoice,ProjectNoteTags)
 from coldfront.core.utils.common import import_from_settings
 
 EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL = import_from_settings(
@@ -79,6 +79,37 @@ class ProjectUserUpdateForm(forms.Form):
     role = forms.ModelChoiceField(
         queryset=ProjectUserRoleChoice.objects.all(), empty_label=None)
     enable_notifications = forms.BooleanField(initial=False, required=False)
+
+class ProjectNoteCreateForm(forms.Form):
+    # note_from = forms.CharField(max_length=150)
+    tags = forms.ModelChoiceField(
+        queryset=ProjectNoteTags.objects.all(), empty_label=None) 
+    message = forms.CharField(widget=forms.Textarea)
+    note_to = forms.MultipleChoiceField(
+        widget=forms.CheckboxSelectMultiple(attrs={'checked': 'checked'}), required=False)
+    
+    
+    def __init__(self, pk,  *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        project_obj = get_object_or_404(Project, pk=pk)
+        user_query_set = project_obj.projectuser_set.select_related('user').filter(
+            status__name__in=['Active', ]).order_by("user__username")
+        user_query_set = user_query_set.exclude(user=project_obj.pi)
+        if user_query_set:
+            self.fields['note_to'].choices = ((user.user.username, "%s %s (%s)" % (
+                user.user.first_name, user.user.last_name, user.user.username)) for user in user_query_set)
+            self.fields['note_to'].help_text = '<br/>Select users in your project to send this note to. Only they can view this note'
+        else:
+
+            self.fields['note_to'].widget = forms.HiddenInput()
+
+
+class ProjectNoteDeleteForm(forms.Form):
+    tags = forms.ModelChoiceField(
+        queryset=ProjectNoteTags.objects.all(), empty_label=None, required=False) 
+    message = forms.CharField(max_length=2500,required=False)
+    selected = forms.BooleanField(initial=False,required=False)
+    author = forms.CharField(max_length=150,required=False)
 
 
 class ProjectReviewForm(forms.Form):
