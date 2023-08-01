@@ -184,7 +184,7 @@ Allocation Change Detail
           
             {% csrf_token %}
             {{note_form.notes | as_crispy_field}}
-            <div style="float: end;">
+            <div style="float:right;">
               {% if allocation_change.status.name == 'Pending' %}
                 <button type="submit" name="action" value="approve" class="btn btn-success me-1">Approve</button>
                 <button type="submit" name="action" value="deny" class="btn btn-danger me-1">Deny</button>
