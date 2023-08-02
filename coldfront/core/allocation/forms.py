@@ -74,7 +74,7 @@ We do not have information about your research. Please provide a detailed descri
     )
     justification = forms.CharField(
         widget=forms.Textarea,
-        help_text = '<br/>Justification for requesting this allocation. Please provide details about the usecase or datacenter choices'
+        help_text = '<br/>Justification for requesting this allocation. Please provide details here about the usecase or datacenter choices (what data needs to be accessed, expectation of frequent transfer to or from Campus, need for Samba connectivity, etc.)'
     )
 
     #users = forms.MultipleChoiceField(
