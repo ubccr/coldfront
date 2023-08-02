@@ -19,3 +19,5 @@ coldfront.db
 .vscode
 db.json
 .env
+.devcontainer/*
+.bin/*
