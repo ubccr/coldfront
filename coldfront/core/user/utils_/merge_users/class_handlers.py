@@ -74,14 +74,12 @@ class ClassHandler(ABC):
         attribute in the source object."""
         return []
 
-    def _handle_associated_object(self):
+    def _handle_associated_object(self, transferred=False):
         """An object B may be associated with a User through a different
         object A. When A is deleted, B may be deleted with it. When A is
         transferred, B is transferred with it. Record that this has
         occurred."""
-        try:
-            self._src_obj.refresh_from_db()
-        except ObjectDoesNotExist:
+        if not transferred:
             # The object was deleted.
             message = (
                 f'{self._class_name}({self._src_obj.pk}): indirectly deleted')
@@ -233,7 +231,8 @@ class AllocationUserAttributeHandler(ClassHandler):
         super().__init__(*args, **kwargs)
 
     def _run_special_handling(self):
-        self._handle_associated_object()
+        transferred = self._src_obj.allocation_user.user == self._dst_user
+        self._handle_associated_object(transferred=transferred)
 
 
 class AllocationUserAttributeUsageHandler(ClassHandler):
@@ -242,7 +241,10 @@ class AllocationUserAttributeUsageHandler(ClassHandler):
         super().__init__(*args, **kwargs)
 
     def _run_special_handling(self):
-        self._handle_associated_object()
+        transferred = (
+            self._src_obj.allocation_user_attribute.allocation_user.user ==
+            self._dst_user)
+        self._handle_associated_object(transferred=transferred)
 
 
 class ClusterAccessRequestHandler(ClassHandler):
@@ -251,7 +253,8 @@ class ClusterAccessRequestHandler(ClassHandler):
         super().__init__(*args, **kwargs)
 
     def _run_special_handling(self):
-        self._handle_associated_object()
+        transferred = self._src_obj.allocation_user.user == self._dst_user
+        self._handle_associated_object(transferred=transferred)
 
 
 class ProjectUserHandler(ClassHandler):
@@ -310,7 +313,8 @@ class ProjectUserJoinRequestHandler(ClassHandler):
         super().__init__(*args, **kwargs)
 
     def _run_special_handling(self):
-        self._handle_associated_object()
+        transferred = self._src_obj.project_user.user == self._dst_user
+        self._handle_associated_object(transferred=transferred)
 
 
 class SavioProjectAllocationRequestHandler(ClassHandler):
