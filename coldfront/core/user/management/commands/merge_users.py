@@ -63,18 +63,30 @@ class Command(BaseCommand):
             user_1, user_2, reporting_strategies=reporting_strategies)
 
         src_user = user_merge_runner.src_user
+        src_user_str = (
+            f'{src_user.username} ({src_user.pk}, {src_user.first_name} '
+            f'{src_user.last_name})')
         dst_user = user_merge_runner.dst_user
-        self.stdout.write(
-            self.style.WARNING(
-                f'Source: {src_user.username} ({src_user.first_name} '
-                f'{src_user.last_name})'))
-        self.stdout.write(
-            self.style.WARNING(
-                f'Destination: {dst_user.username} ({dst_user.first_name} '
-                f'{dst_user.last_name})'))
+        dst_user_str = (
+            f'{dst_user.username} ({dst_user.pk}, {dst_user.first_name} '
+            f'{dst_user.last_name})')
+
+        self.stdout.write(self.style.WARNING(f'Source: {src_user_str}'))
+        self.stdout.write(self.style.WARNING(f'Destination: {dst_user_str}'))
 
         if dry_run:
             user_merge_runner.dry_run()
         else:
-            user_merge_runner.run()
-            enqueue_for_logging_strategy.log_queued_messages()
+            enqueue_for_logging_strategy.warning(
+                f'Initiating a merge of source User {src_user_str} into '
+                f'destination User {dst_user_str}.')
+            try:
+                user_merge_runner.run()
+            except Exception as e:
+                # TODO
+                pass
+            else:
+                enqueue_for_logging_strategy.success(
+                    f'Successfully merged source User {src_user_str} into '
+                    f'destination User {dst_user_str}.')
+                enqueue_for_logging_strategy.log_queued_messages()
