@@ -20,4 +20,3 @@ coldfront.db
 db.json
 .env
 .devcontainer/*
-.bin/*
