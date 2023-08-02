@@ -7,6 +7,7 @@ from coldfront.core.allocation.utils import get_project_compute_resource_name
 from coldfront.core.allocation.utils_.accounting_utils import set_service_units
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectStatusChoice
+from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.resource.utils import get_compute_resource_names
 from coldfront.core.resource.utils import get_primary_compute_resource_name
 from coldfront.core.utils.common import display_time_zone_current_date
@@ -220,3 +221,16 @@ def is_primary_cluster_project(project):
     project_compute_resource_name = get_project_compute_resource_name(project)
     primary_cluster_resource_name = get_primary_compute_resource_name()
     return project_compute_resource_name == primary_cluster_resource_name
+
+
+def higher_project_user_role(role_1, role_2):
+    """Given two ProjectUserRoleChoices, return the "higher" (more
+    privileged) of the two."""
+    assert isinstance(role_1, ProjectUserRoleChoice)
+    assert isinstance(role_2, ProjectUserRoleChoice)
+    roles_ascending = ['User', 'Manager', 'Principal Investigator']
+    assert role_1.name in roles_ascending
+    assert role_2.name in roles_ascending
+    role_1_index = roles_ascending.index(role_1.name)
+    role_2_index = roles_ascending.index(role_2.name)
+    return role_1 if role_1_index >= role_2_index else role_2
