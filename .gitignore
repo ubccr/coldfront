@@ -21,9 +21,3 @@ db.json
 .env
 .devcontainer/*
 .bin/*
-coldfront/core/allocation/migrations/0006_auto_20230627_1223.py
-coldfront/core/grant/migrations/0003_auto_20230627_1223.py
-coldfront/core/project/migrations/0005_auto_20230627_1223.py
-coldfront/core/publication/migrations/0005_auto_20230627_1223.py
-coldfront/core/research_output/migrations/0002_auto_20230627_1223.py
-coldfront/core/resource/migrations/0003_auto_20230627_1223.py
