@@ -76,6 +76,7 @@ class Command(BaseCommand):
 
         if dry_run:
             user_merge_runner.dry_run()
+            self.stdout.write(self.style.WARNING('Dry run of merge complete.'))
         else:
             enqueue_for_logging_strategy.warning(
                 f'Initiating a merge of source User {src_user_str} into '
@@ -86,6 +87,7 @@ class Command(BaseCommand):
                 # TODO
                 pass
             else:
+                self.stdout.write(self.style.SUCCESS('Merge complete.'))
                 enqueue_for_logging_strategy.success(
                     f'Successfully merged source User {src_user_str} into '
                     f'destination User {dst_user_str}.')
