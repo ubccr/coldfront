@@ -1,6 +1,5 @@
 from django.contrib.auth.models import User
 from django.contrib.admin.utils import NestedObjects
-from django.core.exceptions import ObjectDoesNotExist
 from django.db import DEFAULT_DB_ALIAS
 from django.db import transaction
 
@@ -125,14 +124,9 @@ class UserMergeRunner(object):
 
             class_handler_factory = ClassHandlerFactory()
 
-            try:
-                # Block other threads from retrieving this object until the end
-                # of the transaction.
-                obj = obj.__class__.objects.select_for_update().get(pk=obj.pk)
-            except ObjectDoesNotExist:
-                # The object was deleted in a cascading fashion. Process it
-                # anyway for reporting purposes.
-                pass
+            # Block other threads from retrieving this object until the end of
+            # the transaction.
+            obj = obj.__class__.objects.select_for_update().get(pk=obj.pk)
 
             try:
                 handler = class_handler_factory.get_handler(
