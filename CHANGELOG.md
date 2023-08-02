@@ -131,4 +131,5 @@
 [1.1.2]: https://github.com/ubccr/coldfront/releases/tag/v1.1.2
 [1.1.3]: https://github.com/ubccr/coldfront/releases/tag/v1.1.3
 [1.1.4]: https://github.com/ubccr/coldfront/releases/tag/v1.1.4
-[Unreleased]: https://github.com/ubccr/coldfront/compare/v1.1.4...HEAD
+[1.1.5]: https://github.com/ubccr/coldfront/releases/tag/v1.1.5
+[Unreleased]: https://github.com/ubccr/coldfront/compare/v1.1.6...HEAD
