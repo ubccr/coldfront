@@ -67,6 +67,7 @@ class ClassHandler(ABC):
             self._run_special_handling()
             if self._dst_obj:
                 self._dst_obj.save()
+            self._src_obj.delete()
 
     def _get_settable_if_falsy_attrs(self):
         """Return a list of attributes that, if falsy in the
