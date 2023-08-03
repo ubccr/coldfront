@@ -79,7 +79,6 @@ class ProjectUserUpdateForm(forms.Form):
     role = forms.ModelChoiceField(
         queryset=ProjectUserRoleChoice.objects.all(), empty_label=None)
     enable_notifications = forms.BooleanField(initial=False, required=False)
-
 class ProjectNoteCreateForm(forms.Form):
     # note_from = forms.CharField(max_length=150)
     tags = forms.ModelChoiceField(
