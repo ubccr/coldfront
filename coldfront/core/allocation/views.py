@@ -1113,6 +1113,26 @@ class AllocationInvoiceListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
 
         allocations = Allocation.objects.filter(
             status__name__in=['Paid', 'Payment Pending', 'Payment Requested', 'Payment Declined', ])
+        
+        allocations = [
+            {
+                "pk":allocation.pk,
+                "get_resources_as_string":allocation.get_resources_as_string,
+                "status":allocation.status,
+                "project":allocation.project
+            }
+            for allocation in allocations
+        ]
+        allocation_change_requests=AllocationChangeRequest.objects.all()
+        allocations += [
+            {
+                "pk":allocation.pk,
+                "get_resources_as_string":allocation.allocation.get_resources_as_string,
+                "status":allocation.payment_status,
+                "project":allocation.allocation.project
+            }
+            for allocation in allocation_change_requests
+        ]
         return allocations
 
 # this is the view class thats rendering allocation_invoice_detail.
@@ -1186,7 +1206,7 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
         allocation_obj = get_object_or_404(Allocation, pk=pk)
 
         initial_data = {
-            'status': allocation_obj.status,
+            'status': allocation_obj.status
         }
 
         form = AllocationInvoiceUpdateForm(initial=initial_data)
@@ -1455,13 +1475,14 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
         return context
 
     def get(self, request, *args, **kwargs):
-
         allocation_change_obj = get_object_or_404(
             AllocationChangeRequest, pk=self.kwargs.get('pk'))
 
         allocation_change_form = AllocationChangeForm(
             initial={'justification': allocation_change_obj.justification,
-                     'end_date_extension': allocation_change_obj.end_date_extension})
+                     'end_date_extension': allocation_change_obj.end_date_extension,
+                     "payment_status":allocation_change_obj.payment_status
+                    })
         allocation_change_form.fields['justification'].disabled = True
         if allocation_change_obj.status.name != 'Pending':
             allocation_change_form.fields['end_date_extension'].disabled = True
@@ -1488,7 +1509,8 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
         allocation_change_obj = get_object_or_404(AllocationChangeRequest, pk=pk)
         allocation_change_form = AllocationChangeForm(request.POST,
             initial={'justification': allocation_change_obj.justification,
-                     'end_date_extension': allocation_change_obj.end_date_extension})
+                     'end_date_extension': allocation_change_obj.end_date_extension,
+                     "payment_status":allocation_change_obj.payment_status})
         allocation_change_form.fields['justification'].required = False
 
         allocation_attributes_to_change = self.get_allocation_attributes_to_change(
@@ -1793,12 +1815,14 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         end_date_extension = form_data.get('end_date_extension')
         justification = form_data.get('justification')
         change_request_status_obj = AllocationChangeStatusChoice.objects.get(name='Pending')
+        payment_status_change = AllocationStatusChoice.objects.get(name = str(form_data["payment_status"]))
 
         allocation_change_request_obj = AllocationChangeRequest.objects.create(
             allocation=allocation_obj,
             end_date_extension=end_date_extension,
             justification=justification,
-            status=change_request_status_obj
+            status=change_request_status_obj,
+            payment_status=payment_status_change
             )
 
 

@@ -626,6 +626,7 @@ class AllocationChangeRequest(TimeStampedModel):
     Attributes:
         allocation (Allocation): represents the allocation to change
         status (AllocationStatusChoice): represents the allocation status of the changed allocation
+        payment_status (AllocationStatusChoice): represents the payment status of the allocation
         end_date_extension (int): represents the number of days to extend the allocation's end date
         justification (str): represents input from the user justifying why they want to change the allocation
         notes (str): represents notes for users changing allocations
@@ -634,6 +635,10 @@ class AllocationChangeRequest(TimeStampedModel):
     allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE,)
     status = models.ForeignKey(
         AllocationChangeStatusChoice, on_delete=models.CASCADE, verbose_name='Status')
+    
+    payment_status = models.ForeignKey(
+        AllocationStatusChoice, on_delete=models.CASCADE, verbose_name='Ptatus', related_name= "Payment", null=True)
+
     end_date_extension = models.IntegerField(blank=True, null=True)
     justification = models.TextField()
     notes = models.CharField(max_length=512, blank=True, null=True)
