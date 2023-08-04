@@ -449,48 +449,184 @@ Project Detail
 
 
 <!-- Start Admin Messages -->
-<div class="card mb-3">
+
+<div class="card mb3">
   <div class="card-header">
-    <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Notifications </h3> <span class="badge badge-secondary">{{project.projectusermessage_set.count}}</span>
+  <h3 class="d-inline" id="notes"><i class="fas fa-users" aria-hidden="true"></i> Project Notebook </h3> <span class="badge badge-secondary">{{project.projectusermessage_set.count}}</span>
     <div class="float-right">
-      {% if request.user.is_superuser %}
         <a class="btn btn-success" href="{% url 'project-note-add' project.pk %}" role="button">
           <i class="fas fa-plus" aria-hidden="true"></i> Add Notification
         </a>
+        <a class="btn btn-info" href="{% url 'notes-download' project.id %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Export to CSV</a>
+
+        {% if request.user.is_superuser or request.user.role == "Manager" %}
+        <a class="btn btn-danger" href="{% url 'project-note-delete' project.pk %}" role="button"><i class="fas fa-minus" aria-hidden="true"></i> Delete Notes</a>
       {% endif %}
     </div>
-  </div>
-  <div class="card-body">
     {% if project.projectusermessage_set.all %}
-      <div class="table-responsive">
-        <table class="table table-hover">
+    <ul class="nav nav-tabs" id="myTab" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="home-tab" data-toggle="tab" data-target="#home" type="button" role="tab" aria-controls="home" aria-selected="true">All</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="Information-tab" data-toggle="tab" data-target="#Information" type="button" role="tab" aria-controls="Information" aria-selected="false">Information</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="contact-tab" data-toggle="tab" data-target="#contact" type="button" role="tab" aria-controls="contact" aria-selected="false">Success</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="warning-tab" data-toggle="tab" data-target="#Warning" type="button" role="tab" aria-controls="Warning" aria-selected="false">Warning</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="todo-tab" data-toggle="tab" data-target="#ToDo" type="button" role="tab" aria-controls="ToDo" aria-selected="false">To Do</button>
+      </li>
+    </ul>
+    <div class="tab-content" id="myTabContent">
+      <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
+                <table id="notes_table_1" class="table table-hover">
+                  <thead>
+                    <tr>
+                      <th scope="col">Comment</th>
+                      <th scope="col">Posted By</th>
+                      <th scope="col">Tag</th>
+                      <th scope="col">Last Modified</th>
+                      <th scope="col">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for message in project.projectusermessage_set.all %}
+                    <tr>
+                      <td>{{ message.message }}</td>
+                      <td>{{ message.author.first_name }} {{ message.author.last_name }}</td>
+                      {% if message.tags.name == "Information" %}
+                      <td class="text-info">{{ message.tags }}</td>
+                      {% elif message.tags.name == "Success" %}
+                      <td class="text-success">{{ message.tags }}</td>
+                      {% elif message.tags.name == "Warning" %}
+                      <td class="text-danger">{{ message.tags }}</td>
+                      {% elif message.tags.name == "To-Do" %}
+                      <td class="text-primary">{{ message.tags }}</td>
+                      {% else %}
+                      <td class="text-justify">{{ message.tags }}</td>
+                      {% endif %}
+                      <td>{{ message.modified }}</td>
+                      <td><a href="{% url 'notes-update' message.id %}"><i class="far fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+          </div>
+      <div class="tab-pane fade" id="Information" role="tabpanel" aria-labelledby="Information-tab">
+              <table id="notes_table_1" class="table table-hover">
+                <thead>
+                  <tr>
+                    <th scope="col">Comment</th>
+                    <th scope="col">Posted By</th>
+                    <th scope="col">Tag</th>
+                    <th scope="col">Last Modified</th>
+                    <th scope="col">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for message in project.projectusermessage_set.all %}
+                  <tr>
+                    {% if message.tags.name == "Information" %}
+                    <td>{{ message.message }}</td>
+                    <td>{{ message.author.first_name }} {{ message.author.last_name }}</td>
+                    {% if message.tags.name == "Information" %}
+                    <td class="text-info">{{ message.tags }}</td>
+                    {% else %}
+                    <td class="text-justify">{{ message.tags }}</td>
+                    {% endif %}
+                    <td>{{ message.modified }}</td>
+                    <td><a href="{% url 'notes-update' message.id %}"><i class="far fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
+                  </tr>
+                  {% endif %}
+                  {% endfor %}
+                </tbody>
+              </table>
+      </div>
+      <div class="tab-pane fade" id="contact" role="tabpanel" aria-labelledby="contact-tab">
+        <table id="notes_table_1" class="table table-hover">
           <thead>
             <tr>
               <th scope="col">Comment</th>
-              <th scope="col">Administrator</th>
+              <th scope="col">Posted By</th>
+              <th scope="col">Tag</th>
               <th scope="col">Last Modified</th>
+              <th scope="col">Actions</th>
             </tr>
           </thead>
           <tbody>
             {% for message in project.projectusermessage_set.all %}
-              {% if not message.is_private or request.user.is_superuser %}
             <tr>
+              {% if message.tags.name == "Success" %}
               <td>{{ message.message }}</td>
               <td>{{ message.author.first_name }} {{ message.author.last_name }}</td>
-              <td>{{ message.modified }}</td>
-            </tr>
+              {% if message.tags.name == "Success" %}
+              <td class="text-success">{{ message.tags }}</td>
+              {% else %}
+              <td class="text-justify">{{ message.tags }}</td>
               {% endif %}
+              <td>{{ message.modified }}</td>
+              <td><a href="{% url 'notes-update' message.id %}"><i class="far fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+          </tbody>
+          </table>
+          </div>
+        <div class="tab-pane fade" id="Warning" role="tabpanel" aria-labelledby="warning-tab">
+          <tbody>
+            {% for message in project.projectusermessage_set.all %}
+            <tr>
+              {% if message.tags.name == "Warning" %}
+              <td>{{ message.message }}</td>
+              <td>{{ message.author.first_name }} {{ message.author.last_name }}</td>
+              {% if message.tags.name == "Warning" %}
+              <td class="text-danger">{{ message.tags }}</td>
+              {% else %}
+              <td class="text-justify">{{ message.tags }}</td>
+              {% endif %}
+              <td>{{ message.modified }}</td>
+              <td><a href="{% url 'notes-update' message.id %}"><i class="far fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
+            </tr>
+            {% endif %}
             {% endfor %}
           </tbody>
         </table>
+        </div>
+        <div class="tab-pane fade" id="ToDo" role="tabpanel" aria-labelledby="todo-tab">
+        <tbody>
+          {% for message in project.projectusermessage_set.all %}
+          <tr>
+            {% if message.tags.name == "To-Do" %}
+            <td>{{ message.message }}</td>
+            <td>{{ message.author.first_name }} {{ message.author.last_name }}</td>
+            {% if message.tags.name == "To-Do" %}
+            <td class="text-primary">{{ message.tags }}</td>
+            {% else %}
+            <td class="text-justify">{{ message.tags }}</td>
+            {% endif %}
+            <td>{{ message.modified }}</td>
+            <td><a href="{% url 'notes-update' message.id %}"><i class="far fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
+          </tr>
+          {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
       </div>
+    </div>
     {% else %}
-      <div class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i> There are no messages from system administrators.</div>
-    {% endif %}
+    <div class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i> There are no messages from system administrators.</div>
+  {% endif %}
   </div>
 </div>
-<!-- End Admin Messages -->
 
+
+
+<!-- End Admin Messages -->
+  
 <script>
   function getCookie(name) {
     var cookieValue = null;
@@ -538,6 +674,13 @@ Project Detail
     });
 
     $('#projectuser_table').DataTable({
+      'aoColumnDefs': [{
+        'bSortable': false,
+        'aTargets': ['nosort']
+      }]
+    });
+
+    $('#notes_table').DataTable({
       'aoColumnDefs': [{
         'bSortable': false,
         'aTargets': ['nosort']

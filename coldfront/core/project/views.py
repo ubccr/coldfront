@@ -2,7 +2,8 @@ import datetime
 from pipes import Template
 import pprint
 import django
-import logging 
+import logging
+import csv 
 from django import forms
 
 from django.conf import settings
@@ -11,13 +12,13 @@ from django import forms
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import user_passes_test, login_required
 from django.contrib.auth.models import User
-from coldfront.core.utils.common import import_from_settings
+from coldfront.core.utils.common import import_from_settings, Echo
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
 from django.forms import formset_factory, modelformset_factory
 from django.http import (HttpResponse, HttpResponseForbidden,
-                         HttpResponseRedirect)
+                         HttpResponseRedirect, StreamingHttpResponse)
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -43,7 +44,10 @@ from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectReviewForm,
                                           ProjectSearchForm,
                                           ProjectUserUpdateForm,
-                                          ProjectAttributeUpdateForm)
+                                          ProjectAttributeUpdateForm,
+                                          ProjectNoteCreateForm,
+                                          ProjectNoteDeleteForm
+                                          )
 from coldfront.core.project.models import (Project,
                                            ProjectAttribute,
                                            ProjectReview,
@@ -52,7 +56,9 @@ from coldfront.core.project.models import (Project,
                                            ProjectUser,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice,
-                                           ProjectUserMessage)
+                                           ProjectUserMessage,
+                                           ProjectUserMessageReciever
+                                           )
 from coldfront.core.publication.models import Publication
 from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.user.forms import UserSearchForm
@@ -163,6 +169,10 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             else:
                 allocations = Allocation.objects.prefetch_related(
                     'resources').filter(project=self.object)
+                
+        
+
+        context["note_recievers"] = self.object.projectusermessagereciever_set.all()
 
         context['publications'] = Publication.objects.filter(
             project=self.object, status='Active').order_by('-year')
@@ -1165,14 +1175,21 @@ class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         return reverse('project-review-list')
 
 
-class ProjectNoteCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
-    model = ProjectUserMessage
-    fields = '__all__'
+class ProjectNoteCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
+    # model = ProjectUserMessage
+    form_class = ProjectNoteCreateForm
+    # fields = '__all__'
     template_name = 'project/project_note_create.html'
-
     def test_func(self):
         """ UserPassesTestMixin Tests"""
 
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+        if project_obj.pi == self.request.user:
+            return True
+
+        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+            return True
+        
         if self.request.user.is_superuser:
             return True
         else:
@@ -1184,27 +1201,244 @@ class ProjectNoteCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView)
         pk = self.kwargs.get('pk')
         project_obj = get_object_or_404(Project, pk=pk)
         context['project'] = project_obj
+
         return context
 
-    def get_initial(self):
-        initial = super().get_initial()
-        pk = self.kwargs.get('pk')
-        project_obj = get_object_or_404(Project, pk=pk)
-        author = self.request.user
-        initial['project'] = project_obj
-        initial['author'] = author
-        return initial
+    
 
-    def get_form(self, form_class=None):
+    def get_form(self, form_class=form_class):
         """Return an instance of the form to be used in this view."""
-        form = super().get_form(form_class)
-        form.fields['project'].widget = forms.HiddenInput()
-        form.fields['author'].widget = forms.HiddenInput()
-        form.order_fields([ 'project', 'author', 'message', 'is_private' ])
-        return form
+        return form_class(self.kwargs.get('pk'),  **self.get_form_kwargs())
+    
+    def form_valid(self, form) -> HttpResponse:
+        obj = form
+        obj.author = self.request.user
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+        form_complete = ProjectNoteCreateForm(project_obj.pk,self.request.POST,initial = {"author":obj.author,"message":obj.data['message']})
+
+        if form_complete.is_valid():
+            form_data = form_complete.cleaned_data
+            new_note_obj = ProjectUserMessage.objects.create(
+                project = project_obj,
+                message = form_data["message"],
+                tags = form_data["tags"],
+                author = obj.author,
+            )
+
+            receivers_list = form_data["note_to"]
+            for user in receivers_list:
+                new_rec_obj = ProjectUserMessageReciever.objects.create(
+                    project = project_obj,
+                    user = User.objects.get(username=user),
+                    notes = new_note_obj
+                )
+                
+            receivers_list = [
+                User.objects.get(username=user).email
+                for user in form_data["note_to"]
+            ]
+            email_list=[]
+            for r in receivers_list :
+                if r!="":
+                    email_list.append(r)
+
+            send_email(
+                'New message has been sent to you',
+                "A new message from "" has been sent to you - \n ",
+                EMAIL_DIRECTOR_EMAIL_ADDRESS,
+                email_list,
+                []
+            )
+            
+        obj.project = project_obj
+
+        self.object = obj
+
+        return super().form_valid(form)
+    
+        
+
 
     def get_success_url(self):
         return reverse('project-detail', kwargs={'pk': self.kwargs.get('pk')})
+
+
+class ProjectNoteDeleteView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name = 'project/project_note_delete.html'
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+        if project_obj.pi == self.request.user:
+            return True
+
+        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+            return True
+
+        messages.error(self.request, 'You do not have permission to delete notes from this project.')
+
+    def get_notes_to_delete(self, project_obj):
+        notes_to_delete = [
+
+            {"author": note.author,
+             "tags": note.tags,
+             "message": note.message}
+
+
+            for note in project_obj.projectusermessage_set.all()
+        ]
+
+        return notes_to_delete
+
+    def get(self, request, *args, **kwargs):
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+
+        notes_to_delete = self.get_notes_to_delete(project_obj)
+        context = {}
+
+        if notes_to_delete:
+            formset = formset_factory(ProjectNoteDeleteForm, max_num=len(notes_to_delete))
+            formset = formset(initial=notes_to_delete, prefix='notedeleteform')
+            context['formset'] = formset
+
+        context['project'] = project_obj
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+
+        notes_to_delete = self.get_notes_to_delete(project_obj)
+        context = {}
+
+        formset = formset_factory(ProjectNoteDeleteForm, max_num=len(notes_to_delete))
+        formset = formset(request.POST, initial=notes_to_delete, prefix='notedeleteform')
+        notes_deleted_count = 0
+
+        if formset.is_valid():
+            for form in formset:
+                notes_to_delete_data = form.cleaned_data
+                if notes_to_delete_data['selected']:
+
+                    note_obj = ProjectUserMessage.objects.get(
+                        author=notes_to_delete_data.get("author"),
+                        message=notes_to_delete_data.get('message'),
+                        tags=notes_to_delete_data.get('tags')
+                    )
+                    note_obj.delete()
+                    notes_deleted_count += 1
+
+            messages.success(request, 'Deleted {} notes from project.'.format(notes_deleted_count))
+        else:
+            for error in formset.errors:
+                messages.error(request, error)
+
+        return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
+
+    def get_success_url(self):
+        return reverse('project-detail', kwargs={'pk': self.object.project.id})
+
+class ProjectNoteUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+        if project_obj.project.pi == self.request.user:
+            return True
+
+        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+            return True
+
+        messages.error(self.request, 'You do not have permission to update notes from this project.')
+
+    model = ProjectUserMessage
+    template_name_suffix = '_update_form'
+    fields = ['message']
+
+    def get_success_url(self):
+        return reverse('project-detail', kwargs={'pk': self.object.project.id})
+
+
+class ProjectNotesListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    #TODO
+    template_name = 'project/project_note_list.html'
+    def test_func(self):
+            """ UserPassesTestMixin Tests"""
+            if self.request.user.is_superuser:
+                return True
+            
+            project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+
+            if project_obj.project.pi == self.request.user:
+                return True
+
+            if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+                return True
+
+            messages.error(self.request, 'You do not have permission to download all notes.')
+
+    def get(self, request, *args, **kwargs):
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+        notes = ProjectUserMessage.objects.all()
+        notes_to_delete = self.get_notes_to_delete(project_obj)
+        context = {}
+
+        if notes_to_delete:
+            formset = formset_factory(ProjectNoteDeleteForm, max_num=len(notes_to_delete))
+            formset = formset(initial=notes_to_delete, prefix='notedeleteform')
+            context['formset'] = formset
+
+        context['project'] = project_obj
+        return render(request, self.template_name, context)    
+    
+
+class ProjectNoteDownloadView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+      def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+        
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+
+        if project_obj.project.pi == self.request.user:
+            return True
+
+        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+            return True
+
+        messages.error(self.request, 'You do not have permission to download all notes.')
+
+      def get(self, request, pk):  
+          header = [
+              "Comment",
+              "Administrator",
+              "Created By",
+              "Last Modified"
+          ]  
+          rows = []
+          project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+
+          notes = project_obj.projectusermessage_set.all()
+
+          for note in notes:
+              row = [
+                  note.message,
+                  note.author,
+                  note.tags,
+                  note.modified
+              ]  
+              rows.append(row)
+          rows.insert(0, header)
+          pseudo_buffer = Echo()
+          writer = csv.writer(pseudo_buffer)
+          response = StreamingHttpResponse((writer.writerow(row) for row in rows),
+                                              content_type="text/csv")
+          response['Content-Disposition'] = 'attachment; filename="notes.csv"'
+          return response  
+
+
 
 class ProjectAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = ProjectAttribute

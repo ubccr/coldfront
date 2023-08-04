@@ -1,5 +1,6 @@
 import datetime
 import textwrap
+import json
 from enum import Enum
 
 from django.contrib.auth.models import User
@@ -240,6 +241,24 @@ class ProjectAdminComment(TimeStampedModel):
 
     def __str__(self):
         return self.comment
+    
+class ProjectNoteTags(TimeStampedModel):
+    name = models.CharField(max_length=64)
+
+    class ProjectNoteTagManager(models.Manager):
+        def get_by_natural_key(self, name):
+            return self.get(name=name)
+    objects = ProjectNoteTagManager()
+
+    def __str__(self):
+        return self.name
+
+    def natural_key(self):
+        return (self.name,)
+
+    class Meta:
+        ordering = ['name', ]
+
 
 class ProjectUserMessage(TimeStampedModel):
     """ A project user message is a message sent to a user in a project. 
@@ -247,17 +266,40 @@ class ProjectUserMessage(TimeStampedModel):
     Attributes:
         project (Project): links the project the message is from to the message
         author (User): represents the user who authored the message
+        tags (ProjectNoteTags): represents the tag/type of message
         is_private (bool): indicates whether or not the message is private
         message (str): text input from the user containing the message
     """
 
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     author = models.ForeignKey(User, on_delete=models.CASCADE)
-    is_private = models.BooleanField(default=True)
+    tags = models.ForeignKey(ProjectNoteTags, on_delete=models.CASCADE,null=True,default=None)
+    test = models.TextField(default="True")
+    is_private = models.BooleanField(default=False)
     message = models.TextField()
+    note_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name="NoteT",null=True)
 
     def __str__(self):
         return self.message
+    
+
+class ProjectUserMessageReciever(TimeStampedModel):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    user = models.ForeignKey(User,on_delete=models.CASCADE)
+    notes = models.ForeignKey(ProjectUserMessage,on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ('user', 'notes')
+        verbose_name_plural = "Project User Note"
+
+    class ProjectUserMessageRecieverManager(models.Manager):
+            def get_by_natural_key(self, name):
+                return self.get(name=name)
+    
+    
+    objects = ProjectUserMessageRecieverManager()
+
+
 
 class ProjectReviewStatusChoice(TimeStampedModel):
     """ A project review status choice is an option a user can choose when setting a project's status. Examples include Completed and Pending.
@@ -310,6 +352,7 @@ class ProjectUserRoleChoice(TimeStampedModel):
 
     def natural_key(self):
         return (self.name,)
+    
 
 class ProjectUserStatusChoice(TimeStampedModel):
     """ A project user status choice indicates the status of a project user. Examples include Active, Pending, and Denied.
