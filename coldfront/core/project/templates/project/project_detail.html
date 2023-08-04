@@ -460,9 +460,10 @@ Project Detail
         <a class="btn btn-info" href="{% url 'notes-download' project.id %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Export to CSV</a>
 
         {% if request.user.is_superuser or request.user.role == "Manager" %}
-        <a class="btn btn-danger" href="{% url 'project-note-delete' project.pk %}" role="button"><i class="fas fa-minus" aria-hidden="true"></i> Delete Grants</a>
+        <a class="btn btn-danger" href="{% url 'project-note-delete' project.pk %}" role="button"><i class="fas fa-minus" aria-hidden="true"></i> Delete Notes</a>
       {% endif %}
     </div>
+    {% if project.projectusermessage_set.all %}
     <ul class="nav nav-tabs" id="myTab" role="tablist">
       <li class="nav-item" role="presentation">
         <button class="nav-link active" id="home-tab" data-toggle="tab" data-target="#home" type="button" role="tab" aria-controls="home" aria-selected="true">All</button>
@@ -482,8 +483,6 @@ Project Detail
     </ul>
     <div class="tab-content" id="myTabContent">
       <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
-          <div class="card-body">
-            {% if project.projectusermessage_set.all %}
                 <table id="notes_table_1" class="table table-hover">
                   <thead>
                     <tr>
@@ -516,14 +515,8 @@ Project Detail
                     {% endfor %}
                   </tbody>
                 </table>
-            {% else %}
-              <div class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i> There are no messages from system administrators.</div>
-            {% endif %}
           </div>
-        </div>
       <div class="tab-pane fade" id="Information" role="tabpanel" aria-labelledby="Information-tab">
-        <div class="card-body">
-          {% if project.projectusermessage_set.all %}
               <table id="notes_table_1" class="table table-hover">
                 <thead>
                   <tr>
@@ -552,14 +545,8 @@ Project Detail
                   {% endfor %}
                 </tbody>
               </table>
-          {% else %}
-            <div class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i> There are no messages from system administrators.</div>
-          {% endif %}
-        </div>
-
       </div>
       <div class="tab-pane fade" id="contact" role="tabpanel" aria-labelledby="contact-tab">
-
         <table id="notes_table_1" class="table table-hover">
           <thead>
             <tr>
@@ -630,6 +617,9 @@ Project Detail
       </table>
       </div>
     </div>
+    {% else %}
+    <div class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i> There are no messages from system administrators.</div>
+  {% endif %}
   </div>
 </div>
 
