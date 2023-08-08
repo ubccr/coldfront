@@ -1042,7 +1042,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             elif resource_attributes_type_attribute_type_name == 'True/False':
                 resource_attributes_type_attribute_type_name = 'checkbox'
 
-            if resource_attributes_type_field_name in ['access_level', 'system', 'storage_space_unit']:
+            if resource_attributes_type_field_name in ['access_level', 'system', 'storage_space_unit', 'use_type']:
                 resource_attributes_type_attribute_type_name = 'radio'
             elif resource_attributes_type_field_name in ['campus_affiliation', 'training_or_inference']:
                 resource_attributes_type_attribute_type_name = 'choice'
@@ -1342,12 +1342,14 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         form_data.pop('license_term')
         form_data.pop('prorated_cost')
         form_data.pop('allocation_account')
+        use_type = form_data.pop('use_type')
         form_data['status'] = allocation_status_obj
         form_data['project'] = project_obj
         form_data['end_date'] = end_date
         form_data['total_cost'] = total_cost
         form_data['storage_space_unit'] = storage_space_unit
         allocation_obj = Allocation.objects.create(**form_data)
+        form_data['use_type'] = use_type
 
         if ALLOCATION_ENABLE_CHANGE_REQUESTS_BY_DEFAULT:
             allocation_obj.is_changeable = True

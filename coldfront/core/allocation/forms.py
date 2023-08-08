@@ -78,6 +78,10 @@ class AllocationForm(forms.Form):
         ('current', 'Current license'),
         ('current_and_next_year', 'Current license + next annual license')
     )
+    USE_TYPE_CHOICES = (
+        ('Research', 'Research'),
+        ('Class', 'Class')
+    )
 
     resource = forms.ChoiceField(choices=())
     justification = forms.CharField(widget=forms.Textarea)
@@ -130,6 +134,7 @@ class AllocationForm(forms.Form):
     data_management_responsibilities = forms.BooleanField(required=False)
     admin_ads_group = forms.CharField(max_length=64, required=False)
     user_ads_group = forms.CharField(max_length=64, required=False)
+    use_type = forms.ChoiceField(choices=USE_TYPE_CHOICES, required=False, widget=RadioSelect)
     will_exceed_limit = forms.ChoiceField(choices=YES_NO_CHOICES, required=False, widget=RadioSelect)
 
     users = forms.MultipleChoiceField(
@@ -231,6 +236,7 @@ class AllocationForm(forms.Form):
             'quantity',
             'storage_space',
             InlineRadios('storage_space_unit'),
+            InlineRadios('use_type'),
             InlineRadios('will_exceed_limit'),
             'group_account_name',
             'group_account_name_exists',
