@@ -1,13 +1,18 @@
+import json
+import os
+
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from flags.state import flag_enabled
 
+from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.resource.models import AttributeType
 from coldfront.core.resource.models import Resource
 from coldfront.core.resource.models import ResourceAttribute
 from coldfront.core.resource.models import ResourceAttributeType
 from coldfront.core.resource.models import ResourceType
+from coldfront.core.resource.models import TimedResourceAttribute
 from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
 from coldfront.core.resource.utils_.allowance_utils.constants import LRCAllowances
 
@@ -40,6 +45,16 @@ class Command(BaseCommand):
                 ResourceAttribute.objects.update_or_create(
                     resource_attribute_type=resource_attribute_type,
                     resource=resource,
+                    defaults={
+                        'value': value,
+                    })
+            for resource_attribute_type, start_date, end_date, value in \
+                    allowance.get('timed_attributes', []):
+                TimedResourceAttribute.objects.update_or_create(
+                    resource_attribute_type=resource_attribute_type,
+                    resource=resource,
+                    start_date=start_date,
+                    end_date=end_date,
                     defaults={
                         'value': value,
                     })
@@ -103,7 +118,6 @@ class Command(BaseCommand):
                     'description': (
                         'A free computing allowance available to faculty.'),
                     'attributes': [
-                        (self.service_units, '300000.00'),
                         (self.name_long, 'Faculty Computing Allowance (FCA)'),
                         (self.name_short, 'FCA'),
                         (self.code, 'fc_'),
@@ -135,7 +149,6 @@ class Command(BaseCommand):
                         'A free computing allowance available to '
                         'instructors.'),
                     'attributes': [
-                        (self.service_units, '200000.00'),
                         (self.name_long,
                          'Instructional Computing Allowance (ICA)'),
                         (self.name_short, 'ICA'),
@@ -148,7 +161,6 @@ class Command(BaseCommand):
                         'A free computing allowance available in special '
                         'cases.'),
                     'attributes': [
-                        (self.service_units, '300000.00'),
                         (self.name_long, 'Partner Computing Allowance (PCA)'),
                         (self.name_short, 'PCA'),
                         (self.code, 'pc_'),
@@ -161,7 +173,6 @@ class Command(BaseCommand):
                     'description': (
                         'A free computing allowance available to PIs.'),
                     'attributes': [
-                        (self.service_units, '300000.00'),
                         (self.name_long, 'PI Computing Allowance (PCA)'),
                         (self.name_short, 'PCA'),
                         (self.code, 'pc_'),
@@ -192,8 +203,38 @@ class Command(BaseCommand):
             ],
         }
 
+        service_units_files_by_flag_name = {
+            'BRC_ONLY': 'data/brc_service_units.json',
+            'LRC_ONLY': 'data/lrc_service_units.json',
+        }
+
         data = []
         for flag_name, allowances in data_by_flag_name.items():
             if flag_enabled(flag_name):
+                service_units_file_path = os.path.join(
+                    os.path.dirname(__file__),
+                    service_units_files_by_flag_name[flag_name])
+                with open(service_units_file_path, 'r') as f:
+                    # A mapping from allowance name to a list of objects
+                    # specifying how many Service Units the allowance grants
+                    # during a particular AllocationPeriod.
+                    service_units_data = json.load(f)
+                for allowance in allowances:
+                    if allowance['name'] in service_units_data:
+                        allowance['timed_attributes'] = []
+                        for allocation_period_value in service_units_data[
+                                allowance['name']]:
+                            allocation_period = AllocationPeriod.objects.get(
+                                name=allocation_period_value[
+                                    'allocation_period'])
+                            value = allocation_period_value['value']
+                            allowance['timed_attributes'].append(
+                                (
+                                    self.service_units,
+                                    allocation_period.start_date,
+                                    allocation_period.end_date,
+                                    value,
+                                )
+                            )
                 data.extend(allowances)
         return data

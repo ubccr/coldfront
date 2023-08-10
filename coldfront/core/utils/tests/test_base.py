@@ -94,8 +94,8 @@ class TestBase(TestCase):
             'add_resource_defaults',
             'add_allocation_defaults',
             'add_accounting_defaults',
-            'add_allowance_defaults',
             'create_allocation_periods',
+            'add_allowance_defaults',
             # This command calls 'print', whose output must be suppressed.
             'import_field_of_science_data',
             'add_default_project_choices',

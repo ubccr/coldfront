@@ -1,0 +1,42 @@
+{
+    "Faculty Computing Allowance": [
+        {"allocation_period": "Allowance Year 2020 - 2021", "value": "300000.00"},
+        {"allocation_period": "Allowance Year 2021 - 2022", "value": "300000.00"},
+        {"allocation_period": "Allowance Year 2022 - 2023", "value": "300000.00"},
+        {"allocation_period": "Allowance Year 2023 - 2024", "value": "300000.00"},
+        {"allocation_period": "Allowance Year 2024 - 2025", "value": "300000.00"}
+    ],
+    "Instructional Computing Allowance": [
+        {"allocation_period": "Fall Semester 2021", "value": "200000.00"},
+        {"allocation_period": "Spring Semester 2022", "value": "200000.00"},
+        {"allocation_period": "Summer Sessions 2022 - Session A", "value": "200000.00"},
+        {"allocation_period": "Summer Sessions 2022 - Session B", "value": "200000.00"},
+        {"allocation_period": "Summer Sessions 2022 - Session C", "value": "200000.00"},
+        {"allocation_period": "Summer Sessions 2022 - Session D", "value": "200000.00"},
+        {"allocation_period": "Summer Sessions 2022 - Session E", "value": "200000.00"},
+        {"allocation_period": "Summer Sessions 2022 - Session F", "value": "200000.00"},
+        {"allocation_period": "Fall Semester 2022", "value": "200000.00"},
+        {"allocation_period": "Spring Semester 2023", "value": "200000.00"},
+        {"allocation_period": "Summer Sessions 2023 - Session A", "value": "200000.00"},
+        {"allocation_period": "Summer Sessions 2023 - Session B", "value": "200000.00"},
+        {"allocation_period": "Summer Sessions 2023 - Session C", "value": "200000.00"},
+        {"allocation_period": "Summer Sessions 2023 - Session D", "value": "200000.00"},
+        {"allocation_period": "Summer Sessions 2023 - Session E", "value": "200000.00"},
+        {"allocation_period": "Summer Sessions 2023 - Session F", "value": "200000.00"},
+        {"allocation_period": "Fall Semester 2023", "value": "200000.00"},
+        {"allocation_period": "Spring Semester 2024", "value": "200000.00"},
+        {"allocation_period": "Summer Sessions 2024 - Session A", "value": "200000.00"},
+        {"allocation_period": "Summer Sessions 2024 - Session B", "value": "200000.00"},
+        {"allocation_period": "Summer Sessions 2024 - Session C", "value": "200000.00"},
+        {"allocation_period": "Summer Sessions 2024 - Session D", "value": "200000.00"},
+        {"allocation_period": "Summer Sessions 2024 - Session E", "value": "200000.00"},
+        {"allocation_period": "Summer Sessions 2024 - Session F", "value": "200000.00"}
+    ],
+    "Partner Computing Allowance": [
+        {"allocation_period": "Allowance Year 2020 - 2021", "value": "300000.00"},
+        {"allocation_period": "Allowance Year 2021 - 2022", "value": "300000.00"},
+        {"allocation_period": "Allowance Year 2022 - 2023", "value": "300000.00"},
+        {"allocation_period": "Allowance Year 2023 - 2024", "value": "300000.00"},
+        {"allocation_period": "Allowance Year 2024 - 2025", "value": "300000.00"}
+    ]
+}
