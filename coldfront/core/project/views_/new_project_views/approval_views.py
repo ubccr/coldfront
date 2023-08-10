@@ -439,8 +439,16 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
             num_service_units = Decimal(f'{num_service_units_int:.2f}')
         else:
             allowance_name = self.request_obj.computing_allowance.name
+
+            allocation_period = self.request_obj.allocation_period
+            kwargs = {}
+            if allocation_period:
+                kwargs['is_timed'] = True
+                kwargs['allocation_period'] = allocation_period
             num_service_units = Decimal(
-                self.interface.service_units_from_name(allowance_name))
+                self.interface.service_units_from_name(
+                    allowance_name, **kwargs))
+
             if self.computing_allowance_obj.are_service_units_prorated():
                 num_service_units = prorated_allocation_amount(
                     num_service_units, self.request_obj.request_time,

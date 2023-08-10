@@ -33,9 +33,11 @@ class TestApproveRenewalRequestsForAllocationPeriod(TestBase):
         """Set up test data."""
         super().setUp()
         computing_allowance = Resource.objects.get(name=BRCAllowances.FCA)
+        next_allocation_period = get_next_allowance_year_period()
         self.num_service_units = Decimal(
             ComputingAllowanceInterface().service_units_from_name(
-                computing_allowance.name))
+                computing_allowance.name, is_timed=True,
+                allocation_period=next_allocation_period))
 
     @staticmethod
     def call_command(allocation_period_id, dry_run=False):

@@ -148,7 +148,8 @@ class Command(BaseCommand):
             'PI Computing Allowance')
         num_service_units = Decimal(
             computing_allowance_interface.service_units_from_name(
-                computing_allowance.name))
+                computing_allowance.name, is_timed=True,
+                allocation_period=allocation_period))
 
         for project in Project.objects.filter(
                 name__startswith=prefix).iterator():

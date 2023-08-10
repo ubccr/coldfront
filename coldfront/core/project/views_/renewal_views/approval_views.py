@@ -110,7 +110,8 @@ class AllocationRenewalRequestMixin(object):
         if it were to be approved now."""
         num_service_units = Decimal(
             ComputingAllowanceInterface().service_units_from_name(
-                self.computing_allowance_obj.get_name()))
+                self.computing_allowance_obj.get_name(),
+                is_timed=True, allocation_period=self.allocation_period_obj))
         if self.computing_allowance_obj.are_service_units_prorated():
             num_service_units = prorated_allocation_amount(
                 num_service_units, self.request_obj.request_time,
