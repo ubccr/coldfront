@@ -194,7 +194,10 @@ class Allocation(TimeStampedModel):
 
     @property
     def cost(self):
-        price = float(get_resource_rate(self.resources.first().name))
+        try:
+            price = float(get_resource_rate(self.resources.first().name))
+        except AttributeError:
+            return None
         size = self.allocationattribute_set.get(allocation_attribute_type_id=1).value
         return 0 if not size else price * float(size)
 
@@ -204,8 +207,9 @@ class Allocation(TimeStampedModel):
         Returns:
             int: the number of days until the allocation expires
         """
-
-        return (self.end_date - datetime.date.today()).days
+        if self.end_date:
+            return (self.end_date - datetime.date.today()).days
+        return None
 
     @property
     def get_information(self, public_only=True):
