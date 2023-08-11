@@ -149,6 +149,37 @@ class AllocationChangeDetailViewTest(AllocationViewBaseTest):
         )
         self.assertEqual(response.status_code, 200)
 
+    def test_allocationchangedetailview_post_permissions_admin(self):
+        """Test post request"""
+        param = {'action': 'deny'}
+        self.client.force_login(self.admin_user, backend=BACKEND)
+        response = self.client.post(
+            reverse('allocation-change-detail', kwargs={'pk': 2}), param, follow=True
+        )
+        alloc_change_req = AllocationChangeRequest.objects.get(pk=2)
+        self.assertEqual(alloc_change_req.status_id, 3)
+
+    def test_allocationchangedetailview_post_permissions_pi(self):
+        """pi can't post changes"""
+        param = {'action': 'deny'}
+        self.client.force_login(self.pi_user, backend=BACKEND)
+        self.client.post(
+            reverse('allocation-change-detail', kwargs={'pk': 2}), param, follow=True
+        )
+        alloc_change_req = AllocationChangeRequest.objects.get(pk=2)
+        self.assertNotEqual(alloc_change_req.status_id, 3)
+
+    def test_allocationchangedetailview_post_permissions_normaluser(self):
+        """normal user can't post changes"""
+        param = {'action': 'deny'}
+        self.client.force_login(self.proj_allocation_user, backend=BACKEND)
+        self.client.post(
+            reverse('allocation-change-detail', kwargs={'pk': 2}), param, follow=True
+        )
+        alloc_change_req = AllocationChangeRequest.objects.get(pk=2)
+        self.assertNotEqual(alloc_change_req.status_id, 3)
+
+
     def test_allocationchangedetailview_post_deny(self):
         param = {'action': 'deny'}
         response = self.client.post(
@@ -192,6 +223,24 @@ class AllocationChangeViewTest(AllocationViewBaseTest):
         self.allocation_access_tstbase(self.url)
         utils.test_user_can_access(self, self.pi_user, self.url)  # Manager can access
         utils.test_user_cannot_access(self, self.proj_allocation_user, self.url)  # user can't access
+
+    def test_allocationchangeview_post_permissions(self):
+        """Test post request"""
+        self.post_data['attributeform-0-new_value'] = '1000'
+        self.client.force_login(self.admin_user, backend=BACKEND)
+        response = self.client.post(self.url, data=self.post_data, follow=True)
+        self.assertContains(
+            response, "Allocation change request successfully submitted."
+        )
+        self.client.force_login(self.pi_user, backend=BACKEND)
+        response = self.client.post(self.url, data=self.post_data, follow=True)
+        self.assertContains(
+            response, "Allocation change request successfully submitted."
+        )
+
+        self.client.force_login(self.proj_allocation_user, backend=BACKEND)
+        response = self.client.post(self.url, data=self.post_data, follow=True)
+        self.assertEqual(response.status_code, 403)
 
     def test_allocationchangeview_post_extension(self):
         """Test post request to extend end date"""
@@ -442,8 +491,6 @@ class AllocationChangeListViewTest(AllocationViewBaseTest):
         and test that they all display properly
         """
         # create a new allocationchangerequest for each attribute that is changeable
-
-
 
 class AllocationNoteCreateViewTest(AllocationViewBaseTest):
     """Tests for the AllocationNoteCreateView"""

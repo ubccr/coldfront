@@ -199,8 +199,8 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         for a in invalid_attributes:
             attributes_with_usage.remove(a)
 
-        allocation_quota_tb = next((a for a in attributes_with_usage if \
-            a.allocation_attribute_type.name == 'Storage Quota (TB)'), None)
+        allocation_quota_tb = next((a for a in attributes_with_usage
+            if a.allocation_attribute_type.name == 'Storage Quota (TB)'), None)
         quota_bytes, usage_bytes = return_allocation_bytes_values(
             attributes_with_usage, allocation_obj.allocationuser_set.all()
         )
@@ -255,6 +255,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             'is_locked': allocation_obj.is_locked,
             'is_changeable': allocation_obj.is_changeable,
             'heavy_io': allocation_obj.heavy_io,
+            'resource': allocation_obj.get_parent_resource,
         }
 
         form = AllocationUpdateForm(initial=initial_data)
@@ -268,11 +269,12 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         return self.render_to_response(context)
 
     def post(self, request, *args, **kwargs):
+
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
         if not self.request.user.is_superuser:
-            msg = 'You do not have permission to update the allocation'
-            messages.error(request, msg)
+            err = 'You do not have permission to update the allocation'
+            messages.error(request, err)
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
         initial_data = {
@@ -282,6 +284,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             'description': allocation_obj.description,
             'is_locked': allocation_obj.is_locked,
             'is_changeable': allocation_obj.is_changeable,
+            'resource': allocation_obj.get_parent_resource,
         }
         form = AllocationUpdateForm(request.POST, initial=initial_data)
 
@@ -300,6 +303,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         old_status = allocation_obj.status.name
 
         if action in ['update', 'approve', 'deny']:
+
             allocation_obj.end_date = form_data.get('end_date')
             allocation_obj.start_date = form_data.get('start_date')
             allocation_obj.description = form_data.get('description')
@@ -308,16 +312,30 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             allocation_obj.status = form_data.get('status')
 
         if 'approve' in action:
+            # ensure that Tier gets swapped out for storage volume
+            if form_data.get('resource'):
+                if 'Tier ' in form_data.get('resource').name:
+                    err = 'You must select a volume for the selected tier.'
+                    messages.error(request, err)
+                    return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
+                if 'Tier ' in allocation_obj.get_resources_as_string:
+                    # remove current resource from resources
+                    allocation_obj.resources.clear()
+                    # add form_data.get(resource)
+                    allocation_obj.resources.add(form_data.get('resource'))
+
             allocation_obj.status = AllocationStatusChoice.objects.get(name='Active')
+            allocation_obj.save()
+
         elif action == 'deny':
             allocation_obj.status = AllocationStatusChoice.objects.get(name='Denied')
 
         if old_status != 'Active' == allocation_obj.status.name:
             if not allocation_obj.start_date:
                 allocation_obj.start_date = datetime.datetime.now()
-            if 'approve' in action or not allocation_obj.end_date:
-                rdelta = relativedelta(days=ALLOCATION_DEFAULT_ALLOCATION_LENGTH)
-                allocation_obj.end_date = datetime.datetime.now() + rdelta
+            # if 'approve' in action or not allocation_obj.end_date:
+            #     rdelta = relativedelta(days=ALLOCATION_DEFAULT_ALLOCATION_LENGTH)
+            #     allocation_obj.end_date = datetime.datetime.now() + rdelta
 
             allocation_obj.save()
 
@@ -531,17 +549,15 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         # create list of resources for which the project already has an allocation
         project_allocations = project_obj.allocation_set.all()
-        resources_with_allocations = {
-            str(allo.get_parent_resource.id):allo.pk for allo in project_allocations
-        }
-        overfull_resources = {
-            str(r.pk): r.used_percentage
-            for r in Resource.objects.all()
-            if r.used_percentage and r.used_percentage > 79.5
-        }
+        tiers_with_allocations = {}
 
-        context['overfull_resources'] = overfull_resources
-        context['resources_with_allocations'] = resources_with_allocations
+        for allo in project_allocations:
+            if allo.get_parent_resource:
+                tiers_with_allocations[str(allo.get_parent_resource.pk)] = allo.pk
+                if allo.get_parent_resource.parent_resource:
+                    tiers_with_allocations[str(allo.get_parent_resource.parent_resource.pk)] = allo.pk
+
+        context['tiers_with_allocations'] = tiers_with_allocations
         context['resources_form_default_quantities'] = resources_form_default_quantities
         context['resources_form_label_texts'] = resources_form_label_texts
         context['resources_with_eula'] = resources_with_eula
@@ -563,7 +579,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
 
         # pull data from form
-        resource_obj = form_data.get('resource')
+        resource_obj = form_data.get('tier')
         justification = form_data.get('justification')
         quantity = form_data.get('quantity', 1)
         allocation_account = form_data.get('allocation_account', None)
@@ -649,9 +665,6 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         allocation_obj.set_usage('Storage Quota (TB)', 0)
 
-        for linked_resource in resource_obj.linked_resources.all():
-            allocation_obj.resources.add(linked_resource)
-
         allocation_user_active_status = AllocationUserStatusChoice.objects.get(
             name='Active'
         )
@@ -661,7 +674,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             )
 
         # if requested resource is on NESE, add to vars
-        nese = bool(allocation_obj.resources.filter(name__contains="nesetape"))
+        nese = bool(allocation_obj.resources.filter(name__contains="Tier 3"))
         used_percentage = allocation_obj.get_parent_resource.used_percentage
 
         other_vars = {
@@ -1059,11 +1072,54 @@ class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templat
         allocation_list = Allocation.objects.filter(
             status__name__in=['New', 'Renewal Requested', 'Paid', 'Approved']
         )
+        AllocationFormSet = formset_factory(
+            AllocationUpdateForm, max_num=len(allocation_list),
+        )
+        formset = AllocationFormSet(
+            initial=[
+                {
+                    "project": a.project,
+                    "pk": a.pk,
+                    "created": a.created,
+                    "get_parent_resource": a.get_parent_resource,
+                    "resource": a.get_parent_resource,
+                    "status": a.status,
+                }
+                for a in allocation_list
+            ],
+        )
+        context['formset'] = formset
         context['allocation_status_active'] = AllocationStatusChoice.objects.get(name='Active')
         context['allocation_list'] = allocation_list
         context['PROJECT_ENABLE_PROJECT_REVIEW'] = PROJECT_ENABLE_PROJECT_REVIEW
         context['ALLOCATION_DEFAULT_ALLOCATION_LENGTH'] = ALLOCATION_DEFAULT_ALLOCATION_LENGTH
         return context
+
+    def post(self, request, *args, **kwargs):
+        post_data = request.POST
+        pk = post_data['pk']
+        chosen_resource_id = next(v for k, v in post_data.items() if 'resource' in k.lower())
+        if not chosen_resource_id:
+            err = 'You must select a resource volume.'
+            messages.error(request, err)
+            return HttpResponseRedirect(reverse('allocation-request-list'))
+
+        allocation_obj = get_object_or_404(Allocation, pk=pk)
+        active_status = AllocationStatusChoice.objects.get(name='Active')
+
+        allocation_obj.status = active_status
+        chosen_resource = Resource.objects.get(pk=chosen_resource_id)
+        if 'Tier ' in allocation_obj.get_resources_as_string:
+            # remove current resource from resources
+            allocation_obj.resources.clear()
+            # add form_data.get(resource)
+            allocation_obj.resources.add(chosen_resource)
+        allocation_obj.save()
+
+        messages.success(request, 'Allocation Activated.')
+
+        return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
+
 
 
 class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -1085,7 +1141,7 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
             err = 'Allocation renewal is disabled. Request a new allocation to this resource if you want to continue using it after the active until date.'
         elif allocation_obj.status.name not in ['Active']:
             err = f'You cannot renew an allocation with status {allocation_obj.status.name}.'
-        elif allocation_obj.expires_in > 60:
+        elif allocation_obj.expires_in and allocation_obj.expires_in > 60:
             err = 'It is too soon to review your allocation.'
 
         if err:
@@ -1600,6 +1656,7 @@ class AllocationAccountListView(LoginRequiredMixin, UserPassesTestMixin, ListVie
         return AllocationAccount.objects.filter(user=self.request.user)
 
 
+
 class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     formset_class = AllocationAttributeUpdateForm
     template_name = 'allocation/allocation_change_detail.html'
@@ -1913,9 +1970,13 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             formset = formset(initial=attrs_to_change, prefix='attributeform')
             context['formset'] = formset
 
+        if allocation_obj.get_parent_resource:
+            resource_used = allocation_obj.get_parent_resource.used_percentage
+        else:
+            resource_used = None
         context['allocation'] = allocation_obj
         context['attributes'] = attrs_to_change
-        context['used_percentage'] = allocation_obj.get_parent_resource.used_percentage
+        context['used_percentage'] = resource_used
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
