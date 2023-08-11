@@ -204,7 +204,8 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         ).distinct().order_by('-end_date')
         allocation_total = {'allocation_user_count': 0, 'size': 0, 'cost': 0}
         for allocation in allocations:
-            allocation_total['cost'] += allocation.cost
+            if allocation.cost:
+                allocation_total['cost'] += allocation.cost
             allocation_total['allocation_user_count'] += int(
                 allocation.allocationuser_set.count()
             )
