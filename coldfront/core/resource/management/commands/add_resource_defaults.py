@@ -1,8 +1,11 @@
 from django.core.management.base import BaseCommand
 
-from coldfront.core.resource.models import (AttributeType,
-                                            ResourceAttributeType,
-                                            ResourceType)
+from coldfront.core.resource.models import (
+    Resource,
+    ResourceType,
+    AttributeType,
+    ResourceAttributeType,
+)
 
 
 class Command(BaseCommand):
@@ -50,6 +53,7 @@ class Command(BaseCommand):
 
         for resource_type, description in (
             ('Storage', 'Network Storage'),
+            ('Storage Tier', 'Storage Tier',),
             ('Cloud', 'Cloud Computing'),
             ('Cluster', 'Cluster servers'),
             # ('Cluster Partition', 'Cluster Partition '),
@@ -60,3 +64,23 @@ class Command(BaseCommand):
         ):
             ResourceType.objects.get_or_create(
                 name=resource_type, description=description)
+
+
+        storage_tier = ResourceType.objects.get(name='Storage Tier')
+        storage = ResourceType.objects.get(name='Storage')
+        for name, desc, is_public, rtype, parent in (
+            (
+                ('Tier 0', 'Bulk - Lustre', True, storage_tier, None),
+                ('Tier 1', 'Enterprise - Isilon', True, storage_tier, None),
+                ('Tier 3', 'Attic Storage - Tape', True, storage_tier, None),
+            )
+        ):
+            Resource.objects.update_or_create(
+                name=name,
+                defaults={
+                    'description':desc,
+                    'is_public':is_public,
+                    'resource_type':rtype,
+                    'parent_resource': parent
+                }
+            )
