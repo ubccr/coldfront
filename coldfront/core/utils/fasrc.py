@@ -91,6 +91,12 @@ def convert_size_fmt(num, target_unit, source_unit='B'):
 
 def get_resource_rate(resource):
     """find Product with the name provided and return the associated rate"""
+    try:
+        resource_obj = Resource.objects.get(name=resource)
+    except Resource.DoesNotExist:
+        return None
+    if resource_obj.resource_type.name == 'Storage Tier':
+        return None
     prod_obj = Product.objects.get(product_name=resource)
     rate_obj = prod_obj.rate_set.get(is_active=True)
     # return charge per TB, adjusted to dollar value
