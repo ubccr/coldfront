@@ -98,6 +98,8 @@ class TestBillingIds(TestBillingBase):
         billing_activity = get_billing_activity_from_full_id(billing_id)
         self.assertTrue(isinstance(billing_activity, BillingActivity))
 
+    # TODO: test_list
+
     def test_set_billing_id_invalid(self):
         """Test that, when the given billing ID is invalid, each of the
         subcommands of the 'set' subcommand raises an error, unless the
