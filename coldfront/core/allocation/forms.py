@@ -48,10 +48,14 @@ class AllocationForm(forms.Form):
     DEFAULT_DESCRIPTION = """
 We do not have information about your research. Please provide a detailed description of your work and update your field of science. Thank you!
         """
-    resource = forms.ModelChoiceField(queryset=None, empty_label=None)
+    # resource = forms.ModelChoiceField(queryset=None, empty_label=None)
     quantity = forms.IntegerField(required=True, initial=1)
     offer_letter_code = OfferLetterCodeField(
         label="Lab's 33 digit billing code", required=False
+    )
+    tier = forms.ModelChoiceField(
+        queryset=Resource.objects.filter(resource_type__name='Storage Tier'),
+        label='Resource Tier'
     )
     heavy_io = forms.BooleanField(
         label='My lab will perform heavy I/O from the cluster against this space (more than 100 cores)',
@@ -83,7 +87,9 @@ We do not have information about your research. Please provide a detailed descri
     def __init__(self, request_user, project_pk,  *args, **kwargs):
         super().__init__(*args, **kwargs)
         project_obj = get_object_or_404(Project, pk=project_pk)
-        self.fields['resource'].queryset = get_user_resources(request_user).order_by(Lower("name"))
+        self.fields['tier'].queryset = get_user_resources(request_user).filter(
+            resource_type__name='Storage Tier'
+        ).order_by(Lower("name"))
         user_query_set = project_obj.projectuser_set.select_related('user').filter(
             status__name__in=['Active', ]).order_by("user__username")
         user_query_set = user_query_set.exclude(user=project_obj.pi)
@@ -96,7 +102,18 @@ We do not have information about your research. Please provide a detailed descri
 
 
 
+class AllocationResourceChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        label_str = f'{obj.name}'
+        if obj.used_percentage != None:
+            label_str += f' ({obj.used_percentage}% full)'
+        return label_str
+
 class AllocationUpdateForm(forms.Form):
+    resource = forms.ModelChoiceField(
+        label='Resource',
+        queryset=Resource.objects.all(),
+    )
     status = forms.ModelChoiceField(
         queryset=AllocationStatusChoice.objects.all().order_by(Lower("name")), empty_label=None)
     start_date = forms.DateField(
@@ -107,11 +124,31 @@ class AllocationUpdateForm(forms.Form):
         label='End Date',
         widget=forms.DateInput(attrs={'class': 'datepicker'}),
         required=False)
-    description = forms.CharField(max_length=512,
-                                  label='Description',
-                                  required=False)
+    description = forms.CharField(
+        max_length=512, label='Description', required=False
+    )
     is_locked = forms.BooleanField(required=False)
     is_changeable = forms.BooleanField(required=False)
+
+    def __init__(self, *args, **kwargs):
+        allo_resource = kwargs['initial'].pop('resource')
+        super().__init__(*args, **kwargs)
+        if not allo_resource:
+            self.fields['resource'].queryset = Resource.objects.exclude(
+                resource_type__name='Storage Tier'
+            )
+        else:
+
+            if allo_resource.resource_type.name == 'Storage Tier':
+                self.fields['resource'].queryset = Resource.objects.filter(
+                    parent_resource=allo_resource
+                )
+            else:
+                self.fields['resource'].required = False
+                self.fields['resource'].queryset = Resource.objects.filter(
+                    pk=allo_resource.pk
+                )
+
 
     def clean(self):
         cleaned_data = super().clean()

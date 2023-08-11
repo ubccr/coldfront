@@ -84,13 +84,19 @@ Allocation Detail
             <td>
               {% if allocation.get_resources_as_list %}
                 {% for resource in allocation.get_resources_as_list %}
-                  <a href="{% url 'resource-detail' resource.pk %}">{{ resource }}</a> <br>
+                  {% if request.user.is_superuser and allocation.status.name == "New" and "Tier" in allocation.get_resources_as_string %}
+                    {{ form.resource }} <a color="red">Please choose a resource.</a>
+                  {% else %}
+                    <a href="{% url 'resource-detail' resource.pk %}">{{ resource }}</a>
+                  {% endif %}
+                  <br>
                 {% endfor %}
               {% else %}
                 None
               {% endif %}
             </td>
           </tr>
+
           <tr>
             <th scope="row" class="text-nowrap">Justification:</th>
             <td>{{ allocation.justification }}</td>
@@ -264,8 +270,9 @@ Allocation Detail
         {% if allocation.status.name == 'New' or allocation.status.name == 'Renewal Requested' %}
           <button type="submit" name="action" value="approve" class="btn btn-success mr-1 confirm-activate">Approve</button>
           <button type="submit" name="action" value="deny" class="btn btn-danger mr-1 confirm-deny">Deny</button>
+        {% else %}
+          <button type="submit" name="action" value="update" class="btn btn-primary"><i class="fas fa-sync" aria-hidden="true"></i> Update</button>
         {% endif %}
-        <button type="submit" name="action" value="update" class="btn btn-primary"><i class="fas fa-sync" aria-hidden="true"></i> Update</button>
       {% endif %}
       </div>
     </form>
