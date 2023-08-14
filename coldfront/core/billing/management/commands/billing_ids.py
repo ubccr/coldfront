@@ -9,6 +9,7 @@ from coldfront.core.billing.utils import ProjectBillingActivityManager
 from coldfront.core.billing.utils import ProjectUserBillingActivityManager
 from coldfront.core.billing.utils import UserBillingActivityManager
 from coldfront.core.billing.utils.queries import get_billing_activity_from_full_id
+from coldfront.core.billing.utils.queries import get_billing_id_usages
 from coldfront.core.billing.utils.queries import get_or_create_billing_activity_from_full_id
 from coldfront.core.billing.utils.queries import is_billing_id_well_formed
 from coldfront.core.billing.utils.validation import is_billing_id_valid
@@ -34,15 +35,14 @@ class Command(BaseCommand):
             title='subcommands')
         subparsers.required = True
         self._add_create_subparser(subparsers)
+        self._add_list_subparser(subparsers)
         self._add_set_subparser(subparsers)
 
     def handle(self, *args, **options):
         """Call the handler for the provided subcommand."""
         subcommand = options['subcommand']
-        if subcommand == 'create':
-            self._handle_create(*args, **options)
-        elif subcommand == 'set':
-            self._handle_set(*args, **options)
+        handler = getattr(self, f'_handle_{subcommand}')
+        handler(*args, **options)
 
     @staticmethod
     def _add_create_subparser(parsers):
@@ -51,6 +51,15 @@ class Command(BaseCommand):
         add_billing_id_argument(parser)
         add_ignore_invalid_argument(parser)
         add_argparse_dry_run_argument(parser)
+
+    @staticmethod
+    def _add_list_subparser(parsers):
+        """Add a subparser for the 'list' command."""
+        parser = parsers.add_parser(
+            'list', help='List billing IDs matching filters.')
+        add_billing_id_argument(parser, is_optional=True)
+        add_project_name_argument(parser, is_optional=True)
+        add_username_argument(parser, is_optional=True)
 
     @staticmethod
     def _add_set_subparser(parsers):
@@ -168,6 +177,55 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(message))
             self.logger.info(message)
 
+    def _handle_list(self, *args, **options):
+        """Handle the 'list' subcommand."""
+        kwargs = {'full_id': None, 'project_obj': None, 'user_obj': None}
+        billing_id = options['billing_id']
+        if billing_id is not None:
+            kwargs['full_id'] = billing_id
+        project_name = options['project_name']
+        if project_name is not None:
+            kwargs['project_obj'] = self._get_project_or_error(project_name)
+        username = options['username']
+        if username is not None:
+            kwargs['user_obj'] = self._get_user_or_error(username)
+        usages = get_billing_id_usages(**kwargs)
+
+        full_id_by_billing_activity_pk = {}
+
+        for allocation_attribute in usages.project_default:
+            pk = int(allocation_attribute.value)
+            if billing_id:
+                full_id = billing_id
+            elif pk in full_id_by_billing_activity_pk:
+                full_id = full_id_by_billing_activity_pk[pk]
+            else:
+                full_id = BillingActivity.objects.get(pk=pk).full_id()
+                full_id_by_billing_activity_pk[pk] = full_id
+            project_name = allocation_attribute.allocation.project.name
+            line = f'project_default,{project_name},{full_id}'
+            self.stdout.write(line)
+
+        for allocation_user_attribute in usages.recharge:
+            pk = int(allocation_user_attribute.value)
+            if billing_id:
+                full_id = billing_id
+            elif pk in full_id_by_billing_activity_pk:
+                full_id = full_id_by_billing_activity_pk[pk]
+            else:
+                full_id = BillingActivity.objects.get(pk=pk).full_id()
+                full_id_by_billing_activity_pk[pk] = full_id
+            project_name = allocation_user_attribute.allocation.project.name
+            username = allocation_user_attribute.allocation_user.user.username
+            line = f'recharge,{project_name},{username},{full_id}'
+            self.stdout.write(line)
+
+        for user_profile in usages.user_account:
+            full_id = user_profile.billing_activity.full_id()
+            username = user_profile.user.username
+            line = f'user_account,{username},{full_id}'
+            self.stdout.write(line)
+
     def _handle_set(self, *args, **options):
         """Handle the 'set' subcommand."""
         billing_activity = self._get_billing_activity_or_error(
@@ -272,11 +330,12 @@ class Command(BaseCommand):
                 raise CommandError(message)
 
 
-def add_billing_id_argument(parser):
+def add_billing_id_argument(parser, is_optional=False):
     """Add an argument 'billing_id' to the given argparse parser to
-    accept a billing ID."""
-    parser.add_argument(
-        'billing_id', help='A billing ID (e.g., 123456-789).', type=str)
+    accept a billing ID. Optionally make it an option rather than a
+    positional argument."""
+    name = int(is_optional) * '--' + 'billing_id'
+    parser.add_argument(name, help='A billing ID (e.g., 123456-789).', type=str)
 
 
 def add_ignore_invalid_argument(parser):
@@ -289,17 +348,20 @@ def add_ignore_invalid_argument(parser):
         help='Allow the billing ID to be invalid.')
 
 
-def add_project_name_argument(parser):
+def add_project_name_argument(parser, is_optional=False):
     """Add an argument 'project_name' to the given argparse parser to
-    accept the name of a Project."""
-    parser.add_argument(
-        'project_name', help='The name of a project.', type=str)
+    accept the name of a Project. Optionally make it an option rather
+    than a positional argument."""
+    name = int(is_optional) * '--' + 'project_name'
+    parser.add_argument(name, help='The name of a project.', type=str)
 
 
-def add_username_argument(parser):
+def add_username_argument(parser, is_optional=False):
     """Add an argument 'username' to the given argparse parser to accept
-    the username of a User."""
-    parser.add_argument('username', help='The username of a user.', type=str)
+    the username of a User. Optionally make it an option rather than a
+    positional argument."""
+    name = int(is_optional) * '--' + 'username'
+    parser.add_argument(name, help='The username of a user.', type=str)
 
 
 class Entity(object):
