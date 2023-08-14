@@ -5,7 +5,12 @@ from django.test import TestCase
 from coldfront.core.allocation.forms import (
     AllocationForm,
 )
-from coldfront.core.test_helpers.factories import setup_models
+from coldfront.core.resource.models import Resource
+from coldfront.core.test_helpers.factories import (
+    setup_models,
+    ResourceTypeFactory,
+    ResourceFactory,
+)
 
 
 logging.disable(logging.CRITICAL)
@@ -36,10 +41,14 @@ class AllocationFormTest(AllocationFormBaseTest):
     """Tests for the AllocationCreateView"""
 
     def setUp(self):
+        tier_restype = ResourceTypeFactory(name='Storage Tier')
+        storage_tier = ResourceFactory(resource_type=tier_restype)
         self.post_data = {
             'justification': 'test justification',
             'quantity': '1',
+            'offer_letter_code': '123-12312-3123-123123-123123-1231-23123',
             'resource': f'{self.proj_allocation.resources.first().pk}',
+            'tier': Resource.objects.filter(resource_type__name='Storage Tier').first()
         }
 
     def test_allocationcreateview_post_offerlettercode_invalid(self):
@@ -57,7 +66,6 @@ class AllocationFormTest(AllocationFormBaseTest):
         - ensure correctly entered codes get properly formatted
         """
         # correct # of digits with no dashes
-        self.post_data['offer_letter_code'] = '123' * 11
         cleaned_form = self.return_cleaned_form()
         self.assertEqual(
             cleaned_form['offer_letter_code'], '123-12312-3123-123123-123123-1231-23123'
@@ -68,6 +76,16 @@ class AllocationFormTest(AllocationFormBaseTest):
         # correct # of digits with many dashes
         self.post_data['offer_letter_code'] = '123-' * 11
         cleaned_form = self.return_cleaned_form()
+
         self.assertEqual(
             cleaned_form['offer_letter_code'], '123-12312-3123-123123-123123-1231-23123'
         )
+
+    def test_allocationcreateview_post_offerlettercode_multiplefield_invalid(self):
+        """Test POST to AllocationCreateView in circumstance where hsph and seas values are also checked"""
+        self.post_data['offer_letter_code'] = '123-' * 11
+        self.post_data['hsph_code'] = True
+        form = AllocationForm(
+            data=self.post_data, request_user=self.pi_user, project_pk=self.project.pk
+        )
+        self.assertEqual(form.errors['offer_letter_code'], ["you must select exactly one from hsph, seas, or manual entry"])

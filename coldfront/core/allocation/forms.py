@@ -3,7 +3,6 @@ import re
 from django import forms
 from django.db.models.functions import Lower
 from django.shortcuts import get_object_or_404
-from django.core.exceptions import ValidationError
 
 from coldfront.core.allocation.models import (
     AllocationAccount,
@@ -20,18 +19,19 @@ ALLOCATION_ACCOUNT_ENABLED = import_from_settings(
     'ALLOCATION_ACCOUNT_ENABLED', False)
 ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS = import_from_settings(
     'ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS', [])
-
+HSPH_CODE = import_from_settings('HSPH_CODE', '000-000-000-000-000-000-000-000-000-000-000')
+SEAS_CODE = import_from_settings('SEAS_CODE', '111-111-111-111-111-111-111-111-111-111-111')
 
 class OfferLetterCodeField(forms.CharField):
     """custom field for offer_letter_code"""
 
-    def validate(self, value):
-        if value:
-            digits_only = re.sub(r'\D', '', value)
-            if not re.fullmatch(r'^(\d+-?)*[\d-]+$', value):
-                raise ValidationError("Input must consist only of digits and dashes.")
-            if len(digits_only) != 33:
-                raise ValidationError("Input must contain exactly 33 digits.")
+    # def validate(self, value):
+    #     if value:
+    #         digits_only = re.sub(r'\D', '', value)
+    #         if not re.fullmatch(r'^(\d+-?)*[\d-]+$', value):
+    #             raise ValidationError("Input must consist only of digits and dashes.")
+    #         if len(digits_only) != 33:
+    #             raise ValidationError("Input must contain exactly 33 digits.")
 
     def clean(self, value):
         # Remove all dashes from the input string to count the number of digits
@@ -50,9 +50,21 @@ We do not have information about your research. Please provide a detailed descri
         """
     # resource = forms.ModelChoiceField(queryset=None, empty_label=None)
     quantity = forms.IntegerField(required=True, initial=1)
+
     offer_letter_code = OfferLetterCodeField(
         label="Lab's 33 digit billing code", required=False
     )
+
+    hsph_code = forms.BooleanField(
+        label='The PI is part of HSPH and storage should be billed to their code',
+        required=False
+    )
+
+    seas_code = forms.BooleanField(
+        label='The PI is part of SEAS and storage should be billed to their code',
+        required=False
+    )
+
     tier = forms.ModelChoiceField(
         queryset=Resource.objects.filter(resource_type__name='Storage Tier'),
         label='Resource Tier'
@@ -84,6 +96,7 @@ We do not have information about your research. Please provide a detailed descri
     #users = forms.MultipleChoiceField(
     #    widget=forms.CheckboxSelectMultiple, required=False)
 
+
     def __init__(self, request_user, project_pk,  *args, **kwargs):
         super().__init__(*args, **kwargs)
         project_obj = get_object_or_404(Project, pk=project_pk)
@@ -101,6 +114,35 @@ We do not have information about your research. Please provide a detailed descri
         #     self.fields['users'].widget = forms.HiddenInput()
 
 
+    def clean(self):
+        cleaned_data = super().clean()
+        # Remove all dashes from the input string to count the number of digits
+        value = cleaned_data.get("offer_letter_code")
+        hsph_val = cleaned_data.get("hsph_code")
+        seas_val = cleaned_data.get("seas_code")
+        trues = sum(x for x in [(value not in ['', '------']), hsph_val, seas_val])
+
+        if trues != 1:
+            self.add_error("offer_letter_code", "you must select exactly one from hsph, seas, or manual entry")
+
+        elif value and value != '------':
+            digits_only = re.sub(r'\D', '', value)
+            if not re.fullmatch(r'^(\d+-?)*[\d-]+$', value):
+                self.add_error("offer_letter_code", "Input must consist only of digits and dashes.")
+            elif len(digits_only) != 33:
+                self.add_error("offer_letter_code", "Input must contain exactly 33 digits.")
+            else:
+                digits_only = re.sub(r'\D', '', value)
+                insert_dashes = lambda d: '-'.join(
+                    [d[:3], d[3:8], d[8:12], d[12:18], d[18:24], d[24:28], d[28:33]]
+                )
+                cleaned_data['offer_letter_code'] = insert_dashes(digits_only)
+        elif hsph_val:
+            cleaned_data['offer_letter_code'] = HSPH_CODE
+        elif seas_val:
+            cleaned_data['offer_letter_code'] = SEAS_CODE
+        return cleaned_data
+
 
 class AllocationResourceChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, obj):
@@ -108,6 +150,7 @@ class AllocationResourceChoiceField(forms.ModelChoiceField):
         if obj.used_percentage != None:
             label_str += f' ({obj.used_percentage}% full)'
         return label_str
+
 
 class AllocationUpdateForm(forms.Form):
     resource = forms.ModelChoiceField(
@@ -138,7 +181,6 @@ class AllocationUpdateForm(forms.Form):
                 resource_type__name='Storage Tier'
             )
         else:
-
             if allo_resource.resource_type.name == 'Storage Tier':
                 self.fields['resource'].queryset = Resource.objects.filter(
                     parent_resource=allo_resource

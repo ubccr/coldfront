@@ -5,6 +5,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from coldfront.core.test_helpers import utils
+from coldfront.core.resource.models import Resource
 from coldfront.core.allocation.models import (
     Allocation,
     AllocationUserNote,
@@ -15,6 +16,7 @@ from coldfront.core.test_helpers.factories import (
     setup_models,
     UserFactory,
     ResourceFactory,
+    ResourceTypeFactory,
     AllocationFactory,
     AllocationChangeRequestFactory,
 )
@@ -380,10 +382,13 @@ class AllocationCreateViewTest(AllocationViewBaseTest):
     def setUp(self):
         self.url = f'/allocation/project/{self.project.pk}/create'  # url for AllocationCreateView
         self.client.force_login(self.pi_user)
+        tier_restype = ResourceTypeFactory(name='Storage Tier')
+        storage_tier = ResourceFactory(resource_type=tier_restype)
         self.post_data = {
             'justification': 'test justification',
             'quantity': '1',
-            'resource': f'{self.proj_allocation.resources.first().pk}',
+            'offer_letter_code': '123-12312-3123-123123-123123-1231-23123',
+            'tier': f'{storage_tier.pk}',
         }
 
     def test_allocationcreateview_access(self):
@@ -396,6 +401,7 @@ class AllocationCreateViewTest(AllocationViewBaseTest):
         """Test POST to the AllocationCreateView"""
         self.assertEqual(len(self.project.allocation_set.all()), 1)
         response = self.client.post(self.url, data=self.post_data, follow=True)
+
         self.assertContains(response, "Allocation requested.")
         self.assertEqual(len(self.project.allocation_set.all()), 2)
 
@@ -431,6 +437,27 @@ class AllocationCreateViewTest(AllocationViewBaseTest):
             allocation_attribute_type__name__in=aa_names
         )
         self.assertEqual(len(aa_objs), 5)
+
+    def test_allocationcreateview_post_offerlettercode_multiplefield_invalid(self):
+        """Ensure that form won't pass if multiple offer letter codes are given
+        """
+        self.post_data['hsph_code'] = '000-000-000-000-000-000-000-000-000-000-000'
+        response = self.client.post(self.url, data=self.post_data, follow=True)
+        self.assertContains(response, "you must select exactly one from hsph, seas, or manual entry")
+
+
+    def test_allocationcreateview_post_hsph_offerlettercode(self):
+        """Ensure that form goes through if hsph is checked"""
+        self.post_data['hsph_code'] = '000-000-000-000-000-000-000-000-000-000-000'
+        self.post_data.pop('offer_letter_code')
+        response = self.client.post(self.url, data=self.post_data, follow=True)
+        self.assertContains(response, "Allocation requested.")
+
+        aa_obj = AllocationAttribute.objects.filter(
+            allocation_attribute_type__name='Offer Letter Code'
+        )
+        self.assertEqual(len(aa_obj), 1)
+        self.assertEqual(aa_obj[0].value, '000-00000-0000-000000-000000-0000-00000')
 
 
 class AllocationAddUsersViewTest(AllocationViewBaseTest):
