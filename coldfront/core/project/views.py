@@ -65,6 +65,8 @@ ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
     'ALLOCATION_ENABLE_ALLOCATION_RENEWAL', True)
 ALLOCATION_DEFAULT_ALLOCATION_LENGTH = import_from_settings(
     'ALLOCATION_DEFAULT_ALLOCATION_LENGTH', 365)
+ACCESSIBILITY_ENABLE = import_from_settings(
+    'ACCESSIBILITY_ENABLE', False)
 
 if EMAIL_ENABLED:
     EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
@@ -75,7 +77,10 @@ logger = logging.getLogger(__name__)
 
 class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     model = Project
-    template_name = 'project/project_detail.html'
+    if ACCESSIBILITY_ENABLE:
+        template_name = 'project/project_detail_accessible.html'
+    else:
+        template_name = 'project/project_detail.html'
     context_object_name = 'project'
 
     def test_func(self):

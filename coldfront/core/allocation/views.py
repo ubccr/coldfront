@@ -81,12 +81,17 @@ ALLOCATION_ACCOUNT_ENABLED = import_from_settings(
 ALLOCATION_ACCOUNT_MAPPING = import_from_settings(
     'ALLOCATION_ACCOUNT_MAPPING', {})
 
+ACCESSIBILITY_ENABLE = import_from_settings(
+    'ACCESSIBILITY_ENABLE', False)
 
 logger = logging.getLogger(__name__)
 
 class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     model = Allocation
-    template_name = 'allocation/allocation_detail.html'
+    if ACCESSIBILITY_ENABLE:
+        template_name = 'allocation/allocation_detail_accessible.html'
+    else:
+        template_name = 'allocation/allocation_detail.html'
     context_object_name = 'allocation'
 
     def test_func(self):
