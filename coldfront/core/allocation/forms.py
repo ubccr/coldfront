@@ -154,8 +154,7 @@ class AllocationResourceChoiceField(forms.ModelChoiceField):
 
 class AllocationUpdateForm(forms.Form):
     resource = forms.ModelChoiceField(
-        label='Resource',
-        queryset=Resource.objects.all(),
+        label='Resource', queryset=Resource.objects.all(), required=False
     )
     status = forms.ModelChoiceField(
         queryset=AllocationStatusChoice.objects.all().order_by(Lower("name")), empty_label=None)
@@ -196,9 +195,9 @@ class AllocationUpdateForm(forms.Form):
         cleaned_data = super().clean()
         start_date = cleaned_data.get("start_date")
         end_date = cleaned_data.get("end_date")
-
         if start_date and end_date and end_date < start_date:
             raise forms.ValidationError('End date cannot be less than start date')
+        return cleaned_data
 
 
 class AllocationInvoiceUpdateForm(forms.Form):

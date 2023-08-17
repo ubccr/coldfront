@@ -312,17 +312,20 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             allocation_obj.status = form_data.get('status')
 
         if 'approve' in action:
+            err = None
             # ensure that Tier gets swapped out for storage volume
-            if form_data.get('resource'):
-                if 'Tier ' in form_data.get('resource').name:
-                    err = 'You must select a volume for the selected tier.'
-                    messages.error(request, err)
-                    return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
-                if 'Tier ' in allocation_obj.get_resources_as_string:
-                    # remove current resource from resources
-                    allocation_obj.resources.clear()
-                    # add form_data.get(resource)
-                    allocation_obj.resources.add(form_data.get('resource'))
+            if not form_data.get('resource'):
+                err = "You must select a resource to approve the form."
+            if 'Tier ' in form_data.get('resource').name:
+                err = 'You must select a volume for the selected tier.'
+            if err:
+                messages.error(request, err)
+                return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
+            if 'Tier ' in allocation_obj.get_resources_as_string:
+                # remove current resource from resources
+                allocation_obj.resources.clear()
+                # add form_data.get(resource)
+                allocation_obj.resources.add(form_data.get('resource'))
 
             allocation_obj.status = AllocationStatusChoice.objects.get(name='Active')
             allocation_obj.save()
@@ -331,6 +334,11 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             allocation_obj.status = AllocationStatusChoice.objects.get(name='Denied')
 
         if old_status != 'Active' == allocation_obj.status.name:
+
+            if not form_data.get('resource'):
+                err = "You must select a resource to approve the form. If you do not have the option to select a resource, update the status of the Allocation to 'New' first."
+                messages.error(request, err)
+                return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
             if not allocation_obj.start_date:
                 allocation_obj.start_date = datetime.datetime.now()
             # if 'approve' in action or not allocation_obj.end_date:

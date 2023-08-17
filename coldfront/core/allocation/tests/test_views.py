@@ -5,7 +5,6 @@ from django.test import TestCase
 from django.urls import reverse
 
 from coldfront.core.test_helpers import utils
-from coldfront.core.resource.models import Resource
 from coldfront.core.allocation.models import (
     Allocation,
     AllocationUserNote,
