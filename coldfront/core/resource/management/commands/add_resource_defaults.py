@@ -67,13 +67,17 @@ class Command(BaseCommand):
 
 
         storage_tier = ResourceType.objects.get(name='Storage Tier')
-        storage = ResourceType.objects.get(name='Storage')
-        for name, desc, is_public, rtype, parent in (
-            (
-                ('Tier 0', 'Bulk - Lustre', True, storage_tier, None),
-                ('Tier 1', 'Enterprise - Isilon', True, storage_tier, None),
-                ('Tier 3', 'Attic Storage - Tape', True, storage_tier, None),
-            )
+
+        for name, desc, is_public, rtype, parent_name in (
+            ('Tier 0', 'Bulk - Lustre', True, storage_tier, None),
+            ('Tier 1', 'Enterprise - Isilon', True, storage_tier, None),
+            ('Tier 3', 'Attic Storage - Tape', True, storage_tier, None),
+            ('holylfs04/tier0', 'Lustre storage in Holyoke data center', True, 'Tier 0'),
+            ('holylfs05/tier0', 'Lustre storage in Holyoke data center', True, 'Tier 0'),
+            ('nesetape/tier3', 'Cold storage for past projects', True, 'Tier 3'),
+            ('holy-isilon/tier1', 'Tier1 storage with snapshots and disaster recovery copy', True, 'Tier 1'),
+            ('bos-isilon/tier1', 'Tier1 storage server in Boston in case storage needs to be mounted on campus', True, 'Tier 1'),
+            ('holystore01/tier0', 'Luster storage under Tier0', True, 'Tier 0'),
         ):
             Resource.objects.update_or_create(
                 name=name,
@@ -81,6 +85,6 @@ class Command(BaseCommand):
                     'description':desc,
                     'is_public':is_public,
                     'resource_type':rtype,
-                    'parent_resource': parent
+                    'parent_resource': Resource.objects.get(name=parent_name)
                 }
             )
