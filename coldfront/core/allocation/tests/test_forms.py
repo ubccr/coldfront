@@ -96,7 +96,7 @@ class AllocationFormTest(AllocationFormBaseTest):
         form = AllocationForm(
             data=self.post_data, request_user=self.pi_user, project_pk=self.project.pk
         )
-        self.assertEqual(form.errors['expense_code'], ["you must select exactly one from hsph, seas, or manual entry"])
+        self.assertIn("you must do exactly one of the following", form.errors['expense_code'][0])
 
 
 class AllocationUpdateFormTest(AllocationFormBaseTest):

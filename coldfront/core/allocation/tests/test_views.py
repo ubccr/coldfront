@@ -441,7 +441,7 @@ class AllocationCreateViewTest(AllocationViewBaseTest):
         """Ensure that form won't pass if multiple expense codes are given"""
         self.post_data['hsph_code'] = '000-000-000-000-000-000-000-000-000-000-000'
         response = self.client.post(self.url, data=self.post_data, follow=True)
-        self.assertContains(response, "you must select exactly one from hsph, seas, or manual entry")
+        self.assertContains(response, "you must do exactly one of the following")
 
 
     def test_allocationcreateview_post_hsph_offerlettercode(self):
