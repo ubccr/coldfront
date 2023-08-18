@@ -123,12 +123,12 @@ We do not have information about your research. Please provide a detailed descri
         trues = sum(x for x in [(value not in ['', '------']), hsph_val, seas_val])
 
         if trues != 1:
-            self.add_error("expense_code", "you must select exactly one from hsph, seas, or manual entry")
+            self.add_error("expense_code", "you must do exactly one of the following: manually enter an expense code, check the box to use SEAS' expense code, or check the box to use HSPH's expense code")
 
         elif value and value != '------':
             digits_only = re.sub(r'[^0-9xX]', '', value)
             if not re.fullmatch(r'^([0-9xX]+-?)*[0-9xX-]+$', value):
-                self.add_error("expense_code", "Input must consist only of digits and dashes.")
+                self.add_error("expense_code", "Input must consist only of digits (or x'es) and dashes.")
             elif len(digits_only) != 33:
                 self.add_error("expense_code", "Input must contain exactly 33 digits.")
             else:
