@@ -7,6 +7,7 @@ from coldfront.api.statistics.utils import create_user_project_allocation
 from coldfront.core.project.models import *
 from coldfront.core.project.utils_.removal_utils import ProjectRemovalRequestRunner
 from coldfront.core.project.utils_.removal_utils import ProjectRemovalRequestProcessingRunner
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.user.models import *
 from coldfront.core.allocation.models import *
@@ -69,9 +70,14 @@ class TestRemovalRequestRunnerBase(TestBase):
         user_project_role = ProjectUserRoleChoice.objects.get(
             name='User')
 
+        computing_allowance_interface = ComputingAllowanceInterface()
+        computing_allowance = self.get_predominant_computing_allowance()
+        prefix = computing_allowance_interface.code_from_name(
+            computing_allowance.name)
+
         # Create Projects.
         self.project1 = Project.objects.create(
-            name='fc_project1', status=active_project_status)
+            name=f'{prefix}_project1', status=active_project_status)
 
         # add pis
         for pi_user in [self.pi1, self.pi2]:

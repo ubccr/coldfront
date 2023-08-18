@@ -43,6 +43,7 @@ from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowanc
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import utc_now_offset_aware
+from coldfront.core.utils.tests.test_base import enable_deployment
 from coldfront.core.utils.tests.test_base import TestBase
 
 
@@ -60,6 +61,7 @@ class TestStartAllocationPeriod(TestBase):
     """A class for testing the start_allocation_period management
     command."""
 
+    @enable_deployment('BRC')
     def setUp(self):
         """Set up test data."""
         super().setUp()
@@ -862,6 +864,7 @@ class TestStartAllocationPeriod(TestBase):
         usage.value = str(value)
         usage.save()
 
+    @enable_deployment('BRC')
     def test_allocation_period_nonexistent(self):
         """Test that an ID for a nonexistent AllocationPeriod raises an
         error."""
@@ -870,6 +873,7 @@ class TestStartAllocationPeriod(TestBase):
             self.call_command(_id)
         self.assertIn('does not exist', str(cm.exception))
 
+    @enable_deployment('BRC')
     def test_allocation_period_not_current(self):
         """Test that an ID for an AllocationPeriod whose start and end
         dates do not include the current date raises an error."""
@@ -880,6 +884,7 @@ class TestStartAllocationPeriod(TestBase):
                 self.call_command(_id)
             self.assertIn('is not current', str(cm.exception))
 
+    @enable_deployment('BRC')
     def test_allocation_renewal_request_processing_eligibility(self):
         """Test that AllocationRenewalRequests that do not meet all
         conditions for processing are not processed."""
@@ -925,6 +930,7 @@ class TestStartAllocationPeriod(TestBase):
                 self.assertNotIn(fc_message, output)
             self.assertFalse(error)
 
+    @enable_deployment('BRC')
     def test_failed_deactivations_preempt_processing(self):
         """Test that, if one or more Projects fail to be deactivated,
         request processing does not proceed."""
@@ -981,6 +987,7 @@ class TestStartAllocationPeriod(TestBase):
             AllocationRenewalRequest.objects.filter(
                 status__name='Complete').count())
 
+    @enable_deployment('BRC')
     def test_multiple_runs_avoid_redundant_work(self):
         """Test that running the command multiple times does not
         re-deactivate Projects or re-process already completed
@@ -1034,6 +1041,7 @@ class TestStartAllocationPeriod(TestBase):
         self.assertIn('Processed 0 AllocationRenewalRequests', output)
         self.assertFalse(error)
 
+    @enable_deployment('BRC')
     def test_new_project_request_processing_eligibility(self):
         """Test that new project requests that do not meet all
         conditions for processing are not processed."""
@@ -1086,6 +1094,7 @@ class TestStartAllocationPeriod(TestBase):
                 self.assertNotIn(pc_message, output)
             self.assertFalse(error)
 
+    @enable_deployment('BRC')
     def test_output_for_allowance_year_period(self):
         """Test that the messages written to stdout and stderr are
         exactly the ones expected for an AllocationPeriod representing
@@ -1120,6 +1129,7 @@ class TestStartAllocationPeriod(TestBase):
                 deepcopy(num_sus_by_new_project_request_id),
                 deepcopy(num_sus_by_renewal_request_id), dry_run=dry_run)
 
+    @enable_deployment('BRC')
     def test_output_for_instructional_period(self):
         """Test that the messages written to stdout and stderr are
         exactly the ones expected for an AllocationPeriod representing
@@ -1153,6 +1163,7 @@ class TestStartAllocationPeriod(TestBase):
                 deepcopy(num_sus_by_new_project_request_id),
                 deepcopy(num_sus_by_renewal_request_id), dry_run=dry_run)
 
+    @enable_deployment('BRC')
     def test_project_deactivation_eligibility(self):
         """Test that Projects that do not meet all conditions for
         deactivation are not deactivated."""
@@ -1239,6 +1250,7 @@ class TestStartAllocationPeriod(TestBase):
 
         assert_message_in_command_output(True)
 
+    @enable_deployment('BRC')
     def test_skip_deactivations_flag(self):
         """Test that deactivations are not run if the skip_deactivations
         flag is provided."""
@@ -1272,6 +1284,7 @@ class TestStartAllocationPeriod(TestBase):
             self.assertNotIn('Deactivated', output)
             self.assertFalse(error)
 
+    @enable_deployment('BRC')
     def test_starts_allowance_year_period(self):
         """Test that an AllocationPeriod representing an allowance year
         is started properly."""
@@ -1320,6 +1333,7 @@ class TestStartAllocationPeriod(TestBase):
         ic_new.refresh_from_db()
         self.assertEqual(ic_new.status.name, 'New')
 
+    @enable_deployment('BRC')
     def test_starts_instructional_period(self):
         """Test that an AllocationPeriod representing an instructional
         period is started properly."""

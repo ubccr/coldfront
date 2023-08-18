@@ -13,12 +13,14 @@ from coldfront.core.project.utils_.renewal_utils import get_next_allowance_year_
 from coldfront.core.resource.models import Resource
 from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
 from coldfront.core.utils.common import utc_now_offset_aware
+from coldfront.core.utils.tests.test_base import enable_deployment
 from coldfront.core.utils.tests.test_base import TestBase
 
 
 class TestSavioProjectExistingPIForm(TestBase):
     """A class for testing SavioProjectExistingPIForm."""
 
+    @enable_deployment('BRC')
     def setUp(self):
         """Set up test data."""
         super().setUp()
@@ -28,10 +30,11 @@ class TestSavioProjectExistingPIForm(TestBase):
         self.fca_computing_allowance = Resource.objects.get(
             name=BRCAllowances.FCA)
 
+    @enable_deployment('BRC')
     def test_eligibility_based_on_requests_in_specific_allocation_period(self):
         """Test that PI eligibility for a particular AllocationPeriod is
         only based on existing requests under the same period."""
-        computing_allowance = self.get_fca_computing_allowance()
+        computing_allowance = self.get_predominant_computing_allowance()
         allocation_period = get_current_allowance_year_period()
 
         # Create a new project request.
@@ -100,6 +103,7 @@ class TestSavioProjectExistingPIForm(TestBase):
             form.fields['PI'].widget.disabled_choices
         self.assertIn(self.user.pk, pi_field_disabled_choices)
 
+    @enable_deployment('BRC')
     def test_inactive_users_not_selectable(self):
         """Test that Users who have is_active set to False may not be
         selected in the 'PI' field."""
@@ -124,6 +128,7 @@ class TestSavioProjectExistingPIForm(TestBase):
         pi_field_queryset = form.fields['PI'].queryset
         self.assertIn(self.user, pi_field_queryset)
 
+    @enable_deployment('BRC')
     def test_pis_with_inactive_fc_projects_disabled(self):
         """Test that PIs of Projects with the 'Inactive' status are
         disabled in the 'PI' field."""
@@ -154,11 +159,12 @@ class TestSavioProjectExistingPIForm(TestBase):
         pi_field_disabled_choices = form.fields['PI'].widget.disabled_choices
         self.assertIn(self.user.pk, pi_field_disabled_choices)
 
+    @enable_deployment('BRC')
     def test_pis_with_non_denied_project_allocation_requests_disabled(self):
         """Test that PIs with non-'Denied'
         SavioProjectAllocationRequests are disabled in the 'PI'
         field."""
-        computing_allowance = self.get_fca_computing_allowance()
+        computing_allowance = self.get_predominant_computing_allowance()
         allocation_period = get_current_allowance_year_period()
         # Create a new project request.
         new_project, new_project_request = create_project_and_request(
@@ -183,6 +189,7 @@ class TestSavioProjectExistingPIForm(TestBase):
             else:
                 self.assertNotIn(self.user.pk, pi_field_disabled_choices)
 
+    @enable_deployment('BRC')
     def test_pis_with_non_denied_allocation_renewal_requests_disabled(self):
         """Test that PIs with non-'Denied' AllocationRenewalRequests
         are disabled in the 'PI' field."""

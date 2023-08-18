@@ -42,7 +42,7 @@ class TestViewMixin(TestRenewalViewsMixin):
         self.user_b.save()
 
         # Create two requests.
-        computing_allowance = Resource.objects.get(name=BRCAllowances.FCA)
+        computing_allowance = self.get_predominant_computing_allowance()
         self.project_a, self.request_a = self.create_project_and_request(
             'project_a', computing_allowance, self.user_a)
         self.project_b, self.request_b = self.create_project_and_request(

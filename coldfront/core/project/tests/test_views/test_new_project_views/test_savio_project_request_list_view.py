@@ -47,7 +47,7 @@ class TestViewMixin(object):
         self.user_c.save()
 
         # Create three requests.
-        computing_allowance = TestBase.get_fca_computing_allowance()
+        computing_allowance = TestBase.get_predominant_computing_allowance()
         allocation_period = get_current_allowance_year_period()
         self.project_a, self.request_a = create_project_and_request(
             'project_a', 'New', computing_allowance, allocation_period,

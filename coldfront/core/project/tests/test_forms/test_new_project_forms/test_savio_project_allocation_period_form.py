@@ -3,6 +3,7 @@ from coldfront.core.project.forms_.new_project_forms.request_forms import SavioP
 from coldfront.core.resource.models import Resource
 from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
 from coldfront.core.utils.common import display_time_zone_current_date
+from coldfront.core.utils.tests.test_base import enable_deployment
 from coldfront.core.utils.tests.test_base import TestBase
 
 from copy import deepcopy
@@ -19,6 +20,7 @@ class TestSavioProjectAllocationPeriodForm(TestBase):
 
     form_class = SavioProjectAllocationPeriodForm
 
+    @enable_deployment('BRC')
     def setUp(self):
         """Set up test data."""
         super().setUp()
@@ -69,6 +71,7 @@ class TestSavioProjectAllocationPeriodForm(TestBase):
             start_date=today + timedelta(days=2 * num_days_before_ica),
             end_date=today + timedelta(days=3 * num_days_before_ica))
 
+    @enable_deployment('BRC')
     def test_fca_pca_allowance_choices(self):
         """Test that the AllocationPeriods that are selectable for the
         FCA and PCA computing allowances on BRC are the expected
@@ -100,6 +103,7 @@ class TestSavioProjectAllocationPeriodForm(TestBase):
             self.assertIn(self.current_fca_pca_period, period_choices)
             self.assertIn(self.next_fca_pca_period, period_choices)
 
+    @enable_deployment('BRC')
     def test_ica_allowance_choices(self):
         """Test that the AllocationPeriods that are selectable for the
         ICA allocation type are the expected ones."""
@@ -110,6 +114,7 @@ class TestSavioProjectAllocationPeriodForm(TestBase):
         self.assertIn(self.current_ica_period, period_choices)
         self.assertIn(self.soon_ica_period, period_choices)
 
+    @enable_deployment('BRC')
     def test_other_allowance_choices(self):
         """Test that the AllocationPeriods that are selectable for the
         other allocation types are the expected ones."""
