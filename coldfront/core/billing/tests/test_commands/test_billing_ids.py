@@ -22,6 +22,9 @@ class TestBillingIds(TestBillingBase):
         """Set up test data."""
         super().setUp()
 
+        self.original_billing_activity = get_billing_activity_from_full_id(
+            '000000-000')
+
         self.command = BillingIdsCommand()
 
     def test_create_billing_id_existent(self):
@@ -132,11 +135,13 @@ class TestBillingIds(TestBillingBase):
             manager = call['manager']
             args = call['args']
 
-            self.assertIsNone(manager.billing_activity)
+            self.assertEqual(
+                manager.billing_activity, self.original_billing_activity)
             with self.assertRaises(CommandError) as cm:
                 command(*args)
             self.assertIn('is invalid', str(cm.exception))
-            self.assertIsNone(manager.billing_activity)
+            self.assertEqual(
+                manager.billing_activity, self.original_billing_activity)
 
             output, error = command(*args, ignore_invalid=True)
             self.assertIn('is invalid', output)
@@ -166,11 +171,13 @@ class TestBillingIds(TestBillingBase):
             manager = call['manager']
             args = call['args']
 
-            self.assertIsNone(manager.billing_activity)
+            self.assertEqual(
+                manager.billing_activity, self.original_billing_activity)
             with self.assertRaises(CommandError) as cm:
                 command(*args)
             self.assertIn('is malformed', str(cm.exception))
-            self.assertIsNone(manager.billing_activity)
+            self.assertEqual(
+                manager.billing_activity, self.original_billing_activity)
 
     def test_set_billing_id_nonexistent(self):
         """Test that, when the given billing ID does not already exist,
@@ -203,11 +210,13 @@ class TestBillingIds(TestBillingBase):
             manager = call['manager']
             args = call['args']
 
-            self.assertIsNone(manager.billing_activity)
+            self.assertEqual(
+                manager.billing_activity, self.original_billing_activity)
             with self.assertRaises(CommandError) as cm:
                 command(*args)
             self.assertIn('does not exist', str(cm.exception))
-            self.assertIsNone(manager.billing_activity)
+            self.assertEqual(
+                manager.billing_activity, self.original_billing_activity)
 
     def test_set_project_default_dry_run(self):
         """Test that, when the --dry_run flag is given to the
@@ -217,14 +226,16 @@ class TestBillingIds(TestBillingBase):
         self.command.create(billing_id)
 
         manager = ProjectBillingActivityManager(self.project)
-        self.assertIsNone(manager.billing_activity)
+        self.assertEqual(
+            manager.billing_activity, self.original_billing_activity)
 
         output, error = self.command.set_project_default(
             self.project_name, billing_id, dry_run=True)
         self.assertIn('Would update', output)
         self.assertFalse(error)
 
-        self.assertIsNone(manager.billing_activity)
+        self.assertEqual(
+            manager.billing_activity, self.original_billing_activity)
 
     def test_set_project_default_success(self):
         """Test that the 'project_default' subcommand of the 'set'
@@ -234,7 +245,8 @@ class TestBillingIds(TestBillingBase):
         billing_activity = get_billing_activity_from_full_id(billing_id)
 
         manager = ProjectBillingActivityManager(self.project)
-        self.assertIsNone(manager.billing_activity)
+        self.assertEqual(
+            manager.billing_activity, self.original_billing_activity)
 
         output, error = self.command.set_project_default(
             self.project_name, billing_id)
@@ -263,14 +275,16 @@ class TestBillingIds(TestBillingBase):
         self.command.create(billing_id)
 
         manager = ProjectUserBillingActivityManager(self.project_user)
-        self.assertIsNone(manager.billing_activity)
+        self.assertEqual(
+            manager.billing_activity, self.original_billing_activity)
 
         output, error = self.command.set_recharge(
             self.project_name, self.user.username, billing_id, dry_run=True)
         self.assertIn('Would update', output)
         self.assertFalse(error)
 
-        self.assertIsNone(manager.billing_activity)
+        self.assertEqual(
+            manager.billing_activity, self.original_billing_activity)
 
     def test_set_recharge_success(self):
         """Test that the 'recharge' subcommand of the 'set' subcommand
@@ -280,7 +294,8 @@ class TestBillingIds(TestBillingBase):
         billing_activity = get_billing_activity_from_full_id(billing_id)
 
         manager = ProjectUserBillingActivityManager(self.project_user)
-        self.assertIsNone(manager.billing_activity)
+        self.assertEqual(
+            manager.billing_activity, self.original_billing_activity)
 
         output, error = self.command.set_recharge(
             self.project_name, self.user.username, billing_id)
@@ -309,14 +324,16 @@ class TestBillingIds(TestBillingBase):
         self.command.create(billing_id)
 
         manager = UserBillingActivityManager(self.user)
-        self.assertIsNone(manager.billing_activity)
+        self.assertEqual(
+            manager.billing_activity, self.original_billing_activity)
 
         output, error = self.command.set_user_account(
             self.user.username, billing_id, dry_run=True)
         self.assertIn('Would update', output)
         self.assertFalse(error)
 
-        self.assertIsNone(manager.billing_activity)
+        self.assertEqual(
+            manager.billing_activity, self.original_billing_activity)
 
     def test_set_user_account_success(self):
         """Test that the 'user_account' subcommand of the 'set'
@@ -326,7 +343,8 @@ class TestBillingIds(TestBillingBase):
         billing_activity = get_billing_activity_from_full_id(billing_id)
 
         manager = UserBillingActivityManager(self.user)
-        self.assertIsNone(manager.billing_activity)
+        self.assertEqual(
+            manager.billing_activity, self.original_billing_activity)
 
         output, error = self.command.set_user_account(
             self.user.username, billing_id)

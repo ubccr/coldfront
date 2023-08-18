@@ -480,6 +480,10 @@ class TestLRCNewProjectUserRunner(TestCommonRunnerMixin, TestRunnerBase):
         """Set up test data."""
         super().setUp()
         self._deployment_name = 'LRC'
+
+        self.project.name = 'pc_project'
+        self.project.save()
+
         # Create another PI.
         self.pi = User.objects.create(username='pi0', email='pi0@lbl.gov')
         user_profile = UserProfile.objects.get(user=self.pi)

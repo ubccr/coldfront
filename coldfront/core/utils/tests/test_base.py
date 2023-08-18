@@ -36,7 +36,7 @@ FLAGS_COPY = deepcopy(settings.FLAGS)
 FLAGS_COPY.pop('LRC_ONLY')
 
 
-@override_settings(FLAGS=FLAGS_COPY, PRIMARY_CLUSTER_NAME='Savio')
+# @override_settings(FLAGS=FLAGS_COPY)#, PRIMARY_CLUSTER_NAME='Savio')
 class TestBase(TestCase):
     """A base class for testing the application."""
 
@@ -86,7 +86,7 @@ class TestBase(TestCase):
         # Run the setup commands with the BRC_ONLY flag enabled.
         # TODO: Implement a long-term solution that enables testing of multiple
         # TODO: types of deployments.
-        enable_flag('BRC_ONLY', create_boolean_condition=True)
+        # enable_flag('BRC_ONLY', create_boolean_condition=True)
         enable_flag('SERVICE_UNITS_PURCHASABLE', create_boolean_condition=True)
 
         out, err = StringIO(), StringIO()
@@ -184,9 +184,15 @@ class enable_deployment(TestContextDecorator):
         if self._deployment_name == 'BRC':
             self._flag_to_enable = 'BRC_ONLY'
             self._flag_to_disable = 'LRC_ONLY'
+            self._settings = {
+                'PRIMARY_CLUSTER_NAME': 'Savio',
+            }
         else:
             self._flag_to_enable = 'LRC_ONLY'
             self._flag_to_disable = 'BRC_ONLY'
+            self._settings = {
+                'PRIMARY_CLUSTER_NAME': 'Lawrencium',
+            }
 
         self._pre_states = {
             flag_name: flag_enabled(flag_name) or False
@@ -201,7 +207,8 @@ class enable_deployment(TestContextDecorator):
         flags_copy[self._flag_to_disable] = {
             'condition': 'boolean', 'value': False}
 
-        self._override_settings_cm = override_settings(FLAGS=flags_copy)
+        self._override_settings_cm = override_settings(
+            FLAGS=flags_copy, **self._settings)
         self._override_settings_cm.__enter__()
 
         enable_flag(self._flag_to_enable)

@@ -139,6 +139,10 @@ class TestLRCProjectProcessingRunner(TestProjectProcessingRunnerMixin,
     def setUp(self):
         """Set up test data."""
         super().setUp()
+
+        self.project.name = 'pc_project'
+        self.project.save()
+
         self._deployment_name = 'LRC'
         # Set the PI's email address to be an LBL email address.
         self.pi.email = 'pi@lbl.gov'

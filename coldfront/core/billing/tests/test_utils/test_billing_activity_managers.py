@@ -19,6 +19,16 @@ class TestBillingActivityManagerBase(TestBillingBase):
         """Set up test data."""
         super().setUp()
 
+        self.allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Billing Activity')
+
+        AllocationAttribute.objects.filter(
+            allocation_attribute_type=self.allocation_attribute_type,
+            allocation=self.allocation).delete()
+        AllocationUserAttribute.objects.filter(
+            allocation_attribute_type=self.allocation_attribute_type,
+            allocation=self.allocation).delete()
+
         self.billing_id_1 = '123456-789'
         self.billing_activity_1 = get_or_create_billing_activity_from_full_id(
             self.billing_id_1)
@@ -35,8 +45,6 @@ class TestProjectBillingActivityManager(TestBillingActivityManagerBase):
         """Set up test data."""
         super().setUp()
 
-        self.allocation_attribute_type = AllocationAttributeType.objects.get(
-            name='Billing Activity')
         self.manager = ProjectBillingActivityManager(self.project)
 
     def test_get_invalid_allocation_attribute_value(self):
@@ -168,8 +176,6 @@ class TestProjectUserBillingActivityManager(TestBillingActivityManagerBase):
 
         self.allocation_user = AllocationUser.objects.get(
             allocation=self.allocation, user=self.user)
-        self.allocation_attribute_type = AllocationAttributeType.objects.get(
-            name='Billing Activity')
         self.manager = ProjectUserBillingActivityManager(self.project_user)
 
     def test_get_invalid_allocation_user_attribute_value(self):
