@@ -36,7 +36,7 @@ class OfferLetterCodeField(forms.CharField):
     def clean(self, value):
         # Remove all dashes from the input string to count the number of digits
         value = super().clean(value)
-        digits_only = re.sub(r'\D', '', value)
+        digits_only = re.sub(r'[^0-9xX]', '', value)
         insert_dashes = lambda d: '-'.join(
             [d[:3], d[3:8], d[8:12], d[12:18], d[18:24], d[24:28], d[28:33]]
         )
@@ -126,13 +126,12 @@ We do not have information about your research. Please provide a detailed descri
             self.add_error("offer_letter_code", "you must select exactly one from hsph, seas, or manual entry")
 
         elif value and value != '------':
-            digits_only = re.sub(r'\D', '', value)
-            if not re.fullmatch(r'^(\d+-?)*[\d-]+$', value):
+            digits_only = re.sub(r'[^0-9xX]', '', value)
+            if not re.fullmatch(r'^([0-9xX]+-?)*[0-9xX-]+$', value):
                 self.add_error("offer_letter_code", "Input must consist only of digits and dashes.")
             elif len(digits_only) != 33:
                 self.add_error("offer_letter_code", "Input must contain exactly 33 digits.")
             else:
-                digits_only = re.sub(r'\D', '', value)
                 insert_dashes = lambda d: '-'.join(
                     [d[:3], d[3:8], d[8:12], d[12:18], d[18:24], d[24:28], d[28:33]]
                 )

@@ -81,6 +81,18 @@ class AllocationFormTest(AllocationFormBaseTest):
             cleaned_form['offer_letter_code'], '123-12312-3123-123123-123123-1231-23123'
         )
 
+    def test_allocationform_offerlettercode_valid3(self):
+        """Test POST to the AllocationCreateView
+        - ensure xes count as digits
+        """
+        # correct # of digits with no dashes
+        self.post_data['offer_letter_code'] = '1Xx-' * 11
+        cleaned_form = self.return_cleaned_form(AllocationForm)
+        print(cleaned_form)
+        self.assertEqual(
+            cleaned_form['offer_letter_code'], '1Xx-1Xx1X-x1Xx-1Xx1Xx-1Xx1Xx-1Xx1-Xx1Xx'
+        )
+
     def test_allocationform_offerlettercode_multiplefield_invalid(self):
         """Test POST to AllocationCreateView in circumstance where hsph and seas values are also checked"""
         self.post_data['offer_letter_code'] = '123-' * 11
