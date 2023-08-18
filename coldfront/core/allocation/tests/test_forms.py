@@ -3,10 +3,7 @@ import logging
 from django.test import TestCase
 
 from coldfront.core.resource.models import Resource
-from coldfront.core.allocation.forms import (
-    AllocationForm,
-    AllocationUpdateForm,
-)
+from coldfront.core.allocation.forms import AllocationForm
 from coldfront.core.test_helpers.factories import (
     setup_models,
     ResourceTypeFactory,
@@ -46,18 +43,18 @@ class AllocationFormTest(AllocationFormBaseTest):
         self.post_data = {
             'justification': 'test justification',
             'quantity': '1',
-            'offer_letter_code': '123-12312-3123-123123-123123-1231-23123',
+            'expense_code': '123-12312-3123-123123-123123-1231-23123',
             'resource': f'{self.proj_allocation.resources.first().pk}',
             'tier': Resource.objects.filter(resource_type=tier_restype).first()
         }
 
     def test_allocationform_offerlettercode_invalid(self):
-        """ensure correct error messages for incorrect offer_letter_code value
+        """ensure correct error messages for incorrect expense_code value
         """
-        self.post_data['offer_letter_code'] = '123456789'
+        self.post_data['expense_code'] = '123456789'
         form = AllocationForm(data=self.post_data, request_user=self.pi_user, project_pk=self.project.pk)
         self.assertEqual(
-            form.errors['offer_letter_code'], ['Input must contain exactly 33 digits.']
+            form.errors['expense_code'], ['Input must contain exactly 33 digits.']
         )
 
     def test_allocationform_offerlettercode_valid(self):
@@ -68,17 +65,17 @@ class AllocationFormTest(AllocationFormBaseTest):
         # correct # of digits with no dashes
         cleaned_form = self.return_cleaned_form(AllocationForm)
         self.assertEqual(
-            cleaned_form['offer_letter_code'], '123-12312-3123-123123-123123-1231-23123'
+            cleaned_form['expense_code'], '123-12312-3123-123123-123123-1231-23123'
         )
 
     def test_allocationform_offerlettercode_valid2(self):
         # check that offer code was correctly formatted
         # correct # of digits with many dashes
-        self.post_data['offer_letter_code'] = '123-' * 11
+        self.post_data['expense_code'] = '123-' * 11
         cleaned_form = self.return_cleaned_form(AllocationForm)
 
         self.assertEqual(
-            cleaned_form['offer_letter_code'], '123-12312-3123-123123-123123-1231-23123'
+            cleaned_form['expense_code'], '123-12312-3123-123123-123123-1231-23123'
         )
 
     def test_allocationform_offerlettercode_valid3(self):
@@ -86,21 +83,20 @@ class AllocationFormTest(AllocationFormBaseTest):
         - ensure xes count as digits
         """
         # correct # of digits with no dashes
-        self.post_data['offer_letter_code'] = '1Xx-' * 11
+        self.post_data['expense_code'] = '1Xx-' * 11
         cleaned_form = self.return_cleaned_form(AllocationForm)
-        print(cleaned_form)
         self.assertEqual(
-            cleaned_form['offer_letter_code'], '1Xx-1Xx1X-x1Xx-1Xx1Xx-1Xx1Xx-1Xx1-Xx1Xx'
+            cleaned_form['expense_code'], '1Xx-1Xx1X-x1Xx-1Xx1Xx-1Xx1Xx-1Xx1-Xx1Xx'
         )
 
     def test_allocationform_offerlettercode_multiplefield_invalid(self):
         """Test POST to AllocationCreateView in circumstance where hsph and seas values are also checked"""
-        self.post_data['offer_letter_code'] = '123-' * 11
+        self.post_data['expense_code'] = '123-' * 11
         self.post_data['hsph_code'] = True
         form = AllocationForm(
             data=self.post_data, request_user=self.pi_user, project_pk=self.project.pk
         )
-        self.assertEqual(form.errors['offer_letter_code'], ["you must select exactly one from hsph, seas, or manual entry"])
+        self.assertEqual(form.errors['expense_code'], ["you must select exactly one from hsph, seas, or manual entry"])
 
 
 class AllocationUpdateFormTest(AllocationFormBaseTest):

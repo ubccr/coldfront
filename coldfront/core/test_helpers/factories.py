@@ -347,6 +347,7 @@ def setup_models(test_case):
     quota_tb_type = AllocationAttributeTypeFactory(name='Storage Quota (TB)')
     for name, attribute_type, has_usage, is_private in (
         ('Offer Letter Code', 'Text', False, True),
+        ('Expense Code', 'Text', False, True),
         ('Heavy IO',  'Yes/No', False, False),
         ('Mounted',  'Yes/No', False, False),
         ('High Security', 'Yes/No', False, False),

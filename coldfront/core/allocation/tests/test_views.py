@@ -386,7 +386,7 @@ class AllocationCreateViewTest(AllocationViewBaseTest):
         self.post_data = {
             'justification': 'test justification',
             'quantity': '1',
-            'offer_letter_code': '123-12312-3123-123123-123123-1231-23123',
+            'expense_code': '123-12312-3123-123123-123123-1231-23123',
             'tier': f'{storage_tier.pk}',
         }
 
@@ -406,7 +406,7 @@ class AllocationCreateViewTest(AllocationViewBaseTest):
 
     def test_allocationcreateview_post_zeroquantity(self):
         """Test POST to the AllocationCreateView with default post_data:
-        No offer_letter_code, dua, heavy_io, mounted, external_sharing, high_security
+        No expense_code, dua, heavy_io, mounted, external_sharing, high_security
         """
         self.post_data['quantity'] = '0'
         self.assertEqual(len(self.project.allocation_set.all()), 1)
@@ -418,12 +418,12 @@ class AllocationCreateViewTest(AllocationViewBaseTest):
         """ensure 33-digit codes go through and get formatted"""
         # correct # of digits with no dashes
         aa_objs = AllocationAttribute.objects.all()
-        aa_obj = aa_objs.filter(allocation_attribute_type__name='Offer Letter Code')
+        aa_obj = aa_objs.filter(allocation_attribute_type__name='Expense Code')
         self.assertEqual(len(aa_obj), 0)
-        self.post_data['offer_letter_code'] = '123' * 11
+        self.post_data['expense_code'] = '123' * 11
         response = self.client.post(self.url, data=self.post_data, follow=True)
         self.assertContains(response, "Allocation requested.")
-        aa_obj = aa_objs.filter(allocation_attribute_type__name='Offer Letter Code')
+        aa_obj = aa_objs.filter(allocation_attribute_type__name='Expense Code')
         self.assertEqual(len(aa_obj), 1)
 
     def test_allocationcreateview_post_bools(self):
@@ -438,8 +438,7 @@ class AllocationCreateViewTest(AllocationViewBaseTest):
         self.assertEqual(len(aa_objs), 5)
 
     def test_allocationcreateview_post_offerlettercode_multiplefield_invalid(self):
-        """Ensure that form won't pass if multiple offer letter codes are given
-        """
+        """Ensure that form won't pass if multiple expense codes are given"""
         self.post_data['hsph_code'] = '000-000-000-000-000-000-000-000-000-000-000'
         response = self.client.post(self.url, data=self.post_data, follow=True)
         self.assertContains(response, "you must select exactly one from hsph, seas, or manual entry")
@@ -448,12 +447,12 @@ class AllocationCreateViewTest(AllocationViewBaseTest):
     def test_allocationcreateview_post_hsph_offerlettercode(self):
         """Ensure that form goes through if hsph is checked"""
         self.post_data['hsph_code'] = '000-000-000-000-000-000-000-000-000-000-000'
-        self.post_data.pop('offer_letter_code')
+        self.post_data.pop('expense_code')
         response = self.client.post(self.url, data=self.post_data, follow=True)
         self.assertContains(response, "Allocation requested.")
 
         aa_obj = AllocationAttribute.objects.filter(
-            allocation_attribute_type__name='Offer Letter Code'
+            allocation_attribute_type__name='Expense Code'
         )
         self.assertEqual(len(aa_obj), 1)
         self.assertEqual(aa_obj[0].value, '000-00000-0000-000000-000000-0000-00000')

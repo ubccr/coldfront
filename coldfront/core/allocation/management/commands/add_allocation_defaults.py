@@ -36,6 +36,7 @@ class Command(BaseCommand):
             ('Offer Letter', 'Float', False, True),
             ('RequiresPayment', 'Yes/No', False, True),
             ('Offer Letter Code', 'Text', False, True),
+            ('Expense Code', 'Text', False, True),
             ('Subdirectory', 'Text', False, False),
             ('Heavy IO',  'Yes/No', False, False),
             ('Mounted',  'Yes/No', False, False),

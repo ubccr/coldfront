@@ -641,12 +641,12 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             )
 
 
-        offer_letter_code = form_data.get('offer_letter_code', None)
-        if offer_letter_code:
+        expense_code = form_data.get('expense_code', None)
+        if expense_code:
             insert_dashes = lambda d: '-'.join(
                 [d[:3], d[3:8], d[8:12], d[12:18], d[18:24], d[24:28], d[28:33]]
             )
-            offer_letter_code = insert_dashes(re.sub(r'\D', '', offer_letter_code))
+            expense_code = insert_dashes(re.sub(r'\D', '', expense_code))
         dua = form_data.get('dua', None)
         heavy_io = form_data.get('heavy_io', None)
         mounted = form_data.get('mounted', None)
@@ -655,7 +655,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         for value, attr_name in (
             (quantity, 'Storage Quota (TB)'),
-            (offer_letter_code, 'Offer Letter Code'),
+            (expense_code, 'Expense Code'),
             (dua, 'DUA'),
             (heavy_io, 'Heavy IO'),
             (mounted, 'Mounted'),

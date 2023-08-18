@@ -22,8 +22,8 @@ ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS = import_from_settings(
 HSPH_CODE = import_from_settings('HSPH_CODE', '000-000-000-000-000-000-000-000-000-000-000')
 SEAS_CODE = import_from_settings('SEAS_CODE', '111-111-111-111-111-111-111-111-111-111-111')
 
-class OfferLetterCodeField(forms.CharField):
-    """custom field for offer_letter_code"""
+class ExpenseCodeField(forms.CharField):
+    """custom field for expense_code"""
 
     # def validate(self, value):
     #     if value:
@@ -51,8 +51,8 @@ We do not have information about your research. Please provide a detailed descri
     # resource = forms.ModelChoiceField(queryset=None, empty_label=None)
     quantity = forms.IntegerField(required=True, initial=1)
 
-    offer_letter_code = OfferLetterCodeField(
-        label="Lab's 33 digit billing code", required=False
+    expense_code = ExpenseCodeField(
+        label="Lab's 33 digit expense code", required=False
     )
 
     hsph_code = forms.BooleanField(
@@ -117,29 +117,29 @@ We do not have information about your research. Please provide a detailed descri
     def clean(self):
         cleaned_data = super().clean()
         # Remove all dashes from the input string to count the number of digits
-        value = cleaned_data.get("offer_letter_code")
+        value = cleaned_data.get("expense_code")
         hsph_val = cleaned_data.get("hsph_code")
         seas_val = cleaned_data.get("seas_code")
         trues = sum(x for x in [(value not in ['', '------']), hsph_val, seas_val])
 
         if trues != 1:
-            self.add_error("offer_letter_code", "you must select exactly one from hsph, seas, or manual entry")
+            self.add_error("expense_code", "you must select exactly one from hsph, seas, or manual entry")
 
         elif value and value != '------':
             digits_only = re.sub(r'[^0-9xX]', '', value)
             if not re.fullmatch(r'^([0-9xX]+-?)*[0-9xX-]+$', value):
-                self.add_error("offer_letter_code", "Input must consist only of digits and dashes.")
+                self.add_error("expense_code", "Input must consist only of digits and dashes.")
             elif len(digits_only) != 33:
-                self.add_error("offer_letter_code", "Input must contain exactly 33 digits.")
+                self.add_error("expense_code", "Input must contain exactly 33 digits.")
             else:
                 insert_dashes = lambda d: '-'.join(
                     [d[:3], d[3:8], d[8:12], d[12:18], d[18:24], d[24:28], d[28:33]]
                 )
-                cleaned_data['offer_letter_code'] = insert_dashes(digits_only)
+                cleaned_data['expense_code'] = insert_dashes(digits_only)
         elif hsph_val:
-            cleaned_data['offer_letter_code'] = HSPH_CODE
+            cleaned_data['expense_code'] = HSPH_CODE
         elif seas_val:
-            cleaned_data['offer_letter_code'] = SEAS_CODE
+            cleaned_data['expense_code'] = SEAS_CODE
         return cleaned_data
 
 

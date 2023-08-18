@@ -146,6 +146,10 @@ class Allocation(TimeStampedModel):
         return self.pull_allocationattribute('Offer Letter Code')
 
     @property
+    def expense_code(self):
+        return self.pull_allocationattribute('Expense Code')
+
+    @property
     def heavy_io(self):
         return self.pull_allocationattribute('Heavy IO')
 
