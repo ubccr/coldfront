@@ -60,7 +60,7 @@ Project Detail
       {{ project.pi.first_name }}
       {{ project.pi.last_name }}
       ({{ project.pi.username }})
-      <a href="mailto:{{ project.pi.email }} "><i class="far fa-envelope" aria-hidden="true"></i><span class="sr-only">Email PI</span></a>
+      <a title="Email project admin" data-bs-toggle="tooltip" href="mailto:{{ project.pi.email }} "><i class="far fa-envelope" aria-hidden="true"></i><span class="sr-only">Email PI</span></a>
     </h3>
     <p class="card-text"><strong>Description: </strong>{{ project.description }}</p>
     <p class="card-text"><strong>Field of Science: </strong>{{ project.field_of_science }}</p>
@@ -141,7 +141,7 @@ Project Detail
               </td>
               <td>
                 {% if is_allowed_to_update_project %}
-                  <a href="{% url 'project-user-detail' project.pk user.id %}"><i class="fas fa-user-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a>
+                  <a title="View user detail" data-bs-toggle="tooltip" href="{% url 'project-user-detail' project.pk user.id %}"><i class="fas fa-user-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a>
                 {% endif %}
               </td>
             </tr>
@@ -197,13 +197,13 @@ Project Detail
               {% endif %}
               <td>{{allocation.end_date|date:"Y-m-d"}}</td>
               <td>
-                <a href="{% url 'allocation-detail' allocation.pk %}"><i class="far fa-folder-open" aria-hidden="true"></i><span class="sr-only">Details</span></a>
+                <a title="View allocation detail" data-bs-toggle="tooltip" href="{% url 'allocation-detail' allocation.pk %}"><i class="far fa-folder-open" aria-hidden="true"></i><span class="sr-only">Details</span></a>
                 {% if allocation.is_locked and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %}
                 <span class="badge bg-warning"><i class="far fa-clock" aria-hidden="true"></i>
                   Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} <br> Not renewable
                 </span>
                 {% elif is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %}
-                  <a href="{% url 'allocation-renew' allocation.pk %}">
+                  <a title="Renew allocation" data-bs-toggle="tooltip" href="{% url 'allocation-renew' allocation.pk %}">
                   <span class="badge bg-warning"><i class="fas fa-redo-alt" aria-hidden="true"></i>
                   Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} <br> Click to renew
                   </span>
@@ -257,7 +257,7 @@ Project Detail
                   <tr style="background-color:#eee">
                     <td><i class="fas fa-lock" aria-hidden="true"></i> {{attribute}}</td>
                     <td>{{attribute.value}}</td>
-                    <td><a href="{% url 'project-attribute-update' project.pk attribute.pk %}"><i class="far fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
+                    <td><a title="Edit attribute" data-bs-toggle="tooltip" href="{% url 'project-attribute-update' project.pk attribute.pk %}"><i class="far fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
                   </tr>
                 {% else %}
                   <tr>
@@ -266,7 +266,7 @@ Project Detail
                       {{attribute.value}}
                     </td>
                     {% if is_allowed_to_update_project %}
-                    <td><a href="{% url 'project-attribute-update' project.pk attribute.pk %}"><i class="far fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
+                    <td><a title="Edit attribute" data-bs-toggle="tooltip" href="{% url 'project-attribute-update' project.pk attribute.pk %}"><i class="far fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
                     {% endif %}
                   </tr>                
                 {% endif %}
@@ -341,7 +341,7 @@ Project Detail
               {% else %}
                 <td class="text-info">{{ grant.status.name }}</td>
               {% endif %}
-              <td><a href="{% url 'grant-update' grant.id %}"><i class="far fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
+              <td><a title="Update grant" data-bs-toggle="tooltip" href="{% url 'grant-update' grant.id %}"><i class="far fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
             </tr>
             {% endfor %}
           </tbody>
@@ -388,7 +388,7 @@ Project Detail
               <td>
                 <strong>Title: </strong>{{ publication.title }}
                 {% if publication.source.url %}
-                  <a target="_blank" rel="noopener" href="{{publication.source.url}}{{publication.unique_id}}"><i class="fas fa-external-link-alt" aria-hidden="true"></i><span class="sr-only">Visit source</span></a>
+                  <a title="Visit source" data-bs-toggle="tooltip" target="_blank" rel="noopener" href="{{publication.source.url}}{{publication.unique_id}}"><i class="fas fa-external-link-alt" aria-hidden="true"></i><span class="sr-only">Visit source</span></a>
                 {% endif %}
                 <br><strong>Author: </strong>{{ publication.author}}
                 <br><strong>Journal: </strong>{{ publication.journal}}

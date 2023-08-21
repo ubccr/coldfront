@@ -54,7 +54,7 @@ Resource Detail
             <td>
             {% if resource.linked_resources.all %}
               {% for resource in resource.linked_resources.all %}
-                <a href="{% url 'resource-detail' resource.pk %}">{{ resource }}</a> <br>
+                <a title="View resource detail" data-bs-toggle="tooltip" href="{% url 'resource-detail' resource.pk %}">{{ resource }}</a> <br>
               {% endfor %}
             {% else %}
               None
@@ -140,7 +140,7 @@ Resource Detail
           <tbody>
             {% for child in child_resources %}
                 <tr>
-                  <td><a href="{% url 'resource-detail' child.object.pk %}">{{child.object}}</a></td>
+                  <td><a title="View resource detail" data-bs-toggle="tooltip" href="{% url 'resource-detail' child.object.pk %}">{{child.object}}</a></td>
                   <td>{{child.WarrantyExpirationDate}}</td>
                   <td>{{child.ServiceEnd}}</td>
                   <td>{{child.Vendor}}</td>

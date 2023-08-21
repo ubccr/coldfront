@@ -21,7 +21,7 @@ User Projects and Managers{% if not user == viewed_user %}: {{ viewed_user.usern
           <div class="card-header">
             <h3 class="d-inline">{{ project.title }}</h3>
             {% if user == viewed_user or perms.project.can_view_all_projects %}
-              <a href="{% url 'project-detail' project.pk %}" role="button"><i class="far fa-folder-open" aria-hidden="true"></i><span class="sr-only">Details</span></a>
+              <a title="View project detail" data-bs-toggle="tooltip" href="{% url 'project-detail' project.pk %}" role="button"><i class="far fa-folder-open" aria-hidden="true"></i><span class="sr-only">Details</span></a>
             {% endif %}
           </div>
           <div class="card-body">
@@ -41,7 +41,7 @@ User Projects and Managers{% if not user == viewed_user %}: {{ viewed_user.usern
             <p class="card-text"><strong>Field of Science: </strong>{{ project.field_of_science }}</p>
             <p class="card-text"><strong>Project Status: </strong>{{ project.status }} </p>
             <p class="card-text"><strong>Principal Investigator: </strong>{{ project.pi.first_name }} {{ project.pi.last_name }} ({{ project.pi.username }})
-              <a href="mailto:{{ project.pi.email }} "><i class="far fa-envelope" aria-hidden="true"></i><span class="sr-only">Email</span></a>
+              <a  title="Email project PI" data-bs-toggle="tooltip" href="mailto:{{ project.pi.email }} "><i class="far fa-envelope" aria-hidden="true"></i><span class="sr-only">Email</span></a>
               {% if association.is_project_pi %}
                 <span class="text-success">({{ user_pronounish | lower }} <em>{{user_verbform_be}}</em> the project PI)</span>
               {% endif %}
@@ -77,7 +77,7 @@ User Projects and Managers{% if not user == viewed_user %}: {{ viewed_user.usern
                             <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
                             <td>
                               {{ user.user.email }}
-                              <a href="mailto:{{ user.user.email }} "><i class="far fa-envelope"></i></a>
+                              <a  title="Email project manager" data-bs-toggle="tooltip" href="mailto:{{ user.user.email }} "><i class="far fa-envelope"></i></a>
                             </td>
                             {% if user.status.name == 'Active' %}
                               <td class="text-success">{{ user.status.name }}</td>

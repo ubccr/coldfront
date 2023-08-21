@@ -39,7 +39,7 @@ Allocation Review New and Pending Change Requests
           <tr>
             <td>{{change.pk}}</td>
             <td>{{ change.created|date:"Y-m-d" }}</td>
-            <td><a href="{% url 'project-detail' change.allocation.project.pk %}">{{change.allocation.project.title|truncatechars:50}}</a></td>
+            <td><a  title="View project detail" data-bs-toggle="tooltip" href="{% url 'project-detail' change.allocation.project.pk %}">{{change.allocation.project.title|truncatechars:50}}</a></td>
             <td>{{change.allocation.project.pi.first_name}} {{change.allocation.project.pi.last_name}}
               ({{change.allocation.project.pi.username}})</td>
             <td>{{change.allocation.get_parent_resource}}</td>

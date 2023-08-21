@@ -43,7 +43,7 @@ Grants Report
               <tr>
                 <td>{{ form.selected }}</td>
                 <td style="min-width: 400px">{{ form.title.value }}</td>
-                <td class="text-nowrap"><a href="{% url 'project-detail' form.project_pk.value %}">{{ form.pi_first_name.value }} {{ form.pi_last_name.value }}</a></td>
+                <td class="text-nowrap"><a title="View project detail" data-bs-toggle="tooltip" href="{% url 'project-detail' form.project_pk.value %}">{{ form.pi_first_name.value }} {{ form.pi_last_name.value }}</a></td>
                 <td class="text-nowrap">{{ form.role.value }}</td>
                 <td class="text-nowrap">{{ form.grant_pi.value }}</td>
                 <td class="text-nowrap">{{ form.total_amount_awarded.value|floatformat:2|intcomma }}</td>

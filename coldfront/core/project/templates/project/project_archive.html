@@ -19,7 +19,7 @@ Archive Project
       {{ project.pi.first_name }}
       {{ project.pi.last_name }}
       ({{ project.pi.username }})
-      <a href="mailto:{{ project.pi.email }}"><i class="far fa-envelope" aria-hidden="true"></i><span class="sr-only">Email</span></a>
+      <a title="Email project PI" data-bs-toggle="tooltip" href="mailto:{{ project.pi.email }}"><i class="far fa-envelope" aria-hidden="true"></i><span class="sr-only">Email</span></a>
     </h3>
     <p class="card-text"><strong>Description: </strong>{{ project.description }}</p>
     <p class="card-text"><strong>Field of Science: </strong>{{ project.field_of_science }}</p>

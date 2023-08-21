@@ -13,9 +13,9 @@
       <ul class="list-group">
         {% for project in project_list %}
           <li class="list-group-item">
-            <a href="{% url 'project-detail' project.pk %}"><i class="fa fa-folder fa-lg" aria-hidden="true"></i> {{project.title}}</a>
+            <a title="View project detail" data-bs-toggle="tooltip" href="{% url 'project-detail' project.pk %}"><i class="fa fa-folder fa-lg" aria-hidden="true"></i> {{project.title}}</a>
             {% if project.needs_review %}
-              <a href="{% url 'project-review' project.pk %}"><span class="badge bg-warning">Needs Review</span></a>
+              <a title="View project detail" data-bs-toggle="tooltip" href="{% url 'project-review' project.pk %}"><span class="badge bg-warning">Needs Review</span></a>
             {% endif %}
           </li>
         {% endfor %}
@@ -24,7 +24,7 @@
       <div class="alert alert-info" role="alert"><i class="fa fa-info-circle" aria-hidden="true"></i> There are no projects to display.</div>
       {% if user.userprofile.is_pi or user.is_superuser %}
         <div class="d-grid gap-2">
-          <a class="btn btn-primary" href="{% url 'project-create' %}" role="button">Add a project</a>
+          <a title="Add a project" data-bs-toggle="tooltip" class="btn btn-primary" href="{% url 'project-create' %}" role="button">Add a project</a>
         </div>
         <hr>
       {% endif %}
@@ -55,26 +55,26 @@
             {% endif %} 
             </td>
             {%  if allocation.status.name == "Expired" and allocation.expires_in < 0 %}
-            <td><div class="d-grid gap-2"><a href="{% url 'allocation-detail' allocation.id %}" class="btn btn-danger">Expired</a></div></td>
+            <td><div class="d-grid gap-2"><a title="View allocation detail" data-bs-toggle="tooltip" href="{% url 'allocation-detail' allocation.id %}" class="btn btn-danger">Expired</a></div></td>
             {%  elif allocation.status.name == "Renewal Requested" %}
-            <td><div class="d-grid gap-2"><a href="{% url 'allocation-detail' allocation.id %}" class="btn btn-danger">Renewal
+            <td><div class="d-grid gap-2"><a title="View allocation detail" data-bs-toggle="tooltip" href="{% url 'allocation-detail' allocation.id %}" class="btn btn-danger">Renewal
                 Requested</a></div></td>
             {%  elif allocation.expires_in >= 0 and  allocation.expires_in <= 30 %}
-            <td><div class="d-grid gap-2"><a href="{% url 'allocation-detail' allocation.id %}" class="btn btn-danger">Expires in <span
+            <td><div class="d-grid gap-2"><a title="View allocation detail" data-bs-toggle="tooltip" href="{% url 'allocation-detail' allocation.id %}" class="btn btn-danger">Expires in <span
                   class="badge bg-light">{{allocation.expires_in}}</span> day{{allocation.expires_in|pluralize }}</div></a>
             </td>
             {% elif allocation.expires_in > 30 and allocation.expires_in <= 90 %}
-            <td><div class="d-grid gap-2"><a href="{% url 'allocation-detail' allocation.id %}" class="btn btn-warning">Expires in <span
+            <td><div class="d-grid gap-2"><a title="View allocation detail" data-bs-toggle="tooltip" href="{% url 'allocation-detail' allocation.id %}" class="btn btn-warning">Expires in <span
                   class="badge bg-light">{{allocation.expires_in}}</span> day{{allocation.expires_in|pluralize }}</a></div>
             </td>
             {% elif allocation.status.name == "Pending" %}
-            <td><div class="d-grid gap-2"><a href="{% url 'allocation-detail' allocation.id %}"
+            <td><div class="d-grid gap-2"><a title="View allocation detail" data-bs-toggle="tooltip" href="{% url 'allocation-detail' allocation.id %}"
                 class="btn btn-info">{{allocation.status}}</a></div></td>
             {% elif allocation.status.name == "Active" %}
-            <td><div class="d-grid gap-2"><a href="{% url 'allocation-detail' allocation.id %}"
+            <td><div class="d-grid gap-2"><a title="View allocation detail" data-bs-toggle="tooltip" href="{% url 'allocation-detail' allocation.id %}"
                 class="btn btn-success">{{allocation.status}}</a></div></td>
             {% else %}
-            <td><div class="d-grid gap-2"><a href="{% url 'allocation-detail' allocation.id %}"
+            <td><div class="d-grid gap-2"><a title="View allocation detail" data-bs-toggle="tooltip" href="{% url 'allocation-detail' allocation.id %}"
                 class="btn btn-info btn-block">{{allocation.status}}</a></div></td>
             {% endif %}
           </tr>

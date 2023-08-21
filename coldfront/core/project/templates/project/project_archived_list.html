@@ -76,7 +76,7 @@ Project List
       <tbody>
         {% for project in project_list %}
           <tr>
-            <td><a href="/project/{{project.id}}/">{{ project.id }}</a></td>
+            <td><a title="View project detail" data-bs-toggle="tooltip" href="/project/{{project.id}}/">{{ project.id }}</a></td>
             <td>{{ project.pi.username }}</td>
             <td><strong>Title: </strong> {{ project.title }}
               <br> <strong>Description: </strong>{{ project.description }}</td>

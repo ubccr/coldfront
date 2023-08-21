@@ -51,14 +51,14 @@ Allocation Detail
         <table class="table table-bordered table-sm">
           <tr>
             <th scope="row" class="text-nowrap">Project:</th>
-            <td><a href="{% url 'project-detail' allocation.project.pk %}">{{ allocation.project }}</a></td>
+            <td><a title="View project detail" data-bs-toggle="tooltip" href="{% url 'project-detail' allocation.project.pk %}">{{ allocation.project }}</a></td>
           </tr>
           <tr>
             <th scope="row" class="text-nowrap">Resource{{ allocation.resources.all|pluralize }} in allocation:</th>
             <td>
               {% if allocation.get_resources_as_list %}
                 {% for resource in allocation.get_resources_as_list %}
-                  <a href="{% url 'resource-detail' resource.pk %}">{{ resource }}</a> <br>
+                  <a title="View resource detail" data-bs-toggle="tooltip" href="{% url 'resource-detail' resource.pk %}">{{ resource }}</a> <br>
                 {% endfor %}
               {% else %}
                 None
