@@ -115,7 +115,7 @@ def remove_existing_publications(project_obj, publications):
 
 def add_publication(project_obj, publication):
     """
-    Creates new publications for the project from the provided list.
+    Creates a new publication for the provided project.
     """
     source_obj, _ = PublicationSource.objects.get_or_create(
         name='aa'
