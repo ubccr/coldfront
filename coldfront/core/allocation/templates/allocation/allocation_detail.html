@@ -269,7 +269,7 @@ Allocation Detail
                   {% else %}
                     <td></td>
                   {% endif %}
-                  <td><a href="{% url 'allocation-change-detail' change_request.pk %}"><i class="far fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
+                  <td><a title="View allocation change request" data-bs-toggle="tooltip" href="{% url 'allocation-change-detail' change_request.pk %}"><i class="far fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
                 </tr>
             {% endfor %}
           </tbody>
