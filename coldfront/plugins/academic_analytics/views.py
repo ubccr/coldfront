@@ -64,7 +64,10 @@ class AcademicAnalyticsPublications(LoginRequiredMixin, UserPassesTestMixin, Tem
                     if data.get("add"):
                         add_publication(project_obj, data)
             else:
-                logger.error('An error occurred while adding publications to a project during review')
+                logger.error(
+                    f'An error occurred while adding publications to a project during review for '
+                    f'user {request.user.username}'
+                )
                 raise Exception('Error adding publications')
 
         publication_data = remove_existing_publications(project_obj, publication_data)
