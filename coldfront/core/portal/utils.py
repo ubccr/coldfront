@@ -49,24 +49,27 @@ def generate_resources_chart_data(allocations_count_by_resource_type):
 
     if allocations_count_by_resource_type:
         cluster_label = "Cluster: %d" % (allocations_count_by_resource_type.get('Cluster', 0))
-        cloud_label = "Cloud: %d" % (allocations_count_by_resource_type.get('Cloud', 0))
-        server_label = "Server: %d" % (allocations_count_by_resource_type.get('Server', 0))
+        # cloud_label = "Cloud: %d" % (allocations_count_by_resource_type.get('Cloud', 0))
+        # server_label = "Server: %d" % (allocations_count_by_resource_type.get('Server', 0))
         storage_label = "Storage: %d" % (allocations_count_by_resource_type.get('Storage', 0))
+        service_label = "Service: %d" % (allocations_count_by_resource_type.get('Service', 0))
 
         resource_plot_data = {
             "columns": [
                 [cluster_label, allocations_count_by_resource_type.get('Cluster', 0)],
                 [storage_label, allocations_count_by_resource_type.get('Storage', 0)],
-                [cloud_label, allocations_count_by_resource_type.get('Cloud', 0)],
-                [server_label, allocations_count_by_resource_type.get('Server', 0)]
+                [service_label, allocations_count_by_resource_type.get('Service', 0)],
+                # [cloud_label, allocations_count_by_resource_type.get('Cloud', 0)],
+                # [server_label, allocations_count_by_resource_type.get('Server', 0)]
 
             ],
             "type": 'donut',
             "colors": {
                 cluster_label: '#6da04b',
                 storage_label: '#ffc72c',
-                cloud_label: '#2f9fd0',
-                server_label: '#e56a54',
+                service_label: '#2f9fd0',
+                # cloud_label: '#2f9fd0',
+                # server_label: '#e56a54',
 
             }
         }
