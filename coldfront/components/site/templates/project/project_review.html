@@ -43,6 +43,10 @@ Review Project
   </div>
 </div>
 
+{% if academics_analytics_enabled %}
+  {% include "academic_analytics/academic_analytics_div.html" with project_pk=project.pk project_type=project.type.name %}
+{% endif %}
+
 <form method="post">
   {% csrf_token %}
   <div class="card mb-3">

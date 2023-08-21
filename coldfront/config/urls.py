@@ -29,6 +29,8 @@ urlpatterns = [
     path('research-output/', include('coldfront.core.research_output.urls')),
 ]
 
+if 'coldfront.plugins.academic_analytics' in settings.INSTALLED_APPS:
+    urlpatterns.append(path('academic-analytics/', include('coldfront.plugins.academic_analytics.urls')))
 
 if 'coldfront.plugins.iquota' in settings.INSTALLED_APPS:
     urlpatterns.append(path('iquota/', include('coldfront.plugins.iquota.urls')))

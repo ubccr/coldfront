@@ -1916,6 +1916,11 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             formset = formset(initial=allocation_data, prefix='allocationform')
             context['formset'] = formset
 
+        context['academics_analytics_enabled'] = 'false'
+        if 'coldfront.plugins.academic_analytics' in settings.INSTALLED_APPS:
+            context['academics_analytics_enabled'] = 'true'
+            context['username'] = request.user.username
+
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
