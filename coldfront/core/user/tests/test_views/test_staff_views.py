@@ -1,12 +1,12 @@
 from django.urls import reverse
 from http import HTTPStatus
 
+from flags.state import flag_enabled
+
 from coldfront.core.project.models import *
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.allocation.models import *
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
-from coldfront.core.resource.models import Resource
-from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.tests.test_base import TestBase as AllTestsBase
 
@@ -38,7 +38,12 @@ class TestBase(AllTestsBase):
         self.staff1.is_staff = True
         self.staff1.save()
 
-        project_name = 'fc_project'
+        computing_allowance_interface = ComputingAllowanceInterface()
+        computing_allowance = self.get_predominant_computing_allowance()
+        project_name_prefix = computing_allowance_interface.code_from_name(
+            computing_allowance.name)
+
+        project_name = f'{project_name_prefix}_project'
         active_project_status = ProjectStatusChoice.objects.get(name='Active')
         self.project = Project.objects.create(
             name=project_name,
@@ -85,7 +90,7 @@ class TestStaffViewPermissions(TestBase):
             user=self.user1)
 
         # Create an AllocationRenewalRequest.
-        computing_allowance = Resource.objects.get(name=BRCAllowances.FCA)
+        computing_allowance = self.get_predominant_computing_allowance()
         allocation_period = get_current_allowance_year_period()
         under_review_request_status = \
             AllocationRenewalRequestStatusChoice.objects.get(
@@ -115,8 +120,16 @@ class TestStaffViewPermissions(TestBase):
                                reverse('pi-allocation-renewal-completed-request-list'))
 
     def test_vector_project_request(self):
+        if flag_enabled('LRC_ONLY'):
+            return
+
         # Create a new Project.
-        new_project_name = 'fc_new_project'
+        computing_allowance_interface = ComputingAllowanceInterface()
+        computing_allowance = self.get_predominant_computing_allowance()
+        project_name_prefix = computing_allowance_interface.code_from_name(
+            computing_allowance.name)
+
+        new_project_name = f'{project_name_prefix}_new_project'
         new_project_status = ProjectStatusChoice.objects.get(name='New')
         new_project = Project.objects.create(
             name=new_project_name,
@@ -149,7 +162,12 @@ class TestStaffViewPermissions(TestBase):
     def test_savio_project_request(self):
         # new-project-request-detail
         # Create a new Project.
-        new_project_name = 'fc_new_project'
+        computing_allowance_interface = ComputingAllowanceInterface()
+        computing_allowance = self.get_predominant_computing_allowance()
+        project_name_prefix = computing_allowance_interface.code_from_name(
+            computing_allowance.name)
+
+        new_project_name = f'{project_name_prefix}_new_project'
         new_project_status = ProjectStatusChoice.objects.get(name='New')
         new_project = Project.objects.create(
             name=new_project_name,
@@ -157,15 +175,12 @@ class TestStaffViewPermissions(TestBase):
             title=new_project_name,
             description=f'Description of {new_project_name}.')
 
-        interface = ComputingAllowanceInterface()
-        computing_allowance = Resource.objects.get(name=BRCAllowances.FCA)
-
         under_review_request_status = \
             ProjectAllocationRequestStatusChoice.objects.get(
                 name='Under Review')
         request = SavioProjectAllocationRequest.objects.create(
             requester=self.user1,
-            allocation_type=interface.name_short_from_name(
+            allocation_type=computing_allowance_interface.name_short_from_name(
                 computing_allowance.name),
             computing_allowance=computing_allowance,
             allocation_period=get_current_allowance_year_period(),

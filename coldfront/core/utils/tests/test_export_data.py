@@ -17,6 +17,7 @@ from coldfront.core.statistics.models import Job
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import display_time_zone_date_to_utc_datetime
 from coldfront.core.utils.common import utc_now_offset_aware
+from coldfront.core.utils.tests.test_base import enable_deployment
 from coldfront.core.utils.tests.test_base import TestBase
 from coldfront.core.project.models import Project, ProjectStatusChoice, \
     ProjectUser, ProjectUserStatusChoice, ProjectUserRoleChoice, \
@@ -147,10 +148,12 @@ class TestBaseExportData(TestBase):
 class TestLatestJobsByUser(TestBaseExportData):
     """ Test class to test export data subcommand latest_jobs_by_user runs correctly """
 
+    @enable_deployment('BRC')
     def setUp(self):
         """Setup test data"""
         super().setUp()
 
+    @enable_deployment('BRC')
     def test_json_no_date(self):
         """Testing latest_jobs_by_user subcommand with NO date arg passed,
         exporting as JSON"""
@@ -172,6 +175,7 @@ class TestLatestJobsByUser(TestBaseExportData):
 
         self.assertEqual(error, '')
 
+    @enable_deployment('BRC')
     def test_json_with_date(self):
         """Testing latest_jobs_by_user subcommand with date arg passed,
         exporting as JSON"""
@@ -197,6 +201,7 @@ class TestLatestJobsByUser(TestBaseExportData):
 
         self.assertEqual(error, '')
 
+    @enable_deployment('BRC')
     def test_csv_no_date(self):
         """Testing latest_jobs_by_user subcommand with NO date arg passed,
         exporting as CSV"""
@@ -220,6 +225,7 @@ class TestLatestJobsByUser(TestBaseExportData):
 
         self.assertEqual(error, '')
 
+    @enable_deployment('BRC')
     def test_with_date(self):
         """Testing latest_jobs_by_user subcommand with date arg passed,
         exporting as CSV"""
@@ -252,6 +258,7 @@ class TestNewClusterAccounts(TestBaseExportData):
     """Test class to test export data subcommand new_cluster_accounts runs
     correctly."""
 
+    @enable_deployment('BRC')
     def setUp(self):
         """Setup test data"""
         super().setUp()
@@ -259,6 +266,7 @@ class TestNewClusterAccounts(TestBaseExportData):
         self.pre_time = utc_now_offset_aware().replace(tzinfo=None,
                                                        microsecond=0)
 
+    @enable_deployment('BRC')
     def test_json_no_date(self):
         """Testing new_cluster_accounts subcommand with NO date arg passed,
         exporting as JSON"""
@@ -278,6 +286,7 @@ class TestNewClusterAccounts(TestBaseExportData):
 
         self.assertEqual(error, '')
 
+    @enable_deployment('BRC')
     def test_json_with_date(self):
         """Testing new_cluster_accounts subcommand with ONE date arg passed,
         exporting as JSON"""
@@ -316,6 +325,7 @@ class TestNewClusterAccounts(TestBaseExportData):
 
         self.assertEqual(error, '')
 
+    @enable_deployment('BRC')
     def test_csv_no_date(self):
         """Testing new_cluster_accounts subcommand with NO date arg passed,
         exporting as CSV"""
@@ -338,6 +348,7 @@ class TestNewClusterAccounts(TestBaseExportData):
 
             self.assertEqual(error, '')
 
+    @enable_deployment('BRC')
     def test_csv_with_date(self):
         """Testing new_cluster_accounts subcommand with ONE date arg passed,
         exporting as CSV"""
@@ -383,10 +394,12 @@ class TestJobAvgQueueTime(TestBaseExportData):
     """ Test class to test export data subcommand job_avg_queue_time
     runs correctly """
 
+    @enable_deployment('BRC')
     def setUp(self):
         """Setup test data"""
         super().setUp()
 
+    @enable_deployment('BRC')
     def test_no_dates(self):
         """Testing job_avg_queue_time with NO date args passed"""
         output, error = self.call_command('export_data',
@@ -395,6 +408,7 @@ class TestJobAvgQueueTime(TestBaseExportData):
         self.assertIn('48hrs 0mins 0secs', output)
         self.assertEqual(error, '')
 
+    @enable_deployment('BRC')
     def test_two_dates(self):
         """Testing job_avg_queue_time with BOTH date args passed"""
         start_date = datetime.datetime.strftime(
@@ -409,6 +423,7 @@ class TestJobAvgQueueTime(TestBaseExportData):
         self.assertIn('24hrs 0mins 0secs', output)
         self.assertEqual(error, '')
 
+    @enable_deployment('BRC')
     def test_start_date(self):
         """Testing job_avg_queue_time with only start date arg passed"""
         start_date = datetime.datetime.strftime(
@@ -420,6 +435,7 @@ class TestJobAvgQueueTime(TestBaseExportData):
         self.assertIn('24hrs 0mins 0secs', output)
         self.assertEqual(error, '')
 
+    @enable_deployment('BRC')
     def test_end_date(self):
         """Testing job_avg_queue_time with only end date arg passed"""
         end_date = datetime.datetime.strftime(
@@ -431,6 +447,7 @@ class TestJobAvgQueueTime(TestBaseExportData):
         self.assertIn('60hrs 0mins 0secs', output)
         self.assertEqual(error, '')
 
+    @enable_deployment('BRC')
     def test_partition(self):
         """Testing job_avg_queue_time with parition arg passed"""
         output, error = self.call_command('export_data',
@@ -439,6 +456,7 @@ class TestJobAvgQueueTime(TestBaseExportData):
         self.assertIn('48hrs 0mins 0secs', output)
         self.assertEqual(error, '')
 
+    @enable_deployment('BRC')
     def test_errors(self):
         # invalid date error
         start_date = datetime.datetime.strftime(
@@ -475,6 +493,7 @@ class TestJobAvgQueueTime(TestBaseExportData):
 class TestProjects(TestBase):
     """ Test class to test export data subcommand projects runs correctly """
 
+    @enable_deployment('BRC')
     def setUp(self):
         super().setUp()
 
@@ -549,6 +568,7 @@ class TestProjects(TestBase):
             project for project in base_queryset if project['id'] in active_project_ids]
         self.base_queryset = base_queryset
 
+    @enable_deployment('BRC')
     def test_default(self):
         out, err = StringIO(''), StringIO('')
         call_command('export_data', 'projects',
@@ -572,6 +592,7 @@ class TestProjects(TestBase):
 
         self.assertEqual(len(query_set), count)
 
+    @enable_deployment('BRC')
     def test_active_filter(self):
         out, err = StringIO(''), StringIO('')
         call_command('export_data', 'projects',
@@ -595,6 +616,7 @@ class TestProjects(TestBase):
 
         self.assertEqual(len(query_set), count)
 
+    @enable_deployment('BRC')
     def test_allowance_filter(self):
         out, err = StringIO(''), StringIO('')
         call_command('export_data', 'projects',
@@ -619,6 +641,7 @@ class TestProjects(TestBase):
 
         self.assertEqual(len(query_set), count)
 
+    @enable_deployment('BRC')
     def test_format(self):
         # NOTE: csv is tested in other tests, only check json here
         out, err = StringIO(''), StringIO('')
@@ -647,6 +670,7 @@ class TestProjects(TestBase):
 class TestNewProjectRequests(TestBase):
     """ Test class to test export data subcommand new_project_requests runs correctly """
 
+    @enable_deployment('BRC')
     def setUp(self):
         super().setUp()
 
@@ -760,6 +784,7 @@ class TestNewProjectRequests(TestBase):
         self.savio_queryset = list(map(lambda r: dict(zip(savio_headers, r)), savio_queryset))
         self.vector_queryset = list(map(lambda r: dict(zip(vector_headers, r)), vector_queryset))
 
+    @enable_deployment('BRC')
     def test_savio(self):
         out, err = StringIO(''), StringIO('')
         call_command('export_data', 'new_project_requests',
@@ -783,6 +808,7 @@ class TestNewProjectRequests(TestBase):
 
         self.assertEqual(len(query_set), count)
 
+    @enable_deployment('BRC')
     def test_vector(self):
         out, err = StringIO(''), StringIO('')
         call_command('export_data', 'new_project_requests',
@@ -806,6 +832,7 @@ class TestNewProjectRequests(TestBase):
 
         self.assertEqual(len(query_set), count)
 
+    @enable_deployment('BRC')
     def test_json(self):
         # NOTE: csv is tested in other tests, only check json here
         out, err = StringIO(''), StringIO('')
@@ -830,6 +857,7 @@ class TestNewProjectRequests(TestBase):
 
         self.assertEqual(len(query_set), count)
 
+    @enable_deployment('BRC')
     def test_start_date(self):
         # NOTE: csv is tested in other tests, only check json here
         out, err = StringIO(''), StringIO('')
@@ -859,6 +887,7 @@ class TestNewProjectRequests(TestBase):
 class TestSurveyResponses(TestBase):
     """ Test class to test export data subcommand survey_responses runs correctly """
 
+    @enable_deployment('BRC')
     def setUp(self):
         super().setUp()
 
@@ -914,6 +943,7 @@ class TestSurveyResponses(TestBase):
         self.fixtures = fixtures
         self.filtered_fixtures = filtered_fixtures
 
+    @enable_deployment('BRC')
     def test_survey_responses_json(self):
         out, err = StringIO(''), StringIO('')
         call_command('export_data', 'survey_responses',
@@ -932,6 +962,7 @@ class TestSurveyResponses(TestBase):
         err.seek(0)
         self.assertEqual(err.read(), '')
 
+    @enable_deployment('BRC')
     def test_get_survey_responses_csv(self):
         out, err = StringIO(''), StringIO('')
         call_command('export_data', 'survey_responses',
@@ -950,6 +981,7 @@ class TestSurveyResponses(TestBase):
         err.seek(0)
         self.assertEqual(err.read(), '')
 
+    @enable_deployment('BRC')
     def test_get_survey_responses_allowance_type(self):
         out, err = StringIO(''), StringIO('')
         call_command('export_data', 'survey_responses',

@@ -7,6 +7,8 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.urls import reverse
 
+from flags.state import flag_enabled
+
 from coldfront.api.statistics.utils import create_project_allocation, \
     create_user_project_allocation, get_accounting_allocation_objects
 from coldfront.core.allocation.models import AllocationUserAttribute, \
@@ -23,6 +25,7 @@ from coldfront.core.project.models import ProjectStatusChoice, \
     savio_project_request_state_schema, vector_project_request_state_schema, \
     VectorProjectAllocationRequest, ProjectUserJoinRequest
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
@@ -60,6 +63,11 @@ class TestRequestHubView(TestBase):
             setattr(self, f'user{i}', user)
             setattr(self, f'user_profile{i}', user_profile)
 
+        computing_allowance_interface = ComputingAllowanceInterface()
+        computing_allowance = self.get_predominant_computing_allowance()
+        project_name_prefix = computing_allowance_interface.code_from_name(
+            computing_allowance.name)
+
         # Create Projects and associate Users with them.
         project_status = ProjectStatusChoice.objects.get(name='Active')
         project_user_status = ProjectUserStatusChoice.objects.get(
@@ -68,17 +76,18 @@ class TestRequestHubView(TestBase):
         manager_role = ProjectUserRoleChoice.objects.get(name='Manager')
         for i in range(2):
             # Create a Project and ProjectUsers.
+            project_name = f'{project_name_prefix}_project{i}'
             project = Project.objects.create(
-                name=f'fc_project{i}', status=project_status)
-            setattr(self, f'fc_project{i}', project)
+                name=project_name, status=project_status)
+            setattr(self, 'project0', project)
             proj_user = ProjectUser.objects.create(
                 user=self.user0, project=project,
                 role=user_role, status=project_user_status)
-            setattr(self, f'fc_project{i}_user0', proj_user)
+            setattr(self, 'project0_user0', proj_user)
             pi_proj_user = ProjectUser.objects.create(
                 user=self.pi, project=project, role=manager_role,
                 status=project_user_status)
-            setattr(self, f'fc_project{i}_pi', pi_proj_user)
+            setattr(self, 'project0_pi', pi_proj_user)
 
             # Create a compute allocation for the Project.
             allocation = Decimal(f'{i + 1}000.00')
@@ -120,6 +129,9 @@ class TestRequestHubView(TestBase):
         response = self.get_response(user, url)
         soup = BeautifulSoup(response.content, 'html.parser')
         for request in self.requests:
+            if flag_enabled('LRC_ONLY'):
+                if request == 'vector project request':
+                    continue
             if request == exclude:
                 continue
             divs = soup.find(id=f'{request.replace(" ", "_")}_section'). \
@@ -159,8 +171,12 @@ class TestRequestHubView(TestBase):
             """Assert that the relevant button appears if the
             given boolean is True; otherwise, assert that they do not
             appear."""
-            button_list = [f'Go To {request.title()}s Main Page'
-                           for request in self.requests]
+            button_list = []
+            for request in self.requests:
+                if flag_enabled('LRC_ONLY'):
+                    if request == 'vector project request':
+                        continue
+                button_list.append(f'Go To {request.title()}s Main Page')
             response = self.get_response(user, self.url)
             html = response.content.decode('utf-8')
             func = self.assertIn if displayed else self.assertNotIn
@@ -213,9 +229,9 @@ class TestRequestHubView(TestBase):
 
         # creating two cluster access requests for user0
         allocation_obj = \
-            get_accounting_allocation_objects(self.fc_project0)
+            get_accounting_allocation_objects(self.project0)
         allocation_user_obj = \
-            get_accounting_allocation_objects(self.fc_project0, self.user0)
+            get_accounting_allocation_objects(self.project0, self.user0)
 
         kwargs = {
             'allocation_user': allocation_user_obj.allocation_user,
@@ -287,8 +303,8 @@ class TestRequestHubView(TestBase):
         current_time = utc_now_offset_aware()
 
         kwargs = {
-            'project_user': self.fc_project0_user0,
-            'requester': self.fc_project0_pi.user,
+            'project_user': self.project0_user0,
+            'requester': self.project0_pi.user,
             'request_time': current_time,
         }
         pending_req = ProjectUserRemovalRequest.objects.create(
@@ -350,7 +366,7 @@ class TestRequestHubView(TestBase):
             'requester': self.user0,
             'allocation_type': 'FCA',
             'pi': self.pi,
-            'project': self.fc_project0,
+            'project': self.project0,
             'pool': False,
             'survey_answers': savio_project_request_state_schema()
         }
@@ -386,6 +402,9 @@ class TestRequestHubView(TestBase):
 
     def test_vector_project_requests(self):
         """Testing that vector project requests appear"""
+        if flag_enabled('LRC_ONLY'):
+            return
+
         def assert_request_shown(user, url):
             response = self.get_response(user, url)
             soup = BeautifulSoup(response.content, 'html.parser')
@@ -416,7 +435,7 @@ class TestRequestHubView(TestBase):
         kwargs = {
             'requester': self.user0,
             'pi': self.pi,
-            'project': self.fc_project0,
+            'project': self.project0,
             'state': vector_project_request_state_schema()
         }
 
@@ -483,14 +502,14 @@ class TestRequestHubView(TestBase):
             name='Pending - Add')
         user_role = ProjectUserRoleChoice.objects.get(name='User')
         pending_proj_user = ProjectUser.objects.create(
-            user=self.user1, project=self.fc_project0,
+            user=self.user1, project=self.project0,
             role=user_role, status=project_user_status)
 
         pending_req = ProjectUserJoinRequest.objects.create(
             project_user=pending_proj_user,
             reason='Request hub testing.')
         completed_req = ProjectUserJoinRequest.objects.create(
-            project_user=self.fc_project0_user0,
+            project_user=self.project0_user0,
             reason='Request hub testing.')
 
         # assert the correct requests are shown
@@ -546,8 +565,8 @@ class TestRequestHubView(TestBase):
             'pi': self.pi,
             'requester': self.user0,
             'allocation_period': get_current_allowance_year_period(),
-            'pre_project': self.fc_project0,
-            'post_project': self.fc_project0,
+            'pre_project': self.project0,
+            'post_project': self.project0,
             'num_service_units': 1000,
             'request_time': utc_now_offset_aware(),
             'state': allocation_renewal_request_state_schema()
@@ -612,7 +631,7 @@ class TestRequestHubView(TestBase):
         current_time = utc_now_offset_aware()
         kwargs = {
             'requester': self.pi,
-            'project': self.fc_project0,
+            'project': self.project0,
             'num_service_units': 1000,
             'request_time': current_time,
             'state': allocation_addition_request_state_schema()

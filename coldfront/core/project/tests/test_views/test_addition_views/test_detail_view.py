@@ -3,18 +3,26 @@ from coldfront.core.allocation.models import AllocationAdditionRequest
 from coldfront.core.allocation.models import AllocationAdditionRequestStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
+from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
+from coldfront.core.resource.utils_.allowance_utils.constants import LRCAllowances
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
+from coldfront.core.utils.tests.test_base import enable_deployment
 from coldfront.core.utils.tests.test_base import TestBase
 
 from decimal import Decimal
 from django.contrib.auth.models import Permission
 from django.contrib.auth.models import User
+from django.core.exceptions import ImproperlyConfigured
 from django.urls import reverse
 from unittest.mock import patch
+
+from flags.state import flag_enabled
 
 
 class TestAllocationAdditionRequestDetailView(TestBase):
     """A class for testing AllocationAdditionRequestDetailView."""
 
+    @enable_deployment('BRC')
     def setUp(self):
         """Set up test data."""
         super().setUp()
@@ -22,8 +30,18 @@ class TestAllocationAdditionRequestDetailView(TestBase):
         self.sign_user_access_agreement(self.user)
         self.client.login(username=self.user.username, password=self.password)
 
+        computing_allowance_interface = ComputingAllowanceInterface()
+        if flag_enabled('BRC_ONLY'):
+            computing_allowance = BRCAllowances.RECHARGE
+        elif flag_enabled('LRC_ONLY'):
+            computing_allowance = LRCAllowances.RECHARGE
+        else:
+            raise ImproperlyConfigured
+        project_name_prefix = computing_allowance_interface.code_from_name(
+            computing_allowance)
+
         self.project = self.create_active_project_with_pi(
-            'ac_project', self.user)
+            f'{project_name_prefix}_project', self.user)
 
         self.allocation_addition_request = \
             AllocationAdditionRequest.objects.create(
@@ -45,6 +63,7 @@ class TestAllocationAdditionRequestDetailView(TestBase):
         return reverse(
             'service-units-purchase-request-detail', kwargs={'pk': pk})
 
+    @enable_deployment('BRC')
     def test_permissions_get(self):
         """Test that the correct users have permissions to perform GET
         requests."""
@@ -92,6 +111,7 @@ class TestAllocationAdditionRequestDetailView(TestBase):
             url, self.user, has_access=False,
             expected_messages=expected_messages)
 
+    @enable_deployment('BRC')
     def test_permissions_post(self):
         """Test that the correct users have permissions to perform POST
         requests."""
@@ -126,6 +146,7 @@ class TestAllocationAdditionRequestDetailView(TestBase):
         message = 'Please complete the checklist before final activation.'
         self.assertEqual(message, self.get_message_strings(response)[0])
 
+    @enable_deployment('BRC')
     @patch(
         'coldfront.core.project.utils_.addition_utils.'
         'AllocationAdditionProcessingRunner.run')

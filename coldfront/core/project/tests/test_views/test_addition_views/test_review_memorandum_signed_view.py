@@ -1,6 +1,7 @@
 from coldfront.core.allocation.models import AllocationAdditionRequest
 from coldfront.core.allocation.models import AllocationAdditionRequestStatusChoice
 from coldfront.core.utils.common import utc_now_offset_aware
+from coldfront.core.utils.tests.test_base import enable_deployment
 from coldfront.core.utils.tests.test_base import TestBase
 
 from decimal import Decimal
@@ -14,6 +15,7 @@ class TestAllocationRenewalRequestReviewMemorandumSignedView(TestBase):
     """A class for testing
     AllocationRenewalRequestReviewMemorandumSignedView."""
 
+    @enable_deployment('BRC')
     def setUp(self):
         """Set up test data."""
         super().setUp()
@@ -43,6 +45,7 @@ class TestAllocationRenewalRequestReviewMemorandumSignedView(TestBase):
             'service-units-purchase-request-review-memorandum-signed',
             kwargs={'pk': pk})
 
+    @enable_deployment('BRC')
     def test_permissions_get(self):
         """Test that the correct users have permissions to perform GET
         requests."""
@@ -63,6 +66,7 @@ class TestAllocationRenewalRequestReviewMemorandumSignedView(TestBase):
             url, self.user, has_access=False,
             expected_messages=expected_messages)
 
+    @enable_deployment('BRC')
     def test_permissions_post(self):
         """Test that the correct users have permissions to perform POST
         requests."""
@@ -84,6 +88,7 @@ class TestAllocationRenewalRequestReviewMemorandumSignedView(TestBase):
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, HTTPStatus.OK)
 
+    @enable_deployment('BRC')
     def test_post_updates_request_state(self):
         """Test that a POST request updates the request's 'state'
         field."""
@@ -113,6 +118,7 @@ class TestAllocationRenewalRequestReviewMemorandumSignedView(TestBase):
         time = iso8601.parse_date(memorandum_signed['timestamp'])
         self.assertTrue(pre_time <= time <= post_time)
 
+    @enable_deployment('BRC')
     def test_view_blocked_for_inapplicable_statuses(self):
         """Test that requests that are already 'Complete' or 'Denied'
         cannot be modified via the view."""

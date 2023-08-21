@@ -3,7 +3,7 @@ from coldfront.core.allocation.models import AllocationAdditionRequestStatusChoi
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
-from coldfront.core.user.utils import access_agreement_signed
+from coldfront.core.utils.tests.test_base import enable_deployment
 from coldfront.core.utils.tests.test_base import TestBase
 from decimal import Decimal
 from django.contrib.auth.models import Permission
@@ -68,6 +68,7 @@ class TestViewMixin(object):
                 name='Under Review'),
             num_service_units=Decimal('1000.00'))
 
+    @enable_deployment('BRC')
     def test_all_requests_visible_to_superusers(self):
         """Test that superusers can see all requests, even if they are
         not associated with them."""
@@ -77,6 +78,7 @@ class TestViewMixin(object):
         self.assertContains(response, self.project_a.name)
         self.assertContains(response, self.project_b.name)
 
+    @enable_deployment('BRC')
     def test_all_requests_visible_to_users_with_permission(self):
         """Test that users who have the appropriate permission can see
         all requests, even if they are not associated with them."""
@@ -96,6 +98,7 @@ class TestViewMixin(object):
         self.assertContains(response, self.project_a.name)
         self.assertContains(response, self.project_b.name)
 
+    @enable_deployment('BRC')
     def test_permissions_get(self):
         """Test that the correct users have permissions to perform GET
         requests."""
@@ -161,6 +164,7 @@ class TestViewMixin(object):
             url, self.user_a, has_access=False,
             expected_messages=expected_messages)
 
+    @enable_deployment('BRC')
     def test_requests_visible_to_pis_and_managers(self):
         """Test that PIs and Managers can only see requests associated
         with them."""
@@ -183,6 +187,7 @@ class TestAllocationAdditionRequestCompletedListView(TestViewMixin, TestBase):
     """A class for testing AllocationAdditionRequestListView for
     completed requests."""
 
+    @enable_deployment('BRC')
     def setUp(self):
         """Set up test data."""
         super().setUp()
@@ -194,12 +199,14 @@ class TestAllocationAdditionRequestCompletedListView(TestViewMixin, TestBase):
             AllocationAdditionRequestStatusChoice.objects.get(name='Denied')
         self.request_b.save()
 
+    @enable_deployment('BRC')
     def test_pending_list_empty(self):
         """Test that no requests appear in the pending view, since all
         requests have a completed status."""
         response = self.client.get(self.pending_url)
         self.assertContains(response, 'No pending purchase requests!')
 
+    @enable_deployment('BRC')
     def test_type(self):
         """Test that the correct type is displayed on the page."""
         response = self.client.get(self.url)
@@ -211,6 +218,7 @@ class TestAllocationAdditionRequestPendingListView(TestViewMixin, TestBase):
     """A class for testing AllocationAdditionRequestListView for
     pending requests."""
 
+    @enable_deployment('BRC')
     def setUp(self):
         """Set up test data."""
         super().setUp()
@@ -219,12 +227,14 @@ class TestAllocationAdditionRequestPendingListView(TestViewMixin, TestBase):
             name='Under Review')
         AllocationAdditionRequest.objects.update(status=pending_status)
 
+    @enable_deployment('BRC')
     def test_completed_list_empty(self):
         """Test that no requests appear in the completed view, since all
         requests have a pending status."""
         response = self.client.get(self.completed_url)
         self.assertContains(response, 'No completed purchase requests!')
 
+    @enable_deployment('BRC')
     def test_type(self):
         """Test that the correct type is displayed on the page."""
         response = self.client.get(self.url)
