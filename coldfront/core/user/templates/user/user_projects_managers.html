@@ -102,5 +102,5 @@ User Projects and Managers{% if not user == viewed_user %}: {{ viewed_user.usern
   {% endif %}
 {% endwith %}
 
-<a class="btn btn-primary" href="{% url 'user-profile' viewed_user %}" role="button"><i class="fas fa-arrow-left" aria-hidden="true"></i> Back to user profile</a>
+<a class="btn btn-primary" href="{% url 'user-profile' viewed_user.username %}" role="button"><i class="fas fa-arrow-left" aria-hidden="true"></i> Back to user profile</a>
 {% endblock %}
