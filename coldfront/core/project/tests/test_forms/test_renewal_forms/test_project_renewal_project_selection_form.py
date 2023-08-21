@@ -4,8 +4,7 @@ from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
-from coldfront.core.resource.models import Resource
-from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.tests.test_base import TestBase
 
 
@@ -22,11 +21,16 @@ class TestProjectRenewalProjectSelectionForm(TestBase):
     def test_inactive_projects_included_in_project_field(self):
         """Test that Projects with the 'Inactive' status are included in
         the choices for the 'project' field."""
-        active_name = 'fc_active_project'
+        computing_allowance_interface = ComputingAllowanceInterface()
+        computing_allowance = self.get_predominant_computing_allowance()
+        project_name_prefix = computing_allowance_interface.code_from_name(
+            computing_allowance.name)
+
+        active_name = f'{project_name_prefix}_active_project'
         active_status = ProjectStatusChoice.objects.get(name='Active')
         active_project = Project.objects.create(
             name=active_name, title=active_name, status=active_status)
-        inactive_name = 'fc_inactive_project'
+        inactive_name = f'{project_name_prefix}_inactive_project'
         inactive_status = ProjectStatusChoice.objects.get(name='Inactive')
         inactive_project = Project.objects.create(
             name=inactive_name, title=inactive_name, status=inactive_status)
@@ -45,8 +49,7 @@ class TestProjectRenewalProjectSelectionForm(TestBase):
             ProjectUser.objects.create(**kwargs)
 
         kwargs = {
-            'computing_allowance': Resource.objects.get(
-                name=BRCAllowances.FCA),
+            'computing_allowance': computing_allowance,
             'pi_pk': self.user.pk,
             'non_owned_projects': False,
             'exclude_project_pk': None,
