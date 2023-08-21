@@ -26,7 +26,6 @@ class AcademicAnalyticsPublications(LoginRequiredMixin, UserPassesTestMixin, Tem
         if self.request.user.is_superuser:
             return True
 
-        project_obj = get_object_or_404(Project, project_pk)
         if project_obj.pi == self.request.user:
             return True
 
