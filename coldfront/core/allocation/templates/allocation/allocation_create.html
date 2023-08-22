@@ -17,63 +17,27 @@ Request new or update existing allocation
   resources are available to request for this project. If you need access to
   more than one of these, please submit a separate allocation request for each
   resource. For each request you must provide the justification for how you
-  intend to use the resource to further the research goals of your project. </br></br>
-  <b>Note : </b> Following link has the latest Tier information so please check this out before
-  submitting your request</p>
+  intend to use the resource to further the research goals of your project. <br><br>
+  <b>Note : </b> Please review the information about our <a target="_blank" href="https://www.rc.fas.harvard.edu/services/data-storage/#Offerings_Tiers_of_Service">
+    Tier offerings</a> before
+  submitting your request.</p>
 
-<p class="details"> <a target="_blank" href="https://www.rc.fas.harvard.edu/services/data-storage/#Offerings_Tiers_of_Service"> FASRC Storage Service Details</a>
-</p>
-
-<p class="text-justify">Tier 0:  Bulk - Lustre </p>
-<ul>
-  <li>Features: High-performance, single copy, network attached to cluster via (Lustre/NFS), quota (files + size), Starfish data management web access, Globus transfer access.</li>
-  <li>Mount point(s): <i>Other (varies)</i></li>
-  <li>Quota: 1-1024 TB</li>
-  <li>Cost: $50/TB/yr (excluding scratch)
-  </li>
-</ul>
-
-<p class="text-justify">Tier 1: Enterprise - Isilon</p>
-<ul>
-  <li>Features:  Tiered performance, snapshot, Disaster Recovery(DR) copy, network attached to cluster (NFS), quota, SMB, Superna Eyeglass data management web access, Globus transfer access.</li>
-  <li>Mount point: <i>/n/pi_lab</i></li>
-  <li>Quota: 1-1024 TB</li>
-  <li>Cost: $250/TB/yr </li>
-</ul>
-
-<p class="text-justify">Tier 2: Lab Share - Ceph </p>
-<ul>
-  <li>Features: Regular performance, object store, Disaster Recovery(DR) copy, network attached to cluster (NFS), SMB, encrypted at rest.</li>
-  <li>Mount point: <i>/n/pi_lab</i> </li>
-  <li>Quota: 1-1024 TB</li>
-  <li>Cost: $100/TB/yr </li>
-</ul>
-
-<p class="text-justify">Tier 3: Attic Storage - Tape </p>
-<ul>
-  <li>Features: Low performance, S3 object store access, single copy, network attached to data transfer nodes, Globus transfer access.</li>
-  <li>Available in 20TB increments</li>
-  <li>Cost: estimate $5/TB/yr</li>
-</ul>
-
-<p class="text-justify">Note:</p>
-<ul>
-  <li>Please try to provide details in justification like data need to be accessed or needs frequent transfer to or from Campus or Need for Samba connectivity etc. </li>
-</ul>
+<li>Please provide details in the justification such as: what data needs to be accessed, expectation of frequent transfer to or from Campus, need for Samba connectivity, etc. </li>
+</br>
 
 <form method="post">
   {% csrf_token %}
   {{form |crispy}}
 
 <div id=resource_message></div>
-  <div id="eula-div" style="display: none;">
-    <textarea style="display:none;min-width:100%" id="eula"  rows="15"></textarea>
-    <br>
-    <p class="font-weight-bold">By clicking submit you agree to the Terms and Conditions.</p>
-  </div>
+<div id="eula-div" style="display: none;">
+  <textarea style="display:none;min-width:100%" id="eula"  rows="15"></textarea>
+  <br>
+  <p class="font-weight-bold">By clicking submit you agree to the Terms and Conditions.</p>
+</div>
 
-  <input class="btn btn-primary" type="submit" value="Submit" />
-  <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button">Back to Project</a><br>
+<input class="btn btn-primary" type="submit" value="Submit" />
+<a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button">Back to Project</a><br>
 </form>
 
 
@@ -91,6 +55,7 @@ Request new or update existing allocation
         <div id="error_div"></div>
         *No spaces in account name
         <form id="allocation_account_form">
+          {% csrf_token %}
           {{AllocationAccountForm |crispy}}
           <button id="myFormSubmit" class="btn btn-primary" type="submit">Submit</button>
           <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -112,7 +77,7 @@ Request new or update existing allocation
 
   $(document).ready(function () {
     $('<br><input id="selectAll" class="check" type="checkbox" checked> <strong>Select All Users</strong>').insertAfter($("#div_id_users > label"))
-    $("#id_resource").trigger('change');
+    $("#id_tier").trigger('change');
 
     $("#selectAll").click(function () {
       $("input[name^='users']").prop('checked', $(this).prop('checked'));
@@ -149,28 +114,18 @@ Request new or update existing allocation
   $(function (){
     // display messages under the following conditions when a resource is selected
     // from the resource dropdown list:
-    // 1. if the resource id is present as a key in resources_form_default_quantities,
-    // display a message informing the user that they already have an allocation
+    // 1. if a selected tier is the parent resource of an existing allocation's
+    // resource, display a message informing the user that they already have an allocation
     // and containing a link to the allocation change request form for that allocation.
-    // 2. if the resource's used_percentage is greater than 80, display a message
-    // informing the user that the resource is almost full.
-    var resources_with_allocations = {{ resources_with_allocations | safe }};
-    var overfull_resources = {{ overfull_resources | safe }};
-    $('#id_resource').change(function () {
+    var tiers_with_allocations = {{ tiers_with_allocations | safe }};
+    $('#id_tier').change(function () {
       var resource = $(this).val();
       var messages = [];
-      if (resources_with_allocations.hasOwnProperty(resource)) {
-        let allocation_pk = resources_with_allocations[resource];
+      if (tiers_with_allocations.hasOwnProperty(resource)) {
+        let allocation_pk = tiers_with_allocations[resource];
         url = "{% url 'allocation-change' 99999 %}".replace("99999", allocation_pk);
-        message = `<div class="alert alert-warning" role="alert">Warning: you already have an allocation on the selected resource. Did you mean to submit an <a href=${url}>Allocation Change Request<\a> instead?</div>`
+        message = `<div class="alert alert-warning" role="alert">Warning: you already have an allocation in the selected tier. Did you mean to submit an <a href=${url}>Allocation Change Request<\a> instead?</div>`;
         messages.push(message);
-       // $('#resource_message').html(message);
-      }
-      if (overfull_resources.hasOwnProperty(resource)) {
-        let used_percentage = overfull_resources[resource];
-          message = `<div class="alert alert-warning" role="alert">Warning: the selected resource is ${used_percentage} percent allocated. Requests for allocations on this resource may be subject to delay. If possible, consider choosing a different resource.</div>`
-          messages.push(message);
-         // $('#resource_message').html(message);
       }
       if (messages.length > 0) {
         $('#resource_message').html(messages.join(''));
@@ -213,8 +168,8 @@ Request new or update existing allocation
     });
   });
 
-  $("#id_resource").change(function () {
-    var resource_id = $("#id_resource option:selected").val();
+  $("#id_tier").change(function () {
+    var resource_id = $("#id_tier option:selected").val();
     if (resources_form_default_quantities[resource_id]) {
       var label = $('label[for="id_quantity"]');
       if (resources_form_label_texts[resource_id]) {

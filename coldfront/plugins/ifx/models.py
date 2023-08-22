@@ -130,7 +130,7 @@ def resource_post_save(sender, instance, **kwargs):
     '''
     Ensure that there is a Product for each Resource
     '''
-    if not kwargs.get('raw'):
+    if not kwargs.get('raw') and not instance.resource_type.name == "Storage Tier":
         try:
             product_resource = ProductResource.objects.get(resource=instance)
         except ProductResource.DoesNotExist:

@@ -263,6 +263,7 @@ class Resource(TimeStampedModel):
     def natural_key(self):
         return [self.name]
 
+
 class ResourceAttribute(TimeStampedModel):
     """ A resource attribute class links a resource attribute type and a resource.
 

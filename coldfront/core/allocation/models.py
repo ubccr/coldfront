@@ -133,6 +133,41 @@ class Allocation(TimeStampedModel):
 
         super().save(*args, **kwargs)
 
+    def pull_allocationattribute(self, attr_name):
+        try:
+            return self.allocationattribute_set.get(
+                allocation_attribute_type__name=attr_name
+            ).value
+        except ObjectDoesNotExist:
+            return None
+
+    @property
+    def offer_letter_code(self):
+        return self.pull_allocationattribute('Offer Letter Code')
+
+    @property
+    def expense_code(self):
+        return self.pull_allocationattribute('Expense Code')
+
+    @property
+    def heavy_io(self):
+        return self.pull_allocationattribute('Heavy IO')
+
+    @property
+    def mounted(self):
+        return self.pull_allocationattribute('Mounted')
+
+    @property
+    def external_sharing(self):
+        return self.pull_allocationattribute('External Sharing')
+
+    @property
+    def high_security(self):
+        return self.pull_allocationattribute('High Security')
+
+    @property
+    def dua(self):
+        return self.pull_allocationattribute('DUA')
 
     @property
     def size(self):
@@ -163,7 +198,10 @@ class Allocation(TimeStampedModel):
 
     @property
     def cost(self):
-        price = float(get_resource_rate(self.resources.first().name))
+        try:
+            price = float(get_resource_rate(self.resources.first().name))
+        except AttributeError:
+            return None
         size = self.allocationattribute_set.get(allocation_attribute_type_id=1).value
         return 0 if not size else price * float(size)
 
@@ -173,8 +211,9 @@ class Allocation(TimeStampedModel):
         Returns:
             int: the number of days until the allocation expires
         """
-
-        return (self.end_date - datetime.date.today()).days
+        if self.end_date:
+            return (self.end_date - datetime.date.today()).days
+        return None
 
     @property
     def get_information(self, public_only=True):
@@ -184,7 +223,8 @@ class Allocation(TimeStampedModel):
         """
         html_string = ''
         if public_only:
-            allocationattribute_set = self.allocationattribute_set.filter(allocation_attribute_type__is_private=False)
+            allocationattribute_set = self.allocationattribute_set.filter(
+                allocation_attribute_type__is_private=False)
         else:
             allocationattribute_set = self.allocationattribute_set.all()
         for attribute in allocationattribute_set:

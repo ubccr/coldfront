@@ -14,8 +14,8 @@ from coldfront.core.allocation.models import (
 from coldfront.core.test_helpers.factories import (
     setup_models,
     UserFactory,
-    ProjectFactory,
     ResourceFactory,
+    ResourceTypeFactory,
     AllocationFactory,
     AllocationChangeRequestFactory,
 )
@@ -150,6 +150,37 @@ class AllocationChangeDetailViewTest(AllocationViewBaseTest):
         )
         self.assertEqual(response.status_code, 200)
 
+    def test_allocationchangedetailview_post_permissions_admin(self):
+        """Test post request"""
+        param = {'action': 'deny'}
+        self.client.force_login(self.admin_user, backend=BACKEND)
+        response = self.client.post(
+            reverse('allocation-change-detail', kwargs={'pk': 2}), param, follow=True
+        )
+        alloc_change_req = AllocationChangeRequest.objects.get(pk=2)
+        self.assertEqual(alloc_change_req.status_id, 3)
+
+    def test_allocationchangedetailview_post_permissions_pi(self):
+        """pi can't post changes"""
+        param = {'action': 'deny'}
+        self.client.force_login(self.pi_user, backend=BACKEND)
+        self.client.post(
+            reverse('allocation-change-detail', kwargs={'pk': 2}), param, follow=True
+        )
+        alloc_change_req = AllocationChangeRequest.objects.get(pk=2)
+        self.assertNotEqual(alloc_change_req.status_id, 3)
+
+    def test_allocationchangedetailview_post_permissions_normaluser(self):
+        """normal user can't post changes"""
+        param = {'action': 'deny'}
+        self.client.force_login(self.proj_allocation_user, backend=BACKEND)
+        self.client.post(
+            reverse('allocation-change-detail', kwargs={'pk': 2}), param, follow=True
+        )
+        alloc_change_req = AllocationChangeRequest.objects.get(pk=2)
+        self.assertNotEqual(alloc_change_req.status_id, 3)
+
+
     def test_allocationchangedetailview_post_deny(self):
         param = {'action': 'deny'}
         response = self.client.post(
@@ -194,6 +225,24 @@ class AllocationChangeViewTest(AllocationViewBaseTest):
         utils.test_user_can_access(self, self.pi_user, self.url)  # Manager can access
         utils.test_user_cannot_access(self, self.proj_allocation_user, self.url)  # user can't access
 
+    def test_allocationchangeview_post_permissions(self):
+        """Test post request"""
+        self.post_data['attributeform-0-new_value'] = '1000'
+        self.client.force_login(self.admin_user, backend=BACKEND)
+        response = self.client.post(self.url, data=self.post_data, follow=True)
+        self.assertContains(
+            response, "Allocation change request successfully submitted."
+        )
+        self.client.force_login(self.pi_user, backend=BACKEND)
+        response = self.client.post(self.url, data=self.post_data, follow=True)
+        self.assertContains(
+            response, "Allocation change request successfully submitted."
+        )
+
+        self.client.force_login(self.proj_allocation_user, backend=BACKEND)
+        response = self.client.post(self.url, data=self.post_data, follow=True)
+        self.assertEqual(response.status_code, 403)
+
     def test_allocationchangeview_post_extension(self):
         """Test post request to extend end date"""
 
@@ -216,7 +265,6 @@ class AllocationChangeViewTest(AllocationViewBaseTest):
         response = self.client.post(
             '/allocation/1/change-request', data=self.post_data, follow=True
         )
-        self.assertEqual(response.status_code, 200)
         self.assertContains(response, "You must request a change")
         self.assertEqual(len(AllocationChangeRequest.objects.all()), 0)
 
@@ -228,7 +276,6 @@ class AllocationChangeViewTest(AllocationViewBaseTest):
         response = self.client.post(
             '/allocation/1/change-request', data=self.post_data, follow=True
         )
-        self.assertEqual(response.status_code, 200)
         self.assertContains(
             response, "Allocation change request successfully submitted."
         )
@@ -242,7 +289,6 @@ class AllocationChangeViewTest(AllocationViewBaseTest):
         response = self.client.post(
             '/allocation/1/change-request', data=self.post_data, follow=True
         )
-        self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Value must be an integer.")
         self.assertEqual(len(AllocationChangeRequest.objects.all()), 0)
 
@@ -335,10 +381,13 @@ class AllocationCreateViewTest(AllocationViewBaseTest):
     def setUp(self):
         self.url = f'/allocation/project/{self.project.pk}/create'  # url for AllocationCreateView
         self.client.force_login(self.pi_user)
+        tier_restype = ResourceTypeFactory(name='Storage Tier')
+        storage_tier = ResourceFactory(resource_type=tier_restype)
         self.post_data = {
             'justification': 'test justification',
             'quantity': '1',
-            'resource': f'{self.proj_allocation.resources.first().pk}',
+            'expense_code': '123-12312-3123-123123-123123-1231-23123',
+            'tier': f'{storage_tier.pk}',
         }
 
     def test_allocationcreateview_access(self):
@@ -351,18 +400,62 @@ class AllocationCreateViewTest(AllocationViewBaseTest):
         """Test POST to the AllocationCreateView"""
         self.assertEqual(len(self.project.allocation_set.all()), 1)
         response = self.client.post(self.url, data=self.post_data, follow=True)
-        self.assertEqual(response.status_code, 200)
+
         self.assertContains(response, "Allocation requested.")
         self.assertEqual(len(self.project.allocation_set.all()), 2)
 
     def test_allocationcreateview_post_zeroquantity(self):
-        """Test POST to the AllocationCreateView"""
+        """Test POST to the AllocationCreateView with default post_data:
+        No expense_code, dua, heavy_io, mounted, external_sharing, high_security
+        """
         self.post_data['quantity'] = '0'
         self.assertEqual(len(self.project.allocation_set.all()), 1)
         response = self.client.post(self.url, data=self.post_data, follow=True)
-        self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Allocation requested.")
         self.assertEqual(len(self.project.allocation_set.all()), 2)
+
+    def test_allocationcreateview_post_offerlettercode_valid(self):
+        """ensure 33-digit codes go through and get formatted"""
+        # correct # of digits with no dashes
+        aa_objs = AllocationAttribute.objects.all()
+        aa_obj = aa_objs.filter(allocation_attribute_type__name='Expense Code')
+        self.assertEqual(len(aa_obj), 0)
+        self.post_data['expense_code'] = '123' * 11
+        response = self.client.post(self.url, data=self.post_data, follow=True)
+        self.assertContains(response, "Allocation requested.")
+        aa_obj = aa_objs.filter(allocation_attribute_type__name='Expense Code')
+        self.assertEqual(len(aa_obj), 1)
+
+    def test_allocationcreateview_post_bools(self):
+        """ensure booleans are properly saved"""
+        for val in ['dua', 'heavy_io', 'mounted', 'external_sharing', 'high_security']:
+            self.post_data[val] = True
+        response = self.client.post(self.url, data=self.post_data, follow=True)
+        aa_names = ['Heavy IO', 'Mounted', 'High Security', 'DUA', 'External Sharing']
+        aa_objs = AllocationAttribute.objects.filter(
+            allocation_attribute_type__name__in=aa_names
+        )
+        self.assertEqual(len(aa_objs), 5)
+
+    def test_allocationcreateview_post_offerlettercode_multiplefield_invalid(self):
+        """Ensure that form won't pass if multiple expense codes are given"""
+        self.post_data['hsph_code'] = '000-000-000-000-000-000-000-000-000-000-000'
+        response = self.client.post(self.url, data=self.post_data, follow=True)
+        self.assertContains(response, "you must do exactly one of the following")
+
+
+    def test_allocationcreateview_post_hsph_offerlettercode(self):
+        """Ensure that form goes through if hsph is checked"""
+        self.post_data['hsph_code'] = '000-000-000-000-000-000-000-000-000-000-000'
+        self.post_data.pop('expense_code')
+        response = self.client.post(self.url, data=self.post_data, follow=True)
+        self.assertContains(response, "Allocation requested.")
+
+        aa_obj = AllocationAttribute.objects.filter(
+            allocation_attribute_type__name='Expense Code'
+        )
+        self.assertEqual(len(aa_obj), 1)
+        self.assertEqual(aa_obj[0].value, '000-00000-0000-000000-000000-0000-00000')
 
 
 class AllocationAddUsersViewTest(AllocationViewBaseTest):
@@ -419,12 +512,10 @@ class AllocationChangeListViewTest(AllocationViewBaseTest):
 
     def test_allocationchangelistview_changetypes(self):
         """
-        Produce allocationchangerequests with all different change types 
+        Produce allocationchangerequests with all different change types
         and test that they all display properly
         """
         # create a new allocationchangerequest for each attribute that is changeable
-
-
 
 class AllocationNoteCreateViewTest(AllocationViewBaseTest):
     """Tests for the AllocationNoteCreateView"""

@@ -44,6 +44,6 @@ urlpatterns = [
          allocation_views.AllocationInvoiceNoteUpdateView.as_view(), name='allocation-update-invoice-note'),
     path('allocation/<int:pk>/delete/',
          allocation_views.AllocationDeleteInvoiceNoteView.as_view(), name='allocation-delete-invoice-note'),
-    path('allocation/<int:pk>/invoice/pdf_view/',  allocation_views.ViewPDF.as_view(), name="pdf_view"),
-    path('pdf_download/',  allocation_views.DownloadPDF.as_view(), name="pdf_download"),
+    path('allocation/<int:pk>/invoice/pdf_view/', allocation_views.ViewPDF.as_view(), name="pdf_view"),
+    path('pdf_download/', allocation_views.DownloadPDF.as_view(), name="pdf_download"),
 ]

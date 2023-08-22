@@ -1,8 +1,11 @@
 from django.core.management.base import BaseCommand
 
-from coldfront.core.resource.models import (AttributeType,
-                                            ResourceAttributeType,
-                                            ResourceType)
+from coldfront.core.resource.models import (
+    Resource,
+    ResourceType,
+    AttributeType,
+    ResourceAttributeType,
+)
 
 
 class Command(BaseCommand):
@@ -50,6 +53,7 @@ class Command(BaseCommand):
 
         for resource_type, description in (
             ('Storage', 'Network Storage'),
+            ('Storage Tier', 'Storage Tier',),
             ('Cloud', 'Cloud Computing'),
             ('Cluster', 'Cluster servers'),
             # ('Cluster Partition', 'Cluster Partition '),
@@ -60,3 +64,27 @@ class Command(BaseCommand):
         ):
             ResourceType.objects.get_or_create(
                 name=resource_type, description=description)
+
+
+        storage_tier = ResourceType.objects.get(name='Storage Tier')
+
+        for name, desc, is_public, rtype, parent_name in (
+            ('Tier 0', 'Bulk - Lustre', True, storage_tier, None),
+            ('Tier 1', 'Enterprise - Isilon', True, storage_tier, None),
+            ('Tier 3', 'Attic Storage - Tape', True, storage_tier, None),
+            ('holylfs04/tier0', 'Lustre storage in Holyoke data center', True, 'Tier 0'),
+            ('holylfs05/tier0', 'Lustre storage in Holyoke data center', True, 'Tier 0'),
+            ('nesetape/tier3', 'Cold storage for past projects', True, 'Tier 3'),
+            ('holy-isilon/tier1', 'Tier1 storage with snapshots and disaster recovery copy', True, 'Tier 1'),
+            ('bos-isilon/tier1', 'Tier1 storage server in Boston in case storage needs to be mounted on campus', True, 'Tier 1'),
+            ('holystore01/tier0', 'Luster storage under Tier0', True, 'Tier 0'),
+        ):
+            Resource.objects.update_or_create(
+                name=name,
+                defaults={
+                    'description':desc,
+                    'is_public':is_public,
+                    'resource_type':rtype,
+                    'parent_resource': Resource.objects.get(name=parent_name)
+                }
+            )

@@ -7,7 +7,6 @@ from ifxuser.models import Organization, OrgRelation, UserAffiliation
 from coldfront.core.project.models import Project
 from coldfront.plugins.ifx.models import ProductResource, ProjectOrganization
 from coldfront.core.test_helpers.factories import (
-    factory as cf_factory,
     UserFactory,
     ProjectFactory,
     ResourceFactory,
