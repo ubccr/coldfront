@@ -10,7 +10,7 @@ Project List
 
 
 {% block content %}
-<div class="card mb-3 bg-light">
+<div class="card mb-3">
   <div class="card-body">
     {% if user.userprofile.is_pi or user.is_superuser %}
     <a class="btn btn-primary" href="{% url 'project-create' %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add a project</a> {% endif %}

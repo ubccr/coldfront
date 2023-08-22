@@ -1,4 +1,5 @@
 {% load static %}
+{% load common_tags %}
 
 <!DOCTYPE html>
 <html lang="en">
@@ -68,3 +69,18 @@
 </body>
 
 </html>
+
+<script>
+  const storedValue = localStorage.getItem('darkModeToggle');
+
+  if (storedValue === 'true') {
+    localStorage.setItem("darkModeToggle", true);
+    document.documentElement.setAttribute('data-bs-theme', 'dark')
+    document.getElementById("banner-logo").src = document.getElementById("banner-logo").src.replace("go.png", "go-dark-mode.png");
+  }
+  else {
+    localStorage.setItem("darkModeToggle", false);
+    document.documentElement.setAttribute('data-bs-theme', 'light')
+    document.getElementById("banner-logo").src = document.getElementById("banner-logo").src.replace("go-dark-mode.png", "go.png");
+  }
+</script>

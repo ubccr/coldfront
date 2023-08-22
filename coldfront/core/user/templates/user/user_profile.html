@@ -1,20 +1,31 @@
-{% extends "common/base.html" %}
-{% load static %}
+{% extends "common/base.html" %} {% load static %} {% block title %} User
+Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif %}
+{% endblock %} {% block content %}
 
-{% block title %}
-User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif %}
-{% endblock %}
-
-{% block content %}
-<h2>User Profile</h2>
-<hr>
+<div class="d-flex justify-content-between align-items-end">
+  <h2>User Profile</h2>
+  <div class="d-flex justify-content-end">
+    <label>Enable dark mode&nbsp&nbsp</label>
+    <label class="switch">
+      <input type="checkbox" id="darkModeToggle" />
+      <span class="slider round"></span>
+    </label>
+</div> 
+</div>
+<hr />
 
 <div class="card">
   <div class="card-header">
     <i class="fas fa-user" aria-hidden="true"></i>
     {{ viewed_user.username }}
     <div class="float-end">
-      <a class="btn btn-info" href="{% url 'user-projects-managers' viewed_user %}" role="button"><i class="far fa-user-circle" aria-hidden="true"></i> View user projects and managers</a>
+      <a
+        class="btn btn-info"
+        href="{% url 'user-projects-managers' viewed_user %}"
+        role="button"
+        ><i class="far fa-user-circle" aria-hidden="true"></i> View user
+        projects and managers</a
+      >
     </div>
   </div>
   <div class="card-body">
@@ -36,17 +47,33 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
             <th scope="row">PI Status:</th>
             <td>
               {% if viewed_user.userprofile.is_pi %}
-                <span class="badge bg-success"><i class="fas fa-check" aria-hidden="true"></i><span class="sr-only">Yes</span></span>
+              <span class="badge bg-success"
+                ><i class="fas fa-check" aria-hidden="true"></i
+                ><span class="sr-only">Yes</span></span
+              >
               {% elif not user == viewed_user %}
-                <span class="badge bg-danger"><i class="fas fa-times" aria-hidden="true"></i><span class="sr-only">No</span></span>
+              <span class="badge bg-danger"
+                ><i class="fas fa-times" aria-hidden="true"></i
+                ><span class="sr-only">No</span></span
+              >
               {% else %}
-                <form class="form-inline" method="post" action="{% url 'user-upgrade' %}">
-                  <div class="form-group mb-2">
-                    <span class="badge bg-danger"><i class="fas fa-times" aria-hidden="true"></i><span class="sr-only">No</span></span>
-                    {% csrf_token %}
-                    <button class="btn btn-secondary" type="submit"><i class="fas fa-chevron-circle-up" aria-hidden="true"></i> Upgrade Account</button>
-                  </div>
-                </form>
+              <form
+                class="form-inline"
+                method="post"
+                action="{% url 'user-upgrade' %}"
+              >
+                <div class="form-group mb-2">
+                  <span class="badge bg-danger"
+                    ><i class="fas fa-times" aria-hidden="true"></i
+                    ><span class="sr-only">No</span></span
+                  >
+                  {% csrf_token %}
+                  <button class="btn btn-secondary" type="submit">
+                    <i class="fas fa-chevron-circle-up" aria-hidden="true"></i>
+                    Upgrade Account
+                  </button>
+                </div>
+              </form>
               {% endif %}
             </td>
           </tr>
@@ -64,5 +91,33 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
   $("#navbar-main > ul > li.active").removeClass("active");
   $("#navbar-user").addClass("active");
   $("#navbar-user-user-profile").addClass("active");
+
+  const darkModeToggle = document.getElementById('darkModeToggle');
+  const storedValue = localStorage.getItem('darkModeToggle');
+
+  if (storedValue === 'true') {
+      darkModeToggle.checked = true;
+  }
+
+  if (darkModeToggle.checked) {
+    localStorage.setItem("darkModeToggle", darkModeToggle.checked);
+    document.documentElement.setAttribute('data-bs-theme', 'dark')
+    document.getElementById("banner-logo").src = document.getElementById("banner-logo").src.replace("go.png", "go-dark-mode.png");
+  }
+
+  darkModeToggle.addEventListener('change', () => {
+    if (darkModeToggle.checked){
+      localStorage.setItem("darkModeToggle", darkModeToggle.checked);
+      document.documentElement.setAttribute('data-bs-theme', 'dark')
+      document.getElementById("banner-logo").src = document.getElementById("banner-logo").src.replace("go.png", "go-dark-mode.png");
+    }
+    else {
+      localStorage.setItem("darkModeToggle", darkModeToggle.checked);
+      document.documentElement.setAttribute('data-bs-theme', 'light')
+      document.getElementById("banner-logo").src = document.getElementById("banner-logo").src.replace("go-dark-mode.png", "go.png");
+    }
+  }
+  );
+
 </script>
 {% endblock %}
