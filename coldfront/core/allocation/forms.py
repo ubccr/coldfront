@@ -152,7 +152,7 @@ class AllocationResourceChoiceField(forms.ModelChoiceField):
 
 
 class AllocationUpdateForm(forms.Form):
-    resource = forms.ModelChoiceField(
+    resource = AllocationResourceChoiceField(
         label='Resource', queryset=Resource.objects.all(), required=False
     )
     status = forms.ModelChoiceField(
