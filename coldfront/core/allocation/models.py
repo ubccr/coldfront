@@ -232,10 +232,10 @@ class Allocation(TimeStampedModel):
             if not self.start_date:
                 raise ValidationError('You have to set the start date.')
 
-            if not self.end_date and not self.use_indefinitely:
+            if not self.end_date:
                 raise ValidationError('You have to set the end date.')
 
-            if not self.use_indefinitely and self.start_date > self.end_date:
+            if self.start_date > self.end_date:
                 raise ValidationError(
                     'Start date cannot be greater than the end date.')
 

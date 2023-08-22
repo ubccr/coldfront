@@ -1912,12 +1912,10 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         allocations = project_obj.allocation_set.filter(
             status__name__in=['Active', 'Expired', ],
             resources__requires_payment=False
-        ).exclude(use_indefinitely=True)
+        )
         initial_data = []
         if allocations:
             for allocation in allocations:
-                if allocation.end_date is None:
-                    continue
                 if ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING >= 0 and allocation.expires_in < -ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING:
                     continue
 
