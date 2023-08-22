@@ -80,17 +80,15 @@ class TestSavioProjectApprovalRunner(TestRunnerMixinBase, TestBase):
         self.assertEqual(expected_subject, email.subject)
 
         formatted_start_date = request.allocation_period.start_date.strftime(
-            '%b %-d, %Y')
+            '%b. %-d, %Y')
         start_date_parts = formatted_start_date.split()
-        if len(start_date_parts[0]) == 3:
-            start_date_parts[0] = start_date_parts[0] + '.'
-        formatted_start_date = ' '.join(start_date_parts)
         expected_body_snippets = [
             'request to create project',
             (f'under Allocation Period "{request.allocation_period.name}" has '
              f'been approved'),
-            (f'processed on {formatted_start_date}, {num_service_units} will '
-             f'be added to the project'),
+            f'processed on {start_date_parts[0][:3]}',
+            f'{start_date_parts[1]} {start_date_parts[2]}',
+            f'{num_service_units} will be added to the project',
             'will gain the permission to manage the project',
             f'/project/{project.pk}/',
         ]
