@@ -1,14 +1,21 @@
 import logging
 import re
 
+from collections import namedtuple
+
+from django.contrib.auth.models import User
+
 from flags.state import flag_enabled
 
+from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationAttributeType
+from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.allocation.utils import get_project_compute_allocation
 from coldfront.core.billing.models import BillingActivity
 from coldfront.core.billing.models import BillingProject
 from coldfront.core.project.models import Project
 from coldfront.core.resource.utils import get_computing_allowance_project_prefixes
+from coldfront.core.user.models import UserProfile
 
 
 logger = logging.getLogger(__name__)
@@ -29,6 +36,84 @@ def get_billing_activity_from_full_id(full_id):
     except BillingActivity.DoesNotExist:
         return None
     return billing_activity
+
+
+def get_billing_id_usages(full_id=None, project_obj=None, user_obj=None):
+    """Return all database objects storing billing IDs, with optional
+    filtering for a specific ID, for IDs associated with a specific
+    Project, or for IDs associated with a specific User.
+
+    Parameters:
+        - full_id (str): A fully-formed billing ID
+        - project_obj (Project): A Project instance
+        - user_obj (User): A User instance
+
+    Returns:
+        - BillingIdUsages (namedtuple): A namedtuple with the following
+          keys and values:
+              project_default: An AllocationAttribute queryset
+              recharge: An AllocationUserAttribute queryset
+              user_account: A UserProfile queryset
+    """
+    BillingIdUsages = namedtuple(
+        'BillingIdUsages', 'project_default recharge user_account')
+    output_kwargs = {
+        'project_default': AllocationAttribute.objects.none(),
+        'recharge': AllocationUserAttribute.objects.none(),
+        'user_account': UserProfile.objects.none(),
+    }
+
+    allocation_attribute_type = AllocationAttributeType.objects.get(
+        name='Billing Activity')
+
+    allocation_attribute_kwargs = {}
+    allocation_user_attribute_kwargs = {}
+    user_profile_kwargs = {}
+
+    if full_id is not None:
+        assert isinstance(full_id, str)
+        if not is_billing_id_well_formed(full_id):
+            return BillingIdUsages(**output_kwargs)
+        billing_activity = get_billing_activity_from_full_id(full_id)
+        if billing_activity is None:
+            return BillingIdUsages(**output_kwargs)
+        pk_str = str(billing_activity.pk)
+        allocation_attribute_kwargs['value'] = pk_str
+        allocation_user_attribute_kwargs['value'] = pk_str
+        user_profile_kwargs['billing_activity'] = billing_activity
+    if project_obj is not None:
+        assert isinstance(project_obj, Project)
+        allocation_attribute_kwargs['allocation__project'] = project_obj
+        allocation_user_attribute_kwargs['allocation__project'] = project_obj
+    if user_obj is not None:
+        assert isinstance(user_obj, User)
+        allocation_user_attribute_kwargs['allocation_user__user'] = user_obj
+        user_profile_kwargs['user'] = user_obj
+
+    if allocation_attribute_kwargs:
+        allocation_attributes = AllocationAttribute.objects.filter(
+            allocation_attribute_type=allocation_attribute_type,
+            **allocation_attribute_kwargs).order_by('id')
+    else:
+        allocation_attributes = AllocationAttribute.objects.none()
+    output_kwargs['project_default'] = allocation_attributes
+
+    if allocation_user_attribute_kwargs:
+        allocation_user_attributes = AllocationUserAttribute.objects.filter(
+            allocation_attribute_type=allocation_attribute_type,
+            **allocation_user_attribute_kwargs).order_by('id')
+    else:
+        allocation_user_attributes = AllocationUserAttribute.objects.none()
+    output_kwargs['recharge'] = allocation_user_attributes
+
+    if user_profile_kwargs:
+        user_profiles = UserProfile.objects.filter(
+            **user_profile_kwargs).order_by('id')
+    else:
+        user_profiles = UserProfile.objects.none()
+    output_kwargs['user_account'] = user_profiles
+
+    return BillingIdUsages(**output_kwargs)
 
 
 def get_or_create_billing_activity_from_full_id(full_id):

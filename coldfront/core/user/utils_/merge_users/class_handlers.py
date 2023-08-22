@@ -153,15 +153,64 @@ class UserProfileHandler(ClassHandler):
         ]
 
     def _run_special_handling(self):
-        self._set_host_user()
+        if flag_enabled('LRC_ONLY'):
+            # TODO: Refactor shared logic between these methods.
+            self._set_host_user()
+            self._set_billing_activity()
+
+    def _set_billing_activity(self):
+        attr_name = 'billing_activity'
+        src_activity = self._src_obj.billing_activity
+        dst_activity = self._dst_obj.billing_activity
+        if src_activity and dst_activity and src_activity != dst_activity:
+            src_full_id = src_activity.full_id()
+            dst_full_id = dst_activity.full_id()
+            prompt = (
+                f'{self._class_name}({self._dst_obj.pk}).{attr_name}: Conflict '
+                f'requiring manual resolution. Type 1 or 2 to keep the '
+                f'corresponding value.\n'
+                f'1 - {src_full_id} (Source)\n'
+                f'2 - {dst_full_id} (Destination)\n')
+            choice = input(prompt)
+            if choice == '1':
+                self._dst_obj.billing_activity = src_activity
+                self._record_update(
+                    self._dst_obj.pk, attr_name, dst_full_id, src_full_id)
+            elif choice == '2':
+                pass
+            else:
+                raise ValueError('Invalid choice.')
+        else:
+            self._set_attr_if_falsy(attr_name)
 
     def _set_host_user(self):
-        if flag_enabled('LRC_ONLY'):
-            raise NotImplementedError
-            # TODO
-            #  Deal with conflicts.
-            #  Handle LBL users.
-            # self._set_attr_if_falsy('host_user')
+        attr_name = 'host_user'
+        src_host = self._src_obj.host_user
+        dst_host = self._dst_obj.host_user
+        if src_host and dst_host and src_host != dst_host:
+            src_user_str = (
+                f'{src_host.username} ({src_host.pk}, {src_host.first_name} '
+                f'{src_host.last_name})')
+            dst_user_str = (
+                f'{dst_host.username} ({dst_host.pk}, {dst_host.first_name} '
+                f'{dst_host.last_name})')
+            prompt = (
+                f'{self._class_name}({self._dst_obj.pk}).{attr_name}: Conflict '
+                f'requiring manual resolution. Type 1 or 2 to keep the '
+                f'corresponding value.\n'
+                f'1 - {src_user_str} (Source)\n'
+                f'2 - {dst_user_str} (Destination)\n')
+            choice = input(prompt)
+            if choice == '1':
+                self._dst_obj.host_user = src_host
+                self._record_update(
+                    self._dst_obj.pk, attr_name, dst_host, src_host)
+            elif choice == '2':
+                pass
+            else:
+                raise ValueError('Invalid choice.')
+        else:
+            self._set_attr_if_falsy(attr_name)
 
 
 class SocialAccountHandler(ClassHandler):
