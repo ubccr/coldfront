@@ -6,6 +6,8 @@ from coldfront.core.statistics.models import Node
 from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
 
+admin.site.register(CPU)
+admin.site.register(Node)
 
 @admin.register(ProjectTransaction)
 class ProjectTransactionAdmin(admin.ModelAdmin):

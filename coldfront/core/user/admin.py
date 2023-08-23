@@ -2,7 +2,10 @@ from django.contrib import admin
 
 from allauth.account.models import EmailAddress
 
-from coldfront.core.user.models import UserProfile
+from coldfront.core.user.models import UserProfile, IdentityLinkingRequestStatusChoice, IdentityLinkingRequest
+
+admin.site.register(IdentityLinkingRequest)
+admin.site.register(IdentityLinkingRequestStatusChoice)
 
 
 @admin.register(UserProfile)
