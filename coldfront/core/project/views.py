@@ -188,7 +188,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 resources__requires_payment=True
             )
         else:
-            if self.object.status.name in ['Active', 'New', 'Waiting For Admin Approval', ]:
+            if self.object.status.name in ['Active', 'New', 'Waiting For Admin Approval', 'Contacted By Admin', ]:
                 free_allocations = Allocation.objects.filter(
                     Q(project=self.object) &
                     Q(project__projectuser__user=self.request.user) &
@@ -278,6 +278,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
                         'New',
                         'Active',
                         'Waiting For Admin Approval',
+                        'Contacted By Admin',
                         'Review Pending',
                         'Expired',
                     ]
@@ -293,6 +294,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
                             'New',
                             'Active',
                             'Waiting For Admin Approval',
+                            'Contacted By Admin',
                             'Review Pending',
                             'Expired',
                         ]
@@ -326,6 +328,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
                         'New',
                         'Active',
                         'Waiting For Admin Approval',
+                        'Contacted By Admin',
                         'Review Pending',
                         'Expired',
                     ]
@@ -345,7 +348,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
         project_count = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
             Q(pi__username=self.request.user.username) &
             Q(projectuser__status__name='Active') &
-            Q(status__name__in=['New', 'Active', 'Review Pending', 'Waiting For Admin Approval', ])
+            Q(status__name__in=['New', 'Active', 'Review Pending', 'Waiting For Admin Approval', 'Contacted By Admin', ])
         ).distinct().count()
         # Not being used.
         context['project_requests_remaining'] = 10  # max(0, max_projects - project_count)
@@ -677,7 +680,7 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.status.name in ['Denied', 'Waiting For Admin Approval', 'Review Pending']:
+        if project_obj.status.name in ['Denied', 'Waiting For Admin Approval', 'Review Pending', 'Contacted By Admin', ]:
             messages.error(
                 request,
                 'You cannot archive a project with status "{}".'.format(project_obj.status.name)
@@ -763,6 +766,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
                 status__in=[
                     ProjectStatusChoice.objects.get(name='Active'),
                     ProjectStatusChoice.objects.get(name='Waiting For Admin Approval'),
+                    ProjectStatusChoice.objects.get(name='Contacted By Admin'),
                     ProjectStatusChoice.objects.get(name='Review Pending')
                 ]).count()
             return pi_projects_count >= limit
@@ -2071,7 +2075,7 @@ class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
         context = super().get_context_data(**kwargs)
         context['project_review_list'] = ProjectReview.objects.filter(status__name='Pending')
         projects = Project.objects.filter(
-            status__name="Waiting For Admin Approval"
+            status__name__in=['Waiting For Admin Approval', 'Contacted By Admin', ]
         )
         context['project_request_list'] = projects
         pis = set()
@@ -2109,7 +2113,7 @@ class ProjectActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
                 return False
 
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.status.name != 'Waiting For Admin Approval':
+        if not project_obj.status.name in ['Waiting For Admin Approval', 'Contacted By Admin', ]:
             messages.error(
                 self.request, f'You cannot approve a project with status "{project_obj.status.name}"'
             )
@@ -2169,7 +2173,7 @@ class ProjectDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
                 return False
 
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.status.name != 'Waiting For Admin Approval':
+        if not project_obj.status.name in ['Waiting For Admin Approval', 'Contacted By Admin', ]:
             messages.error(
                 self.request, f'You cannot deny a project with status "{project_obj.status.name}"'
             )
@@ -2555,6 +2559,8 @@ class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             if cc:
                 success_text += ' CCed: {}'.format(', '.join(cc))
 
+            # Set project status to "Contacted By Admin"
+
             messages.success(self.request, success_text)
         else:
             messages.error(self.request, 'Failed to send email: Email not enabled')
@@ -2634,6 +2640,9 @@ class ProjectRequestEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView)
             )
             if cc:
                 success_text += ' CCed: {}'.format(', '.join(cc))
+
+            project_obj.status = ProjectStatusChoice.objects.get(name='Contacted By Admin')
+            project_obj.save()
 
             messages.success(self.request, success_text)
         else:

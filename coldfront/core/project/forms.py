@@ -161,6 +161,11 @@ class ProjectRequestEmailForm(forms.Form):
 
     def __init__(self, pk, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        project_obj = get_object_or_404(Project, pk=int(pk))
+        self.fields['email_body'].initial = (
+            f'Dear {project_obj.pi.first_name} {project_obj.pi.last_name}, '
+            f'\n{EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL}'
+        )
         self.fields['cc'].initial = ', '.join(
             [EMAIL_DIRECTOR_EMAIL_ADDRESS] + EMAIL_ADMIN_LIST)
 

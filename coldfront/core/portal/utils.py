@@ -119,11 +119,11 @@ def generate_allocations_chart_data():
 
 def generate_project_type_chart_data():
     num_research_projects_count = Project.objects.filter(
-        status__name__in=['Active', 'Waiting For Admin Approval', 'Review Pending', ],
+        status__name__in=['Active', 'Waiting For Admin Approval', 'Review Pending', 'Contacted By Admin', ],
         type__name='Research'
     ).count()
     num_class_projects_count = Project.objects.filter(
-        status__name__in=['Active', 'Waiting For Admin Approval', 'Review Pending', ],
+        status__name__in=['Active', 'Waiting For Admin Approval', 'Review Pending', 'Contacted By Admin', ],
         type__name='Class'
     ).count()
 
@@ -147,7 +147,7 @@ def generate_project_type_chart_data():
 
 def generate_project_status_chart_data():
     num_active_projects = Project.objects.filter(status__name='Active').count()
-    num_requested_projects = Project.objects.filter(status__name='Waiting For Admin Approval').count()
+    num_requested_projects = Project.objects.filter(status__name__in=['Waiting For Admin Approval', 'Contacted By Admin', ]).count()
     num_renewal_projects = Project.objects.filter(status__name='Review Pending').count()
 
     active_projects_label = f'Active: {num_active_projects}'
@@ -174,7 +174,7 @@ def generate_project_status_chart_data():
 def generate_research_project_status_columns():
     research_projects = Project.objects.filter(type__name='Research')
     num_active_projects = research_projects.filter(status__name='Active').count()
-    num_requested_projects = research_projects.filter(status__name='Waiting For Admin Approval').count()
+    num_requested_projects = research_projects.filter(status__name__in=['Waiting For Admin Approval', 'Contacted By Admin', ]).count()
     num_renewal_projects = research_projects.filter(status__name='Review Pending').count()
 
     active_projects_label = f'Active (R): {num_active_projects}'
@@ -200,7 +200,7 @@ def generate_research_project_status_columns():
 def generate_class_project_status_columns():
     research_projects = Project.objects.filter(type__name='Class')
     num_active_projects = research_projects.filter(status__name='Active').count()
-    num_requested_projects = research_projects.filter(status__name='Waiting For Admin Approval').count()
+    num_requested_projects = research_projects.filter(status__name__in=['Waiting For Admin Approval', 'Contacted By Admin', ]).count()
     num_renewal_projects = research_projects.filter(status__name='Review Pending').count()
 
     active_projects_label = f'Active (C): {num_active_projects}'
@@ -224,7 +224,7 @@ def generate_class_project_status_columns():
 
 
 def generate_user_counts():
-    project_statuses = ['Active', 'Waiting For Admin Approval', 'Review Pending', ]
+    project_statuses = ['Active', 'Waiting For Admin Approval', 'Review Pending', 'Contacted By Admin', ]
     num_unique_active_users = len(set(ProjectUser.objects.filter(
         status__name='Active',
         project__status__name__in=project_statuses
