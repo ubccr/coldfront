@@ -1,7 +1,9 @@
 from django.contrib import admin
+from django import forms
 
 from allauth.account.models import EmailAddress
 
+from coldfront.core.account.utils.queries import update_user_primary_email_address
 from coldfront.core.user.models import UserProfile
 
 
@@ -22,6 +24,22 @@ class UserProfileAdmin(admin.ModelAdmin):
         return obj.user.last_name
 
 
+class EmailAddressInlineFormset(forms.models.BaseInlineFormSet):
+
+    def clean(self):
+        """Ensure that exactly one address is set as the primary for a
+        particular user."""
+        super().clean()
+        num_primary = 0
+        for form in self.forms:
+            if form.cleaned_data.get('primary'):
+                num_primary += 1
+        if num_primary != 1:
+            raise forms.ValidationError(
+                'Exactly one address must be primary.')
+
+
 class EmailAddressInline(admin.TabularInline):
     model = EmailAddress
     extra = 0
+    formset = EmailAddressInlineFormset

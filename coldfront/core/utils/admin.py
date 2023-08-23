@@ -3,6 +3,8 @@ from django.contrib import messages
 from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import Group, User
+from coldfront.core.account.utils.queries import update_user_primary_email_address
+from django.db import transaction
 
 from coldfront.core.user.admin import EmailAddressInline
 
@@ -44,6 +46,15 @@ class UserAdmin(BaseUserAdmin):
             logger.info(
                 f'User {request.user.username} activated the following users: '
                 f'{user_pk_str}.')
+
+    @transaction.atomic
+    def save_formset(self, request, form, formset, change):
+        instances = formset.save(commit=False)
+        if isinstance(formset, EmailAddressInline.formset):
+            for instance in instances:
+                if instance.primary:
+                    update_user_primary_email_address(instance)
+        super().save_formset(request, form, formset, change)
 
 
 admin.site.unregister(Group)
