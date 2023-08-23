@@ -18,8 +18,24 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationUserStatusChoice,
                                               AttributeType, SecureDirRequest,
                                               SecureDirAddUserRequest,
-                                              SecureDirRemoveUserRequest)
+                                              SecureDirRemoveUserRequest,
+                                            AllocationRenewalRequest, 
+                                            AllocationAdditionRequestStatusChoice, 
+                                            AllocationAdditionRequest, 
+                                            SecureDirAddUserRequestStatusChoice, 
+                                            SecureDirRemoveUserRequestStatusChoice, 
+                                            SecureDirRequestStatusChoice, 
+                                            ClusterAccessRequestStatusChoice, 
+                                            ClusterAccessRequest, )
 
+admin.site.register(AllocationRenewalRequest)
+admin.site.register(AllocationAdditionRequestStatusChoice)
+admin.site.register(AllocationAdditionRequest)
+admin.site.register(SecureDirAddUserRequestStatusChoice)
+admin.site.register(SecureDirRemoveUserRequestStatusChoice)
+admin.site.register(SecureDirRequestStatusChoice)
+admin.site.register(ClusterAccessRequestStatusChoice)
+admin.site.register(ClusterAccessRequest)
 
 @admin.register(AllocationStatusChoice)
 class AllocationStatusChoiceAdmin(admin.ModelAdmin):

@@ -3,7 +3,8 @@ from django import forms
 
 from allauth.account.models import EmailAddress
 
-from coldfront.core.account.utils.queries import update_user_primary_email_address
+from coldfront.core.user.models import IdentityLinkingRequestStatusChoice
+from coldfront.core.user.models import IdentityLinkingRequest
 from coldfront.core.user.models import UserProfile
 
 
@@ -43,3 +44,7 @@ class EmailAddressInline(admin.TabularInline):
     model = EmailAddress
     extra = 0
     formset = EmailAddressInlineFormset
+
+
+admin.site.register(IdentityLinkingRequest)
+admin.site.register(IdentityLinkingRequestStatusChoice)

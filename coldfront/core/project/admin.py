@@ -3,15 +3,26 @@ import textwrap
 from django.contrib import admin
 from simple_history.admin import SimpleHistoryAdmin
 
+from coldfront.core.statistics.models import (ProjectTransaction,
+                                              ProjectUserTransaction)
+
 from coldfront.core.project.models import (Project, ProjectAdminComment,
                                             ProjectReview, ProjectStatusChoice,
                                             ProjectUser, ProjectUserMessage,
                                             ProjectUserRoleChoice,
                                             ProjectUserStatusChoice,
-                                            SavioProjectAllocationRequest)
-from coldfront.core.statistics.models import (ProjectTransaction,
-                                              ProjectUserTransaction)
+                                            SavioProjectAllocationRequest,
+                                            ProjectUserJoinRequest, 
+                                            ProjectAllocationRequestStatusChoice, 
+                                            VectorProjectAllocationRequest, 
+                                            ProjectUserRemovalRequestStatusChoice, 
+                                            ProjectUserRemovalRequest, )
 
+admin.site.register(ProjectUserJoinRequest)
+admin.site.register(ProjectAllocationRequestStatusChoice)
+admin.site.register(VectorProjectAllocationRequest)
+admin.site.register(ProjectUserRemovalRequestStatusChoice)
+admin.site.register(ProjectUserRemovalRequest)
 
 @admin.register(ProjectStatusChoice)
 class ProjectStatusChoiceAdmin(admin.ModelAdmin):
