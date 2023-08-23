@@ -13,8 +13,6 @@ CENTER_HELP_URL = ENV.str('CENTER_HELP_URL', default='')
 CENTER_PROJECT_RENEWAL_HELP_URL = ENV.str('CENTER_PROJECT_RENEWAL_HELP_URL', default='')
 CENTER_BASE_URL = ENV.str('CENTER_BASE_URL', default='')
 
-ACCESSIBILITY_ENABLE = ENV.bool('ACCESSIBILITY_ENABLE', default=False)
-
 #------------------------------------------------------------------------------
 # Enable Project Review
 #------------------------------------------------------------------------------
@@ -41,7 +39,6 @@ ALLOCATION_ACCOUNT_MAPPING = ENV.dict('ALLOCATION_ACCOUNT_MAPPING', default={})
 SETTINGS_EXPORT += [
     'ALLOCATION_ACCOUNT_ENABLED',
     'CENTER_HELP_URL',
-    'ACCESSIBILITY_ENABLE'
 ]
 
 ADMIN_COMMENTS_SHOW_EMPTY = ENV.bool('ADMIN_COMMENTS_SHOW_EMPTY', default=True)

@@ -14,11 +14,7 @@
   <link rel="manifest" href="{% static 'common/site.webmanifest' %}">
 
   <!-- Load Bootstrap 5.3.1 -->
-  {% if settings.ACCESSIBILITY_ENABLE %}
-    <link rel="stylesheet" href="{% static 'bootstrap/bootstrap_accessible.min.css' %}">
-  {% else %}
-    <link rel="stylesheet" href="{% static 'bootstrap/bootstrap.min.css' %}">
-  {% endif %}
+  <link rel="stylesheet" href="{% static 'bootstrap/bootstrap.min.css' %}">
   <link rel="stylesheet" href="{% static 'flatpickr/flatpickr.min.css' %}">
 
   <script src="{% static 'jquery/jquery-3.7.0.js' %}"></script>
