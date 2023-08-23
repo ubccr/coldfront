@@ -41,7 +41,7 @@ Project Review List
             {% if project_request.status.name == 'Contacted By Admin' %}
               <td><span class="badge badge-success"><i class="fas fa-check-circle fa-lg"></i></i></span></td>
             {% else %}
-              <td><span class="badge badge-danger"><i class="fas fa-times-circle fa-lg"></i></span></td>
+              <td></td>
             {% endif %}
             <td class="no-textwrap">
               <a href="{% url 'project-activate-request' project_request.pk %}" class="btn btn-success mr-1">Activate</a>
