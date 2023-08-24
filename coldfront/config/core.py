@@ -102,8 +102,8 @@ Director
 
 xxx@example.edu
 Phone: (xxx) xxx-xxx
-"""
-)
+""",
+multiline=True)
 
 ACCOUNT_CREATION_TEXT = '''University faculty can submit a help ticket to request an account.
 Please see <a href="#">instructions on our website</a>. Staff, students, and external collaborators must
