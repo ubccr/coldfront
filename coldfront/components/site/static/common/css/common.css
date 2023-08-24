@@ -26,6 +26,11 @@
   border-color: #004d4d;
 } */
 
+.badge-success {
+  background-color: #008216;
+  border-color: #008216;
+}
+
 .btn-success {
   background-color: #008216;
   border-color: #008216;
@@ -34,6 +39,11 @@
 .btn-success:hover {
   background-color: #006611;
   border-color: #006611;
+}
+
+.badge-danger {
+  background-color: #990000;
+  border-color: #990000;
 }
 
 .btn-danger {
