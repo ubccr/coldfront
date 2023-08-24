@@ -36,14 +36,13 @@ class LDAPSearch:
         self.LDAP_USER_SEARCH_BASE = import_from_settings('LDAP_USER_SEARCH_BASE')
         self.LDAP_BIND_DN = import_from_settings('LDAP_USER_SEARCH_BIND_DN', None)
         self.LDAP_BIND_PASSWORD = import_from_settings('LDAP_USER_SEARCH_BIND_PASSWORD', None)
+        self.LDAP_CONNECT_TIMEOUT = import_from_settings('LDAP_USER_SEARCH_CONNECT_TIMEOUT', 2.5)
 
-        self.server = Server(self.LDAP_SERVER_URI, use_ssl=True, connect_timeout=1)
+        self.server = Server(self.LDAP_SERVER_URI, use_ssl=True, connect_timeout=self.LDAP_CONNECT_TIMEOUT)
         self.conn = Connection(self.server, self.LDAP_BIND_DN, self.LDAP_BIND_PASSWORD, auto_bind=True)
 
         if not self.conn.bind():
             logger.error('LDAPSearch: Failed to bind to LDAP server: {}'.format(self.conn.result))
-        else:
-            logger.info('LDAPSearch: LDAP bind successful: %s', self.conn.extend.standard.who_am_i())
 
     def search_a_user(self, user_search_string=None, search_attributes_list=None):
         # Add check if debug is true to run this. If debug is not then write an error to log file.
@@ -60,7 +59,13 @@ class LDAPSearch:
         attributes = {}
         if self.conn.entries:
             attributes = json.loads(self.conn.entries[0].entry_to_json()).get('attributes')
+            logger.info(
+                f'LDAPSearch: Attributes {search_attributes_list} found for user {user_search_string}'
+            )
         else:
             attributes = dict.fromkeys(search_attributes_list, [''])
+            logger.info(
+                f'LDAPSearch: Attributes {search_attributes_list} not found for user {user_search_string}'
+            )
 
         return attributes

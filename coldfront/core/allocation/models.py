@@ -12,7 +12,7 @@ from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
 from coldfront.core.project.models import Project
-from coldfront.core.resource.models import Resource, ResourceAttribute
+from coldfront.core.resource.models import Resource, ResourceAttribute, ResourceAttributeType
 from coldfront.core.utils.common import import_from_settings
 import coldfront.core.attribute_expansion as attribute_expansion
 
@@ -25,6 +25,15 @@ ALLOCATION_FUNCS_ON_EXPIRE = import_from_settings(
 ALLOCATION_RESOURCE_ORDERING = import_from_settings(
     'ALLOCATION_RESOURCE_ORDERING',
     ['-is_allocatable', 'name'])
+ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING = import_from_settings(
+    'ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING', 30
+)
+ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING = import_from_settings(
+    'ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING', 60
+)
+ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
+    'ALLOCATION_ENABLE_ALLOCATION_RENEWAL', True
+)
 
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 if EMAIL_ENABLED:
@@ -223,10 +232,10 @@ class Allocation(TimeStampedModel):
             if not self.start_date:
                 raise ValidationError('You have to set the start date.')
 
-            if not self.end_date and not self.use_indefinitely:
+            if not self.end_date:
                 raise ValidationError('You have to set the end date.')
 
-            if not self.use_indefinitely and self.start_date > self.end_date:
+            if self.start_date > self.end_date:
                 raise ValidationError(
                     'Start date cannot be greater than the end date.')
 
@@ -247,6 +256,28 @@ class Allocation(TimeStampedModel):
     @property
     def expires_in(self):
         return (self.end_date - datetime.date.today()).days
+    
+    @property
+    def can_be_renewed(self):
+        if not ALLOCATION_ENABLE_ALLOCATION_RENEWAL:
+            return False
+
+        if self.status.name not in ['Active', 'Expired']:
+            return False
+
+        if self.project.needs_review or self.project.can_be_reviewed or self.project.status.name not in ['Active']:
+            return False
+
+        if self.status.name == 'Active' and self.expires_in <= ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING  and self.expires_in >= 0:
+            return True
+        
+        if self.status.name == 'Expired' and ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING < 0:
+            return True
+
+        if self.status.name == 'Expired' and self.expires_in >= -ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING:
+            return True
+
+        return False
 
     @property
     def get_information(self):
@@ -462,6 +493,7 @@ class AllocationAttributeType(TimeStampedModel):
     attribute_type = models.ForeignKey(AttributeType, on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
     linked_allocation_attribute = models.CharField(max_length=50, blank=True)
+    linked_resource_attribute_type = models.ForeignKey(ResourceAttributeType, on_delete=models.CASCADE, blank=True, null=True)
     linked_resources = models.ManyToManyField(Resource, blank=True)
     has_usage = models.BooleanField(default=False)
     is_required = models.BooleanField(default=False)

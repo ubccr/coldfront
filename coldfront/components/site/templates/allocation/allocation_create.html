@@ -225,6 +225,11 @@ Request New Allocation
       .addClass("btn btn-secondary")
 
     $('#div_id_justification').after(
+      '<p id="posit_connect_link"> Please visit <a href="https://kb.iu.edu/d/bgto" target="_blank">this kb article</a> \
+      for more information about this service.</p>'
+    );
+
+    $('#div_id_justification').after(
       '<p id="user_account_info">You must first have an account on this resource to gain access to its partitions. \
       To create an account, go to \
       <a href="https://access.iu.edu/Accounts/Create" target = "_blank">Create Additional Accounts.</a></p>'
@@ -440,6 +445,13 @@ Request New Allocation
       $('#div_id_sda_information').show()
     } else {
       $('#div_id_sda_information').hide()
+    }
+
+    if (resource_name === 'Posit Connect')
+    {
+      $('#posit_connect_link').show();
+    } else {
+      $('#posit_connect_link').hide();
     }
 
     if (resource_name === 'Slate-Project') {

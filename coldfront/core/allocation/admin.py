@@ -135,53 +135,6 @@ class AllocationAdmin(SimpleHistoryAdmin):
         'resource',
         'quantity',
         'justification',
-        'leverage_multiple_gpus',
-        'dl_workflow',
-        'gpu_workflow',
-        'applications_list',
-        'training_or_inference',
-        'for_coursework',
-        'system',
-        'phi_association',
-        'access_level',
-        'confirm_understanding',
-        'is_grand_challenge',
-        'grand_challenge_program',
-        'use_indefinitely',
-        'primary_contact',
-        'secondary_contact',
-        'department_full_name',
-        'department_short_name',
-        'fiscal_officer',
-        'account_number',
-        'sub_account_number',
-        'it_pros',
-        'devices_ip_addresses',
-        'data_management_plan',
-        'data_manager',
-        'project_directory_name',
-        'total_cost',
-        'campus_affiliation',
-        'email',
-        'faculty_email',
-        'first_name',
-        'last_name',
-        'store_ephi',
-        'url',
-        'share_name',
-        'share_path',
-        'organization',
-        'billing_rate',
-        'billable_amount_annual',
-        'billable_amount_monthly',
-        'actively_billing',
-        'billing_start_date',
-        'billing_end_date',
-        'quota_files',
-        'fileset',
-        'mou_link',
-        'storage_space_unit',
-        'storage_space',
         'start_date',
         'end_date',
         'status',
@@ -246,8 +199,11 @@ class AttributeTypeAdmin(admin.ModelAdmin):
 
 @admin.register(AllocationAttributeType)
 class AllocationAttributeTypeAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'name', 'linked_allocation_attribute', 'attribute_type', 'has_usage', 'is_private')
+    list_display = ('pk', 'name', 'linked_resource_attribute_type', 'list_linked_resources', 'attribute_type', 'has_usage', 'is_private')
     filter_horizontal = ('linked_resources', )
+
+    def list_linked_resources(self, obj):
+        return list(obj.linked_resources.all())
 
 
 class AllocationAttributeUsageInline(admin.TabularInline):

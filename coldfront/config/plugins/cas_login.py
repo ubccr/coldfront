@@ -10,8 +10,6 @@ MIDDLEWARE += [
     'django_cas_ng.middleware.CASMiddleware',
 ]
 
-
-
 AUTHENTICATION_BACKENDS += [
     'django_cas_ng.backends.CASBackend',
 ]

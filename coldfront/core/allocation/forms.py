@@ -78,6 +78,10 @@ class AllocationForm(forms.Form):
         ('current', 'Current license'),
         ('current_and_next_year', 'Current license + next annual license')
     )
+    USE_TYPE_CHOICES = (
+        ('Research', 'Research'),
+        ('Class', 'Class')
+    )
 
     resource = forms.ChoiceField(choices=())
     justification = forms.CharField(widget=forms.Textarea)
@@ -93,7 +97,7 @@ class AllocationForm(forms.Form):
     leverage_multiple_gpus = forms.ChoiceField(choices=YES_NO_CHOICES, required=False, widget=RadioSelect)
     dl_workflow = forms.ChoiceField(choices=YES_NO_CHOICES, required=False, widget=RadioSelect)
     gpu_workflow = forms.ChoiceField(choices=YES_NO_CHOICES, required=False, widget=RadioSelect)
-    applications_list = forms.CharField(max_length=150, required=False)
+    applications_list = forms.CharField(max_length=128, required=False)
     training_or_inference = forms.ChoiceField(choices=TRAINING_INFERENCE_CHOICES, required=False)
     for_coursework = forms.ChoiceField(choices=YES_NO_CHOICES, required=False, widget=RadioSelect)
     system = forms.ChoiceField(choices=SYSTEM_CHOICES, required=False, widget=RadioSelect)
@@ -115,7 +119,7 @@ class AllocationForm(forms.Form):
     faculty_email = forms.EmailField(max_length=40, required=False)
     store_ephi = forms.ChoiceField(choices=YES_NO_CHOICES, required=False, widget=RadioSelect)
     it_pros = forms.CharField(max_length=100, required=False)
-    devices_ip_addresses = forms.CharField(max_length=200, required=False)
+    devices_ip_addresses = forms.CharField(max_length=128, required=False)
     data_management_plan = forms.CharField(widget=forms.Textarea, required=False)
     prorated_cost = forms.IntegerField(disabled=True, required=False)
     cost = forms.IntegerField(disabled=True, required=False)
@@ -130,6 +134,7 @@ class AllocationForm(forms.Form):
     data_management_responsibilities = forms.BooleanField(required=False)
     admin_ads_group = forms.CharField(max_length=64, required=False)
     user_ads_group = forms.CharField(max_length=64, required=False)
+    use_type = forms.ChoiceField(choices=USE_TYPE_CHOICES, required=False, widget=RadioSelect)
     will_exceed_limit = forms.ChoiceField(choices=YES_NO_CHOICES, required=False, widget=RadioSelect)
 
     users = forms.MultipleChoiceField(
@@ -231,6 +236,7 @@ class AllocationForm(forms.Form):
             'quantity',
             'storage_space',
             InlineRadios('storage_space_unit'),
+            InlineRadios('use_type'),
             InlineRadios('will_exceed_limit'),
             'group_account_name',
             'group_account_name_exists',
@@ -332,12 +338,12 @@ class AllocationForm(forms.Form):
                 if field_value <= date.today():
                     errors[name] = 'Please select a start date later than today'
                     continue
-                end_date = resource_attribute_objs.filter(resource_attribute_type__name='end_date')
+                end_date = cleaned_data.get('end_date')
                 use_indefinitely = resource_attribute_objs.filter(
                     resource_attribute_type__name='use_indefinitely'
                 )
                 if not use_indefinitely.exists() or not cleaned_data.get(use_indefinitely):
-                    if end_date.exists() and field_value >= cleaned_data.get('end_date'):
+                    if end_date and field_value >= end_date:
                         errors[name] = 'Start date must be earlier than end date'
                         continue
             elif name == 'end_date' and field_value:

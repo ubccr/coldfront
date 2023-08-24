@@ -30,9 +30,14 @@ LOGGING = {
             'filename': './coldfront.log',
             'formatter': 'custom'
         },
+        'mail_admins': {
+            'class': 'coldfront.core.utils.log.CustomAdminEmailHandler',
+            'formatter': 'custom',
+            'level': 'ERROR'
+        },
     },
     'root': {
-        'handlers': ['file'],
+        'handlers': ['file', 'mail_admins'],
         'level': 'INFO',
     }
     #'loggers': {

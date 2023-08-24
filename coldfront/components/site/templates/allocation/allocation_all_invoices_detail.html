@@ -28,14 +28,6 @@ Allocation Invoice Detail
             <td>{{ invoice.allocation.pk }}</td>
           </tr>
           <tr>
-            <th scope="row" class="text-nowrap">Account Number</th>
-            <td>{{ invoice.account_number }}</td>
-          </tr>
-          <tr>
-            <th scope="row" class="text-nowrap">Sub-Account Number</th>
-            <td>{{ invoice.sub_account_number }}</td>
-          </tr>
-          <tr>
             <th scope="row" class="text-nowrap">Resource</th>
             <td>{{ invoice.allocation.get_parent_resource.name }}</td>
           </tr>

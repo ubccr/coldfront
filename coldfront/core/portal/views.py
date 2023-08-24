@@ -53,6 +53,7 @@ def home(request):
                         'New',
                         'Active',
                         'Waiting For Admin Approval',
+                        'Contacted By Admin',
                         'Review Pending',
                         'Expired'
                     ]
@@ -63,6 +64,7 @@ def home(request):
                     'New',
                     'Active',
                     'Waiting For Admin Approval',
+                    'Contacted By Admin',
                     'Review Pending'
                     ]
              ) &

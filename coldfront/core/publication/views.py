@@ -1,3 +1,4 @@
+import ast
 import re
 import uuid
 import requests
@@ -209,7 +210,7 @@ class PublicationAddView(LoginRequiredMixin, UserPassesTestMixin, View):
             return super().dispatch(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        pubs = eval(request.POST.get('pubs'))
+        pubs = ast.literal_eval(request.POST.get('pubs'))
         project_pk = self.kwargs.get('project_pk')
 
         project_obj = get_object_or_404(Project, pk=project_pk)

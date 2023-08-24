@@ -10,7 +10,8 @@ from coldfront.core.project.models import (Project, ProjectAdminComment,
                                            ProjectUserStatusChoice,
                                            ProjectTypeChoice,
                                            ProjectReviewStatusChoice,
-                                           ProjectAdminAction)
+                                           ProjectAdminAction,
+                                           ProjectDescriptionRecord)
 
 
 @admin.register(ProjectStatusChoice)
@@ -106,8 +107,8 @@ class ProjectAdminActionInline(admin.TabularInline):
 
 @admin.register(Project)
 class ProjectAdmin(SimpleHistoryAdmin):
-    fields_change = ('title', 'pi', 'requestor', 'description', 'slurm_account_name', 'private', 'type', 'status',
-                     'requires_review', 'force_review', 'max_managers', 'created', 'end_date', 'modified', )
+    fields_change = ('title', 'pi', 'requestor', 'description', 'slurm_account_name', 'private', 'type', 'class_number', 
+                     'status', 'requires_review', 'force_review', 'max_managers', 'created', 'end_date', 'modified', )
     readonly_fields_change = ('created', 'modified', )
     list_display = ('pk', 'title', 'PI', 'created', 'modified', 'end_date', 'type', 'status')
     search_fields = ['pi__username', 'projectuser__user__username',
@@ -181,3 +182,10 @@ class ProjectAdminActionAdmin(admin.ModelAdmin):
 
     def project_title(self, obj):
         return obj.project.title
+
+
+@admin.register(ProjectDescriptionRecord)
+class ProjectDescriptionRecordAdmin(admin.ModelAdmin):
+    list_display = ('pk', 'project', 'user', 'created')
+    readonly_fields = ('project', 'user', 'description')
+    list_filter = ('project', )

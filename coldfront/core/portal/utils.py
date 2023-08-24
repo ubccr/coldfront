@@ -49,24 +49,27 @@ def generate_resources_chart_data(allocations_count_by_resource_type):
 
     if allocations_count_by_resource_type:
         cluster_label = "Cluster: %d" % (allocations_count_by_resource_type.get('Cluster', 0))
-        cloud_label = "Cloud: %d" % (allocations_count_by_resource_type.get('Cloud', 0))
-        server_label = "Server: %d" % (allocations_count_by_resource_type.get('Server', 0))
+        # cloud_label = "Cloud: %d" % (allocations_count_by_resource_type.get('Cloud', 0))
+        # server_label = "Server: %d" % (allocations_count_by_resource_type.get('Server', 0))
         storage_label = "Storage: %d" % (allocations_count_by_resource_type.get('Storage', 0))
+        service_label = "Service: %d" % (allocations_count_by_resource_type.get('Service', 0))
 
         resource_plot_data = {
             "columns": [
                 [cluster_label, allocations_count_by_resource_type.get('Cluster', 0)],
                 [storage_label, allocations_count_by_resource_type.get('Storage', 0)],
-                [cloud_label, allocations_count_by_resource_type.get('Cloud', 0)],
-                [server_label, allocations_count_by_resource_type.get('Server', 0)]
+                [service_label, allocations_count_by_resource_type.get('Service', 0)],
+                # [cloud_label, allocations_count_by_resource_type.get('Cloud', 0)],
+                # [server_label, allocations_count_by_resource_type.get('Server', 0)]
 
             ],
             "type": 'donut',
             "colors": {
                 cluster_label: '#6da04b',
                 storage_label: '#ffc72c',
-                cloud_label: '#2f9fd0',
-                server_label: '#e56a54',
+                service_label: '#2f9fd0',
+                # cloud_label: '#2f9fd0',
+                # server_label: '#e56a54',
 
             }
         }
@@ -116,11 +119,11 @@ def generate_allocations_chart_data():
 
 def generate_project_type_chart_data():
     num_research_projects_count = Project.objects.filter(
-        status__name__in=['Active', 'Waiting For Admin Approval', 'Review Pending', ],
+        status__name__in=['Active', 'Waiting For Admin Approval', 'Review Pending', 'Contacted By Admin', ],
         type__name='Research'
     ).count()
     num_class_projects_count = Project.objects.filter(
-        status__name__in=['Active', 'Waiting For Admin Approval', 'Review Pending', ],
+        status__name__in=['Active', 'Waiting For Admin Approval', 'Review Pending', 'Contacted By Admin', ],
         type__name='Class'
     ).count()
 
@@ -144,7 +147,7 @@ def generate_project_type_chart_data():
 
 def generate_project_status_chart_data():
     num_active_projects = Project.objects.filter(status__name='Active').count()
-    num_requested_projects = Project.objects.filter(status__name='Waiting For Admin Approval').count()
+    num_requested_projects = Project.objects.filter(status__name__in=['Waiting For Admin Approval', 'Contacted By Admin', ]).count()
     num_renewal_projects = Project.objects.filter(status__name='Review Pending').count()
 
     active_projects_label = f'Active: {num_active_projects}'
@@ -171,7 +174,7 @@ def generate_project_status_chart_data():
 def generate_research_project_status_columns():
     research_projects = Project.objects.filter(type__name='Research')
     num_active_projects = research_projects.filter(status__name='Active').count()
-    num_requested_projects = research_projects.filter(status__name='Waiting For Admin Approval').count()
+    num_requested_projects = research_projects.filter(status__name__in=['Waiting For Admin Approval', 'Contacted By Admin', ]).count()
     num_renewal_projects = research_projects.filter(status__name='Review Pending').count()
 
     active_projects_label = f'Active (R): {num_active_projects}'
@@ -197,7 +200,7 @@ def generate_research_project_status_columns():
 def generate_class_project_status_columns():
     research_projects = Project.objects.filter(type__name='Class')
     num_active_projects = research_projects.filter(status__name='Active').count()
-    num_requested_projects = research_projects.filter(status__name='Waiting For Admin Approval').count()
+    num_requested_projects = research_projects.filter(status__name__in=['Waiting For Admin Approval', 'Contacted By Admin', ]).count()
     num_renewal_projects = research_projects.filter(status__name='Review Pending').count()
 
     active_projects_label = f'Active (C): {num_active_projects}'
@@ -221,7 +224,7 @@ def generate_class_project_status_columns():
 
 
 def generate_user_counts():
-    project_statuses = ['Active', 'Waiting For Admin Approval', 'Review Pending', ]
+    project_statuses = ['Active', 'Waiting For Admin Approval', 'Review Pending', 'Contacted By Admin', ]
     num_unique_active_users = len(set(ProjectUser.objects.filter(
         status__name='Active',
         project__status__name__in=project_statuses
