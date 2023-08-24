@@ -17,6 +17,7 @@ from django.urls import reverse
 from django.views.generic import DetailView, ListView, TemplateView, View
 from django.views.generic.edit import FormView
 from django.views.static import serve
+from django.conf import settings
 
 from coldfront.core.project.models import Project
 from coldfront.core.publication.forms import (
@@ -67,6 +68,10 @@ class PublicationSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
         context['publication_search_form'] = PublicationSearchForm()
         context['project'] = Project.objects.get(
             pk=self.kwargs.get('project_pk'))
+        context['academics_analytics_enabled'] = 'false'
+        if 'coldfront.plugins.academic_analytics' in settings.INSTALLED_APPS:
+            context['academics_analytics_enabled'] = 'true'
+            context['username'] = self.request.user.username
         return context
 
 
