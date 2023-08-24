@@ -2610,7 +2610,7 @@ class ProjectRequestEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView)
         """Return an instance of the form to be used in this view."""
         if form_class is None:
             form_class = self.get_form_class()
-        return form_class(self.kwargs.get('pk'), **self.get_form_kwargs())
+        return form_class(self.kwargs.get('pk'), self.request.user, **self.get_form_kwargs())
 
     def form_valid(self, form):
         pk = self.kwargs.get('pk')
@@ -2618,7 +2618,7 @@ class ProjectRequestEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView)
         form_data = form.cleaned_data
 
         if EMAIL_ENABLED:
-            receiver_list = [project_obj.pi.email]
+            receiver_list = [project_obj.requestor.email]
             cc = form_data.get('cc').strip()
             if cc:
                 cc = cc.split(',')
@@ -2628,15 +2628,15 @@ class ProjectRequestEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView)
             send_email(
                 'Request for more information',
                 form_data.get('email_body'),
-                EMAIL_DIRECTOR_EMAIL_ADDRESS,
+                EMAIL_SENDER,
                 receiver_list,
                 cc
             )
 
             success_text = 'Email sent to {} {} ({}).'.format(
-                project_obj.pi.first_name,
-                project_obj.pi.last_name,
-                project_obj.pi.username
+                project_obj.requestor.first_name,
+                project_obj.requestor.last_name,
+                project_obj.requestor.username
             )
             if cc:
                 success_text += ' CCed: {}'.format(', '.join(cc))
