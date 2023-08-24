@@ -15,8 +15,14 @@
         <li><a id="navbar-jobs-list" class="dropdown-item" href="{% url 'slurm-job-list' %}?show_all_jobs=on">All Jobs</a></li>
         <li><a class="dropdown-item" href="{% url 'project-list' %}?show_all_projects=on">All Projects</a></li>
         <li><a id="navbar-user-list" class="dropdown-item" href="{% url 'user-search-all' %}">All Users</a></li>
+        {% comment %}
         <li><a id="navbar-project-reviews" class="dropdown-item" href="{% url 'project-review-list' %}">Project Reviews</a></li>
+        {% endcomment %}
         <li><a id="navbar-user-search" class="dropdown-item" href="{% url 'user-search-home' %}">User Search</a></li>
+        {% flag_enabled 'LRC_ONLY' as lrc_only %}
+        {% if lrc_only %}
+        <li><a class="dropdown-item" href="{% url 'billing-id-usages' %}">LBL Project IDs</a></li>
+        {% endif %}
 
         <li><div class="dropdown-divider"></div></li>
         <li class="dropdown-submenu"><a class="dropdown-item dropdown-toggle" href="#">Requests</a>
