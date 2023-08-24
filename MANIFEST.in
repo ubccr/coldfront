@@ -1,6 +1,7 @@
 recursive-include coldfront/core/field_of_science/management/commands/data *
 recursive-include coldfront/plugins/iquota/templates *
 recursive-include coldfront/plugins/system_monitor/templates *
+recursive-include coldfront/plugins/academic_analytics/templates *
 recursive-include coldfront/templates *
 recursive-include coldfront/static *
 recursive-include coldfront/core/portal/templates *
