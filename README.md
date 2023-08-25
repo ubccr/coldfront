@@ -245,7 +245,7 @@ multiple files or directories to omit.
    ```
 7. To load a database backup, run:
    ```bash
-   sh bootstrap/development/docker_load_database_backup.sh ${DB_NAME} ${PATH_TO_DUMP}
+   sh bootstrap/development/docker_load_database_backup.sh -k ${DB_NAME} ${PATH_TO_DUMP}
    ```
 8. To start from scratch, deleting created volumes, run:
    ```bash
