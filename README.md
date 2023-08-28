@@ -225,11 +225,18 @@ multiple files or directories to omit.
    ```
 3. Build images. In the base directory, run:
    ```bash
-   docker build . -t coldfront
+   # Build an image to serve the website. Run ONE of the following, based on the deployment.
+   # MyBRC
+   docker build --build-arg PORTAL=mybrc . -t coldfront
+   # MyLRC
+   docker build --build-arg PORTAL=mylrc . -t coldfront
+
+   # Build an image to host the database.
    docker build . -f Dockerfile.db -t coldfront_db
+
+   # Build an image to serve an outgoing email server.
    docker build . -f Dockerfile.email -t coldfront_email
    ```
-   Note: The above commands build images meant for a MyBRC instance. To build MyLRC images, include `--build-arg PORTAL=mylrc`.
 4. Configure environment variables to be injected into containers by creating a `.env` file in the root directory (ignored by Git) or by setting them manually. The password should match those generated via `main.yml`
    - `DB_NAME=cf_brc_db`: The name of the database can be customized (e.g., for a MyLRC instance, change it to `cf_lrc_db`).
    - `DB_PASSWORD=root`: The password for the database admin user.
