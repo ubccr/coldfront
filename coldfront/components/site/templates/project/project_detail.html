@@ -141,6 +141,17 @@ Project Detail
       ({{ project.pi.username }})
       <a href="mailto:{{ project.pi.email }} "><i class="far fa-envelope" aria-hidden="true"></i><span class="sr-only">Email PI</span></a>
     </h3>
+    {% if project.pi.pk != project.requestor.pk %}
+      <p class="card-text text-justify">
+        <strong>Requestor: </strong>
+        {{ project.requestor.first_name }}
+        {{ project.requestor.last_name }}
+        ({{ project.requestor.username }})
+        <a href="mailto:{{ project.requestor.email }}?cc={{ project.pi.email }}">
+          <i class="far fa-envelope" aria-hidden="true"></i><span class="sr-only">Email Requestor</span>
+        </a>
+      </p>
+    {% endif %}
     <p class="card-text text-justify"><strong>Description: </strong>{{ project.description }}</p>
     {% if project.slurm_account_name %}
       <p class="card-text text-justify"><strong>Slurm Account Name: </strong>{{ project.slurm_account_name }}</p>
@@ -481,7 +492,7 @@ Project Detail
 
 
   <!-- Start Project Publications -->
-  <!-- <div class="card mb-3">
+  <div class="card mb-3">
     <div class="card-header">
       <h3 class="d-inline" id="publications"><i class="fas fa-newspaper" aria-hidden="true"></i> Publications</h3> <span class="badge badge-secondary">{{publications.count}}</span>
       <div class="float-right">
@@ -528,7 +539,7 @@ Project Detail
         <div class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i> There are no publications to display.</div>
       {% endif %}
     </div>
-  </div> -->
+  </div>
   <!-- End Project Publications -->
 
 

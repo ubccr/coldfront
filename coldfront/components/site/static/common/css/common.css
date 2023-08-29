@@ -11,6 +11,12 @@
   border-color: #006298;
 }
 
+.btn-primary:disabled {
+  background-color: #006298;
+  border-color: #006298;
+  pointer-events: none;
+}
+
 .btn-primary:hover {
   background-color: #01426A;
   border-color: #01426A;
@@ -26,6 +32,11 @@
   border-color: #004d4d;
 } */
 
+.badge-success {
+  background-color: #008216;
+  border-color: #008216;
+}
+
 .btn-success {
   background-color: #008216;
   border-color: #008216;
@@ -34,6 +45,11 @@
 .btn-success:hover {
   background-color: #006611;
   border-color: #006611;
+}
+
+.badge-danger {
+  background-color: #990000;
+  border-color: #990000;
 }
 
 .btn-danger {

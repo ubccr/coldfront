@@ -1206,7 +1206,6 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         resource_obj = Resource.objects.get(pk=form_data.get('resource'))
         storage_space_unit = form.data.get('storage_space_unit')
         end_date = form_data.get('end_date')
-        use_indefinitely = form_data.get('use_indefinitely')
         account_number = form_data.get('account_number')
         url = form_data.get('url')
         data_manager = form_data.get('data_manager')
@@ -1257,16 +1256,14 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             if expiry_date is not None:
                 month, day, year = expiry_date.split('/')
                 end_date = self.calculate_end_date(int(month), int(day))
+        elif end_date > project_obj.end_date:
+            end_date = project_obj.end_date
+        
 
         if resource_obj.name == 'Slate-Project':
             storage_space_unit = 'TB'
         elif resource_obj.name == 'Geode-Projects':
             storage_space_unit = 'GB'
-            if use_indefinitely:
-                end_date = None
-        elif resource_obj.name == 'SDA Group Account':
-            if use_indefinitely:
-                end_date = None
 
         # A resource is selected that requires an account name selection but user has no account names
         if ALLOCATION_ACCOUNT_ENABLED and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING and AllocationAttributeType.objects.filter(
@@ -2509,8 +2506,16 @@ class AllocationActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
         if not allocation_obj.start_date:
             allocation_obj.start_date = start_date
 
-        if not allocation_obj.get_parent_resource.requires_payment:
-            allocation_obj.end_date = allocation_obj.project.end_date
+        # TODO - Logic for resources requiring payment is missing
+        allocation_obj.end_date = allocation_obj.project.end_date
+
+        end_date_obj = allocation_obj.allocationattribute_set.filter(
+            allocation_attribute_type__name='Official End Date'
+        )
+        if end_date_obj.exists():
+            end_date_value = datetime.date.fromisoformat(end_date_obj.first().value)
+            if end_date_value < allocation_obj.end_date:
+                allocation_obj.end_date = end_date_value
 
         allocation_obj.save()
 

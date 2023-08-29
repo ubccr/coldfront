@@ -125,6 +125,9 @@ class Command(BaseCommand):
         elif project_obj.pi.username != pi_username:
             project_obj = self.create_project(pi_username, end_date, share_name)
 
+        if end_date is None:
+            end_date = project_obj.end_date
+
         start_date = row["Start Date"]
         if not start_date:
             start_date = datetime.datetime.today()
@@ -378,6 +381,13 @@ class Command(BaseCommand):
                 allocation_attribute_type=AllocationAttributeType.objects.get(name="Storage Quota (GB)"),
                 allocation=allocation_obj,
                 value=quota_data
+            )
+
+        if end_date != project_obj.end_date:
+            AllocationAttribute.objects.create(
+                allocation_attribute_type=AllocationAttributeType.objects.get(name="Official End Date"),
+                allocation=allocation_obj,
+                value=end_date
             )
 
         if row["Notes"]:

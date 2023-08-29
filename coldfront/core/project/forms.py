@@ -159,10 +159,14 @@ class ProjectRequestEmailForm(forms.Form):
         widget=forms.Textarea
     )
 
-    def __init__(self, pk, *args, **kwargs):
+    def __init__(self, pk, user, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['cc'].initial = ', '.join(
-            [EMAIL_DIRECTOR_EMAIL_ADDRESS] + EMAIL_ADMIN_LIST)
+        project_obj = get_object_or_404(Project, pk=int(pk))
+        self.fields['email_body'].initial = EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL.format(
+            first_name=user.first_name, project_name=project_obj.title
+        )
+        cc_list = {project_obj.pi.email, user.email}
+        self.fields['cc'].initial = ', '.join(cc_list)
 
 
 class ProjectReviewAllocationForm(forms.Form):
