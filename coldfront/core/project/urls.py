@@ -1,6 +1,5 @@
 from django.urls import path
 from django.views.generic import TemplateView
-from flags.urls import flagged_paths
 
 from flags.urls import flagged_paths
 

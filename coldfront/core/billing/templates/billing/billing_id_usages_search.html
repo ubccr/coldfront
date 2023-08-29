@@ -1,0 +1,137 @@
+{% extends "common/base.html" %}
+{% load common_tags %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}
+  LBL Project ID Usages
+{% endblock %}
+
+{% block content %}
+<script type='text/javascript' src="{% static 'selectize/selectize.min.js' %}"></script>
+<link rel='stylesheet' type='text/css' href="{% static 'selectize/selectize.bootstrap3.css' %}"/>
+
+<h1>LBL Project ID Usages</h1>
+<hr>
+
+<div class="mb-3" id="accordion">
+  <div class="card">
+    <div class="card-header">
+      <a id="expand_button" role="button" class="card-link " data-toggle="collapse" href="#collapseOne">
+        <i class="fas fa-filter" aria-hidden="true"></i> Search
+        <i id="plus_minus" class="fas {{expand_accordion|get_icon}} float-right"></i>
+      </a>
+    </div>
+    <div id="collapseOne" class="{{expand_accordion}}" data-parent="#accordion">
+      <div class="card-body">
+        <form id="search_form" method="GET" action="{% url 'billing-id-usages' %}" autocomplete="off">
+          {{ search_form|crispy }}
+          <input type="submit" class="btn btn-primary" value="Search">
+          <button id="form_reset_button" type="button" class="btn btn-secondary">Reset</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<h3>Project Default</h3>
+<p>The following project IDs are used as the default IDs for the respective projects.</p>
+<strong>Results Found: {{ project_default_usages|length }}</strong>
+<div class="table-responsive">
+  <table class="table table-sm">
+    <thead>
+      <tr>
+        <th scope="col" class="text-nowrap">
+          Project
+        </th>
+        <th scope="col" class="text-nowrap">
+          LBL Project ID
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for usage in project_default_usages %}
+      <tr>
+        <td>{{ usage.project_name }}</td>
+        <td>{{ usage.full_id }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<br>
+
+<h3>Recharge</h3>
+<p>The following project IDs are used for the recharge fee for the respective project users.</p>
+<strong>Results Found: {{ recharge_usages|length }}</strong>
+<div class="table-responsive">
+  <table class="table table-sm">
+    <thead>
+      <tr>
+        <th scope="col" class="text-nowrap">
+          Project
+        </th>
+        <th scope="col" class="text-nowrap">
+          User
+        </th>
+        <th scope="col" class="text-nowrap">
+          LBL Project ID
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for usage in recharge_usages %}
+      <tr>
+        <td>{{ usage.project_name }}</td>
+        <td>{{ usage.username }}</td>
+        <td>{{ usage.full_id }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<br>
+
+<h3>User Account</h3>
+<p>The following project IDs are used for the user account fee for the respective users.</p>
+<strong>Results Found: {{ user_account_usages|length }}</strong>
+<div class="table-responsive">
+  <table class="table table-sm">
+    <thead>
+      <tr>
+        <th scope="col" class="text-nowrap">
+          User
+        </th>
+        <th scope="col" class="text-nowrap">
+          LBL Project ID
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for usage in user_account_usages %}
+      <tr>
+        <td>{{ usage.username }}</td>
+        <td>{{ usage.full_id }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<br>
+
+<script>
+  $('select').selectize({
+    create: false,
+    sortField: 'text'
+  });
+</script>
+
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-admin").addClass("active");
+  $("#navbar-billing-id-usages").addClass("active");
+</script>
+
+{% endblock %}
