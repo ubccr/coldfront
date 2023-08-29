@@ -126,6 +126,39 @@ class SavioProjectRequestMixin(object):
         factory = NewProjectExtraFieldsFormFactory()
         return factory.get_form(computing_allowance, **kwargs)
 
+    def get_service_units_to_allocate(self):
+        """Return the possibly-prorated number of service units to
+        allocate to the project.
+
+        If the request was created as part of an allocation renewal, it
+        may be associated with at most one AllocationRenewalRequest. If
+        so, service units will be allocated when the latter request is
+        approved."""
+        if AllocationRenewalRequest.objects.filter(
+                new_project_request=self.request_obj).exists():
+            return settings.ALLOCATION_MIN
+        if self.computing_allowance_obj.are_service_units_user_specified():
+            num_service_units_int = self.request_obj.extra_fields[
+                'num_service_units']
+            num_service_units = Decimal(f'{num_service_units_int:.2f}')
+        else:
+            allowance_name = self.request_obj.computing_allowance.name
+
+            allocation_period = self.request_obj.allocation_period
+            kwargs = {}
+            if allocation_period:
+                kwargs['is_timed'] = True
+                kwargs['allocation_period'] = allocation_period
+            num_service_units = Decimal(
+                self.interface.service_units_from_name(
+                    allowance_name, **kwargs))
+
+            if self.computing_allowance_obj.are_service_units_prorated():
+                num_service_units = prorated_allocation_amount(
+                    num_service_units, self.request_obj.request_time,
+                    self.request_obj.allocation_period)
+        return num_service_units
+
     def get_survey_form(self):
         """Return a disabled form containing the survey answers for the
         request."""
@@ -187,6 +220,10 @@ class SavioProjectRequestMixin(object):
         context['allowance_requires_funds_transfer'] = (
             self.computing_allowance_obj.is_recharge() and
             context['allowance_has_extra_fields'])
+        try:
+            context['allocation_amount'] = self.get_service_units_to_allocate()
+        except Exception as e:
+            context['allocation_amount'] = 'Failed to compute.'
         context['survey_form'] = SavioProjectSurveyForm(
             initial=self.request_obj.survey_answers, disable_fields=True)
 
@@ -226,13 +263,6 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         self.set_common_context_data(context)
-
-        try:
-            context['allocation_amount'] = self.get_service_units_to_allocate()
-        except Exception as e:
-            self.logger.exception(e)
-            messages.error(self.request, self.error_message)
-            context['allocation_amount'] = 'Failed to compute.'
 
         try:
             latest_update_timestamp = \
@@ -421,31 +451,6 @@ class SavioProjectRequestDetailView(LoginRequiredMixin, UserPassesTestMixin,
         ])
 
         return checklist
-
-    def get_service_units_to_allocate(self):
-        """Return the possibly-prorated number of service units to
-        allocate to the project.
-
-        If the request was created as part of an allocation renewal, it
-        may be associated with at most one AllocationRenewalRequest. If
-        so, service units will be allocated when the latter request is
-        approved."""
-        if AllocationRenewalRequest.objects.filter(
-                new_project_request=self.request_obj).exists():
-            return settings.ALLOCATION_MIN
-        if self.computing_allowance_obj.are_service_units_user_specified():
-            num_service_units_int = self.request_obj.extra_fields[
-                'num_service_units']
-            num_service_units = Decimal(f'{num_service_units_int:.2f}')
-        else:
-            allowance_name = self.request_obj.computing_allowance.name
-            num_service_units = Decimal(
-                self.interface.service_units_from_name(allowance_name))
-            if self.computing_allowance_obj.are_service_units_prorated():
-                num_service_units = prorated_allocation_amount(
-                    num_service_units, self.request_obj.request_time,
-                    self.request_obj.allocation_period)
-        return num_service_units
 
     def get_setup_status(self):
         """Return one of the following statuses for the 'setup' step of

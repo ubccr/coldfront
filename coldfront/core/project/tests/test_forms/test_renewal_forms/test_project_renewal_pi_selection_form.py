@@ -10,6 +10,7 @@ from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.tests.utils import create_project_and_request
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.project.utils_.renewal_utils import get_next_allowance_year_period
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
 
@@ -24,8 +25,13 @@ class TestProjectRenewalPISelectionForm(TestBase):
         self.sign_user_access_agreement(self.user)
         self.client.login(username=self.user.username, password=self.password)
 
+        computing_allowance_interface = ComputingAllowanceInterface()
+        computing_allowance = self.get_predominant_computing_allowance()
+        self._project_prefix = computing_allowance_interface.code_from_name(
+            computing_allowance.name)
+
         # Create a Project for the user to renew.
-        project_name = 'fc_project'
+        project_name = f'{self._project_prefix}_project'
         active_project_status = ProjectStatusChoice.objects.get(name='Active')
         self.project = Project.objects.create(
             name=project_name,
@@ -47,9 +53,10 @@ class TestProjectRenewalPISelectionForm(TestBase):
         allocation_period = get_current_allowance_year_period()
 
         # Create a new project request.
-        computing_allowance = self.get_fca_computing_allowance()
+        computing_allowance = self.get_predominant_computing_allowance()
         new_project, new_project_request = create_project_and_request(
-            'fc_new_project', 'New', computing_allowance, allocation_period,
+            f'{self._project_prefix}_new_project', 'New',
+            computing_allowance, allocation_period,
             self.user, self.user, 'Under Review')
         self.assertNotEqual(new_project_request.status.name, 'Denied')
 
@@ -102,11 +109,12 @@ class TestProjectRenewalPISelectionForm(TestBase):
         """Test that PIs with non-'Denied'
         SavioProjectAllocationRequests are disabled in the 'PI'
         field."""
-        computing_allowance = self.get_fca_computing_allowance()
+        computing_allowance = self.get_predominant_computing_allowance()
         allocation_period = get_current_allowance_year_period()
         # Create a new project request.
         new_project, new_project_request = create_project_and_request(
-            'fc_new_project', 'New', computing_allowance, allocation_period,
+            f'{self._project_prefix}_new_project', 'New',
+            computing_allowance, allocation_period,
             self.user, self.user, 'Under Review')
 
         # For every status except 'Denied', the PI should be disabled.
@@ -133,7 +141,7 @@ class TestProjectRenewalPISelectionForm(TestBase):
     def test_pis_with_non_denied_allocation_renewal_requests_disabled(self):
         """Test that PIs with non-'Denied' AllocationRenewalRequests are
         disabled in the 'PI' field."""
-        computing_allowance = self.get_fca_computing_allowance()
+        computing_allowance = self.get_predominant_computing_allowance()
         allocation_period = get_current_allowance_year_period()
         # Create a renewal request.
         under_review_request_status = \

@@ -32,6 +32,7 @@ from coldfront.core.project.utils_.new_project_user_utils import NewProjectUserR
 from coldfront.core.project.utils_.new_project_user_utils import NewProjectUserSource
 from coldfront.core.project.models import ProjectUserJoinRequest
 from coldfront.core.resource.models import Resource
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.user.models import UserProfile
 from coldfront.core.utils.email.email_strategy import EnqueueEmailStrategy
 from coldfront.core.utils.tests.test_base import enable_deployment
@@ -63,31 +64,19 @@ class TestRunnerBase(TestBase):
         self.create_test_user()
         self.sign_user_access_agreement(self.user)
 
+        computing_allowance_interface = ComputingAllowanceInterface()
+        computing_allowance = self.get_predominant_computing_allowance()
+        prefix = computing_allowance_interface.code_from_name(
+            computing_allowance.name)
+
         # Create a Project with a computing allowance, along with an 'Active'
         # ProjectUser.
         self.project = self.create_active_project_with_pi(
-            'fc_project', self.user)
+            f'{prefix}_project', self.user)
         accounting_allocation_objects = create_project_allocation(
             self.project, Decimal('0.00'))
         self.allocation = accounting_allocation_objects.allocation
         self.project_user = self.project.projectuser_set.get(user=self.user)
-
-
-class TestNewProjectUserRunnerFactory(TestRunnerBase):
-    """A class for testing NewProjectUserRunnerFactory."""
-
-    def test_creates_expected_runner(self):
-        """Test that the factory creates the expected runner, based on
-        feature flags."""
-        factory = NewProjectUserRunnerFactory()
-        with enable_deployment('BRC'):
-            runner = factory.get_runner(
-                self.project_user, NewProjectUserSource.ADDED)
-            self.assertIsInstance(runner, BRCNewProjectUserRunner)
-        with enable_deployment('LRC'):
-            runner = factory.get_runner(
-                self.project_user, NewProjectUserSource.JOINED)
-            self.assertIsInstance(runner, LRCNewProjectUserRunner)
 
 
 class TestCommonRunnerMixin(object):
@@ -471,6 +460,14 @@ class TestBRCNewProjectUserRunner(TestCommonRunnerMixin, TestRunnerBase):
 
         self.assertEqual(len(mail.outbox), 4)
 
+    @enable_deployment('BRC')
+    def test_factory_creates_expected_runner(self):
+        """Test that the factory creates the BRC runner."""
+        factory = NewProjectUserRunnerFactory()
+        runner = factory.get_runner(
+            self.project_user, NewProjectUserSource.ADDED)
+        self.assertIsInstance(runner, BRCNewProjectUserRunner)
+
 
 class TestLRCNewProjectUserRunner(TestCommonRunnerMixin, TestRunnerBase):
     """A class for testing LRCNewProjectUserRunner."""
@@ -480,6 +477,10 @@ class TestLRCNewProjectUserRunner(TestCommonRunnerMixin, TestRunnerBase):
         """Set up test data."""
         super().setUp()
         self._deployment_name = 'LRC'
+
+        self.project.name = 'pc_project'
+        self.project.save()
+
         # Create another PI.
         self.pi = User.objects.create(username='pi0', email='pi0@lbl.gov')
         user_profile = UserProfile.objects.get(user=self.pi)
@@ -502,6 +503,14 @@ class TestLRCNewProjectUserRunner(TestCommonRunnerMixin, TestRunnerBase):
                 name='Billing Activity'),
             allocation=self.allocation,
             value=str(self.billing_activity.pk))
+
+    @enable_deployment('LRC')
+    def test_factory_creates_expected_runner(self):
+        """Test that the factory creates the LRC runner."""
+        factory = NewProjectUserRunnerFactory()
+        runner = factory.get_runner(
+            self.project_user, NewProjectUserSource.ADDED)
+        self.assertIsInstance(runner, LRCNewProjectUserRunner)
 
     @enable_deployment('LRC')
     def test_set_billing_activities_failure(self):

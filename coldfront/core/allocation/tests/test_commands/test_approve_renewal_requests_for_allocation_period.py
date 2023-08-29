@@ -5,8 +5,11 @@ import iso8601
 
 from django.contrib.auth.models import User
 from django.core import mail
+from django.core.exceptions import ImproperlyConfigured
 from django.core.management import call_command
 from django.core.management.base import CommandError
+
+from flags.state import flag_enabled
 
 from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationRenewalRequest
@@ -17,6 +20,7 @@ from coldfront.core.project.utils_.renewal_utils import get_current_allowance_ye
 from coldfront.core.project.utils_.renewal_utils import get_next_allowance_year_period
 from coldfront.core.resource.models import Resource
 from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
+from coldfront.core.resource.utils_.allowance_utils.constants import LRCAllowances
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import display_time_zone_date_to_utc_datetime
@@ -32,10 +36,19 @@ class TestApproveRenewalRequestsForAllocationPeriod(TestBase):
     def setUp(self):
         """Set up test data."""
         super().setUp()
-        computing_allowance = Resource.objects.get(name=BRCAllowances.FCA)
+        if flag_enabled('BRC_ONLY'):
+            self.computing_allowance_name = BRCAllowances.FCA
+        elif flag_enabled('LRC_ONLY'):
+            self.computing_allowance_name = LRCAllowances.PCA
+        else:
+            raise ImproperlyConfigured
+        computing_allowance = Resource.objects.get(
+            name=self.computing_allowance_name)
+        next_allocation_period = get_next_allowance_year_period()
         self.num_service_units = Decimal(
             ComputingAllowanceInterface().service_units_from_name(
-                computing_allowance.name))
+                computing_allowance.name, is_timed=True,
+                allocation_period=next_allocation_period))
 
     @staticmethod
     def call_command(allocation_period_id, dry_run=False):
@@ -52,8 +65,7 @@ class TestApproveRenewalRequestsForAllocationPeriod(TestBase):
         call_command(*args, **kwargs)
         return out.getvalue(), err.getvalue()
 
-    @staticmethod
-    def create_request_and_supporting_objects(allocation_period):
+    def create_request_and_supporting_objects(self, allocation_period):
         """Create and return an AllocationRenewalRequest, a Project, a
         requester, and a PI, under the given AllocationPeriod."""
         project_name = 'fc_project'
@@ -77,7 +89,8 @@ class TestApproveRenewalRequestsForAllocationPeriod(TestBase):
         request = AllocationRenewalRequest.objects.create(
             requester=requester,
             pi=pi,
-            computing_allowance=Resource.objects.get(name=BRCAllowances.FCA),
+            computing_allowance=Resource.objects.get(
+                name=self.computing_allowance_name),
             allocation_period=allocation_period,
             status=AllocationRenewalRequestStatusChoice.objects.get(
                 name='Under Review'),
@@ -97,6 +110,9 @@ class TestApproveRenewalRequestsForAllocationPeriod(TestBase):
     def test_allocation_period_not_allowance_year(self):
         """Test that an Allocation Period that does not represent an
         allowance year raises an error."""
+        if flag_enabled('LRC_ONLY'):
+            # There are no such periods on LRC.
+            return
         _id = AllocationPeriod.objects.exclude(
             name__startswith='Allowance Year').first().id
         with self.assertRaises(CommandError) as cm:
@@ -117,8 +133,9 @@ class TestApproveRenewalRequestsForAllocationPeriod(TestBase):
     def test_requests_limited_by_conditions(self):
         """Test that a request is only considered if it meets the
         following conditions: its status is 'Under Review', its
-        post_project is an FCA, its allocation_period is the given one,
-        and its request_time is before the start_date of the period."""
+        post_project is an FCA (BRC) or PCA (LRC), its allocation_period
+        is the given one, and its request_time is before the start_date
+        of the period."""
         # A condition-meeting request should be included.
         allocation_period = get_next_allowance_year_period()
         _id = allocation_period.id
@@ -150,17 +167,26 @@ class TestApproveRenewalRequestsForAllocationPeriod(TestBase):
         self.assertIn(expected_message, output)
         self.assertFalse(error)
 
-        # Non-FCA/PCA project
+        # Non-FCA (BRC) or PCA (LRC) project
         project = request.post_project
         tmp_project_name = project.name
         tmp_computing_allowance = request.computing_allowance
         computing_allowance_interface = ComputingAllowanceInterface()
-        allowance_names = (
-            BRCAllowances.CO,
-            BRCAllowances.ICA,
-            BRCAllowances.PCA,
-            BRCAllowances.RECHARGE,
-        )
+
+        if flag_enabled('BRC_ONLY'):
+            allowance_names = (
+                BRCAllowances.CO,
+                BRCAllowances.ICA,
+                BRCAllowances.PCA,
+                BRCAllowances.RECHARGE,
+            )
+        elif flag_enabled('LRC_ONLY'):
+            allowance_names = (
+                LRCAllowances.LR,
+                LRCAllowances.RECHARGE,
+            )
+        else:
+            raise ImproperlyConfigured
         for allowance_name in allowance_names:
             prefix = computing_allowance_interface.code_from_name(
                 allowance_name)

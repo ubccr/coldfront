@@ -10,7 +10,6 @@ from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils_.new_project_utils import ProjectDenialRunner
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.resource.models import Resource
-from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
@@ -30,8 +29,12 @@ class TestProjectDenialRunner(TestBase):
         """Test that when a SavioProjectAllocationRequest that is
         referenced by an AllocationRenewalRequest is denied, the latter
         is also denied."""
+        interface = ComputingAllowanceInterface()
+        computing_allowance = self.get_predominant_computing_allowance()
+        prefix = interface.code_from_name(computing_allowance.name)
+
         # Create a Project for the user to currently be on.
-        old_project_name = 'old_project'
+        old_project_name = f'{prefix}_old_project'
         active_project_status = ProjectStatusChoice.objects.get(name='Active')
         old_project = Project.objects.create(
             name=old_project_name,
@@ -48,7 +51,7 @@ class TestProjectDenialRunner(TestBase):
             user=self.user)
 
         # Create a new Project.
-        new_project_name = 'unpooled_project2'
+        new_project_name = f'{prefix}_unpooled_project2'
         new_project_status = ProjectStatusChoice.objects.get(name='New')
         new_project = Project.objects.create(
             name=new_project_name,
@@ -61,8 +64,6 @@ class TestProjectDenialRunner(TestBase):
         under_review_request_status = \
             ProjectAllocationRequestStatusChoice.objects.get(
                 name='Under Review')
-        computing_allowance = Resource.objects.get(name=BRCAllowances.FCA)
-        interface = ComputingAllowanceInterface()
         new_project_request = SavioProjectAllocationRequest.objects.create(
             requester=self.user,
             allocation_type=interface.name_short_from_name(

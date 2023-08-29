@@ -125,9 +125,6 @@ class AllocationRenewalMixin(object):
                 'One of the following flags must be enabled: BRC_ONLY, '
                 'LRC_ONLY.')
         self.interface = ComputingAllowanceInterface()
-        self.num_service_units = Decimal(
-            self.interface.service_units_from_name(
-                self.computing_allowance.name))
 
     @staticmethod
     def create_allocation_renewal_request(requester, pi, computing_allowance,
@@ -180,6 +177,18 @@ class AllocationRenewalMixin(object):
                 logger.error(
                     f'Failed to send notification email. Details:\n')
                 logger.exception(e)
+
+    def _get_service_units_to_allocate(self, allocation_period):
+        """Return the number of service units to allocate to the project
+        if the renewal were to be approved now for the given
+        AllocationPeriod."""
+        # TODO: Modify this as needed when supporting other types.
+        num_service_units = Decimal(
+            self.interface.service_units_from_name(
+                self.computing_allowance.name, is_timed=True,
+                allocation_period=allocation_period))
+        return prorated_allocation_amount(
+            num_service_units, utc_now_offset_aware(), allocation_period)
 
 
 class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
@@ -488,9 +497,9 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
                 str(allocation_period_form_step))
             if data:
                 dictionary.update(data)
-                dictionary['allocation_amount'] = prorated_allocation_amount(
-                    self.num_service_units, utc_now_offset_aware(),
-                    data['allocation_period'])
+                dictionary['allocation_amount'] = \
+                    self._get_service_units_to_allocate(
+                        data['allocation_period'])
 
         pi_selection_form_step = self.step_numbers_by_form_name['pi_selection']
         if step > pi_selection_form_step:
@@ -663,10 +672,9 @@ class AllocationRenewalRequestUnderProjectView(LoginRequiredMixin,
                 str(allocation_period_form_step))
             if data:
                 dictionary.update(data)
-                # TODO: Set this dynamically when supporting other types.
-                dictionary['allocation_amount'] = prorated_allocation_amount(
-                    self.num_service_units, utc_now_offset_aware(),
-                    data['allocation_period'])
+                dictionary['allocation_amount'] = \
+                    self._get_service_units_to_allocate(
+                        data['allocation_period'])
 
         pi_selection_form_step = self.step_numbers_by_form_name['pi_selection']
         if step > pi_selection_form_step:

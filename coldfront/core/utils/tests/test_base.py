@@ -8,6 +8,7 @@ import sys
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.messages import get_messages
+from django.core.exceptions import ImproperlyConfigured
 from django.core.management import call_command
 from django.test import Client
 from django.test import override_settings
@@ -26,17 +27,10 @@ from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.resource.models import Resource
 from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
+from coldfront.core.resource.utils_.allowance_utils.constants import LRCAllowances
 from coldfront.core.utils.common import utc_now_offset_aware
 
 
-# TODO: Because FLAGS is set directly in settings, the disable_flag method has
-# TODO: no effect. A better approach is to have a dedicated test_settings
-# TODO: module that is used exclusively for testing.
-FLAGS_COPY = deepcopy(settings.FLAGS)
-FLAGS_COPY.pop('LRC_ONLY')
-
-
-@override_settings(FLAGS=FLAGS_COPY, PRIMARY_CLUSTER_NAME='Savio')
 class TestBase(TestCase):
     """A base class for testing the application."""
 
@@ -86,7 +80,7 @@ class TestBase(TestCase):
         # Run the setup commands with the BRC_ONLY flag enabled.
         # TODO: Implement a long-term solution that enables testing of multiple
         # TODO: types of deployments.
-        enable_flag('BRC_ONLY', create_boolean_condition=True)
+        # enable_flag('BRC_ONLY', create_boolean_condition=True)
         enable_flag('SERVICE_UNITS_PURCHASABLE', create_boolean_condition=True)
 
         out, err = StringIO(), StringIO()
@@ -94,8 +88,8 @@ class TestBase(TestCase):
             'add_resource_defaults',
             'add_allocation_defaults',
             'add_accounting_defaults',
-            'add_allowance_defaults',
             'create_allocation_periods',
+            'add_allowance_defaults',
             # This command calls 'print', whose output must be suppressed.
             'import_field_of_science_data',
             'add_default_project_choices',
@@ -141,9 +135,16 @@ class TestBase(TestCase):
         return self.user
 
     @staticmethod
-    def get_fca_computing_allowance():
-        """Return the FCA Resource."""
-        return Resource.objects.get(name=BRCAllowances.FCA)
+    def get_predominant_computing_allowance():
+        """Return the most-allocated Computing Allowance Resource: FCA
+        on BRC, or PCA on LRC."""
+        if flag_enabled('BRC_ONLY'):
+            computing_allowance_name = BRCAllowances.FCA
+        elif flag_enabled('LRC_ONLY'):
+            computing_allowance_name = LRCAllowances.PCA
+        else:
+            raise ImproperlyConfigured
+        return Resource.objects.get(name=computing_allowance_name)
 
     @staticmethod
     def get_message_strings(response):
@@ -184,9 +185,15 @@ class enable_deployment(TestContextDecorator):
         if self._deployment_name == 'BRC':
             self._flag_to_enable = 'BRC_ONLY'
             self._flag_to_disable = 'LRC_ONLY'
+            self._settings = {
+                'PRIMARY_CLUSTER_NAME': 'Savio',
+            }
         else:
             self._flag_to_enable = 'LRC_ONLY'
             self._flag_to_disable = 'BRC_ONLY'
+            self._settings = {
+                'PRIMARY_CLUSTER_NAME': 'Lawrencium',
+            }
 
         self._pre_states = {
             flag_name: flag_enabled(flag_name) or False
@@ -201,7 +208,8 @@ class enable_deployment(TestContextDecorator):
         flags_copy[self._flag_to_disable] = {
             'condition': 'boolean', 'value': False}
 
-        self._override_settings_cm = override_settings(FLAGS=flags_copy)
+        self._override_settings_cm = override_settings(
+            FLAGS=flags_copy, **self._settings)
         self._override_settings_cm.__enter__()
 
         enable_flag(self._flag_to_enable)

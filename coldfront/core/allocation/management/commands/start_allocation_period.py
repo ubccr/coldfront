@@ -228,7 +228,8 @@ class Command(BaseCommand):
         eligible_requests = model.objects.filter(
             allocation_period=allocation_period, status__name='Approved')
         self.process_requests(
-            model, runner_class, eligible_requests, skip_emails, dry_run)
+            allocation_period, model, runner_class, eligible_requests,
+            skip_emails, dry_run)
 
     def process_new_project_requests(self, allocation_period, skip_emails,
                                      dry_run):
@@ -242,14 +243,16 @@ class Command(BaseCommand):
             allocation_period=allocation_period,
             status__name='Approved - Scheduled')
         self.process_requests(
-            model, runner_class, eligible_requests, skip_emails, dry_run)
+            allocation_period, model, runner_class, eligible_requests,
+            skip_emails, dry_run)
 
-    def process_requests(self, model, runner_class, requests, skip_emails,
-                         dry_run):
-        """Given a request model, a runner class for processing
-        instances of that model, and a queryset of instances to process,
-        run the runner on each instance. Optionally skip sending emails.
-        Optionally display updates instead of performing them."""
+    def process_requests(self, allocation_period, model, runner_class, requests,
+                         skip_emails, dry_run):
+        """Given an AllocationPeriod, a request model, a runner class
+        for processing instances of that model, and a queryset of
+        instances to process, run the runner on each instance.
+        Optionally skip sending emails. Optionally display updates
+        instead of performing them."""
         model_name = model.__name__
         num_successes, num_failures = 0, 0
 
@@ -263,7 +266,8 @@ class Command(BaseCommand):
                     data = {
                         'num_service_units': Decimal(
                             interface.service_units_from_name(
-                                wrapper.get_name())),
+                                wrapper.get_name(), is_timed=True,
+                                allocation_period=allocation_period)),
                         'is_prorated': wrapper.are_service_units_prorated(),
                     }
                     cached_allowance_data[computing_allowance] = data

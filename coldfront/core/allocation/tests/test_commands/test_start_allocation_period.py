@@ -36,11 +36,14 @@ from coldfront.core.project.utils_.renewal_utils import get_current_allowance_ye
 from coldfront.core.project.utils_.renewal_utils import get_previous_allowance_year_period
 from coldfront.core.project.utils_.renewal_utils import get_next_allowance_year_period
 from coldfront.core.resource.models import Resource
+from coldfront.core.resource.models import ResourceAttributeType
+from coldfront.core.resource.models import TimedResourceAttribute
 from coldfront.core.resource.utils import get_primary_compute_resource
 from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import utc_now_offset_aware
+from coldfront.core.utils.tests.test_base import enable_deployment
 from coldfront.core.utils.tests.test_base import TestBase
 
 
@@ -58,6 +61,7 @@ class TestStartAllocationPeriod(TestBase):
     """A class for testing the start_allocation_period management
     command."""
 
+    @enable_deployment('BRC')
     def setUp(self):
         """Set up test data."""
         super().setUp()
@@ -76,6 +80,15 @@ class TestStartAllocationPeriod(TestBase):
             name='Instructional Period',
             start_date=self.current_date,
             end_date=self.current_date + timedelta(days=90))
+        # Create a corresponding TimedResourceAttribute for it.
+        TimedResourceAttribute.objects.create(
+            resource=Resource.objects.get(
+                name='Instructional Computing Allowance'),
+            resource_attribute_type=ResourceAttributeType.objects.get(
+                name='Service Units'),
+            start_date=self.current_instructional_period.start_date,
+            end_date=self.current_instructional_period.end_date,
+            value='200000.00')
 
         self.computing_allowance_interface = ComputingAllowanceInterface()
 
@@ -92,17 +105,19 @@ class TestStartAllocationPeriod(TestBase):
             BRCAllowances.ICA: self.previous_instructional_period,
             BRCAllowances.PCA: self.previous_allowance_year,
         }
-        self.num_service_units_by_allowance = {
+        self.previous_num_service_units_by_allowance = {
             allowance_name:
                 Decimal(
                     self.computing_allowance_interface.service_units_from_name(
-                        allowance_name))
+                        allowance_name, is_timed=True,
+                        allocation_period=self.previous_allocation_periods_by_allowance[
+                            allowance_name]))
             for allowance_name in computing_allowances}
         self.usages_by_allowance = {
             allowance_name: (
-                self.num_service_units_by_allowance[allowance_name] -
+                self.previous_num_service_units_by_allowance[allowance_name] -
                 Decimal('0.01'))
-            for allowance_name in self.num_service_units_by_allowance}
+            for allowance_name in self.previous_num_service_units_by_allowance}
         projects_by_name = {}
         self.project_user_data_by_name = {}
         num_extra_users_per_project = 5
@@ -110,7 +125,7 @@ class TestStartAllocationPeriod(TestBase):
             project_name_prefix = \
                 self.computing_allowance_interface.code_from_name(
                     allowance_name)
-            num_service_units = self.num_service_units_by_allowance[
+            num_service_units = self.previous_num_service_units_by_allowance[
                 allowance_name]
             usage = self.usages_by_allowance[allowance_name]
             allocation_period = self.previous_allocation_periods_by_allowance[
@@ -136,7 +151,8 @@ class TestStartAllocationPeriod(TestBase):
                 name='Approved'),
             pre_project=fc_existing,
             post_project=fc_existing,
-            num_service_units=self.num_service_units_by_allowance[BRCAllowances.FCA],
+            num_service_units=self.previous_num_service_units_by_allowance[
+                BRCAllowances.FCA],
             request_time=utc_now_offset_aware(),
             approval_time=utc_now_offset_aware())
 
@@ -147,15 +163,23 @@ class TestStartAllocationPeriod(TestBase):
             BRCAllowances.ICA: self.current_instructional_period,
             BRCAllowances.PCA: self.current_allowance_year,
         }
+        self.current_num_service_units_by_allowance = {
+            allowance_name:
+                Decimal(
+                    self.computing_allowance_interface.service_units_from_name(
+                        allowance_name, is_timed=True,
+                        allocation_period=self.current_allocation_periods_by_allowance[
+                            allowance_name]))
+            for allowance_name in computing_allowances}
         for allowance_name, computing_allowance in computing_allowances.items():
             project_name_prefix = \
                 self.computing_allowance_interface.code_from_name(
                     allowance_name)
-            num_service_units = prorated_allocation_amount(
-                self.num_service_units_by_allowance[allowance_name],
-                utc_now_offset_aware(), allocation_period)
             allocation_period = self.current_allocation_periods_by_allowance[
                 allowance_name]
+            num_service_units = prorated_allocation_amount(
+                self.current_num_service_units_by_allowance[allowance_name],
+                utc_now_offset_aware(), allocation_period)
             name = f'{project_name_prefix}new'
             projects_by_name[name] = self.create_project(
                 name, computing_allowance, allocation_period, num_service_units,
@@ -185,7 +209,7 @@ class TestStartAllocationPeriod(TestBase):
 
         allowance_name = self.allowance_name_from_project_name(project)
 
-        pre_allocation_allowance = self.num_service_units_by_allowance[
+        pre_allocation_allowance = self.previous_num_service_units_by_allowance[
             allowance_name]
         allocation_attribute = objects.allocation_attribute
         self.assertEqual(
@@ -262,7 +286,7 @@ class TestStartAllocationPeriod(TestBase):
                 status__name='Approved - Scheduled')
             self.assertEqual(requests.count(), expected_num)
             for request in requests:
-                num_service_units = self.num_service_units_by_allowance[
+                num_service_units = self.current_num_service_units_by_allowance[
                     allowance_name]
                 if allowance_name != BRCAllowances.ICA:
                     num_service_units = prorated_allocation_amount(
@@ -409,7 +433,7 @@ class TestStartAllocationPeriod(TestBase):
             post_time)
 
         post_allocation_allowance = prorated_allocation_amount(
-            self.num_service_units_by_allowance[allowance_name],
+            self.current_num_service_units_by_allowance[allowance_name],
             utc_now_offset_aware(), allocation_period)
         latest_allocation_attribute_values = (
             (str(post_allocation_allowance), True),
@@ -446,7 +470,7 @@ class TestStartAllocationPeriod(TestBase):
         objects = get_accounting_allocation_objects(
             project, enforce_allocation_active=False)
 
-        pre_allocation_allowance = self.num_service_units_by_allowance[
+        pre_allocation_allowance = self.previous_num_service_units_by_allowance[
             allowance_name]
         pre_allocation_usage = self.usages_by_allowance[allowance_name]
 
@@ -483,7 +507,7 @@ class TestStartAllocationPeriod(TestBase):
             post_time)
 
         post_allocation_allowance = prorated_allocation_amount(
-            self.num_service_units_by_allowance[allowance_name],
+            self.current_num_service_units_by_allowance[allowance_name],
             utc_now_offset_aware(), allocation_period)
         latest_allocation_attribute_values = (
             (str(zero), True),
@@ -551,7 +575,7 @@ class TestStartAllocationPeriod(TestBase):
 
         objects = get_accounting_allocation_objects(project)
 
-        pre_allocation_allowance = self.num_service_units_by_allowance[
+        pre_allocation_allowance = self.previous_num_service_units_by_allowance[
             allowance_name]
         pre_allocation_usage = self.usages_by_allowance[allowance_name]
 
@@ -592,7 +616,7 @@ class TestStartAllocationPeriod(TestBase):
             post_time)
 
         post_allocation_allowance = prorated_allocation_amount(
-            self.num_service_units_by_allowance[allowance_name],
+            self.current_num_service_units_by_allowance[allowance_name],
             utc_now_offset_aware(), allocation_period)
         latest_allocation_attribute_values = (
             (str(post_allocation_allowance), True),
@@ -692,7 +716,7 @@ class TestStartAllocationPeriod(TestBase):
                 status__name='Approved')
             self.assertEqual(requests.count(), expected_num)
             for request in requests:
-                num_service_units = self.num_service_units_by_allowance[
+                num_service_units = self.current_num_service_units_by_allowance[
                     allowance_name]
                 if allowance_name != BRCAllowances.ICA:
                     num_service_units = prorated_allocation_amount(
@@ -840,6 +864,7 @@ class TestStartAllocationPeriod(TestBase):
         usage.value = str(value)
         usage.save()
 
+    @enable_deployment('BRC')
     def test_allocation_period_nonexistent(self):
         """Test that an ID for a nonexistent AllocationPeriod raises an
         error."""
@@ -848,6 +873,7 @@ class TestStartAllocationPeriod(TestBase):
             self.call_command(_id)
         self.assertIn('does not exist', str(cm.exception))
 
+    @enable_deployment('BRC')
     def test_allocation_period_not_current(self):
         """Test that an ID for an AllocationPeriod whose start and end
         dates do not include the current date raises an error."""
@@ -858,6 +884,7 @@ class TestStartAllocationPeriod(TestBase):
                 self.call_command(_id)
             self.assertIn('is not current', str(cm.exception))
 
+    @enable_deployment('BRC')
     def test_allocation_renewal_request_processing_eligibility(self):
         """Test that AllocationRenewalRequests that do not meet all
         conditions for processing are not processed."""
@@ -903,6 +930,7 @@ class TestStartAllocationPeriod(TestBase):
                 self.assertNotIn(fc_message, output)
             self.assertFalse(error)
 
+    @enable_deployment('BRC')
     def test_failed_deactivations_preempt_processing(self):
         """Test that, if one or more Projects fail to be deactivated,
         request processing does not proceed."""
@@ -959,6 +987,7 @@ class TestStartAllocationPeriod(TestBase):
             AllocationRenewalRequest.objects.filter(
                 status__name='Complete').count())
 
+    @enable_deployment('BRC')
     def test_multiple_runs_avoid_redundant_work(self):
         """Test that running the command multiple times does not
         re-deactivate Projects or re-process already completed
@@ -1012,6 +1041,7 @@ class TestStartAllocationPeriod(TestBase):
         self.assertIn('Processed 0 AllocationRenewalRequests', output)
         self.assertFalse(error)
 
+    @enable_deployment('BRC')
     def test_new_project_request_processing_eligibility(self):
         """Test that new project requests that do not meet all
         conditions for processing are not processed."""
@@ -1064,6 +1094,7 @@ class TestStartAllocationPeriod(TestBase):
                 self.assertNotIn(pc_message, output)
             self.assertFalse(error)
 
+    @enable_deployment('BRC')
     def test_output_for_allowance_year_period(self):
         """Test that the messages written to stdout and stderr are
         exactly the ones expected for an AllocationPeriod representing
@@ -1098,6 +1129,7 @@ class TestStartAllocationPeriod(TestBase):
                 deepcopy(num_sus_by_new_project_request_id),
                 deepcopy(num_sus_by_renewal_request_id), dry_run=dry_run)
 
+    @enable_deployment('BRC')
     def test_output_for_instructional_period(self):
         """Test that the messages written to stdout and stderr are
         exactly the ones expected for an AllocationPeriod representing
@@ -1131,6 +1163,7 @@ class TestStartAllocationPeriod(TestBase):
                 deepcopy(num_sus_by_new_project_request_id),
                 deepcopy(num_sus_by_renewal_request_id), dry_run=dry_run)
 
+    @enable_deployment('BRC')
     def test_project_deactivation_eligibility(self):
         """Test that Projects that do not meet all conditions for
         deactivation are not deactivated."""
@@ -1217,6 +1250,7 @@ class TestStartAllocationPeriod(TestBase):
 
         assert_message_in_command_output(True)
 
+    @enable_deployment('BRC')
     def test_skip_deactivations_flag(self):
         """Test that deactivations are not run if the skip_deactivations
         flag is provided."""
@@ -1250,6 +1284,7 @@ class TestStartAllocationPeriod(TestBase):
             self.assertNotIn('Deactivated', output)
             self.assertFalse(error)
 
+    @enable_deployment('BRC')
     def test_starts_allowance_year_period(self):
         """Test that an AllocationPeriod representing an allowance year
         is started properly."""
@@ -1298,6 +1333,7 @@ class TestStartAllocationPeriod(TestBase):
         ic_new.refresh_from_db()
         self.assertEqual(ic_new.status.name, 'New')
 
+    @enable_deployment('BRC')
     def test_starts_instructional_period(self):
         """Test that an AllocationPeriod representing an instructional
         period is started properly."""

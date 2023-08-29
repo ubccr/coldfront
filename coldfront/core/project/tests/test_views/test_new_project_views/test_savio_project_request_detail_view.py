@@ -1,20 +1,27 @@
+from http import HTTPStatus
+
+from django.conf import settings
+from django.core import mail
+from django.core.exceptions import ImproperlyConfigured
+from django.urls import reverse
+
+from flags.state import flag_enabled
+
 from coldfront.api.statistics.utils import create_project_allocation
+from coldfront.core.billing.models import BillingActivity
+from coldfront.core.billing.models import BillingProject
 from coldfront.core.project.tests.utils import create_project_and_request
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.project.utils_.renewal_utils import get_next_allowance_year_period
 from coldfront.core.resource.models import Resource
 from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
+from coldfront.core.resource.utils_.allowance_utils.constants import LRCAllowances
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import format_date_month_name_day_year
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
 from decimal import Decimal
-
-from django.conf import settings
-from django.core import mail
-from django.urls import reverse
-from http import HTTPStatus
 
 
 class TestSavioProjectRequestDetailView(TestBase):
@@ -24,16 +31,33 @@ class TestSavioProjectRequestDetailView(TestBase):
         """Set up test data."""
         super().setUp()
         self.create_test_user()
+
+        if flag_enabled('LRC_ONLY'):
+            self.user.email = 'test_user@lbl.gov'
+            self.user.save()
+
         self.sign_user_access_agreement(self.user)
         self.client.login(username=self.user.username, password=self.password)
 
+        self.interface = ComputingAllowanceInterface()
+
         # Create a Project and a corresponding new project request.
-        computing_allowance = self.get_fca_computing_allowance()
+        computing_allowance = self.get_predominant_computing_allowance()
+        prefix = self.interface.code_from_name(computing_allowance.name)
         allocation_period = get_current_allowance_year_period()
         self.project, self.new_project_request = \
             create_project_and_request(
-                'fc_project', 'New', computing_allowance, allocation_period,
-                self.user, self.user, 'Approved - Processing')
+                f'{prefix}_project', 'New', computing_allowance,
+                allocation_period, self.user, self.user,
+                'Approved - Processing')
+
+        self.new_project_request.billing_activity = \
+            BillingActivity.objects.create(
+                billing_project=BillingProject.objects.create(
+                    identifier='000000'),
+                identifier='000')
+        self.new_project_request.save()
+
         # Create a 'CLUSTER_NAME Compute' Allocation for the Project.
         self.existing_service_units = Decimal('0.00')
         accounting_allocation_objects = create_project_allocation(
@@ -41,8 +65,6 @@ class TestSavioProjectRequestDetailView(TestBase):
         self.compute_allocation = accounting_allocation_objects.allocation
         self.service_units_attribute = \
             accounting_allocation_objects.allocation_attribute
-
-        self.interface = ComputingAllowanceInterface()
 
     @staticmethod
     def detail_view_url(pk):
@@ -201,7 +223,15 @@ class TestSavioProjectRequestDetailView(TestBase):
     def test_post_approves_and_processes_request_for_null_period_condo(self):
         """Test that a POST request for a new project request (Condo)
         with a null AllocationPeriod is both approved and processed."""
-        computing_allowance = Resource.objects.get(name=BRCAllowances.CO)
+        if flag_enabled('BRC_ONLY'):
+            computing_allowance_name = BRCAllowances.CO
+        elif flag_enabled('LRC_ONLY'):
+            computing_allowance_name = LRCAllowances.LR
+        else:
+            raise ImproperlyConfigured
+
+        computing_allowance = Resource.objects.get(
+            name=computing_allowance_name)
         project_name_prefix = self.interface.code_from_name(
             computing_allowance.name)
 
@@ -282,7 +312,15 @@ class TestSavioProjectRequestDetailView(TestBase):
     def test_post_approves_and_processes_request_for_null_period_recharge(self):
         """Test that a POST request for a new project request (Recharge)
         with a null AllocationPeriod is both approved and processed."""
-        computing_allowance = Resource.objects.get(name=BRCAllowances.RECHARGE)
+        if flag_enabled('BRC_ONLY'):
+            computing_allowance_name = BRCAllowances.RECHARGE
+        elif flag_enabled('LRC_ONLY'):
+            computing_allowance_name = LRCAllowances.RECHARGE
+        else:
+            raise ImproperlyConfigured
+
+        computing_allowance = Resource.objects.get(
+            name=computing_allowance_name)
         project_name_prefix = self.interface.code_from_name(
             computing_allowance.name)
 

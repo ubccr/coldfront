@@ -9,6 +9,7 @@ from coldfront.core.billing.utils import ProjectUserBillingActivityManager
 from coldfront.core.billing.utils import UserBillingActivityManager
 from coldfront.core.billing.utils.queries import get_or_create_billing_activity_from_full_id
 from coldfront.core.user.models import UserProfile
+from coldfront.core.utils.tests.test_base import enable_deployment
 
 
 class TestBillingActivityManagerBase(TestBillingBase):
@@ -18,6 +19,16 @@ class TestBillingActivityManagerBase(TestBillingBase):
     def setUp(self):
         """Set up test data."""
         super().setUp()
+
+        self.allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Billing Activity')
+
+        AllocationAttribute.objects.filter(
+            allocation_attribute_type=self.allocation_attribute_type,
+            allocation=self.allocation).delete()
+        AllocationUserAttribute.objects.filter(
+            allocation_attribute_type=self.allocation_attribute_type,
+            allocation=self.allocation).delete()
 
         self.billing_id_1 = '123456-789'
         self.billing_activity_1 = get_or_create_billing_activity_from_full_id(
@@ -31,14 +42,14 @@ class TestProjectBillingActivityManager(TestBillingActivityManagerBase):
     """A class for testing the ProjectBillingActivityManager utility
     class."""
 
+    @enable_deployment('LRC')
     def setUp(self):
         """Set up test data."""
         super().setUp()
 
-        self.allocation_attribute_type = AllocationAttributeType.objects.get(
-            name='Billing Activity')
         self.manager = ProjectBillingActivityManager(self.project)
 
+    @enable_deployment('LRC')
     def test_get_invalid_allocation_attribute_value(self):
         """Test that the getter raises an exception when the given
         Project's AllocationAttribute contains a value that does not
@@ -62,6 +73,7 @@ class TestProjectBillingActivityManager(TestBillingActivityManagerBase):
             _ = self.manager.billing_activity
         self.assertIn('does not exist', str(cm.exception))
 
+    @enable_deployment('LRC')
     def test_get_nonexistent_allocation_attribute(self):
         """Test that the getter returns None when the given Project does
         not have an associated AllocationAttribute for storing a
@@ -80,6 +92,7 @@ class TestProjectBillingActivityManager(TestBillingActivityManagerBase):
         self.assertEqual(
             self.manager.billing_activity, self.billing_activity_1)
 
+    @enable_deployment('LRC')
     def test_get_refreshes_value(self):
         """Test that the getter returns the most up-to-date
         BillingActivity stored in the AllocationAttribute, accounting
@@ -102,6 +115,7 @@ class TestProjectBillingActivityManager(TestBillingActivityManagerBase):
         allocation_attribute.delete()
         self.assertIsNone(self.manager.billing_activity)
 
+    @enable_deployment('LRC')
     def test_set_creates_allocation_attribute_if_nonexistent(self):
         """Test that the setter creates an associated
         AllocationAttribute for the Project if one does not already
@@ -138,6 +152,7 @@ class TestProjectBillingActivityManager(TestBillingActivityManagerBase):
 
         self.assertGreater(new_attribute_pk, old_attribute_pk)
 
+    @enable_deployment('LRC')
     def test_set_updates_allocation_attribute_if_existent(self):
         """Test that the setter updates an associated
         AllocationAttribute for the Project if one already exists."""
@@ -162,16 +177,16 @@ class TestProjectUserBillingActivityManager(TestBillingActivityManagerBase):
     """A class for testing the ProjectUserBillingActivityManager utility
     class."""
 
+    @enable_deployment('LRC')
     def setUp(self):
         """Set up test data."""
         super().setUp()
 
         self.allocation_user = AllocationUser.objects.get(
             allocation=self.allocation, user=self.user)
-        self.allocation_attribute_type = AllocationAttributeType.objects.get(
-            name='Billing Activity')
         self.manager = ProjectUserBillingActivityManager(self.project_user)
 
+    @enable_deployment('LRC')
     def test_get_invalid_allocation_user_attribute_value(self):
         """Test that the getter raises an exception when the given
         ProjectUser's AllocationUserAttribute contains a value that does
@@ -196,6 +211,7 @@ class TestProjectUserBillingActivityManager(TestBillingActivityManagerBase):
             _ = self.manager.billing_activity
         self.assertIn('does not exist', str(cm.exception))
 
+    @enable_deployment('LRC')
     def test_get_nonexistent_allocation_user_attribute(self):
         """Test that the getter returns None when the given ProjectUser
         does not have an associated AllocationUserAttribute for storing
@@ -218,6 +234,7 @@ class TestProjectUserBillingActivityManager(TestBillingActivityManagerBase):
         self.assertEqual(
             self.manager.billing_activity, self.billing_activity_1)
 
+    @enable_deployment('LRC')
     def test_get_refreshes_value(self):
         """Test that the getter returns the most up-to-date
         BillingActivity stored in the AllocationUserAttribute,
@@ -241,6 +258,7 @@ class TestProjectUserBillingActivityManager(TestBillingActivityManagerBase):
         allocation_user_attribute.delete()
         self.assertIsNone(self.manager.billing_activity)
 
+    @enable_deployment('LRC')
     def test_set_creates_allocation_user_attribute_if_nonexistent(self):
         """Test that the setter creates an associated
         AllocationUserAttribute for the ProjectUser if one does not
@@ -280,6 +298,7 @@ class TestProjectUserBillingActivityManager(TestBillingActivityManagerBase):
 
         self.assertGreater(new_attribute_pk, old_attribute_pk)
 
+    @enable_deployment('LRC')
     def test_set_updates_allocation_user_attribute_if_existent(self):
         """Test that the setter updates an associated
         AllocationUserAttribute for the ProjectUser if one already
@@ -305,6 +324,7 @@ class TestUserBillingActivityManager(TestBillingActivityManagerBase):
     """A class for testing the UserBillingActivityManager utility
     class."""
 
+    @enable_deployment('LRC')
     def setUp(self):
         """Set up test data."""
         super().setUp()
@@ -312,6 +332,7 @@ class TestUserBillingActivityManager(TestBillingActivityManagerBase):
         self.user.userprofile.delete()
         self.manager = UserBillingActivityManager(self.user)
 
+    @enable_deployment('LRC')
     def test_get_nonexistent_user_profile(self):
         """Test that the getter returns None when the given User does
         not have an associated UserProfile for storing a
@@ -328,6 +349,7 @@ class TestUserBillingActivityManager(TestBillingActivityManagerBase):
         self.assertEqual(
             self.manager.billing_activity, self.billing_activity_1)
 
+    @enable_deployment('LRC')
     def test_get_refreshes_value(self):
         """Test that the getter returns the most up-to-date
         BillingActivity stored in the UserProfile, accounting for
@@ -348,6 +370,7 @@ class TestUserBillingActivityManager(TestBillingActivityManagerBase):
         user_profile.delete()
         self.assertIsNone(self.manager.billing_activity)
 
+    @enable_deployment('LRC')
     def test_set_creates_user_profile_if_nonexistent(self):
         """Test that the setter creates an associated UserProfile for
         the User if one does not already exist."""
@@ -379,6 +402,7 @@ class TestUserBillingActivityManager(TestBillingActivityManagerBase):
 
         self.assertGreater(new_profile_pk, old_profile_pk)
 
+    @enable_deployment('LRC')
     def test_set_updates_user_profile_if_existent(self):
         """Test that the setter updates an associated UserProfile for
         the User if one already exists."""

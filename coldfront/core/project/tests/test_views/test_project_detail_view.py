@@ -133,7 +133,13 @@ class TestProjectDetailView(TestBase):
     def test_renew_allowance_button_conditionally_enabled(self):
         """Test that the 'Renew Allowance' button is only enabled
         under certain conditions."""
-        project = self.create_active_project_with_pi('fc_project', self.user)
+        computing_allowance_interface = ComputingAllowanceInterface()
+        computing_allowance = self.get_predominant_computing_allowance()
+        project_name_prefix = computing_allowance_interface.code_from_name(
+            computing_allowance.name)
+
+        project = self.create_active_project_with_pi(
+            f'{project_name_prefix}_project', self.user)
         create_project_allocation(project, Decimal('0.00'))
 
         project_detail_url = self.project_detail_url(project.pk)

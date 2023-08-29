@@ -4,6 +4,8 @@ from django.contrib.auth.models import User
 
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationStatusChoice
+from coldfront.core.billing.models import BillingActivity
+from coldfront.core.billing.models import BillingProject
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.tests.utils import create_project_and_request
 from coldfront.core.resource.models import Resource
@@ -25,7 +27,7 @@ class TestBillingBase(TestBase):
 
         self.username = 'user'
         self.user = User.objects.create_user(
-            email='user@email.com', username=self.username)
+            email='user@lbl.gov', username=self.username)
 
         computing_allowance = Resource.objects.get(name='Recharge Allocation')
         allocation_period = get_current_allowance_year_period()
@@ -37,6 +39,11 @@ class TestBillingBase(TestBase):
             project=self.project,
             status=AllocationStatusChoice.objects.get(name='New'))
         self.allocation.resources.add(get_primary_compute_resource())
+
+        new_project_request.billing_activity = BillingActivity.objects.create(
+            billing_project=BillingProject.objects.create(identifier='000000'),
+            identifier='000')
+        new_project_request.save()
 
         runner = SavioProjectProcessingRunner(
             new_project_request, Decimal('300000.00'),

@@ -1,10 +1,16 @@
-from coldfront.core.utils.tests.test_base import TestBase
+
 from copy import deepcopy
+
 from django.conf import settings
 from django.test import override_settings
 from django.urls import reverse
+
 from flags.state import disable_flag
 from flags.state import enable_flag
+
+from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
+from coldfront.core.utils.tests.test_base import TestBase
 
 
 class TestRenewPIAllocationLandingView(TestBase):
@@ -29,7 +35,18 @@ class TestRenewPIAllocationLandingView(TestBase):
         feature flag is enabled."""
         flag_name = 'ALLOCATION_RENEWAL_FOR_NEXT_PERIOD_REQUESTABLE'
 
-        alert_text = 'The allowance year for FCAs, PCAs is ending soon'
+        allowance_short_names = []
+        computing_allowance_interface = ComputingAllowanceInterface()
+        for allowance in computing_allowance_interface.allowances():
+            if ComputingAllowance(allowance).is_yearly():
+                short_name = computing_allowance_interface.name_short_from_name(
+                    allowance.name)
+                allowance_short_names.append(f'{short_name}s')
+        allowance_short_names.sort()
+
+        alert_text = (
+            f'The allowance year for {", ".join(allowance_short_names)} is '
+            f'ending soon')
 
         enable_flag(flag_name)
         url = self.view_url()

@@ -9,16 +9,19 @@ from coldfront.core.resource.models import Resource
 from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
 from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
+from coldfront.core.utils.tests.test_base import enable_deployment
 from coldfront.core.utils.tests.test_base import TestBase
 
 
 class TestSavioProjectSurveyForm(TestBase):
     """A class for testing SavioProjectSurveyForm."""
 
+    @enable_deployment('BRC')
     def setUp(self):
         """Set up test data."""
         super().setUp()
 
+    @enable_deployment('BRC')
     def test_fields_conditionally_included_for_deployment(self):
         """Test that, based on whether BRC_ONLY or LRC_ONLY is enabled,
         some fields are (not) included."""
@@ -42,6 +45,7 @@ class TestSavioProjectSurveyForm(TestBase):
             for field in brc_only_fields:
                 self.assertNotIn(field, form.fields)
 
+    @enable_deployment('BRC')
     def test_text_updated_for_deployment(self):
         """Test that, based on whether BRC_ONLY or LRC_ONLY is enabled,
         some fields have updated help text and labels."""
@@ -82,6 +86,7 @@ class TestSavioProjectSurveyForm(TestBase):
                     'Lawrencium' in attribute_value or
                     'LRC' in attribute_value)
 
+    @enable_deployment('BRC')
     def test_text_updated_for_instructional_allowance(self):
         """Test that, if the input computing allowance is instructional,
         some fields have updated help text and labels."""

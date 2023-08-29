@@ -1,4 +1,3 @@
-from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.allocation.models import AllocationRenewalRequest
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectStatusChoice
@@ -6,6 +5,7 @@ from coldfront.core.project.models import ProjectUser
 from coldfront.core.project.models import ProjectUserRoleChoice
 from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.tests.test_base import TestBase
 from django.urls import reverse
@@ -30,8 +30,13 @@ class TestAllocationRenewalRequestView(TestBase):
     def test_post_sets_request_request_time(self):
         """Test that a POST request sets the request_time of the renewal
         request."""
+        computing_allowance_interface = ComputingAllowanceInterface()
+        computing_allowance = self.get_predominant_computing_allowance()
+        project_name_prefix = computing_allowance_interface.code_from_name(
+            computing_allowance.name)
+
         # Create a Project for the user to renew.
-        project_name = 'fc_project'
+        project_name = f'{project_name_prefix}_project'
         active_project_status = ProjectStatusChoice.objects.get(name='Active')
         project = Project.objects.create(
             name=project_name,

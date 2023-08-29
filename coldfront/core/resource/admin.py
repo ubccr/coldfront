@@ -4,7 +4,8 @@ from simple_history.admin import SimpleHistoryAdmin
 from coldfront.core.resource.models import (AttributeType, Resource,
                                               ResourceAttribute,
                                               ResourceAttributeType,
-                                              ResourceType)
+                                              ResourceType,
+                                              TimedResourceAttribute)
 
 
 @admin.register(AttributeType)
@@ -67,6 +68,21 @@ class ResourceAdmin(SimpleHistoryAdmin):
 @admin.register(ResourceAttribute)
 class ResourceAttributeAdmin(SimpleHistoryAdmin):
     list_display = ('pk', 'resource_name', 'value', 'resource_attribute_type_name', 'created', 'modified', )
+    search_fields = ('resource__name', 'resource_attribute_type__name', 'value')
+    list_filter = ('resource_attribute_type__name', )
+
+    def resource_name(self, obj):
+        return obj.resource.name
+
+    def resource_attribute_type_name(self, obj):
+        return obj.resource_attribute_type.name
+
+
+@admin.register(TimedResourceAttribute)
+class TimedResourceAttributeAdmin(SimpleHistoryAdmin):
+    list_display = (
+        'pk', 'resource_name', 'value', 'resource_attribute_type_name',
+        'start_date', 'end_date', 'created', 'modified',)
     search_fields = ('resource__name', 'resource_attribute_type__name', 'value')
     list_filter = ('resource_attribute_type__name', )
 

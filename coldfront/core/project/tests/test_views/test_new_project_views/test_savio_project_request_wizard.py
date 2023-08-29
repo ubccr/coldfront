@@ -1,9 +1,8 @@
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import SavioProjectAllocationRequest
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
-from coldfront.core.resource.models import Resource
-from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
+from coldfront.core.utils.tests.test_base import enable_deployment
 from coldfront.core.utils.tests.test_base import TestBase
 from django.urls import reverse
 from http import HTTPStatus
@@ -12,6 +11,7 @@ from http import HTTPStatus
 class TestSavioProjectRequestWizard(TestBase):
     """A class for testing SavioProjectRequestWizard."""
 
+    @enable_deployment('BRC')
     def setUp(self):
         """Set up test data."""
         super().setUp()
@@ -27,13 +27,14 @@ class TestSavioProjectRequestWizard(TestBase):
         project."""
         return reverse('new-project-request')
 
+    @enable_deployment('BRC')
     def test_post_creates_request(self):
         """Test that a POST request creates a
         SavioProjectAllocationRequest."""
         self.assertEqual(SavioProjectAllocationRequest.objects.count(), 0)
         self.assertEqual(Project.objects.count(), 0)
 
-        computing_allowance = Resource.objects.get(name=BRCAllowances.FCA)
+        computing_allowance = self.get_predominant_computing_allowance()
         allocation_period = get_current_allowance_year_period()
 
         view_name = 'savio_project_request_wizard'

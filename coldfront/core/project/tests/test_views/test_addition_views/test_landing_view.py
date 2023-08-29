@@ -10,6 +10,7 @@ from coldfront.core.project.models import ProjectUserStatusChoice
 from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import utc_now_offset_aware
+from coldfront.core.utils.tests.test_base import enable_deployment
 from coldfront.core.utils.tests.test_base import TestBase
 
 from decimal import Decimal
@@ -22,6 +23,7 @@ from http import HTTPStatus
 class TestAllocationAdditionRequestLandingView(TestBase):
     """A class for testing AllocationAdditionRequestLandingView."""
 
+    @enable_deployment('BRC')
     def setUp(self):
         """Set up test data."""
         super().setUp()
@@ -47,6 +49,7 @@ class TestAllocationAdditionRequestLandingView(TestBase):
         given primary key."""
         return reverse('purchase-service-units', kwargs={'pk': pk})
 
+    @enable_deployment('BRC')
     def test_allocation_usage_displayed(self):
         """Test that the project's current 'Service Units' usage of its
         total allocation is displayed on a GET request."""
@@ -64,6 +67,7 @@ class TestAllocationAdditionRequestLandingView(TestBase):
         self.assertContains(response, allocation_value)
         self.assertContains(response, usage_value)
 
+    @enable_deployment('BRC')
     def test_continue_button_conditionally_disabled(self):
         """Test that, if the Project already has an 'Under Review'
         request, the button redirecting to the form to request another
@@ -102,6 +106,7 @@ class TestAllocationAdditionRequestLandingView(TestBase):
                 self.assertEqual(
                     a.get('href'), self.request_view_url(project.pk))
 
+    @enable_deployment('BRC')
     def test_ineligible_projects_redirected(self):
         """Test that GET requests for ineligible Projects are redirected
         back to the Project's Detail view."""
@@ -130,6 +135,7 @@ class TestAllocationAdditionRequestLandingView(TestBase):
         self.assertEqual(expected_num_eligible, actual_num_eligible)
         self.assertTrue(ineligible_found)
 
+    @enable_deployment('BRC')
     def test_permissions_get(self):
         """Test that the correct users have permissions to perform GET
         requests."""

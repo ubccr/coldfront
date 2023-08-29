@@ -5,8 +5,7 @@ from coldfront.core.project.tests.test_views.test_renewal_views.utils import Tes
 from coldfront.core.project.tests.utils import create_project_and_request
 from coldfront.core.project.utils_.renewal_utils import get_current_allowance_year_period
 from coldfront.core.project.utils_.renewal_utils import get_next_allowance_year_period
-from coldfront.core.resource.models import Resource
-from coldfront.core.resource.utils_.allowance_utils.constants import BRCAllowances
+from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 from coldfront.core.utils.common import display_time_zone_current_date
 from coldfront.core.utils.common import format_date_month_name_day_year
 from coldfront.core.utils.common import utc_now_offset_aware
@@ -30,9 +29,13 @@ class TestAllocationRenewalRequestDetailView(TestBase, TestRenewalViewsMixin):
         self.sign_user_access_agreement(self.user)
         self.client.login(username=self.user.username, password=self.password)
 
+        computing_allowance_interface = ComputingAllowanceInterface()
+        computing_allowance = self.get_predominant_computing_allowance()
+        project_name_prefix = computing_allowance_interface.code_from_name(
+            computing_allowance.name)
+
         # Create a Project, a renewal request, and a corresponding Allocation.
-        project_name = 'fc_project'
-        computing_allowance = Resource.objects.get(name=BRCAllowances.FCA)
+        project_name = f'{project_name_prefix}_project'
         project, self.allocation_renewal_request = \
             self.create_project_and_request(
                 project_name, computing_allowance, self.user)
@@ -351,7 +354,7 @@ class TestAllocationRenewalRequestDetailView(TestBase, TestRenewalViewsMixin):
         self.user.save()
 
         # Create a new Project and associated request.
-        computing_allowance = self.get_fca_computing_allowance()
+        computing_allowance = self.get_predominant_computing_allowance()
         new_project_name = 'fc_new_project'
         new_project, new_project_request = create_project_and_request(
             new_project_name, 'New', computing_allowance,

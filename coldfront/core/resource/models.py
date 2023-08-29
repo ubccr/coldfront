@@ -114,12 +114,12 @@ class Resource(TimeStampedModel):
         ordering = ['name', ]
 
 
-class ResourceAttribute(TimeStampedModel):
+class AbstractResourceAttribute(TimeStampedModel):
+
     resource_attribute_type = models.ForeignKey(
         ResourceAttributeType, on_delete=models.CASCADE)
     resource = models.ForeignKey(Resource, on_delete=models.CASCADE)
     value = models.TextField()
-    history = HistoricalRecords()
 
     def clean(self):
 
@@ -141,8 +141,27 @@ class ResourceAttribute(TimeStampedModel):
                 raise ValidationError(
                     'Invalid Value "%s". Date must be in format MM/DD/YYYY' % (self.value))
 
+    class Meta:
+        abstract = True
+
+
+class ResourceAttribute(AbstractResourceAttribute):
+
+    history = HistoricalRecords()
+
     def __str__(self):
         return '%s: %s (%s)' % (self.resource_attribute_type, self.value, self.resource)
 
     class Meta:
         unique_together = ('resource_attribute_type', 'resource')
+
+
+class TimedResourceAttribute(AbstractResourceAttribute):
+
+    start_date = models.DateField()
+    end_date = models.DateField()
+    history = HistoricalRecords()
+
+    class Meta:
+        unique_together = (
+            'resource_attribute_type', 'resource', 'start_date', 'end_date')

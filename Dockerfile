@@ -19,9 +19,9 @@ WORKDIR /vagrant/coldfront_app/coldfront/
 
 CMD ./manage.py initial_setup \
  && ./manage.py add_accounting_defaults \
+ && ./manage.py create_allocation_periods \
  && ./manage.py add_allowance_defaults \
  && ./manage.py add_directory_defaults \
- && ./manage.py create_allocation_periods \
  && ./manage.py create_staff_group \
  && ./manage.py collectstatic --noinput \
  && ./manage.py runserver 0.0.0.0:80

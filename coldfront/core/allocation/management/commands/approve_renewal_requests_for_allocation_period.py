@@ -79,7 +79,8 @@ class Command(BaseCommand):
                 yearly_allowances.append(allowance)
                 num_service_units_by_allowance_name[allowance.name] = Decimal(
                     computing_allowance_interface.service_units_from_name(
-                        allowance.name))
+                        allowance.name, is_timed=True,
+                        allocation_period=allocation_period))
 
         allocation_period_start_utc = display_time_zone_date_to_utc_datetime(
             allocation_period_start_date)

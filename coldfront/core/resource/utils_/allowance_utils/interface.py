@@ -1,3 +1,4 @@
+from coldfront.core.allocation.models import AllocationPeriod
 from coldfront.core.resource.models import Resource
 from coldfront.core.resource.models import ResourceType
 
@@ -32,6 +33,10 @@ class ComputingAllowanceInterface(object):
         """Fill in data structures."""
         for allowance in allowances:
             self._name_to_object[allowance.name] = allowance
+            self._object_to_service_units[allowance] = {
+                'constant': None,
+                'timed': {},
+            }
             for attribute in allowance.resourceattribute_set.all():
                 attribute_type_name = attribute.resource_attribute_type.name
                 if attribute_type_name == 'code':
@@ -43,7 +48,15 @@ class ComputingAllowanceInterface(object):
                     self._name_short_to_object[attribute.value] = allowance
                     self._object_to_name_short[allowance] = attribute.value
                 elif attribute_type_name == 'Service Units':
-                    self._object_to_service_units[allowance] = attribute.value
+                    self._object_to_service_units[allowance]['constant'] = \
+                        attribute.value
+            for timed_attribute in allowance.timedresourceattribute_set.all():
+                attribute_type_name = \
+                    timed_attribute.resource_attribute_type.name
+                key = (timed_attribute.start_date, timed_attribute.end_date)
+                if attribute_type_name == 'Service Units':
+                    self._object_to_service_units[allowance]['timed'][key] = \
+                        timed_attribute.value
 
     def allowance_from_code(self, code):
         """Given a code, return the corresponding allowance (Resource
@@ -97,11 +110,24 @@ class ComputingAllowanceInterface(object):
         except KeyError as e:
             raise ComputingAllowanceInterfaceError(e)
 
-    def service_units_from_name(self, name):
+    def service_units_from_name(self, name, is_timed=False,
+                                allocation_period=None):
         """Given a name, return the corresponding allowance's service
-        units value."""
+        units value. If is_timed is True (i.e., the value varies over
+        time), return the value associated with the given
+        AllocationPeriod. Otherwise, return the constant value.
+
+        The AllocationPeriod is only considered if is_timed is True.
+        """
         try:
-            return self._object_to_service_units[self._name_to_object[name]]
+            service_units_data = self._object_to_service_units[
+                self._name_to_object[name]]
+            if is_timed:
+                assert isinstance(allocation_period, AllocationPeriod)
+                key = (allocation_period.start_date, allocation_period.end_date)
+                return service_units_data['timed'][key]
+            else:
+                return service_units_data['constant']
         except KeyError as e:
             raise ComputingAllowanceInterfaceError(e)
 
