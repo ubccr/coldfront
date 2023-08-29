@@ -68,9 +68,9 @@ class PublicationSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
         context['publication_search_form'] = PublicationSearchForm()
         context['project'] = Project.objects.get(
             pk=self.kwargs.get('project_pk'))
-        context['academics_analytics_enabled'] = 'false'
+        context['academics_analytics_enabled'] = False
         if 'coldfront.plugins.academic_analytics' in settings.INSTALLED_APPS:
-            context['academics_analytics_enabled'] = 'true'
+            context['academics_analytics_enabled'] = True
             context['username'] = self.request.user.username
         return context
 
