@@ -14,9 +14,7 @@ from coldfront.core.portal.utils import (generate_allocations_chart_data,
                                          generate_resources_chart_data,
                                          generate_total_grants_by_agency_chart_data,
                                          generate_project_type_chart_data,
-                                         generate_project_status_chart_data,
-                                         generate_research_project_status_columns,
-                                         generate_class_project_status_columns,
+                                         generate_project_user_chart_data,
                                          generate_user_counts,
                                          generate_user_timeline)
 from coldfront.core.project.models import Project
@@ -219,20 +217,11 @@ def allocation_summary(request):
 
 @cache_page(60 * 15)
 def project_summary(request):
-    project_status_chart_data = generate_project_status_chart_data()
-    research_project_status_columns = generate_research_project_status_columns()
-    class_project_status_columns = generate_class_project_status_columns()
-    project_status_chart_data['colors'].update(research_project_status_columns['colors'])
-    project_status_chart_data['colors'].update(class_project_status_columns['colors'])
-
     context = {}
-    context['project_status_chart_data'] = project_status_chart_data
+    context['project_user_chart_data'] = generate_project_user_chart_data()
     context['project_type_chart_data'] = generate_project_type_chart_data()
-    context['research_project_status_columns'] = research_project_status_columns
-    context['class_project_status_columns'] = class_project_status_columns
 
     return render(request, 'portal/project_summary.html', context)
-
 
 
 @cache_page(60 * 15)

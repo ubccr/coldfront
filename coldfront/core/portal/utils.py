@@ -145,6 +145,36 @@ def generate_project_type_chart_data():
     return project_type_chart_data
 
 
+def generate_project_user_chart_data():
+    project_statuses = ['Active', 'Waiting For Admin Approval', 'Review Pending', 'Contacted By Admin', ]
+    num_active_research_users = len(ProjectUser.objects.filter(
+        status__name='Active',
+        project__type__name='Research',
+        project__status__name__in=project_statuses
+    ))
+    num_active_class_users = len(ProjectUser.objects.filter(
+        status__name='Active',
+        project__type__name='Class',
+        project__status__name__in=project_statuses
+    ))
+
+    active_research_users_label = f'Research: {num_active_research_users}'
+    active_class_users_label = f'Class: {num_active_class_users}'
+    project_user_chart_data = {
+        'columns': [
+            [active_research_users_label, num_active_research_users],
+            [active_class_users_label, num_active_class_users],
+        ],
+        'type': 'donut',
+        'colors': {
+            active_class_users_label: '#e27602',
+            active_research_users_label: '#673ab7',
+        }
+    }
+
+    return project_user_chart_data
+
+
 def generate_project_status_chart_data():
     num_active_projects = Project.objects.filter(status__name='Active').count()
     num_requested_projects = Project.objects.filter(status__name__in=['Waiting For Admin Approval', 'Contacted By Admin', ]).count()
