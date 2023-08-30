@@ -1,10 +1,20 @@
+import logging
+
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.mixins import UserPassesTestMixin
+from django.urls import reverse
 from django.views.generic.base import TemplateView
+from django.views.generic.edit import FormView
 
+from coldfront.core.billing.forms import BillingIDCreationForm
 from coldfront.core.billing.forms import BillingIDUsagesSearchForm
 from coldfront.core.billing.models import BillingActivity
 from coldfront.core.billing.utils.queries import get_billing_id_usages
+from coldfront.core.billing.utils.queries import get_or_create_billing_activity_from_full_id
+
+
+logger = logging.getLogger(__name__)
 
 
 class BillingIDUsagesSearchView(LoginRequiredMixin, UserPassesTestMixin,
@@ -79,3 +89,43 @@ class BillingIDUsagesSearchView(LoginRequiredMixin, UserPassesTestMixin,
                 {'username': username, 'full_id': full_id})
 
         return context
+
+
+class BillingIDCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
+
+    form_class = BillingIDCreationForm
+    template_name = 'billing/billing_id_create.html'
+
+    def test_func(self):
+        return self.request.user.is_superuser
+
+    def form_valid(self, form):
+        billing_id = form.cleaned_data.get('billing_id')
+        try:
+            # The form checks that it does not exist.
+            get_or_create_billing_activity_from_full_id(billing_id)
+        except Exception as e:
+            logger.exception(
+                f'Failed to create BillingActivity for {billing_id}. '
+                f'Details:\n{e}')
+            messages.error(
+                self.request,
+                'Unexpected failure. Please contact an administrator.')
+        else:
+            log_message = (
+                f'Administrator {self.request.user} created a BillingActivity '
+                f'for {billing_id}')
+            message = f'Created {billing_id}'
+            if form.is_billing_id_invalid:
+                # The form would only be valid if the user chose ignore_invalid.
+                invalid_note = ' (ignoring that it was invalid)'
+                log_message += invalid_note
+                message += invalid_note
+            log_message += '.'
+            message += '.'
+            logger.info(log_message)
+            messages.success(self.request, message)
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('billing-id-usages')

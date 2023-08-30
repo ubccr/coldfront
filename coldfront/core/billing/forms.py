@@ -5,6 +5,7 @@ from django.core.validators import MinLengthValidator
 from django.core.validators import RegexValidator
 
 from coldfront.core.billing.models import BillingActivity
+from coldfront.core.billing.utils.queries import get_billing_activity_from_full_id
 from coldfront.core.billing.utils.validation import is_billing_id_valid
 from coldfront.core.project.models import Project
 
@@ -38,14 +39,56 @@ class BillingIDValidationForm(forms.Form):
         super().__init__(*args, **kwargs)
 
     def clean_billing_id(self):
-        """Return the BillingActivity representing the given billing ID
-        if it exists, and optionally, is valid. Otherwise, raise a
-        ValidationError."""
+        """Return the given billing ID if it exists, and optionally, is
+        valid. Otherwise, raise a ValidationError."""
         billing_id = self.cleaned_data['billing_id']
         if self.enforce_validity and not is_billing_id_valid(billing_id):
             raise forms.ValidationError(
                 f'Project ID {billing_id} is not currently valid.')
         return billing_id
+
+
+class BillingIDCreationForm(forms.Form):
+
+    billing_id = forms.CharField(
+        help_text='Example: 123456-789',
+        label='Project ID',
+        max_length=10,
+        required=True,
+        validators=billing_id_validators())
+    ignore_invalid = forms.BooleanField(
+        initial=False,
+        label='Create the Project ID even if it is invalid.',
+        required=False)
+
+    def __init__(self, *args, **kwargs):
+        self.is_billing_id_invalid = False
+        super().__init__(*args, **kwargs)
+
+    def clean_billing_id(self):
+        billing_id = self.cleaned_data['billing_id']
+        if not is_billing_id_valid(billing_id):
+            return billing_id
+        if get_billing_activity_from_full_id(billing_id):
+            raise forms.ValidationError(
+                f'Project ID {billing_id} already exists.')
+        return billing_id
+
+    def clean(self):
+        """Disallow invalid billing IDs from being created, unless the
+        user explicitly allows it."""
+        cleaned_data = super().clean()
+        billing_id = cleaned_data.get('billing_id', None)
+        if not billing_id:
+            # Validation failed.
+            return cleaned_data
+        ignore_invalid = cleaned_data.get('ignore_invalid')
+        if not is_billing_id_valid(billing_id):
+            self.is_billing_id_invalid = True
+            if not ignore_invalid:
+                raise forms.ValidationError(
+                    f'Project ID {billing_id} is not currently valid.')
+        return cleaned_data
 
 
 class BillingActivityChoiceField(forms.ModelChoiceField):

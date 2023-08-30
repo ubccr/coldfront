@@ -1,0 +1,21 @@
+{% extends "common/base.html" %}
+{% load common_tags %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}
+  Create LBL Project ID
+{% endblock %}
+
+{% block content %}
+
+<h1>Create LBL Project ID</h1>
+<hr>
+
+<form method="post">
+  {% csrf_token %}
+  {{ form|crispy }}
+  <input type="submit" class="btn btn-primary" value="Create">
+</form>
+
+{% endblock %}

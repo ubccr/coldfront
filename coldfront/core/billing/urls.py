@@ -8,6 +8,9 @@ urlpatterns = []
 
 with flagged_paths('LRC_ONLY') as path:
     flagged_url_patterns = [
+        path('create/',
+             admin_views.BillingIDCreateView.as_view(),
+             name='billing-id-create'),
         path('usages/',
              admin_views.BillingIDUsagesSearchView.as_view(),
              name='billing-id-usages'),
