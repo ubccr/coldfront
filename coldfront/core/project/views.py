@@ -1915,6 +1915,7 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     def get_allocation_data(self, project_obj):
         allocations = project_obj.allocation_set.filter(
             status__name__in=['Active', 'Expired', ],
+            is_locked=False,
             resources__requires_payment=False
         )
         initial_data = []
