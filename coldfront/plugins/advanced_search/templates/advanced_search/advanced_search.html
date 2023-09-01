@@ -78,6 +78,7 @@ Project and Allocation Export List
   var rows = {{ rows | safe }}
   var form_count = {{ allocationattribute_form.total_form_count | safe}}
   var allocation_attribute_type_ids = {{ allocation_attribute_type_ids | safe}}
+  var linked_allocation_attribute_types = {{ linked_allocation_attribute_types | safe }}
 
   function toggleUsageFields(value, base_div_id) {
     if (allocation_attribute_type_ids.includes(value)) {
@@ -103,20 +104,72 @@ Project and Allocation Export List
     $(base_div_id + 'allocationattribute__usage_format').val('whole');
   }
 
+  function disableCollapsibleSection(collapsible, hyperlink) {
+    collapsible.removeClass().addClass('collapse');
+    hyperlink.toggleClass('ui-state-disabled');
+    hyperlink.addClass('collapsed');
+    hyperlink.prop('ariaExpanded', false);
+  }
+
   $(document).ready(function () {
+    if ($("#id_full_search-only_search_projects").is(":checked")) {
+      disableCollapsibleSection($("#allocations"), $('h5 > a[href="#allocations"]'));
+      disableCollapsibleSection($("#resources"), $('h5 > a[href="#resources"]'));
+      disableCollapsibleSection($("#allocation-attributes"), $('h5 > a[href="#allocation-attributes"]'));
+    } 
+
+    $("#id_full_search-only_search_projects").on('click', function () {
+      var is_checked = $("#id_full_search-only_search_projects").is(":checked");
+
+      disableCollapsibleSection($("#allocations"), $('h5 > a[href="#allocations"]'));
+      disableCollapsibleSection($("#resources"), $('h5 > a[href="#resources"]'));
+      disableCollapsibleSection($("#allocation-attributes"), $('h5 > a[href="#allocation-attributes"]'));
+    })
+
+    $("#id_full_search-resources__name").on('click', function(evt) {
+      options = [];
+      selected_resources = $("#id_full_search-resources__name").val();
+      for (let i = 0; i < selected_resources.length; i++) {
+        options.push(linked_allocation_attribute_types[selected_resources[i]]);
+      }
+
+      var options_set = new Set();
+      options.flat().forEach(element => {
+        options_set.add(element);
+      });
+
+      matches = $("[id*=allocationattribute__name]");
+      for (let i = 0; i < matches.length; i++) {
+        id = matches[i].id;
+        
+        if (!id.includes('div') && !id.includes('hint')) {
+          value = $("#" + id + " option:selected").val();
+          matches[i].innerHTML = '<option value="">---------</option>' + Array.from(options_set).toString().replace(',', '');
+          $("#" + id).val(value).change();
+          value = $("#" + id + " option:selected").val();
+          if (value === undefined) {
+            $("#" + id).val("").change();
+
+            base_id = "#" + id.slice(0, id.length - 25);
+            resetAllocationAttributeFieldsToDefaults(base_id);
+          }
+        }
+      } 
+    })
+
     $("[id*='allocationattribute__name']").each(function (data) {
-      id = $(this)[0].id
+      id = $(this)[0].id;
       if (id.includes('div')) {
         return;
       }
 
       $(this).on('change', function (evt) {
         id = evt.target.id
-        base_div_id = '#div_' + id.slice(0, id.indexOf('-', id.indexOf('-') + 1) + 1)
+        base_div_id = '#div_' + id.slice(0, id.indexOf('-', id.indexOf('-') + 1) + 1);
         toggleUsageFields(parseInt(evt.target.value), base_div_id);
       })
 
-      base_div_id = '#div_' + id.slice(0, id.indexOf('-', id.indexOf('-') + 1) + 1)
+      base_div_id = '#div_' + id.slice(0, id.indexOf('-', id.indexOf('-') + 1) + 1);
       toggleUsageFields(parseInt(id = $(this)[0].value), base_div_id);
     })
   })
@@ -127,11 +180,11 @@ Project and Allocation Export List
     row.innerHTML = row.innerHTML.replaceAll('-0-', '-' + form_count + '-');
     $("#id_allocationattribute_formset").append(row);
 
-    var allocationattribute__name_field = $('#id_allocationattribute-' + form_count + '-allocationattribute__name')
+    var allocationattribute__name_field = $('#id_allocationattribute-' + form_count + '-allocationattribute__name');
 
     allocationattribute__name_field.on('change', function (evt) {
-      id = evt.target.id
-      base_div_id = '#div_' + id.slice(0, id.indexOf('-', id.indexOf('-') + 1) + 1)
+      id = evt.target.id;
+      base_div_id = '#div_' + id.slice(0, id.indexOf('-', id.indexOf('-') + 1) + 1);
       toggleUsageFields(parseInt(evt.target.value), base_div_id);
     })
 

@@ -158,10 +158,6 @@ class SearchForm(forms.Form):
 
     resources__name = forms.ModelMultipleChoiceField(
         label='Resource Name',
-        help_text= (
-            f'The selection of allocation attributes is only updated of after the search form is '
-            f'submitted.'
-        ),
         queryset=Resource.objects.filter(is_allocatable=True).order_by('name'),
         required=False
     )
@@ -186,24 +182,37 @@ class SearchForm(forms.Form):
             Accordion(
                 AccordionGroup('Projects',
                     'only_search_projects',
-                    'project__title',
-                    'project__description',
-                    'project__pi__username',
-                    'project__requestor__username',
-                    'project__user_username',
-                    'project__status__name',
-                    'project__type__name',
-                    'project__class_number',
-                    'display__project__id',
-                    'display__project__title',
-                    'display__project__description',
-                    'display__project__pi__username',
-                    'display__project__requestor__username',
-                    'display__project__status__name',
-                    'display__project__type__name',
-                    'display__project__class_number',
-                    'display__project__users',
-                    'display__project__total_users',
+                    Accordion(
+                        AccordionGroup(
+                            'Filters',
+                            'project__title',
+                            'project__description',
+                            'project__pi__username',
+                            'project__requestor__username',
+                            'project__user_username',
+                            'project__status__name',
+                            'project__type__name',
+                            'project__class_number',
+                            active=False,
+                        ),
+                    ),
+                    Accordion(
+                        AccordionGroup(
+                            'Displays',
+                            'display__project__id',
+                            'display__project__title',
+                            'display__project__description',
+                            'display__project__pi__username',
+                            'display__project__requestor__username',
+                            'display__project__status__name',
+                            'display__project__type__name',
+                            'display__project__class_number',
+                            'display__project__users',
+                            'display__project__total_users',
+                            active=False,
+                        ),
+                    ),
+                    active=False,
                 ),
             ),
             Accordion(
@@ -213,7 +222,8 @@ class SearchForm(forms.Form):
                     'display__allocation__id',
                     'display__allocation__status__name',
                     'display__allocation__users',
-                    'display__allocation__total_users'
+                    'display__allocation__total_users',
+                    active=False,
                 )
             ),
             Accordion(
@@ -221,7 +231,8 @@ class SearchForm(forms.Form):
                     'resources__name',
                     'resources__resource_type__name',
                     'display__resources__name',
-                    'display__resources__resource_type__name'
+                    'display__resources__resource_type__name',
+                    active=False,
                 )
             ),
             Accordion(
@@ -229,7 +240,8 @@ class SearchForm(forms.Form):
                     Formset('allocationattribute_form', 'allocationattribute_helper', label='allocationattribute_formset'),
                     HTML(
                         '<button id="id_formset_add_allocation_attribute_button" type="button" class="btn btn-primary">Add Allocation Attribute</button>'
-                    )
+                    ),
+                    active=False,
                 )
             ),
             FormActions(
