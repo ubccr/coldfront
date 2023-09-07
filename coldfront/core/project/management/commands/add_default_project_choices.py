@@ -32,5 +32,11 @@ class Command(BaseCommand):
             ('Project ID', 'Text', False, False),
             ('Account Number', 'Int', False, True),
         ):
-            ProjectAttributeType.objects.get_or_create(name=name, attribute_type=AttributeType.objects.get(
-                name=attribute_type), has_usage=has_usage, is_private=is_private)
+            ProjectAttributeType.objects.update_or_create(
+                name=name,
+                defaults={
+                    'attribute_type': AttributeType.objects.get(name=attribute_type),
+                    'has_usage': has_usage,
+                    'is_private': is_private
+                }
+            )
