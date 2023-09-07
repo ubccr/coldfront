@@ -12,8 +12,10 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
 
-        for attribute_type in ('Date', 'Float', 'Int', 'Text', 'Yes/No', 'No',
-            'Attribute Expanded Text'):
+        for attribute_type in (
+            'Date', 'Float', 'Int', 'Text', 'Yes/No', 'No', 'Attribute Expanded Text',
+            'Boolean'
+        ):
             AttributeType.objects.get_or_create(name=attribute_type)
 
         for choice in ('Active', 'Denied', 'Expired',
@@ -31,10 +33,10 @@ class Command(BaseCommand):
         for name, attribute_type, has_usage, is_private in (
             # FASRC defaults
             ('Storage Quota (TB)', 'Float', True, False),
-            ('Quota_In_Bytes', 'Float', True, False),
+            ('Quota_In_Bytes', 'Int', True, False),
             ('UseStarFishZone', 'Yes/No', False, True),
             ('Offer Letter', 'Float', False, True),
-            ('RequiresPayment', 'Yes/No', False, True),
+            ('RequiresPayment', 'Boolean', False, True),
             ('Offer Letter Code', 'Text', False, True),
             ('Expense Code', 'Text', False, True),
             ('Subdirectory', 'Text', False, False),
@@ -68,8 +70,11 @@ class Command(BaseCommand):
             # ('SupportersQOS', 'Yes/No', False, False),
             # ('SupportersQOSExpireDate', 'Date', False, False),
         ):
-            AllocationAttributeType.objects.get_or_create(
+            AllocationAttributeType.objects.update_or_create(
                 name=name,
-                attribute_type=AttributeType.objects.get(name=attribute_type),
-                has_usage=has_usage, is_private=is_private
+                defaults={
+                    'attribute_type': AttributeType.objects.get(name=attribute_type),
+                    'has_usage': has_usage,
+                    'is_private': is_private,
+                }
             )
