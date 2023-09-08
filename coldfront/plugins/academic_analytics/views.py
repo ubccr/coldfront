@@ -38,7 +38,8 @@ class AcademicAnalyticsPublications(LoginRequiredMixin, UserPassesTestMixin, Tem
         context = {}
         context['project_pk'] = request.GET.get('project_pk')
         context['publication_formset'] = []
-        publication_data = get_publications(request.user.username)
+        usernames = project_obj.projectuser_set.filter(status__name='Active').values_list('user__username', flat=True)
+        publication_data = get_publications(usernames)
         publication_data = remove_existing_publications(project_obj, publication_data)
         if publication_data:
             publication_formset = formset_factory(PublicationForm, max_num=len(publication_data))
@@ -53,7 +54,8 @@ class AcademicAnalyticsPublications(LoginRequiredMixin, UserPassesTestMixin, Tem
         context = {}
         context['project_pk'] = request.POST.get('project_pk')
         context['publication_formset'] = []
-        publication_data = get_publications(request.user.username)
+        usernames = project_obj.projectuser_set.filter(status__name='Active').values_list('user__username', flat=True)
+        publication_data = get_publications(usernames)
         publication_data = remove_existing_publications(project_obj, publication_data)
         if publication_data:
             publication_formset = formset_factory(PublicationForm, max_num=len(publication_data))

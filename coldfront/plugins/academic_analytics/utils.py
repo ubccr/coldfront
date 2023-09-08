@@ -16,17 +16,18 @@ ORACLE_DB_DSN = import_from_settings('ORACLE_DB_DSN')
 ORACLE_DB_QUERY = import_from_settings('ORACLE_DB_QUERY')
 
 
-def get_user_id(username):
+def get_user_ids(usernames):
     """
-    Connects to an oracle database to grab a users ID.
+    Connects to an oracle database to grab users' IDs.
     """
-    user_id = ''
+    user_ids = []
     oracledb.init_oracle_client()
     with oracledb.connect(user=ORACLE_DB_USER, password=ORACLE_DB_PASSWORD, dsn=ORACLE_DB_DSN) as connection:
         with connection.cursor() as cursor:
-            user_id = cursor.execute(ORACLE_DB_QUERY.format(username)).fetchall()[0][0]
+            results = cursor.execute(ORACLE_DB_QUERY.format("'" + "','".join(usernames) + "'")).fetchall()
+            user_ids = [user_id[0] for user_id in results]
 
-    return user_id
+    return user_ids
 
 def format_author(author):
     """
@@ -53,50 +54,65 @@ def format_journal(journal):
     
     return journal.split('[')[0].strip()
 
-def get_publications(username):
+def get_publications(usernames):
     """
-    Finds all publications a user has within the academic analytics database.
+    Finds all publications a list of usernames have within the academic analytics database.
     """
-    user_id = get_user_id(username)
+    user_ids = get_user_ids(usernames)
 
     headers = {
         'apikey': ACADEMIC_ANALYTICS_API_KEY
     }
 
-    client_faculty_id = eval(ACADEMIC_ANALYTICS_FORMULA.format(int(user_id)), {'__builtins__':{}}, {})
-    person_results = requests.get(
-        url=ACADEMIC_ANALYTICS_API_BASE_ADDRESS + f'GetPersonIdByClientFacultyId?clientFacultyId={client_faculty_id}',
-        headers=headers
-    )
-    person_id = person_results.json().get('PersonId')
-    if not person_id:
-        return []
-    
     publications = []
-    articles_result = requests.get(
-        url=ACADEMIC_ANALYTICS_API_BASE_ADDRESS + f'{person_id}/articles',
-        headers=headers
-    )
-    for articles in articles_result.json():
-        publications.append({
-            'title': articles.get('ArticleTitle'),
-            'author': format_author(articles.get('Authors')),
-            'year': articles.get('ArticleYear'),
-            'journal': format_journal(articles.get('JournalName')),
-            'unique_id': articles.get('DOI'),
-        })
-    proceedings_result = requests.get(
-        url=ACADEMIC_ANALYTICS_API_BASE_ADDRESS + f'{person_id}/proceedings',
-        headers=headers
-    )
-    for proceeding in proceedings_result.json():
-        publications.append({
-            'title': proceeding.get('ProceedingTitle'),
-            'author': format_author(proceeding.get('Authors')),
-            'year': proceeding.get('ArticleYear'),
-            'journal': format_journal(proceeding.get('JournalName')),
-            'unique_id': proceeding.get('DOI'),
-        })
+    for user_id in user_ids:
+        client_faculty_id = eval(ACADEMIC_ANALYTICS_FORMULA.format(int(user_id)), {'__builtins__':{}}, {})
+        person_results = requests.get(
+            url=ACADEMIC_ANALYTICS_API_BASE_ADDRESS + f'GetPersonIdByClientFacultyId?clientFacultyId={client_faculty_id}',
+            headers=headers
+        )
+        person_id = person_results.json().get('PersonId')
+        if not person_id:
+            continue
+        
+        articles_result = requests.get(
+            url=ACADEMIC_ANALYTICS_API_BASE_ADDRESS + f'{person_id}/articles',
+            headers=headers
+        )
+        for article in articles_result.json():
+            duplicate = False
+            for publication in publications:
+                if article.get('DOI') == publication.get('unique_id'):
+                    duplicate = True
+                    break
+
+            if not duplicate:
+                publications.append({
+                    'title': article.get('ArticleTitle'),
+                    'author': format_author(article.get('Authors')),
+                    'year': article.get('ArticleYear'),
+                    'journal': format_journal(article.get('JournalName')),
+                    'unique_id': article.get('DOI'),
+                })
+        proceedings_result = requests.get(
+            url=ACADEMIC_ANALYTICS_API_BASE_ADDRESS + f'{person_id}/proceedings',
+            headers=headers
+        )
+        for proceeding in proceedings_result.json():
+            duplicate = False
+            for publication in publications:
+                if proceeding.get('DOI') == publication.get('unique_id'):
+                    duplicate = True
+                    break
+
+            if not duplicate:
+                publications.append({
+                    'title': proceeding.get('ProceedingTitle'),
+                    'author': format_author(proceeding.get('Authors')),
+                    'year': proceeding.get('ArticleYear'),
+                    'journal': format_journal(proceeding.get('JournalName')),
+                    'unique_id': proceeding.get('DOI'),
+                })
 
     return publications
 
