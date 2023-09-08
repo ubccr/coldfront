@@ -1258,7 +1258,6 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 end_date = self.calculate_end_date(int(month), int(day))
         elif end_date > project_obj.end_date:
             end_date = project_obj.end_date
-        
 
         if resource_obj.name == 'Slate-Project':
             storage_space_unit = 'TB'
@@ -1333,6 +1332,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             allocation_status_obj = AllocationStatusChoice.objects.get(
                 name='New')
 
+        official_end_date = form_data['end_date']
+
         form_data.pop('cost')
         form_data.pop('users')
         form_data.pop('resource')
@@ -1347,6 +1348,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         form_data['storage_space_unit'] = storage_space_unit
         allocation_obj = Allocation.objects.create(**form_data)
         form_data['use_type'] = use_type
+        form_data['end_date'] = official_end_date
 
         if ALLOCATION_ENABLE_CHANGE_REQUESTS_BY_DEFAULT:
             allocation_obj.is_changeable = True
