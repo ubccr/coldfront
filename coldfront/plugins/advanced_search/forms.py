@@ -134,7 +134,8 @@ class SearchForm(forms.Form):
     display__project__class_number = forms.BooleanField(required=False)
 
     display__project__users = forms.BooleanField(
-        required=False, help_text='Active users. Ignored if "only search projects" is not selected'
+        required=False,
+        help_text='Active users. Enable by selecting "only search projects". Enables the user profiles section.'
     )
 
     display__project__total_users = forms.BooleanField(required=False, help_text='Active users')
@@ -152,7 +153,9 @@ class SearchForm(forms.Form):
     )
     display__allocation__status__name = forms.BooleanField(required=False)
 
-    display__allocation__users = forms.BooleanField(required=False, help_text='Active users')
+    display__allocation__users = forms.BooleanField(
+        required=False, help_text='Active users. Enables the user profiles section.'
+    )
 
     display__allocation__total_users = forms.BooleanField(required=False, help_text='Active users')
 
@@ -172,6 +175,12 @@ class SearchForm(forms.Form):
 
     allocationattribute_form = AllocationAttributeSearchForm()
     allocationattribute_helper = AllocationAttributeFormSetHelper()
+
+    user_profile__department = forms.CharField(label="Department Contains", max_length=100, required=False)
+    display__user_profile__department = forms.BooleanField(required=False)
+
+    user_profile__title = forms.CharField(label="Title Contains", max_length=30, required=False)
+    display__user_profile__title = forms.BooleanField(required=False)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -243,6 +252,15 @@ class SearchForm(forms.Form):
                     ),
                     active=False,
                 )
+            ),
+            Accordion(
+                AccordionGroup('User Profiles',
+                    'user_profile__department',
+                    'user_profile__title',
+                    'display__user_profile__department',
+                    'display__user_profile__title',
+                    active=False,
+                ),
             ),
             FormActions(
                 Submit('submit', 'Search'),
