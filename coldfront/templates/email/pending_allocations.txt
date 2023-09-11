@@ -1,0 +1,20 @@
+Greetings, {{center_name}} admins!
+
+This is a notice about allocation change requests on Coldfront that have been pending
+for the past week:
+---------------------
+{% for allocation in new_allocations %}
+
+Allocation: {{allocation}}
+
+Review the request here: {{url_base}}{{allocation.pk}}/
+
+Requested changes:
+{{allocation}}
+---------------------
+
+{% endfor %}
+
+
+Thank you,
+{{ signature }}
