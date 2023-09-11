@@ -4,6 +4,10 @@ from django.contrib.messages import constants as messages
 # ColdFront logging config
 #------------------------------------------------------------------------------
 
+from coldfront.config.env import ENV
+FILE_OUTPUT = ENV.str('FILE_OUTPUT', default="/tmp/debug.log")
+LOG_LEVEL = ENV.str('LOG_LEVEL', default="DEBUG")
+
 MESSAGE_TAGS = {
     messages.DEBUG: 'info',
     messages.INFO: 'info',
@@ -21,7 +25,7 @@ LOGGING = {
         },
         # 'file': {
         #     'class': 'logging.FileHandler',
-        #     'filename': '/tmp/debug.log',
+        #     'filename': FILE_OUTPUT,
         # },
     },
     'loggers': {
@@ -32,7 +36,7 @@ LOGGING = {
         },
         'django': {
             'handlers': ['console'],
-            'level': 'INFO',
+            'level': LOG_LEVEL,
         },
     },
 }
