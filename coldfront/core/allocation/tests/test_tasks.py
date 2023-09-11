@@ -3,15 +3,7 @@ from django.test import TestCase
 
 from django.utils import timezone
 
-
-from coldfront.core.test_helpers import utils
-from coldfront.core.allocation.models import (
-    Allocation,
-    AllocationUserNote,
-    AllocationAttribute,
-    AllocationChangeRequest,
-    AllocationStatusChoice,
-)
+from coldfront.core.allocation.models import AllocationStatusChoice
 from coldfront.core.test_helpers.factories import (
     setup_models,
     AllocationFactory,

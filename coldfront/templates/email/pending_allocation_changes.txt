@@ -3,7 +3,7 @@ Greetings, {{center_name}} admins!
 This is a notice about allocation change requests on Coldfront that have been pending
 for the past week:
 ---------------------
-{% for change_request, change_attrs in pending_allocation_change_requests.items %}
+{% for change_request, change_attrs in pending_changerequests.items %}
 
 Allocation: {{change_request.allocation}}
 
