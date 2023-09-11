@@ -20,7 +20,9 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationUserRequest,
                                               AllocationInvoice,
                                               AllocationAdminAction,
-                                              AttributeType,)
+                                              AttributeType,
+                                              AllocationRemovalRequest,
+                                              AllocationRemovalStatusChoice,)
 
 
 @admin.register(AllocationStatusChoice)
@@ -542,3 +544,18 @@ class AllocationAdminActionAdmin(admin.ModelAdmin):
 
     def allocation_pk(self, obj):
         return obj.allocation.pk
+
+
+@admin.register(AllocationRemovalRequest)
+class AllocationRemovalRequestAdmin(admin.ModelAdmin):
+    list_display = ('pk', 'project_pi', 'requestor', 'allocation_prior_status', 'resource', 'status')
+    readonly_fields = ('project_pi', 'requestor', 'allocation_prior_status')
+
+    def resource(self, obj):
+        allocation_obj = obj.allocation
+        return allocation_obj.get_parent_resource.resource_type.name
+
+
+@admin.register(AllocationRemovalStatusChoice)
+class AllocationRemovalStatusChoiceAdmin(admin.ModelAdmin):
+    list_display = ('pk', 'name')

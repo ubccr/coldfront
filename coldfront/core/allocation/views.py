@@ -54,7 +54,9 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationUserRequestStatusChoice,
                                               AllocationUserRequest,
                                               AllocationUserStatusChoice,
-                                              AllocationInvoice)
+                                              AllocationInvoice,
+                                              AllocationRemovalRequest,
+                                              AllocationRemovalStatusChoice)
 from coldfront.core.allocation.utils import (compute_prorated_amount,
                                              generate_guauge_data_from_usage,
                                              get_user_resources,
@@ -576,6 +578,14 @@ class AllocationRemoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                 allocation_obj
             )
 
+        AllocationRemovalRequest.objects.create(
+            project_pi=allocation_obj.project.pi,
+            requestor=request.user,
+            allocation=allocation_obj,
+            allocation_prior_status=allocation_obj.status,
+            status=AllocationRemovalStatusChoice.objects.get(name='Pending')
+        )
+
         allocation_obj.status = new_status
         allocation_obj.save()
 
@@ -668,26 +678,27 @@ class AllocationRemovalListView(LoginRequiredMixin, UserPassesTestMixin, Templat
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.request.user.is_superuser:
-            allocation_list = Allocation.objects.filter(
-                status__name='Removal Requested'
-            ).exclude(project__status__name__in=['Review Pending', 'Archived'])
+            allocation_removal_list = AllocationRemovalRequest.objects.filter(
+                status__name='Pending'
+            )
         else:
-            allocation_list = Allocation.objects.filter(
-                status__name='Removal Requested',
-                resources__review_groups__in=list(self.request.user.groups.all())
-            ).exclude(project__status__name__in=['Review Pending', 'Archived'])
+            allocation_removal_list = AllocationRemovalRequest.objects.filter(
+                status__name='Pending',
+                allocation__resources__review_groups__in=list(self.request.user.groups.all())
+            )
 
-        context['allocation_list'] = allocation_list
+        context['allocation_removal_list'] = allocation_removal_list
         return context
 
-class AllocationApproveRemovalView(LoginRequiredMixin, UserPassesTestMixin, View):
+class AllocationApproveRemovalRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
     login_url = '/'
 
     def test_func(self):
         if self.request.user.is_superuser:
             return True
 
-        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
+        allocation_removal_obj = get_object_or_404(AllocationRemovalRequest, pk=self.kwargs.get('pk'))
+        allocation_obj = allocation_removal_obj.allocation
         group_exists = check_if_groups_in_review_groups(
             allocation_obj.get_parent_resource.review_groups.all(),
             self.request.user.groups.all(),
@@ -701,17 +712,23 @@ class AllocationApproveRemovalView(LoginRequiredMixin, UserPassesTestMixin, View
         )
 
     def get(self, request, pk):
-        allocation_obj = get_object_or_404(Allocation, pk=pk)
+        allocation_removal_obj = get_object_or_404(AllocationRemovalRequest, pk=pk)
+        allocation_obj = allocation_removal_obj.allocation
 
-        allocation_status_removed_obj = AllocationStatusChoice.objects.get(name='Removed')
+        allocation_removal_status_obj = AllocationRemovalStatusChoice.objects.get(name='Approved')
+        allocation_status_obj = AllocationStatusChoice.objects.get(name='Removed')
         end_date = datetime.datetime.now()
 
         create_admin_action(
             request.user,
-            {'status': allocation_status_removed_obj},
+            {'status': allocation_status_obj},
             allocation_obj
         )
-        allocation_obj.status = allocation_status_removed_obj
+
+        allocation_removal_obj.status = allocation_removal_status_obj
+        allocation_removal_obj.save()
+
+        allocation_obj.status = allocation_status_obj
         allocation_obj.end_date = end_date
         allocation_obj.save()
 
@@ -748,14 +765,15 @@ class AllocationApproveRemovalView(LoginRequiredMixin, UserPassesTestMixin, View
         return HttpResponseRedirect(reverse('allocation-removal-request-list'))
 
 
-class AllocationDenyRemovalRequest(LoginRequiredMixin, UserPassesTestMixin, View):
+class AllocationDenyRemovalRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
     login_url = '/'
 
     def test_func(self):
         if self.request.user.is_superuser:
             return True
 
-        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
+        allocation_removal_obj = get_object_or_404(AllocationRemovalRequest, pk=self.kwargs.get('pk'))
+        allocation_obj = allocation_removal_obj.allocation
         group_exists = check_if_groups_in_review_groups(
             allocation_obj.get_parent_resource.review_groups.all(),
             self.request.user.groups.all(),
@@ -769,16 +787,24 @@ class AllocationDenyRemovalRequest(LoginRequiredMixin, UserPassesTestMixin, View
         )
 
     def get(self, request, pk):
-        allocation_obj = get_object_or_404(Allocation, pk=pk)
+        allocation_removal_obj = get_object_or_404(AllocationRemovalRequest, pk=pk)
+        allocation_obj = allocation_removal_obj.allocation
 
-        allocation_status_active_obj = AllocationStatusChoice.objects.get(name='Active')
+        allocation_removal_status_obj = AllocationRemovalStatusChoice.objects.get(name='Denied')
+        allocation_status_obj = AllocationStatusChoice.objects.get(
+            name=allocation_removal_obj.allocation_prior_status
+        )
 
         create_admin_action(
             request.user,
-            {'status': allocation_status_active_obj},
+            {'status': allocation_status_obj},
             allocation_obj
         )
-        allocation_obj.status = allocation_status_active_obj
+
+        allocation_removal_obj.status = allocation_removal_status_obj
+        allocation_removal_obj.save()
+
+        allocation_obj.status = allocation_status_obj
         allocation_obj.save()
 
         messages.success(
