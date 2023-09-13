@@ -36,12 +36,12 @@ class ExpenseCodeField(forms.CharField):
     def clean(self, value):
         # Remove all dashes from the input string to count the number of digits
         value = super().clean(value)
-        digits_only = re.sub(r'[^0-9xX]', '', value)
-        insert_dashes = lambda d: '-'.join(
-            [d[:3], d[3:8], d[8:12], d[12:18], d[18:24], d[24:28], d[28:33]]
-        )
-        formatted_value = insert_dashes(digits_only)
-        return formatted_value
+        # digits_only = re.sub(r'[^0-9xX]', '', value)
+        # insert_dashes = lambda d: '-'.join(
+        #     [d[:3], d[3:8], d[8:12], d[12:18], d[18:24], d[24:28], d[28:33]]
+        # )
+        # formatted_value = insert_dashes(digits_only)
+        return value
 
 
 class AllocationForm(forms.Form):
@@ -122,20 +122,23 @@ We do not have information about your research. Please provide a detailed descri
         seas_val = cleaned_data.get("seas_code")
         trues = sum(x for x in [(value not in ['', '------']), hsph_val, seas_val])
 
+        digits_only = lambda v: re.sub(r'[^0-9xX]', '', v)
         if trues != 1:
             self.add_error("expense_code", "you must do exactly one of the following: manually enter an expense code, check the box to use SEAS' expense code, or check the box to use HSPH's expense code")
 
         elif value and value != '------':
-            digits_only = re.sub(r'[^0-9xX]', '', value)
-            if not re.fullmatch(r'^([0-9xX]+-?)*[0-9xX-]+$', value):
+            if re.search(r'[^0-9xX\-\.]', value):
                 self.add_error("expense_code", "Input must consist only of digits (or x'es) and dashes.")
-            elif len(digits_only) != 33:
+            elif len(digits_only(value)) != 33:
                 self.add_error("expense_code", "Input must contain exactly 33 digits.")
+            elif 'x' in digits_only(value)[:8]+digits_only(value)[12:]:
+                self.add_error("expense_code", "xes are only allowed in place of the product code (the third grouping of characters in the code)")
             else:
+                replace_productcode = lambda s: s[:8] + '8250' + s[12:]
                 insert_dashes = lambda d: '-'.join(
                     [d[:3], d[3:8], d[8:12], d[12:18], d[18:24], d[24:28], d[28:33]]
                 )
-                cleaned_data['expense_code'] = insert_dashes(digits_only)
+                cleaned_data['expense_code'] = insert_dashes(replace_productcode(digits_only(value)))
         elif hsph_val:
             cleaned_data['expense_code'] = HSPH_CODE
         elif seas_val:
