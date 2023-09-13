@@ -117,6 +117,7 @@ class AllocationFormTest(AllocationFormBaseTest):
         self.assertEqual(
             cleaned_form['expense_code'], '123-12312-8250-123123-123123-1231-23123'
         )
+
     def test_allocationform_expense_code_multiplefield_invalid(self):
         """Test POST to AllocationCreateView in circumstance where hsph and seas values are also checked"""
         self.post_data['expense_code'] = '123-' * 11

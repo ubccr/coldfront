@@ -66,6 +66,9 @@ from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_allocation_admin_email, send_allocation_customer_email
 
+
+if 'ifxbilling' in settings.INSTALLED_APPS:
+    from ifxbilling.models import Account, UserProductAccount
 if 'django_q' in settings.INSTALLED_APPS:
     from django_q.tasks import Task
 
@@ -214,6 +217,14 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         else:
             user_sync_dt = None
         context['user_sync_dt'] = user_sync_dt
+
+        if 'ifxbilling' in settings.INSTALLED_APPS:
+            expense_codes = UserProductAccount.objects.filter(
+                user=allocation_obj.project.pi,
+                is_valid=1,
+                product__product_name=allocation_obj.get_parent_resource.name
+            )
+            context['expense_codes'] = expense_codes
 
         context['allocation_quota_bytes'] = quota_bytes
         context['allocation_usage_bytes'] = usage_bytes
