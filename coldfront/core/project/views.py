@@ -2629,7 +2629,7 @@ class ProjectRequestEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView)
             send_email(
                 'Request for more information',
                 form_data.get('email_body'),
-                EMAIL_SENDER,
+                EMAIL_TICKET_SYSTEM_ADDRESS,
                 receiver_list,
                 cc
             )
