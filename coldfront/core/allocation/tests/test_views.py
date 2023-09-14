@@ -439,14 +439,14 @@ class AllocationCreateViewTest(AllocationViewBaseTest):
 
     def test_allocationcreateview_post_offerlettercode_multiplefield_invalid(self):
         """Ensure that form won't pass if multiple expense codes are given"""
-        self.post_data['hsph_code'] = '000-000-000-000-000-000-000-000-000-000-000'
+        self.post_data['existing_expense_codes'] = '000-000-000-000-000-000-000-000-000-000-000'
         response = self.client.post(self.url, data=self.post_data, follow=True)
-        self.assertContains(response, "you must do exactly one of the following")
+        self.assertContains(response, "must either select an existing expense code or")
 
 
     def test_allocationcreateview_post_hsph_offerlettercode(self):
-        """Ensure that form goes through if hsph is checked"""
-        self.post_data['hsph_code'] = '000-000-000-000-000-000-000-000-000-000-000'
+        """Ensure that form goes through if existing_expense_codes is checked"""
+        self.post_data['existing_expense_codes'] = '000-000-000-000-000-000-000-000-000-000-000'
         self.post_data.pop('expense_code')
         response = self.client.post(self.url, data=self.post_data, follow=True)
         self.assertContains(response, "Allocation requested.")

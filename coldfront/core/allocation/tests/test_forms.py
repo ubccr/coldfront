@@ -3,7 +3,7 @@ import logging
 from django.test import TestCase
 
 from coldfront.core.resource.models import Resource
-from coldfront.core.allocation.forms import AllocationForm
+from coldfront.core.allocation.forms import AllocationForm, HSPH_CODE
 from coldfront.core.test_helpers.factories import (
     setup_models,
     ResourceTypeFactory,
@@ -119,13 +119,16 @@ class AllocationFormTest(AllocationFormBaseTest):
         )
 
     def test_allocationform_expense_code_multiplefield_invalid(self):
-        """Test POST to AllocationCreateView in circumstance where hsph and seas values are also checked"""
+        """
+        Test POST to AllocationCreateView in circumstance where code is entered
+        and an existing_expense_codes value has also been selected
+        """
         self.post_data['expense_code'] = '123-' * 11
-        self.post_data['hsph_code'] = True
+        self.post_data['existing_expense_codes'] = HSPH_CODE
         form = AllocationForm(
             data=self.post_data, request_user=self.pi_user, project_pk=self.project.pk
         )
-        self.assertIn("you must do exactly one of the following", form.errors['expense_code'][0])
+        self.assertIn("must either select an existing expense code or", form.errors['existing_expense_codes'][0])
 
 
 class AllocationUpdateFormTest(AllocationFormBaseTest):
