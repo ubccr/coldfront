@@ -97,6 +97,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        DEFAULT_STATUS = import_from_settings('DEFAULT_STATUS')
         # Can the user update the project?
         if self.request.user.is_superuser:
             context['is_allowed_to_update_project'] = True
@@ -142,8 +143,14 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             attributes_with_usage.remove(a)
 
         # Only show 'Active Users'
-        project_users = self.object.projectuser_set.filter(
-            status__name='Active').order_by('user__username')
+        if DEFAULT_STATUS == 'Active':
+            project_users = self.object.projectuser_set.filter(
+                status__name='Active').order_by('user__username')
+        else:
+            project_users = self.object.projectuser_set.filter(
+                Q(status__name='Active') |
+                Q(status__name='Pending - Remove') |
+                Q(status__name='Pending - Add')).order_by('user__username')
 
         context['mailto'] = 'mailto:' + \
             ','.join([user.user.email for user in project_users])
@@ -549,6 +556,7 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
     raise_exception = True
 
     def test_func(self):
+        DEFAULT_STATUS = import_from_settings('DEFAULT_STATUS')
         """ UserPassesTestMixin Tests"""
         if self.request.user.is_superuser:
             return True
@@ -558,7 +566,7 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
         if project_obj.pi == self.request.user:
             return True
 
-        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name=DEFAULT_STATUS).exists():
             return True
 
     def dispatch(self, request, *args, **kwargs):
@@ -622,6 +630,7 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
 class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
     def test_func(self):
+        DEFAULT_STATUS = import_from_settings('DEFAULT_STATUS')
         """ UserPassesTestMixin Tests"""
         if self.request.user.is_superuser:
             return True
@@ -631,7 +640,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
         if project_obj.pi == self.request.user:
             return True
 
-        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name=DEFAULT_STATUS).exists():
             return True
 
     def dispatch(self, request, *args, **kwargs):
@@ -672,7 +681,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
         added_users_count = 0
         if formset.is_valid() and allocation_form.is_valid():
             project_user_active_status_choice = ProjectUserStatusChoice.objects.get(
-                name='Active')
+                name=DEFAULT_STATUS)
             allocation_user_active_status_choice = AllocationUserStatusChoice.objects.get(
                 name='Active')
             allocation_form_data = allocation_form.cleaned_data['allocation']
@@ -798,10 +807,11 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             request.POST, initial=users_to_remove, prefix='userform')
 
         remove_users_count = 0
+        DEFAULT_REMOVE = import_from_settings('DEFAULT_REMOVE')
 
         if formset.is_valid():
             project_user_removed_status_choice = ProjectUserStatusChoice.objects.get(
-                name='Removed')
+                name=DEFAULT_REMOVE)
             allocation_user_removed_status_choice = AllocationUserStatusChoice.objects.get(
                 name='Removed')
             for form in formset:
