@@ -1,6 +1,7 @@
 from coldfront.core.project.models import Project
 from coldfront.core.allocation.models import Allocation, AllocationAttribute, AllocationAttributeUsage
 from coldfront.core.resource.models import Resource
+from coldfront.core.user.models import UserProfile
 
 
 def build_table(data, allocationattribute_data, get_request):
@@ -18,16 +19,37 @@ def build_table(data, allocationattribute_data, get_request):
     if data.get('only_search_projects'):
         queryset = build_project_queryset(data, get_request)
         columns = build_project_columns(data)
-        rows = build_project_rows(columns, queryset)
+        project_users = get_project_users(data, queryset, columns)
+        rows = build_project_rows(columns, queryset, project_users)
         return rows, columns
     
     queryset = build_queryset(data, allocationattribute_data, get_request)
     columns = build_columns(data, allocationattribute_data)
     additional_data = get_allocation_attribute_data(allocationattribute_data)
     additional_usage_data = get_allocation_attribute_usage(additional_data)
-    rows = build_rows(columns, queryset, additional_data, additional_usage_data)
+    allocation_users = get_allocation_users(data, queryset, columns)
+    rows = build_rows(columns, queryset, additional_data, additional_usage_data, allocation_users)
 
     return rows, columns
+
+def get_allocation_users(data, queryset, columns):
+    column_field_names = [column.get('field_name') for column in columns]
+    allocation_users = {}
+    if 'allocation__users' in column_field_names:
+        user_profile_objs = UserProfile.objects.prefetch_related('user').all()
+        if 'user_profile__department' in column_field_names or 'user_profile__title' in column_field_names:
+            title = data.get('user_profile__title')
+            department = data.get('user_profile__department')
+            if title:
+                user_profile_objs = user_profile_objs.filter(title__icontains=title)
+            if department:
+                user_profile_objs = user_profile_objs.filter(department__icontains=department)
+        for allocation_obj in queryset:
+            all_allocation_users = allocation_obj.allocationuser_set.all()
+            users = all_allocation_users.values_list('user', flat=True)
+            allocation_users[allocation_obj.id] = user_profile_objs.filter(user__in=users)
+
+    return allocation_users
 
 def build_columns(data, allocationattribute_data):
     """
@@ -55,6 +77,10 @@ def build_columns(data, allocationattribute_data):
             if not only_projects:
                 if key == 'display__project__users':
                     continue
+
+                if key in ['display__user_profile__department', 'display__user_profile__title']:
+                    if not data.get('display__allocation__users'):
+                        continue
 
             display_name = ' '.join(key.split('__')[1:])
             display_name = ' '.join(display_name.split('_'))
@@ -87,7 +113,7 @@ def build_columns(data, allocationattribute_data):
 
     return columns
 
-def build_rows(columns, queryset, additional_data, additional_usage_data):
+def build_rows(columns, queryset, additional_data, additional_usage_data, allocation_users):
     """
     Creates the rows for the table. Rows are the length of the number of columns. The length of the
     Queryset is the number of rows.
@@ -104,22 +130,22 @@ def build_rows(columns, queryset, additional_data, additional_usage_data):
     rows_dict = {}
     cache = {'total_project_users': {}, 'total_allocation_users': {}}
     row_idx = 0
-    column_field_names = [column.get('field_name') for column in columns]
-    if 'allocation__users' in column_field_names:
+    if len(allocation_users) > 0:
         for allocation_obj in queryset:
-            all_allocation_users = allocation_obj.allocationuser_set.all()
-            for allocation_user in all_allocation_users:
-                if allocation_user.status.name == 'Active':
-                    row, cache = build_row(
-                        allocation_obj,
-                        columns,
-                        cache,
-                        additional_data,
-                        additional_usage_data,
-                        username=allocation_user.user.username
-                    )
-                    rows_dict[row_idx] = row
-                    row_idx += 1
+            user_profiles = allocation_users.get(allocation_obj.id)
+            for user_profile in user_profiles:
+                row, cache = build_row(
+                    allocation_obj,
+                    columns,
+                    cache,
+                    additional_data,
+                    additional_usage_data,
+                    user_profile=user_profile,
+                    username=user_profile.user.username
+                )
+                rows_dict[row_idx] = row
+                row_idx += 1
+
     else:
         for allocation_obj in queryset:
             row, cache = build_row(
@@ -134,7 +160,7 @@ def build_rows(columns, queryset, additional_data, additional_usage_data):
 
     return rows_dict
 
-def build_row(allocation_obj, columns, cache, additional_data, additional_usage_data, username=None):
+def build_row(allocation_obj, columns, cache, additional_data, additional_usage_data, user_profile=None, username=None):
     row = []
     for column in columns:
         field_name = column.get('field_name')
@@ -149,6 +175,8 @@ def build_row(allocation_obj, columns, cache, additional_data, additional_usage_
             model = allocation_obj.get_parent_resource
         elif model == 'allocationattribute':
             model = None
+        elif model == 'user_profile':
+            model = user_profile
 
         if model is not None:
             current_attribute = model
@@ -434,6 +462,25 @@ def build_resource_queryset(data):
         )
 
     return resources
+
+def get_project_users(data, queryset, columns):
+    column_field_names = [column.get('field_name') for column in columns]
+    project_users = {}
+    if 'project__users' in column_field_names:
+        user_profile_objs = UserProfile.objects.prefetch_related('user').all()
+        if 'user_profile__department' in column_field_names or 'user_profile__title' in column_field_names:
+            title = data.get('user_profile__title')
+            department = data.get('user_profile__department')
+            if title:
+                user_profile_objs = user_profile_objs.filter(title__icontains=title)
+            if department:
+                user_profile_objs = user_profile_objs.filter(department__icontains=department)
+        for project_obj in queryset:
+            all_project_users = project_obj.projectuser_set.all()
+            users = all_project_users.values_list('user', flat=True)
+            project_users[project_obj.id] = user_profile_objs.filter(user__in=users)
+
+    return project_users
     
 def build_project_queryset(data, request):
     """
@@ -495,7 +542,10 @@ def build_project_columns(data):
     """
     columns = []
     for key, value in data.items():
-        if 'display' in key and 'project' in key and value:
+        if 'display' in key and ('project' in key or 'user_profile' in key) and value:
+            if key in ['display__user_profile__department', 'display__user_profile__title']:
+                if not data.get('display__project__users'):
+                    continue
             display_name = ' '.join(key.split('_')[1:])
             field_name = key[len('display') + 2:]
             columns.append({
@@ -505,7 +555,7 @@ def build_project_columns(data):
 
     return columns
 
-def build_project_rows(columns, queryset):
+def build_project_rows(columns, queryset, project_users):
     """
     Creates the rows for the projects table. Rows are the length of the number of columns. The
     length of the Queryset is the number of rows.
@@ -522,16 +572,18 @@ def build_project_rows(columns, queryset):
     column_field_names = [column.get('field_name') for column in columns]
     rows_dict = {}
     row_idx = 0
-    if 'project__users' in column_field_names:
+    if len(project_users) > 0:
         for project_obj in queryset:
-            all_project_users = project_obj.projectuser_set.all()
-            for project_user in all_project_users:
-                if project_user.status.name == 'Active':
-                    row = build_project_row(
-                        project_obj, column_field_names, project_user.user.username
-                    )
-                    rows_dict[row_idx] = row
-                    row_idx += 1
+            user_profiles = project_users.get(project_obj.id)
+            for user_profile in user_profiles:
+                row = build_project_row(
+                    project_obj,
+                    column_field_names,
+                    user_profile=user_profile,
+                    username=user_profile.user.username
+                )
+                rows_dict[row_idx] = row
+                row_idx += 1
     else:
         for project_obj in queryset:
             row = build_project_row(project_obj, column_field_names)
@@ -540,13 +592,16 @@ def build_project_rows(columns, queryset):
 
     return rows_dict
 
-def build_project_row(project_obj, columns, username=None):
+def build_project_row(project_obj, columns, user_profile=None, username=None):
     row = []
     for column in columns:
         attributes = column.split('__')[1:]
 
         current_attribute = project_obj
         for attribute in attributes:
+            if 'user_profile' in column:
+                current_attribute = user_profile
+
             if hasattr(current_attribute, attribute):
                 current_attribute = getattr(current_attribute, attribute)
                 continue

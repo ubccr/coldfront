@@ -64,6 +64,18 @@ class AdvancedSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         helper = AllocationAttributeFormSetHelper()
         context['allocationattribute_helper'] = helper
 
+        linked_allocation_attribute_types = {}
+        for allocation_attribute_type in AllocationAttributeType.objects.all():
+            resources = allocation_attribute_type.linked_resources.all()
+            if resources.exists():
+                for resource in resources:
+                    if not linked_allocation_attribute_types.get(resource.id):
+                        linked_allocation_attribute_types[resource.id] = []
+
+                    linked_allocation_attribute_types[resource.id].append(
+                        f'<option value="{allocation_attribute_type.id}">{allocation_attribute_type}</option>'
+                    )
+
         if search_form.is_valid():
             data = search_form.cleaned_data
             rows, columns = build_table(data, allocationattribute_data, self.request.GET)
@@ -76,6 +88,7 @@ class AdvancedSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         context['entries'] = num_rows
         context['rows'] = rows
         context['allocation_attribute_type_ids'] = allocation_attribute_types_with_usage
+        context['linked_allocation_attribute_types'] = linked_allocation_attribute_types
         return context
 
 

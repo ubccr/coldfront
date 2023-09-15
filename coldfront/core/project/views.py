@@ -1915,6 +1915,7 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     def get_allocation_data(self, project_obj):
         allocations = project_obj.allocation_set.filter(
             status__name__in=['Active', 'Expired', ],
+            is_locked=False,
             resources__requires_payment=False
         )
         initial_data = []
@@ -1959,11 +1960,6 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             formset = formset_factory(ProjectReviewAllocationForm, max_num=len(allocation_data))
             formset = formset(initial=allocation_data, prefix='allocationform')
             context['formset'] = formset
-
-        context['academics_analytics_enabled'] = False
-        if 'coldfront.plugins.academic_analytics' in settings.INSTALLED_APPS:
-            context['academics_analytics_enabled'] = True
-            context['username'] = request.user.username
 
         return render(request, self.template_name, context)
 
@@ -2633,7 +2629,7 @@ class ProjectRequestEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView)
             send_email(
                 'Request for more information',
                 form_data.get('email_body'),
-                EMAIL_SENDER,
+                EMAIL_TICKET_SYSTEM_ADDRESS,
                 receiver_list,
                 cc
             )

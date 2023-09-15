@@ -751,3 +751,21 @@ class AllocationAdminAction(TimeStampedModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE)
     action = models.CharField(max_length=128)
+
+
+class AllocationRemovalStatusChoice(TimeStampedModel):
+    name = models.CharField(max_length=64)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name', ]
+
+
+class AllocationRemovalRequest(TimeStampedModel):
+    project_pi = models.ForeignKey(User, on_delete=models.CASCADE, related_name='%(class)s_project_pi')
+    requestor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='%(class)s_requestor')
+    allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE)
+    allocation_prior_status = models.ForeignKey(AllocationStatusChoice, on_delete=models.CASCADE)
+    status = models.ForeignKey(AllocationRemovalStatusChoice, on_delete=models.CASCADE)
