@@ -553,7 +553,7 @@ class AllocationRemovalRequestAdmin(admin.ModelAdmin):
 
     def resource(self, obj):
         allocation_obj = obj.allocation
-        return allocation_obj.get_parent_resource.resource_type.name
+        return allocation_obj.get_parent_resource.name
 
 
 @admin.register(AllocationRemovalStatusChoice)
