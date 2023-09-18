@@ -541,6 +541,7 @@ class AllocationInvoice(SimpleHistoryAdmin):
 class AllocationAdminActionAdmin(admin.ModelAdmin):
     list_display = ('pk', 'user', 'allocation_pk', 'allocation', 'action', 'created', )
     readonly_fields = ('user', 'allocation', 'action', 'created', )
+    list_filter = ('allocation__resources', )
 
     def allocation_pk(self, obj):
         return obj.allocation.pk
