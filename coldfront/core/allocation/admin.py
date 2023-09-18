@@ -548,12 +548,17 @@ class AllocationAdminActionAdmin(admin.ModelAdmin):
 
 @admin.register(AllocationRemovalRequest)
 class AllocationRemovalRequestAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'project_pi', 'requestor', 'allocation_prior_status', 'resource', 'status')
-    readonly_fields = ('project_pi', 'requestor', 'allocation_prior_status')
+    list_display = ('pk', 'allocation_pk', 'project_pi', 'requestor', 'allocation_prior_status',
+                    'resource', 'status')
+    readonly_fields = ('project_pi', 'requestor', 'allocation_prior_status', 'allocation')
 
     def resource(self, obj):
         allocation_obj = obj.allocation
-        return allocation_obj.get_parent_resource.resource_type.name
+        return allocation_obj.get_parent_resource.name
+    
+    def allocation_pk(self, obj):
+        allocation_obj = obj.allocation
+        return allocation_obj.pk
 
 
 @admin.register(AllocationRemovalStatusChoice)
