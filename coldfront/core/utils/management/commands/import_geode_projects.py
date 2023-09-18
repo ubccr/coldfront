@@ -172,7 +172,7 @@ class Command(BaseCommand):
         billing_rate = float(row["Billing Rate"])
         billable_amount_annual = quota_data * billing_rate
         billable_amount_monthly = billable_amount_annual / 12
-        allocation_obj = Allocation.objects.create(
+        allocation_obj, created = Allocation.objects.get_or_create(
             project=project_obj,
             status=AllocationStatusChoice.objects.get(name="Active"),
             start_date=start_date,
@@ -208,9 +208,10 @@ class Command(BaseCommand):
             fileset=row["Fileset"].strip(),
             mou_link=row["MOU Link"].strip()
         )
-        allocation_obj.resources.add(Resource.objects.get(name="Geode-Projects"))
+        if created:
+            allocation_obj.resources.add(Resource.objects.get(name="Geode-Projects"))
 
-        AllocationUser.objects.create(
+        AllocationUser.objects.get_or_create(
             allocation=allocation_obj,
             user=project_obj.pi,
             status=AllocationUserStatusChoice.objects.get(name="Active")
@@ -236,162 +237,230 @@ class Command(BaseCommand):
                     continue
                 self.create_project_and_allocation_user(username, project_obj, allocation_obj)
 
+        resource_obj = Resource.objects.get(name="Geode-Projects")
         if account_num:
-            AllocationAttribute.objects.create(
-                allocation_attribute_type=AllocationAttributeType.objects.get(name="Account Number"),
+            AllocationAttribute.objects.get_or_create(
+                allocation_attribute_type=AllocationAttributeType.objects.get(
+                    name="Account Number",
+                    linked_resources=resource_obj
+                ),
                 allocation=allocation_obj,
                 value=account_num
             )
 
         if sub_account_num:
-            AllocationAttribute.objects.create(
-                allocation_attribute_type=AllocationAttributeType.objects.get(name="Sub-Account Number"),
+            AllocationAttribute.objects.get_or_create(
+                allocation_attribute_type=AllocationAttributeType.objects.get(
+                    name="Sub-Account Number",
+                    linked_resources=resource_obj
+                ),
                 allocation=allocation_obj,
                 value=sub_account_num
             )
 
         if row["Share Name"]:
-            AllocationAttribute.objects.create(
-                allocation_attribute_type=AllocationAttributeType.objects.get(name="Share Name"),
+            AllocationAttribute.objects.get_or_create(
+                allocation_attribute_type=AllocationAttributeType.objects.get(
+                    name="Share Name",
+                    linked_resources=resource_obj
+                ),
                 allocation=allocation_obj,
                 value=row["Share Name"].strip()
             )
 
         if row["MountPath"]:
-            AllocationAttribute.objects.create(
-                allocation_attribute_type=AllocationAttributeType.objects.get(name="Share Path"),
+            AllocationAttribute.objects.get_or_create(
+                allocation_attribute_type=AllocationAttributeType.objects.get(
+                    name="Share Path",
+                    linked_resources=resource_obj
+                ),
                 allocation=allocation_obj,
                 value=row["MountPath"].strip()
             )
 
         if row["Org"]:
-            AllocationAttribute.objects.create(
-                allocation_attribute_type=AllocationAttributeType.objects.get(name="Organization"),
+            AllocationAttribute.objects.get_or_create(
+                allocation_attribute_type=AllocationAttributeType.objects.get(
+                    name="Organization",
+                    linked_resources=resource_obj
+                ),
                 allocation=allocation_obj,
                 value=row["Org"].strip()
             )
 
         if billing_rate > 0:
-            AllocationAttribute.objects.create(
-                allocation_attribute_type=AllocationAttributeType.objects.get(name="Billing Rate"),
+            AllocationAttribute.objects.get_or_create(
+                allocation_attribute_type=AllocationAttributeType.objects.get(
+                    name="Billing Rate",
+                    linked_resources=resource_obj
+                ),
                 allocation=allocation_obj,
                 value=billing_rate
             )
 
         if billable_amount_annual > 0:
-            AllocationAttribute.objects.create(
-                allocation_attribute_type=AllocationAttributeType.objects.get(name="Billable Amount Annual"),
+            AllocationAttribute.objects.get_or_create(
+                allocation_attribute_type=AllocationAttributeType.objects.get(
+                    name="Billable Amount Annual",
+                    linked_resources=resource_obj
+                ),
                 allocation=allocation_obj,
                 value=billable_amount_annual
             )
 
         if billable_amount_monthly > 0:
-            AllocationAttribute.objects.create(
-                allocation_attribute_type=AllocationAttributeType.objects.get(name="Billable Amount Monthly"),
+            AllocationAttribute.objects.get_or_create(
+                allocation_attribute_type=AllocationAttributeType.objects.get(
+                    name="Billable Amount Monthly",
+                    linked_resources=resource_obj
+                ),
                 allocation=allocation_obj,
                 value=billable_amount_monthly
             )
 
         if row[" Billing? "]:
-            AllocationAttribute.objects.create(
-                allocation_attribute_type=AllocationAttributeType.objects.get(name="Actively Billing"),
+            AllocationAttribute.objects.get_or_create(
+                allocation_attribute_type=AllocationAttributeType.objects.get(
+                    name="Actively Billing",
+                    linked_resources=resource_obj
+                ),
                 allocation=allocation_obj,
                 value=row[" Billing? "].strip()
             )
 
         if billing_start_date:
-            AllocationAttribute.objects.create(
-                allocation_attribute_type=AllocationAttributeType.objects.get(name="Billing Start Date"),
+            AllocationAttribute.objects.get_or_create(
+                allocation_attribute_type=AllocationAttributeType.objects.get(
+                    name="Billing Start Date",
+                    linked_resources=resource_obj
+                ),
                 allocation=allocation_obj,
                 value=billing_start_date
             )
 
         if billing_end_date:
-            AllocationAttribute.objects.create(
-                allocation_attribute_type=AllocationAttributeType.objects.get(name="Billing End Date"),
+            AllocationAttribute.objects.get_or_create(
+                allocation_attribute_type=AllocationAttributeType.objects.get(
+                    name="Billing End Date",
+                    linked_resources=resource_obj
+                ),
                 allocation=allocation_obj,
                 value=billing_end_date
             )
 
         if quota_files > 0:
-            AllocationAttribute.objects.create(
-                allocation_attribute_type=AllocationAttributeType.objects.get(name="Quota Files (M)"),
+            AllocationAttribute.objects.get_or_create(
+                allocation_attribute_type=AllocationAttributeType.objects.get(
+                    name="Quota Files (M)",
+                    linked_resources=resource_obj
+                ),
                 allocation=allocation_obj,
                 value=quota_files
             )
 
         if row["Fileset"]:
-            AllocationAttribute.objects.create(
-                allocation_attribute_type=AllocationAttributeType.objects.get(name="Fileset"),
+            AllocationAttribute.objects.get_or_create(
+                allocation_attribute_type=AllocationAttributeType.objects.get(
+                    name="Fileset",
+                    linked_resources=resource_obj
+                ),
                 allocation=allocation_obj,
                 value=row["Fileset"].strip()
             )
 
         if row["MOU Link"]:
-            AllocationAttribute.objects.create(
-                allocation_attribute_type=AllocationAttributeType.objects.get(name="MOU Link"),
+            AllocationAttribute.objects.get_or_create(
+                allocation_attribute_type=AllocationAttributeType.objects.get(
+                    name="MOU Link",
+                    linked_resources=resource_obj
+                ),
                 allocation=allocation_obj,
                 value=row["MOU Link"].strip()
             )
 
         if row["Admin Group"]:
-            AllocationAttribute.objects.create(
-                allocation_attribute_type=AllocationAttributeType.objects.get(name="Admin Group"),
+            AllocationAttribute.objects.get_or_create(
+                allocation_attribute_type=AllocationAttributeType.objects.get(
+                    name="Admin Group",
+                    linked_resources=resource_obj
+                ),
                 allocation=allocation_obj,
                 value=row["Admin Group"].strip()
             )
 
         if row["Users Group"]:
-            AllocationAttribute.objects.create(
-                allocation_attribute_type=AllocationAttributeType.objects.get(name="Users Group"),
+            AllocationAttribute.objects.get_or_create(
+                allocation_attribute_type=AllocationAttributeType.objects.get(
+                    name="Users Group",
+                    linked_resources=resource_obj
+                ),
                 allocation=allocation_obj,
                 value=row["Users Group"].strip()
             )
 
         if row["Fiscal Officer"]:
-            AllocationAttribute.objects.create(
-                allocation_attribute_type=AllocationAttributeType.objects.get(name="Fiscal Officer"),
+            AllocationAttribute.objects.get_or_create(
+                allocation_attribute_type=AllocationAttributeType.objects.get(
+                    name="Fiscal Officer",
+                    linked_resources=resource_obj
+                ),
                 allocation=allocation_obj,
                 value=row["Fiscal Officer"].strip()
             )
 
         if row["IT Pro Contact"]:
-            AllocationAttribute.objects.create(
-                allocation_attribute_type=AllocationAttributeType.objects.get(name="IT Pro Contact"),
+            AllocationAttribute.objects.get_or_create(
+                allocation_attribute_type=AllocationAttributeType.objects.get(
+                    name="IT Pro Contact",
+                    linked_resources=resource_obj
+                ),
                 allocation=allocation_obj,
                 value=row["IT Pro Contact"].strip()
             )
 
         if row["Primary Contact"]:
-            AllocationAttribute.objects.create(
-                allocation_attribute_type=AllocationAttributeType.objects.get(name="Primary Contact"),
+            AllocationAttribute.objects.get_or_create(
+                allocation_attribute_type=AllocationAttributeType.objects.get(
+                    name="Primary Contact",
+                    linked_resources=resource_obj
+                ),
                 allocation=allocation_obj,
                 value=row["Primary Contact"].strip()
             )
 
         if row["Secondary Contact"]:
-            AllocationAttribute.objects.create(
-                allocation_attribute_type=AllocationAttributeType.objects.get(name="Secondary Contact"),
+            AllocationAttribute.objects.get_or_create(
+                allocation_attribute_type=AllocationAttributeType.objects.get(
+                    name="Secondary Contact",
+                    linked_resources=resource_obj
+                    
+                ),
                 allocation=allocation_obj,
                 value=row["Secondary Contact"].strip()
             )
 
         if quota_data > 0:
-            AllocationAttribute.objects.create(
-                allocation_attribute_type=AllocationAttributeType.objects.get(name="Storage Quota (GB)"),
+            AllocationAttribute.objects.get_or_create(
+                allocation_attribute_type=AllocationAttributeType.objects.get(
+                    name="Storage Quota (GB)",
+                    linked_resources=resource_obj
+                ),
                 allocation=allocation_obj,
                 value=quota_data
             )
 
         if end_date != project_obj.end_date:
-            AllocationAttribute.objects.create(
-                allocation_attribute_type=AllocationAttributeType.objects.get(name="Official End Date"),
+            AllocationAttribute.objects.get_or_create(
+                allocation_attribute_type=AllocationAttributeType.objects.get(
+                    name="Official End Date",
+                    linked_resources=resource_obj
+                ),
                 allocation=allocation_obj,
                 value=end_date
             )
 
         if row["Notes"]:
-            AllocationUserNote.objects.create(
+            AllocationUserNote.objects.get_or_create(
                 allocation=allocation_obj,
                 is_private=True,
                 note=row["Notes"],
@@ -420,8 +489,8 @@ class Command(BaseCommand):
                 90
             )
 
-        project_obj = Project.objects.create(
-            title="",
+        project_obj, created = Project.objects.get_or_create(
+            title=f"Geode Project \"{share_name}\"",
             description=project_description,
             pi=pi_obj,
             max_managers=3,
@@ -430,11 +499,11 @@ class Command(BaseCommand):
             status=ProjectStatusChoice.objects.get(name="Active"),
             end_date=project_end_date
         )
-        project_obj.slurm_account_name = self.generate_slurm_account_name(project_obj)
-        project_obj.title = f"Geode Project \"{share_name}\""
-        project_obj.save()
+        if created:
+            project_obj.slurm_account_name = self.generate_slurm_account_name(project_obj)
+            project_obj.save()
 
-        ProjectUser.objects.create(
+        ProjectUser.objects.get_or_create(
             user=pi_obj,
             project=project_obj,
             role=ProjectUserRoleChoice.objects.get(name="Manager"),
