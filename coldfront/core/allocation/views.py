@@ -4058,7 +4058,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
         if user_can_access_project and user_can_access_allocation:
             return True
 
-        allocation_obj = allocation_change_obj.allocation_user.allocation
+        allocation_obj = allocation_change_obj.allocation
         group_exists = check_if_groups_in_review_groups(
             allocation_obj.get_parent_resource.review_groups.all(),
             self.request.user.groups.all(),
