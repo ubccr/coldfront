@@ -3,7 +3,8 @@ Dear {{ center_name }} user,
 User {{user.first_name}} {{user.last_name}} ({{user.email}}) has requested to join
 your project {{project_title}} at {{project_url}}. If you would like to add them
 then please visit your project's page, click on 'add users', and type their username
-into the text box.
+into the text box. This user should be added to any allocations with resources they
+need access to.
 
 This user was able to send this request by searching for projects you are a PI in
 via your username.

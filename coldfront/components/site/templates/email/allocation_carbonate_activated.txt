@@ -1,10 +1,8 @@
 Dear {{ center_name }} user,
 
-Your allocation request for {{ resource }} has been activated.
+Your allocation request for {{ resource }} has been activated and it may take up to 2 hours for these changes to propagate through the system.
 
 To view your allocations information, please go to {{ allocation_url }}
-
-It may take up to 24 hours for these changes to propagate through the system. 
 
 The Carbonate system consists of 72 compute nodes, each with 256 GB of RAM and two 12-core Intel Xeon E5-2680 v3 CPUs, and 8 large-memory compute nodes, each with 512 GB of RAM and two 12-core Intel Xeon E5-2680 v3 CPUs.
 The system also consists of 12 deep learning nodes, each with 192 GB of RAM, two Intel Xeon Gold 6126 12-core CPUs, and two NVIDIA GPU accelerators (eight with Tesla P100s; four with Tesla V100s), and 24 gpu-accelerated nodes, each with 768 GB of RAM, two Intel 6248 2.5 GHz 20-core CPUs, and 4 NVIDIA V100-PCIE-32GB GPUs.

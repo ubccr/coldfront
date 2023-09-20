@@ -1,10 +1,8 @@
 Dear {{ center_name }} user,
 
-Your allocation request for {{ resource }} has been activated.
+Your allocation request for {{ resource }} has been activated and it may take up to 2 hours for these changes to propagate through the system.
 
 To view your allocations information, please go to {{ allocation_url }}
-
-It may take up to 24 hours for these changes to propagate through the system. 
 
 The Big Red 200 system consists of 640 compute nodes, each with 256 GB of memory and two 64-core, 2.25 GHz, 225-watt AMD EPYC 7742 processors.
 The system also consists of 64 GPU nodes, each with 256 GB of memory, a single 64-core, 2.0 GHz, 225-watt AMD EPYC 7713 processor, and four NVIDIA A100 GPUs.
