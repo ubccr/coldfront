@@ -90,10 +90,10 @@ Project List
     <div class="card-header">
       <a id="expand_pi_button" href="#collapse_pi" role="button" class="card-link" data-toggle="collapse">
         Expand
-        <i id="plus_minus_1" class="fas {{expand_accordion|get_icon}} float-right"></i>
+        <i id="plus_minus_1" class="fas fa-minus float-right"></i>
       </a>
     </div>
-    <div id="collapse_pi" class="collapse {{expand_accordion}}" data-parent="#pi_search_accordion">
+    <div id="collapse_pi" class="collapse show" data-parent="#pi_search_accordion">
       <div class="card-body">
         <form id="pi_search_form" method="post">
           {{ project_pi_search_form|crispy }}
