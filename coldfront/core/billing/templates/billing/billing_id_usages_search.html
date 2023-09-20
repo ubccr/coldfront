@@ -68,7 +68,7 @@
           {{ usage.full_id }}
           {% if user.is_superuser %}
             &nbsp;
-            <a href="{% url 'billing-id-set' billing_id_type='project_default' %}?project={{ usage.project_pk }}">
+            <a href="{% url 'billing-id-set' billing_id_type='project_default' %}?project={{ usage.project_pk }}&{{ next_url_parameter }}">
               <i class="fas fa-edit" aria-hidden="true"></i>
             </a>
           {% endif %}
@@ -107,7 +107,7 @@
           {{ usage.full_id }}
           {% if user.is_superuser %}
             &nbsp;
-            <a href="{% url 'billing-id-set' billing_id_type='recharge' %}?project={{ usage.project_pk }}&user={{ usage.user_pk }}">
+            <a href="{% url 'billing-id-set' billing_id_type='recharge' %}?project={{ usage.project_pk }}&user={{ usage.user_pk }}&{{ next_url_parameter }}">
               <i class="fas fa-edit" aria-hidden="true"></i>
             </a>
           {% endif %}
@@ -142,7 +142,7 @@
           {{ usage.full_id }}
           {% if user.is_superuser %}
             &nbsp;
-            <a href="{% url 'billing-id-set' billing_id_type='user_account' %}?user={{ usage.user_pk }}">
+            <a href="{% url 'billing-id-set' billing_id_type='user_account' %}?user={{ usage.user_pk }}&{{ next_url_parameter }}">
               <i class="fas fa-edit" aria-hidden="true"></i>
             </a>
           {% endif %}

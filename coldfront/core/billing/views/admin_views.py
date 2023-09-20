@@ -1,5 +1,7 @@
 import logging
 
+from urllib.parse import urlencode
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.mixins import UserPassesTestMixin
@@ -164,6 +166,8 @@ class BillingIDSetView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         return initial
 
     def get_success_url(self):
+        if 'next' in self.request.POST:
+            return self.request.POST['next']
         return reverse('billing-id-usages')
 
     def _set_billing_activity_manager(self):
@@ -284,5 +288,11 @@ class BillingIDUsagesSearchView(LoginRequiredMixin, UserPassesTestMixin,
                     'username': user.username,
                     'full_id': full_id,
                 })
+
+        # Once the linked form is submitted, redirect back to this page, with
+        # the same parameters, for further editing.
+        next_url = (
+            f'{reverse("billing-id-usages")}?{urlencode(self.request.GET)}')
+        context['next_url_parameter'] = urlencode({'next': next_url})
 
         return context

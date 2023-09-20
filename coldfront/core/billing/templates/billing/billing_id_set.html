@@ -16,6 +16,7 @@
 
 <form method="post">
   {% csrf_token %}
+  <input type="hidden" name="next" value="{{ request.GET.next }}">
   {{ form|crispy }}
   <input type="submit" class="btn btn-primary" value="Set">
 </form>
