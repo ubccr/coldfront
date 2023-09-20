@@ -13,6 +13,27 @@ from coldfront.core.project.models import Project
 # TODO: Replace this module with a directory as needed.
 
 
+class BillingActivityChoiceField(forms.ModelChoiceField):
+
+    @staticmethod
+    def label_from_instance(obj):
+        return obj.full_id()
+
+
+class BillingIDValidityMixin(object):
+
+    def __init__(self, *args, **kwargs):
+        self.is_billing_id_invalid = False
+        super().__init__(*args, **kwargs)
+
+    def validate_billing_id(self, billing_id, ignore_invalid=False):
+        if not is_billing_id_valid(billing_id):
+            self.is_billing_id_invalid = True
+            if not ignore_invalid:
+                raise forms.ValidationError(
+                    f'Project ID {billing_id} is not currently valid.')
+
+
 def billing_id_validators():
     """Return a list of validators for billing IDs."""
     return [
@@ -25,7 +46,7 @@ def billing_id_validators():
     ]
 
 
-class BillingIDValidationForm(forms.Form):
+class BillingIDValidationForm(BillingIDValidityMixin, forms.Form):
 
     billing_id = forms.CharField(
         help_text='Example: 123456-789',
@@ -42,13 +63,12 @@ class BillingIDValidationForm(forms.Form):
         """Return the given billing ID if it exists, and optionally, is
         valid. Otherwise, raise a ValidationError."""
         billing_id = self.cleaned_data['billing_id']
-        if self.enforce_validity and not is_billing_id_valid(billing_id):
-            raise forms.ValidationError(
-                f'Project ID {billing_id} is not currently valid.')
+        self.validate_billing_id(
+            billing_id, ignore_invalid=not self.enforce_validity)
         return billing_id
 
 
-class BillingIDCreationForm(forms.Form):
+class BillingIDCreationForm(BillingIDValidityMixin, forms.Form):
 
     billing_id = forms.CharField(
         help_text='Example: 123456-789',
@@ -60,10 +80,6 @@ class BillingIDCreationForm(forms.Form):
         initial=False,
         label='Create the Project ID even if it is invalid.',
         required=False)
-
-    def __init__(self, *args, **kwargs):
-        self.is_billing_id_invalid = False
-        super().__init__(*args, **kwargs)
 
     def clean_billing_id(self):
         billing_id = self.cleaned_data['billing_id']
@@ -83,24 +99,61 @@ class BillingIDCreationForm(forms.Form):
             # Validation failed.
             return cleaned_data
         ignore_invalid = cleaned_data.get('ignore_invalid')
-        if not is_billing_id_valid(billing_id):
-            self.is_billing_id_invalid = True
-            if not ignore_invalid:
-                raise forms.ValidationError(
-                    f'Project ID {billing_id} is not currently valid.')
+        self.validate_billing_id(billing_id, ignore_invalid=ignore_invalid)
         return cleaned_data
 
 
-class BillingActivityChoiceField(forms.ModelChoiceField):
+class BillingIDBaseSetForm(BillingIDValidityMixin, forms.Form):
 
-    @staticmethod
-    def label_from_instance(obj):
-        return obj.full_id()
+    billing_activity = BillingActivityChoiceField(
+        label='Project ID',
+        queryset=BillingActivity.objects.all(),
+        required=True)
+    ignore_invalid = forms.BooleanField(
+        initial=False,
+        label='Set the Project ID even if it is invalid.',
+        required=False)
+
+    def clean(self):
+        """Disallow invalid billing IDs from being set, unless the user
+        explicitly allows it."""
+        cleaned_data = super().clean()
+        billing_activity = cleaned_data.get('billing_activity')
+        billing_id = billing_activity.full_id()
+        ignore_invalid = cleaned_data.get('ignore_invalid')
+        self.validate_billing_id(billing_id, ignore_invalid=ignore_invalid)
+        return cleaned_data
+
+
+class BillingIDSetProjectDefaultForm(BillingIDBaseSetForm):
+
+    project = forms.CharField(
+        widget=forms.TextInput(attrs={'readonly': 'readonly'}))
+
+    field_order = ['project', 'billing_activity', 'ignore_invalid']
+
+
+class BillingIDSetRechargeForm(BillingIDBaseSetForm):
+
+    project = forms.CharField(
+        widget=forms.TextInput(attrs={'readonly': 'readonly'}))
+    user = forms.CharField(
+        widget=forms.TextInput(attrs={'readonly': 'readonly'}))
+
+    field_order = ['project', 'user', 'billing_activity', 'ignore_invalid']
+
+
+class BillingIDSetUserAccountForm(BillingIDBaseSetForm):
+
+    user = forms.CharField(
+        widget=forms.TextInput(attrs={'readonly': 'readonly'}))
+
+    field_order = ['user', 'billing_activity', 'ignore_invalid']
 
 
 class BillingIDUsagesSearchForm(forms.Form):
 
-    billing_id = BillingActivityChoiceField(
+    billing_activity = BillingActivityChoiceField(
         help_text=(
             'Filter results to only include usages of the selected ID. If an '
             'ID does not appear in the list, then there are no usages.'),

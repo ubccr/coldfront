@@ -59,6 +59,11 @@ class BillingActivityManager(ABC):
         else:
             self._create_container_with_value(value)
 
+    @property
+    @abstractmethod
+    def entity_str(self):
+        pass
+
     @abstractmethod
     def _create_container_with_value(self, value):
         """Create the container to store the given value, and set the
@@ -119,6 +124,10 @@ class ProjectBillingActivityManager(BillingActivityManager):
         self._allocation = get_project_compute_allocation(project)
         super().__init__(project)
 
+    @property
+    def entity_str(self):
+        return self._entity.name
+
     def _create_container_with_value(self, value):
         self._container = AllocationAttribute.objects.create(
             allocation_attribute_type=self._allocation_attribute_type,
@@ -156,6 +165,10 @@ class ProjectUserBillingActivityManager(BillingActivityManager):
             allocation=self._allocation, user=project_user.user)
         super().__init__(project_user)
 
+    @property
+    def entity_str(self):
+        return f'({self._entity.project.name}, {self._entity.user.username})'
+
     def _create_container_with_value(self, value):
         self._container = self.container_type.objects.create(
             allocation_attribute_type=self._allocation_attribute_type,
@@ -189,6 +202,10 @@ class UserBillingActivityManager(BillingActivityManager):
 
     def __init__(self, user):
         super().__init__(user)
+
+    @property
+    def entity_str(self):
+        return self._entity.username
 
     def _create_container_with_value(self, value):
         self._container = self.container_type.objects.create(

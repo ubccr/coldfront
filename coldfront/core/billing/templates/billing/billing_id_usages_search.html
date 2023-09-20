@@ -64,7 +64,15 @@
       {% for usage in project_default_usages %}
       <tr>
         <td>{{ usage.project_name }}</td>
-        <td>{{ usage.full_id }}</td>
+        <td>
+          {{ usage.full_id }}
+          {% if user.is_superuser %}
+            &nbsp;
+            <a href="{% url 'billing-id-set' billing_id_type='project_default' %}?project={{ usage.project_pk }}">
+              <i class="fas fa-edit" aria-hidden="true"></i>
+            </a>
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>
@@ -95,7 +103,15 @@
       <tr>
         <td>{{ usage.project_name }}</td>
         <td>{{ usage.username }}</td>
-        <td>{{ usage.full_id }}</td>
+        <td>
+          {{ usage.full_id }}
+          {% if user.is_superuser %}
+            &nbsp;
+            <a href="{% url 'billing-id-set' billing_id_type='recharge' %}?project={{ usage.project_pk }}&user={{ usage.user_pk }}">
+              <i class="fas fa-edit" aria-hidden="true"></i>
+            </a>
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>
@@ -122,7 +138,15 @@
       {% for usage in user_account_usages %}
       <tr>
         <td>{{ usage.username }}</td>
-        <td>{{ usage.full_id }}</td>
+        <td>
+          {{ usage.full_id }}
+          {% if user.is_superuser %}
+            &nbsp;
+            <a href="{% url 'billing-id-set' billing_id_type='user_account' %}?user={{ usage.user_pk }}">
+              <i class="fas fa-edit" aria-hidden="true"></i>
+            </a>
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>
