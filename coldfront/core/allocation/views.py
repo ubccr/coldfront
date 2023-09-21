@@ -628,8 +628,8 @@ class AllocationRemoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                 )
                 resource_name = allocation_obj.get_parent_resource
                 domain_url = get_domain_url(self.request)
-                allocation_detail_url = reverse('allocation-detail', kwargs={'pk': allocation_obj.pk})
-                allocation_url = f'{domain_url}{allocation_detail_url}'
+                allocation_removal_list_url = reverse('allocation-removal-request-list')
+                allocation_url = f'{domain_url}{allocation_removal_list_url}'
                 project_obj = allocation_obj.project
                 template_context = {
                     'project_title': project_obj.title,
