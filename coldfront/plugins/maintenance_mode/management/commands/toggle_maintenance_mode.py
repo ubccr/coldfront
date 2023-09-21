@@ -14,6 +14,9 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         status = options.get('status')
+        if status is None:
+            raise CommandError('Please provide a status (on/off)')
+
         if status.lower() == 'on':
             set_maintenance_mode_status(True)
         elif status.lower() == 'off':
