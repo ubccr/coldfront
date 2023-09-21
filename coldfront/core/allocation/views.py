@@ -628,8 +628,8 @@ class AllocationRemoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                 )
                 resource_name = allocation_obj.get_parent_resource
                 domain_url = get_domain_url(self.request)
-                allocation_detail_url = reverse('allocation-detail', kwargs={'pk': allocation_obj.pk})
-                allocation_url = f'{domain_url}{allocation_detail_url}'
+                allocation_removal_list_url = reverse('allocation-removal-request-list')
+                allocation_url = f'{domain_url}{allocation_removal_list_url}'
                 project_obj = allocation_obj.project
                 template_context = {
                     'project_title': project_obj.title,
@@ -4058,7 +4058,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
         if user_can_access_project and user_can_access_allocation:
             return True
 
-        allocation_obj = allocation_change_obj.allocation_user.allocation
+        allocation_obj = allocation_change_obj.allocation
         group_exists = check_if_groups_in_review_groups(
             allocation_obj.get_parent_resource.review_groups.all(),
             self.request.user.groups.all(),

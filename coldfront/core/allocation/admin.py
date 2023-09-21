@@ -541,6 +541,7 @@ class AllocationInvoice(SimpleHistoryAdmin):
 class AllocationAdminActionAdmin(admin.ModelAdmin):
     list_display = ('pk', 'user', 'allocation_pk', 'allocation', 'action', 'created', )
     readonly_fields = ('user', 'allocation', 'action', 'created', )
+    list_filter = ('allocation__resources', )
 
     def allocation_pk(self, obj):
         return obj.allocation.pk
@@ -551,6 +552,16 @@ class AllocationRemovalRequestAdmin(admin.ModelAdmin):
     list_display = ('pk', 'allocation_pk', 'project_pi', 'requestor', 'allocation_prior_status',
                     'resource', 'status')
     readonly_fields = ('project_pi', 'requestor', 'allocation_prior_status', 'allocation')
+    list_filter = (
+        'status',
+        'allocation__resources',
+        'allocation_prior_status'
+    )
+    search_fields = (
+        'requestor__username',
+        'requestor__first_name',
+        'requestor__last_name',
+    )
 
     def resource(self, obj):
         allocation_obj = obj.allocation
