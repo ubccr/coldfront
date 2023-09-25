@@ -5,3 +5,7 @@
 {% if 'coldfront.plugins.system_monitor' in EXTRA_APPS %}
   {% include "system_monitor/system_monitor_div.html" %} 
 {% endif %}
+
+{% if 'coldfront.plugins.slurm' in EXTRA_APPS %}
+  {% include "slurm/slurm_div.html" %} 
+{% endif %}

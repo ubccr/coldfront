@@ -1,0 +1,18 @@
+
+<div id="slurm_help">
+</div>
+
+<script>
+  $(document).ready(function () {
+    $.ajax({
+      url: "{% url 'get-slurm-accounts' %}",
+      method: "POST",
+      data: {
+        csrfmiddlewaretoken: "{{ csrf_token }}",
+      },
+      success: function(data) {
+        $('#slurm_help').after(data);
+      }
+    })
+  })
+</script>
