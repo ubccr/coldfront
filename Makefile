@@ -3,7 +3,7 @@ PRODBUILDARGS = --ssh default
 
 DRFIMAGE      = coldfront
 DRFBUILDARGS  = --ssh default
-DRFFILE       = Dockerfile-ifx
+DRFFILE       = Dockerfile
 
 
 DOCKERCOMPOSEFILE = docker-compose.yml
