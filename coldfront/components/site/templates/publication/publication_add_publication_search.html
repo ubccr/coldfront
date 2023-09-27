@@ -16,7 +16,7 @@ Add Publication to Project
   <a class="btn btn-primary" href="{% url 'add-publication-manually' project.pk %}" role="button"><i class="far fa-edit" aria-hidden="true"></i> Enter publication manually</a>
 
   {% if academics_analytics_enabled %}
-    {% include "academic_analytics/academic_analytics_div.html" with project_pk=project.pk project_type=project.type.name %}
+    {% include "academic_analytics/academic_analytics_div.html" with project_pk=project.pk %}
   {% endif %}
 
   <form id="post-form">
