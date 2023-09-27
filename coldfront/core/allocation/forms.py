@@ -10,7 +10,8 @@ from django.conf import settings
 from coldfront.core.allocation.models import (AllocationAccount,
                                               AllocationAttributeType,
                                               AllocationAttribute,
-                                              AllocationStatusChoice,)
+                                              AllocationStatusChoice,
+                                              AllocationUserRoleChoice)
 from coldfront.core.allocation.utils import get_user_resources
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource, ResourceType
@@ -406,7 +407,23 @@ class AllocationAddUserForm(forms.Form):
     first_name = forms.CharField(max_length=30, required=False, disabled=True)
     last_name = forms.CharField(max_length=150, required=False, disabled=True)
     email = forms.EmailField(max_length=100, required=False, disabled=True)
+    role = forms.ModelChoiceField(queryset=AllocationUserRoleChoice.objects.all(), required=False)
     selected = forms.BooleanField(initial=False, required=False)
+
+    def __init__(self, *args, resource=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.requires_role = False
+        if resource:
+            self.requires_role = resource.requires_user_roles
+            self.fields['role'].queryset = AllocationUserRoleChoice.objects.filter(resources=resource)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get('selected'):
+            if self.requires_role and not cleaned_data.get('role'):
+                raise ValidationError('This resource requires user roles')
+
+        return cleaned_data
 
 
 class AllocationRemoveUserForm(forms.Form):
@@ -693,3 +710,18 @@ class AllocationExportForm(forms.Form):
             Submit('submit', 'Export', css_class='btn-success'),
             Reset('reset', 'Reset', css_class='btn-secondary')
         )
+
+
+class AllocationUserUpdateForm(forms.Form):
+    role = forms.ModelChoiceField(
+        queryset=AllocationUserRoleChoice.objects.all(), empty_label=None)
+    enable_notifications = forms.BooleanField(initial=False, required=False)
+
+    def __init__(self, *args, **kwargs):
+        disable_role = kwargs.pop('disable_role', False)
+        disable_enable_notifications = kwargs.pop('disable_enable_notifications', False)
+        super().__init__(*args, **kwargs)
+        if disable_role:
+            self.fields['role'].disabled = True
+        if disable_enable_notifications:
+            self.fields['enable_notifications'].disabled = True

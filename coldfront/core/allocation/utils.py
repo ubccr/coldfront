@@ -6,7 +6,8 @@ from django.forms.models import model_to_dict
 from coldfront.core.allocation.models import (AllocationUser,
                                               AllocationUserStatusChoice,
                                               AllocationStatusChoice,
-                                              AllocationAdminAction)
+                                              AllocationAdminAction,
+                                              AllocationUserRoleChoice)
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email_template
@@ -222,3 +223,31 @@ def get_allocation_user_emails(allocation_obj, only_project_managers=False):
     allocation_users = allocation_users.values_list('user__email', flat=True)
 
     return list(allocation_users)
+
+
+def check_if_roles_are_enabled(allocation_obj):
+    return allocation_obj.get_parent_resource.requires_user_roles
+
+
+def get_default_allocation_user_role(resource, allocation_user):
+    project_managers = allocation_user.allocation.project.projectuser_set.filter(
+        role__name='Manager'
+    ).values_list('user__username', flat=True)
+    is_manager = allocation_user.user.username in project_managers
+    if resource.requires_user_roles:
+        if is_manager:
+            return AllocationUserRoleChoice.objects.filter(
+                resources=resource, is_manager_default=True
+            )
+        else:
+            return AllocationUserRoleChoice.objects.filter(
+                resources=resource, is_user_default=True
+            )
+        
+    return AllocationUserRoleChoice.objects.none()
+
+def set_default_allocation_user_role(resource, allocation_user):
+    role_choice_queryset = get_default_allocation_user_role(resource, allocation_user)
+    if role_choice_queryset.exists():
+        allocation_user.role = role_choice_queryset[0]
+        allocation_user.save()

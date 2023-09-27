@@ -374,8 +374,12 @@ Allocation Detail
             <th scope="col">Username</th>
             <th scope="col">Name</th>
             <th scope="col">Email</th>
+            {% if allocation_user_roles_enabled %}
+              <th scope="col">Role</th>
+            {% endif %}
             <th scope="col">Status</th>
             <th scope="col">Last Modified</th>
+            <th scope="col">Action</th>
           </tr>
         </thead>
         <tbody>
@@ -384,6 +388,9 @@ Allocation Detail
               <td>{{ user.user.username }}</td>
               <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
               <td>{{ user.user.email }}</td>
+              {% if allocation_user_roles_enabled %}
+                <td>{{ user.role.name }}</td>
+              {% endif %}
               {% if user.status.name == 'Active' %}
                 <td class="text-success"><strong>{{ user.status.name }}</strong></td>
               {% elif user.status.name in 'Denied, Error, Expired' %}
@@ -392,6 +399,13 @@ Allocation Detail
                 <td class="text-primary"><strong>{{ user.status.name }}</strong></td>
               {% endif %}
               <td>{{ user.modified|date:"M. d, Y" }}</td>
+              <td>
+                {% if is_allowed_to_update_project %}
+                  <a title="Edit user" href="{% url 'allocation-user-detail' allocation.pk user.id %}">
+                    <i class="fas fa-user-edit" aria-hidden="true"></i><span class="sr-only">Edit</span>
+                  </a>
+                {% endif %}
+              </td>
             </tr>
           {% endfor %}
         </tbody>
