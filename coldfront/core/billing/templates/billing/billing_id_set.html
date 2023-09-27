@@ -1,0 +1,37 @@
+{% extends "common/base.html" %}
+{% load common_tags %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}
+  Set LBL Project ID: {{ billing_id_type_label }}
+{% endblock %}
+
+{% block content %}
+<script type='text/javascript' src="{% static 'selectize/selectize.min.js' %}"></script>
+<link rel='stylesheet' type='text/css' href="{% static 'selectize/selectize.bootstrap3.css' %}"/>
+
+<h1>Set LBL Project ID: {{ billing_id_type_label }}</h1>
+<hr>
+
+<form method="post">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ request.GET.next }}">
+  {{ form|crispy }}
+  <input type="submit" class="btn btn-primary" value="Set">
+</form>
+
+<script>
+  $('select').selectize({
+    create: false,
+    sortField: 'text'
+  });
+</script>
+
+<script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-admin").addClass("active");
+  $("#navbar-billing-id-usages").addClass("active");
+</script>
+
+{% endblock %}

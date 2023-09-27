@@ -14,6 +14,15 @@
 <h1>LBL Project ID Usages</h1>
 <hr>
 
+<!-- Create -->
+{% if user.is_superuser %}
+<a class="class btn btn-primary" href="{% url 'billing-id-create' %}">
+  <i class="fas fa-plus" aria-hidden="true"></i>
+  Create
+</a>
+<hr>
+{% endif %}
+
 <div class="mb-3" id="accordion">
   <div class="card">
     <div class="card-header">
@@ -55,7 +64,15 @@
       {% for usage in project_default_usages %}
       <tr>
         <td>{{ usage.project_name }}</td>
-        <td>{{ usage.full_id }}</td>
+        <td>
+          {{ usage.full_id }}
+          {% if user.is_superuser %}
+            &nbsp;
+            <a href="{% url 'billing-id-set' billing_id_type='project_default' %}?project={{ usage.project_pk }}&{{ next_url_parameter }}">
+              <i class="fas fa-edit" aria-hidden="true"></i>
+            </a>
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>
@@ -86,7 +103,15 @@
       <tr>
         <td>{{ usage.project_name }}</td>
         <td>{{ usage.username }}</td>
-        <td>{{ usage.full_id }}</td>
+        <td>
+          {{ usage.full_id }}
+          {% if user.is_superuser %}
+            &nbsp;
+            <a href="{% url 'billing-id-set' billing_id_type='recharge' %}?project={{ usage.project_pk }}&user={{ usage.user_pk }}&{{ next_url_parameter }}">
+              <i class="fas fa-edit" aria-hidden="true"></i>
+            </a>
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>
@@ -113,7 +138,15 @@
       {% for usage in user_account_usages %}
       <tr>
         <td>{{ usage.username }}</td>
-        <td>{{ usage.full_id }}</td>
+        <td>
+          {{ usage.full_id }}
+          {% if user.is_superuser %}
+            &nbsp;
+            <a href="{% url 'billing-id-set' billing_id_type='user_account' %}?user={{ usage.user_pk }}&{{ next_url_parameter }}">
+              <i class="fas fa-edit" aria-hidden="true"></i>
+            </a>
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>
