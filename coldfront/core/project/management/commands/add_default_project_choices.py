@@ -7,7 +7,8 @@ from coldfront.core.project.models import (ProjectAttributeType,
                                             ProjectStatusChoice,
                                             ProjectUserRoleChoice,
                                             ProjectUserStatusChoice,
-                                            AttributeType)
+                                            AttributeType,
+                                            ProjectNoteTags)
 
 
 class Command(BaseCommand):
@@ -35,3 +36,5 @@ class Command(BaseCommand):
         ):
             ProjectAttributeType.objects.get_or_create(name=name, attribute_type=AttributeType.objects.get(
                 name=attribute_type), has_usage=has_usage, is_private=is_private)
+        for choice in ["Warning","Success","Information","To-Do"]:
+            ProjectNoteTags.objects.get_or_create(name = choice)
