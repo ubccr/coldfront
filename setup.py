@@ -55,7 +55,7 @@ setup(
         'six==1.16.0',
         'sqlparse==0.4.2',
         'text-unidecode==1.3',
-        'urllib3==1.26.14',
+        'urllib3==1.26.17',
         'wcwidth==0.2.6',
         'formencode==2.0.1',
     ],
