@@ -47,4 +47,4 @@ RUN mkdir -p /usr/src/app/media/reports
 EXPOSE 80
 EXPOSE 25
 
-CMD ["/bin/bash", "./container_startup-dev.sh dev"]
+CMD ["/bin/bash", "./container_startup.sh dev"]
