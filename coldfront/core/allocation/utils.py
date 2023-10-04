@@ -229,11 +229,11 @@ def check_if_roles_are_enabled(allocation_obj):
     return allocation_obj.get_parent_resource.requires_user_roles
 
 
-def get_default_allocation_user_role(resource, allocation_user):
-    project_managers = allocation_user.allocation.project.projectuser_set.filter(
+def get_default_allocation_user_role(resource, project_obj, user):
+    project_managers = project_obj.projectuser_set.filter(
         role__name='Manager'
     ).values_list('user__username', flat=True)
-    is_manager = allocation_user.user.username in project_managers
+    is_manager = user.username in project_managers
     if resource.requires_user_roles:
         if is_manager:
             return AllocationUserRoleChoice.objects.filter(
@@ -247,7 +247,9 @@ def get_default_allocation_user_role(resource, allocation_user):
     return AllocationUserRoleChoice.objects.none()
 
 def set_default_allocation_user_role(resource, allocation_user):
-    role_choice_queryset = get_default_allocation_user_role(resource, allocation_user)
+    role_choice_queryset = get_default_allocation_user_role(
+        resource, allocation_user.allocation.project, allocation_user.user
+    )
     if role_choice_queryset.exists():
         allocation_user.role = role_choice_queryset[0]
         allocation_user.save()

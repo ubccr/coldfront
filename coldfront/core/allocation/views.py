@@ -1644,23 +1644,21 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                              set(users_already_in_allocation))
         missing_users = User.objects.filter(username__in=missing_users)
         # .exclude(pk=allocation_obj.project.pi.pk)
-        missing_allocation_users = allocation_obj.allocationuser_set.filter(
-            user__in=missing_users
-        )
+
         resource_obj = allocation_obj.get_parent_resource
 
         users_to_add = []
-        for allocation_user in missing_allocation_users:
-            role = get_default_allocation_user_role(resource_obj, allocation_user)
+        for user in missing_users:
+            role = get_default_allocation_user_role(resource_obj, allocation_obj.project, user)
             if role.exists():
                 role = role[0]
             else:
                 role = None
             users_to_add.append({
-                'username': allocation_user.user.username,
-                'first_name': allocation_user.user.first_name,
-                'last_name': allocation_user.user.last_name,
-                'email': allocation_user.user.email,
+                'username': user.username,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'email': user.email,
                 'role': role
             })
 
