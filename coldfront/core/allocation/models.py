@@ -679,7 +679,7 @@ class AllocationUserRoleChoice(TimeStampedModel):
                         raise ValidationError(
                             f'role {role_choice.name} is already set as the user default'
                         )
-        elif self.is_manager_default:
+        if self.is_manager_default:
             for role_choice in AllocationUserRoleChoice.objects.all().exclude(pk=self.pk):
                 for resource in role_choice.resources.all():
                     if resource in self.resources.all() and role_choice.is_manager_default:
