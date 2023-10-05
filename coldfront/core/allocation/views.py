@@ -69,6 +69,9 @@ from coldfront.core.utils.mail import send_allocation_admin_email, send_allocati
 if 'django_q' in settings.INSTALLED_APPS:
     from django_q.tasks import Task
 
+if 'coldfront.plugins.ldap' in settings.INSTALLED_APPS:
+    from coldfront.plugins.ldap.utils import LDAPConn
+
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
     'ALLOCATION_ENABLE_ALLOCATION_RENEWAL', True)
 ALLOCATION_DEFAULT_ALLOCATION_LENGTH = import_from_settings(
@@ -791,6 +794,8 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         formset = formset(request.POST, initial=users_to_add, prefix='userform')
 
         users_added_count = 0
+        if 'coldfront.plugins.ldap' in settings.INSTALLED_APPS:
+            ldap_conn = LDAPConn()
 
         if formset.is_valid():
             user_active_status = AllocationUserStatusChoice.objects.get(name='Active')
@@ -798,10 +803,24 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             cleaned_form = [form.cleaned_data for form in formset]
             selected_cleaned_form = [form for form in cleaned_form if form['selected']]
             for form_data in selected_cleaned_form:
-                users_added_count += 1
+
                 user_obj = get_user_model().objects.get(
                     username=form_data.get('username')
                 )
+
+                if 'coldfront.plugins.ldap' in settings.INSTALLED_APPS:
+                    try:
+                        ldap_conn.add_member_to_group(
+                            user_obj.username,
+                            allocation_obj.project.title,
+                        )
+                    except Exception as e:
+                        messages.error(
+                            request,
+                            f"could not remove user {allocation_user_obj}: {e}"
+                        )
+                        continue
+
                 allocation_user_obj, _ = (
                     allocation_obj.allocationuser_set.update_or_create(
                         user=user_obj, defaults={'status': user_active_status}
@@ -810,6 +829,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                 allocation_activate_user.send(
                     sender=self.__class__, allocation_user_pk=allocation_user_obj.pk
                 )
+                users_added_count += 1
 
             user_plural = 'user' if users_added_count == 1 else 'users'
             msg = f'Added {users_added_count} {user_plural} to allocation.'
@@ -897,6 +917,8 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
         formset = formset(request.POST, initial=users_to_remove, prefix='userform')
 
         remove_users_count = 0
+        if 'coldfront.plugins.ldap' in settings.INSTALLED_APPS:
+            ldap_conn = LDAPConn()
         if formset.is_valid():
             removed_allocuser_status = AllocationUserStatusChoice.objects.get(
                 name='Removed'
@@ -906,7 +928,6 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
                 form for form in cleaned_forms if form['selected']
             ]
             for user_form_data in selected_cleaned_forms:
-                remove_users_count += 1
                 user_obj = get_user_model().objects.get(
                     username=user_form_data.get('username')
                 )
@@ -916,11 +937,26 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
                 allocation_user_obj = allocation_obj.allocationuser_set.get(
                     user=user_obj
                 )
+
+                if 'coldfront.plugins.ldap' in settings.INSTALLED_APPS:
+                    try:
+                        ldap_conn.remove_member_from_group(
+                            user_obj.username,
+                            allocation_obj.project.title,
+                        )
+                    except Exception as e:
+                        messages.error(
+                            request,
+                            f"could not remove user {allocation_user_obj}: {e}"
+                        )
+                        continue
+
                 allocation_user_obj.status = removed_allocuser_status
                 allocation_user_obj.save()
                 allocation_remove_user.send(
                     sender=self.__class__, allocation_user_pk=allocation_user_obj.pk
                 )
+                remove_users_count += 1
 
             user_plural = 'user' if remove_users_count == 1 else 'users'
             msg = f'Removed {remove_users_count} {user_plural} from allocation.'

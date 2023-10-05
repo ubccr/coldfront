@@ -157,12 +157,19 @@ class LDAPConn:
             raise e
         group_dn = group['distinguishedName']
         user_dn = user['distinguishedName']
-        ad_add_members_to_groups(self.conn, [user_dn], group_dn, fix=True)
+        try:
+            result = ad_add_members_to_groups(self.conn, [user_dn], group_dn, fix=True)
+        except Exception as e:
+            return e
+        return result
 
 
     def remove_member_from_group(self, user_name, group_name):
         # get group
-        group = self.return_group_members_manager(group_name)
+        try:
+            group = self.return_group_members_manager(group_name)
+        except ValueError as e:
+            raise e
         # get user
         try:
             user = self.return_user_by_name(user_name)
@@ -170,7 +177,13 @@ class LDAPConn:
             raise e
         group_dn = group['distinguishedName']
         user_dn = user['distinguishedName']
-        ad_remove_members_from_groups(self.conn, [user_dn], group_dn, fix=True)
+        try:
+            result = ad_remove_members_from_groups(self.conn, [user_dn], group_dn, fix=True)
+        except Exception as e:
+            return e
+        return result
+
+
 
 
     def return_group_members_manager(self, samaccountname):

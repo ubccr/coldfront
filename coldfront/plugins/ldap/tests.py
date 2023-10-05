@@ -5,15 +5,17 @@ from ldap3.core.timezone import OffsetTzInfo
 from django.test import TestCase, tag
 from django.contrib.auth import get_user_model
 
-from coldfront.plugins.ldap.utils import (format_template_assertions,
-                                        LDAPConn,
-                                        GroupUserCollection,
-                                        add_new_projects)
+from coldfront.plugins.ldap.utils import (
+    LDAPConn,
+    GroupUserCollection,
+    add_new_projects,
+    format_template_assertions,
+)
 from coldfront.core.test_helpers.factories import setup_models
 
 
 UTIL_FIXTURES = [
-        "coldfront/core/test_helpers/test_data/test_fixtures/ifx.json",
+    "coldfront/core/test_helpers/test_data/test_fixtures/ifx.json",
 ]
 
 class UtilFunctionTests(TestCase):
@@ -83,6 +85,7 @@ class LDAPConnTest(TestCase):
         samaccountname = 'cepr_test_group'
         members, manager = self.ldap_conn.return_group_members_manager(samaccountname)
         self.assertEqual(len(members), 1)
+
 
 class GroupUserCollectionTests(TestCase):
     """Tests for GroupUserCollection class"""
