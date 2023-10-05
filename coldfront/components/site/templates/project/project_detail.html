@@ -63,9 +63,9 @@ Project Detail
       {% if not project.status.name in 'Archived, Denied, Expired' %}
         <a class="btn btn-success" href="{% url 'project-add-users-search' project.pk %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
         {% if project.type.name != 'Class' %}
-          <!-- <a class="btn btn-success" href="{% url 'grant-create' project.id %}" role="button"><i class="fas fa-trophy" aria-hidden="true"></i> Add Grant</a>
+          <!-- <a class="btn btn-success" href="{% url 'grant-create' project.id %}" role="button"><i class="fas fa-trophy" aria-hidden="true"></i> Add Grant</a> -->
           <a class="btn btn-success" href="{% url 'publication-search' project.pk %}" role="button"><i class="fas fa-newspaper" aria-hidden="true"></i> Add Publication</a>
-          <a class="btn btn-success" href="{% url 'add-research-output' project.pk %}" role="button"><i class="far fa-newspaper" aria-hidden="true"></i> Add Research Output</a> -->
+          <!-- <a class="btn btn-success" href="{% url 'add-research-output' project.pk %}" role="button"><i class="far fa-newspaper" aria-hidden="true"></i> Add Research Output</a> -->
         {% endif %}
       {% endif %}
     </div>
@@ -321,6 +321,11 @@ Project Detail
                 <a title="Details" href="{% url 'allocation-detail' allocation.pk %}">
                   <i class="far fa-folder-open" aria-hidden="true"></i><span class="sr-only">Details</span>
                 </a>
+                {% if is_allowed_to_update_project and allocation.status.name in 'Active, Billing Information Submitted' %}
+                  <a title="Add Users" href="{% url 'allocation-add-users' allocation.pk %}">
+                    <i class="fas fa-user-plus" aria-hidden="true"></i><span class="sr-only">Add Users</span>
+                  </a>
+                {% endif %}
                 {% if allocation.project.requires_review %}
                   {% if allocation.is_locked and allocation.status.name == 'Active' and allocation.expires_in <= ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING and allocation.expires_in >= 0 %}
                     <span class="badge badge-warning"><i class="far fa-clock" aria-hidden="true"></i>
@@ -396,6 +401,9 @@ Project Detail
                   <i title="Details" class="far fa-folder-open" aria-hidden="true"></i><span class="sr-only">Details</span>
                 </a>
                 {% if is_allowed_to_update_project and allocation.status.name in 'Active, Billing Information Submitted' %}
+                  <a title="Add Users" href="{% url 'allocation-add-users' allocation.pk %}">
+                    <i class="fas fa-user-plus" aria-hidden="true"></i><span class="sr-only">Add Users</span>
+                  </a>
                   <a href="{% url 'allocation-remove' pk=allocation.pk %}?from_project=true">
                     <i title="Remove access" class="far fa-times-circle" aria-hidden="true"></i><span class="sr-only">Remove access</span>
                   </a>
