@@ -403,16 +403,14 @@ Allocation Detail
     <span class="float-right">Last Sync: {{user_sync_dt}}</span>
     <div class="float-right">
 
-      {% comment %}
-      {% if allocation.project.status.name != 'Archived' and is_allowed_to_update_project and allocation.status.name in 'Active,New,Renewal Requested' and request.user.is_superuser %}
-        <a class="btn btn-success" href="{% url 'allocation-add-users' allocation.pk %}" role="button">
-          <i class="fas fa-user-plus" aria-hidden="true"></i> Add Users
-        </a>
-        <a class="btn btn-danger" href="{% url 'allocation-remove-users' allocation.pk %}" role="button">
-          <i class="fas fa-user-times" aria-hidden="true"></i> Remove Users
-        </a>
-      {% endif %}
-      {% endcomment %}
+    {% if allocation.project.status.name != 'Archived' and is_allowed_to_update_project and allocation.status.name in 'Active,New,Renewal Requested' %}
+      <a class="btn btn-success" href="{% url 'allocation-add-users' allocation.pk %}" role="button">
+        <i class="fas fa-user-plus" aria-hidden="true"></i> Add Users
+      </a>
+      <a class="btn btn-danger" href="{% url 'allocation-remove-users' allocation.pk %}" role="button">
+        <i class="fas fa-user-times" aria-hidden="true"></i> Remove Users
+      </a>
+    {% endif %}
 
     </div>
   </div>
