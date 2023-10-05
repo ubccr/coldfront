@@ -69,9 +69,6 @@ from coldfront.core.utils.mail import send_allocation_admin_email, send_allocati
 if 'django_q' in settings.INSTALLED_APPS:
     from django_q.tasks import Task
 
-if 'coldfront.plugins.ldap' in settings.INSTALLED_APPS:
-    from coldfront.plugins.ldap.utils import LDAPConn
-
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
     'ALLOCATION_ENABLE_ALLOCATION_RENEWAL', True)
 ALLOCATION_DEFAULT_ALLOCATION_LENGTH = import_from_settings(
@@ -794,8 +791,6 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         formset = formset(request.POST, initial=users_to_add, prefix='userform')
 
         users_added_count = 0
-        if 'coldfront.plugins.ldap' in settings.INSTALLED_APPS:
-            ldap_conn = LDAPConn()
 
         if formset.is_valid():
             user_active_status = AllocationUserStatusChoice.objects.get(name='Active')
@@ -807,19 +802,6 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                 user_obj = get_user_model().objects.get(
                     username=form_data.get('username')
                 )
-
-                if 'coldfront.plugins.ldap' in settings.INSTALLED_APPS:
-                    try:
-                        ldap_conn.add_member_to_group(
-                            user_obj.username,
-                            allocation_obj.project.title,
-                        )
-                    except Exception as e:
-                        messages.error(
-                            request,
-                            f"could not remove user {allocation_user_obj}: {e}"
-                        )
-                        continue
 
                 allocation_user_obj, _ = (
                     allocation_obj.allocationuser_set.update_or_create(
@@ -917,8 +899,6 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
         formset = formset(request.POST, initial=users_to_remove, prefix='userform')
 
         remove_users_count = 0
-        if 'coldfront.plugins.ldap' in settings.INSTALLED_APPS:
-            ldap_conn = LDAPConn()
         if formset.is_valid():
             removed_allocuser_status = AllocationUserStatusChoice.objects.get(
                 name='Removed'
@@ -937,19 +917,6 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
                 allocation_user_obj = allocation_obj.allocationuser_set.get(
                     user=user_obj
                 )
-
-                if 'coldfront.plugins.ldap' in settings.INSTALLED_APPS:
-                    try:
-                        ldap_conn.remove_member_from_group(
-                            user_obj.username,
-                            allocation_obj.project.title,
-                        )
-                    except Exception as e:
-                        messages.error(
-                            request,
-                            f"could not remove user {allocation_user_obj}: {e}"
-                        )
-                        continue
 
                 allocation_user_obj.status = removed_allocuser_status
                 allocation_user_obj.save()

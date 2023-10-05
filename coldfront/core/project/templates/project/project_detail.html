@@ -249,13 +249,11 @@ Project Detail
     <h3 class="d-inline" id="users"><i class="fas fa-users" aria-hidden="true"></i> Users</h3> <span class="badge badge-secondary">{{project_users.count}}</span>
     <span class="float-right">Last Sync: {{user_sync_dt}}</span>
     <div class="float-right">
-      {% comment %}
       {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
         <a style="visibility: hidden" class="btn btn-primary" href="{{mailto}}" role="button"><i class="far fa-envelope" aria-hidden="true"></i> Email Project Users</a>
         <a style="visibility: hidden" class="btn btn-success" href="{% url 'project-add-users-search' project.id %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
         <a style="visibility: hidden" class="btn btn-danger" href="{% url 'project-remove-users' project.id %}" role="button"><i class="fas fa-user-times" aria-hidden="true"></i> Remove Users</a>
       {% endif %}
-      {% endcomment %}
     </div>
   </div>
   <div class="card-body">
