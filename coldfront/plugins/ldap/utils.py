@@ -137,7 +137,6 @@ class LDAPConn:
             manager_members_tuples.append(self.manager_members_from_group(entry))
         return manager_members_tuples
 
-
     def return_user_by_name(self, username, return_as='dict'):
         """Return an AD user entry by the username"""
         user = self.search_users({"uid": username}, return_as=return_as)
@@ -147,9 +146,17 @@ class LDAPConn:
             raise ValueError("no users returned")
         return user[0]
 
+    def return_group_by_name(self, groupname, return_as='dict'):
+        group = self.search_groups({"sAMAccountName": groupname}, return_as=return_as)
+        if len(group) > 1:
+            raise ValueError("too many groups in value returned")
+        if not group:
+            raise ValueError("no groups returned")
+        return group[0]
+
     def add_member_to_group(self, user_name, group_name):
         # get group
-        group = self.return_group_members_manager(group_name)
+        group = self.return_group_by_name(group_name)
         # get user
         try:
             user = self.return_user_by_name(user_name)
@@ -160,14 +167,13 @@ class LDAPConn:
         try:
             result = ad_add_members_to_groups(self.conn, [user_dn], group_dn, fix=True)
         except Exception as e:
-            return e
+            raise e
         return result
-
 
     def remove_member_from_group(self, user_name, group_name):
         # get group
         try:
-            group = self.return_group_members_manager(group_name)
+            group = self.return_group_by_name(group_name)
         except ValueError as e:
             raise e
         # get user
@@ -175,16 +181,15 @@ class LDAPConn:
             user = self.return_user_by_name(user_name)
         except ValueError as e:
             raise e
+        if user['gidNumber'] == group['gidNumber']:
+            raise ValueError("group is user's primary group - please contact FASRC support to remove this user from your group.")
         group_dn = group['distinguishedName']
         user_dn = user['distinguishedName']
         try:
             result = ad_remove_members_from_groups(self.conn, [user_dn], group_dn, fix=True)
         except Exception as e:
-            return e
+            raise e
         return result
-
-
-
 
     def return_group_members_manager(self, samaccountname):
         """return user entries that are members of the specified group.
