@@ -7,11 +7,19 @@
 # turn on bash's job control
 # set -m
 
-# RUN python3 ./manage.py initial_setup
-# RUN python3 ./manage.py load_test_data
 service redis-server start
 python ./manage.py qcluster &
 python ./manage.py add_scheduled_tasks
+source /srv/coldfront/venv/bin/activate
+python ./manage.py collectstatic
 # initial_setup does not appear to work as requested.
 python ./manage.py initial_setup &
-python ./manage.py runserver 0.0.0.0:80 --insecure
+
+case $1 in
+    'dev')
+            python ./manage.py runserver 0.0.0.0:80 --insecure
+        ;;
+    *)
+            python ./manage.py runserver 0.0.0.0:80
+        ;;
+esac
