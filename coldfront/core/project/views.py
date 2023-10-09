@@ -680,6 +680,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
         added_users_count = 0
         if formset.is_valid() and allocation_form.is_valid():
+            DEFAULT_STATUS = import_from_settings('DEFAULT_STATUS')
             project_user_active_status_choice = ProjectUserStatusChoice.objects.get(
                 name=DEFAULT_STATUS)
             allocation_user_active_status_choice = AllocationUserStatusChoice.objects.get(
