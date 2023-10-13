@@ -50,3 +50,6 @@ if 'coldfront.plugins.api' in settings.INSTALLED_APPS:
 
 if 'coldfront.plugins.fasrc_monitoring' in settings.INSTALLED_APPS:
     urlpatterns.append(path('', include('coldfront.plugins.fasrc_monitoring.urls')))
+
+if 'django_prometheus' in settings.INSTALLED_APPS:
+    urlpatterns.append(path('metrics', include('coldfront.plugins.fasrc_monitoring.urls')))

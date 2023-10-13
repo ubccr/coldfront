@@ -24,9 +24,7 @@ ARG IFXEC_COMMIT=0c09c90890fb87d4db22c635a6c403c89e1a957f
 ARG IFXBILLING_COMMIT=58d07688e52b4c63fb93a903cbb8a1e5ed24ea34
 
 RUN --mount=type=ssh pip install --upgrade pip && \
-    pip install ldap3 django_auth_ldap django-prometheus && \
-    pip install django-author==1.0.2
-RUN --mount=type=ssh pip install git+ssh://git@github.com/harvardinformatics/ifxurls.git@${IFXURLS_COMMIT} && \
+    pip install git+ssh://git@github.com/harvardinformatics/ifxurls.git@${IFXURLS_COMMIT} && \
     pip install git+ssh://git@github.com/harvardinformatics/nanites.client.git@${NANITES_CLIENT_COMMIT} && \
     pip install git+ssh://git@github.com/harvardinformatics/ifxuser.git@${IFXUSER_COMMIT} && \
     pip install git+ssh://git@github.com/harvardinformatics/ifxmail.client.git@${IFXMAIL_CLIENT_COMMIT} && \
@@ -37,8 +35,8 @@ RUN --mount=type=ssh pip install git+ssh://git@github.com/harvardinformatics/ifx
 
 COPY . .
 
-# RUN pip install django-redis reportlab==3.6.6
-# RUN pip install django-debug-toolbar
+# RUN pip install django-redis reportlab==3.6.6 django-debug-toolbar
+RUN pip install ldap3 django_auth_ldap django-author==1.0.2
 
 ENV PYTHONPATH /usr/src/app:/usr/src/app/ifxreport
 
