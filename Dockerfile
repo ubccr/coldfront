@@ -36,7 +36,7 @@ RUN --mount=type=ssh pip install --upgrade pip && \
 COPY . .
 
 # RUN pip install django-redis reportlab==3.6.6 django-debug-toolbar
-RUN pip install ldap3 django_auth_ldap django-author==1.0.2
+RUN pip install ldap3 django_auth_ldap django-author==1.0.2 django-prometheus
 
 ENV PYTHONPATH /usr/src/app:/usr/src/app/ifxreport
 
