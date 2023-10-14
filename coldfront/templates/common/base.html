@@ -2,7 +2,11 @@
 {% load common_tags %}
 
 <!DOCTYPE html>
-<html lang="en">
+{% if user.userprofile.dark_mode %}
+<html lang="en" data-bs-theme="dark">
+{% else %}
+<html lang="en" data-bs-theme="light">
+{% endif %}
 
 <head>
   <!-- Required meta tags -->
@@ -17,6 +21,11 @@
   <!-- Load Bootstrap 5.3.1 -->
   <link rel="stylesheet" href="{% static 'bootstrap/bootstrap.min.css' %}">
   <link rel="stylesheet" href="{% static 'flatpickr/flatpickr.min.css' %}">
+  {% if user.userprofile.dark_mode %}
+    <link rel="stylesheet" href="{% static 'flatpickr/flatpickr-dark.min.css' %}">
+  {% else %}
+    <link rel="stylesheet" href="{% static 'flatpickr/flatpickr.min.css' %}">
+  {% endif %}
 
   <script src="{% static 'jquery/jquery-3.7.0.js' %}"></script>
   <script src="{% static 'bootstrap/bootstrap.bundle.min.js' %}"></script>
@@ -69,18 +78,3 @@
 </body>
 
 </html>
-
-<script>
-  const storedValue = localStorage.getItem('darkModeToggle');
-
-  if (storedValue === 'true') {
-    localStorage.setItem("darkModeToggle", true);
-    document.documentElement.setAttribute('data-bs-theme', 'dark')
-    document.getElementById("banner-logo").src = document.getElementById("banner-logo").src.replace("go.png", "go-dark-mode.png");
-  }
-  else {
-    localStorage.setItem("darkModeToggle", false);
-    document.documentElement.setAttribute('data-bs-theme', 'light')
-    document.getElementById("banner-logo").src = document.getElementById("banner-logo").src.replace("go-dark-mode.png", "go.png");
-  }
-</script>

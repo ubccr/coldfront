@@ -1,16 +1,10 @@
 {% extends "common/base.html" %} {% load static %} {% block title %} User
 Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif %}
 {% endblock %} {% block content %}
+{% load crispy_forms_tags %}
 
 <div class="d-flex justify-content-between align-items-end">
   <h2>User Profile</h2>
-  <div class="d-flex justify-content-end">
-    <label>Enable dark mode&nbsp&nbsp</label>
-    <label class="switch">
-      <input type="checkbox" id="darkModeToggle" />
-      <span class="slider round"></span>
-    </label>
-</div> 
 </div>
 <hr />
 
@@ -81,6 +75,22 @@ Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif %}
             <th scope="row">Last Login:</th>
             <td>{{viewed_user.last_login}}</td>
           </tr>
+          <tr>
+            <th>Dark Mode:</th>
+            <td>
+              <form
+                class="form-inline"
+                method="post"
+                action="{% url 'user-profile' %}"
+                id="form-dark-mode"
+              >
+                <div class="form-group mb-2">
+                  {% csrf_token %}
+                   {{ dark_mode_form|crispy }}
+                   <input type="submit" value="Submit">
+                </div>
+              </form>
+            </td>
         </tbody>
       </table>
     </div>
@@ -91,33 +101,5 @@ Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif %}
   $("#navbar-main > ul > li.active").removeClass("active");
   $("#navbar-user").addClass("active");
   $("#navbar-user-user-profile").addClass("active");
-
-  const darkModeToggle = document.getElementById('darkModeToggle');
-  const storedValue = localStorage.getItem('darkModeToggle');
-
-  if (storedValue === 'true') {
-      darkModeToggle.checked = true;
-  }
-
-  if (darkModeToggle.checked) {
-    localStorage.setItem("darkModeToggle", darkModeToggle.checked);
-    document.documentElement.setAttribute('data-bs-theme', 'dark')
-    document.getElementById("banner-logo").src = document.getElementById("banner-logo").src.replace("go.png", "go-dark-mode.png");
-  }
-
-  darkModeToggle.addEventListener('change', () => {
-    if (darkModeToggle.checked){
-      localStorage.setItem("darkModeToggle", darkModeToggle.checked);
-      document.documentElement.setAttribute('data-bs-theme', 'dark')
-      document.getElementById("banner-logo").src = document.getElementById("banner-logo").src.replace("go.png", "go-dark-mode.png");
-    }
-    else {
-      localStorage.setItem("darkModeToggle", darkModeToggle.checked);
-      document.documentElement.setAttribute('data-bs-theme', 'light')
-      document.getElementById("banner-logo").src = document.getElementById("banner-logo").src.replace("go-dark-mode.png", "go.png");
-    }
-  }
-  );
-
 </script>
 {% endblock %}

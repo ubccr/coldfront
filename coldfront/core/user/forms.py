@@ -1,6 +1,6 @@
 from django import forms
 from django.utils.html import mark_safe
-
+from coldfront.core.user.models import UserProfile
 
 class UserSearchForm(forms.Form):
     CHOICES = [('username_only', 'Exact Username Only'),
@@ -10,3 +10,12 @@ class UserSearchForm(forms.Form):
     q = forms.CharField(label='Search String', min_length=2, widget=forms.Textarea(attrs={'rows': 4}),
                         help_text='Copy paste usernames separated by space or newline for multiple username searches!')
     search_by = forms.ChoiceField(choices=CHOICES, widget=forms.RadioSelect(), initial='username_only')
+
+class UserDarkModeForm(forms.ModelForm):
+
+    class Meta:
+        model = UserProfile
+        fields = ('dark_mode',)
+        labels = {
+            'dark_mode': ""
+        }

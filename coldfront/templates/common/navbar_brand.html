@@ -9,7 +9,11 @@
   <div class="container">
     <div class="row">
       <div class="col-6 col-md-2">
-        <a href="/"><img id="banner-logo" class="img-responsive banner-logo" src="{% static 'common/images/logo.png' %}" alt="Coldfront"></a>
+        {% if user.userprofile.dark_mode %}
+          <a href="/"><img id="banner-logo" class="img-responsive banner-logo" src="{% static 'common/images/logo-dark-mode.png' %}" alt="Coldfront"></a>
+        {% else %}
+          <a href="/"><img id="banner-logo" class="img-responsive banner-logo" src="{% static 'common/images/logo.png' %}" alt="Coldfront"></a>
+        {% endif %}
       </div>
       <div class="col-6 col-md-6">
         <h3 class="banner-name">{% settings_value 'CENTER_NAME' %}</h3>
