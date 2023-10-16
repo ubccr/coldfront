@@ -81,5 +81,21 @@ To check the consistency between ColdFront and Slurm run the following command:
 This will process the output of sacctmgr dump flat file and compare to active
 allocations in ColdFront. Any users with Slurm associations that are not
 members of an active Allocation in ColdFront will be reported and can be
-removed. You can optionally provide the '--sync' flag and this tool will remove
+removed. You can optionally provide the `--sync` flag and this tool will remove
 associations in Slurm using sacctmgr.
+
+Individual user QOS's are not supported.
+
+
+To import existing Slurm project information into the ColdFront database, run the following command:
+```
+    $ coldfront slurm_import --cluster <cluster_name>
+```
+
+This will dump the given cluster, read the dump, and import the relevant
+contents (user -> users, accounts -> projects, associations -> allocations,
+QOSes -> allocation attributes, etc) into the ColdFront database.
+Plenty of customization flags are provided and can be seen with `--help`.
+Some notable flags are `--input <sacctmgr dump file>` for reading from an
+existing file, and `--noop` to not actually perform any transactions on the
+database.
