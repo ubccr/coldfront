@@ -15,8 +15,6 @@ python ./manage.py initial_setup &
 
 if [ "$BUILD_ENV" == 'dev' ]; then
     python ./manage.py runserver 0.0.0.0:80 --insecure
-    echo "opt 1 chosen" > `tty`
 else
     gunicorn coldfront.config.wsgi:application --bind 0.0.0.0:80
-    echo "opt 2 chosen" > `tty`
 fi
