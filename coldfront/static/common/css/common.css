@@ -176,7 +176,7 @@ body > main > div > div.card.border-primary > div.card-body > form > div.alert.a
 	top:1px;
 }
 
-.form-control[readonly]{background-color:#ffffff;opacity:1}
+/* .form-control[readonly]{background-color:#ffffff;opacity:1} */
 
 .switch {
   position: relative;
