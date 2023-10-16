@@ -61,6 +61,7 @@ from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.utils.views import ColdfrontListView, NoteCreateView, NoteUpdateView
 from coldfront.core.utils.common import get_domain_url, import_from_settings
+from coldfront.core.utils.fasrc import sort_by
 from coldfront.core.utils.mail import send_email, send_email_template
 
 if 'django_q' in settings.INSTALLED_APPS:
@@ -758,10 +759,13 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
         # if ldap is activated, prevent
         if 'coldfront.plugins.ldap' in settings.INSTALLED_APPS:
+
             usernames = [u['username'] for u in users_to_remove]
             ldap_conn = LDAPConn()
-            users_to_remove, users_no_removal = ldap_conn.determine_primary_group_membership(
+            users_main_group = ldap_conn.users_in_primary_group(
                 usernames, project_obj.title)
+            ingroup = lambda u: u['username'] in users_main_group
+            users_no_removal, users_to_remove = sort_by(users_to_remove, ingroup, how="condition")
 
         context = {}
 

@@ -191,15 +191,15 @@ class LDAPConn:
             raise e
         return result
 
-    def determine_primary_group_membership(self, usernames, groupname):
+    def users_in_primary_group(self, usernames, groupname):
         """Return two lists of users based on membership in the specified group.
         """
         group = self.return_group_by_name(groupname)
         attrs = ['sAMAccountName', 'gidNumber']
         users = [self.return_user_by_name(user, attributes=attrs) for user in usernames]
-        in_group = lambda u: u['gidNumber'] == group['gidNumber']
-        users_in_group = sort_by(users, in_group, how='condition')
-        return users_in_group
+        return [
+            u['sAMAccountName'][0] for u in users if u['gidNumber'] == group['gidNumber']
+        ]
 
     def return_group_members_manager(self, samaccountname):
         """return user entries that are members of the specified group.
