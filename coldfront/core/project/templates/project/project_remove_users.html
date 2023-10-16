@@ -8,7 +8,7 @@
 <h2>Remove users from project: {{project.title}}</h2>
 <hr>
 
-{% if formset %}
+{% if formset or users_no_removal %}
   <div class="card border-light">
     <div class="card-body">
       <p>
