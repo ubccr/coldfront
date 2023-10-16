@@ -11,7 +11,16 @@
 {% if formset %}
   <div class="card border-light">
     <div class="card-body">
-
+      <p>
+        Project users have the ability to access project allocations. Removing a user here
+        will remove the user's access to your project's allocations, but will not
+        remove that user's data from the allocations.
+      </p>
+      <p>
+        To be removed from a lab, the user must not have the lab as their primary
+        group. If you would like to remove a user that has your lab as their primary
+        group, please contact FASRC support.
+      </p>
       <form action="{% url 'project-remove-users' project.pk %}" method="post">
         {% csrf_token %}
         <div class="table-responsive">
@@ -30,6 +39,17 @@
               </tr>
             </thead>
             <tbody>
+              {% for user in users_no_removal %}
+              <tr>
+                <td></td>
+                <td></td>
+                <td style="color: gray;">{{ user.username }}</td>
+                <td style="color: gray;">{{ user.first_name }}</td>
+                <td style="color: gray;">{{ user.last_name }}</td>
+                <td style="color: gray;">{{ user.email }}</td>
+                <td style="color: gray;">{{ user.role }}</td>
+              </tr>
+              {% endfor %}
               {% for form in formset %}
                 <tr>
                   <td>{{ form.selected }}</td>
@@ -54,7 +74,7 @@
     </div>
   </div>
 {% else %}
-  <a class="btn btn-secondary mb-3" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a> 
+  <a class="btn btn-secondary mb-3" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a>
   <div class="alert alert-info">
     No users to remove!
   </div>

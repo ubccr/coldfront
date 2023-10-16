@@ -137,9 +137,9 @@ class LDAPConn:
             manager_members_tuples.append(self.manager_members_from_group(entry))
         return manager_members_tuples
 
-    def return_user_by_name(self, username, return_as='dict'):
+    def return_user_by_name(self, username, return_as='dict', attributes=ALL_ATTRIBUTES):
         """Return an AD user entry by the username"""
-        user = self.search_users({"uid": username}, return_as=return_as)
+        user = self.search_users({"uid": username}, return_as=return_as, attributes=attributes)
         if len(user) > 1:
             raise ValueError("too many users in value returned")
         if not user:
@@ -190,6 +190,16 @@ class LDAPConn:
         except Exception as e:
             raise e
         return result
+
+    def determine_primary_group_membership(self, usernames, groupname):
+        """Return two lists of users based on membership in the specified group.
+        """
+        group = self.return_group_by_name(groupname)
+        attrs = ['sAMAccountName', 'gidNumber']
+        users = [self.return_user_by_name(user, attributes=attrs) for user in usernames]
+        in_group = lambda u: u['gidNumber'] == group['gidNumber']
+        users_in_group = sort_by(users, in_group, how='condition')
+        return users_in_group
 
     def return_group_members_manager(self, samaccountname):
         """return user entries that are members of the specified group.

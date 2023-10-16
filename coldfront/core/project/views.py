@@ -754,6 +754,15 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         pk = self.kwargs.get('pk')
         project_obj = get_object_or_404(Project, pk=pk)
         users_to_remove = self.get_users_to_remove(project_obj)
+        users_no_removal = None
+
+        # if ldap is activated, prevent
+        if 'coldfront.plugins.ldap' in settings.INSTALLED_APPS:
+            usernames = [u['username'] for u in users_to_remove]
+            ldap_conn = LDAPConn()
+            users_to_remove, users_no_removal = ldap_conn.determine_primary_group_membership(
+                usernames, project_obj.title)
+
         context = {}
 
         if users_to_remove:
@@ -764,6 +773,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             context['formset'] = formset
 
         context['project'] = get_object_or_404(Project, pk=pk)
+        context['users_no_removal'] = users_no_removal
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
