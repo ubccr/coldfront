@@ -16,5 +16,5 @@ python ./manage.py initial_setup &
 if [ "$BUILD_ENV" == 'dev' ]; then
     python ./manage.py runserver 0.0.0.0:80 --insecure
 else
-    gunicorn coldfront.config.wsgi:application --bind 0.0.0.0:80
+    gunicorn coldfront.config.wsgi:application --bind 0.0.0.0:80 --reload
 fi
