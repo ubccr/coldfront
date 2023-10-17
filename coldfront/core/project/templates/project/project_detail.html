@@ -112,6 +112,10 @@ Project Detail
               <td>{{ user.role.name }}</td>
               {% if user.status.name == 'Active' %}
                 <td class="text-success">{{ user.status.name }}</td>
+              {% elif user.status.name == 'Pending - Add' %}
+                <td class="text-success">{{ user.status.name }}</td>
+              {% elif user.status.name == 'Pending - Remove' %}
+                <td class="text-success">{{ user.status.name }}</td>
               {% else %}
                 <td class="text-info">{{ user.status.name }}</td>
               {% endif %}
