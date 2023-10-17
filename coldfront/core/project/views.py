@@ -495,6 +495,7 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
     success_message = 'Project updated.'
 
     def test_func(self):
+        DEFAULT_STATUS = import_from_settings('DEFAULT_STATUS')
         """ UserPassesTestMixin Tests"""
         if self.request.user.is_superuser:
             return True
@@ -504,7 +505,7 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
         if project_obj.pi == self.request.user:
             return True
 
-        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name=DEFAULT_STATUS).exists():
             return True
 
     def dispatch(self, request, *args, **kwargs):
