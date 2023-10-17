@@ -9,7 +9,8 @@ class Command(BaseCommand):
     help = 'Run setup script to initialize the Coldfront database'
 
     def add_arguments(self, parser):
-        parser.add_argument("-f", "--force_overwrite", help="Force intial_setup script to run with no warning.", action="store_true")
+        parser.add_argument("-f", "--force_overwrite",
+        help="Force intial_setup script to run with no warning.", action="store_true")
 
     def handle(self, *args, **options):
         if options['force_overwrite']:
