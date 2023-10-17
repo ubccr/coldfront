@@ -640,12 +640,10 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             allocation_attribute_type_obj = AllocationAttributeType.objects.get(
                 name=ALLOCATION_ACCOUNT_MAPPING[resource_obj.name]
             )
-            AllocationAttribute.objects.create(
+            allocation_obj.allocationattribute_set.create(
                 allocation_attribute_type=allocation_attribute_type_obj,
-                allocation=allocation_obj,
                 value=allocation_account,
             )
-
 
         expense_code = form_data.get('expense_code', None)
         if expense_code:
@@ -653,29 +651,24 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 [d[:3], d[3:8], d[8:12], d[12:18], d[18:24], d[24:28], d[28:33]]
             )
             expense_code = insert_dashes(re.sub(r'\D', '', expense_code))
-        dua = form_data.get('dua', None)
-        heavy_io = form_data.get('heavy_io', None)
-        mounted = form_data.get('mounted', None)
-        external_sharing = form_data.get('external_sharing', None)
-        high_security = form_data.get('high_security', None)
+
+        additional_specifications = form_data.get('additional_specifications', None)
+        for spec in additional_specifications:
+            attr_type = AllocationAttributeType.objects.get(name=spec)
+            allocation_obj.allocationattribute_set.create(
+                allocation_attribute_type=attr_type, value=True,
+            )
 
         for value, attr_name in (
             (quantity, 'Storage Quota (TB)'),
             (expense_code, 'Expense Code'),
-            (dua, 'DUA'),
-            (heavy_io, 'Heavy IO'),
-            (mounted, 'Mounted'),
-            (external_sharing, 'External Sharing'),
-            (high_security, 'High Security'),
         ):
-            if value:
-                AllocationAttribute.objects.create(
-                    allocation=allocation_obj,
-                    value=value,
-                    allocation_attribute_type=AllocationAttributeType.objects.get(
-                        name=attr_name
-                    )
+            allocation_obj.allocationattribute_set.create(
+                value=value,
+                allocation_attribute_type=AllocationAttributeType.objects.get(
+                    name=attr_name
                 )
+            )
 
         allocation_obj.set_usage('Storage Quota (TB)', 0)
 

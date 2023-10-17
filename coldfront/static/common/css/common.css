@@ -143,11 +143,6 @@ body > main > div > div.card.border-primary > div.card-body > form > div.alert.a
 	position:relative;
 	top:1px;
 }
-
-#div_id_quantity {
-  display:inline !important;
-}
-
 .bg-primary {
 
   background-color: #A51C30 !important;
