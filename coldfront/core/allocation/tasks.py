@@ -5,6 +5,7 @@ import logging
 from coldfront.core.allocation.models import (Allocation, AllocationAttribute,
                                               AllocationStatusChoice)
 from coldfront.core.allocation.utils import get_allocation_user_emails
+from coldfront.core.allocation.signals import allocation_expire
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.mail import send_email_template
 
@@ -37,6 +38,8 @@ def update_statuses():
     for sub_obj in allocations_to_expire:
         sub_obj.status = expired_status_choice
         sub_obj.save()
+
+        allocation_expire.send(sender='update_statuses', allocation_pk=sub_obj.pk)
 
     logger.info(f'Allocations set to expired: {allocations_to_expire.count()}')
 

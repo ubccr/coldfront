@@ -77,7 +77,9 @@ from coldfront.core.allocation.signals import (allocation_activate,
                                                allocation_activate_user,
                                                allocation_disable,
                                                allocation_remove_user,
-                                               allocation_change_approved,)
+                                               allocation_change_approved,
+                                               allocation_change_user_role,
+                                               allocation_remove)
 from coldfront.core.project.models import (Project, ProjectUser,
                                            ProjectUserStatusChoice,
                                            ProjectUserRoleChoice)
@@ -565,6 +567,9 @@ class AllocationRemoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             context['from_project'] = True
         context['users'] = ', '.join(users)
         context['allocation'] = allocation_obj
+        context['is_admin'] = True
+        if allocation_obj.project.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+            context['is_admin'] = False
         return context
 
     def post(self, request, *args, **kwargs):
@@ -573,10 +578,13 @@ class AllocationRemoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         if allocation_obj.project.projectuser_set.filter(user=request.user, role__name='Manager', status__name='Active').exists():
             new_status = AllocationStatusChoice.objects.get(name='Removal Requested')
             message = 'Allocation removal request sent'
+            removal_request_status = AllocationRemovalStatusChoice.objects.get(name='Pending')
+
         else:
             new_status = AllocationStatusChoice.objects.get(name='Removed')
             allocation_obj.end_date = datetime.date.today()
             message = 'Allocation has been removed'
+            removal_request_status = AllocationRemovalStatusChoice.objects.get(name='Approved')
 
             create_admin_action(
                 request.user,
@@ -589,13 +597,18 @@ class AllocationRemoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             requestor=request.user,
             allocation=allocation_obj,
             allocation_prior_status=allocation_obj.status,
-            status=AllocationRemovalStatusChoice.objects.get(name='Pending')
+            status=removal_request_status
         )
 
         allocation_obj.status = new_status
         allocation_obj.save()
 
         if new_status.name == 'Removed':
+            allocation_remove.send(sender=self.__class__, allocation_pk=allocation_obj.pk)
+            allocation_users = allocation_obj.allocationuser_set.filter(status__name__in=['Active'])
+            for allocation_user in allocation_users:
+                allocation_remove_user.send(
+                    sender=self.__class__, allocation_user_pk=allocation_user.pk)
             logger.info(
                 f'Admin {request.user.username} removed a {allocation_obj.get_parent_resource.name} '
                 f'allocation (allocation pk={allocation_obj.pk})'
@@ -737,6 +750,12 @@ class AllocationApproveRemovalRequestView(LoginRequiredMixin, UserPassesTestMixi
         allocation_obj.status = allocation_status_obj
         allocation_obj.end_date = end_date
         allocation_obj.save()
+
+        allocation_remove.send(sender=self.__class__, allocation_pk=allocation_obj.pk)
+        allocation_users = allocation_obj.allocationuser_set.filter(status__name__in=['Active'])
+        for allocation_user in allocation_users:
+            allocation_remove_user.send(
+                sender=self.__class__, allocation_user_pk=allocation_user.pk)
 
         messages.success(
             request,
@@ -1865,14 +1884,6 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
         allocation_obj = get_object_or_404(
             Allocation, pk=self.kwargs.get('pk'))
-
-        # if allocation_obj.get_parent_resource.name == 'Slate-Project':
-        #     if allocation_obj.data_manager != self.request.user.username:
-        #         messages.error(
-        #             self.request,
-        #             'Only the Data Manager can remove users to this resource.'
-        #         )
-        #         return False
 
         if allocation_obj.project.pi == self.request.user:
             return True
@@ -5366,6 +5377,10 @@ class AllocationUserDetailView(LoginRequiredMixin, UserPassesTestMixin, Template
                 allocation_user_obj.role = AllocationUserRoleChoice.objects.get(
                     name=form_data.get('role'))
                 allocation_user_obj.save()
+                allocation_change_user_role.send(
+                    sender=self.__class__,
+                    allocation_user_pk=allocation_user_obj.pk,
+                )
 
                 logger.info(
                     f'User {request.user.username} updated {allocation_user_obj.user.username}\'s '

@@ -8,6 +8,11 @@ Remove Allocation
 
 {% block content %}
 <h2>Remove Allocation</h2>
+{% if is_admin %}
+  <div class="alert alert-warning" role="alert">
+    This allocation will be removed immediately.
+  </div>
+{% endif %}
 
 <div class="card mb-3">
   <div class="card-header">

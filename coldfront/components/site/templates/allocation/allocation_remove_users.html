@@ -13,6 +13,12 @@ Remove Users from Allocation
 <hr>
 
 {% if formset %}
+  {% if allocation.get_parent_resource.name == 'Slate Project' %}
+    <div class="alert alert-warning">
+      <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+      Removing users from a slate project allocation can result in data loss.
+  </div>
+  {% endif %}
   <div class="card border-light">
     <div class="card-body">
       <form action="{% url 'allocation-remove-users' allocation.pk %}" method="post">

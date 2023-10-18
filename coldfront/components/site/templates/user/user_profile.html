@@ -76,7 +76,7 @@ User Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif
   </div>
 </div>
 
-{% if 'coldfront.plugins.slate_project_info' in EXTRA_APPS  %}
+{% if DISPLAY_USER_SLATE_PROJECTS  %}
   {% include "slate_project_info/slate_project_info_div.html" %}
 {% endif %}
 
