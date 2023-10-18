@@ -94,8 +94,6 @@ def produce_filter_parameter(key, value):
 
 logger = logging.getLogger(__name__)
 
-logger = logging.getLogger(__name__)
-
 
 class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     model = Project
@@ -651,14 +649,23 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                 if user_form_data['selected']:
 
                     # Will create local copy of user if not already present in local database
-                    user_obj, _ = get_user_model().objects.get_or_create(
-                        username=user_form_data.get('username')
-                    )
-
-                    user_obj.first_name = user_form_data.get('first_name')
-                    user_obj.last_name = user_form_data.get('last_name')
-                    user_obj.email = user_form_data.get('email')
-                    user_obj.save()
+                    # user_obj, _ = get_user_model().objects.update_or_create(
+                    #     username=user_form_data.get('username'),
+                    #     defaults={
+                    #         'first_name': user_form_data.get('first_name'),
+                    #         'last_name': user_form_data.get('last_name'),
+                    #         'email': user_form_data.get('email'),
+                    #     }
+                    # )
+                    # FASRC Coldfront doesn't add user entries due to internal syncing
+                    user_username = user_form_data.get('username')
+                    try:
+                        user_obj = get_user_model().objects.get(username=user_username)
+                    except Exception as e:
+                        error = f"Could not locate user for {user_username}: {e}"
+                        logger.error('P665: %s', error)
+                        messages.error(request, error)
+                        continue
 
                     role_choice = user_form_data.get('role')
 
@@ -667,11 +674,19 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                             ldap_conn.add_member_to_group(
                                 user_obj.username, project_obj.title,
                             )
-                        except Exception as e:
-                            messages.error(
-                                request,
-                                f"could not add user {user_obj}: {e}"
+                            logger.info(
+                                "P678: Coldfront user %s added AD User for %s to AD Group %s",
+                                self.request.user,
+                                user_obj.username,
+                                project_obj.title,
                             )
+                        except Exception as e:
+                            error = f"Could not add user {user_obj} to AD Group for {project_obj.title}: {e}"
+                            logger.error(
+                                "P685: user %s could not add AD user of %s to AD Group of %s: %s",
+                                self.request.user, user_obj, project_obj.title, e
+                            )
+                            messages.error(request, error)
                             continue
 
                     # Is the user already in the project?
@@ -679,7 +694,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                         user=user_obj,
                         defaults={
                             'role': role_choice,
-                            'status': projuserstatus_active
+                            'status': projuserstatus_active,
                         }
                     )
 
@@ -816,10 +831,23 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                             ldap_conn.remove_member_from_group(
                                 user_obj.username, project_obj.title,
                             )
+                            logger.info(
+                                "P835: Coldfront user %s removed AD User for %s from AD Group for %s",
+                                self.request.user,
+                                user_obj.username,
+                                project_obj.title,
+                            )
                         except Exception as e:
                             messages.error(
                                 request,
                                 f"could not remove user {user_obj}: {e}"
+                            )
+                            logger.error(
+                                "P846: Coldfront user %s could NOT remove AD User for %s from AD Group for %s: e",
+                                self.request.user,
+                                user_obj.username,
+                                project_obj.title,
+                                e,
                             )
                             continue
 

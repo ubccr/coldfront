@@ -24,6 +24,10 @@ LOGGING = {
             'class': 'logging.FileHandler',
             'filename': 'django-q.log',
         },
+        'key-events': {
+            'class': 'logging.FileHandler',
+            'filename': 'key-events.log',
+        },
         # 'file': {
         #     'class': 'logging.FileHandler',
         #     'filename': '/tmp/debug.log',
@@ -52,5 +56,9 @@ LOGGING = {
             'handlers': ['console'],
             'level': 'INFO',
         },
+        'project': {
+            'handlers': ['key-events'],
+            'level': 'INFO',
+        }
     },
 }
