@@ -36,13 +36,15 @@ from coldfront.core.allocation.utils_.secure_dir_utils import \
     get_secure_dir_manage_user_request_objects, secure_dir_request_state_status, \
     SecureDirRequestDenialRunner, SecureDirRequestApprovalRunner, \
     get_secure_dir_allocations, get_default_secure_dir_paths, \
-    pi_eligible_to_request_secure_dir, set_sec_dir_context
+    pi_eligible_to_request_secure_dir, SECURE_DIRECTORY_NAME_PREFIX, \
+    set_sec_dir_context
 from coldfront.core.project.forms import ReviewStatusForm, ReviewDenyForm
 from coldfront.core.project.models import ProjectUser, Project
 from coldfront.core.user.utils import access_agreement_signed
 from coldfront.core.utils.common import utc_now_offset_aware, \
     session_wizard_all_form_data
 from coldfront.core.utils.mail import send_email_template
+
 
 logger = logging.getLogger(__name__)
 
@@ -875,6 +877,7 @@ class SecureDirRequestWizard(LoginRequiredMixin,
         groups_path, scratch_path = get_default_secure_dir_paths()
         context['groups_path'] = groups_path
         context['scratch_path'] = scratch_path
+        context['directory_name_prefix'] = SECURE_DIRECTORY_NAME_PREFIX
 
         return context
 

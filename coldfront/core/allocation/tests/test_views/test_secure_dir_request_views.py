@@ -168,7 +168,7 @@ class TestSecureDirRequestWizard(TestSecureDirRequestBase):
             form_data[1]['1-rdm_consultants'])
         self.assertEqual(
             request.directory_name,
-            form_data[2]['2-directory_name'])
+            f'pl1_{form_data[2]["2-directory_name"]}')
         self.assertEqual(request.project, self.project1)
         self.assertTrue(
             pre_time < request.request_time < utc_now_offset_aware())
@@ -444,9 +444,9 @@ class TestSecureDirRequestDetailView(TestSecureDirRequestBase):
                       f'on the cluster is complete.',
                       f'The paths to your secure group and scratch directories '
                       f'are \'/global/home/groups/pl1data/'
-                      f'pl1_{self.request0.directory_name}\' and '
+                      f'{self.request0.directory_name}\' and '
                       f'\'/global/scratch/p2p3/'
-                      f'pl1_{self.request0.directory_name}\', '
+                      f'{self.request0.directory_name}\', '
                       f'respectively.']
 
         self.assertEqual(len(pi_emails), len(mail.outbox))
@@ -780,7 +780,8 @@ class TestSecureDirRequestReviewSetupView(TestSecureDirRequestBase):
 
         self.request0.refresh_from_db()
         self.assertRedirects(response, self.success_url)
-        self.assertEqual(self.request0.directory_name, data['directory_name'])
+        self.assertEqual(
+            self.request0.directory_name, f'pl1_{data["directory_name"]}')
         self.assertEqual(self.request0.status.name, 'Approved - Processing')
         self.assertEqual(self.request0.state['setup']['status'], 'Completed')
 
@@ -792,6 +793,7 @@ class TestSecureDirRequestReviewSetupView(TestSecureDirRequestBase):
         """Tests that a Denied status denies the request."""
         self.client.login(username=self.admin.username, password=self.password)
         data = {'status': 'Denied',
+                'directory_name': self.request0.directory_name,
                 'justification': 'This is a test denial justification.'}
         response = self.client.post(self.url, data)
 

@@ -30,7 +30,7 @@ class TestCreateSecureDir(TestBase):
 
         self.project1 = self.create_active_project_with_pi('project1', self.pi)
 
-        self.subdirectory_name = 'test_dir'
+        self.subdirectory_name = 'pl1_test_dir'
         call_command('add_directory_defaults')
         create_secure_dirs(self.project1, self.subdirectory_name, 'groups')
         create_secure_dirs(self.project1, self.subdirectory_name, 'scratch')

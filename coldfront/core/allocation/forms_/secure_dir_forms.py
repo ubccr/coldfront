@@ -1,8 +1,32 @@
 from django import forms
 from django.core.validators import MinLengthValidator
 
-from coldfront.core.allocation.utils_.secure_dir_utils import \
-    sec_dir_name_available
+from coldfront.core.allocation.utils_.secure_dir_utils import is_secure_directory_name_suffix_available
+from coldfront.core.allocation.utils_.secure_dir_utils import SECURE_DIRECTORY_NAME_PREFIX
+
+
+class SecureDirNameField(forms.CharField):
+
+    def __init__(self, *args, **kwargs):
+        self.exclude_request_pk = kwargs.pop('exclude_request_pk', None)
+        super().__init__(*args, **kwargs)
+
+    def clean(self, directory_name):
+        # If the user does not provide the prefix, prepend it.
+        if not directory_name.startswith(SECURE_DIRECTORY_NAME_PREFIX):
+            directory_name = f'{SECURE_DIRECTORY_NAME_PREFIX}{directory_name}'
+        # If the directory name (sans the prefix) is not unique, raise an error.
+        # Optionally exclude the request the name is associated with.
+        directory_name_suffix = directory_name[
+            len(SECURE_DIRECTORY_NAME_PREFIX):]
+        if not is_secure_directory_name_suffix_available(
+                directory_name_suffix,
+                exclude_request_pk=self.exclude_request_pk):
+            raise forms.ValidationError(
+                f'The directory name {directory_name} is already taken. Please '
+                f'choose another.')
+        # Return the full, prefixed directory name.
+        return directory_name
 
 
 class SecureDirManageUsersForm(forms.Form):
@@ -86,9 +110,10 @@ class SecureDirRDMConsultationForm(forms.Form):
 
 class SecureDirDirectoryNamesForm(forms.Form):
 
-    directory_name = forms.CharField(
+    directory_name = SecureDirNameField(
         help_text=(
-            'Provide the name of the requested secure directory on the cluster.'),
+            'Provide the name of the requested secure directory on the '
+            'cluster.'),
         label='Subdirectory Name',
         required=True,
         widget=forms.Textarea(attrs={'rows': 1}))
@@ -97,16 +122,6 @@ class SecureDirDirectoryNamesForm(forms.Form):
         kwargs.pop('breadcrumb_rdm_consultation', None)
         kwargs.pop('breadcrumb_project', None)
         super().__init__(*args, **kwargs)
-
-    def clean(self):
-        cleaned_data = super().clean()
-        directory_name = cleaned_data.get('directory_name', None)
-
-        # Provided directory name must be unique.
-        if not sec_dir_name_available(directory_name):
-            raise forms.ValidationError(
-                'This directory name is already taken. Please choose another.')
-        return cleaned_data
 
 
 class SecureDirSetupForm(forms.Form):
@@ -122,12 +137,8 @@ class SecureDirSetupForm(forms.Form):
         label='Status',
         required=True)
 
-    directory_name = forms.CharField(
-        help_text=(
-            'Edit the provided directory name if necessary.'),
-        label='Subdirectory Name',
-        required=False,
-        widget=forms.Textarea(attrs={'rows': 1}))
+    # Overridden in __init__.
+    directory_name = forms.CharField()
 
     justification = forms.CharField(
         help_text=(
@@ -144,12 +155,17 @@ class SecureDirSetupForm(forms.Form):
         dir_name = kwargs.pop('dir_name', None)
         super().__init__(*args, **kwargs)
 
-        self.fields['directory_name'].initial = dir_name
+        self.fields['directory_name'] = SecureDirNameField(
+            help_text='Edit the provided directory name if necessary.',
+            initial=dir_name,
+            label='Subdirectory Name',
+            required=False,
+            widget=forms.Textarea(attrs={'rows': 1}),
+            exclude_request_pk=self.request_pk)
 
     def clean(self):
         cleaned_data = super().clean()
         status = cleaned_data.get('status', 'Pending')
-        directory_name = cleaned_data.get('directory_name', None)
 
         # Require justification for denials.
         if status == 'Denied':
@@ -157,13 +173,6 @@ class SecureDirSetupForm(forms.Form):
             if not justification.strip():
                 raise forms.ValidationError(
                     'Please provide a justification for your decision.')
-
-            return cleaned_data
-
-        # Provided directory name must be unique.
-        if not sec_dir_name_available(directory_name, self.request_pk):
-            raise forms.ValidationError(
-                'This directory name is already taken. Please choose another.')
 
         return cleaned_data
 
