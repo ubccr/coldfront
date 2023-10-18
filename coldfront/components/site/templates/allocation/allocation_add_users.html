@@ -29,6 +29,9 @@ Add Users to Allocation
                 <th scope="col">First Name</th>
                 <th scope="col">Last Name</th>
                 <th scope="col">Email</th>
+                {% if allocation_user_roles_enabled %}
+                  <th scope="col">Role</th>
+                {% endif %}
               </tr>
             </thead>
             <tbody>
@@ -40,6 +43,9 @@ Add Users to Allocation
                   <td>{{ form.first_name.value }}</td>
                   <td>{{ form.last_name.value }}</td>
                   <td>{{ form.email.value }}</td>
+                  {% if allocation_user_roles_enabled %}
+                    <td>{{ form.role }}</td>
+                  {% endif %}
                 </tr>
               {% endfor %}
             </tbody>

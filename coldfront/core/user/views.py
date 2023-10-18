@@ -1,5 +1,4 @@
 import logging
-from coldfront.core.allocation.models import Allocation
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -14,7 +13,6 @@ from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.generic import ListView, TemplateView
-from django.conf import settings
 
 from coldfront.core.project.models import Project, ProjectUser
 from coldfront.core.user.forms import UserSearchForm
@@ -25,6 +23,7 @@ from coldfront.core.utils.mail import send_email_template
 
 logger = logging.getLogger(__name__)
 
+DISPLAY_USER_SLATE_PROJECTS = import_from_settings('DISPLAY_USER_SLATE_PROJECTS', False)
 SLATE_PROJECT_MAX_ALLOCATED_STORAGE = import_from_settings(
     'SLATE_PROJECT_MAX_ALLOCATED_STORAGE', 60
 )
@@ -85,7 +84,7 @@ class UserProfile(TemplateView):
         context['statistics'] = self.get_statistics(viewed_user)
         context['slate_allocated_storage_chart_data'] = generate_allocated_slate_storage_chart_data(viewed_user)
         context['SLATE_PROJECT_MAX_ALLOCATED_STORAGE'] = SLATE_PROJECT_MAX_ALLOCATED_STORAGE
-        context['EXTRA_APPS'] = settings.INSTALLED_APPS
+        context['DISPLAY_USER_SLATE_PROJECTS'] = DISPLAY_USER_SLATE_PROJECTS
         return context
 
 

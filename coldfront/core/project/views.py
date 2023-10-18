@@ -62,7 +62,7 @@ from coldfront.core.utils.mail import send_email, send_email_template
 from coldfront.core.project.utils import (get_new_end_date_from_list,
                                           create_admin_action,
                                           get_project_user_emails)
-from coldfront.core.allocation.utils import send_added_user_email
+from coldfront.core.allocation.utils import send_added_user_email, set_default_allocation_user_role
 from coldfront.core.utils.slack import send_message
 
 logger = logging.getLogger(__name__)
@@ -1376,6 +1376,12 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                                     allocation=allocation,
                                     user=user_obj,
                                     status=allocation_user_status_choice)
+
+                            set_default_allocation_user_role(
+                                allocation.get_parent_resource,
+                                allocation_user_obj
+                            )
+
                             allocation_activate_user.send(sender=self.__class__,
                                                         allocation_user_pk=allocation_user_obj.pk)
 

@@ -31,7 +31,7 @@ plugin_configs = {
     'PLUGIN_ACADEMIC_ANALYTICS': 'plugins/academic_analytics.py',
     'PLUGIN_ADVANCED_SEARCH': 'plugins/advanced_search.py',
     'PLUGIN_MAINTENANCE_MODE': 'plugins/maintenance_mode.py',
-    'PLUGIN_SLATE_PROJECT_INFO':'plugins/slate_project_info.py',
+    'PLUGIN_SLATE_PROJECT':'plugins/slate_project.py',
 }
 
 # This allows plugins to be enabled via environment variables. Can alternatively

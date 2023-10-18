@@ -659,10 +659,39 @@ class AllocationUserStatusChoice(TimeStampedModel):
         ordering = ['name', ]
 
 
+class AllocationUserRoleChoice(TimeStampedModel):
+    name = models.CharField(max_length=64)
+    resources = models.ManyToManyField(Resource, blank=True)
+    is_user_default = models.BooleanField(default=False)
+    is_manager_default = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name', ]
+
+    def clean(self):
+        if self.is_user_default:
+            for role_choice in AllocationUserRoleChoice.objects.all().exclude(pk=self.pk):
+                for resource in role_choice.resources.all():
+                    if resource in self.resources.all() and role_choice.is_user_default:
+                        raise ValidationError(
+                            f'role {role_choice.name} is already set as the user default'
+                        )
+        if self.is_manager_default:
+            for role_choice in AllocationUserRoleChoice.objects.all().exclude(pk=self.pk):
+                for resource in role_choice.resources.all():
+                    if resource in self.resources.all() and role_choice.is_manager_default:
+                        raise ValidationError(
+                            f'role {role_choice.name} is already set as the manager default'
+                        )
+
 class AllocationUser(TimeStampedModel):
     """ AllocationUser. """
     allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    role = models.ForeignKey(AllocationUserRoleChoice, null=True, on_delete=models.CASCADE)
     status = models.ForeignKey(AllocationUserStatusChoice, on_delete=models.CASCADE,
                                verbose_name='Allocation User Status')
     history = HistoricalRecords()

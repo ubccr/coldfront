@@ -75,6 +75,7 @@ class Resource(TimeStampedModel):
     is_public = models.BooleanField(default=True)
     is_allocatable = models.BooleanField(default=True)
     requires_payment = models.BooleanField(default=False)
+    requires_user_roles = models.BooleanField(default=False)
     review_groups = models.ManyToManyField(
         Group, blank=True, related_name='review_groups_resource_set'
     )

@@ -1,7 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 
-from coldfront.plugins.slate_project_info import utils
+from coldfront.plugins.slate_project import utils
 
 
 @login_required
@@ -13,4 +13,4 @@ def get_slate_project_info(request):
         'slate_projects': slate_projects
     }
 
-    return render(request, "slate_project_info/slate_project_info.html", context)
+    return render(request, "slate_project/slate_project_info.html", context)

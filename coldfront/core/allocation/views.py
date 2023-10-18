@@ -41,7 +41,8 @@ from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationSearchForm,
                                              AllocationUpdateForm,
                                              AllocationInvoiceSearchForm,
-                                             AllocationExportForm)
+                                             AllocationExportForm,
+                                             AllocationUserUpdateForm)
 from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationAttribute,
                                               AllocationAttributeType,
@@ -56,7 +57,8 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationUserStatusChoice,
                                               AllocationInvoice,
                                               AllocationRemovalRequest,
-                                              AllocationRemovalStatusChoice)
+                                              AllocationRemovalStatusChoice,
+                                              AllocationUserRoleChoice)
 from coldfront.core.allocation.utils import (compute_prorated_amount,
                                              generate_guauge_data_from_usage,
                                              get_user_resources,
@@ -66,13 +68,18 @@ from coldfront.core.allocation.utils import (compute_prorated_amount,
                                              create_admin_action,
                                              create_admin_action_for_deletion,
                                              create_admin_action_for_creation,
-                                             get_allocation_user_emails)
+                                             get_allocation_user_emails,
+                                             check_if_roles_are_enabled,
+                                             set_default_allocation_user_role,
+                                             get_default_allocation_user_role)
 from coldfront.core.utils.common import Echo
 from coldfront.core.allocation.signals import (allocation_activate,
                                                allocation_activate_user,
                                                allocation_disable,
                                                allocation_remove_user,
-                                               allocation_change_approved,)
+                                               allocation_change_approved,
+                                               allocation_change_user_role,
+                                               allocation_remove)
 from coldfront.core.project.models import (Project, ProjectUser,
                                            ProjectUserStatusChoice,
                                            ProjectUserRoleChoice)
@@ -221,6 +228,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                 # else:
                 #     context['is_allowed_to_update_project'] = True
 
+        context['allocation_user_roles_enabled'] = check_if_roles_are_enabled(allocation_obj)
         context['allocation_users'] = allocation_users
         context['allocation_invoices'] = allocation_obj.allocationinvoice_set.all()
 
@@ -559,6 +567,9 @@ class AllocationRemoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             context['from_project'] = True
         context['users'] = ', '.join(users)
         context['allocation'] = allocation_obj
+        context['is_admin'] = True
+        if allocation_obj.project.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+            context['is_admin'] = False
         return context
 
     def post(self, request, *args, **kwargs):
@@ -567,10 +578,13 @@ class AllocationRemoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         if allocation_obj.project.projectuser_set.filter(user=request.user, role__name='Manager', status__name='Active').exists():
             new_status = AllocationStatusChoice.objects.get(name='Removal Requested')
             message = 'Allocation removal request sent'
+            removal_request_status = AllocationRemovalStatusChoice.objects.get(name='Pending')
+
         else:
             new_status = AllocationStatusChoice.objects.get(name='Removed')
             allocation_obj.end_date = datetime.date.today()
             message = 'Allocation has been removed'
+            removal_request_status = AllocationRemovalStatusChoice.objects.get(name='Approved')
 
             create_admin_action(
                 request.user,
@@ -583,13 +597,18 @@ class AllocationRemoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             requestor=request.user,
             allocation=allocation_obj,
             allocation_prior_status=allocation_obj.status,
-            status=AllocationRemovalStatusChoice.objects.get(name='Pending')
+            status=removal_request_status
         )
 
         allocation_obj.status = new_status
         allocation_obj.save()
 
         if new_status.name == 'Removed':
+            allocation_remove.send(sender=self.__class__, allocation_pk=allocation_obj.pk)
+            allocation_users = allocation_obj.allocationuser_set.filter(status__name__in=['Active'])
+            for allocation_user in allocation_users:
+                allocation_remove_user.send(
+                    sender=self.__class__, allocation_user_pk=allocation_user.pk)
             logger.info(
                 f'Admin {request.user.username} removed a {allocation_obj.get_parent_resource.name} '
                 f'allocation (allocation pk={allocation_obj.pk})'
@@ -731,6 +750,12 @@ class AllocationApproveRemovalRequestView(LoginRequiredMixin, UserPassesTestMixi
         allocation_obj.status = allocation_status_obj
         allocation_obj.end_date = end_date
         allocation_obj.save()
+
+        allocation_remove.send(sender=self.__class__, allocation_pk=allocation_obj.pk)
+        allocation_users = allocation_obj.allocationuser_set.filter(status__name__in=['Active'])
+        for allocation_user in allocation_users:
+            allocation_remove_user.send(
+                sender=self.__class__, allocation_user_pk=allocation_user.pk)
 
         messages.success(
             request,
@@ -1465,6 +1490,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                     )
 
                     new_user_requests.append(user.username)
+
+                set_default_allocation_user_role(resource_obj, allocation_user_obj)
         else:
             for user in users:
                 allocation_user_obj = AllocationUser.objects.create(
@@ -1472,6 +1499,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                     user=user,
                     status=allocation_user_active_status_choice
                 )
+
+                set_default_allocation_user_role(resource_obj, allocation_user_obj)
 
         pi_name = '{} {} ({})'.format(allocation_obj.project.pi.first_name,
                                       allocation_obj.project.pi.last_name, allocation_obj.project.pi.username)
@@ -1635,15 +1664,22 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         missing_users = User.objects.filter(username__in=missing_users)
         # .exclude(pk=allocation_obj.project.pi.pk)
 
-        users_to_add = [
+        resource_obj = allocation_obj.get_parent_resource
 
-            {'username': user.username,
-             'first_name': user.first_name,
-             'last_name': user.last_name,
-             'email': user.email, }
-
-            for user in missing_users
-        ]
+        users_to_add = []
+        for user in missing_users:
+            role = get_default_allocation_user_role(resource_obj, allocation_obj.project, user)
+            if role.exists():
+                role = role[0]
+            else:
+                role = None
+            users_to_add.append({
+                'username': user.username,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'email': user.email,
+                'role': role
+            })
 
         return users_to_add
 
@@ -1673,9 +1709,16 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         if users_to_add:
             formset = formset_factory(
                 AllocationAddUserForm, max_num=len(users_to_add))
-            formset = formset(initial=users_to_add, prefix='userform')
+            formset = formset(
+                initial=users_to_add,
+                prefix='userform',
+                form_kwargs={
+                    'resource': allocation_obj.get_parent_resource 
+                }
+            )
             context['formset'] = formset
 
+        context['allocation_user_roles_enabled'] = check_if_roles_are_enabled(allocation_obj)
         context['allocation'] = allocation_obj
         return render(request, self.template_name, context)
 
@@ -1688,8 +1731,13 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
         formset = formset_factory(
             AllocationAddUserForm, max_num=len(users_to_add))
-        formset = formset(request.POST, initial=users_to_add,
-                          prefix='userform')
+        formset = formset(
+            request.POST,
+            initial=users_to_add,
+            prefix='userform', form_kwargs={
+                'resource': allocation_obj.get_parent_resource 
+            }
+        )
 
         added_users = []
         added_users_objs = []
@@ -1737,10 +1785,15 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                         allocation_user_obj = allocation_obj.allocationuser_set.get(
                             user=user_obj)
                         allocation_user_obj.status = allocation_user_status_choice
+                        allocation_user_obj.role = user_form_data.get('role')
                         allocation_user_obj.save()
                     else:
                         allocation_user_obj = AllocationUser.objects.create(
-                            allocation=allocation_obj, user=user_obj, status=allocation_user_status_choice)
+                            allocation=allocation_obj,
+                            user=user_obj,
+                            status=allocation_user_status_choice,
+                            role=user_form_data.get('role')    
+                        )
 
                     allocation_user_request_obj = allocation_obj.create_user_request(
                         requestor_user=requestor_user,
@@ -1811,8 +1864,12 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                     f'{allocation_obj.get_parent_resource.name} allocation (allocation pk={allocation_obj.pk})'
                 )
         else:
+            logger.warning(
+                f'An error occured when adding users to an allocation (allocation pk={allocation_obj.pk})'
+            )
             for error in formset.errors:
-                messages.error(request, error)
+                messages.error(request, error.get('__all__'))
+                return HttpResponseRedirect(reverse('allocation-add-users', kwargs={'pk': pk}))
 
         return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
@@ -1827,14 +1884,6 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
         allocation_obj = get_object_or_404(
             Allocation, pk=self.kwargs.get('pk'))
-
-        # if allocation_obj.get_parent_resource.name == 'Slate-Project':
-        #     if allocation_obj.data_manager != self.request.user.username:
-        #         messages.error(
-        #             self.request,
-        #             'Only the Data Manager can remove users to this resource.'
-        #         )
-        #         return False
 
         if allocation_obj.project.pi == self.request.user:
             return True
@@ -5244,3 +5293,112 @@ class AllocationExportView(LoginRequiredMixin, UserPassesTestMixin, View):
                 .format(' '.join(form.errors))
             )
             return HttpResponseRedirect(reverse('allocation-list'))
+
+
+class AllocationUserDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name = 'allocation/allocation_user_detail.html'
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+
+        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
+
+        if allocation_obj.project.pi == self.request.user:
+            return True
+
+        if allocation_obj.project.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+            return True
+
+    def check_user_is_manager(self, project_user_obj):
+        if project_user_obj.role == ProjectUserRoleChoice.objects.get(name='Manager'):
+            return True
+
+        return False
+
+    def get(self, request, *args, **kwargs):
+        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
+        allocation_user_pk = self.kwargs.get('allocation_user_pk')
+
+        if allocation_obj.allocationuser_set.filter(pk=allocation_user_pk).exists():
+            allocation_user_obj = allocation_obj.allocationuser_set.get(
+                pk=allocation_user_pk)
+
+            allocation_user_update_form = AllocationUserUpdateForm(
+                initial={
+                    'role': allocation_user_obj.role,
+                },
+            )
+
+            context = {}
+            context['allocation_obj'] = allocation_obj
+            context['allocation_user_update_form'] = allocation_user_update_form
+            context['allocation_user_obj'] = allocation_user_obj
+
+            return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
+        project_obj = allocation_obj.project
+        allocation_user_pk = self.kwargs.get('allocation_user_pk')
+
+        if allocation_obj.status.name not in ['Active', 'Billing Information Submitted', 'New']:
+            messages.error(
+                request, f'You cannot update a user in a(n) {allocation_obj.status.name} allocation.'
+            )
+            return HttpResponseRedirect(
+                reverse('allocation-user-detail', kwargs={'pk': allocation_user_pk})
+            )
+
+        if allocation_obj.allocationuser_set.filter(id=allocation_user_pk).exists():
+            allocation_user_obj = allocation_obj.allocationuser_set.get(
+                pk=allocation_user_pk
+            )
+
+            if allocation_user_obj.user == allocation_user_obj.allocation.project.pi:
+                messages.error(request, 'PI role cannot be changed.')
+                return HttpResponseRedirect(
+                    reverse(
+                        'allocation-user-detail',
+                        kwargs={'pk': allocation_obj.pk, 'allocation_user_pk': allocation_user_obj.pk}
+                    )
+                )
+
+            allocation_user_update_form = AllocationUserUpdateForm(
+                request.POST,
+                initial={
+                    'role': allocation_user_obj.role.name,
+                },
+            )
+
+            if allocation_user_update_form.is_valid():
+                form_data = allocation_user_update_form.cleaned_data
+                allocation_user_obj.role = AllocationUserRoleChoice.objects.get(
+                    name=form_data.get('role'))
+                allocation_user_obj.save()
+                allocation_change_user_role.send(
+                    sender=self.__class__,
+                    allocation_user_pk=allocation_user_obj.pk,
+                )
+
+                logger.info(
+                    f'User {request.user.username} updated {allocation_user_obj.user.username}\'s '
+                    f'role (allocation pk={project_obj.pk})'
+                )
+
+                messages.success(request, 'User details updated.')
+                return HttpResponseRedirect(
+                    reverse(
+                        'allocation-user-detail',
+                        kwargs={'pk': allocation_obj.pk, 'allocation_user_pk': allocation_user_obj.pk}
+                    )
+                )
+            else:
+                messages.error(request, allocation_user_update_form.errors)
+                return HttpResponseRedirect(
+                    reverse(
+                        'allocation-user-detail',
+                        kwargs={'pk': allocation_obj.pk, 'allocation_user_pk': allocation_user_obj.pk}
+                    )
+                )

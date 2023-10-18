@@ -22,7 +22,8 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationAdminAction,
                                               AttributeType,
                                               AllocationRemovalRequest,
-                                              AllocationRemovalStatusChoice,)
+                                              AllocationRemovalStatusChoice,
+                                              AllocationUserRoleChoice,)
 
 
 @admin.register(AllocationStatusChoice)
@@ -309,13 +310,22 @@ class AllocationUserStatusChoiceAdmin(admin.ModelAdmin):
     list_display = ('name',)
 
 
+@admin.register(AllocationUserRoleChoice)
+class AllocationUserRoleChoiceAdmin(admin.ModelAdmin):
+    list_display = ('name', 'list_resources')
+    filter_horizontal = ('resources', )
+
+    def list_resources(self, obj):
+        return list(obj.resources.all())
+
+
 @admin.register(AllocationUser)
 class AllocationUserAdmin(SimpleHistoryAdmin):
     readonly_fields_change = ('allocation', 'user',
                               'resource', 'created', 'modified',)
-    fields_change = ('allocation', 'user', 'status', 'created', 'modified',)
+    fields_change = ('allocation', 'user', 'role', 'status', 'created', 'modified',)
     list_display = ('pk', 'project', 'project_pi', 'resource', 'allocation_status',
-                    'user_info', 'status', 'created', 'modified',)
+                    'user_info', 'role', 'status', 'created', 'modified',)
     list_filter = ('status', 'allocation__status', 'allocation__resources',)
     search_fields = (
         'user__first_name',

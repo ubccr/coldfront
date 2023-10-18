@@ -81,5 +81,7 @@ urlpatterns = [
     path('<int:pk>/allocation-approve-removal/', allocation_views.AllocationApproveRemovalRequestView.as_view(),
          name='allocation-approve-removal-request'),
     path('<int:pk>/allocation-deny-removal/', allocation_views.AllocationDenyRemovalRequestView.as_view(),
-         name='allocation-deny-removal-request')
+         name='allocation-deny-removal-request'),
+    path('<int:pk>/user-detail/<int:allocation_user_pk>', allocation_views.AllocationUserDetailView.as_view(),
+         name='allocation-user-detail')
 ]
