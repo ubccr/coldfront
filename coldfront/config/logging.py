@@ -25,8 +25,8 @@ LOGGING = {
             'filename': 'django-q.log',
         },
         'key-events': {
-            'class': 'logging.FileHandler',
-            'filename': 'key-events.log',
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': 'logs/key-events.log',
         },
         # 'file': {
         #     'class': 'logging.FileHandler',
