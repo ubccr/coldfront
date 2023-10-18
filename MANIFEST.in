@@ -14,5 +14,5 @@ recursive-include coldfront/core/user/templates *
 recursive-include coldfront/core/resource/templates *
 recursive-include coldfront/plugins/maintenance_mode/templates *
 recursive-include coldfront/plugins/maintenance_mode/management/commands *
-recursive-include coldfront/plugins/slate_project_info/templates *
+recursive-include coldfront/plugins/slate_project/templates *
 recursive-include coldfront/plugins/advanced_search/templates *
