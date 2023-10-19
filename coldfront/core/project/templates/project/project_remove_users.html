@@ -19,7 +19,8 @@
       <p>
         To be removed from a lab, the user must not have the lab as their primary
         group. If you would like to remove a user that has your lab as their primary
-        group, please contact FASRC support.
+        group, please <a href="https://portal.rc.fas.harvard.edu/rcrt/submit_ticket">
+        contact FASRC support</a>.
       </p>
       <form action="{% url 'project-remove-users' project.pk %}" method="post">
         {% csrf_token %}

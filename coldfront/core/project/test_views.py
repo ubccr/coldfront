@@ -5,9 +5,7 @@ from django.test import TestCase, tag
 from coldfront.core.test_helpers import utils
 from coldfront.core.test_helpers.factories import (
     setup_models,
-    UserFactory,
     ProjectFactory,
-    ProjectUserFactory,
     PAttributeTypeFactory,
     ProjectAttributeFactory,
     ProjectStatusChoiceFactory,

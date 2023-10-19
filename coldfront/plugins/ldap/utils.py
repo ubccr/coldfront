@@ -192,7 +192,9 @@ class LDAPConn:
         return result
 
     def users_in_primary_group(self, usernames, groupname):
-        """Return two lists of users based on membership in the specified group.
+        """
+        Return list of usernames representing users that are members of the
+        designated AD Group
         """
         group = self.return_group_by_name(groupname)
         attrs = ['sAMAccountName', 'gidNumber']
