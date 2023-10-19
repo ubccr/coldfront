@@ -105,22 +105,6 @@ class Command(BaseCommand):
                 allocation=allocation_obj,
                 value=value
             )
-
-    def get_slate_project_gid_to_name_mapping(self):
-        """
-        This works with multiple slate projects. Returns a dictionary with the key as the slate
-        project's gid and value as its name.
-        """
-        slate_project_gid_to_name_mapping = {}
-        with open(os.path.join('slate_projects', 'slate_projects.txt'), 'r') as file_with_gids:
-            for line in file_with_gids:
-                split_line = line.split(' ')
-                split_line = [ element for element in split_line if element ]
-                gid = int(split_line[3])
-                name = split_line[8][:-1]
-                slate_project_gid_to_name_mapping[gid] = name
-
-        return slate_project_gid_to_name_mapping
     
     def get_slate_project_role(self, gid_number):
         role = 'read/write'
@@ -152,7 +136,7 @@ class Command(BaseCommand):
 
         return results
     
-    def get_allocation_user_role(self, username, namespace_entry, slate_project_gid_to_name_mapping):
+    def get_allocation_user_role(self, username, namespace_entry):
         gid_number = self.get_slate_project_gid_number(username, namespace_entry)
         if not gid_number:
             print(
@@ -162,8 +146,7 @@ class Command(BaseCommand):
             role='read only'
         else:
             role = self.get_slate_project_role(
-                gid_number[0].get('gidNumber')[0],
-                slate_project_gid_to_name_mapping
+                gid_number[0].get('gidNumber')[0]
             )
 
         return AllocationUserRoleChoice.objects.get(name=role)
@@ -305,12 +288,10 @@ class Command(BaseCommand):
                 allocation=allocation_obj,
                 status=AllocationUserStatusChoice.objects.get(name='Active')
             )
-            slate_project_gid_to_name_mapping = self.get_slate_project_gid_to_name_mapping()
             if created:
                 allocation_user_obj.role = self.get_allocation_user_role(
                     user_obj.username,
-                    slate_project.get('namespace_entry'),
-                    slate_project_gid_to_name_mapping
+                    slate_project.get('namespace_entry')
                 )
                 allocation_user_obj.save()
 
@@ -327,8 +308,7 @@ class Command(BaseCommand):
                 if created:
                     allocation_user_obj.role = self.get_allocation_user_role(
                         user_obj.username,
-                        slate_project.get('namespace_entry'),
-                        slate_project_gid_to_name_mapping
+                        slate_project.get('namespace_entry')
                     )
                     allocation_user_obj.save()
 
