@@ -275,9 +275,16 @@ class Command(BaseCommand):
                     status=ProjectUserStatusChoice.objects.get(name='Active')
                 )
 
+            allocation_start_date = slate_project.get('start_date').split('/')
+            allocation_start_date = '-'.join(
+                [allocation_start_date[2], allocation_start_date[0], allocation_start_date[1]]
+            )
+
             allocation_obj, created = Allocation.objects.get_or_create(
                 project=project_obj,
-                status=AllocationStatusChoice.objects.get(name='Active')
+                status=AllocationStatusChoice.objects.get(name='Active'),
+                start_date=allocation_start_date,
+                end_date=project_end_date
             )
             if created:
                 allocation_obj.resources.add(Resource.objects.get(name='Slate Project'))
