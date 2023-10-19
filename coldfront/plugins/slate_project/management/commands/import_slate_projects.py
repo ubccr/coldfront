@@ -284,7 +284,8 @@ class Command(BaseCommand):
                 project=project_obj,
                 status=AllocationStatusChoice.objects.get(name='Active'),
                 start_date=allocation_start_date,
-                end_date=project_end_date
+                end_date=project_end_date,
+                is_changeable=True
             )
             if created:
                 allocation_obj.resources.add(Resource.objects.get(name='Slate Project'))
