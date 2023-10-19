@@ -105,51 +105,6 @@ class Command(BaseCommand):
                 allocation=allocation_obj,
                 value=value
             )
-    
-    def get_slate_project_role(self, gid_number):
-        role = 'read/write'
-        if gid_number % 2:
-            role = 'read only'
-
-        return role
-    
-    def get_slate_project_gid_number(self, username, namespace_entry):
-        server = Server(
-            import_from_settings('LDAP_SLATE_PROJECT_SERVER_URI'), use_ssl=True, connect_timeout=1
-        )
-        conn = Connection(server)
-        if not conn.bind():
-            return []
-        
-        searchParameters = {
-            'search_base': import_from_settings('LDAP_SLATE_PROJECT_USER_SEARCH_BASE'),
-            'search_filter': ldap.filter.filter_format(
-                "(&(memberUid=%s)(cn=%s))", [username, 'condo_' + namespace_entry]
-            ),
-            'attributes': ['gidNumber']
-        }
-        conn.search(**searchParameters)
-        results = []
-        if conn.entries:
-            for entry in conn.entries:
-                results.append(json.loads(entry.entry_to_json()).get('attributes'))
-
-        return results
-    
-    def get_allocation_user_role(self, username, namespace_entry):
-        gid_number = self.get_slate_project_gid_number(username, namespace_entry)
-        if not gid_number:
-            print(
-                f'Warning: No GID found for user: {username} and '
-                f'namespace_entry: {namespace_entry}. Setting role to read only.'
-            )
-            role='read only'
-        else:
-            role = self.get_slate_project_role(
-                gid_number[0].get('gidNumber')[0]
-            )
-
-        return AllocationUserRoleChoice.objects.get(name=role)
 
     def handle(self, *args, **kwargs):
         if not kwargs.get("csv"):
@@ -201,7 +156,8 @@ class Command(BaseCommand):
                     "updated_at": line[30],
                     "title": line[31],
                     "can_be_pi": line[32],
-                    "users": line[33],
+                    "read_write_users": line[33],
+                    "read_only_users": line[34]
                 }
                 slate_projects.append(slate_project)
 
@@ -253,13 +209,8 @@ class Command(BaseCommand):
                     status=ProjectUserStatusChoice.objects.get(name='Active')
                 )
 
-            ProjectUser.objects.get_or_create(
-                user=user_obj,
-                project=project_obj,
-                role=project_user_role,
-                status=ProjectUserStatusChoice.objects.get(name='Active')
-            )
-            for user in slate_project.get('users').split(','):
+            all_users = slate_project.get('read_write_users') + ',' + slate_project.get('read_only_users')
+            for user in all_users.split(','):
                 if not user:
                     continue
                 user_obj, _ = User.objects.get_or_create(username=user)
@@ -267,6 +218,9 @@ class Command(BaseCommand):
                 project_user_role = ProjectUserRoleChoice.objects.get(name='User')
                 if user_profile_obj.title == 'group':
                     project_user_role = ProjectUserRoleChoice.objects.get(name='Group')
+
+                if user_obj == project_obj.pi:
+                    project_user_role = ProjectUserRoleChoice.objects.get(name='Manager')
 
                 ProjectUser.objects.get_or_create(
                     user=user_obj,
@@ -290,35 +244,44 @@ class Command(BaseCommand):
             if created:
                 allocation_obj.resources.add(Resource.objects.get(name='Slate Project'))
 
-            user_obj, created = User.objects.get_or_create(username=slate_project.get('owner_netid'))
-            allocation_user_obj, created = AllocationUser.objects.get_or_create(
-                user=user_obj,
-                allocation=allocation_obj,
-                status=AllocationUserStatusChoice.objects.get(name='Active')
-            )
-            if created:
-                allocation_user_obj.role = self.get_allocation_user_role(
-                    user_obj.username,
-                    slate_project.get('namespace_entry')
-                )
-                allocation_user_obj.save()
-
-            for user in slate_project.get("users").split(','):
-                if not user:
-                    continue
-                user_obj, created = User.objects.get_or_create(username=user)
+            if not all_users:
+                user_obj, created = User.objects.get_or_create(username=slate_project.get('owner_netid'))
                 allocation_user_obj, created = AllocationUser.objects.get_or_create(
                     user=user_obj,
                     allocation=allocation_obj,
                     status=AllocationUserStatusChoice.objects.get(name='Active')
                 )
-
                 if created:
-                    allocation_user_obj.role = self.get_allocation_user_role(
-                        user_obj.username,
-                        slate_project.get('namespace_entry')
-                    )
+                    allocation_user_obj.role = AllocationUserRoleChoice.objects.get(name='read/write')
                     allocation_user_obj.save()
+            else:
+                for user in slate_project.get("read_write_users").split(','):
+                    if not user:
+                        continue
+                    user_obj, created = User.objects.get_or_create(username=user)
+                    allocation_user_obj, created = AllocationUser.objects.get_or_create(
+                        user=user_obj,
+                        allocation=allocation_obj,
+                        status=AllocationUserStatusChoice.objects.get(name='Active')
+                    )
+
+                    if created:
+                        allocation_user_obj.role = AllocationUserRoleChoice.objects.get(name='read/write')
+                        allocation_user_obj.save()
+
+                for user in slate_project.get("read_only_users").split(','):
+                    if not user:
+                        continue
+                    user_obj, created = User.objects.get_or_create(username=user)
+                    allocation_user_obj, created = AllocationUser.objects.get_or_create(
+                        user=user_obj,
+                        allocation=allocation_obj,
+                        status=AllocationUserStatusChoice.objects.get(name='Active')
+                    )
+
+                    if created:
+                        allocation_user_obj.role = AllocationUserRoleChoice.objects.get(name='read only')
+                        allocation_user_obj.save()
 
             self.create_allocation_attribute(allocation_obj, 'Namespace Entry', slate_project.get('namespace_entry'))
             self.create_allocation_attribute(allocation_obj, 'Allocated Quantity', slate_project.get('allocated_quantity'))
