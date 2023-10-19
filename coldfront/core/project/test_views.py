@@ -353,6 +353,7 @@ class ProjectRemoveUsersViewTest(ProjectViewTestBase):
         """set up users and project for testing"""
         self.url = f'/project/{self.project.pk}/remove-users/'
 
+    @tag('net')
     def test_projectremoveusersview_access(self):
         """test access to project remove users page"""
         self.project_access_tstbase(self.url)
