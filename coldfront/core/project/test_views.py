@@ -1,6 +1,6 @@
 import logging
 
-from django.test import TestCase
+from django.test import TestCase, tag
 
 from coldfront.core.test_helpers import utils
 from coldfront.core.test_helpers.factories import (
