@@ -791,10 +791,11 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             cleaned_form = [form.cleaned_data for form in formset]
             selected_cleaned_form = [form for form in cleaned_form if form['selected']]
             for form_data in selected_cleaned_form:
-                users_added_count += 1
+
                 user_obj = get_user_model().objects.get(
                     username=form_data.get('username')
                 )
+
                 allocation_user_obj, _ = (
                     allocation_obj.allocationuser_set.update_or_create(
                         user=user_obj, defaults={'status': user_active_status}
@@ -803,6 +804,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                 allocation_activate_user.send(
                     sender=self.__class__, allocation_user_pk=allocation_user_obj.pk
                 )
+                users_added_count += 1
 
             user_plural = 'user' if users_added_count == 1 else 'users'
             msg = f'Added {users_added_count} {user_plural} to allocation.'
@@ -899,7 +901,6 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
                 form for form in cleaned_forms if form['selected']
             ]
             for user_form_data in selected_cleaned_forms:
-                remove_users_count += 1
                 user_obj = get_user_model().objects.get(
                     username=user_form_data.get('username')
                 )
@@ -909,11 +910,13 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
                 allocation_user_obj = allocation_obj.allocationuser_set.get(
                     user=user_obj
                 )
+
                 allocation_user_obj.status = removed_allocuser_status
                 allocation_user_obj.save()
                 allocation_remove_user.send(
                     sender=self.__class__, allocation_user_pk=allocation_user_obj.pk
                 )
+                remove_users_count += 1
 
             user_plural = 'user' if remove_users_count == 1 else 'users'
             msg = f'Removed {remove_users_count} {user_plural} from allocation.'

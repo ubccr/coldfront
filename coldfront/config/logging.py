@@ -15,7 +15,13 @@ MESSAGE_TAGS = {
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
-    'formatters': {},
+    'formatters': {
+        'key-events': {
+            "()": "django.utils.log.ServerFormatter",
+            "format": "[{server_time}] {levelname} {message}",
+            "style": "{",
+        }
+    },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
@@ -24,12 +30,17 @@ LOGGING = {
             'class': 'logging.FileHandler',
             'filename': 'django-q.log',
         },
+        'key-events': {
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': 'logs/key-events.log',
+            'when': 'D',
+            'formatter': 'key-events',
+        },
         # 'file': {
         #     'class': 'logging.FileHandler',
         #     'filename': '/tmp/debug.log',
         # },
     },
-    'formatters': {},
     'loggers': {
         'django_auth_ldap': {
             'level': 'INFO',
@@ -52,5 +63,9 @@ LOGGING = {
             'handlers': ['console'],
             'level': 'INFO',
         },
+        'coldfront.core.project': {
+            'handlers': ['key-events'],
+            'level': 'INFO',
+        }
     },
 }

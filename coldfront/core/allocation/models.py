@@ -202,6 +202,8 @@ class Allocation(TimeStampedModel):
             price = float(get_resource_rate(self.resources.first().name))
         except AttributeError:
             return None
+        except TypeError:
+            return None
         size = self.allocationattribute_set.get(allocation_attribute_type_id=1).value
         return 0 if not size else price * float(size)
 

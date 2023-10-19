@@ -10,8 +10,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db.models import Q
 from django.forms import formset_factory
-from django.http import (HttpResponse,
-                         HttpResponseRedirect)
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.views import View
@@ -62,10 +61,14 @@ from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.utils.views import ColdfrontListView, NoteCreateView, NoteUpdateView
 from coldfront.core.utils.common import get_domain_url, import_from_settings
+from coldfront.core.utils.fasrc import sort_by
 from coldfront.core.utils.mail import send_email, send_email_template
 
 if 'django_q' in settings.INSTALLED_APPS:
     from django_q.tasks import Task
+
+if 'coldfront.plugins.ldap' in settings.INSTALLED_APPS:
+    from coldfront.plugins.ldap.utils import LDAPConn
 
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
     'ALLOCATION_ENABLE_ALLOCATION_RENEWAL', True)
@@ -88,8 +91,6 @@ def produce_filter_parameter(key, value):
     if isinstance(value, list):
         return ''.join([f'{key}={ele}&' for ele in value])
     return f'{key}={value}&'
-
-logger = logging.getLogger(__name__)
 
 logger = logging.getLogger(__name__)
 
@@ -632,6 +633,9 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
         )
 
         added_users_count = 0
+        if 'coldfront.plugins.ldap' in settings.INSTALLED_APPS:
+            ldap_conn = LDAPConn()
+
         if formset.is_valid() and allocation_form.is_valid():
             projuserstatus_active = ProjectUserStatusChoice.objects.get(name='Active')
             allocuser_status_active = AllocationUserStatusChoice.objects.get(
@@ -643,34 +647,58 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             for form in formset:
                 user_form_data = form.cleaned_data
                 if user_form_data['selected']:
-                    added_users_count += 1
 
                     # Will create local copy of user if not already present in local database
-                    user_obj, _ = get_user_model().objects.get_or_create(
-                        username=user_form_data.get('username')
-                    )
-                    user_obj.first_name = user_form_data.get('first_name')
-                    user_obj.last_name = user_form_data.get('last_name')
-                    user_obj.email = user_form_data.get('email')
-                    user_obj.save()
+                    # user_obj, _ = get_user_model().objects.update_or_create(
+                    #     username=user_form_data.get('username'),
+                    #     defaults={
+                    #         'first_name': user_form_data.get('first_name'),
+                    #         'last_name': user_form_data.get('last_name'),
+                    #         'email': user_form_data.get('email'),
+                    #     }
+                    # )
+                    # FASRC Coldfront doesn't add user entries due to internal syncing
+                    user_username = user_form_data.get('username')
+                    try:
+                        user_obj = get_user_model().objects.get(username=user_username)
+                    except Exception as e:
+                        error = f"Could not locate user for {user_username}: {e}"
+                        logger.error('P665: %s', error)
+                        messages.error(request, error)
+                        continue
 
                     role_choice = user_form_data.get('role')
-                    # Is the user already in the project?
-                    if project_obj.projectuser_set.filter(user=user_obj).exists():
-                        project_user_obj = project_obj.projectuser_set.get(
-                            user=user_obj
-                        )
-                        project_user_obj.role = role_choice
-                        project_user_obj.status = projuserstatus_active
-                        project_user_obj.save()
-                    else:
-                        project_user_obj = ProjectUser.objects.create(
-                            user=user_obj,
-                            project=project_obj,
-                            role=role_choice,
-                            status=projuserstatus_active,
-                        )
 
+                    if 'coldfront.plugins.ldap' in settings.INSTALLED_APPS:
+                        try:
+                            ldap_conn.add_member_to_group(
+                                user_obj.username, project_obj.title,
+                            )
+                            logger.info(
+                                "P678: Coldfront user %s added AD User for %s to AD Group %s",
+                                self.request.user,
+                                user_obj.username,
+                                project_obj.title,
+                            )
+                        except Exception as e:
+                            error = f"Could not add user {user_obj} to AD Group for {project_obj.title}: {e}"
+                            logger.error(
+                                "P685: user %s could not add AD user of %s to AD Group of %s: %s",
+                                self.request.user, user_obj, project_obj.title, e
+                            )
+                            messages.error(request, error)
+                            continue
+
+                    # Is the user already in the project?
+                    project_obj.projectuser_set.update_or_create(
+                        user=user_obj,
+                        defaults={
+                            'role': role_choice,
+                            'status': projuserstatus_active,
+                        }
+                    )
+
+                    added_users_count += 1
                     for allocation in Allocation.objects.filter(
                         pk__in=allocation_form_data
                     ):
@@ -742,6 +770,18 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         pk = self.kwargs.get('pk')
         project_obj = get_object_or_404(Project, pk=pk)
         users_to_remove = self.get_users_to_remove(project_obj)
+        users_no_removal = None
+
+        # if ldap is activated, prevent
+        if 'coldfront.plugins.ldap' in settings.INSTALLED_APPS:
+
+            usernames = [u['username'] for u in users_to_remove]
+            ldap_conn = LDAPConn()
+            users_main_group = ldap_conn.users_in_primary_group(
+                usernames, project_obj.title)
+            ingroup = lambda u: u['username'] in users_main_group
+            users_no_removal, users_to_remove = sort_by(users_to_remove, ingroup, how="condition")
+
         context = {}
 
         if users_to_remove:
@@ -752,6 +792,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             context['formset'] = formset
 
         context['project'] = get_object_or_404(Project, pk=pk)
+        context['users_no_removal'] = users_no_removal
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
@@ -764,6 +805,8 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         formset = formset(request.POST, initial=users_to_remove, prefix='userform')
 
         remove_users_count = 0
+        if 'coldfront.plugins.ldap' in settings.INSTALLED_APPS:
+            ldap_conn = LDAPConn()
 
         if formset.is_valid():
             projectuser_status_removed = ProjectUserStatusChoice.objects.get(
@@ -775,7 +818,6 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             for form in formset:
                 user_form_data = form.cleaned_data
                 if user_form_data['selected']:
-                    remove_users_count += 1
                     user_obj = get_user_model().objects.get(
                         username=user_form_data.get('username')
                     )
@@ -783,6 +825,32 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                         continue
 
                     project_user_obj = project_obj.projectuser_set.get(user=user_obj)
+
+                    if 'coldfront.plugins.ldap' in settings.INSTALLED_APPS:
+                        try:
+                            ldap_conn.remove_member_from_group(
+                                user_obj.username, project_obj.title,
+                            )
+                            logger.info(
+                                "P835: Coldfront user %s removed AD User for %s from AD Group for %s",
+                                self.request.user,
+                                user_obj.username,
+                                project_obj.title,
+                            )
+                        except Exception as e:
+                            messages.error(
+                                request,
+                                f"could not remove user {user_obj}: {e}"
+                            )
+                            logger.error(
+                                "P846: Coldfront user %s could NOT remove AD User for %s from AD Group for %s: %s",
+                                self.request.user,
+                                user_obj.username,
+                                project_obj.title,
+                                e
+                            )
+                            continue
+
                     project_user_obj.status = projectuser_status_removed
                     project_user_obj.save()
 
@@ -800,6 +868,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                             allocation_remove_user.send(
                                 sender=self.__class__, allocation_user_pk=alloc_user.pk
                             )
+                    remove_users_count += 1
             user_pl = 'user' if remove_users_count == 1 else 'users'
             messages.success(
                 request, f'Removed {remove_users_count} {user_pl} from project.'
