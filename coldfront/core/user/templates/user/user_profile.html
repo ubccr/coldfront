@@ -1,7 +1,6 @@
-{% extends "common/base.html" %} {% load static %} {% block title %} User
+{% extends "common/base.html" %} {% load static %} {% load crispy_forms_tags %} {% block title %} User
 Profile{% if not user == viewed_user %}: {{ viewed_user.username }}{% endif %}
 {% endblock %} {% block content %}
-{% load crispy_forms_tags %}
 
 <div class="d-flex justify-content-between align-items-end">
   <h2>User Profile</h2>
