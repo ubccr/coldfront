@@ -106,7 +106,7 @@ plugin_configs['PLUGIN_WEEKLYREPORTAPP'] = 'plugins/weeklyreportapp.py'
 5. Since the example Weekly Report plugin is intended for admins, to add it to the navbar for admins, update the **navbar_admin.html** (```templates/common/navbar_admin.html```) file or its equivalent in your ColdFront setup like so:
   ```
   <li id="navbar-admin" class="nav-item dropdown">
-    <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown">Admin</a>
+    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Admin</a>
     <div class="dropdown-menu">
       <a class="dropdown-item" href="/admin">ColdFront Administration</a>
       <a id="navbar-user-search" class="dropdown-item" href="{% url 'user-search-home' %}">User Search</a>
@@ -171,7 +171,7 @@ plugin_configs['PLUGIN_WEEKLYREPORTAPP'] = 'plugins/weeklyreportapp.py'
 5. Since the example Weekly Report plugin is intended for admins, to add it to the navbar for admins, update the **navbar_admin.html** (```templates/common/navbar_admin.html```) file or its equivalent in your ColdFront setup like so:
   ```
   <li id="navbar-admin" class="nav-item dropdown">
-    <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown">Admin</a>
+    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Admin</a>
     <div class="dropdown-menu">
       <a class="dropdown-item" href="/admin">ColdFront Administration</a>
       <a id="navbar-user-search" class="dropdown-item" href="{% url 'user-search-home' %}">User Search</a>

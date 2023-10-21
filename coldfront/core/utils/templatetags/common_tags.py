@@ -29,9 +29,9 @@ def get_icon(expand_accordion):
 @register.filter
 def convert_boolean_to_icon(boolean):
     if boolean == False:
-        return mark_safe('<span class="badge badge-success"><i class="fas fa-check"></i></span>')
+        return mark_safe('<span class="badge bg-success"><i class="fas fa-check"></i></span>')
     else:
-        return mark_safe('<span class="badge badge-danger"><i class="fas fa-times"></i></span>')
+        return mark_safe('<span class="badge bg-danger"><i class="fas fa-times"></i></span>')
 
 
 @register.filter
@@ -39,13 +39,13 @@ def convert_status_to_icon(project):
     if project.last_project_review:
         status = project.last_project_review.status.name
         if status == 'Pending':
-            return mark_safe('<h4><span class="badge badge-info"><i class="fas fa-exclamation-circle"></i></span></h4>')
+            return mark_safe('<h4><span class="badge bg-info"><i class="fas fa-exclamation-circle"></i></span></h4>')
         elif status == 'Completed':
-            return mark_safe('<h4><span class="badge badge-success"><i class="fas fa-check-circle"></i></span></h4>')
+            return mark_safe('<h4><span class="badge bg-success"><i class="fas fa-check-circle"></i></span></h4>')
     elif project.needs_review and not project.last_project_review:
-        return mark_safe('<h4><span class="badge badge-danger"><i class="fas fa-question-circle"></i></span></h4>')
+        return mark_safe('<h4><span class="badge bg-danger"><i class="fas fa-question-circle"></i></span></h4>')
     elif not project.needs_review:
-        return mark_safe('<h4><span class="badge badge-success"><i class="fas fa-check-circle"></i></span></h4>')
+        return mark_safe('<h4><span class="badge bg-success"><i class="fas fa-check-circle"></i></span></h4>')
 
 
 
