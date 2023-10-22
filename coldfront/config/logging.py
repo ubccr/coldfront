@@ -13,7 +13,10 @@ MESSAGE_TAGS = {
     messages.ERROR: 'danger',
 }
 
-LOGGING_FILE = ENV.str('LOGGING_FILE', default=None)
+FILE_ENABLE = ENV.bool('FILE_ENABLE', default=False)
+LOG_LEVEL = ENV.str('LOG_LEVEL', default="INFO")
+LOG_LEVEL_LDAP = ENV.str('LOG_LEVEL_LDAP', default=LOG_LEVEL)
+LOGGING_FILE = ENV.str('LOGGING_FILE', default="/tmp/debug.log")
 LOGGING_VERSION = ENV.int('LOGGING_VERSION', default=1)
 
 
@@ -31,13 +34,13 @@ LOGGING = {
     },
     'loggers': {
         'django_auth_ldap': {
-            'level': 'WARN',
+            'level': LOG_LEVEL_LDAP,
             # 'handlers': ['console', 'file'],
             'handlers': ['console', ],
         },
         'django': {
             'handlers': ['console'],
-            'level': 'INFO',
+            'level': LOG_LEVEL,
         },
     },
 }
