@@ -51,6 +51,7 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserStatusChoice,
                                            ProjectUserMessage,
                                            ProjectDescriptionRecord)
+from coldfront.core.project.signals import visit_project_detail
 from coldfront.core.publication.models import Publication
 from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.user.forms import UserSearchForm
@@ -141,6 +142,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        visit_project_detail.send(sender=self.__class__, project_pk=self.object.pk)
         allocation_submitted = self.request.GET.get('allocation_submitted')
         after_project_creation_get = self.request.GET.get('after_project_creation')
         context['display_modal'] = 'false'
@@ -168,7 +170,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
         # Only show 'Active Users'
         project_users = self.object.projectuser_set.filter(
-            status__name='Active').order_by('user__username')
+            status__name__in=['Active', 'Inactive']).order_by('user__username')
 
         context['mailto'] = 'mailto:' + \
             ','.join([user.user.email for user in project_users])
@@ -1098,7 +1100,7 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
         project_obj = get_object_or_404(Project, pk=pk)
 
         users_to_exclude = [ele.user.username for ele in project_obj.projectuser_set.filter(
-            status__name='Active')]
+            status__name__in=['Active', 'Inactive'])]
 
         cobmined_user_search_obj = CombinedUserSearch(
             user_search_string, search_by, users_to_exclude)
@@ -1234,7 +1236,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
         project_obj = get_object_or_404(Project, pk=pk)
 
         users_to_exclude = [ele.user.username for ele in project_obj.projectuser_set.filter(
-            status__name='Active')]
+            status__name__in=['Active', 'Inactive'])]
 
         cobmined_user_search_obj = CombinedUserSearch(
             user_search_string, search_by, users_to_exclude)
@@ -1524,7 +1526,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
              'email': ele.user.email,
              'role': ele.role}
 
-            for ele in project_obj.projectuser_set.filter(status__name='Active').order_by('user__username') if ele.user != self.request.user and ele.user != project_obj.pi
+            for ele in project_obj.projectuser_set.filter(status__name__in=['Active', 'Inactive']).order_by('user__username') if ele.user != self.request.user and ele.user != project_obj.pi
         ]
 
         return users_to_remove
@@ -1958,7 +1960,7 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         context['project'] = project_obj
         context['project_review_form'] = project_review_form
         context['project_users'] = ', '.join(['{} {}'.format(ele.user.first_name, ele.user.last_name)
-                                              for ele in project_obj.projectuser_set.filter(status__name='Active').order_by('user__last_name')])
+                                              for ele in project_obj.projectuser_set.filter(status__name__=['Active','Inactive']).order_by('user__last_name')])
 
         context['formset'] = []
         allocation_data = self.get_allocation_data(project_obj)

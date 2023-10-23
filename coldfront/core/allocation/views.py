@@ -79,7 +79,8 @@ from coldfront.core.allocation.signals import (allocation_activate,
                                                allocation_remove_user,
                                                allocation_change_approved,
                                                allocation_change_user_role,
-                                               allocation_remove)
+                                               allocation_remove,
+                                               visit_allocation_detail)
 from coldfront.core.project.models import (Project, ProjectUser,
                                            ProjectUserStatusChoice,
                                            ProjectUserRoleChoice)
@@ -165,6 +166,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         pk = self.kwargs.get('pk')
+        visit_allocation_detail.send(sender=self.__class__, allocation_pk=pk)
         allocation_obj = get_object_or_404(Allocation, pk=pk)
         allocation_users = allocation_obj.allocationuser_set.exclude(
             status__name__in=['Removed']).order_by('user__username')
