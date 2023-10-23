@@ -607,7 +607,7 @@ class AllocationRemoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
         if new_status.name == 'Removed':
             allocation_remove.send(sender=self.__class__, allocation_pk=allocation_obj.pk)
-            allocation_users = allocation_obj.allocationuser_set.filter(status__name__in=['Active'])
+            allocation_users = allocation_obj.allocationuser_set.filter(status__name__in=['Active', 'Inactive'])
             for allocation_user in allocation_users:
                 allocation_remove_user.send(
                     sender=self.__class__, allocation_user_pk=allocation_user.pk)
@@ -754,7 +754,7 @@ class AllocationApproveRemovalRequestView(LoginRequiredMixin, UserPassesTestMixi
         allocation_obj.save()
 
         allocation_remove.send(sender=self.__class__, allocation_pk=allocation_obj.pk)
-        allocation_users = allocation_obj.allocationuser_set.filter(status__name__in=['Active'])
+        allocation_users = allocation_obj.allocationuser_set.filter(status__name__in=['Active', 'Inactive'])
         for allocation_user in allocation_users:
             allocation_remove_user.send(
                 sender=self.__class__, allocation_user_pk=allocation_user.pk)
@@ -5261,7 +5261,7 @@ class AllocationExportView(LoginRequiredMixin, UserPassesTestMixin, View):
             ]
 
             for allocation in allocations:
-                allocation_users = allocation.allocationuser_set.filter(status__name__in=['Active', ]).order_by('user__username')
+                allocation_users = allocation.allocationuser_set.filter(status__name__in=['Active', 'Inactive']).order_by('user__username')
 
                 for allocation_user in allocation_users:
                     row = [
