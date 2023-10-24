@@ -1,3 +1,4 @@
+import csv
 import datetime
 import logging
 from datetime import date
@@ -13,7 +14,7 @@ from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
 from django.db.models.query import QuerySet
 from django.forms import formset_factory
-from django.http import HttpResponseRedirect, JsonResponse, HttpResponseBadRequest
+from django.http import HttpResponseRedirect, JsonResponse, HttpResponseBadRequest, HttpResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse, reverse_lazy
 from django.utils.html import format_html, mark_safe
@@ -31,7 +32,7 @@ from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationAttributeUpdateForm,
                                              AllocationForm,
                                              AllocationInvoiceNoteDeleteForm,
-                                             AllocationInvoiceUpdateForm,
+                                             AllocationInvoiceUpdateForm, AllocationNoteCreateForm,
                                              AllocationRemoveUserForm,
                                              AllocationReviewUserForm,
                                              AllocationSearchForm,
@@ -59,7 +60,7 @@ from coldfront.core.allocation.utils import (generate_guauge_data_from_usage,
 from coldfront.core.project.models import (Project, ProjectUser, ProjectPermission,
                                            ProjectUserStatusChoice)
 from coldfront.core.resource.models import Resource
-from coldfront.core.utils.common import get_domain_url, import_from_settings
+from coldfront.core.utils.common import Echo, get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_allocation_admin_email, send_allocation_customer_email
 
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
@@ -885,47 +886,103 @@ class AllocationAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Tem
         return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
 
-class AllocationNoteCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
-    model = AllocationUserNote
-    fields = '__all__'
+class AllocationNoteCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
+    form_class = AllocationNoteCreateForm
+    # fields = '__all__'
     template_name = 'allocation/allocation_note_create.html'
-
     def test_func(self):
         """ UserPassesTestMixin Tests"""
 
+        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
         if self.request.user.is_superuser:
             return True
-        messages.error( self.request, 'You do not have permission to add allocation notes.')
-        return False
+        
+        else:
+            messages.error(
+                self.request, 'You do not have permission to add allocation notes.')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         pk = self.kwargs.get('pk')
-        allocation_obj = get_object_or_404(Allocation, pk=pk)
-        context['allocation'] = allocation_obj
+        project_obj = get_object_or_404(Allocation, pk=pk)
+        context['allocation'] = project_obj
         return context
 
-    def get_initial(self):
-        initial = super().get_initial()
-        pk = self.kwargs.get('pk')
-        allocation_obj = get_object_or_404(Allocation, pk=pk)
-        author = self.request.user
-        initial['allocation'] = allocation_obj
-        initial['author'] = author
-        return initial
+    
 
-    def get_form(self, form_class=None):
+    def get_form(self, form_class=form_class):
         """Return an instance of the form to be used in this view."""
-        form = super().get_form(form_class)
-        form.fields['allocation'].widget = forms.HiddenInput()
-        form.fields['author'].widget = forms.HiddenInput()
-        form.order_fields([ 'allocation', 'author', 'note', 'is_private' ])
-        return form
+        pk = self.kwargs.get('pk')
+        return form_class(self.kwargs.get('pk'),  **self.get_form_kwargs())
+    
+    def form_valid(self, form) -> HttpResponse:
+        obj = form
+        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
+        form_complete = AllocationNoteCreateForm(allocation_obj.pk,self.request.POST,initial = {"author":self.request.user,"message":obj.data['message']})
+        if form_complete.is_valid():
+            form_data = form_complete.cleaned_data
+            new_note_obj = AllocationUserNote.objects.create(
+                allocation = allocation_obj,
+                message = form_data["message"],
+                tags = form_data["tags"],
+                author = self.request.user,
+            )
 
+        # obj.project = allocation_obj
+
+        self.object = obj
+
+        return super().form_valid(form)
+    
+    
     def get_success_url(self):
         return reverse('allocation-detail', kwargs={'pk': self.kwargs.get('pk')})
 
 
+
+class AllocationNoteDownloadView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+      def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if self.request.user.is_superuser:
+            return True
+
+        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
+
+        if allocation_obj.project.pi == self.request.user:
+            return True
+
+        if allocation_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+            return True
+
+        messages.error(self.request, 'You do not have permission to download all notes.')
+
+      def get(self, request, pk):  
+          header = [
+              "Comment",
+              "Administrator",
+              "Created By",
+              "Last Modified"
+          ]  
+          rows = []
+          allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
+
+          notes = allocation_obj.allocationusernote_set.all()
+
+          for note in notes:
+              row = [
+                  note.message,
+                  note.author,
+                  note.tags,
+                  note.modified
+              ]  
+              rows.append(row)
+          rows.insert(0, header)
+          pseudo_buffer = Echo()
+          writer = csv.writer(pseudo_buffer)
+          response = StreamingHttpResponse((writer.writerow(row) for row in rows),
+                                              content_type="text/csv")
+          response['Content-Disposition'] = 'attachment; filename="notes.csv"'
+          return response
 class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'allocation/allocation_request_list.html'
     login_url = '/'
