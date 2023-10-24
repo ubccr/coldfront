@@ -2,6 +2,7 @@ import logging
 import json
 
 from django.contrib.auth.models import User
+from django.contrib.auth.signals import user_logged_in
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.conf import settings
@@ -70,18 +71,24 @@ def create_user_profile(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
+    instance.userprofile.save()
+
+
+@receiver(user_logged_in, sender=User)
+def update_user_profile(sender, user, **kwargs):
     if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
         from coldfront.plugins.ldap_user_info.utils import get_user_info
-        attributes = get_user_info(instance.username, ['title', 'department'])
+        attributes = get_user_info(user.username, ['title', 'department'])
+        user_profile = UserProfile.objects.get(user=user)
         if attributes['title']:
-            instance.userprofile.title = attributes['title'][0]
+            user_profile.title = attributes['title'][0]
 
         department = ''
         if attributes['department']:
             department = attributes['department'][0]
-        instance.userprofile.department = department
+        user_profile.department = department
 
-    instance.userprofile.save()
+        user_profile.save()
 
 
 @receiver(cas_user_authenticated)

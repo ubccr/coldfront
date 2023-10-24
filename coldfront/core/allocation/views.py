@@ -5,6 +5,7 @@ import csv
 from datetime import date
 
 from dateutil.relativedelta import relativedelta
+from django.conf import settings
 from django import forms
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -1356,12 +1357,16 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             return self.form_invalid(form)
 
         denied_users = []
-        for user in users:
-            username = user.username
-            if resource_account is not None:
-                if not resource_obj.check_user_account_exists(username, resource_account):
-                    denied_users.append(username)
-                    users.remove(user)
+        if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
+            from coldfront.plugins.ldap_user_info.utils import get_users_info
+            usernames = [user.username for user in users]
+            results = get_users_info(usernames, ['memberOf'])
+            for user in users:
+                username = user.username
+                if resource_account is not None:
+                    if not resource_obj.check_user_account_exists(username, resource_account, results.get(username)):
+                        denied_users.append(username)
+                        users.remove(user)
 
         if denied_users:
             messages.warning(self.request, format_html(
@@ -1767,6 +1772,23 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             if requires_user_request is not None and requires_user_request == 'Yes':
                 allocation_user_status_choice = allocation_user_pending_add_status_choice
 
+            selected_users = {}
+            selected_user_usernames = []
+            for form in formset:
+                user_form_data = form.cleaned_data
+                if user_form_data.get('selected'):
+                    selected_user_usernames.append(user_form_data.get('username'))
+                    selected_users[user_form_data.get('username')] = {
+                        'user_form_data': user_form_data,
+                        'attributes': []
+                    }
+
+            if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
+                from coldfront.plugins.ldap_user_info.utils import get_users_info
+                results = get_users_info(selected_user_usernames, ['memberOf'])
+                for username, result in results.items():
+                    selected_users.get(username)['attributes'] = result
+
             requestor_user = User.objects.get(username=request.user)
             for form in formset:
                 user_form_data = form.cleaned_data
@@ -1776,7 +1798,8 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                         username=user_form_data.get('username'))
 
                     username = user_obj.username
-                    if allocation_obj.check_user_account_exists_on_resource(username):
+                    attributes = selected_users.get(username).get('attributes')
+                    if allocation_obj.check_user_account_exists_on_resource(username, attributes):
                         added_users.append(username)
                         added_users_objs.append(user_obj)
                     else:

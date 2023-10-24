@@ -193,11 +193,13 @@ class Resource(TimeStampedModel):
             return ondemand.value
         return None
 
-    def check_user_account_exists(self, username, resource):
+    def check_user_account_exists(self, username, resource, member_of=None):
         if not RESOURCE_ENABLE_ACCOUNT_CHECKING:
             return True
-
-        if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
+        
+        if member_of:
+            attributes = member_of    
+        elif 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
             from coldfront.plugins.ldap_user_info.utils import get_user_info
             attributes = get_user_info(username, ['memberOf'])
         else:
