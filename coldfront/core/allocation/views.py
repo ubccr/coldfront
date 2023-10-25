@@ -1259,9 +1259,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
             from coldfront.plugins.ldap_user_info.utils import get_users_info
             results = get_users_info(usernames, ['memberOf'])
-            count = 0
             for username in usernames:
-                count += 1
                 if not resource_obj.check_user_account_exists(username, results.get(username).get('memberOf')):
                     denied_users.append(username)
                 else:
