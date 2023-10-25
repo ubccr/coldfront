@@ -411,14 +411,6 @@ class Allocation(TimeStampedModel):
             else:
                 return [a.value for a in attr]
 
-    def check_user_account_exists_on_resource(self, username, attributes):
-        resource = self.get_parent_resource.get_attribute('check_user_account')
-
-        if resource is None:
-            return True
-
-        return self.get_parent_resource.check_user_account_exists(username, resource, attributes)
-
     def create_user_request(self, requestor_user, allocation_user, allocation_user_status):
         """
         Check if the allocation's resource has the 'requires_user_request' attribute set to

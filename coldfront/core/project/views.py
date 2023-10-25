@@ -1228,6 +1228,23 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
         #             disable_select_list[i] = True
 
         return disable_select_list
+    
+    def get_users_accounts(self, formset):
+        selected_users_accounts = {}
+        selected_users_usernames = []
+        for form in formset:
+            user_form_data = form.cleaned_data
+            if user_form_data.get('selected'):
+                selected_users_usernames.append(user_form_data.get('username'))
+                selected_users_accounts[user_form_data.get('username')] = []
+
+        if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
+            from coldfront.plugins.ldap_user_info.utils import get_users_info
+            results = get_users_info(selected_users_usernames, ['memberOf'])
+            for username, result in results.items():
+                selected_users_accounts[username] = result.get('memberOf')
+
+        return selected_users_accounts
 
     def post(self, request, *args, **kwargs):
         user_search_string = request.POST.get('q')
@@ -1299,23 +1316,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             managers_rejected = []
             resources_requiring_user_request = {}
             requestor_user = User.objects.get(username=request.user)
-            selected_users = {}
-            selected_user_usernames = []
-            for form in formset:
-                user_form_data = form.cleaned_data
-                if user_form_data.get('selected'):
-                    selected_user_usernames.append(user_form_data.get('username'))
-                    selected_users[user_form_data.get('username')] = {
-                        'user_form_data': user_form_data,
-                        'attributes': []
-                    }
-
-            if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
-                from coldfront.plugins.ldap_user_info.utils import get_users_info
-                results = get_users_info(selected_user_usernames, ['memberOf'])
-                for username, result in results.items():
-                    selected_users.get(username)['attributes'] = result
-
+            selected_users_accounts = self.get_users_accounts(formset)
             for form in formset:
                 user_form_data = form.cleaned_data
 
@@ -1371,12 +1372,12 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
                             resource_name = allocation.get_parent_resource.name
                             # If the user does not have an account on the resource in the allocation then do not add them to it.
-                            attributes = selected_users.get(username).get('attributes')
-                            if not allocation.check_user_account_exists_on_resource(username, attributes):
+                            accounts = selected_users_accounts.get(username)
+                            if not allocation.get_parent_resource.check_user_account_exists(username, accounts):
                                 display_warning = True
                                 # Make sure there are no duplicates for a user if there's more than one instance of a resource.
-                                if allocation.get_parent_resource.get_attribute('check_user_account') not in no_accounts[username]:
-                                    no_accounts[username].append(allocation.get_parent_resource.get_attribute('check_user_account'))
+                                if allocation.get_parent_resource.name not in no_accounts[username]:
+                                    no_accounts[username].append(allocation.get_parent_resource.name)
                                 continue
 
                             requires_user_request = allocation.get_parent_resource.get_attribute(
@@ -1428,10 +1429,11 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             if display_warning:
                 warning_message = 'The following users were not added to the selected resources due to missing accounts:<ul>'
                 for username, no_account_list in no_accounts.items():
-                    warning_message += '<li>{} is missing an account for {}</li>'.format(
-                        username,
-                        ', '.join(no_account_list)
-                    )
+                    if no_account_list:
+                        warning_message += '<li>{} is missing an account for {}</li>'.format(
+                            username,
+                            ', '.join(no_account_list)
+                        )
                 warning_message += '</ul>'
                 if warning_message != '':
                     warning_message += 'They cannot be added until they create one. Please direct them to <a href="https://access.iu.edu/Accounts/Create">https://access.iu.edu/Accounts/Create</a> to create one.'
