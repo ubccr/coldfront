@@ -39,3 +39,11 @@ class Command(BaseCommand):
                             next_run=date,
                             schedule_type=Schedule.DAILY,
                             **kwargs)
+
+        if f'coldfront.core.allocation.tasks.send_request_reminder_emails' not in scheduled:
+            schedule(
+                f'coldfront.core.allocation.tasks.send_request_reminder_emails',
+                next_run=date,
+                schedule_type=Schedule.WEEKLY,
+                **kwargs
+            )
