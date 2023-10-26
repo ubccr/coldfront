@@ -1354,12 +1354,15 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             return self.form_invalid(form)
 
         denied_users = []
+        approved_users = []
         for user in users:
             username = user.username
             if resource_account is not None:
                 if not resource_obj.check_user_account_exists(username, resource_account):
                     denied_users.append(username)
-                    users.remove(user)
+                else:
+                    approved_users.append(user)
+        users = approved_users
 
         if denied_users:
             messages.warning(self.request, format_html(
