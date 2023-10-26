@@ -428,8 +428,8 @@ class AllocationCreateViewTest(AllocationViewBaseTest):
 
     def test_allocationcreateview_post_bools(self):
         """ensure booleans are properly saved"""
-        for val in ['dua', 'heavy_io', 'mounted', 'external_sharing', 'high_security']:
-            self.post_data[val] = True
+        self.post_data['additional_specifications'] = [
+            'Heavy IO', 'Mounted', 'External Sharing', 'High Security', 'DUA']
         response = self.client.post(self.url, data=self.post_data, follow=True)
         aa_names = ['Heavy IO', 'Mounted', 'High Security', 'DUA', 'External Sharing']
         aa_objs = AllocationAttribute.objects.filter(

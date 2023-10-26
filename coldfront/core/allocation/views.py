@@ -651,12 +651,10 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             allocation_attribute_type_obj = AllocationAttributeType.objects.get(
                 name=ALLOCATION_ACCOUNT_MAPPING[resource_obj.name]
             )
-            AllocationAttribute.objects.create(
+            allocation_obj.allocationattribute_set.create(
                 allocation_attribute_type=allocation_attribute_type_obj,
-                allocation=allocation_obj,
                 value=allocation_account,
             )
-
 
         expense_code = form_data.get('expense_code', None)
         if expense_code:
@@ -664,29 +662,24 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 [d[:3], d[3:8], d[8:12], d[12:18], d[18:24], d[24:28], d[28:33]]
             )
             expense_code = insert_dashes(re.sub(r'\D', '', expense_code))
-        dua = form_data.get('dua', None)
-        heavy_io = form_data.get('heavy_io', None)
-        mounted = form_data.get('mounted', None)
-        external_sharing = form_data.get('external_sharing', None)
-        high_security = form_data.get('high_security', None)
+
+        additional_specifications = form_data.get('additional_specifications', None)
+        for spec in additional_specifications:
+            attr_type = AllocationAttributeType.objects.get(name=spec)
+            allocation_obj.allocationattribute_set.create(
+                allocation_attribute_type=attr_type, value=True,
+            )
 
         for value, attr_name in (
             (quantity, 'Storage Quota (TB)'),
             (expense_code, 'Expense Code'),
-            (dua, 'DUA'),
-            (heavy_io, 'Heavy IO'),
-            (mounted, 'Mounted'),
-            (external_sharing, 'External Sharing'),
-            (high_security, 'High Security'),
         ):
-            if value:
-                AllocationAttribute.objects.create(
-                    allocation=allocation_obj,
-                    value=value,
-                    allocation_attribute_type=AllocationAttributeType.objects.get(
-                        name=attr_name
-                    )
+            allocation_obj.allocationattribute_set.create(
+                value=value,
+                allocation_attribute_type=AllocationAttributeType.objects.get(
+                    name=attr_name
                 )
+            )
 
         allocation_obj.set_usage('Storage Quota (TB)', 0)
 
@@ -809,10 +802,11 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             cleaned_form = [form.cleaned_data for form in formset]
             selected_cleaned_form = [form for form in cleaned_form if form['selected']]
             for form_data in selected_cleaned_form:
-                users_added_count += 1
+
                 user_obj = get_user_model().objects.get(
                     username=form_data.get('username')
                 )
+
                 allocation_user_obj, _ = (
                     allocation_obj.allocationuser_set.update_or_create(
                         user=user_obj, defaults={'status': user_active_status}
@@ -821,6 +815,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                 allocation_activate_user.send(
                     sender=self.__class__, allocation_user_pk=allocation_user_obj.pk
                 )
+                users_added_count += 1
 
             user_plural = 'user' if users_added_count == 1 else 'users'
             msg = f'Added {users_added_count} {user_plural} to allocation.'
@@ -917,7 +912,6 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
                 form for form in cleaned_forms if form['selected']
             ]
             for user_form_data in selected_cleaned_forms:
-                remove_users_count += 1
                 user_obj = get_user_model().objects.get(
                     username=user_form_data.get('username')
                 )
@@ -927,11 +921,13 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
                 allocation_user_obj = allocation_obj.allocationuser_set.get(
                     user=user_obj
                 )
+
                 allocation_user_obj.status = removed_allocuser_status
                 allocation_user_obj.save()
                 allocation_remove_user.send(
                     sender=self.__class__, allocation_user_pk=allocation_user_obj.pk
                 )
+                remove_users_count += 1
 
             user_plural = 'user' if remove_users_count == 1 else 'users'
             msg = f'Removed {remove_users_count} {user_plural} from allocation.'

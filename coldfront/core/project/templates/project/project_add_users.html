@@ -12,6 +12,9 @@ Add Users to Project
 <h2>Add users to project: {{project.title}}</h2>
 <hr>
 
+<p>
+  Adding a user to your project gives them the ability to access and use your project's allocations.
+</p>
 <div class="row">
   <div class="col">
     <form method="post" action="/search-ldap" id="post-form">
@@ -70,9 +73,9 @@ Add Users to Project
     $.ajax({
         url : "/project/" + pk + "/add-users-search-results/", // the endpoint
         type : "POST", // http method
-        data : { 
-          q : q, 
-          search_by : search_by, 
+        data : {
+          q : q,
+          search_by : search_by,
           csrfmiddlewaretoken: "{{ csrf_token }}"
         }, // data sent with the post request
         // handle a successful response
@@ -99,7 +102,7 @@ Add Users to Project
   $(document).ready(function(){
     $('#search_results').hide();
     $('#selected_users').hide();
-    $('[data-toggle="popover"]').popover(); 
+    $('[data-toggle="popover"]').popover();
   });
 </script>
 {% endblock %}

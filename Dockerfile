@@ -1,46 +1,56 @@
 # syntax=docker/dockerfile:experimental
-FROM python:3.6
 
-EXPOSE 9000
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libsasl2-dev libldap2-dev libssl-dev \
-    nginx supervisor \
+# to build for a development environment, run the following command:
+# docker build --build-arg build_env=dev -t coldfront --ssh default . --network=host
+
+FROM python:3.8
+
+ARG build_env=production
+ENV BUILD_ENV=$build_env
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+    && apt-get install -y redis redis-server \
+    && apt-get install -y libsasl2-dev libldap2-dev libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 RUN mkdir ~/.ssh && echo "Host git*\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
-RUN echo 'TLS_REQCERT allow' >> /etc/ldap/ldap.conf
-
-RUN echo "daemon off;" >> /etc/nginx/nginx.conf
-COPY etc/nginx.conf /etc/nginx/sites-available/default
-COPY etc/supervisor.conf /etc/supervisor/conf.d/app.conf
 
 WORKDIR /usr/src/app
 COPY requirements.txt ./
 
+ARG IPYTHON_STARTUP=/root/.ipython/profile_default/startup
+RUN mkdir -p ${IPYTHON_STARTUP}
+COPY etc/ipython_init.py ${IPYTHON_STARTUP}
+
 ARG IFXURLS_COMMIT=549af42dbe83d07b12dd37055a5ec6368d4b649
 ARG NANITES_CLIENT_COMMIT=1e67ce787e27c9c0e32a4c97a4967c297d30b7cf
-ARG IFXMAIL_CLIENT_COMMIT=cc1a9f9cc6cdb951828b6b912bc830c0172785f1
-ARG IFXUSER_COMMIT=4fbf3ee574edf1c2599a059cbd7f05d37cd69c3f
-ARG FIINE_CLIENT_COMMIT=e79f569aa22b43876945bfb75cf169b11a555138
-ARG IFXVALIDCODE_COMMIT=4dd332c5a8e13d904a90da014094406a81b617e6
-ARG IFXBILLING_COMMIT=f4920d351968b0158cd0fbef0a151eb6ea610944
+ARG IFXUSER_COMMIT=6b7194698b49550ae6df395cfea96380536a41bc
+ARG IFXMAIL_CLIENT_COMMIT=8f728ff54441d2f2449fd3c31b75f0f77372b5f2
+ARG FIINE_CLIENT_COMMIT=1946c8db410077d374b8b16f6de5199d9ed10d7e
+ARG IFXEC_COMMIT=0c09c90890fb87d4db22c635a6c403c89e1a957f
+ARG IFXBILLING_COMMIT=58d07688e52b4c63fb93a903cbb8a1e5ed24ea34
 
 RUN --mount=type=ssh pip install --upgrade pip && \
-    pip install gunicorn && \
-    pip install 'Django>2.2,<3' && \
-    pip install django-author==1.0.2 && \
     pip install git+ssh://git@github.com/harvardinformatics/ifxurls.git@${IFXURLS_COMMIT} && \
     pip install git+ssh://git@github.com/harvardinformatics/nanites.client.git@${NANITES_CLIENT_COMMIT} && \
-    pip install git+ssh://git@github.com/harvardinformatics/ifxmail.client.git@${IFXMAIL_CLIENT_COMMIT} && \
     pip install git+ssh://git@github.com/harvardinformatics/ifxuser.git@${IFXUSER_COMMIT} && \
-    pip install git+ssh://git@gitlab-int.rc.fas.harvard.edu/informatics/fiine.client.git@${FIINE_CLIENT_COMMIT} && \
-    pip install git+ssh://git@gitlab-int.rc.fas.harvard.edu/informatics/ifxvalidcode.git@${IFXVALIDCODE_COMMIT} && \
-    pip install git+ssh://git@gitlab-int.rc.fas.harvard.edu/informatics/ifxbilling.git@${IFXBILLING_COMMIT} && \
-    pip install ldap3 django_auth_ldap && \
+    pip install git+ssh://git@github.com/harvardinformatics/ifxmail.client.git@${IFXMAIL_CLIENT_COMMIT} && \
+    pip install git+ssh://git@github.com/harvardinformatics/fiine.client.git@${FIINE_CLIENT_COMMIT} && \
+    pip install git+ssh://git@github.com/harvardinformatics/ifxec.git@${IFXEC_COMMIT} && \
+    pip install git+ssh://git@github.com/harvardinformatics/ifxbilling.git@${IFXBILLING_COMMIT} && \
     pip install -r requirements.txt
 
 COPY . .
 
-ENV PYTHONPATH /usr/src/app
+RUN if [ "${BUILD_ENV}" = "dev" ]; then pip install django-redis reportlab==3.6.6 django-debug-toolbar; fi
 
-CMD ./manage.py collectstatic --no-input && ./manage.py makemigrations && ./manage.py migrate && /usr/bin/supervisord -n
-RUN ./manage.py qcluster &
+RUN pip install ldap3 django_auth_ldap django-author==1.0.2 django-prometheus gunicorn
+
+ENV PYTHONPATH /usr/src/app:/usr/src/app/ifxreport
+
+RUN mkdir -p /usr/src/app/media/reports
+
+EXPOSE 80
+EXPOSE 25
+
+CMD ["/bin/bash", "./container_startup.sh"]

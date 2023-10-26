@@ -1,13 +1,11 @@
 import logging
 
-from django.test import TestCase
+from django.test import TestCase, tag
 
 from coldfront.core.test_helpers import utils
 from coldfront.core.test_helpers.factories import (
     setup_models,
-    UserFactory,
     ProjectFactory,
-    ProjectUserFactory,
     PAttributeTypeFactory,
     ProjectAttributeFactory,
     ProjectStatusChoiceFactory,
@@ -353,6 +351,7 @@ class ProjectRemoveUsersViewTest(ProjectViewTestBase):
         """set up users and project for testing"""
         self.url = f'/project/{self.project.pk}/remove-users/'
 
+    @tag('net')
     def test_projectremoveusersview_access(self):
         """test access to project remove users page"""
         self.project_access_tstbase(self.url)

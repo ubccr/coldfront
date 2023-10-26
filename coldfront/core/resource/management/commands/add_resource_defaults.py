@@ -4,6 +4,7 @@ from coldfront.core.resource.models import (
     Resource,
     ResourceType,
     AttributeType,
+    ResourceAttribute,
     ResourceAttributeType,
 )
 
@@ -65,26 +66,43 @@ class Command(BaseCommand):
             ResourceType.objects.get_or_create(
                 name=resource_type, description=description)
 
-
         storage_tier = ResourceType.objects.get(name='Storage Tier')
+        storage = ResourceType.objects.get(name='Storage')
 
-        for name, desc, is_public, rtype, parent_name in (
-            ('Tier 0', 'Bulk - Lustre', True, storage_tier, None),
-            ('Tier 1', 'Enterprise - Isilon', True, storage_tier, None),
-            ('Tier 3', 'Attic Storage - Tape', True, storage_tier, None),
-            ('holylfs04/tier0', 'Lustre storage in Holyoke data center', True, 'Tier 0'),
-            ('holylfs05/tier0', 'Lustre storage in Holyoke data center', True, 'Tier 0'),
-            ('nesetape/tier3', 'Cold storage for past projects', True, 'Tier 3'),
-            ('holy-isilon/tier1', 'Tier1 storage with snapshots and disaster recovery copy', True, 'Tier 1'),
-            ('bos-isilon/tier1', 'Tier1 storage server in Boston in case storage needs to be mounted on campus', True, 'Tier 1'),
-            ('holystore01/tier0', 'Luster storage under Tier0', True, 'Tier 0'),
+        default_value_type = ResourceAttributeType.objects.get(name='quantity_default_value')
+        label_type = ResourceAttributeType.objects.get(name='quantity_label')
+
+        for name, desc, is_public, rtype, parent_name, default_value in (
+            ('Tier 0', 'Bulk - Lustre', True, storage_tier, None, 1),
+            ('Tier 1', 'Enterprise - Isilon', True, storage_tier, None, 1),
+            ('Tier 3', 'Attic Storage - Tape', True, storage_tier, None, 20),
+            ('holylfs04/tier0', 'Holyoke data center lustre storage', True, storage, 'Tier 0', 1),
+            ('holylfs05/tier0', 'Holyoke data center lustre storage', True, storage, 'Tier 0', 1),
+            ('nesetape/tier3', 'Cold storage for past projects', True, storage, 'Tier 3', 20),
+            ('holy-isilon/tier1', 'Tier1 storage with snapshots and disaster recovery copy', True, storage, 'Tier 1', 1),
+            ('bos-isilon/tier1', 'Tier1 storage for on-campus storage mounting', True, storage, 'Tier 1', 1),
+            ('holystore01/tier0', 'Luster storage under Tier0', True, storage, 'Tier 0', 1),
         ):
-            Resource.objects.update_or_create(
-                name=name,
-                defaults={
-                    'description':desc,
-                    'is_public':is_public,
-                    'resource_type':rtype,
-                    'parent_resource': Resource.objects.get(name=parent_name)
-                }
+
+            resource_defaults = {
+                'description':desc, 'is_public':is_public, 'resource_type':rtype,
+            }
+            if parent_name:
+                resource_defaults['parent_resource'] = Resource.objects.get(name=parent_name)
+
+            resource_obj, _ = Resource.objects.update_or_create(
+                name=name, defaults=resource_defaults)
+
+            resource_obj.resourceattribute_set.update_or_create(
+                resource_attribute_type=default_value_type,
+                defaults={'value': default_value}
+            )
+
+            quantity_label = "Quantity in TB"
+            if default_value == 20:
+                quantity_label += " in 20T increments"
+
+            resource_obj.resourceattribute_set.update_or_create(
+                resource_attribute_type=label_type,
+                defaults={'value': quantity_label}
             )

@@ -202,6 +202,8 @@ class Allocation(TimeStampedModel):
             price = float(get_resource_rate(self.resources.first().name))
         except AttributeError:
             return None
+        except TypeError:
+            return None
         size = self.allocationattribute_set.get(allocation_attribute_type_id=1).value
         return 0 if not size else price * float(size)
 
@@ -419,7 +421,7 @@ class Allocation(TimeStampedModel):
     def __str__(self):
         tmp = self.get_parent_resource
         if tmp is None:
-            return 'no parent resource'
+            return '%s' % (self.project.pi)
         return '%s (%s)' % (self.get_parent_resource.name, self.project.pi)
 
 class AllocationAdminNote(TimeStampedModel):
@@ -738,6 +740,9 @@ class AllocationChangeRequest(TimeStampedModel):
         return self.allocation.resources.filter(is_allocatable=True).first()
 
     def __str__(self):
+        tmp = self.get_parent_resource
+        if tmp is None:
+            return '(%s)' % (self.allocation.project.pi)
         return '%s (%s)' % (self.get_parent_resource.name, self.allocation.project.pi)
 
 class AllocationAttributeChangeRequest(TimeStampedModel):

@@ -56,6 +56,13 @@ class ExpenseCodeField(forms.CharField):
         # formatted_value = insert_dashes(digits_only)
         return value
 
+ALLOCATION_SPECIFICATIONS = [
+    ('Heavy IO', 'My lab will perform heavy I/O from the cluster against this space (more than 100 cores)'),
+    ('Mounted', 'My lab intends to mount the storage to our local machine as an additional drive'),
+    ('External Sharing', 'My lab intends to share some of this data with collaborators outside of Harvard'),
+    ('High Security', 'This allocation will store secure information (security level three or greater)'),
+    ('DUA', "Some or all of my lab’s data is governed by DUAs"),
+]
 
 class AllocationForm(forms.Form):
     QS_CHOICES = [
@@ -66,7 +73,6 @@ class AllocationForm(forms.Form):
 We do not have information about your research. Please provide a detailed description of your work and update your field of science. Thank you!
         """
     # resource = forms.ModelChoiceField(queryset=None, empty_label=None)
-    quantity = forms.IntegerField(required=True, initial=1)
 
     existing_expense_codes = forms.ChoiceField(
         label='Either select an existing expense code...',
@@ -82,28 +88,18 @@ We do not have information about your research. Please provide a detailed descri
         queryset=Resource.objects.filter(resource_type__name='Storage Tier'),
         label='Resource Tier'
     )
-    heavy_io = forms.BooleanField(
-        label='My lab will perform heavy I/O from the cluster against this space (more than 100 cores)',
-        required=False
-    )
-    mounted = forms.BooleanField(
-        label='My lab intends to mount the storage to our local machine as an additional drive',
-        required=False
-    )
-    external_sharing = forms.BooleanField(
-        label='My lab intends to share some of this data with collaborators outside of Harvard',
-        required=False
-    )
-    high_security = forms.BooleanField(
-        label='This allocation will store secure information (security level three or greater)',
-        required=False
-    )
-    dua = forms.BooleanField(
-        label="Some or all of my lab’s data is governed by DUAs", required=False
-    )
+
+    quantity = forms.IntegerField(required=True, initial=1)
+
     justification = forms.CharField(
         widget=forms.Textarea,
         help_text = '<br/>Justification for requesting this allocation. Please provide details here about the usecase or datacenter choices (what data needs to be accessed, expectation of frequent transfer to or from Campus, need for Samba connectivity, etc.)'
+    )
+
+    additional_specifications = forms.MultipleChoiceField(
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        choices=ALLOCATION_SPECIFICATIONS,
     )
     #users = forms.MultipleChoiceField(
     #    widget=forms.CheckboxSelectMultiple, required=False)
