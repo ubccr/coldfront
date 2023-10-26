@@ -226,6 +226,11 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             )
             context['expense_codes'] = expense_codes
 
+        offer_letter_code_type = AllocationAttributeType.objects.get(name="Offer Letter Code")
+        context['offer_letter_code'] = allocation_obj.allocationattribute_set.filter(
+            allocation_attribute_type=offer_letter_code_type
+        )
+
         context['allocation_quota_bytes'] = quota_bytes
         context['allocation_usage_bytes'] = usage_bytes
         quota_tb = 0 if not quota_bytes else quota_bytes / 1099511627776

@@ -115,12 +115,22 @@ Allocation Detail
               <th scope="row" class="text-nowrap">Service Period:</th>
               <td>1 Month</td>
           </tr>
+          {% if offer_letter_code %}
+            <tr>
+                <th scope="row" class="text-nowrap">Offer Letter Code:</th>
+                <td>
+                  {% for code in offer_letter_code %}
+                    {{ code.value }}<br>
+                  {% endfor %}
+                </td>
+            </tr>
+          {% endif %}
           <tr>
-              <th scope="row" class="text-nowrap">Expense Code:</th>
+              <th scope="row" class="text-nowrap">FIINE Expense Codes:</th>
               <td>
                 {% for code in expense_codes %}
                   {{ code.account.name }} ({{ code.account.code }}): {{ code.percent }}%<br>
-                  {% endfor %}
+                {% endfor %}
               </td>
           </tr>
           <tr>
