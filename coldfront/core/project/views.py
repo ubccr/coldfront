@@ -1316,7 +1316,12 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             managers_rejected = []
             resources_requiring_user_request = {}
             requestor_user = User.objects.get(username=request.user)
-            selected_users_accounts = self.get_users_accounts(formset)
+            for allocation in allocation_formset:
+                cleaned_data = allocation.cleaned_data
+                if cleaned_data['selected']:
+                    selected_users_accounts = self.get_users_accounts(formset)
+                    break
+
             for form in formset:
                 user_form_data = form.cleaned_data
 
