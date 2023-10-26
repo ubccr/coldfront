@@ -1,8 +1,10 @@
 import re
 
 from django import forms
+from django.conf import settings
 from django.db.models.functions import Lower
 from django.shortcuts import get_object_or_404
+from django.core.exceptions import ValidationError
 
 from coldfront.core.allocation.models import (
     AllocationAccount,
@@ -15,6 +17,10 @@ from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource, ResourceType
 from coldfront.core.utils.common import import_from_settings
 
+if 'ifxbilling' in settings.INSTALLED_APPS:
+    from fiine.client import API as FiineAPI
+    from ifxbilling.models import Account, UserProductAccount
+
 ALLOCATION_ACCOUNT_ENABLED = import_from_settings(
     'ALLOCATION_ACCOUNT_ENABLED', False)
 ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS = import_from_settings(
@@ -22,26 +28,33 @@ ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS = import_from_settings(
 HSPH_CODE = import_from_settings('HSPH_CODE', '000-000-000-000-000-000-000-000-000-000-000')
 SEAS_CODE = import_from_settings('SEAS_CODE', '111-111-111-111-111-111-111-111-111-111-111')
 
+
 class ExpenseCodeField(forms.CharField):
     """custom field for expense_code"""
 
-    # def validate(self, value):
-    #     if value:
-    #         digits_only = re.sub(r'\D', '', value)
-    #         if not re.fullmatch(r'^(\d+-?)*[\d-]+$', value):
-    #             raise ValidationError("Input must consist only of digits and dashes.")
-    #         if len(digits_only) != 33:
-    #             raise ValidationError("Input must contain exactly 33 digits.")
+    def validate(self, value):
+        digits_only = lambda v: re.sub(r'[^0-9xX]', '', v)
+        if value and value != '------':
+            if re.search(r'[^0-9xX\-\.]', value):
+                raise ValidationError(
+                    "Input must consist only of digits (or x'es) and dashes."
+                )
+            if len(digits_only(value)) != 33:
+                raise ValidationError("Input must contain exactly 33 digits.")
+            if 'x' in digits_only(value)[:8]+digits_only(value)[12:]:
+                raise ValidationError(
+                    "xes are only allowed in place of the product code (the third grouping of characters in the code)"
+                )
 
     def clean(self, value):
         # Remove all dashes from the input string to count the number of digits
         value = super().clean(value)
-        digits_only = re.sub(r'[^0-9xX]', '', value)
-        insert_dashes = lambda d: '-'.join(
-            [d[:3], d[3:8], d[8:12], d[12:18], d[18:24], d[24:28], d[28:33]]
-        )
-        formatted_value = insert_dashes(digits_only)
-        return formatted_value
+        # digits_only = lambda v: re.sub(r'[^0-9xX]', '', v)
+        # insert_dashes = lambda d: '-'.join(
+        #     [d[:3], d[3:8], d[8:12], d[12:18], d[18:24], d[24:28], d[28:33]]
+        # )
+        # formatted_value = insert_dashes(digits_only)
+        return value
 
 ALLOCATION_SPECIFICATIONS = [
     ('Heavy IO', 'My lab will perform heavy I/O from the cluster against this space (more than 100 cores)'),
@@ -52,23 +65,23 @@ ALLOCATION_SPECIFICATIONS = [
 ]
 
 class AllocationForm(forms.Form):
+    QS_CHOICES = [
+        (HSPH_CODE, f'{HSPH_CODE} (PI is part of HSPH and storage should be billed to their code)'),
+        (SEAS_CODE, f'{SEAS_CODE} (PI is part of SEAS and storage should be billed to their code)')
+    ]
     DEFAULT_DESCRIPTION = """
 We do not have information about your research. Please provide a detailed description of your work and update your field of science. Thank you!
         """
     # resource = forms.ModelChoiceField(queryset=None, empty_label=None)
 
+    existing_expense_codes = forms.ChoiceField(
+        label='Either select an existing expense code...',
+        choices=QS_CHOICES,
+        required=False,
+    )
+
     expense_code = ExpenseCodeField(
-        label="Lab's 33 digit expense code", required=False
-    )
-
-    hsph_code = forms.BooleanField(
-        label='The PI is part of HSPH and storage should be billed to their code',
-        required=False
-    )
-
-    seas_code = forms.BooleanField(
-        label='The PI is part of SEAS and storage should be billed to their code',
-        required=False
+        label="...or add a new 33 digit expense code manually here.", required=False
     )
 
     tier = forms.ModelChoiceField(
@@ -98,9 +111,16 @@ We do not have information about your research. Please provide a detailed descri
         self.fields['tier'].queryset = get_user_resources(request_user).filter(
             resource_type__name='Storage Tier'
         ).order_by(Lower("name"))
+        existing_expense_codes = [(None, '------')] + [
+            (a.code, f'{a.code} ({a.name})') for a in Account.objects.filter(
+                userproductaccount__is_valid=1,
+                userproductaccount__user=project_obj.pi
+            ).distinct()
+        ] + self.QS_CHOICES
+        self.fields['existing_expense_codes'].choices = existing_expense_codes
         user_query_set = project_obj.projectuser_set.select_related('user').filter(
-            status__name__in=['Active', ]).order_by("user__username")
-        user_query_set = user_query_set.exclude(user=project_obj.pi)
+            status__name__in=['Active', ]
+        ).order_by("user__username").exclude(user=project_obj.pi)
         # if user_query_set:
         #     self.fields['users'].choices = ((user.user.username, "%s %s (%s)" % (
         #         user.user.first_name, user.user.last_name, user.user.username)) for user in user_query_set)
@@ -108,33 +128,42 @@ We do not have information about your research. Please provide a detailed descri
         # else:
         #     self.fields['users'].widget = forms.HiddenInput()
 
-
     def clean(self):
         cleaned_data = super().clean()
         # Remove all dashes from the input string to count the number of digits
-        value = cleaned_data.get("expense_code")
-        hsph_val = cleaned_data.get("hsph_code")
-        seas_val = cleaned_data.get("seas_code")
-        trues = sum(x for x in [(value not in ['', '------']), hsph_val, seas_val])
-
+        expense_code = cleaned_data.get("expense_code")
+        existing_expense_codes = cleaned_data.get("existing_expense_codes")
+        trues = sum(x for x in [
+            (expense_code not in ['', '------']),
+            (existing_expense_codes not in ['', '------']),
+        ])
+        digits_only = lambda v: re.sub(r'[^0-9xX]', '', v)
         if trues != 1:
-            self.add_error("expense_code", "you must do exactly one of the following: manually enter an expense code, check the box to use SEAS' expense code, or check the box to use HSPH's expense code")
+            self.add_error(
+                "existing_expense_codes",
+                "You must either select an existing expense code or manually enter a new one."
+            )
 
-        elif value and value != '------':
-            digits_only = re.sub(r'[^0-9xX]', '', value)
-            if not re.fullmatch(r'^([0-9xX]+-?)*[0-9xX-]+$', value):
-                self.add_error("expense_code", "Input must consist only of digits (or x'es) and dashes.")
-            elif len(digits_only) != 33:
-                self.add_error("expense_code", "Input must contain exactly 33 digits.")
-            else:
-                insert_dashes = lambda d: '-'.join(
-                    [d[:3], d[3:8], d[8:12], d[12:18], d[18:24], d[24:28], d[28:33]]
-                )
-                cleaned_data['expense_code'] = insert_dashes(digits_only)
-        elif hsph_val:
-            cleaned_data['expense_code'] = HSPH_CODE
-        elif seas_val:
-            cleaned_data['expense_code'] = SEAS_CODE
+        elif expense_code and expense_code != '------':
+            replace_productcode = lambda s: s[:8] + '8250' + s[12:]
+            insert_dashes = lambda d: '-'.join(
+                [d[:3], d[3:8], d[8:12], d[12:18], d[18:24], d[24:28], d[28:33]]
+            )
+            cleaned_expensecode = insert_dashes(replace_productcode(digits_only(expense_code)))
+            if 'ifxbilling' in settings.INSTALLED_APPS:
+                try:
+                    matched_fiineaccts = FiineAPI.listAccounts(code=cleaned_expensecode)
+                    if not matched_fiineaccts:
+                        self.add_error(
+                            "expense_code",
+                            "expense code not found in system - please check the code or get in touch with a system administrator."
+                        )
+                except Exception:
+                    #Not authorized to use accounts_list
+                    pass
+                cleaned_data['expense_code'] = cleaned_expensecode
+        elif existing_expense_codes and existing_expense_codes != '------':
+            cleaned_data['expense_code'] = existing_expense_codes
         return cleaned_data
 
 
@@ -183,7 +212,6 @@ class AllocationUpdateForm(forms.Form):
                 self.fields['resource'].queryset = Resource.objects.filter(
                     pk=allo_resource.pk
                 )
-
 
     def clean(self):
         cleaned_data = super().clean()

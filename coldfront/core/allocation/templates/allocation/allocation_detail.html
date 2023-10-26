@@ -117,7 +117,11 @@ Allocation Detail
           </tr>
           <tr>
               <th scope="row" class="text-nowrap">Expense Code:</th>
-              <td>{{ allocation.expense_code }}</td>
+              <td>
+                {% for code in expense_codes %}
+                  {{ code.account.name }} ({{ code.account.code }}): {{ code.percent }}%<br>
+                  {% endfor %}
+              </td>
           </tr>
           <tr>
               <th scope="row" class="text-nowrap">Total Users in Your Bill:</th>
