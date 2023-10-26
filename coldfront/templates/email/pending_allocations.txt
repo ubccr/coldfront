@@ -2,10 +2,7 @@ This is a notice about pending allocation requests on Coldfront that are at
 least a week old:
 ---------------------
 {% for allocation in pending_allocations %}
-
 Allocation: {{allocation}}
-
 Review the request here: {{url_base}}{{allocation.pk}}/
-
 ---------------------
 {% endfor %}
