@@ -1,7 +1,5 @@
-Greetings, {{center_name}} admins!
-
-This is a notice about allocation change requests on Coldfront that have been pending
-for the past week:
+This is a notice about pending allocation requests on Coldfront that are at
+least a week old:
 ---------------------
 {% for allocation in pending_allocations %}
 
@@ -9,12 +7,5 @@ Allocation: {{allocation}}
 
 Review the request here: {{url_base}}{{allocation.pk}}/
 
-Requested changes:
-{{allocation}}
 ---------------------
-
 {% endfor %}
-
-
-Thank you,
-{{ signature }}

@@ -1,21 +1,16 @@
-Greetings, {{center_name}} admins!
-
-This is a notice about allocation change requests on Coldfront that have been pending
-for the past week:
+This is a notice about pending allocation change requests on Coldfront that are
+at least a week old:
 ---------------------
 {% for change_request, change_attrs in pending_changerequests.items %}
 
 Allocation: {{change_request.allocation}}
-
-Change it here: {{url_base}}{{change_request.pk}}/
 
 Requested changes:
 {% for change_attr in change_attrs %}
 {{change_attr.allocation_attribute.allocation_attribute_type.name}} - change to {{change_attr.new_value}}
 {% endfor %}
 
+Change it here: {{url_base}}{{change_request.pk}}/
+
 ---------------------
 {% endfor %}
-
-Thank you,
-{{ signature }}
