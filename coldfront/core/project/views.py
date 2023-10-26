@@ -1578,7 +1578,9 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             context['formset'] = formset
 
         # context['data_managers'] = self.get_data_managers(project_obj)
-        context['project'] = get_object_or_404(Project, pk=pk)
+        project_obj = get_object_or_404(Project, pk=pk)
+        context['project'] = project_obj
+        context['display_warning'] = project_obj.allocation_set.filter(resources__name='Slate Project')
 
         return render(request, self.template_name, context)
 
