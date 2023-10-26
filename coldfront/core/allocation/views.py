@@ -226,8 +226,8 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             )
             context['expense_codes'] = expense_codes
 
-        offer_letter_code_type = AllocationAttributeType.objects.get(name="Offer Letter Code")
-        context['offer_letter_code'] = allocation_obj.allocationattribute_set.filter(
+        offer_letter_code_type = AllocationAttributeType.objects.get(name="Expense Code")
+        context['expense_code'] = allocation_obj.allocationattribute_set.filter(
             allocation_attribute_type=offer_letter_code_type
         )
 
