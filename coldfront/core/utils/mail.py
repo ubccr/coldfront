@@ -91,10 +91,15 @@ def build_link(url_path, domain_url=''):
 def send_admin_email_template(subject, template_name, template_context):
     """Helper function for sending admin emails using a template
     """
-    send_email_template(subject, template_name, template_context, EMAIL_SENDER, [EMAIL_TICKET_SYSTEM_ADDRESS,])
+    send_email_template(
+        subject, template_name, template_context, EMAIL_SENDER, [EMAIL_TICKET_SYSTEM_ADDRESS,]
+    )
 
 
-def send_allocation_admin_email(allocation_obj, subject, template_name, url_path='', domain_url='', other_vars=None):
+def send_allocation_admin_email(
+    allocation_obj, subject, template_name,
+    url_path='', domain_url='', other_vars=None
+):
     """Send allocation admin emails
     """
     if not url_path:
@@ -118,7 +123,10 @@ def send_allocation_admin_email(allocation_obj, subject, template_name, url_path
         ctx,
     )
 
-def send_allocation_customer_email(allocation_obj, subject, template_name, url_path='', domain_url=''):
+def send_allocation_customer_email(
+    allocation_obj, subject, template_name,
+    url_path='', domain_url=''
+):
     """Send allocation customer emails
     """
     if not url_path:

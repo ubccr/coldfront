@@ -105,10 +105,10 @@ class Command(BaseCommand):
                     'status': AllocationUserStatusChoice.objects.get(name='Active')}
                 )
             except ValidationError:
-                logger.debug('adding PI %s to allocation %s failed', pi_obj.pi.username, allocation.pk)
+                logger.debug('adding PI %s to allocation %s failed', pi_obj.username, allocation.pk)
                 created = None
             if created:
-                print('PI added: ' + project_obj.pi.username)
+                print('PI added: ' + pi_obj.username)
         missing_projects = [{'title': title} for title in command_report['missing_projects']]
         if not added_allocations_df.empty:
             added_allocations_df['billing_code'] = None
