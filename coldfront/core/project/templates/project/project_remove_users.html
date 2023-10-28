@@ -19,7 +19,7 @@
             <thead>
               <tr>
                 <th>
-                  <input type="checkbox" class="check" id="selectAll">
+                  <input type="checkbox" class="form-check-input" id="selectAll">
                 </th>
                 <th scope="col">#</th>
                 <th scope="col">Username</th>
@@ -46,7 +46,7 @@
         </div>
         {{ formset.management_form }}
         <div>
-          <button type="submit" class="btn btn-primary"><i class="fas fa-user-minus" aria-hidden="true"></i> Remove Selected Users From Project</button>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-minus" aria-hidden="true"></i> Remove Selected Users From Project</button>
           <a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Project</a>
           <br>
         </div>

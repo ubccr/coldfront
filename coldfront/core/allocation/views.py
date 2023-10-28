@@ -81,7 +81,6 @@ ALLOCATION_ACCOUNT_ENABLED = import_from_settings(
 ALLOCATION_ACCOUNT_MAPPING = import_from_settings(
     'ALLOCATION_ACCOUNT_MAPPING', {})
 
-
 logger = logging.getLogger(__name__)
 
 class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):

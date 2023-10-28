@@ -21,7 +21,7 @@ Allocation Review New Requests
       <table class="table ">
         <tr>
           <th scope="row" class="text-nowrap">Project:</th>
-          <td><a href="{% url 'project-detail' allocation.project.pk %}">{{ allocation.project }}</a></td>
+          <td><a title="View project detail" data-bs-toggle="tooltip" href="{% url 'project-detail' allocation.project.pk %}">{{ allocation.project }}</a></td>
         </tr>
         <tr>
           <th scope="row" class="text-nowrap">PI:</th>

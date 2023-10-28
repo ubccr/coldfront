@@ -4,16 +4,15 @@
 
 {% block content %}
 <div class="row mt-4">
-  <div class="col mr-5">
+  <div class="col me-5">
     <h2 class="text-center">Log In to ColdFront</h2>
     <hr>
-
-    <p><a class="btn btn-primary btn-block" href="{% url 'login' %}" role="button"><i class="fas fa-sign-in-alt" aria-hidden="true"></i> Log In</a></p>
+    <p><a class="btn btn-primary w-100" href="{% url 'login' %}" role="button"><i class="fas fa-sign-in-alt" aria-hidden="true"></i> Log In</a></p>
 
     <div class="card bg-light">
       <div class="card-body">
         <h3 class="card-title h5">Do not have an Account?</h3>
-        <p class="card-text" style="text-align: justify;text-justify: inter-word;">{% settings_value 'ACCOUNT_CREATION_TEXT' %}</p>
+        <p class="card-text">{% settings_value 'ACCOUNT_CREATION_TEXT' %}</p>
       </div>
     </div>
   </div>

@@ -22,7 +22,7 @@
         {% for user in matches %}
           <tr>
             <td>{{ forloop.counter }}</td>
-            <td><a href="{% url 'user-profile' user.username %}">{{ user.username }}</a></td>
+            <td><a title="View user detail" data-bs-toggle="tooltip" href="{% url 'user-profile' user.username %}">{{ user.username }}</a></td>
             <td>{{ user.first_name }}</td>
             <td>{{ user.last_name }}</td>
             <td>{{ user.email }}</td>
