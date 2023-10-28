@@ -608,6 +608,10 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         quantity = form_data.get('quantity', 1)
         allocation_account = form_data.get('allocation_account', None)
 
+        if resource_obj.name == "Tier 3" and quantity % 20 != 0:
+            form.add_error("quantity", format_html("Tier 3 quantity must be a multiple of 20."))
+            return self.form_invalid(form)
+
         # A resource is selected that requires an account name selection but user has no account names
         if (
             ALLOCATION_ACCOUNT_ENABLED

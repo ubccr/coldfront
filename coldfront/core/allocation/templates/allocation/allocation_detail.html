@@ -115,11 +115,11 @@ Allocation Detail
               <th scope="row" class="text-nowrap">Service Period:</th>
               <td>1 Month</td>
           </tr>
-          {% if offer_letter_code %}
+          {% if expense_code %}
             <tr>
                 <th scope="row" class="text-nowrap">Requested Expense Code:</th>
                 <td>
-                  {% for code in offer_letter_code %}
+                  {% for code in expense_code %}
                     {{ code.value }}<br>
                   {% endfor %}
                 </td>
