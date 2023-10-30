@@ -1,5 +1,25 @@
 """utility functions for unit and integration testing"""
 
+from io import StringIO
+from django.core.management import call_command
+from django.test import TestCase
+
+class CommandTestBase(TestCase):
+    """Base class for command tests"""
+
+    def call_command(self, command, *args, **kwargs):
+        out = StringIO()
+        call_command(
+            command,
+            *args,
+            stdout=out,
+            stderr=StringIO(),
+            **kwargs,
+        )
+        return out.getvalue()
+
+
+
 def login_and_get_page(client, user, page):
     """force login and return get response for page"""
     client.force_login(user, backend="django.contrib.auth.backends.ModelBackend")
