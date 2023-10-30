@@ -17,6 +17,10 @@ from coldfront.core.project.models import Project
 from coldfront.core.publication.models import Publication
 from coldfront.core.research_output.models import ResearchOutput
 
+from coldfront.core.utils.common import import_from_settings
+RESEARCH_OUTPUT_ENABLE = import_from_settings("RESEARCH_OUTPUT_ENABLE", True)
+GRANT_ENABLE = import_from_settings("GRANT_ENABLE", True)
+PUBLICATION_ENABLE = import_from_settings("PUBLICATION_ENABLE", True)
 
 def home(request):
 
@@ -73,6 +77,9 @@ def center_summary(request):
         year__gte=1999).values('unique_id', 'year').distinct().count()
 
     # Research Outputs card
+    context["RESEARCH_OUTPUT_ENABLE"] = RESEARCH_OUTPUT_ENABLE
+    context["GRANT_ENABLE"] = GRANT_ENABLE
+    context["PUBLICATION_ENABLE"] = PUBLICATION_ENABLE
     context['total_research_outputs_count'] = ResearchOutput.objects.all().distinct().count()
 
     # Grants Card

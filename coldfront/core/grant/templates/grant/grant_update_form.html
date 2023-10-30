@@ -2,7 +2,7 @@
 {% load crispy_forms_tags %}
 {% load static %}
 
-
+{% if GRANT_ENABLE %}
 {% block title %}
 Update Grant
 {% endblock %}
@@ -21,3 +21,4 @@ Update Grant
  $('#id_grant_end').flatpickr();
 </script>
 {% endblock %}
+{% endif %}

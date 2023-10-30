@@ -71,6 +71,11 @@ if EMAIL_ENABLED:
         'EMAIL_DIRECTOR_EMAIL_ADDRESS')
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
 
+from coldfront.core.utils.common import import_from_settings
+RESEARCH_OUTPUT_ENABLE = import_from_settings('RESEARCH_OUTPUT_ENABLE', True)
+PUBLICATION_ENABLE = import_from_settings('PUBLICATION_ENABLE', True)
+GRANT_ENABLE = import_from_settings("GRANT_ENABLE", True)
+
 logger = logging.getLogger(__name__)
 
 class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
@@ -97,6 +102,9 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context['RESEARCH_OUTPUT_ENABLE'] = RESEARCH_OUTPUT_ENABLE
+        context['PUBLICATION_ENABLE'] = PUBLICATION_ENABLE
+        context["GRANT_ENABLE"] = GRANT_ENABLE
         # Can the user update the project?
         if self.request.user.is_superuser:
             context['is_allowed_to_update_project'] = True
@@ -1005,6 +1013,8 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         context = {}
         context['project'] = project_obj
+        context["PUBLICATION_ENABLE"] = PUBLICATION_ENABLE
+        context["GRANT_ENABLE"] = GRANT_ENABLE
         context['project_review_form'] = project_review_form
         context['project_users'] = ', '.join(['{} {}'.format(ele.user.first_name, ele.user.last_name)
                                               for ele in project_obj.projectuser_set.filter(status__name='Active').order_by('user__last_name')])
@@ -1047,7 +1057,6 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 request, 'There was an error in processing  your project review.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
-
 class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
 
     model = ProjectReview
@@ -1057,6 +1066,13 @@ class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
 
     def get_queryset(self):
         return ProjectReview.objects.filter(status__name='Pending')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["GRANT_ENABLE"] = GRANT_ENABLE
+        context["PUBLICATION_ENABLE"] = PUBLICATION_ENABLE
+
+        return context
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -1103,7 +1119,7 @@ class ProjectReviewCompleteView(LoginRequiredMixin, UserPassesTestMixin, View):
         return HttpResponseRedirect(reverse('project-review-list'))
 
 
-class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
+class ProjectReviewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     form_class = ProjectReviewEmailForm
     template_name = 'project/project_review_email.html'
     login_url = "/"
@@ -1125,6 +1141,8 @@ class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         pk = self.kwargs.get('pk')
         project_review_obj = get_object_or_404(ProjectReview, pk=pk)
         context['project_review'] = project_review_obj
+        context["GRANT_ENABLE"] = GRANT_ENABLE
+        context["PUBLICATION_ENABLE"] = PUBLICATION_ENABLE
 
         return context
 

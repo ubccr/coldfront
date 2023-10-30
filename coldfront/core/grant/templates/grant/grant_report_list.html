@@ -3,7 +3,7 @@
 {% load static %}
 {% load humanize %}
 
-
+{% if GRANT_ENABLE %}
 {% block title %}
 Grants Report
 {% endblock %}
@@ -94,3 +94,4 @@ Grants Report
   });
 </script>
 {% endblock %}
+{% endif %}

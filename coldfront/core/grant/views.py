@@ -16,6 +16,9 @@ from coldfront.core.grant.models import (Grant, GrantFundingAgency,
                                          GrantStatusChoice)
 from coldfront.core.project.models import Project
 
+from coldfront.core.utils.common import import_from_settings
+
+GRANT_ENABLE = import_from_settings("GRANT_ENABLE", True)
 
 class GrantCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     form_class = GrantForm
@@ -69,6 +72,7 @@ class GrantCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(*args, **kwargs)
         context['project'] = Project.objects.get(pk=self.kwargs.get('project_pk'))
+        context["GRANT_ENABLE"] = GRANT_ENABLE
         return context
 
     def get_success_url(self):
@@ -97,6 +101,11 @@ class GrantUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     fields = ['title', 'grant_number', 'role', 'grant_pi_full_name', 'funding_agency', 'other_funding_agency',
               'other_award_number', 'grant_start', 'grant_end', 'percent_credit', 'direct_funding', 'total_amount_awarded', 'status', ]
 
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context["GRANT_ENABLE"] = GRANT_ENABLE
+        return context
+    
     def get_success_url(self):
         return reverse('project-detail', kwargs={'pk': self.object.project.id})
 
@@ -177,6 +186,11 @@ class GrantDeleteGrantsView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
 
         return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context["GRANT_ENABLE"] = GRANT_ENABLE
+        return context
+
     def get_success_url(self):
         return reverse('project-detail', kwargs={'pk': self.object.project.id})
 
@@ -231,81 +245,86 @@ class GrantReportView(LoginRequiredMixin, UserPassesTestMixin, ListView):
             context['formset'] = formset
         return render(request, self.template_name, context)
 
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context["GRANT_ENABLE"] = GRANT_ENABLE
+        return context
 
-    def post(self, request, *args, **kwargs):
-        grants = self.get_grants()
+    if GRANT_ENABLE:
+        def post(self, request, *args, **kwargs):
+            grants = self.get_grants()
 
-        formset = formset_factory(GrantDownloadForm, max_num=len(grants))
-        formset = formset(request.POST, initial=grants, prefix='grantdownloadform')
+            formset = formset_factory(GrantDownloadForm, max_num=len(grants))
+            formset = formset(request.POST, initial=grants, prefix='grantdownloadform')
 
-        header = [
-            'Grant Title',
-            'Project PI',
-            'Faculty Role',
-            'Grant PI',
-            'Total Amount Awarded',
-            'Funding Agency',
-            'Grant Number',
-            'Start Date',
-            'End Date',
-            'Percent Credit',
-            'Direct Funding',
-        ]
-        rows = []
-        grants_selected_count = 0
+            header = [
+                'Grant Title',
+                'Project PI',
+                'Faculty Role',
+                'Grant PI',
+                'Total Amount Awarded',
+                'Funding Agency',
+                'Grant Number',
+                'Start Date',
+                'End Date',
+                'Percent Credit',
+                'Direct Funding',
+            ]
+            rows = []
+            grants_selected_count = 0
 
-        if formset.is_valid():
-            for form in formset:
-                form_data = form.cleaned_data
-                if form_data['selected']:
-                    grant = get_object_or_404(Grant, pk=form_data['pk'])
+            if formset.is_valid():
+                for form in formset:
+                    form_data = form.cleaned_data
+                    if form_data['selected']:
+                        grant = get_object_or_404(Grant, pk=form_data['pk'])
 
-                    row = [
-                        grant.title,
-                        ' '.join((grant.project.pi.first_name, grant.project.pi.last_name)),
-                        grant.role,
-                        grant.grant_pi_full_name,
-                        grant.total_amount_awarded,
-                        grant.funding_agency,
-                        grant.grant_number,
-                        grant.grant_start,
-                        grant.grant_end,
-                        grant.percent_credit,
-                        grant.direct_funding,
-                    ]
+                        row = [
+                            grant.title,
+                            ' '.join((grant.project.pi.first_name, grant.project.pi.last_name)),
+                            grant.role,
+                            grant.grant_pi_full_name,
+                            grant.total_amount_awarded,
+                            grant.funding_agency,
+                            grant.grant_number,
+                            grant.grant_start,
+                            grant.grant_end,
+                            grant.percent_credit,
+                            grant.direct_funding,
+                        ]
 
-                    rows.append(row)
-                    grants_selected_count += 1
+                        rows.append(row)
+                        grants_selected_count += 1
 
-            if grants_selected_count == 0:
-                grants = Grant.objects.prefetch_related('project', 'project__pi').all().order_by('-total_amount_awarded')
-                for grant in grants:
-                    row = [
-                        grant.title,
-                        ' '.join((grant.project.pi.first_name, grant.project.pi.last_name)),
-                        grant.role,
-                        grant.grant_pi_full_name,
-                        grant.total_amount_awarded,
-                        grant.funding_agency,
-                        grant.grant_number,
-                        grant.grant_start,
-                        grant.grant_end,
-                        grant.percent_credit,
-                        grant.direct_funding,
-                    ]
-                    rows.append(row)
+                if grants_selected_count == 0:
+                    grants = Grant.objects.prefetch_related('project', 'project__pi').all().order_by('-total_amount_awarded')
+                    for grant in grants:
+                        row = [
+                            grant.title,
+                            ' '.join((grant.project.pi.first_name, grant.project.pi.last_name)),
+                            grant.role,
+                            grant.grant_pi_full_name,
+                            grant.total_amount_awarded,
+                            grant.funding_agency,
+                            grant.grant_number,
+                            grant.grant_start,
+                            grant.grant_end,
+                            grant.percent_credit,
+                            grant.direct_funding,
+                        ]
+                        rows.append(row)
 
-            rows.insert(0, header)
-            pseudo_buffer = Echo()
-            writer = csv.writer(pseudo_buffer)
-            response = StreamingHttpResponse((writer.writerow(row) for row in rows),
-                                            content_type="text/csv")
-            response['Content-Disposition'] = 'attachment; filename="grants.csv"'
-            return response
-        else:
-            for error in formset.errors:
-                messages.error(request, error)
-            return HttpResponseRedirect(reverse('grant-report'))
+                rows.insert(0, header)
+                pseudo_buffer = Echo()
+                writer = csv.writer(pseudo_buffer)
+                response = StreamingHttpResponse((writer.writerow(row) for row in rows),
+                                                content_type="text/csv")
+                response['Content-Disposition'] = 'attachment; filename="grants.csv"'
+                return response
+            else:
+                for error in formset.errors:
+                    messages.error(request, error)
+                return HttpResponseRedirect(reverse('grant-report'))
 
 
 class GrantDownloadView(LoginRequiredMixin, UserPassesTestMixin, View):
@@ -321,6 +340,11 @@ class GrantDownloadView(LoginRequiredMixin, UserPassesTestMixin, View):
 
         messages.error(self.request, 'You do not have permission to download all grants.')
 
+    def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(*args, **kwargs)
+        context["GRANT_ENABLE"] = GRANT_ENABLE
+        return context
+    
     def get(self, request):
 
         header = [
