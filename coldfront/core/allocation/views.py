@@ -1864,7 +1864,6 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                 if new_value != attribute_change.new_value:
                     attribute_change.new_value = new_value
                     attribute_change.save()
-
         if action == 'update':
             message = 'Allocation change request updated!'
         if action == 'approve':
@@ -2055,6 +2054,13 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 formset_data = entry.cleaned_data
 
                 new_value = formset_data.get('new_value')
+                # require nese shares to be divisible by 20
+                tbs = int(new_value) if formset_data['name'] == 'Storage Quota (TB)' else False
+                nese = bool(allocation_obj.resources.filter(name__contains="nesetape"))
+                if nese and tbs and tbs % 20 != 0:
+                    messages.error(request, "Tier 3 quantity must be a multiple of 20.")
+                    return HttpResponseRedirect(reverse('allocation-change', kwargs={'pk': pk}))
+
                 if new_value != '':
                     change_requested = True
                     allocation_attribute = AllocationAttribute.objects.get(
