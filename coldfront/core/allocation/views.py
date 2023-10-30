@@ -891,7 +891,6 @@ class AllocationAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Tem
 
 class AllocationNoteCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     form_class = AllocationNoteCreateForm
-    # fields = '__all__'
     template_name = 'allocation/allocation_note_create.html'
     def test_func(self):
         """ UserPassesTestMixin Tests"""
