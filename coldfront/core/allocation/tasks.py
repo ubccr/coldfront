@@ -3,7 +3,8 @@ import datetime
 import logging
 
 from coldfront.core.allocation.models import (Allocation,
-                                              AllocationStatusChoice)
+                                              AllocationStatusChoice, AllocationUserStatusChoice)
+from coldfront.core.allocation.utils import get_user_resources
 from coldfront.core.user.models import User
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.mail import send_email_template
@@ -38,7 +39,32 @@ def update_statuses():
 
     logger.info('Allocations set to expired: {}'.format(
         allocations_to_expire.count()))
+    
+def get_eula(alloc):
+    if alloc.get_resources_as_list:
+        for res in alloc.get_resources_as_list:
+            if res.get_attribute(name='eula'):
+                return True
 
+def send_eula_reminders():
+    for allocation in Allocation.objects.all():
+        if get_eula(allocation):
+            email_receiver_list = []
+            for allocation_user in allocation.allocationuser_set.all():
+                if allocation_user.status == AllocationUserStatusChoice.objects.get(name='Pending'):
+                    if allocation_user.user.email not in email_receiver_list:
+                        email_receiver_list.append(allocation_user.user.email)
+
+            template_context = {
+                'center_name': CENTER_NAME,
+                'resource': allocation.get_parent_resource,
+                'url': f'{CENTER_BASE_URL.strip("/")}/{"allocation"}/{allocation.pk}/',
+                'signature': EMAIL_SIGNATURE
+            }
+
+            if email_receiver_list:
+                send_email_template(f'Reminder: Agree to EULA for {allocation}', 'email/allocation_eula_reminder.txt', template_context, EMAIL_SENDER, email_receiver_list)
+                logger.debug(f'Allocation(s) EULA reminder sent to users {email_receiver_list}.')
 
 def send_expiry_emails():
     #Allocations expiring soon

@@ -125,7 +125,7 @@ def send_allocation_customer_email(allocation_obj, subject, template_name, url_p
     email_receiver_list = []
     for allocation_user in allocation_users:
         if allocation_user.allocation.project.projectuser_set.get(
-                                user=allocation_user.user).enable_notifications:
+                                user=allocation_user.user):
             email_receiver_list.append(allocation_user.user.email)
 
     send_email_template(
