@@ -2049,6 +2049,10 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         if form_data.get('end_date_extension') != 0:
             change_requested = True
+
+        # if requested resource is on NESE, add to vars
+        nese = bool(allocation_obj.resources.filter(name__contains="nesetape"))
+
         if attrs_to_change:
             for entry in formset:
                 formset_data = entry.cleaned_data
@@ -2056,7 +2060,6 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 new_value = formset_data.get('new_value')
                 # require nese shares to be divisible by 20
                 tbs = int(new_value) if formset_data['name'] == 'Storage Quota (TB)' else False
-                nese = bool(allocation_obj.resources.filter(name__contains="nesetape"))
                 if nese and tbs and tbs % 20 != 0:
                     messages.error(request, "Tier 3 quantity must be a multiple of 20.")
                     return HttpResponseRedirect(reverse('allocation-change', kwargs={'pk': pk}))
@@ -2097,17 +2100,19 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             for a in attribute_changes_to_make
             if a[0].allocation_attribute_type.name == 'Storage Quota (TB)'
         ]
-        # if requested resource is on NESE, add to vars
-        nese = bool(allocation_obj.resources.filter(name__contains="nesetape"))
 
         email_vars = {'justification': justification}
         if quantity:
             quantity_num = int(float(quantity[0][1]))
             difference = quantity_num - int(float(allocation_obj.size))
             used_percentage = allocation_obj.get_parent_resource.used_percentage
+            current_size = allocation_obj.size
+            if nese:
+                current_size = round(current_size, -1)
+                difference = round(difference, -1)
             email_vars['quantity'] = quantity_num
             email_vars['nese'] = nese
-            email_vars['current_size'] = allocation_obj.size
+            email_vars['current_size'] = current_size
             email_vars['difference'] = difference
             email_vars['used_percentage'] = used_percentage
 

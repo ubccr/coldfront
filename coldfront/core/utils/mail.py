@@ -106,11 +106,12 @@ def send_allocation_admin_email(
         url_path = reverse('allocation-request-list')
 
     url = build_link(url_path, domain_url=domain_url)
-    pi_name = f'{allocation_obj.project.pi.first_name} {allocation_obj.project.pi.last_name} ({allocation_obj.project.pi.username})'
+    pi_name = f'{allocation_obj.project.pi.first_name} {allocation_obj.project.pi.last_name}'
     resource_name = allocation_obj.get_parent_resource
 
     ctx = email_template_context()
-    ctx['pi'] = pi_name
+    ctx['pi_name'] = pi_name
+    ctx['pi_username'] = f'{allocation_obj.project.pi.username}'
     ctx['resource'] = resource_name
     ctx['url'] = url
     if other_vars:
