@@ -75,6 +75,7 @@ class Command(BaseCommand):
         for name, desc, is_public, rtype, parent_name, default_value in (
             ('Tier 0', 'Bulk - Lustre', True, storage_tier, None, 1),
             ('Tier 1', 'Enterprise - Isilon', True, storage_tier, None, 1),
+            ('Tier 2', 'CEPH storage', True, storage_tier, None, 1),
             ('Tier 3', 'Attic Storage - Tape', True, storage_tier, None, 20),
             ('holylfs04/tier0', 'Holyoke data center lustre storage', True, storage, 'Tier 0', 1),
             ('holylfs05/tier0', 'Holyoke data center lustre storage', True, storage, 'Tier 0', 1),
@@ -82,6 +83,18 @@ class Command(BaseCommand):
             ('holy-isilon/tier1', 'Tier1 storage with snapshots and disaster recovery copy', True, storage, 'Tier 1', 1),
             ('bos-isilon/tier1', 'Tier1 storage for on-campus storage mounting', True, storage, 'Tier 1', 1),
             ('holystore01/tier0', 'Luster storage under Tier0', True, storage, 'Tier 0', 1),
+            ('b-nfs02-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1),
+            ('b-nfs03-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1),
+            ('b-nfs04-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1),
+            ('b-nfs05-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1),
+            ('b-nfs06-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1),
+            ('b-nfs07-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1),
+            ('b-nfs08-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1),
+            ('b-nfs09-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1),
+            ('h-nfs16-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1),
+            ('h-nfs17-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1),
+            ('h-nfs18-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1),
+            ('h-nfs19-p/tier2', 'Tier2 CEPH storage', True, storage, 'Tier 2', 1),
         ):
 
             resource_defaults = {
