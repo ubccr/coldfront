@@ -28,7 +28,7 @@ setup(
         'bibtexparser==1.4.0',
         'blessed==1.20.0',
         'chardet==5.1.0',
-        'Django==3.2.20',
+        'Django==3.2.23',
         'django-crispy-forms==1.14.0',
         'Faker==11.3.0',
         'fontawesome-free==5.15.4',
