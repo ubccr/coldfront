@@ -1,9 +1,14 @@
 import logging
 import json
 import xml.etree.ElementTree as ET
+
 import requests
+from requests.auth import HTTPBasicAuth
 
 from coldfront.core.utils.common import import_from_settings
+
+XDMOD_USER = import_from_settings('XDMOD_USER', '')
+XDMOD_PASS = import_from_settings('XDMOD_PASS', '')
 
 XDMOD_CLOUD_PROJECT_ATTRIBUTE_NAME = import_from_settings(
     'XDMOD_CLOUD_PROJECT_ATTRIBUTE_NAME', 'Cloud Account Name')
@@ -61,7 +66,7 @@ def xdmod_fetch_total_cpu_hours(start, end, account, resources=None, statistics=
     payload['realm'] = 'Jobs'
     payload['operation'] = 'get_data'
     payload['statistic'] = statistics
-    r = requests.get(url, params=payload)
+    r = requests.get(url, params=payload, auth=HTTPBasicAuth(XDMOD_USER, XDMOD_PASS))
 
     logger.info(r.url)
     logger.info(r.text)
@@ -112,7 +117,7 @@ def xdmod_fetch_total_storage(start, end, account, resources=None, statistics='p
     payload['realm'] = 'Storage'
     payload['operation'] = 'get_data'
     payload['statistic'] = statistics
-    r = requests.get(url, params=payload)
+    r = requests.get(url, params=payload, auth=HTTPBasicAuth(XDMOD_USER, XDMOD_PASS))
 
     logger.info(r.url)
     logger.info(r.text)
@@ -162,14 +167,14 @@ def xdmod_fetch_cloud_core_time(start, end, project, resources=None):
     payload['realm'] = 'Cloud'
     payload['operation'] = 'get_data'
     payload['statistic'] = 'cloud_core_time'
-    r = requests.get(url, params=payload)
+    r = requests.get(url, params=payload, auth=HTTPBasicAuth(XDMOD_USER, XDMOD_PASS))
 
     logger.info(r.url)
     logger.info(r.text)
 
     try:
         error = r.json()
-        # XXX fix me. Here we assume any json response is bad as we're
+        # XXXX fix me. Here we assume any json response is bad as we're
         # expecting xml but XDMoD should just return json always.
         raise XdmodNotFoundError(f'Got json response but expected XML: {error}')
     except json.decoder.JSONDecodeError as e:
@@ -178,7 +183,7 @@ def xdmod_fetch_cloud_core_time(start, end, project, resources=None):
     try:
         root = ET.fromstring(r.text)
     except ET.ParserError as e:
-        raise XdmodError('Invalid XML data returned from XDMoD API: {}'.format(e))
+        raise XdmodError(f'Invalid XML data returned from XDMoD API: {e}')
 
     rows = root.find('rows')
     if len(rows) != 1:
