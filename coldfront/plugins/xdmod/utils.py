@@ -1,22 +1,30 @@
 import logging
-import requests
 import json
 import xml.etree.ElementTree as ET
+import requests
 
 from coldfront.core.utils.common import import_from_settings
 
-XDMOD_CLOUD_PROJECT_ATTRIBUTE_NAME = import_from_settings('XDMOD_CLOUD_PROJECT_ATTRIBUTE_NAME', 'Cloud Account Name')
-XDMOD_CLOUD_CORE_TIME_ATTRIBUTE_NAME = import_from_settings('XDMOD_CLOUD_CORE_TIME_ATTRIBUTE_NAME', 'Core Usage (Hours)')
+XDMOD_CLOUD_PROJECT_ATTRIBUTE_NAME = import_from_settings(
+    'XDMOD_CLOUD_PROJECT_ATTRIBUTE_NAME', 'Cloud Account Name')
+XDMOD_CLOUD_CORE_TIME_ATTRIBUTE_NAME = import_from_settings(
+    'XDMOD_CLOUD_CORE_TIME_ATTRIBUTE_NAME', 'Core Usage (Hours)')
 
-XDMOD_ACCOUNT_ATTRIBUTE_NAME = import_from_settings('XDMOD_ACCOUNT_ATTRIBUTE_NAME', 'slurm_account_name')
+XDMOD_ACCOUNT_ATTRIBUTE_NAME = import_from_settings(
+    'XDMOD_ACCOUNT_ATTRIBUTE_NAME', 'slurm_account_name')
 
-XDMOD_RESOURCE_ATTRIBUTE_NAME = import_from_settings('XDMOD_RESOURCE_ATTRIBUTE_NAME', 'xdmod_resource')
+XDMOD_RESOURCE_ATTRIBUTE_NAME = import_from_settings(
+    'XDMOD_RESOURCE_ATTRIBUTE_NAME', 'xdmod_resource')
 
-XDMOD_CPU_HOURS_ATTRIBUTE_NAME = import_from_settings('XDMOD_CPU_HOURS_ATTRIBUTE_NAME', 'Core Usage (Hours)')
-XDMOD_ACC_HOURS_ATTRIBUTE_NAME = import_from_settings('XDMOD_ACC_HOURS_ATTRIBUTE_NAME', 'Accelerator Usage (Hours)')
+XDMOD_CPU_HOURS_ATTRIBUTE_NAME = import_from_settings(
+    'XDMOD_CPU_HOURS_ATTRIBUTE_NAME', 'Core Usage (Hours)')
+XDMOD_ACC_HOURS_ATTRIBUTE_NAME = import_from_settings(
+    'XDMOD_ACC_HOURS_ATTRIBUTE_NAME', 'Accelerator Usage (Hours)')
 
-XDMOD_STORAGE_ATTRIBUTE_NAME = import_from_settings('XDMOD_STORAGE_ATTRIBUTE_NAME', 'Storage Quota (GB)')
-XDMOD_STORAGE_GROUP_ATTRIBUTE_NAME = import_from_settings('XDMOD_STORAGE_GROUP_ATTRIBUTE_NAME', 'Storage_Group_Name')
+XDMOD_STORAGE_ATTRIBUTE_NAME = import_from_settings(
+    'XDMOD_STORAGE_ATTRIBUTE_NAME', 'Storage Quota (GB)')
+XDMOD_STORAGE_GROUP_ATTRIBUTE_NAME = import_from_settings(
+    'XDMOD_STORAGE_GROUP_ATTRIBUTE_NAME', 'Storage_Group_Name')
 
 XDMOD_API_URL = import_from_settings('XDMOD_API_URL')
 
@@ -42,11 +50,11 @@ class XdmodNotFoundError(XdmodError):
 def xdmod_fetch_total_cpu_hours(start, end, account, resources=None, statistics='total_cpu_hours'):
     if resources is None:
         resources = []
-    
-    url = '{}{}'.format(XDMOD_API_URL, _ENDPOINT_CORE_HOURS)
+
+    url = f'{XDMOD_API_URL}{_ENDPOINT_CORE_HOURS}'
     payload = _DEFAULT_PARAMS
-    payload['pi_filter'] = '"{}"'.format(account)
-    payload['resource_filter'] = '"{}"'.format(','.join(resources))
+    payload['pi_filter'] = f'"{account}"'
+    payload['resource_filter'] = f'"{",".join(resources)}"'
     payload['start_date'] = start
     payload['end_date'] = end
     payload['group_by'] = 'pi'
@@ -61,8 +69,8 @@ def xdmod_fetch_total_cpu_hours(start, end, account, resources=None, statistics=
     try:
         error = r.json()
         # XXX fix me. Here we assume any json response is bad as we're
-        # expecting xml but XDMoD should just return json always. 
-        raise XdmodNotFoundError('Got json response but expected XML: {}'.format(error))
+        # expecting xml but XDMoD should just return json always.
+        raise XdmodNotFoundError(f'Got json response but expected XML: {error}')
     except json.decoder.JSONDecodeError as e:
         pass
     except requests.exceptions.JSONDecodeError:
@@ -71,11 +79,11 @@ def xdmod_fetch_total_cpu_hours(start, end, account, resources=None, statistics=
     try:
         root = ET.fromstring(r.text)
     except ET.ParserError as e:
-        raise XdmodError('Invalid XML data returned from XDMoD API: {}'.format(e))
+        raise XdmodError(f'Invalid XML data returned from XDMoD API: {e}')
 
     rows = root.find('rows')
     if len(rows) != 1:
-        raise XdmodNotFoundError('Rows not found for {} - {}'.format(account, resources))
+        raise XdmodNotFoundError(f'Rows not found for {account} - {resources}')
 
     cells = rows.find('row').findall('cell')
     if len(cells) != 2:
@@ -94,10 +102,10 @@ def xdmod_fetch_total_storage(start, end, account, resources=None, statistics='p
     payload_end = end
     if payload_end is None:
         payload_end = '2099-01-01'
-    url = '{}{}'.format(XDMOD_API_URL, _ENDPOINT_CORE_HOURS)
+    url = f'{XDMOD_API_URL}{_ENDPOINT_CORE_HOURS}'
     payload = _DEFAULT_PARAMS
-    payload['pi_filter'] = '"{}"'.format(account)
-    payload['resource_filter'] = '{}'.format(','.join(resources))
+    payload['pi_filter'] = f'"{account}"'
+    payload['resource_filter'] = f'"{",".join(resources)}"'
     payload['start_date'] =  start
     payload['end_date'] = payload_end
     payload['group_by'] = 'pi'
@@ -111,26 +119,26 @@ def xdmod_fetch_total_storage(start, end, account, resources=None, statistics='p
     if is_json(r.content):
         error = r.json()
         # XXX fix me. Here we assume any json response is bad as we're
-        # expecting xml but XDMoD should just return json always. 
-        
-        # print('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n')
+        # expecting xml but XDMoD should just return json always.
+
+        # print('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n')
         # print(f'XDMOD synchronization error: ({start}, {end}, {account}, {resources}, response: {r})')
         # print(r.content)
         # print(r.url)
         # print(payload)
-        # print('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n\n')
+        # print('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n\n')
 
-        raise XdmodNotFoundError('Got json response but expected XML: {}'.format(error))
-    
+        raise XdmodNotFoundError(f'Got json response but expected XML: {error}')
+
 
     try:
         root = ET.fromstring(r.text)
     except ET.ParserError as e:
-        raise XdmodError('Invalid XML data returned from XDMoD API: {}'.format(e))
+        raise XdmodError(f'Invalid XML data returned from XDMoD API: {e}')
 
     rows = root.find('rows')
     if len(rows) != 1:
-        raise XdmodNotFoundError('Rows not found for {} - {}'.format(account, resources))
+        raise XdmodNotFoundError(f'Rows not found for {account} - {resources}')
 
     cells = rows.find('row').findall('cell')
     if len(cells) != 2:
@@ -144,10 +152,10 @@ def xdmod_fetch_cloud_core_time(start, end, project, resources=None):
     if resources is None:
         resources = []
 
-    url = '{}{}'.format(XDMOD_API_URL, _ENDPOINT_CORE_HOURS)
+    url = f'{XDMOD_API_URL}{_ENDPOINT_CORE_HOURS}'
     payload = _DEFAULT_PARAMS
     payload['project_filter'] = project
-    payload['resource_filter'] = '"{}"'.format(','.join(resources))
+    payload['resource_filter'] = f'"{",".join(resources)}"'
     payload['start_date'] = start
     payload['end_date'] = end
     payload['group_by'] = 'project'
@@ -162,8 +170,8 @@ def xdmod_fetch_cloud_core_time(start, end, project, resources=None):
     try:
         error = r.json()
         # XXX fix me. Here we assume any json response is bad as we're
-        # expecting xml but XDMoD should just return json always. 
-        raise XdmodNotFoundError('Got json response but expected XML: {}'.format(error))
+        # expecting xml but XDMoD should just return json always.
+        raise XdmodNotFoundError(f'Got json response but expected XML: {error}')
     except json.decoder.JSONDecodeError as e:
         pass
 
@@ -174,7 +182,7 @@ def xdmod_fetch_cloud_core_time(start, end, project, resources=None):
 
     rows = root.find('rows')
     if len(rows) != 1:
-        raise XdmodNotFoundError('Rows not found for {} - {}'.format(project, resources))
+        raise XdmodNotFoundError(f'Rows not found for {project} - {resources}')
 
     cells = rows.find('row').findall('cell')
     if len(cells) != 2:
