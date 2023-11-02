@@ -136,12 +136,13 @@ def resource_post_save(sender, instance, **kwargs):
         except ProductResource.DoesNotExist:
             # Need to create a Product and ProductResource for this Resource
             products = FiineAPI.listProducts(product_name=instance.name)
+            facility = Facility.objects.get(name='Research Computing Storage')
             if not products:
-                facility = Facility.objects.get(name='Research Computing Storage')
                 product = create_new_product(product_name=instance.name, product_description=instance.name, facility=facility)
             else:
                 fiine_product = products[0].to_dict()
-                fiine_product.pop('facility')
+                fiine_product.pop('object_code_category')
+                fiine_product['facility'] = facility
                 fiine_product['billing_calculator'] = 'coldfront.plugins.ifx.calculator.NewColdfrontBillingCalculator'
                 (product, created) = Product.objects.get_or_create(**fiine_product)
             product_resource = ProductResource.objects.create(product=product, resource=instance)
