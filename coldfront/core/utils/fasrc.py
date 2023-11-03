@@ -9,12 +9,11 @@ from datetime import datetime
 import pandas as pd
 from django.db.models import Q
 from django.contrib.auth import get_user_model
+from ifxbilling.models import Product
 
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
-from coldfront.config.env import ENV
 
-from ifxbilling.models import Product
 
 MISSING_DATA_DIR = './local_data/missing/'
 
@@ -99,6 +98,8 @@ def get_resource_rate(resource):
         return None
     prod_obj = Product.objects.get(product_name=resource)
     rate_obj = prod_obj.rate_set.get(is_active=True)
+    if resource_obj.resource_type.name == "Cluster":
+        return rate_obj.decimal_price
     # return charge per TB, adjusted to dollar value
     if rate_obj.units == 'TB':
         return rate_obj.price/100
@@ -159,7 +160,7 @@ def id_present_missing_users(username_list):
     """
     present_users = get_user_model().objects.filter(username__in=username_list)
     present_usernames = list(present_users.values_list('username', flat=True))
-    missing_usernames = [{'username': name} for name in username_list if name not in present_usernames]
+    missing_usernames = [{'username': n} for n in username_list if n not in present_usernames]
     return (present_users, missing_usernames)
 
 

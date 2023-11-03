@@ -343,6 +343,10 @@ class Command(BaseCommand):
                     "Total CPU hours = %s for allocation %s account %s cpu_hours %s resources %s",
                         usage, s, account_name, cpu_hours, resources)
             if self.sync:
+                cpu_hours_attr = s.allocationattribute_set.get(
+                    allocation_attribute_type__name=XDMOD_CPU_HOURS_ATTRIBUTE_NAME)
+                cpu_hours_attr.value = usage
+                cpu_hours_attr.save()
                 s.set_usage(XDMOD_CPU_HOURS_ATTRIBUTE_NAME, usage)
 
             self.write('\t'.join([
