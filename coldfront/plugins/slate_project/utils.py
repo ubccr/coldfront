@@ -73,6 +73,7 @@ def add_slate_project_groups(allocation_obj):
     read_write_users = allocation_obj.allocationuser_set.filter(
         status__name='Active', role__name='read/write'
     ).values_list('user__username', flat=True)
+    read_write_users = list(read_write_users)
     added, output = ldap_conn.add_group(
         ldap_group, allocation_obj.project.pi.username, read_write_users, read_write_gid_number
     )
@@ -105,10 +106,8 @@ def add_slate_project_groups(allocation_obj):
     read_only_users = allocation_obj.allocationuser_set.filter(
         status_name='Active', role__name='read only'
     ).values_list('user__username', flat=True)
+    read_only_users = list(read_only_users)
     ldap_group = f'condo_{namespace_entry}-ro'
-    read_write_users = allocation_obj.allocationuser_set.filter(
-        status__name='Active', role__name='read/write'
-    ).values_list('user__username', flat=True)
     added, output = ldap_conn.add_group(
         ldap_group, allocation_obj.project.pi.username, read_only_users, read_only_gid_number
     )
@@ -508,7 +507,7 @@ class LDAPModify:
                 attributes = json.loads(entry.entry_to_json()).get('attributes')
                 gid_number = attributes.get('gidNumber')[0]
                 if gid_number is not None:
-                    gid_numbers.append(int(gid_number))
+                    gid_numbers.append(gid_number)
 
             highest_gid_number = max(gid_numbers)
             return highest_gid_number
