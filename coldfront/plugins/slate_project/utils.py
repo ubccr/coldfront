@@ -384,6 +384,7 @@ def get_slate_project_info(slate_groups):
 
     :param slate_groups: List of slate project group info
     """
+    return [] # TODO
     if not slate_groups:
         return []
 
@@ -546,7 +547,7 @@ class LDAPEligibilityGroup:
         return True, ''
 
     def check_user_exists(self, username):
-        searchParameters = {'search_base': self.LDAP_USER_SEARCH_BASE,
+        searchParameters = {'search_base': self.LDAP_BASE_DN,
             'search_filter': ldap.filter.filter_format(f"(netId={[username]})"),
             'size_limit': 1
         }
