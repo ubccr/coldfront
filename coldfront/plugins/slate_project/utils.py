@@ -508,7 +508,7 @@ class LDAPModify:
                 attributes = json.loads(entry.entry_to_json()).get('attributes')
                 gid_number = attributes.get('gidNumber')[0]
                 if gid_number is not None:
-                    gid_numbers.append(gid_number)
+                    gid_numbers.append(int(gid_number))
 
             highest_gid_number = max(gid_numbers)
             return highest_gid_number
