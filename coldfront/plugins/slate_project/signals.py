@@ -34,7 +34,6 @@ def add_group(sender, **kwargs):
     add_slate_project_groups(allocation_obj)
 
 @receiver(allocation_activate_user, sender=ProjectAddUsersView)
-@receiver(allocation_activate_user, sender=AllocationActivateRequestView)
 @receiver(allocation_activate_user, sender=AllocationAddUsersView)
 def activate_user(sender, **kwargs):
     allocation_user_pk = kwargs.get('allocation_user_pk')
