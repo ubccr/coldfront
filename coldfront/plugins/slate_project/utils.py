@@ -104,7 +104,7 @@ def add_slate_project_groups(allocation_obj):
                         )
 
     read_only_users = allocation_obj.allocationuser_set.filter(
-        status_name='Active', role__name='read only'
+        status__name='Active', role__name='read only'
     ).values_list('user__username', flat=True)
     read_only_users = list(read_only_users)
     ldap_group = f'condo_{namespace_entry}-ro'
