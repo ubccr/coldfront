@@ -9,7 +9,8 @@ from ldap3 import Connection, Server, MODIFY_ADD, MODIFY_DELETE
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.allocation.models import (AllocationUserRoleChoice,
                                               AllocationAttributeType,
-                                              AllocationAttribute)
+                                              AllocationAttribute,
+                                              AllocationUser)
 
 logger = logging.getLogger(__name__)
 
@@ -376,14 +377,46 @@ def get_slate_project_gid_to_name_mapping():
     return slate_project_gid_to_name_mapping
 
 
-def get_slate_project_info(slate_groups):
+def get_slate_project_info(username):
+    """
+    Returns a list of dictionaries that contain a slate project's name, user's access, and owner.
+
+    :param username: Username to find slate project info on
+    """
+    allocation_user_objs = AllocationUser.objects.filter(
+        user__username=username,
+        status__name='Active',
+        allocation__status__name__in=['Active', 'Renewal Requested'],
+        allocation__resources__name='Slate Project'
+    )
+
+    slate_projects = []
+    for allocation_user_obj in allocation_user_objs:
+        namespace_entry_obj = allocation_user_obj.allocation.allocationattribute_set.get(
+            allocation_attribute_type__name='Namespace Entry'
+        )
+        owner = allocation_user_obj.allocation.project.pi.username
+        # For imported projects that have a project owner who can't be a PI.
+        if owner == 'thcrowe' and allocation_user_obj.allocation.project.requestor:
+            owner = allocation_user_obj.allocation.project.requestor.username
+        slate_projects.append(
+            {
+                'name': namespace_entry_obj.value,
+                'access': allocation_user_obj.role.name,
+                'owner': allocation_user_obj.allocation.project.pi.username
+            }
+        )
+
+    return slate_projects
+
+
+def get_slate_project_info_old(slate_groups):
     """
     This works with multiple slate projects. Returns a list of dictionaries that contain a slate
     project's name, user's access, and owner.
 
     :param slate_groups: List of slate project group info
     """
-    return [] # TODO
     if not slate_groups:
         return []
 
