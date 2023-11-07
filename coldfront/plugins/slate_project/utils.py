@@ -307,21 +307,21 @@ def change_users_slate_project_groups(allocation_user_obj):
     added, output = ldap_conn.add_user(add_to_group, username)
     if not added:
         logger.error(
-            f'LDAP: Failed to add user {username} to slate project group condo_{add_to_group} '
+            f'LDAP: Failed to add user {username} to slate project group {add_to_group} '
             f'from role change in allocation {allocation_obj.pk}. Reason: {output}'
         )
         return 
     removed, output = ldap_conn.remove_user(remove_from_group, username)
     if not removed:
         logger.error(
-            f'LDAP: Failed to remove user {username} from slate project group condo_{add_to_group} '
+            f'LDAP: Failed to remove user {username} from slate project group {add_to_group} '
             f'from role change in allocation {allocation_obj.pk}. Reason: {output}'
         )
         return 
         
     logger.info(
-        f'LDAP: Changed user {username}\'s slate project group from condo_{remove_from_group} to '
-        f'condo_{add_to_group}'
+        f'LDAP: Changed user {username}\'s slate project group from {remove_from_group} to '
+        f'{add_to_group}'
     )
 
 

@@ -1850,7 +1850,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                     )
 
                     logger.info(
-                        f'User {request.user.username} added {", ".join(added_users)}'
+                        f'User {request.user.username} added {", ".join(added_users)} '
                         f'to a {allocation_obj.get_parent_resource.name} allocation '
                         f'(allocation pk={allocation_obj.pk})'
                     )
