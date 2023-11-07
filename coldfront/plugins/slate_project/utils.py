@@ -467,9 +467,10 @@ class LDAPModify:
             "objectClass": ["posixGroup", "top"],
             "gidNumber": gid_number,
             "cn": group_name,
-            "memberUid": users,
             "description": f"added on {date.today().strftime('%Y%m%d')}, {owner} owner"
         }
+        if users:
+            attributes['memberUid'] = users
         added = self.conn.add(dn, attributes=attributes)
         return added, self.conn.result.get("description")
 
