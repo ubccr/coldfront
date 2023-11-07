@@ -312,10 +312,10 @@ class AllocationDetailViewTest(AllocationViewBaseTest):
         self.client.force_login(self.admin_user, backend=BACKEND)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
-        # check that allocation_quota_tb has value
-        self.assertEqual(response.context['allocation_quota_bytes'], 109951162777600)
-        # check that allocation_usage_tb has value
-        self.assertEqual(response.context['allocation_usage_bytes'], 10995116277760)
+        # check that allocation.size_exact has value
+        self.assertEqual(response.context['allocation'].size_exact, 109951162777600)
+        # check that allocation.usage_exact has value
+        self.assertEqual(response.context['allocation'].usage_exact, 10995116277760)
 
     def test_allocationdetail_requestchange_button(self):
         """Test visibility of "Request Change" button for different user types"""

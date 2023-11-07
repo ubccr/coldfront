@@ -50,12 +50,14 @@ class Command(BaseCommand):
                 # logger.warning('WARNING: No starfish result for %s %s', lab, resource)
                 continue
             if len(matched_subdirs) > 1:
-                errors.append({ "lab":lab, "allocation":allocation,
-                                "issue": "multiple_results", "results": matched_subdirs,
-                                "url": f"https://coldfront.rc.fas.harvard.edu/allocation/{allocation.pk}"})
+                errors.append({
+                    "lab":lab, "allocation":allocation,
+                    "issue": "multiple_results", "results": matched_subdirs,
+                    "url": f"https://coldfront.rc.fas.harvard.edu/allocation/{allocation.pk}"
+                })
                 continue
             subdir_value = matched_subdirs[0]['path']
             allocation.allocationattribute_set.update_or_create(
-                                    allocation_attribute_type_id=8,
-                                    defaults={'value': subdir_value})
+                allocation_attribute_type_id=8, defaults={'value': subdir_value}
+            )
         make_error_csv("subdirs_to_add", errors)

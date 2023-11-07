@@ -133,56 +133,102 @@ class Allocation(TimeStampedModel):
 
         super().save(*args, **kwargs)
 
-    def pull_allocationattribute(self, attr_name):
-        try:
-            return self.allocationattribute_set.get(
-                allocation_attribute_type__name=attr_name
-            ).value
-        except ObjectDoesNotExist:
-            return None
-
     @property
     def offer_letter_code(self):
-        return self.pull_allocationattribute('Offer Letter Code')
+        return self.get_attribute('Offer Letter Code')
 
     @property
     def expense_code(self):
-        return self.pull_allocationattribute('Expense Code')
+        return self.get_attribute('Expense Code')
 
     @property
     def heavy_io(self):
-        return self.pull_allocationattribute('Heavy IO')
+        return self.get_attribute('Heavy IO')
 
     @property
     def mounted(self):
-        return self.pull_allocationattribute('Mounted')
+        return self.get_attribute('Mounted')
 
     @property
     def external_sharing(self):
-        return self.pull_allocationattribute('External Sharing')
+        return self.get_attribute('External Sharing')
 
     @property
     def high_security(self):
-        return self.pull_allocationattribute('High Security')
+        return self.get_attribute('High Security')
 
     @property
     def dua(self):
-        return self.pull_allocationattribute('DUA')
+        return self.get_attribute('DUA')
+
+    def _return_size_attr_name(self, s_type='display'):
+        parent_resource = self.get_parent_resource
+        if not parent_resource:
+            return None
+        if parent_resource.resource_type.name == 'Cluster':
+            size_attr_name = 'Core Usage (Hours)'
+        elif 'Storage' in parent_resource.resource_type.name:
+            if s_type == 'exact':
+                size_attr_name = 'Quota_In_Bytes'
+            elif s_type=='display':
+                size_attr_name = 'Storage Quota (TB)'
+        else:
+            return None
+        return size_attr_name
 
     @property
     def size(self):
-        try:
-            return self.allocationattribute_set.get(allocation_attribute_type_id=1).value
-        except ObjectDoesNotExist:
+        size_attr_name = self._return_size_attr_name()
+        if not size_attr_name:
             return None
-
+        try:
+            return float(self.get_attribute(size_attr_name))
+        except ObjectDoesNotExist:
+            if self.size_exact:
+                if 'TB' in self.get_parent_resource.quantity_label:
+                    divisor = 1099511627776
+                    return self.size_exact/divisor
+            return None
+        except TypeError:
+            return None
 
     @property
     def usage(self):
+        size_attr_name = self._return_size_attr_name()
+        if not size_attr_name:
+            return None
         try:
-            return self.allocationattribute_set.get(
-                allocation_attribute_type_id=1
-            ).allocationattributeusage.value
+            return float(self.allocationattribute_set.get(
+                allocation_attribute_type__name=size_attr_name
+            ).allocationattributeusage.value)
+        except ObjectDoesNotExist:
+            if self.usage_exact:
+                if 'TB' in self.get_parent_resource.quantity_label:
+                    divisor = 1099511627776
+                    return self.usage_exact/divisor
+            return None
+        except TypeError:
+            return None
+
+    @property
+    def size_exact(self):
+        size_attr_name = self._return_size_attr_name(s_type='exact')
+        if not size_attr_name:
+            return None
+        try:
+            return self.get_attribute(size_attr_name, typed=True)
+        except ObjectDoesNotExist:
+            return None
+
+    @property
+    def usage_exact(self):
+        size_attr_name = self._return_size_attr_name(s_type='exact')
+        if not size_attr_name:
+            return None
+        try:
+            return float(self.allocationattribute_set.get(
+                allocation_attribute_type__name=size_attr_name
+            ).allocationattributeusage.value)
         except ObjectDoesNotExist:
             return None
 
@@ -204,7 +250,11 @@ class Allocation(TimeStampedModel):
             return None
         except TypeError:
             return None
-        size = self.allocationattribute_set.get(allocation_attribute_type_id=1).value
+        size_attr_name = self._return_size_attr_name()
+        if not size_attr_name:
+            return None
+        size = self.allocationattribute_set.get(
+                    allocation_attribute_type__name=size_attr_name).value
         return 0 if not size else price * float(size)
 
     @property

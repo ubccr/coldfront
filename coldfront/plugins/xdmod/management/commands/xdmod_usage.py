@@ -159,7 +159,6 @@ class Command(BaseCommand):
             ]))
 
 
-
     def process_total_gpu_hours(self):
         header = [
             'allocation_id',

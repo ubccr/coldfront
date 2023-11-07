@@ -154,7 +154,6 @@ class Resource(TimeStampedModel):
                 missing_resource_attributes.append(attribute)
         return missing_resource_attributes
 
-
     @property
     def capacity(self):
         """Returns value of capacity_tb resourceattribute object"""
@@ -228,9 +227,14 @@ class Resource(TimeStampedModel):
         """
         Params:
             name (str): name of the resource
-            expand (bool): indicates whether or not to return the expanded value with attributes/parameters for attributes with a base type of 'Attribute Expanded Text'
-            typed (bool): indicates whether or not to convert the attribute value to an int/ float/ str based on the base AttributeType name
-            extra_allocations (list[Allocation]): allocations which are available to reference in the attribute list in addition to those associated with this ResourceAttribute
+            expand (bool): indicates whether or not to return the expanded value
+                with attributes/parameters for attributes with a base type of
+                'Attribute Expanded Text'
+            typed (bool): indicates whether or not to convert the attribute value
+                to an int/ float/ str based on the base AttributeType name
+            extra_allocations (list[Allocation]): allocations which are available
+                to reference in the attribute list in addition to those associated
+                with this ResourceAttribute
 
         Returns:
             list: the list of values of the attributes found with specified name
@@ -244,6 +248,10 @@ class Resource(TimeStampedModel):
         if typed:
             return [a.typed_value() for a in attr]
         return [a.value for a in attr]
+
+    @property
+    def quantity_label(self):
+        return self.get_attribute('quantity_label')
 
     def get_ondemand_status(self):
         """
