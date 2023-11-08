@@ -48,7 +48,7 @@ class Command(BaseCommand):
             # UBCCR defaults
             ('Cloud Account Name', 'Text', False, False),
             # ('CLOUD_USAGE_NOTIFICATION', 'Yes/No', False, True),
-            ('Core Usage (Hours)', 'Int', True, False),
+            ('Core Usage (Hours)', 'Float', True, False),
             # ('Accelerator Usage (Hours)', 'Int', True, False),
             # ('Cloud Storage Quota (TB)', 'Float', True, False),
             # ('EXPIRE NOTIFICATION', 'Yes/No', False, True),

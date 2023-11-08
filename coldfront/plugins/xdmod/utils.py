@@ -52,147 +52,82 @@ class XdmodError(Exception):
 class XdmodNotFoundError(XdmodError):
     pass
 
-def xdmod_fetch_total_cpu_hours(start, end, account, resources=None, statistics='total_cpu_hours'):
-    if resources is None:
-        resources = []
+class XDModFetcher:
 
-    url = f'{XDMOD_API_URL}{_ENDPOINT_CORE_HOURS}'
-    payload = _DEFAULT_PARAMS
-    payload['pi_filter'] = f'"{account}"'
-    payload['resource_filter'] = f'"{",".join(resources)}"'
-    payload['start_date'] = start
-    payload['end_date'] = end
-    payload['group_by'] = 'pi'
-    payload['realm'] = 'Jobs'
-    payload['operation'] = 'get_data'
-    payload['statistic'] = statistics
-    r = requests.get(url, params=payload, auth=HTTPBasicAuth(XDMOD_USER, XDMOD_PASS))
+    def __init__(self, start, end, resources=None,):
+        self.url = f'{XDMOD_API_URL}{_ENDPOINT_CORE_HOURS}'
+        if resources is None:
+            resources = []
 
-    logger.info(r.url)
-    logger.info(r.text)
+        payload = _DEFAULT_PARAMS
+        payload['start_date'] = start
+        payload['end_date'] = end
+        payload['resource_filter'] = f'"{",".join(resources)}"'
+        payload['operation'] = 'get_data'
+        self.payload = payload
 
-    try:
-        error = r.json()
-        # XXX fix me. Here we assume any json response is bad as we're
-        # expecting xml but XDMoD should just return json always.
-        raise XdmodNotFoundError(f'Got json response but expected XML: {error}')
-    except json.decoder.JSONDecodeError as e:
-        pass
-    except requests.exceptions.JSONDecodeError:
-        pass
+    def fetch_data(self, search_item, payload):
+        r = requests.get(
+            self.url, params=payload, auth=HTTPBasicAuth(XDMOD_USER, XDMOD_PASS)
+        )
+        logger.info(r.url)
+        logger.info(r.text)
 
-    try:
-        root = ET.fromstring(r.text)
-    except ET.ParserError as e:
-        raise XdmodError(f'Invalid XML data returned from XDMoD API: {e}')
+        try:
+            error = r.json()
+            # XXXX fix me. Here we assume any json response is bad as we're
+            # expecting xml but XDMoD should just return json always.
+            raise XdmodNotFoundError(f'Got json response but expected XML: {error}')
+        except json.decoder.JSONDecodeError as e:
+            pass
 
-    rows = root.find('rows')
-    if len(rows) != 1:
-        raise XdmodNotFoundError(f'Rows not found for {account} - {resources}')
+        try:
+            root = ET.fromstring(r.text)
+        except ET.ParserError as e:
+            raise XdmodError(f'Invalid XML data returned from XDMoD API: {e}') from e
 
-    cells = rows.find('row').findall('cell')
-    if len(cells) != 2:
-        raise XdmodError('Invalid XML data returned from XDMoD API: Cells not found')
+        rows = root.find('rows')
+        if len(rows) != 1:
+            raise XdmodNotFoundError(
+                f'Rows not found for {search_item} - {self.payload["resources"]}'
+            )
+        cells = rows.find('row').findall('cell')
+        if len(cells) != 2:
+            raise XdmodError('Invalid XML data returned from XDMoD API: Cells not found')
 
-    core_hours = cells[1].find('value').text
+        stats = cells[1].find('value').text
+        return stats
 
-    return core_hours
+    def xdmod_fetch_total_cpu_hours(self, account, statistics='total_cpu_hours'):
+        """fetch total cpu hours."""
+        payload = dict(self.payload)
+        payload['pi_filter'] = f'"{account}"'
+        payload['group_by'] = 'pi'
+        payload['realm'] = 'Jobs'
+        payload['statistic'] = statistics
 
+        core_hours = self.fetch_data(account, payload)
+        return core_hours
 
+    def xdmod_fetch_total_storage(self, account, statistics='physical_usage'):
+        """fetch total storage."""
+        payload = dict(self.payload)
+        payload['pi_filter'] = f'"{account}"'
+        payload['group_by'] = 'pi'
+        payload['realm'] = 'Storage'
+        payload['statistic'] = statistics
 
-def xdmod_fetch_total_storage(start, end, account, resources=None, statistics='physical_usage'):
-    if resources is None:
-        resources = []
+        stats = self.fetch_data(account, payload)
+        physical_usage = float(stats) / 1E9
+        return physical_usage
 
-    payload_end = end
-    if payload_end is None:
-        payload_end = '2099-01-01'
-    url = f'{XDMOD_API_URL}{_ENDPOINT_CORE_HOURS}'
-    payload = _DEFAULT_PARAMS
-    payload['pi_filter'] = f'"{account}"'
-    payload['resource_filter'] = f'"{",".join(resources)}"'
-    payload['start_date'] =  start
-    payload['end_date'] = payload_end
-    payload['group_by'] = 'pi'
-    payload['realm'] = 'Storage'
-    payload['operation'] = 'get_data'
-    payload['statistic'] = statistics
-    r = requests.get(url, params=payload, auth=HTTPBasicAuth(XDMOD_USER, XDMOD_PASS))
+    def xdmod_fetch_cloud_core_time(self, project):
+        """fetch cloud core time."""
+        payload = dict(self.payload)
+        payload['project_filter'] = project
+        payload['group_by'] = 'project'
+        payload['realm'] = 'Cloud'
+        payload['statistic'] = 'cloud_core_time'
 
-    logger.info(r.url)
-    logger.info(r.text)
-    if is_json(r.content):
-        error = r.json()
-        # XXX fix me. Here we assume any json response is bad as we're
-        # expecting xml but XDMoD should just return json always.
-
-        # print('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n')
-        # print(f'XDMOD synchronization error: ({start}, {end}, {account}, {resources}, response: {r})')
-        # print(r.content)
-        # print(r.url)
-        # print(payload)
-        # print('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n\n')
-
-        raise XdmodNotFoundError(f'Got json response but expected XML: {error}')
-
-
-    try:
-        root = ET.fromstring(r.text)
-    except ET.ParserError as e:
-        raise XdmodError(f'Invalid XML data returned from XDMoD API: {e}')
-
-    rows = root.find('rows')
-    if len(rows) != 1:
-        raise XdmodNotFoundError(f'Rows not found for {account} - {resources}')
-
-    cells = rows.find('row').findall('cell')
-    if len(cells) != 2:
-        raise XdmodError('Invalid XML data returned from XDMoD API: Cells not found')
-
-    physical_usage = float(cells[1].find('value').text) / 1E9
-
-    return physical_usage
-
-def xdmod_fetch_cloud_core_time(start, end, project, resources=None):
-    if resources is None:
-        resources = []
-
-    url = f'{XDMOD_API_URL}{_ENDPOINT_CORE_HOURS}'
-    payload = _DEFAULT_PARAMS
-    payload['project_filter'] = project
-    payload['resource_filter'] = f'"{",".join(resources)}"'
-    payload['start_date'] = start
-    payload['end_date'] = end
-    payload['group_by'] = 'project'
-    payload['realm'] = 'Cloud'
-    payload['operation'] = 'get_data'
-    payload['statistic'] = 'cloud_core_time'
-    r = requests.get(url, params=payload, auth=HTTPBasicAuth(XDMOD_USER, XDMOD_PASS))
-
-    logger.info(r.url)
-    logger.info(r.text)
-
-    try:
-        error = r.json()
-        # XXXX fix me. Here we assume any json response is bad as we're
-        # expecting xml but XDMoD should just return json always.
-        raise XdmodNotFoundError(f'Got json response but expected XML: {error}')
-    except json.decoder.JSONDecodeError as e:
-        pass
-
-    try:
-        root = ET.fromstring(r.text)
-    except ET.ParserError as e:
-        raise XdmodError(f'Invalid XML data returned from XDMoD API: {e}')
-
-    rows = root.find('rows')
-    if len(rows) != 1:
-        raise XdmodNotFoundError(f'Rows not found for {project} - {resources}')
-
-    cells = rows.find('row').findall('cell')
-    if len(cells) != 2:
-        raise XdmodError('Invalid XML data returned from XDMoD API: Cells not found')
-
-    core_hours = cells[1].find('value').text
-
-    return core_hours
+        core_hours = self.fetch_data(project, payload)
+        return core_hours

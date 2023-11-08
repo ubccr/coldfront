@@ -38,9 +38,11 @@ class Command(BaseCommand):
         parser.add_argument("-c", "--cluster",
             help="Run sacctmgr dump [cluster] as input")
         parser.add_argument("-s", "--sync",
-            help="Remove associations in Slurm that no longer exist in ColdFront", action="store_true")
+            help="Remove associations in Slurm that no longer exist in ColdFront",
+            action="store_true")
         parser.add_argument("-n", "--noop",
-            help="Print commands only. Do not run any commands.", action="store_true")
+            help="Print commands only. Do not run any commands.",
+            action="store_true")
         parser.add_argument("-u", "--username", help="Check specific username")
         parser.add_argument("-a", "--account", help="Check specific account")
         parser.add_argument("-x", "--header",
