@@ -13,17 +13,22 @@ from coldfront.core.allocation.models import (AllocationUserRoleChoice,
                                               AllocationAttributeType,
                                               AllocationAttribute,
                                               AllocationUser)
+from coldfront.plugins.ldap_user_info.utils import LDAPSearch
 
 logger = logging.getLogger(__name__)
 
 ENABLE_LDAP_ELIGIBILITY_SERVER = import_from_settings('ENABLE_LDAP_ELIGIBILITY_SERVER', False)
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 CENTER_BASE_URL = import_from_settings('CENTER_BASE_URL')
+SLATE_PROJECT_ELIGIBILITY_ACCOUNT = import_from_settings('SLATE_PROJECT_ELIGIBILITY_ACCOUNT')
+SLATE_PROJECT_ACCOUNT = import_from_settings('SLATE_PROJECT_ACCOUNT')
 if EMAIL_ENABLED:
     SLATE_PROJECT_EMAIL = import_from_settings('SLATE_PROJECT_EMAIL')
     EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
     EMAIL_CENTER_NAME = import_from_settings('CENTER_NAME')
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
+    EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
+    EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
 
 
 def send_expiry_email(allocation_obj):
@@ -45,8 +50,46 @@ def send_expiry_email(allocation_obj):
         )
 
 
-def send_missing_account_email():
-    pass
+def send_missing_account_email(email_receiver):
+    if EMAIL_ENABLED:
+        template_context = {
+            'center_name': EMAIL_CENTER_NAME,
+            'url': 'https://access.iu.edu/Accounts/Create',
+            'signature': EMAIL_SIGNATURE,
+            'help_email': EMAIL_TICKET_SYSTEM_ADDRESS
+        }
+
+        send_email_template(
+            'Please Create A Slate Project Account',
+            'slate_project/email/missing_account_email.txt',
+            template_context,
+            EMAIL_TICKET_SYSTEM_ADDRESS,
+            [email_receiver]
+        )
+
+
+def check_slate_project_account(user, ldap_search_conn=None, ldap_eligibility_conn=None):
+    if ldap_search_conn is None:
+        ldap_search_conn = LDAPSearch()
+    if ldap_eligibility_conn is None:
+        ldap_eligibility_conn = LDAPEligibilityGroup()
+
+    attributes = ldap_search_conn.search_a_user(user.username, ['memberOf'])
+    accounts = attributes.get('memberOf')
+    if not SLATE_PROJECT_ELIGIBILITY_ACCOUNT in accounts:
+        added, output = ldap_eligibility_conn.add_user(user.username)
+        if not added:
+            logger.error(
+                f'LDAP: Failed to add user {user.username} to the HPFS ADS eligibility '
+                f'group. Reason: {output}'
+            )
+        else:
+            logger.info(
+                f'LDAP: Added user {user.username} to the HPFS ADS eligibility group'
+            )
+        send_missing_account_email(user.email)
+    elif not SLATE_PROJECT_ACCOUNT in accounts:
+        send_missing_account_email(user.email)
 
 
 def add_slate_project_groups(allocation_obj):
@@ -121,20 +164,12 @@ def add_slate_project_groups(allocation_obj):
         )
 
         if ENABLE_LDAP_ELIGIBILITY_SERVER:
-            ldap_security_conn = LDAPEligibilityGroup()
+            ldap_search_conn = LDAPSearch()
+            ldap_eligibility_conn = LDAPEligibilityGroup()
             for allocation_user in read_write_users:
-                username = allocation_user.user.username
-                if not ldap_security_conn.check_user_exists(username):
-                    added, output = ldap_security_conn.add_user(username)
-                    if not added:
-                        logger.error(
-                            f'LDAP: Failed to add user {username} to the HPFS ADS eligibility '
-                            f'group. Reason: {output}'
-                        )
-                    else:
-                        logger.info(
-                            f'LDAP: Added user {username} to the HPFS ADS eligibility group.'
-                        )
+                check_slate_project_account(
+                    allocation_user.user, ldap_search_conn, ldap_eligibility_conn
+                )
 
     read_only_users = allocation_obj.allocationuser_set.filter(
         status__name='Active', role__name='read only'
@@ -155,20 +190,12 @@ def add_slate_project_groups(allocation_obj):
         )
 
         if ENABLE_LDAP_ELIGIBILITY_SERVER:
-            ldap_security_conn = LDAPEligibilityGroup()
+            ldap_search_conn = LDAPSearch()
+            ldap_eligibility_conn = LDAPEligibilityGroup()
             for allocation_user in read_only_users:
-                username = allocation_user.user.username
-                if not ldap_security_conn.check_user_exists(username):
-                    added, output = ldap_security_conn.add_user(username)
-                    if not added:
-                        logger.error(
-                            f'LDAP: Failed to add user {username} to the HPFS ADS eligibility '
-                            f'group. Reason: {output}'
-                        )
-                    else:
-                        logger.info(
-                            f'LDAP: Added user {username} to the HPFS ADS eligibility group.'
-                        )
+                check_slate_project_account(
+                    allocation_user.user, ldap_search_conn, ldap_eligibility_conn
+                )
 
 def add_user_to_slate_project_group(allocation_user_obj):
     """
@@ -211,16 +238,7 @@ def add_user_to_slate_project_group(allocation_user_obj):
         )
 
     if ENABLE_LDAP_ELIGIBILITY_SERVER:
-        ldap_security_conn = LDAPEligibilityGroup()
-        if not ldap_security_conn.check_user_exists(username):
-            added, output = ldap_security_conn.add_user(username)
-            if not added:
-                logger.error(
-                    f'LDAP: Failed to add user {username} to the HPFS ADS eligibility group. '
-                    f'Reason: {output}'
-                )
-            else:
-                logger.info(f'LDAP: Added user {username} to the HPFS ADS eligibility group.')
+        check_slate_project_account(allocation_user_obj.user)
 
 
 def remove_slate_project_groups(allocation_obj):
@@ -605,7 +623,7 @@ class LDAPEligibilityGroup:
         self.conn = Connection(self.server, self.LDAP_BIND_DN, self.LDAP_BIND_PASSWORD, auto_bind=True)
 
         if not self.conn.bind():
-            logger.error(f'LDAPModify: Failed to bind to LDAP server: {self.conn.result}')
+            logger.error(f'LDAPEligibilityGroup: Failed to bind to LDAP server: {self.conn.result}')
 
     def add_user(self, username):
         # self.conn.add(self.LDAP_BASE_DN, attributes={'netId': username})
