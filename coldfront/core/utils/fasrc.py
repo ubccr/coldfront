@@ -18,6 +18,13 @@ from coldfront.core.resource.models import Resource
 MISSING_DATA_DIR = './local_data/missing/'
 
 
+def get_quarter_start_end():
+    y = datetime.today().year
+    quarter_starts = [f'{y}-01-01', f'{y}-04-01', f'{y}-07-01', f'{y}-10-01']
+    quarter_ends = [f'{y}-03-31', f'{y}-06-30', f'{y}-09-30', f'{y}-12-31']
+    quarter = (datetime.today().month-1)//3
+    return (quarter_starts[quarter], quarter_ends[quarter])
+
 def sort_by(list1, sorter, how='attr'):
     """split one list into two on basis of each item's ability to meet a condition
     Parameters

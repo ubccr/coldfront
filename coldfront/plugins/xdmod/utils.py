@@ -6,6 +6,8 @@ import requests
 from requests.auth import HTTPBasicAuth
 
 from coldfront.core.utils.common import import_from_settings
+from coldfront.core.utils.fasrc import get_quarter_start_end
+
 
 XDMOD_USER = import_from_settings('XDMOD_USER', '')
 XDMOD_PASS = import_from_settings('XDMOD_PASS', '')
@@ -53,15 +55,17 @@ class XdmodNotFoundError(XdmodError):
     pass
 
 class XDModFetcher:
-
     def __init__(self, start, end, resources=None,):
         self.url = f'{XDMOD_API_URL}{_ENDPOINT_CORE_HOURS}'
         if resources is None:
             resources = []
 
         payload = _DEFAULT_PARAMS
-        payload['start_date'] = start
-        payload['end_date'] = end
+        # payload['start_date'] = start
+        # payload['end_date'] = end
+        start_date, end_date = get_quarter_start_end()
+        payload['start_date'] = start_date
+        payload['end_date'] = end_date
         payload['resource_filter'] = f'"{",".join(resources)}"'
         payload['operation'] = 'get_data'
         self.payload = payload

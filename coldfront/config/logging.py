@@ -66,6 +66,10 @@ LOGGING = {
         'coldfront.core.project': {
             'handlers': ['key-events'],
             'level': 'INFO',
+        },
+        'coldfront.core.allocation': {
+            'handlers': ['key-events'],
+            'level': 'INFO',
         }
     },
 }
