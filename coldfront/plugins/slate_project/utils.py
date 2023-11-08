@@ -5,8 +5,10 @@ from datetime import date
 
 import ldap.filter
 from ldap3 import Connection, Server, MODIFY_ADD, MODIFY_DELETE
+from django.urls import reverse
 
 from coldfront.core.utils.common import import_from_settings
+from coldfront.core.utils.mail import send_email_template
 from coldfront.core.allocation.models import (AllocationUserRoleChoice,
                                               AllocationAttributeType,
                                               AllocationAttribute,
@@ -15,6 +17,36 @@ from coldfront.core.allocation.models import (AllocationUserRoleChoice,
 logger = logging.getLogger(__name__)
 
 ENABLE_LDAP_ELIGIBILITY_SERVER = import_from_settings('ENABLE_LDAP_ELIGIBILITY_SERVER', False)
+EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
+CENTER_BASE_URL = import_from_settings('CENTER_BASE_URL')
+if EMAIL_ENABLED:
+    SLATE_PROJECT_EMAIL = import_from_settings('SLATE_PROJECT_EMAIL')
+    EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
+    EMAIL_CENTER_NAME = import_from_settings('CENTER_NAME')
+    EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
+
+
+def send_expiry_email(allocation_obj):
+    if EMAIL_ENABLED:
+        url = f'{CENTER_BASE_URL.strip("/")}{reverse("allocation-detail", kwargs={"pk": allocation_obj.pk})}'
+        template_context = {
+            'pk': allocation_obj.pk,
+            'project_title': allocation_obj.project.title,
+            'url': url,
+            'pi_email': allocation_obj.project.pi.email
+        }
+
+        send_email_template(
+            f'A Slate Project Allocation Has Expired',
+            'slate_project/email/slate_project_expired.txt',
+            template_context,
+            EMAIL_SENDER,
+            [SLATE_PROJECT_EMAIL]
+        )
+
+
+def send_missing_account_email():
+    pass
 
 
 def add_slate_project_groups(allocation_obj):

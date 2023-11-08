@@ -13,13 +13,15 @@ from coldfront.core.allocation.views import (AllocationActivateRequestView,
                                              AllocationRemoveView,
                                              AllocationApproveRemovalRequestView,
                                              AllocationDetailView)
+from coldfront.core.allocation.tasks import update_statuses
 from coldfront.core.allocation.models import AllocationUser, Allocation
 from coldfront.core.project.views import (ProjectAddUsersView,
                                           ProjectRemoveUsersView)
 from coldfront.plugins.slate_project.utils import (add_user_to_slate_project_group,
                                                    remove_user_from_slate_project_group,
                                                    change_users_slate_project_groups,
-                                                   add_slate_project_groups)
+                                                   add_slate_project_groups,
+                                                   send_expiry_email)
 
 @receiver(allocation_activate, sender=AllocationDetailView)
 @receiver(allocation_activate, sender=AllocationActivateRequestView)
@@ -71,7 +73,7 @@ def change_user_role(sender, **kwargs):
 
     change_users_slate_project_groups(allocation_user_obj)
 
-@receiver(allocation_expire, sender='update_statuses')
+@receiver(allocation_expire, sender=update_statuses)
 def expire(sender, **kwargs):
     allocation_pk = kwargs.get('allocation_pk')
     allocation_obj = Allocation.objects.get(pk=allocation_pk)
@@ -79,8 +81,8 @@ def expire(sender, **kwargs):
         return
     if not allocation_obj.status.name == 'Expired':
         return
-    
-    # TODO - Add email to send to ticket queue about a slate project expiring
+
+    send_expiry_email(allocation_obj)
 
 @receiver(allocation_remove, sender=AllocationRemoveView)
 @receiver(allocation_remove, sender=AllocationApproveRemovalRequestView)
@@ -91,5 +93,3 @@ def remove(sender, **kwargs):
         return
     if not allocation_obj.status.name == 'Removed':
         return
-
-    # TODO - Add email to send to ticket queue about a slate project being removed
