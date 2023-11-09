@@ -41,6 +41,8 @@ ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING = ENV.int('ALLOCATION_DAYS_TO_REVIEW_B
 # Resource related
 #------------------------------------------------------------------------------
 RESOURCE_ENABLE_ACCOUNT_CHECKING = ENV.bool('RESOURCE_ENABLE_ACCOUNT_CHECKING', default=True)
+RESOURCE_ACCOUNTS = ENV.str('RESOURCE_ACCOUNTS', default='')
+RESOURCE_ACCOUNTS = dict([val.split('=', 1) for val in RESOURCE_ACCOUNTS.split(';') if val])
 
 # This is in days
 ALLOCATION_DEFAULT_ALLOCATION_LENGTH = ENV.int('ALLOCATION_DEFAULT_ALLOCATION_LENGTH', default=365)

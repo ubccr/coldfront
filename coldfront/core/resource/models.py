@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 RESOURCE_ENABLE_ACCOUNT_CHECKING = import_from_settings(
     'RESOURCE_ENABLE_ACCOUNT_CHECKING', True
 )
+RESOURCE_ACCOUNTS = import_from_settings('RESOURCE_ACCOUNTS', {})
 
 
 class AttributeType(TimeStampedModel):
@@ -83,15 +84,6 @@ class Resource(TimeStampedModel):
     allowed_users = models.ManyToManyField(User, blank=True)
     linked_resources = models.ManyToManyField('self', blank=True)
     history = HistoricalRecords()
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.resource_accounts = {
-            'Carbonate': 'CN=iu-entlmt-app-rt-carbonate-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu',
-            'Quartz': 'CN=iu-entlmt-app-rt-quartz-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu',
-            'Slate-Project': 'CN=iu-entlmt-app-rt-slateproj-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu',
-            'BigRed200': 'CN=iu-entlmt-app-rt-bigred200-users,OU=rt,OU=app,OU=Entlmt,OU=Managed,DC=ads,DC=iu,DC=edu'
-        }
 
     def get_missing_resource_attributes(self, required=False):
         """
@@ -203,7 +195,7 @@ class Resource(TimeStampedModel):
         else:
             return True
 
-        resource_acc = self.resource_accounts.get(resource)
+        resource_acc = RESOURCE_ACCOUNTS.get(resource)
 
         if resource_acc is None:
             logger.warning(
