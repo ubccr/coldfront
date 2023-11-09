@@ -42,6 +42,7 @@ redis_host: localhost
 log_path: /var/log/user_portals/cf_mybrc
 portal_log_file: cf_mybrc_portal.log
 api_log_file: cf_mybrc_api.log
+logrotate_entry_name: cf_mybrc
 
 # Apache settings.
 # The name of the copy of the generated WSGI template in the Apache directory.

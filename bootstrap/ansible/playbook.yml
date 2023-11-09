@@ -206,7 +206,7 @@
             state: started
             enabled: true
 
-        # Create Django application log files.
+        # Create Django application log files and set up log rotation.
 
         - name: Create a parent directory for storing Django application logs
           file:
@@ -234,6 +234,11 @@
             owner: "{{ djangooperator }}"
             group: apache
 
+        - name: Configure logrotate to rotate the Django API and portal logs
+          template:
+            src: "{{ git_prefix }}/{{ reponame }}/bootstrap/ansible/logrotate.tmpl"
+            dest: /etc/logrotate.d/{{ logrotate_entry_name }}
+
         # Prepare the Python virtual environment for the Django application.
 
         - name: Create Python virtual environment directory
@@ -252,7 +257,7 @@
           register: venv_register
           become_user: "{{ djangooperator }}"
           changed_when: venv_register.stdout == "created"
-        
+
         - name: Upgrade pip
           pip:
             name: pip
