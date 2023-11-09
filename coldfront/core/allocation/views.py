@@ -1577,6 +1577,12 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             f'User {self.request.user.username} submitted a request for a '
             f'{allocation_obj.get_parent_resource.name} allocation (allocation pk={allocation_obj.pk})'
         )
+
+        added_users = [user.username for user in users if user != self.request.user]
+        logger.info (
+            f'User {self.request.user.username} added {", ".join(added_users)} to a new allocation '
+            f'(allocation pk={allocation_obj.pk})'
+        )
         return super().form_valid(form)
 
     def reverse_with_params(self, path, **kwargs):
@@ -1869,7 +1875,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                     )
 
                     logger.info(
-                        f'User {request.user.username} added {len(added_users)} user(s) '
+                        f'User {request.user.username} added {", ".join(added_users)} '
                         f'to a {allocation_obj.get_parent_resource.name} allocation '
                         f'(allocation pk={allocation_obj.pk})'
                     )
@@ -2120,7 +2126,7 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
                     )
 
                     logger.info(
-                        f'User {request.user.username} removed {len(removed_users)} user(s) from a '
+                        f'User {request.user.username} removed {", ".join(removed_users)} from a '
                         f'{allocation_obj.get_parent_resource.name} allocation (allocation pk={allocation_obj.pk})'
                     )
 

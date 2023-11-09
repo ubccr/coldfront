@@ -1477,10 +1477,6 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                             if project_obj.pi.email not in allocations_added_users_emails:
                                 allocations_added_users_emails.append(project_obj.pi.email)
 
-                        logger.info(
-                            f'User {request.user.username} added {len(allocations_added_users)} user(s) to a '
-                            f'{allocation.get_parent_resource.name} allocation (allocation pk={allocation.pk})'
-                        )
                         send_added_user_email(
                             request,
                             allocation,
@@ -1489,9 +1485,17 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                         )
 
             logger.info(
-                f'User {request.user.username} added {added_users_count} user(s) to a project '
+                f'User {request.user.username} added {", ".join(added_users)} to a project '
                 f'(project pk={project_obj.pk})'
             )
+            if allocations_added_to:
+                for allocation, values in allocations_added_to.items():
+                    allocations_added_users = values[0]
+                    if allocations_added_users:
+                        logger.info(
+                            f'User {request.user.username} added {", ".join(allocations_added_users)} to a '
+                            f'{allocation.get_parent_resource.name} allocation (allocation pk={allocation.pk})'
+                        )
             messages.success(
                 request, 'Added {} users to project.'.format(added_users_count))
         else:
@@ -1607,7 +1611,9 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             context['formset'] = formset
 
         # context['data_managers'] = self.get_data_managers(project_obj)
-        context['project'] = get_object_or_404(Project, pk=pk)
+        project_obj = get_object_or_404(Project, pk=pk)
+        context['project'] = project_obj
+        context['display_warning'] = project_obj.allocation_set.filter(resources__name='Slate Project')
 
         return render(request, self.template_name, context)
 
@@ -1710,7 +1716,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                     )
 
                 logger.info(
-                    f'User {request.user.username} removed {remove_users_count} user(s) from a '
+                    f'User {request.user.username} removed {", ".join(removed_users)} from a '
                     f'project (project pk={project_obj.pk})'
                 )
 
