@@ -5,6 +5,7 @@ import csv
 from datetime import date
 
 from dateutil.relativedelta import relativedelta
+from django.conf import settings
 from django import forms
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -1252,6 +1253,28 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         return license_end_date
 
+    def check_user_accounts(self, usernames, resource_obj):
+        denied_users = []
+        approved_users = []
+        if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
+            from coldfront.plugins.ldap_user_info.utils import get_users_info
+            results = get_users_info(usernames, ['memberOf'])
+            for username in usernames:
+                if not resource_obj.check_user_account_exists(username, results.get(username).get('memberOf')):
+                    denied_users.append(username)
+                else:
+                    approved_users.append(username)
+
+        if denied_users:
+            messages.warning(self.request, format_html(
+                'The following users do not have an account on {} and were not added: {}. Please\
+                direct them to\
+                <a href="https://access.iu.edu/Accounts/Create">https://access.iu.edu/Accounts/Create</a>\
+                to create an account.'
+                .format(resource_obj.name, ', '.join(denied_users))
+            ))
+        return approved_users
+
     def form_valid(self, form):
         form_data = form.cleaned_data
         project_obj = get_object_or_404(
@@ -1343,34 +1366,15 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 ))
                 return self.form_invalid(form)
 
-        users = [User.objects.get(username=username) for username in usernames]
-        resource_account = resource_obj.get_attribute('check_user_account')
-        if resource_account and not resource_obj.check_user_account_exists(self.request.user.username, resource_account):
-
+        if not resource_obj.check_user_account_exists(self.request.user.username):
             form.add_error(
                 None,
                 format_html('You do not have an account on {}. You will need to create one\
                 <a href="https://access.iu.edu/Accounts/Create">here</a> in order to submit a\
-                resource request for this resource.'.format(resource_account))
+                resource request for this resource.'.format(resource_obj.name))
             )
             return self.form_invalid(form)
-
-        denied_users = []
-        for user in users:
-            username = user.username
-            if resource_account is not None:
-                if not resource_obj.check_user_account_exists(username, resource_account):
-                    denied_users.append(username)
-                    users.remove(user)
-
-        if denied_users:
-            messages.warning(self.request, format_html(
-                'The following users do not have an account on {} and were not added: {}. Please\
-                direct them to\
-                <a href="https://access.iu.edu/Accounts/Create">https://access.iu.edu/Accounts/Create</a>\
-                to create an account.'
-                .format(resource_account, ', '.join(denied_users))
-            ))
+        usernames = self.check_user_accounts(usernames, resource_obj)
 
         if INVOICE_ENABLED and resource_obj.requires_payment:
             allocation_status_obj = AllocationStatusChoice.objects.get(
@@ -1462,6 +1466,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         for linked_resource in resource_obj.linked_resources.all():
             allocation_obj.resources.add(linked_resource)
+
+        users = [User.objects.get(username=username) for username in usernames]
 
         new_user_requests = []
         allocation_user_active_status_choice = AllocationUserStatusChoice.objects.get(name='Active')
@@ -1706,6 +1712,23 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         total_users += len(self.get_list_of_users_to_add(formset))
 
         return total_users
+    
+    def get_users_accounts(self, formset):
+        selected_users_accounts = {}
+        selected_users_usernames = []
+        for form in formset:
+            user_form_data = form.cleaned_data
+            if user_form_data.get('selected'):
+                selected_users_usernames.append(user_form_data.get('username'))
+                selected_users_accounts[user_form_data.get('username')] = []
+
+        if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
+            from coldfront.plugins.ldap_user_info.utils import get_users_info
+            results = get_users_info(selected_users_usernames, ['memberOf'])
+            for username, result in results.items():
+                selected_users_accounts[username] = result.get('memberOf')
+
+        return selected_users_accounts
 
     def get(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
@@ -1773,6 +1796,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             if requires_user_request is not None and requires_user_request == 'Yes':
                 allocation_user_status_choice = allocation_user_pending_add_status_choice
 
+            selected_users_accounts = self.get_users_accounts(formset)
             requestor_user = User.objects.get(username=request.user)
             for form in formset:
                 user_form_data = form.cleaned_data
@@ -1782,7 +1806,8 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                         username=user_form_data.get('username'))
 
                     username = user_obj.username
-                    if allocation_obj.check_user_account_exists_on_resource(username):
+                    accounts = selected_users_accounts.get(username)
+                    if allocation_obj.get_parent_resource.check_user_account_exists(username, accounts):
                         added_users.append(username)
                         added_users_objs.append(user_obj)
                     else:

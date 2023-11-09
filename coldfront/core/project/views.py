@@ -1108,17 +1108,19 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
         context = cobmined_user_search_obj.search()
         context['after_project_creation'] = after_project_creation
 
-        ldap_user_info_enabled = False
-        if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
-            from coldfront.plugins.ldap_user_info.utils import get_user_info
-            ldap_user_info_enabled = True
-
         # Initial data for ProjectAddUserForm
         matches = context.get('matches')
-        for match in matches:
-            if ldap_user_info_enabled and get_user_info(match.get('username'), ['title'])['title'][0] == 'group':
-                match.update({'role': ProjectUserRoleChoice.objects.get(name='Group')})
-            else:
+        if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
+            from coldfront.plugins.ldap_user_info.utils import get_users_info
+            users = [match.get('username') for match in matches]
+            results = get_users_info(users, ['title'])
+            for match in matches:
+                if results.get(match.get('username')).get('title')[0] == 'group':
+                    match.update({'role': ProjectUserRoleChoice.objects.get(name='Group')})
+                else:
+                    match.update({'role': ProjectUserRoleChoice.objects.get(name='User')})
+        else:
+            for match in matches:
                 match.update({'role': ProjectUserRoleChoice.objects.get(name='User')})
 
         if matches:
@@ -1226,6 +1228,23 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
         #             disable_select_list[i] = True
 
         return disable_select_list
+    
+    def get_users_accounts(self, formset):
+        selected_users_accounts = {}
+        selected_users_usernames = []
+        for form in formset:
+            user_form_data = form.cleaned_data
+            if user_form_data.get('selected'):
+                selected_users_usernames.append(user_form_data.get('username'))
+                selected_users_accounts[user_form_data.get('username')] = []
+
+        if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
+            from coldfront.plugins.ldap_user_info.utils import get_users_info
+            results = get_users_info(selected_users_usernames, ['memberOf'])
+            for username, result in results.items():
+                selected_users_accounts[username] = result.get('memberOf')
+
+        return selected_users_accounts
 
     def post(self, request, *args, **kwargs):
         user_search_string = request.POST.get('q')
@@ -1243,17 +1262,19 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
         context = cobmined_user_search_obj.search()
 
-        ldap_user_info_enabled = False
-        if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
-            from coldfront.plugins.ldap_user_info.utils import get_user_info
-            ldap_user_info_enabled = True
-
         # Initial data for ProjectAddUserForm
         matches = context.get('matches')
-        for match in matches:
-            if ldap_user_info_enabled and get_user_info(match.get('username'), ['title'])['title'][0] == 'group':
-                match.update({'role': ProjectUserRoleChoice.objects.get(name='Group')})
-            else:
+        if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
+            from coldfront.plugins.ldap_user_info.utils import get_users_info
+            users = [match.get('username') for match in matches]
+            results = get_users_info(users, ['title'])
+            for match in matches:
+                if results.get(match.get('username')).get('title')[0] == 'group':
+                    match.update({'role': ProjectUserRoleChoice.objects.get(name='Group')})
+                else:
+                    match.update({'role': ProjectUserRoleChoice.objects.get(name='User')})
+        else:
+            for match in matches:
                 match.update({'role': ProjectUserRoleChoice.objects.get(name='User')})
 
         formset = formset_factory(ProjectAddUserForm, max_num=len(matches))
@@ -1295,6 +1316,12 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             managers_rejected = []
             resources_requiring_user_request = {}
             requestor_user = User.objects.get(username=request.user)
+            for allocation in allocation_formset:
+                cleaned_data = allocation.cleaned_data
+                if cleaned_data['selected']:
+                    selected_users_accounts = self.get_users_accounts(formset)
+                    break
+
             for form in formset:
                 user_form_data = form.cleaned_data
 
@@ -1350,11 +1377,12 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
                             resource_name = allocation.get_parent_resource.name
                             # If the user does not have an account on the resource in the allocation then do not add them to it.
-                            if not allocation.check_user_account_exists_on_resource(username):
+                            accounts = selected_users_accounts.get(username)
+                            if not allocation.get_parent_resource.check_user_account_exists(username, accounts):
                                 display_warning = True
                                 # Make sure there are no duplicates for a user if there's more than one instance of a resource.
-                                if allocation.get_parent_resource.get_attribute('check_user_account') not in no_accounts[username]:
-                                    no_accounts[username].append(allocation.get_parent_resource.get_attribute('check_user_account'))
+                                if allocation.get_parent_resource.name not in no_accounts[username]:
+                                    no_accounts[username].append(allocation.get_parent_resource.name)
                                 continue
 
                             requires_user_request = allocation.get_parent_resource.get_attribute(

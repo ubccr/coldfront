@@ -323,8 +323,7 @@ class AllocationForm(forms.Form):
                             errors[name] = 'This username is not valid'
                             continue
             if resource_attribute_obj.resource_account_is_required:
-                check_resource_account = resource_obj.get_attribute('check_user_account')
-                if not resource_obj.check_user_account_exists(field_value, check_resource_account):
+                if not resource_obj.check_user_account_exists(field_value):
                     errors[name] = 'This user does not have an account on this resource'
                     continue
 

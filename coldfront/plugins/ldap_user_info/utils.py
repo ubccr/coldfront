@@ -7,6 +7,13 @@ from ldap3 import Connection, Server
 
 logger = logging.getLogger(__name__)
 
+def get_users_info(usernames, attributes):
+    ldap_search = LDAPSearch()
+    results = {}
+    for username in usernames:
+        results[username] = ldap_search.search_a_user(username, attributes)
+
+    return results
 
 def get_user_info(username, attributes):
     ldap_search = LDAPSearch()
