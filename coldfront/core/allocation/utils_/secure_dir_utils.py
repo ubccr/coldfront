@@ -19,6 +19,10 @@ from coldfront.core.utils.mail import send_email_template
 logger = logging.getLogger(__name__)
 
 
+# All project-specific secure subdirectories begin with the following prefix.
+SECURE_DIRECTORY_NAME_PREFIX = 'pl1_'
+
+
 def create_secure_dirs(project, subdirectory_name, scratch_or_groups):
     """
     Creates one secure directory allocation: either a group directory or a
@@ -232,7 +236,7 @@ class SecureDirRequestApprovalRunner(object):
         """Creates the groups and scratch secure directories."""
 
         groups_alloc, scratch_alloc = None, None
-        subdirectory_name = f'pl1_{self.request_obj.directory_name}'
+        subdirectory_name = self.request_obj.directory_name
         try:
             groups_alloc = \
                 create_secure_dirs(self.request_obj.project,
@@ -400,29 +404,51 @@ def get_all_secure_dir_paths():
     return paths
 
 
-def sec_dir_name_available(directory_name, request_pk=None):
-    """Returns True if the proposed directory name is available
-    and False otherwise.
+def is_secure_directory_name_suffix_available(proposed_directory_name_suffix,
+                                              exclude_request_pk=None):
+    """Returns True if the proposed secure directory name suffix is
+    available and False otherwise. A name suffix is available if it is
+    neither in use by an existing secure directory nor in use by a
+    pending request for a new secure directory, with the possible
+    exception of the request with the given primary key from which it
+    came.
 
     Parameters:
-    - directory_name (str): the name of the proposed directory
-    - request_pk (int): the primary key of the request obj to exclude
+        - proposed_directory_name_suffix (str): The name of the proposed
+            directory, without SECURE_DIRECTORY_NAME_PREFIX
+        - exclude_request_pk (int): The primary key of a SecureDirRequest
+            object to exclude
 
     Returns:
-        - bool: True if the proposed directory name is available, False
-                otherwise
+        - bool: True if the proposed directory name suffix is available,
+            False otherwise
     """
 
-    paths = get_all_secure_dir_paths()
-    cleaned_dir_names = set([path.strip().split('_')[-1] for path in paths])
+    def get_directory_name_suffix(_directory_name):
+        if _directory_name.startswith(SECURE_DIRECTORY_NAME_PREFIX):
+            _directory_name = _directory_name[
+                len(SECURE_DIRECTORY_NAME_PREFIX):]
+        return _directory_name
 
-    pending_request_dirs = \
-        set(SecureDirRequest.objects.exclude(
-            status__name='Denied').exclude(
-            pk=request_pk).values_list('directory_name', flat=True))
-    cleaned_dir_names.update(pending_request_dirs)
+    assert not proposed_directory_name_suffix.startswith(
+        SECURE_DIRECTORY_NAME_PREFIX)
 
-    return directory_name not in cleaned_dir_names
+    unavailable_name_suffixes = set()
+    existing_secure_directory_paths = get_all_secure_dir_paths()
+    for directory_path in existing_secure_directory_paths:
+        directory_name = os.path.basename(directory_path)
+        directory_name_suffix = get_directory_name_suffix(directory_name)
+        unavailable_name_suffixes.add(directory_name_suffix)
+    pending_requested_directory_names = list(
+        SecureDirRequest.objects
+            .exclude(status__name='Denied')
+            .exclude(pk=exclude_request_pk)
+            .values_list('directory_name', flat=True))
+    for directory_name in pending_requested_directory_names:
+        directory_name_suffix = get_directory_name_suffix(directory_name)
+        unavailable_name_suffixes.add(directory_name_suffix)
+
+    return proposed_directory_name_suffix not in unavailable_name_suffixes
 
 
 def set_sec_dir_context(context_dict, request_obj):
@@ -445,8 +471,9 @@ def set_sec_dir_context(context_dict, request_obj):
         raise TypeError(f'Invalid SecureDirRequest {request_obj}.')
 
     context_dict['secure_dir_request'] = request_obj
+    context_dict['proposed_directory_name'] = request_obj.directory_name
     groups_path, scratch_path = get_default_secure_dir_paths()
-    context_dict['groups_path'] = \
-        os.path.join(groups_path, request_obj.directory_name)
-    context_dict['scratch_path'] = \
-        os.path.join(scratch_path, request_obj.directory_name)
+    context_dict['proposed_groups_path'] = \
+        os.path.join(groups_path, context_dict['proposed_directory_name'])
+    context_dict['proposed_scratch_path'] = \
+        os.path.join(scratch_path, context_dict['proposed_directory_name'])
