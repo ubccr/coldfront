@@ -1,0 +1,12 @@
+{{ log_path }}/{{ api_log_file }} {{ log_path }}/{{ portal_log_file }} {
+    weekly
+    rotate 8
+    dateext
+    dateformat -%Y%m%d-%H%s
+    copytruncate
+    missingok
+    notifempty
+    compress
+    delaycompress
+    su {{ djangooperator }} apache
+}
