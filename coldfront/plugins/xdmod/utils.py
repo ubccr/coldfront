@@ -48,6 +48,9 @@ _DEFAULT_PARAMS = {
 
 logger = logging.getLogger(__name__)
 
+QUARTER_START, QUARTER_END = get_quarter_start_end()
+
+
 class XdmodError(Exception):
     pass
 
@@ -55,22 +58,20 @@ class XdmodNotFoundError(XdmodError):
     pass
 
 class XDModFetcher:
-    def __init__(self, start, end, resources=None,):
+    def __init__(self, start=QUARTER_START, end=QUARTER_END, resources=None):
         self.url = f'{XDMOD_API_URL}{_ENDPOINT_CORE_HOURS}'
         if resources is None:
             resources = []
 
         payload = _DEFAULT_PARAMS
-        # payload['start_date'] = start
-        # payload['end_date'] = end
-        start_date, end_date = get_quarter_start_end()
-        payload['start_date'] = start_date
-        payload['end_date'] = end_date
+        payload['start_date'] = start
+        payload['end_date'] = end
         payload['resource_filter'] = f'"{",".join(resources)}"'
         payload['operation'] = 'get_data'
         self.payload = payload
+        self.group_by = {'total':'pi', 'per-user':'user'}
 
-    def fetch_data(self, search_item, payload):
+    def fetch_data(self, payload, search_item=None):
         r = requests.get(
             self.url, params=payload, auth=HTTPBasicAuth(XDMOD_USER, XDMOD_PASS)
         )
@@ -93,7 +94,7 @@ class XDModFetcher:
         rows = root.find('rows')
         if len(rows) != 1:
             raise XdmodNotFoundError(
-                f'Rows not found for {search_item} - {self.payload["resources"]}'
+                f'Rows not found for {search_item} - {self.payload["resource_filter"]}'
             )
         cells = rows.find('row').findall('cell')
         if len(cells) != 2:
@@ -102,26 +103,33 @@ class XDModFetcher:
         stats = cells[1].find('value').text
         return stats
 
-    def xdmod_fetch_total_cpu_hours(self, account, statistics='total_cpu_hours'):
-        """fetch total cpu hours."""
+    def xdmod_fetch(self, account, statistics, realm, group_by='total'):
+        """fetch either total or per-user usage stats"""
         payload = dict(self.payload)
         payload['pi_filter'] = f'"{account}"'
-        payload['group_by'] = 'pi'
-        payload['realm'] = 'Jobs'
+        payload['group_by'] = self.group_by[group_by]
         payload['statistic'] = statistics
-
-        core_hours = self.fetch_data(account, payload)
+        payload['realm'] = realm
+        core_hours = self.fetch_data(payload, search_item=account)
         return core_hours
 
-    def xdmod_fetch_total_storage(self, account, statistics='physical_usage'):
-        """fetch total storage."""
+    def xdmod_fetch_all_project_usages(self, statistic):
+        """return usage statistics for all projects"""
         payload = dict(self.payload)
-        payload['pi_filter'] = f'"{account}"'
         payload['group_by'] = 'pi'
-        payload['realm'] = 'Storage'
-        payload['statistic'] = statistics
+        payload['realm'] = 'Jobs'
+        payload['statistic'] = statistic
+        stats = self.fetch_data(payload)
+        return stats
 
-        stats = self.fetch_data(account, payload)
+    def xdmod_fetch_cpu_hours(self, account, group_by='total', statistics='total_cpu_hours'):
+        """fetch either total or per-user cpu hours"""
+        core_hours = self.xdmod_fetch(account, statistics, 'Jobs', group_by=group_by)
+        return core_hours
+
+    def xdmod_fetch_storage(self, account, group_by='total', statistics='physical_usage'):
+        """fetch total or per-user storage stats."""
+        stats = self.xdmod_fetch(account, statistics, 'Storage', group_by=group_by)
         physical_usage = float(stats) / 1E9
         return physical_usage
 
@@ -133,5 +141,5 @@ class XDModFetcher:
         payload['realm'] = 'Cloud'
         payload['statistic'] = 'cloud_core_time'
 
-        core_hours = self.fetch_data(project, payload)
+        core_hours = self.fetch_data(payload, search_item=project)
         return core_hours

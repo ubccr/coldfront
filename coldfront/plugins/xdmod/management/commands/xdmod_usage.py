@@ -6,6 +6,7 @@ from django.core.management.base import BaseCommand
 from django.db.models import Q
 
 from coldfront.core.allocation.models import Allocation
+from coldfront.core.resource.models import Resource
 from coldfront.plugins.xdmod.utils import (XDMOD_ACCOUNT_ATTRIBUTE_NAME,
                                            XDMOD_CLOUD_CORE_TIME_ATTRIBUTE_NAME,
                                            XDMOD_CLOUD_PROJECT_ATTRIBUTE_NAME,
@@ -57,23 +58,20 @@ class Command(BaseCommand):
             os.dup2(devnull, sys.stdout.fileno())
             sys.exit(1)
 
-    def id_resources(self, s):
+    def run_resource_checks(self, resource):
+        rname = resource.get_attribute(XDMOD_RESOURCE_ATTRIBUTE_NAME)
+        if not rname and resource.parent_resource:
+            rname = resource.parent_resource.get_attribute(
+                XDMOD_RESOURCE_ATTRIBUTE_NAME)
+        if self.filter_resource and self.filter_resource != rname:
+            return None
+        return rname
+
+    def id_allocation_resources(self, s):
         resources = []
         for r in s.resources.all():
-            rname = r.get_attribute(XDMOD_RESOURCE_ATTRIBUTE_NAME)
-            if not rname and r.parent_resource:
-                rname = r.parent_resource.get_attribute(
-                    XDMOD_RESOURCE_ATTRIBUTE_NAME)
-
-            if not rname:
-                continue
-            if self.filter_resource and self.filter_resource != rname:
-                continue
-
+            rname = self.run_resource_checks(r)
             resources.append(rname)
-        if len(resources) == 0:
-            logger.warning("%s attribute not found on any resouces for allocation: %s",
-                        XDMOD_RESOURCE_ATTRIBUTE_NAME, s)
         return resources
 
     def attribute_check(self, s, attr_name, num=False):
@@ -88,9 +86,18 @@ class Command(BaseCommand):
         return attr
 
     def filter_allocations(self, allocations, account_attr_name=XDMOD_ACCOUNT_ATTRIBUTE_NAME):
-        allocations = allocations.select_related('project').prefetch_related(
-            'resources', 'allocationattribute_set', 'allocationuser_set'
-        )
+        cleared_resources = Resource.objects.filter(
+            Q(resourceattribute__resource_attribute_type__name=XDMOD_RESOURCE_ATTRIBUTE_NAME) |
+            Q(parent_resource__resourceattribute__resource_attribute_type__name=XDMOD_RESOURCE_ATTRIBUTE_NAME)
+            )
+
+        allocations = (
+            allocations.select_related('project')
+                .prefetch_related(
+                    'resources', 'allocationattribute_set', 'allocationuser_set'
+                )
+                .filter(resources__in=cleared_resources)
+            )
         if self.fetch_expired:
             allocations = allocations.filter(~Q(status__name='Active'))
         else:
@@ -133,7 +140,8 @@ class Command(BaseCommand):
             ]
         )
 
-        allocations = self.filter_allocations(allocations, account_attr_name=XDMOD_STORAGE_GROUP_ATTRIBUTE_NAME)
+        allocations = self.filter_allocations(
+            allocations, account_attr_name=XDMOD_STORAGE_GROUP_ATTRIBUTE_NAME)
 
         for s in allocations.distinct():
             account_name = self.attribute_check(s, XDMOD_STORAGE_GROUP_ATTRIBUTE_NAME)
@@ -141,13 +149,11 @@ class Command(BaseCommand):
             if None in [account_name, cpu_hours]:
                 continue
 
-            resources = self.id_resources(s)
-            if len(resources) == 0:
-                continue
+            resources = self.id_allocation_resources(s)
 
             fetcher = XDModFetcher(s.start_date, s.end_date, resources=resources)
             try:
-                usage = fetcher.xdmod_fetch_total_storage(
+                usage = fetcher.xdmod_fetch_storage(
                         account_name, statistics='avg_physical_usage'
                 )
             except XdmodNotFoundError:
@@ -199,13 +205,11 @@ class Command(BaseCommand):
             if None in [account_name, cpu_hours]:
                 continue
 
-            resources = self.id_resources(s)
-            if len(resources) == 0:
-                continue
+            resources = self.id_allocation_resources(s)
 
             fetcher = XDModFetcher(s.start_date, s.end_date, resources=resources)
             try:
-                usage = fetcher.xdmod_fetch_total_cpu_hours(
+                usage = fetcher.xdmod_fetch_cpu_hours(
                         account_name, statistics='total_gpu_hours'
                 )
             except XdmodNotFoundError:
@@ -250,19 +254,33 @@ class Command(BaseCommand):
         )
         allocations = self.filter_allocations(allocations)
 
+        resource_filter = (
+            Q(resourceattribute__resource_attribute_type__name=XDMOD_RESOURCE_ATTRIBUTE_NAME) |
+            Q(parent_resource__resourceattribute__resource_attribute_type__name=XDMOD_RESOURCE_ATTRIBUTE_NAME)
+        )
+        resources_all = Resource.objects.filter(
+            id__in=[r.id for a in allocations for r in a.resources.all()]).filter(
+            resource_filter
+        )
+
+        # fetcher = XDModFetcher(resources=resources_all)
+        # try:
+        #     usage = fetcher.xdmod_fetch_all_project_usages('total_cpu_hours')
+        # except XdmodNotFoundError:
+        #     raise XdmodNotFoundError(
+        #         "No data in XDMoD found for resources %s", resources_all)
+
         for s in allocations.distinct():
             account_name = self.attribute_check(s, XDMOD_ACCOUNT_ATTRIBUTE_NAME)
             cpu_hours = self.attribute_check(s, XDMOD_CPU_HOURS_ATTRIBUTE_NAME, num=True)
             if None in [account_name, cpu_hours]:
                 continue
 
-            resources = self.id_resources(s)
-            if len(resources) == 0:
-                continue
+            resources = self.id_allocation_resources(s)
 
             fetcher = XDModFetcher(s.start_date, s.end_date, resources=resources)
             try:
-                usage = fetcher.xdmod_fetch_total_cpu_hours(account_name)
+                usage = fetcher.xdmod_fetch_cpu_hours(account_name)
             except XdmodNotFoundError:
                 logger.warning(
                     "No data in XDMoD found for allocation %s account %s resources %s",
@@ -316,9 +334,7 @@ class Command(BaseCommand):
                 s, XDMOD_CLOUD_CORE_TIME_ATTRIBUTE_NAME, num=True)
             if None in [project_name, core_time]:
                 continue
-            resources = self.id_resources(s)
-            if len(resources) == 0:
-                continue
+            resources = self.id_allocation_resources(s)
 
             fetcher = XDModFetcher(s.start_date, s.end_date, resources=resources)
             try:
