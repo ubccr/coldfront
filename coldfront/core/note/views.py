@@ -25,7 +25,7 @@ from django.views.generic.edit import CreateView, FormView, UpdateView
 
 from coldfront.core.note.models import (Note,
                                         Comment)
-from coldfront.core.note.forms import AllocationNoteCreateForm
+from coldfront.core.note.forms import AllocationNoteCreateForm, NoteCreateForm
 from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationAddUserForm,
                                              AllocationAttributeCreateForm,
@@ -71,31 +71,35 @@ from coldfront.core.utils.mail import send_allocation_admin_email, send_allocati
 
 # Create your views here.
 class NoteCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
-    form_class = AllocationNoteCreateForm
+    form_class = NoteCreateForm
     # fields = '__all__'
     template_name = 'note/allocation_note_create.html'
     model_type = ''
+    object_relation = {"Allocation":Allocation,"Project":Project}
+
 
     def object_type(self):
         if(self.kwargs.get('allocation_pk','Project') == "Project"): 
-            obj = get_object_or_404(Allocation, pk=self.kwargs.get('allocation_pk'))
+            obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
             self.model_type = 'Allocation'
         else:
             obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
             self.model_type = 'Project'
         return self.model_type, obj
+    
+
+
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-        print("i came here!")
-        # try:
-        #     print(self.kwargs)
+
+
         if(self.kwargs.get('allocation_pk','Project') != "Project"):
             allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('allocation_pk'))
             self.model_type = 'Allocation'
         else:
             allocation_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
             self.model_type = 'Project'
-        print("ria was wrong!")
+        model_obj = get_object_or_404(Allocation, pk=self.kwargs.get('allocation_pk'))
         if self.request.user.is_superuser:
             return True
         
@@ -106,19 +110,17 @@ class NoteCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         try:
-            print(self.kwargs.get('allocation_pk'))
-            allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('allocation_pk'))
-            context['allocation'] = allocation_obj
+            model_obj = get_object_or_404(Allocation, pk=self.kwargs.get('allocation_pk'))
+            context['allocation'] = model_obj
             context['type'] = "Allocation"
         except:
-            allocation_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
+            model_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
             context['type'] = "Project"
         return context
 
 
     def get_form(self, form_class=form_class):
         """Return an instance of the form to be used in this view."""
-        print("model type",self.model_type)
         if(self.model_type == "Allocation"):
             return form_class(self.kwargs.get('allocation_pk'),  **self.get_form_kwargs())
         if(self.model_type == "Project"):
@@ -126,34 +128,41 @@ class NoteCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
     
     def form_valid(self, form) -> HttpResponse:
-        print("form!")
         obj = form
-        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('allocation_pk'))
-        form_complete = AllocationNoteCreateForm(allocation_obj.pk,self.request.POST,initial = {"author":self.request.user,"message":obj.data['message']})
+        object_relation = {"Allocation":Allocation,"Project":Project}
+        object_name_as_lowercase_string = self.object_type.lower()
+        model_obj = get_object_or_404(object_relation[self.object_type], pk=self.kwargs.get(object_name_as_lowercase_string+'_pk'))
+        form_complete = NoteCreateForm(model_obj.pk,self.request.POST,initial = {"author":self.request.user,"message":obj.data['message']})
         if form_complete.is_valid():
             form_data = form_complete.cleaned_data
-            new_note_obj = Note.objects.create(
-                title = form_data["title"],
-                allocation = allocation_obj,
-                message = form_data["message"],
-                tags = form_data["tags"],
-                author = self.request.user,
-                # allocation = allocation_obj
-            )
-        print("my pk",new_note_obj.pk)
-        self.pk_hold = new_note_obj.pk
-        # obj.project = allocation_obj
+            if(object_name_as_lowercase_string == "allocation"):
+                new_note_obj = Note.objects.create(
+                    title = form_data["title"],
+                    allocation = model_obj,
+                    message = form_data["message"],
+                    tags = form_data["tags"],
+                    author = self.request.user,
+                )
+            else:
+                new_note_obj = Note.objects.create(
+                    title = form_data["title"],
+                    project = model_obj,
+                    message = form_data["message"],
+                    tags = form_data["tags"],
+                    author = self.request.user,
+                )
 
+
+        
+        self.pk_hold = new_note_obj.pk
         self.object = obj
 
         return super().form_valid(form)
     
     
     def get_success_url(self):
-        print("what is pk?",self.kwargs.get('allocation_pk'))
-        # print("my pk",self.pk)
-        # return None
-        return reverse('allocation-notes-detail', kwargs={'pk': self.pk_hold})
+        # if()
+        return reverse('notes-detail', kwargs={'pk': self.pk_hold})
 
 
 
@@ -163,12 +172,12 @@ class AllocationNoteDownloadView(LoginRequiredMixin, UserPassesTestMixin, ListVi
         if self.request.user.is_superuser:
             return True
 
-        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
+        model_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
 
-        if allocation_obj.project.pi == self.request.user:
+        if model_obj.project.pi == self.request.user:
             return True
 
-        if allocation_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        if model_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
             return True
 
         messages.error(self.request, 'You do not have permission to download all notes.')
