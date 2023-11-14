@@ -34,14 +34,17 @@ class SlurmBase:
 
         return list(set(items))
 
+    def spec_dict(self):
+        """Return dict of Slurm Specs"""
+        spec_dict = {}
+        for s in self.specs:
+            for k, v in s.split(':'):
+                spec_dict[k] = v
+        return spec_dict
+
     def format_specs(self):
         """Format unique list of Slurm Specs"""
-        items = []
-        for s in self.specs:
-            for i in s.split(':'):
-                items.append(i)
-
-        return ':'.join([x for x in self.spec_list()])
+        return ':'.join(self.spec_list())
 
     def _write(self, out, data):
         try:
@@ -232,6 +235,8 @@ class SlurmAccount(SlurmBase):
 
 
 class SlurmUser(SlurmBase):
+    """Create a new SlurmUser by parsing a line from sacctmgr dump. For
+    example: User - 'jdoe':DefaultAccount='doe_lab':Fairshare=100:MaxSubmitJobs=101"""
 
     @staticmethod
     def new_from_sacctmgr(line):

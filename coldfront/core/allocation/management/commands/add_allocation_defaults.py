@@ -45,6 +45,7 @@ class Command(BaseCommand):
             ('High Security', 'Yes/No', False, False),
             ('DUA', 'Yes/No', False, False),
             ('External Sharing', 'Yes/No', False, False),
+            ('Fairshare', 'Int', False, False),
             # UBCCR defaults
             ('Cloud Account Name', 'Text', False, False),
             # ('CLOUD_USAGE_NOTIFICATION', 'Yes/No', False, True),

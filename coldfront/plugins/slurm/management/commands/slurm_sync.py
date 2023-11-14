@@ -4,11 +4,10 @@ import tempfile
 
 from django.core.management.base import BaseCommand
 from django.utils import timezone
+from django.contrib.auth import get_user_model
 
 from coldfront.core.project.models import Project
 from coldfront.core.allocation.models import (
-    Allocation,
-    AllocationAttribute,
     AllocationStatusChoice,
     AllocationAttributeType,
 )
@@ -55,7 +54,9 @@ class Command(BaseCommand):
         cloud_acct_name_attr_type_obj = AllocationAttributeType.objects.get(
             name='Cloud Account Name')
         hours_attr_type_obj = AllocationAttributeType.objects.get(
-                name='Core Usage (Hours)')
+            name='Core Usage (Hours)')
+        fairshare_attr_type_obj = AllocationAttributeType.objects.get(
+            name='Fairshare')
 
         for resource, cluster in slurm_clusters.items():
 
@@ -93,12 +94,17 @@ class Command(BaseCommand):
                     allocation_attribute_type=hours_attr_type_obj,
                     defaults= {'value': 0})
 
-#                for username, user in account.users.items():
-#                    print(username, user.specs)
+                account_spec_dict = account.spec_dict()
 
-        # cluster=resource;
-        # account=allocation;
-        # organization=project;
-        # parent=project;
-        # user=allocationuser
-        # All the data we need: allocation, project, users, usages
+                fairshare = account_spec_dict['Fairshare']
+
+                if fairshare:
+                    allocation_obj.allocationattribute_set.get_or_create(
+                        allocation_attribute_type=fairshare_attr_type_obj,
+                        defaults= {'value': fairshare})
+
+                # add allocationusers from account
+                for user_name, user_account in account.users:
+                    alloc_user, _ = allocation_obj.allocationuser_set.get_or_create(
+                        user = get_user_model().objects.get(username=user_name)
+                    )

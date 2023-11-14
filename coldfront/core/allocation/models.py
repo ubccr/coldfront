@@ -138,6 +138,10 @@ class Allocation(TimeStampedModel):
         return self.get_attribute('Offer Letter Code')
 
     @property
+    def fairshare(self):
+        return self.get_attribute('Fairshare')
+
+    @property
     def expense_code(self):
         return self.get_attribute('Expense Code')
 
