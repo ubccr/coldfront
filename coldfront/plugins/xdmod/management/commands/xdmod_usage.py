@@ -281,17 +281,17 @@ class Command(BaseCommand):
             fetcher = XDModFetcher(s.start_date, s.end_date, resources=resources)
             try:
                 usage = fetcher.xdmod_fetch_cpu_hours(account_name)
-            except XdmodNotFoundError:
+            except XdmodNotFoundError as e:
                 logger.warning(
-                    "No data in XDMoD found for allocation %s account %s resources %s",
-                    s, account_name, resources)
+                    "No data in XDMoD found for allocation %s account %s resources %s: %s",
+                    s, account_name, resources, e)
                 continue
 
             logger.warning(
                     "Total CPU hours = %s for allocation %s account %s cpu_hours %s resources %s",
                         usage, s, account_name, cpu_hours, resources)
             # collect user-level usage and update allocationuser entries with them
-            usage_data = fetcher.xdmod_fetch_cpu_hours(account_name, statistics='per-user')
+            usage_data = fetcher.xdmod_fetch_cpu_hours(account_name, group_by='per-user')
             for user in s.allocationuser_set.all():
                 if user.user.username in usage_data:
                     user.usage = usage_data[user.user.username]
@@ -342,7 +342,7 @@ class Command(BaseCommand):
                 continue
             resources = self.id_allocation_resources(s)
 
-            fetcher = XDModFetcher(s.start_date, s.end_date, resources=resources)
+            fetcher = XDModFetcher(resources=resources)
             try:
                 usage = fetcher.xdmod_fetch_cloud_core_time(project_name)
             except XdmodNotFoundError:
