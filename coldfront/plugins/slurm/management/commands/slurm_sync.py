@@ -113,7 +113,13 @@ class Command(BaseCommand):
                     )
 
                 # add allocationusers from account
-                for user_name, user_account in account.users:
-                    alloc_user, _ = allocation_obj.allocationuser_set.get_or_create(
+                for user_name, user_account in account.users.items():
+                    try:
                         user = get_user_model().objects.get(username=user_name)
+                    except:
+                        print("no user found:", user_name)
+                        continue
+                    alloc_user, _ = allocation_obj.allocationuser_set.get_or_create(
+                        user = get_user_model().objects.get(username=user_name),
+                        defaults = {'status': auser_status_active}
                     )
