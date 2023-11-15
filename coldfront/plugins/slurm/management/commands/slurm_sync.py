@@ -10,6 +10,7 @@ from coldfront.core.project.models import Project
 from coldfront.core.allocation.models import (
     AllocationStatusChoice,
     AllocationAttributeType,
+    AllocationUserStatusChoice,
 )
 from coldfront.core.resource.models import Resource
 from coldfront.plugins.slurm.associations import SlurmCluster
@@ -57,6 +58,7 @@ class Command(BaseCommand):
             name='Core Usage (Hours)')
         fairshare_attr_type_obj = AllocationAttributeType.objects.get(
             name='Fairshare')
+        auser_status_active = AllocationUserStatusChoice.objects.get(name='Active')
 
         for resource, cluster in slurm_clusters.items():
 
@@ -78,6 +80,11 @@ class Command(BaseCommand):
                     )
                     allocation_obj.resources.add(resource)
                     allocation_obj.save()
+                elif len(allocation_objs) == 1:
+                    allocation_obj = allocation_objs.first()
+                elif len(allocation_objs) > 1:
+                    print("Too many allocations:", allocation_objs)
+                    continue
                 # used in XDMOD to correspond with pi_filter, I think
                 # 'slurm_account_name'? XDMOD_ACCOUNT_ATTRIBUTE_NAME
 
@@ -92,7 +99,8 @@ class Command(BaseCommand):
 
                 allocation_obj.allocationattribute_set.get_or_create(
                     allocation_attribute_type=hours_attr_type_obj,
-                    defaults= {'value': 0})
+                    defaults={'value': 0}
+                )
 
                 account_spec_dict = account.spec_dict()
 
@@ -101,7 +109,8 @@ class Command(BaseCommand):
                 if fairshare:
                     allocation_obj.allocationattribute_set.get_or_create(
                         allocation_attribute_type=fairshare_attr_type_obj,
-                        defaults= {'value': fairshare})
+                        defaults={'value': fairshare}
+                    )
 
                 # add allocationusers from account
                 for user_name, user_account in account.users:

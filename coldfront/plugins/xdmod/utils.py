@@ -3,14 +3,9 @@ import json
 import xml.etree.ElementTree as ET
 
 import requests
-from requests.auth import HTTPBasicAuth
 
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.fasrc import get_quarter_start_end
-
-
-XDMOD_USER = import_from_settings('XDMOD_USER', '')
-XDMOD_PASS = import_from_settings('XDMOD_PASS', '')
 
 XDMOD_CLOUD_PROJECT_ATTRIBUTE_NAME = import_from_settings(
     'XDMOD_CLOUD_PROJECT_ATTRIBUTE_NAME', 'Cloud Account Name')
@@ -60,28 +55,22 @@ class XdmodNotFoundError(XdmodError):
 class XDModFetcher:
     def __init__(self, start=QUARTER_START, end=QUARTER_END, resources=None):
         self.url = f'{XDMOD_API_URL}{_ENDPOINT_CORE_HOURS}'
-        if resources is None:
-            resources = []
-
+        self.resources = resources
         payload = _DEFAULT_PARAMS
         payload['start_date'] = start
         payload['end_date'] = end
-        payload['resource_filter'] = f'"{",".join(resources)}"'
-        payload['operation'] = 'get_data'
+        if resources:
+            payload['resource_filter'] = f'"{",".join(resources)}"'
         self.payload = payload
-        self.group_by = {'total':'pi', 'per-user':'user'}
+        self.group_by = {'total':'pi', 'per-user':'person'}
 
     def fetch_data(self, payload, search_item=None):
-        r = requests.get(
-            self.url, params=payload, auth=HTTPBasicAuth(XDMOD_USER, XDMOD_PASS)
-        )
+        r = requests.get(self.url, params=payload)
         logger.info(r.url)
         logger.info(r.text)
 
         try:
             error = r.json()
-            # XXXX fix me. Here we assume any json response is bad as we're
-            # expecting xml but XDMoD should just return json always.
             raise XdmodNotFoundError(f'Got json response but expected XML: {error}')
         except json.decoder.JSONDecodeError as e:
             pass
@@ -92,25 +81,47 @@ class XDModFetcher:
             raise XdmodError(f'Invalid XML data returned from XDMoD API: {e}') from e
 
         rows = root.find('rows')
-        if len(rows) != 1:
+        if len(rows) < 1:
             raise XdmodNotFoundError(
                 f'Rows not found for {search_item} - {self.payload["resource_filter"]}'
             )
+        return rows
+
+    def fetch_value(self, payload, search_item=None):
+        rows = self.fetch_data(payload, search_item=search_item)
         cells = rows.find('row').findall('cell')
         if len(cells) != 2:
             raise XdmodError('Invalid XML data returned from XDMoD API: Cells not found')
-
         stats = cells[1].find('value').text
         return stats
 
-    def xdmod_fetch(self, account, statistics, realm, group_by='total'):
-        """fetch either total or per-user usage stats"""
+    def fetch_table(self, payload, search_item=None):
+        """make a dictionary of usernames and their associated core hours from
+        XML data.
+        """
+        # return rows extracted from XML data
+        rows = self.fetch_data(payload, search_item=search_item)
+        # Produce a dict of usernames and their associated core hours from those rows
+        stats = {}
+        for row in rows:
+            cells = row.findall('cell')
+            username = cells[0].find('value').text
+            stats[username] = cells[1].find('value').text
+        return stats
+
+    def xdmod_fetch(self, account, statistic, realm, group_by='total'):
+        """fetch either total or per-user usage stats for specified project"""
         payload = dict(self.payload)
         payload['pi_filter'] = f'"{account}"'
         payload['group_by'] = self.group_by[group_by]
-        payload['statistic'] = statistics
+        payload['statistic'] = statistic
         payload['realm'] = realm
-        core_hours = self.fetch_data(payload, search_item=account)
+        if group_by == 'total':
+            core_hours = self.fetch_value(payload, search_item=account)
+        elif group_by == 'per-user':
+            core_hours = self.fetch_table(payload, search_item=account)
+        else:
+            raise Exception('unrecognized group_by value')
         return core_hours
 
     def xdmod_fetch_all_project_usages(self, statistic):
@@ -119,7 +130,7 @@ class XDModFetcher:
         payload['group_by'] = 'pi'
         payload['realm'] = 'Jobs'
         payload['statistic'] = statistic
-        stats = self.fetch_data(payload)
+        stats = self.fetch_table(payload)
         return stats
 
     def xdmod_fetch_cpu_hours(self, account, group_by='total', statistics='total_cpu_hours'):
@@ -141,5 +152,5 @@ class XDModFetcher:
         payload['realm'] = 'Cloud'
         payload['statistic'] = 'cloud_core_time'
 
-        core_hours = self.fetch_data(payload, search_item=project)
+        core_hours = self.fetch_value(payload, search_item=project)
         return core_hours

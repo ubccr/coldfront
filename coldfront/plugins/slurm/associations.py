@@ -38,8 +38,8 @@ class SlurmBase:
         """Return dict of Slurm Specs"""
         spec_dict = {}
         for s in self.specs:
-            for k, v in s.split(':'):
-                spec_dict[k] = v
+            i = s.split('=')
+            spec_dict[i[0]] = i[1]
         return spec_dict
 
     def format_specs(self):

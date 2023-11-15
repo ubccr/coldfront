@@ -290,6 +290,12 @@ class Command(BaseCommand):
             logger.warning(
                     "Total CPU hours = %s for allocation %s account %s cpu_hours %s resources %s",
                         usage, s, account_name, cpu_hours, resources)
+            # collect user-level usage and update allocationuser entries with them
+            usage_data = fetcher.xdmod_fetch_cpu_hours(account_name, statistics='per-user')
+            for user in s.allocationuser_set.all():
+                if user.user.username in usage_data:
+                    user.usage = usage_data[user.user.username]
+                    user.save()
             if self.sync:
                 cpu_hours_attr = s.allocationattribute_set.get(
                     allocation_attribute_type__name=XDMOD_CPU_HOURS_ATTRIBUTE_NAME)
