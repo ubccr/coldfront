@@ -224,16 +224,6 @@ class Command(BaseCommand):
         return slurm_cluster
 
     def handle(self, *args, **options):
-        verbosity = int(options['verbosity'])
-        root_logger = logging.getLogger('')
-        verbosity_dict = {
-            0:logging.ERROR,
-            1:logging.WARN,
-            2:logging.INFO,
-            3:logging.DEBUG
-        }
-        root_logger.setLevel(verbosity_dict[verbosity])
-
         if options['sync']:
             self.sync = True
             logger.warning("Syncing Slurm with ColdFront")

@@ -292,11 +292,19 @@ class Command(BaseCommand):
                         usage, s, account_name, cpu_hours, resources)
             # collect user-level usage and update allocationuser entries with them
             usage_data = fetcher.xdmod_fetch_cpu_hours(account_name, group_by='per-user')
+            for username, usage in usage_data.items():
+                try:
+                    user_obj = get_user_model().objects.get(username=username)
+                except:
+                    # if user not present, add to ifx
+                user = s.allocationuser_set.get_or_create(user=user_obj)
             for user in s.allocationuser_set.all():
                 if user.user.username in usage_data:
                     user.usage = usage_data[user.user.username]
-                    user.unit = "CPU Hours"
-                    user.save()
+                else:
+                    user.usage = 0
+                user.unit = "CPU Hours"
+                user.save()
             if self.sync:
                 cpu_hours_attr = s.allocationattribute_set.get(
                     allocation_attribute_type__name=XDMOD_CPU_HOURS_ATTRIBUTE_NAME)
@@ -368,15 +376,6 @@ class Command(BaseCommand):
             ]))
 
     def handle(self, *args, **options):
-        verbosity = int(options['verbosity'])
-        root_logger = logging.getLogger('')
-        verbosity_dict = {
-            0:logging.ERROR,
-            1:logging.WARN,
-            2:logging.INFO,
-            3:logging.DEBUG
-        }
-        root_logger.setLevel(verbosity_dict[verbosity])
 
         if options['sync']:
             self.sync = True
