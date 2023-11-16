@@ -465,7 +465,7 @@ Allocation Detail
           {% for user in allocation_users %}
             {% if user.unit == "CPU Hours" %}
               {% firstof user.usage as userusage %}
-              {% firstof allocation.usage as allocationusage %}
+              {% firstof allocation.size as allocationusage %}
             {% else %}
               {% firstof user.usage_bytes as userusage %}
               {% firstof allocation.usage_exact as allocationusage %}
@@ -490,20 +490,14 @@ Allocation Detail
               {% if allocationusage == None or allocationusage == 0 %}
                 <td>0</td>
               {% else %}
-                {% if user.unit == "CPU Hours" %}
-                  <td>{{userusage|div:allocation.size|mul:100|floatformat:2 }}%</td>
-                {% else %}
                   <td>{{userusage|div:allocationusage|mul:100|floatformat:2 }}%</td>
-                {% endif %}
+              {% endif %}
 
-              {% endif %}
-              {% if user.unit == "CPU Hours" %}
-                {% cost_cpuhours userusage as cost %}
-              {% else %}
+              {% if user.unit != "CPU Hours" %}
                 {% cost_bytes userusage as cost %}
-              {% endif %}
-              {% if cost %}
-                <td>{{ cost }}</td>
+                {% if cost %}
+                  <td>{{ cost }}</td>
+                {% endif %}
               {% endif %}
             </tr>
           {% endfor %}
