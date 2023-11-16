@@ -461,6 +461,12 @@ Allocation Detail
 
         <tbody>
           {% for user in allocation_users %}
+            {% if user.unit not "CPU Hours" %}
+              {% user.usage_bytes as userusage %}
+              {% allocation.usage_exact as allocationusage %}
+            {% else %}
+              {% user.usage_bytes as userusage %}
+            {% endif %}
             <tr status = "{{ user.status }}">
               <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
 
@@ -471,20 +477,22 @@ Allocation Detail
               {% else %}
                 <td class="text-info">{{ user.status.name }}</td>
               {% endif %}
-              {% if user.usage_bytes == 0.0 %}
-              <td data-sort = "{{user.usage_bytes}}" name = "usage_bytes"> 0 bytes</td>
+              <td data-sort = "{{userusage}}" name = "usage_bytes">
+                {% if userusage is None %}
+                  0 {{ user.unit }}
+                {% else %}
+                  {{ user.usage|floatformat:1 }}{{ user.unit }}
+                {% endif %}
+                </td>
+              {% if allocationusage == None or allocationusage == 0 %}
+                <td>0</td>
               {% else %}
-              <td data-sort = "{{user.usage_bytes}}" name = "usage_bytes">{{ user.usage|floatformat:1 }}{{ user.unit }}</td>
+                <td>{{userusage|div:allocationusage|mul:100|floatformat:2 }}%</td>
               {% endif %}
-              {% if allocation.usage_exact == None or allocation.usage_exact == 0 %}
-              <td>0</td>
+              {% if if user.unit not "CPU Hours" %}
+                {% cost_cpuhours userusage as cost %}
               {% else %}
-              <td>{{user.usage_bytes|div:allocation.usage_exact|mul:100|floatformat:2 }}%</td>
-              {% endif %}
-              {% if "Cluster" in allocation.get_parent_resource.resource_type.name %}
-                {% cost_cpuhours user.usage as cost %}
-              {% else %}
-                {% cost_bytes user.usage_bytes as cost %}
+                {% cost_bytes userusage as cost %}
               {% endif %}
               {% if cost %}
                 <td>{{ cost }}</td>

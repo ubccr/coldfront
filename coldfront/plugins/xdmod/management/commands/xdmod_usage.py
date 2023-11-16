@@ -295,6 +295,7 @@ class Command(BaseCommand):
             for user in s.allocationuser_set.all():
                 if user.user.username in usage_data:
                     user.usage = usage_data[user.user.username]
+                    user.unit = "CPU Hours"
                     user.save()
             if self.sync:
                 cpu_hours_attr = s.allocationattribute_set.get(

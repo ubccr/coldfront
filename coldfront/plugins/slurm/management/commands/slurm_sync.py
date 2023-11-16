@@ -121,5 +121,7 @@ class Command(BaseCommand):
                         continue
                     alloc_user, _ = allocation_obj.allocationuser_set.get_or_create(
                         user = get_user_model().objects.get(username=user_name),
-                        defaults = {'status': auser_status_active}
+                        defaults = {
+                            'status': auser_status_active, "unit": "CPU Hours"
+                        }
                     )
