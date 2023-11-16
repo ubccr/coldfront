@@ -481,7 +481,11 @@ Allocation Detail
               {% else %}
               <td>{{user.usage_bytes|div:allocation.usage_exact|mul:100|floatformat:2 }}%</td>
               {% endif %}
-              {% cost_bytes user.usage_bytes as cost %}
+              {% if "Cluster" in allocation.get_parent_resource.resource_type.name %}
+                {% cost_cpuhours user.usage as cost %}
+              {% else %}
+                {% cost_bytes user.usage_bytes as cost %}
+              {% endif %}
               {% if cost %}
                 <td>{{ cost }}</td>
               {% endif %}

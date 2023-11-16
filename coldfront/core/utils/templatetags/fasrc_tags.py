@@ -17,3 +17,10 @@ def cost_tb(context, amount):
     if a_price:
         return "${:,.2f}".format(a_price * amount)
     return None
+
+@register.simple_tag(takes_context=True)
+def cost_cpuhours(context, amount):
+    a_price = get_resource_rate(context['allocation'].get_resources_as_string)
+    if a_price:
+        return "${:,.2f}".format(a_price * amount)
+    return None
