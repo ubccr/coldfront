@@ -4,8 +4,9 @@ import sys
 
 from django.core.management.base import BaseCommand
 from django.db.models import Q
+from django.contrib.auth import get_user_model
 
-from coldfront.core.allocation.models import Allocation
+from coldfront.core.allocation.models import Allocation, AllocationUserStatusChoice
 from coldfront.core.resource.models import Resource
 from coldfront.plugins.xdmod.utils import (XDMOD_ACCOUNT_ATTRIBUTE_NAME,
                                            XDMOD_CLOUD_CORE_TIME_ATTRIBUTE_NAME,
@@ -254,15 +255,16 @@ class Command(BaseCommand):
         )
         allocations = self.filter_allocations(allocations)
 
-        resource_filter = (
-            Q(resourceattribute__resource_attribute_type__name=XDMOD_RESOURCE_ATTRIBUTE_NAME) |
-            Q(parent_resource__resourceattribute__resource_attribute_type__name=XDMOD_RESOURCE_ATTRIBUTE_NAME)
-        )
-        resources_all = Resource.objects.filter(
-            id__in=[r.id for a in allocations for r in a.resources.all()]).filter(
-            resource_filter
-        )
 
+        # # bulk collection
+        # resource_filter = (
+        # Q(resourceattribute__resource_attribute_type__name=XDMOD_RESOURCE_ATTRIBUTE_NAME) |
+        # Q(parent_resource__resourceattribute__resource_attribute_type__name=XDMOD_RESOURCE_ATTRIBUTE_NAME)
+        # )
+        # resources_all = Resource.objects.filter(
+        #     id__in=[r.id for a in allocations for r in a.resources.all()]
+        # ).filter(resource_filter)
+        #
         # fetcher = XDModFetcher(resources=resources_all)
         # try:
         #     usage = fetcher.xdmod_fetch_all_project_usages('total_cpu_hours')
@@ -291,20 +293,32 @@ class Command(BaseCommand):
                     "Total CPU hours = %s for allocation %s account %s cpu_hours %s resources %s",
                         usage, s, account_name, cpu_hours, resources)
             # collect user-level usage and update allocationuser entries with them
+            auser_status_active = AllocationUserStatusChoice.objects.get(name='Active')
+
             usage_data = fetcher.xdmod_fetch_cpu_hours(account_name, group_by='per-user')
+            no_use_allocation_users = s.allocationuser_set.filter(
+                ~Q(user__username__in=usage_data.keys())
+            )
+
+            for user in no_use_allocation_users:
+                user.usage = 0
+                user.save()
             for username, usage in usage_data.items():
                 try:
                     user_obj = get_user_model().objects.get(username=username)
                 except:
                     # if user not present, add to ifx
-                user = s.allocationuser_set.get_or_create(user=user_obj)
-            for user in s.allocationuser_set.all():
-                if user.user.username in usage_data:
-                    user.usage = usage_data[user.user.username]
-                else:
-                    user.usage = 0
-                user.unit = "CPU Hours"
-                user.save()
+                    logger.warning("user missing from ifx: %s", username)
+                    continue
+                user, created = s.allocationuser_set.get_or_create(
+                    user=user_obj,
+                    defaults={
+                        'usage':usage, 'unit': 'CPU Hours', 'status': auser_status_active
+                    }
+                )
+                if not created:
+                    user.usage = usage
+                    user.save()
             if self.sync:
                 cpu_hours_attr = s.allocationattribute_set.get(
                     allocation_attribute_type__name=XDMOD_CPU_HOURS_ATTRIBUTE_NAME)
