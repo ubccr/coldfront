@@ -125,9 +125,12 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context = super().get_context_data(**kwargs)
         context['note_update_link'] = 'allocation-note-update'
         allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
+        if allocation_obj.get_parent_resource.resource_type.name == "Storage":
+            user_filter = (~Q(usage_bytes=0) & Q(usage_bytes__isnull=False))
+        else:
+            user_filter = (~Q(usage=0) & Q(usage__isnull=False))
         allocation_users = (
-            allocation_obj.allocationuser_set.exclude(usage_bytes__isnull=True)
-            .exclude(usage_bytes=0).order_by('user__username')
+            allocation_obj.allocationuser_set.filter(user_filter).order_by('user__username')
         )
         alloc_attr_set = allocation_obj.get_attribute_set(self.request.user)
 
