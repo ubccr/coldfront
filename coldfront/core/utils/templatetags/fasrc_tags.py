@@ -6,7 +6,7 @@ register = template.Library()
 @register.simple_tag(takes_context=True)
 def cost_bytes(context, amount):
     a_price = get_resource_rate(context['allocation'].get_resources_as_string)
-    amount_tb = amount / 1099511627776
+    amount_tb = int(amount) / 1099511627776
     if a_price:
         return "${:,.2f}".format(a_price * amount_tb)
     return None
@@ -21,6 +21,6 @@ def cost_tb(context, amount):
 @register.simple_tag(takes_context=True)
 def cost_cpuhours(context, amount):
     a_price = get_resource_rate(context['allocation'].get_resources_as_string)
-    if a_price:
-        return "${:,.2f}".format(float(a_price) * amount)
+    if amount and a_price:
+        return "${:,.2f}".format(float(a_price) * float(amount))
     return None

@@ -453,7 +453,9 @@ Allocation Detail
             <th scope="col">Status</th>
             <th scope="col">Logical Usage</th>
             <th scope="col">Percentage Usage</th>
-            <th scope="col">Cost Per User (TB/month)</th>
+            {% if "Storage" in allocation.get_parent_resource.resource_type.name %}
+              <th scope="col">Cost Per User (TB/month)</th>
+            {% endif %}
             <!-- <th scope="col">Status</th> -->
             <!-- <th scope="col">Last Modified</th> -->
           </tr>
@@ -462,7 +464,7 @@ Allocation Detail
         <tbody>
           {% for user in allocation_users %}
             {% if user.unit == "CPU Hours" %}
-              {% firstof user.usage_bytes as userusage %}
+              {% firstof user.usage as userusage %}
               {% firstof allocation.usage as allocationusage %}
             {% else %}
               {% firstof user.usage_bytes as userusage %}
@@ -482,13 +484,18 @@ Allocation Detail
                 {% if userusage is None %}
                   0 {{ user.unit }}
                 {% else %}
-                  {{ user.usage|floatformat:1 }}{{ user.unit }}
+                  {{ user.usage|floatformat:1 }} {{ user.unit }}
                 {% endif %}
                 </td>
               {% if allocationusage == None or allocationusage == 0 %}
                 <td>0</td>
               {% else %}
-                <td>{{userusage|div:allocationusage|mul:100|floatformat:2 }}%</td>
+                {% if user.unit == "CPU Hours" %}
+                  <td>{{userusage|div:allocation.size|mul:100|floatformat:2 }}%</td>
+                {% else %}
+                  <td>{{userusage|div:allocationusage|mul:100|floatformat:2 }}%</td>
+                {% endif %}
+
               {% endif %}
               {% if user.unit == "CPU Hours" %}
                 {% cost_cpuhours userusage as cost %}
