@@ -144,14 +144,12 @@ Allocation Detail
               </td>
           </tr>
 
-          {% if "Compute" in allocation.get_parent_resource.resource_type.name %}
+          {% if "Cluster" in allocation.get_parent_resource.resource_type.name %}
             <tr>
                 <th scope="row" class="text-nowrap">Fairshare:</th>
                 <td id = "group_quota">{{ allocation.fairshare }}</td>
             </tr>
-          {% endif %}
-
-          {% if "Storage" in allocation.get_parent_resource.resource_type.name %}
+          {% elif "Storage" in allocation.get_parent_resource.resource_type.name %}
             <tr>
                 <th scope="row" class="text-nowrap">Quota (TB):</th>
                 <td id = "group_quota">{{ allocation.size|floatformat:2 }}</td>
