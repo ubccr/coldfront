@@ -3,7 +3,7 @@ from django.template.loader import render_to_string
 
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import  Layout, Submit, HTML, Row, Column,  Reset, LayoutObject, Div
-from crispy_forms.bootstrap import  FormActions,  AccordionGroup, Accordion
+from crispy_forms.bootstrap import  FormActions,  AccordionGroup, Accordion, TabHolder, Tab
 
 from coldfront.core.project.models import ProjectTypeChoice, ProjectStatusChoice
 from coldfront.core.allocation.models import AllocationStatusChoice, AllocationAttributeType
@@ -176,11 +176,13 @@ class SearchForm(forms.Form):
     allocationattribute_form = AllocationAttributeSearchForm()
     allocationattribute_helper = AllocationAttributeFormSetHelper()
 
-    user_profile__department = forms.CharField(label="Department Contains", max_length=100, required=False)
-    display__user_profile__department = forms.BooleanField(required=False)
+    user__userprofile__department = forms.CharField(label="Department Contains", max_length=100, required=False)
+    display__user__userprofile__department = forms.BooleanField(label='Display user department', required=False)
 
-    user_profile__title = forms.CharField(label="Title Contains", max_length=30, required=False)
-    display__user_profile__title = forms.BooleanField(required=False)
+    user__userprofile__title = forms.CharField(label="Title Contains", max_length=30, required=False)
+    display__user__userprofile__title = forms.BooleanField(label='Display user title', required=False)
+
+    current_tab = forms.IntegerField(initial=1, widget=forms.HiddenInput)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -188,84 +190,95 @@ class SearchForm(forms.Form):
         self.helper = FormHelper(self)
         self.helper.use_custom_control = False 
         self.helper.layout = Layout(
-            Accordion(
-                AccordionGroup('Projects',
-                    'only_search_projects',
+            TabHolder(
+                Tab('Allocation & Project Search',
                     Accordion(
-                        AccordionGroup(
-                            'Filters',
-                            'project__title',
-                            'project__description',
-                            'project__pi__username',
-                            'project__requestor__username',
-                            'project__user_username',
-                            'project__status__name',
-                            'project__type__name',
-                            'project__class_number',
+                        AccordionGroup('Projects',
+                            'only_search_projects',
+                            Accordion(
+                                AccordionGroup(
+                                    'Filters',
+                                    'project__title',
+                                    'project__description',
+                                    'project__pi__username',
+                                    'project__requestor__username',
+                                    'project__user_username',
+                                    'project__status__name',
+                                    'project__type__name',
+                                    'project__class_number',
+                                    active=False,
+                                ),
+                            ),
+                            Accordion(
+                                AccordionGroup(
+                                    'Displays',
+                                    'display__project__id',
+                                    'display__project__title',
+                                    'display__project__description',
+                                    'display__project__pi__username',
+                                    'display__project__requestor__username',
+                                    'display__project__status__name',
+                                    'display__project__type__name',
+                                    'display__project__class_number',
+                                    'display__project__users',
+                                    'display__project__total_users',
+                                    active=False,
+                                ),
+                            ),
                             active=False,
                         ),
                     ),
                     Accordion(
-                        AccordionGroup(
-                            'Displays',
-                            'display__project__id',
-                            'display__project__title',
-                            'display__project__description',
-                            'display__project__pi__username',
-                            'display__project__requestor__username',
-                            'display__project__status__name',
-                            'display__project__type__name',
-                            'display__project__class_number',
-                            'display__project__users',
-                            'display__project__total_users',
+                        AccordionGroup('Allocations',
+                            'allocation__user_username',
+                            'allocation__status__name',
+                            'display__allocation__id',
+                            'display__allocation__status__name',
+                            'display__allocation__users',
+                            'display__allocation__total_users',
+                            active=False,
+                        )
+                    ),
+                    Accordion(
+                        AccordionGroup('Resources',
+                            'resources__name',
+                            'resources__resource_type__name',
+                            'display__resources__name',
+                            'display__resources__resource_type__name',
+                            active=False,
+                        )
+                    ),
+                    Accordion(
+                        AccordionGroup('Allocation Attributes',
+                            Formset('allocationattribute_form', 'allocationattribute_helper', label='allocationattribute_formset'),
+                            HTML(
+                                '<button id="id_formset_add_allocation_attribute_button" type="button" class="btn btn-primary">Add Allocation Attribute</button>'
+                            ),
+                            active=False,
+                        )
+                    ),
+                    css_id='allocation-project-search'
+                ),
+                Tab('User Search',
+                    Accordion(
+                        AccordionGroup('User Profiles',
+                            'enable_user_search',                               
+                            'user__userprofile__department',
+                            'user__userprofile__title',
+                            'display__user__userprofile__department',
+                            'display__user__userprofile__title',
                             active=False,
                         ),
                     ),
-                    active=False,
-                ),
-            ),
-            Accordion(
-                AccordionGroup('Allocations',
-                    'allocation__user_username',
-                    'allocation__status__name',
-                    'display__allocation__id',
-                    'display__allocation__status__name',
-                    'display__allocation__users',
-                    'display__allocation__total_users',
-                    active=False,
+                    css_id='user-search'
                 )
             ),
-            Accordion(
-                AccordionGroup('Resources',
-                    'resources__name',
-                    'resources__resource_type__name',
-                    'display__resources__name',
-                    'display__resources__resource_type__name',
-                    active=False,
-                )
-            ),
-            Accordion(
-                AccordionGroup('Allocation Attributes',
-                    Formset('allocationattribute_form', 'allocationattribute_helper', label='allocationattribute_formset'),
-                    HTML(
-                        '<button id="id_formset_add_allocation_attribute_button" type="button" class="btn btn-primary">Add Allocation Attribute</button>'
-                    ),
-                    active=False,
-                )
-            ),
-            Accordion(
-                AccordionGroup('User Profiles',
-                    'user_profile__department',
-                    'user_profile__title',
-                    'display__user_profile__department',
-                    'display__user_profile__title',
-                    active=False,
-                ),
-            ),
+        
             FormActions(
                 Submit('submit', 'Search'),
                 Reset('reset', 'Reset')
             ),
+            'current_tab'
         )
 
 class Formset(LayoutObject):

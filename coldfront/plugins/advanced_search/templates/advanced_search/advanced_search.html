@@ -112,59 +112,32 @@ Project and Allocation Export List
   }
 
   $(document).ready(function () {
-    toggleCollapsibleSection($("#user-profiles"), $('h5 > a[href="#user-profiles"]'));
+    $('a[href="#allocation-project-search"]').on("click", function () {
+      $('#id_full_search-current_tab').val(1);
+    })
+    $('a[href="#user-search"]').on("click", function () {
+      $('#id_full_search-current_tab').val(2);
+    })
+
+    var current_tab = $('#id_full_search-current_tab').val()
+    if (current_tab === '2') {
+      $('a[href="#allocation-project-search"]').toggleClass('active');
+      $('#allocation-project-search').toggleClass('active');
+      $('a[href="#user-search"]').toggleClass('active');
+      $('#user-search').toggleClass('active');
+    }
 
     if ($("#id_full_search-only_search_projects").is(":checked")) {
       toggleCollapsibleSection($("#allocations"), $('h5 > a[href="#allocations"]'));
       toggleCollapsibleSection($("#resources"), $('h5 > a[href="#resources"]'));
       toggleCollapsibleSection($("#allocation-attributes"), $('h5 > a[href="#allocation-attributes"]'));
-      $('#id_full_search-display__project__users').prop('disabled', false);
-      if ($("#id_full_search-display__project__users").is(":checked")) {
-        toggleCollapsibleSection($("#user-profiles"), $('h5 > a[href="#user-profiles"]'));
-      }
-    } else {
-      $('#id_full_search-display__project__users').prop('disabled', true);
-      if ($("#id_full_search-display__allocation__users").is(":checked")) {
-        toggleCollapsibleSection($("#user-profiles"), $('h5 > a[href="#user-profiles"]'));
-      }
+      toggleCollapsibleSection($("#user-profiles"), $('h5 > a[href="#user-profiles"]'));
     }
 
     $("#id_full_search-only_search_projects").on('click', function () {
-      var is_checked = $("#id_full_search-only_search_projects").is(":checked");
-
       toggleCollapsibleSection($("#allocations"), $('h5 > a[href="#allocations"]'));
       toggleCollapsibleSection($("#resources"), $('h5 > a[href="#resources"]'));
       toggleCollapsibleSection($("#allocation-attributes"), $('h5 > a[href="#allocation-attributes"]'));
-      display_project_users = $('#id_full_search-display__project__users');
-      if (is_checked) {
-        display_project_users.prop('disabled', false);
-        if ($("#id_full_search-display__project__users").is(":checked")) {
-          if ($('h5 > a[href="#user-profiles"]').hasClass('ui-state-disabled')) {
-            toggleCollapsibleSection($("#user-profiles"), $('h5 > a[href="#user-profiles"]'));
-          }
-        } else {
-          if (!$('h5 > a[href="#user-profiles"]').hasClass('ui-state-disabled')) {
-            toggleCollapsibleSection($("#user-profiles"), $('h5 > a[href="#user-profiles"]'));
-          }
-        }
-      } else {
-        display_project_users.prop('disabled', true);
-        if ($("#id_full_search-display__allocation__users").is(":checked")) {
-          if ($('h5 > a[href="#user-profiles"]').hasClass('ui-state-disabled')) {
-            toggleCollapsibleSection($("#user-profiles"), $('h5 > a[href="#user-profiles"]'));
-          }
-        } else {
-          if (!$('h5 > a[href="#user-profiles"]').hasClass('ui-state-disabled')) {
-            toggleCollapsibleSection($("#user-profiles"), $('h5 > a[href="#user-profiles"]'));
-          }
-        }
-      }
-    })
-
-    $("#id_full_search-display__project__users").on('click', function () {
-      toggleCollapsibleSection($("#user-profiles"), $('h5 > a[href="#user-profiles"]'));
-    })
-    $("#id_full_search-display__allocation__users").on('click', function () {
       toggleCollapsibleSection($("#user-profiles"), $('h5 > a[href="#user-profiles"]'));
     })
 
