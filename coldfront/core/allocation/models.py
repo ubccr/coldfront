@@ -518,7 +518,6 @@ class AttributeType(TimeStampedModel):
     Attributes:
         name (str): name of attribute data type
     """
-
     name = models.CharField(max_length=64)
 
     def __str__(self):
@@ -526,6 +525,7 @@ class AttributeType(TimeStampedModel):
 
     class Meta:
         ordering = ['name', ]
+
 
 class AllocationAttributeType(TimeStampedModel):
     """ An allocation attribute type indicates the type of the attribute. Examples include Cloud Account Name and Core Usage (Hours).
@@ -555,6 +555,7 @@ class AllocationAttributeType(TimeStampedModel):
     class Meta:
         ordering = ['name', ]
 
+
 class AllocationAttribute(TimeStampedModel):
     """ An allocation attribute class links an allocation attribute type and an allocation.
 
@@ -563,7 +564,6 @@ class AllocationAttribute(TimeStampedModel):
         allocation (Allocation): allocation to link
         value (str): value of the allocation attribute
     """
-
     allocation_attribute_type = models.ForeignKey(
         AllocationAttributeType, on_delete=models.CASCADE)
     allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE)
@@ -614,7 +614,6 @@ class AllocationAttribute(TimeStampedModel):
         atype_name = self.allocation_attribute_type.attribute_type.name
         return attribute_expansion.convert_type(
             value=raw_value, type_name=atype_name)
-
 
     def expanded_value(self, extra_allocations=[], typed=True):
         """
@@ -729,6 +728,97 @@ class AllocationUser(TimeStampedModel):
         verbose_name_plural = 'Allocation User Status'
         unique_together = ('user', 'allocation')
 
+
+
+class AllocationUserAttributeType(TimeStampedModel):
+    """indicates the type of the allocationuser attribute. Examples: Fairshare, usage_in_bytes.
+
+    Attributes:
+        attribute_type (AttributeType): indicates the data type of the attribute
+        name (str): name of allocation attribute type
+        is_required (bool): indicates whether or not the attribute is required
+        is_unique (bool): indicates whether or not the value is unique
+        is_private (bool): indicates whether or not the attribute type is private
+        is_changeable (bool): indicates whether or not the attribute type is changeable
+    """
+
+    attribute_type = models.ForeignKey(AttributeType, on_delete=models.CASCADE)
+    name = models.CharField(max_length=50)
+    is_required = models.BooleanField(default=False)
+    is_unique = models.BooleanField(default=False)
+    is_private = models.BooleanField(default=True)
+    is_changeable = models.BooleanField(default=False)
+    history = HistoricalRecords()
+
+    def __str__(self):
+        return '%s' % (self.name)
+
+    class Meta:
+        ordering = ['name', ]
+
+class AllocationUserAttribute(TimeStampedModel):
+    """links an allocation user attribute type and an allocation user.
+
+    Attributes:
+        allocation_attribute_type (AllocationAttributeType): attribute type to link
+        allocation (Allocation): allocation to link
+        value (str): value of the allocation attribute
+    """
+    allocationuser_attribute_type = models.ForeignKey(
+        AllocationUserAttributeType, on_delete=models.CASCADE)
+    allocationuser = models.ForeignKey(AllocationUser, on_delete=models.CASCADE)
+    value = models.CharField(max_length=128)
+    history = HistoricalRecords()
+
+    def clean(self):
+        """Validate allocationuser attribute, raise errors if the attribute is invalid."""
+
+        if (
+            self.allocation_attribute_type.is_unique
+            and self.allocation.allocationattribute_set.filter(
+                allocation_attribute_type=self.allocation_attribute_type
+            ).exclude(id=self.pk).exists()
+        ):
+            raise ValidationError(
+                f"'{self.allocation_attribute_type}' attribute already exists for this allocation."
+            )
+
+        expected_value_type = self.allocation_attribute_type.attribute_type.name.strip()
+        error = None
+        if expected_value_type == 'Float' and not isinstance(literal_eval(self.value), (float,int)):
+            error = 'Value must be a float.'
+        elif expected_value_type == 'Int' and not isinstance(literal_eval(self.value), int):
+            error = 'Value must be an integer.'
+        elif expected_value_type == 'Yes/No' and self.value not in ['Yes', 'No']:
+            error = 'Allowed inputs are "Yes" or "No".'
+        elif expected_value_type == 'Date':
+            try:
+                datetime.datetime.strptime(self.value.strip(), '%Y-%m-%d')
+            except ValueError:
+                error = 'Date must be in format YYYY-MM-DD'
+        if error:
+            raise ValidationError(
+                'Invalid Value "%s" for "%s". %s' % (
+                    self.value, self.allocation_attribute_type.name, error)
+                )
+
+    def __str__(self):
+        return str(self.allocationuser_attribute_type.name, self.allocation_user)
+
+    def typed_value(self):
+        """
+        Returns:
+            int, float, str: the value of the attribute with proper type and
+            is used for computing expanded_value() (coerced into int or float
+            for attributes with Int or Float types; if it fails or the
+            attribute is of any other type, it is coerced into a str)
+        """
+        raw_value = self.value
+        atype_name = self.allocation_attribute_type.attribute_type.name
+        return attribute_expansion.convert_type(
+            value=raw_value, type_name=atype_name)
+
+
 class AllocationAccount(TimeStampedModel):
     """ An allocation account
     #come back to
@@ -737,16 +827,15 @@ class AllocationAccount(TimeStampedModel):
         user (User): represents the User object of the project user
         name (str):
     """
-
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     name = models.CharField(max_length=64, unique=True)
-
 
     def __str__(self):
         return self.name
 
     class Meta:
         ordering = ['name', ]
+
 
 class AllocationChangeStatusChoice(TimeStampedModel):
     """ An allocation change status choice represents statuses displayed when a user changes their allocation status (for allocations that have their is_changeable attribute set to True). Examples include Expired and Payment Pending.
@@ -754,7 +843,6 @@ class AllocationChangeStatusChoice(TimeStampedModel):
     Attributes:
         name (str): status name
     """
-
     name = models.CharField(max_length=64)
 
     def __str__(self):
@@ -762,6 +850,7 @@ class AllocationChangeStatusChoice(TimeStampedModel):
 
     class Meta:
         ordering = ['name', ]
+
 
 class AllocationChangeRequest(TimeStampedModel):
     """ An allocation change request represents a request from a PI or manager to change their allocation.
