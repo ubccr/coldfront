@@ -18,10 +18,11 @@ from coldfront.plugins.ldap_user_info.utils import LDAPSearch
 logger = logging.getLogger(__name__)
 
 ENABLE_LDAP_ELIGIBILITY_SERVER = import_from_settings('ENABLE_LDAP_ELIGIBILITY_SERVER', False)
+if ENABLE_LDAP_ELIGIBILITY_SERVER:
+    SLATE_PROJECT_ELIGIBILITY_ACCOUNT = import_from_settings('SLATE_PROJECT_ELIGIBILITY_ACCOUNT')
+    SLATE_PROJECT_ACCOUNT = import_from_settings('SLATE_PROJECT_ACCOUNT') 
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 CENTER_BASE_URL = import_from_settings('CENTER_BASE_URL')
-SLATE_PROJECT_ELIGIBILITY_ACCOUNT = import_from_settings('SLATE_PROJECT_ELIGIBILITY_ACCOUNT')
-SLATE_PROJECT_ACCOUNT = import_from_settings('SLATE_PROJECT_ACCOUNT')
 if EMAIL_ENABLED:
     SLATE_PROJECT_EMAIL = import_from_settings('SLATE_PROJECT_EMAIL')
     EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
