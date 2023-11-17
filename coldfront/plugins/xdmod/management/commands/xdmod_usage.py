@@ -303,7 +303,7 @@ class Command(BaseCommand):
             for user in no_use_allocation_users:
                 user.usage = 0
                 user.save()
-            for username, usage in usage_data.items():
+            for username, user_usage in usage_data.items():
                 try:
                     user_obj = get_user_model().objects.get(username=username)
                 except:
@@ -313,11 +313,12 @@ class Command(BaseCommand):
                 user, created = s.allocationuser_set.get_or_create(
                     user=user_obj,
                     defaults={
-                        'usage':usage, 'unit': 'CPU Hours', 'status': auser_status_active
+                        'usage': user_usage, 'unit': 'CPU Hours',
+                        'status': auser_status_active
                     }
                 )
                 if not created:
-                    user.usage = usage
+                    user.usage = user_usage
                     user.save()
             if self.sync:
                 cpu_hours_attr = s.allocationattribute_set.get(
