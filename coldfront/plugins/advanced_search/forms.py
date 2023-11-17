@@ -3,7 +3,7 @@ from django.template.loader import render_to_string
 
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import  Layout, Submit, HTML, Row, Column,  Reset, LayoutObject, Div
-from crispy_forms.bootstrap import  FormActions,  AccordionGroup, Accordion, TabHolder, Tab
+from crispy_forms.bootstrap import  FormActions,  AccordionGroup, Accordion, TabHolder, Tab, InlineRadios
 
 from coldfront.core.project.models import ProjectTypeChoice, ProjectStatusChoice
 from coldfront.core.allocation.models import AllocationStatusChoice, AllocationAttributeType
@@ -83,6 +83,12 @@ class AllocationAttributeSearchForm(forms.Form):
 
 
 class SearchForm(forms.Form):
+    USER_TYPE_CHOICE = (
+        ('all', 'All'),
+        ('project', 'Project'),
+        ('allocation', 'Allocation')
+    )
+
     only_search_projects = forms.BooleanField(
         required=False,
         help_text='Enables only filtering projects. Disables all other filters and selections.'
@@ -176,11 +182,27 @@ class SearchForm(forms.Form):
     allocationattribute_form = AllocationAttributeSearchForm()
     allocationattribute_helper = AllocationAttributeFormSetHelper()
 
+    user__usernames = forms.CharField(
+        label="Usernames",
+        max_length=100,
+        required=False,
+        help_text='username1,username2,...'
+    )
+    display__user__username = forms.BooleanField(required=False)
+
+    user__first_name = forms.CharField(label="First Name", max_length=100, required=False)
+    display__user__first_name = forms.BooleanField(required=False)
+
+    user__last_name = forms.CharField(label="Last Name", max_length=100, required=False)
+    display__user__last_name = forms.BooleanField(required=False)
+
     user__userprofile__department = forms.CharField(label="Department Contains", max_length=100, required=False)
     display__user__userprofile__department = forms.BooleanField(label='Display user department', required=False)
 
     user__userprofile__title = forms.CharField(label="Title Contains", max_length=30, required=False)
     display__user__userprofile__title = forms.BooleanField(label='Display user title', required=False)
+
+    user__type = forms.ChoiceField(initial='all', choices=USER_TYPE_CHOICE, widget=forms.RadioSelect)
 
     current_tab = forms.IntegerField(initial=1, widget=forms.HiddenInput)
 
@@ -262,9 +284,15 @@ class SearchForm(forms.Form):
                 Tab('User Search',
                     Accordion(
                         AccordionGroup('User Profiles',
-                            'enable_user_search',                               
+                            'user__usernames',
+                            'user__first_name',
+                            'user__last_name',
                             'user__userprofile__department',
                             'user__userprofile__title',
+                            InlineRadios('user__type'),
+                            'display__user__username',
+                            'display__user__first_name',
+                            'display__user__last_name',
                             'display__user__userprofile__department',
                             'display__user__userprofile__title',
                             active=False,

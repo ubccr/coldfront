@@ -1,7 +1,10 @@
 from django.contrib.auth.models import User
 
-from coldfront.core.project.models import Project
-from coldfront.core.allocation.models import Allocation, AllocationAttribute, AllocationAttributeUsage
+from coldfront.core.project.models import Project, ProjectUser
+from coldfront.core.allocation.models import (Allocation,
+                                              AllocationAttribute,
+                                              AllocationAttributeUsage,
+                                              AllocationUser)
 from coldfront.core.resource.models import Resource
 from coldfront.core.user.models import UserProfile
 
@@ -286,7 +289,7 @@ class AllocationTable:
         columns = []
         for key, value in self.form_data.items():
             if 'display' in key and value:
-                if 'userprofile' not in key:
+                if '__user__' not in key:
                     display_name = ' '.join(key.split('__')[1:])
                     display_name = ' '.join(display_name.split('_'))
                     field_name = key[len('display') + 2:]
@@ -479,20 +482,34 @@ class UserTable:
         self.user_queryset = user_queryset
 
     def get_user_queryset(self):
-        user_queryset = User.objects.prefetch_related(
+        data = self.data
+        users = User.objects.prefetch_related(
             'userprofile'
         )
+        if data.get('user__type') == 'project':
+            project_usernames = set(ProjectUser.objects.all().values_list('user__username', flat=True))
+            users = users.filter(username__in=project_usernames)
+        elif data.get('user__type') == 'allocation':
+            allocation_usernames = set(AllocationUser.objects.all().values_list('user__username', flat=True))
+            users = users.filter(username__in=allocation_usernames)
 
-        return user_queryset
+        if data.get('user__username'):
+            users = users.filter(username__in=data.get('user__username').split(','))
+        if data.get('user__first_name'):
+            users = users.filter(first_name=data.get('user__first_name'))
+        if data.get('user__last_name'):
+            users = users.filter(last_name=data.get('user__last_name'))
+
+        return users
 
     def get_user_profile_querset(self):
         data = self.data
         user_profiles = UserProfile.objects.all()
 
         if data.get('user__userprofile__title'):
-            user_profiles = user_profiles.filter(title__icontains= data.get('user__userprofile__title'))
+            user_profiles = user_profiles.filter(title__icontains=data.get('user__userprofile__title'))
         if data.get('user__userprofile__department'):
-            user_profiles = user_profiles.filter(department__icontains= data.get('user__userprofile__department'))
+            user_profiles = user_profiles.filter(department__icontains=data.get('user__userprofile__department'))
 
         return user_profiles
     
@@ -501,7 +518,7 @@ class UserTable:
         columns = []
         for key, value in data.items():
             if 'display' in key and value:
-                if 'userprofile' in key:  
+                if '__user__' in key:  
                     display_name = ' '.join(key.split('_')[1:])
                     field_name = key[len('display') + 2:]
                     columns.append({
@@ -526,9 +543,6 @@ class UserTable:
                 if hasattr(current_attribute, attribute):
                     current_attribute = getattr(current_attribute, attribute)
                     continue
-
-                # if 'user_profile__title' == column.get('field_name'):
-                #     current_attribute = user_obj.userprofile.title
 
             if current_attribute is None:
                 current_attribute = ''
