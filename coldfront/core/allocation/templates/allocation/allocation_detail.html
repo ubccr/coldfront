@@ -125,6 +125,7 @@ Allocation Detail
                 </td>
             </tr>
           {% endif %}
+          {% if "Storage" in allocation.get_parent_resource.resource_type.name %}
           <tr>
               <th scope="row" class="text-nowrap">FIINE Expense Codes:</th>
               <td>
@@ -133,6 +134,7 @@ Allocation Detail
                 {% endfor %}
               </td>
           </tr>
+          {% endif %}
           <tr>
               <th scope="row" class="text-nowrap">Total Users in Your Bill:</th>
               <td>{{ allocation_users.count }}</td>
