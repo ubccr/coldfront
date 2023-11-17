@@ -32,7 +32,7 @@ class Command(BaseCommand):
             AllocationUserStatusChoice.objects.get_or_create(name=choice)
 
         for name, attribute_type, is_private in (
-            ('Fairshare', 'Int', False)
+            ('Fairshare', 'Int', False),
         ):
             AllocationUserAttributeType.objects.update_or_create(
                 name=name,
