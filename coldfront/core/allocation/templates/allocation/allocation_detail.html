@@ -455,6 +455,8 @@ Allocation Detail
             <th scope="col">Percentage Usage</th>
             {% if "Storage" in allocation.get_parent_resource.resource_type.name %}
               <th scope="col">Cost Per User (TB/month)</th>
+            {% else %}
+              <th scope="col">Fairshare</th>
             {% endif %}
             <!-- <th scope="col">Status</th> -->
             <!-- <th scope="col">Last Modified</th> -->
@@ -493,11 +495,13 @@ Allocation Detail
                   <td>{{userusage|div:allocationusage|mul:100|floatformat:2 }}%</td>
               {% endif %}
 
-              {% if user.unit != "CPU Hours" %}
+              {% if "Storage" in allocation.get_parent_resource.resource_type.name %}
                 {% cost_bytes userusage as cost %}
                 {% if cost %}
                   <td>{{ cost }}</td>
                 {% endif %}
+              {% else %}
+               <td>user.fairshare</td>
               {% endif %}
             </tr>
           {% endfor %}

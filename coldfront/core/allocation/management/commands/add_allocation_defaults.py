@@ -31,15 +31,14 @@ class Command(BaseCommand):
         for choice in ('Active', 'Error', 'Removed', ):
             AllocationUserStatusChoice.objects.get_or_create(name=choice)
 
-        for name, attribute_type, is_private, is_changeable in (
-            ('Fairshare', 'Int', False, True)
+        for name, attribute_type, is_private in (
+            ('Fairshare', 'Int', False)
         ):
             AllocationUserAttributeType.objects.update_or_create(
                 name=name,
                 defaults={
                     'attribute_type': AttributeType.objects.get(name=attribute_type),
                     'is_private': is_private,
-                    'is_changeable': is_changeable,
                 }
             )
 
