@@ -165,7 +165,9 @@ class ProjectRequestEmailForm(forms.Form):
         self.fields['email_body'].initial = EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL.format(
             first_name=user.first_name, project_name=project_obj.title
         )
-        cc_list = {project_obj.pi.email, user.email}
+        cc_list = [project_obj.pi.email, user.email]
+        if project_obj.pi == project_obj.requestor:
+            cc_list.remove(project_obj.pi.email)
         self.fields['cc'].initial = ', '.join(cc_list)
 
 
