@@ -2661,6 +2661,12 @@ class ProjectRequestEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView)
         project_obj = get_object_or_404(Project, pk=pk)
         form_data = form.cleaned_data
 
+        project_status_obj = ProjectStatusChoice.objects.get(name='Contacted By Admin')
+        create_admin_action(self.request.user, {'status': project_status_obj}, project_obj)
+
+        project_obj.status = project_status_obj
+        project_obj.save()
+
         if EMAIL_ENABLED:
             receiver_list = [project_obj.requestor.email]
             cc = form_data.get('cc').strip()
@@ -2684,9 +2690,6 @@ class ProjectRequestEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView)
             )
             if cc:
                 success_text += ' CCed: {}'.format(', '.join(cc))
-
-            project_obj.status = ProjectStatusChoice.objects.get(name='Contacted By Admin')
-            project_obj.save()
 
             messages.success(self.request, success_text)
         else:
