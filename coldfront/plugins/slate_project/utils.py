@@ -156,12 +156,12 @@ def add_slate_project_groups(allocation_obj):
     )
     if not added:
         logger.error(
-            f'LDAP: Failed to create slate project group {ldap_group} for allocation '
+            f'LDAP: Failed to create slate project group {ldap_group} in allocation '
             f'{allocation_obj.pk}. Reason: {output}'
         )
     else:
         logger.info(
-            f'LDAP: Added slate project group {ldap_group} for allocation {allocation_obj.pk}'
+            f'LDAP: Added slate project group {ldap_group} in allocation {allocation_obj.pk}'
         )
 
         if ENABLE_LDAP_ELIGIBILITY_SERVER:
@@ -182,12 +182,12 @@ def add_slate_project_groups(allocation_obj):
     )
     if not added:
         logger.error(
-            f'LDAP: Failed to create slate project group {ldap_group} for allocation '
+            f'LDAP: Failed to create slate project group {ldap_group} in allocation '
             f'{allocation_obj.pk}. Reason: {output}'
         )
     else:
         logger.info(
-            f'LDAP: Added slate project group {ldap_group} for allocation {allocation_obj.pk}'
+            f'LDAP: Added slate project group {ldap_group} in allocation {allocation_obj.pk}'
         )
 
         if ENABLE_LDAP_ELIGIBILITY_SERVER:
@@ -229,12 +229,12 @@ def add_user_to_slate_project_group(allocation_user_obj):
     added, output = ldap_conn.add_user(ldap_group, username)
     if not added:
         logger.error(
-            f'LDAP: Failed to add user {username} to slate project group {ldap_group} for '
+            f'LDAP: Failed to add user {username} to slate project group {ldap_group} in '
             f'allocation {allocation_obj.pk}. Reason: {output}'
         )
     else:
         logger.info(
-            f'LDAP: Added user {username} to the slate project group {ldap_group} for allocation '
+            f'LDAP: Added user {username} to the slate project group {ldap_group} in allocation '
             f'{allocation_obj.pk}'
         )
 
@@ -265,12 +265,12 @@ def remove_slate_project_groups(allocation_obj):
     removed, output = ldap_conn.remove_group(read_write_group)
     if not removed:
         logger.error(
-            f'Failed to remove slate project group {read_write_group} for allocation '
+            f'Failed to remove slate project group {read_write_group} in allocation '
             f'{allocation_obj.pk}. Reason: {output}'
         )
     else:
         logger.info(
-            f'Removed slate project group {read_write_group} for allocation {allocation_obj.pk}'
+            f'Removed slate project group {read_write_group} in allocation {allocation_obj.pk}'
         )
 
     read_only_group = f'condo_{namespace_entry[0].value}-ro'
@@ -279,12 +279,12 @@ def remove_slate_project_groups(allocation_obj):
     removed, output = ldap_conn.remove_group(read_only_group)
     if not removed:
         logger.error(
-            f'LDAP: Failed to remove LDAP group {read_only_group} for allocation '
+            f'LDAP: Failed to remove LDAP group {read_only_group} in allocation '
             f'{allocation_obj.pk}. Reason: {output}'
         )
     else:
         logger.info(
-            f'LDAP: Removed LDAP group {read_only_group} for allocation {allocation_obj.pk}'
+            f'LDAP: Removed LDAP group {read_only_group} in allocation {allocation_obj.pk}'
         )
 
 
@@ -319,11 +319,11 @@ def remove_user_from_slate_project_group(allocation_user_obj):
     if not removed:
         logger.error(
             f'LDAP: Failed to remove user {username} from the slate project group {ldap_group} '
-            f'for allocation {allocation_obj.pk}. Reason: {output}'
+            f'in allocation {allocation_obj.pk}. Reason: {output}'
         )
     else:
         logger.info(
-            f'LDAP: Removed user {username} from the slate project group {ldap_group} for '
+            f'LDAP: Removed user {username} from the slate project group {ldap_group} in '
             f'allocation {allocation_obj.pk}'
         )
 
@@ -373,7 +373,7 @@ def change_users_slate_project_groups(allocation_user_obj):
         
     logger.info(
         f'LDAP: Changed user {username}\'s slate project group from {remove_from_group} to '
-        f'{add_to_group}'
+        f'{add_to_group} in allocation {allocation_obj.pk}'
     )
 
 
