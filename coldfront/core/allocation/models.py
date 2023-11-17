@@ -728,25 +728,19 @@ class AllocationUser(TimeStampedModel):
         verbose_name_plural = 'Allocation User Status'
         unique_together = ('user', 'allocation')
 
-    def get_attribute(self, name, expand=True, typed=True,
-        extra_allocations=[]):
+    def get_attribute(self, name, typed=True):
         """
         Params:
             name (str): name of the allocation attribute type
-            expand (bool): indicates whether or not to return the expanded value with attributes/parameters for attributes with a base type of 'Attribute Expanded Text'
             typed (bool): indicates whether or not to convert the attribute value to an int/ float/ str based on the base AttributeType name
-            extra_allocations (list[Allocation]): allocations which are available to reference in the attribute list in addition to those associated with this AllocationAttribute
 
         Returns:
             str: the value of the first attribute found for this allocation with the specified name
         """
 
         attr = self.allocationuserattribute_set.filter(
-            allocation_attribute_type__name=name).first()
+            allocationuser_attribute_type__name=name).first()
         if attr:
-            if expand:
-                return attr.expanded_value(
-                    extra_allocations=extra_allocations, typed=typed)
             if typed:
                 return attr.typed_value()
             return attr.value
