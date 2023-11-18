@@ -824,7 +824,7 @@ class AllocationUserAttribute(TimeStampedModel):
                 )
 
     def __str__(self):
-        return str(self.allocationuser_attribute_type.name, self.allocation_user)
+        return str(self.allocationuser_attribute_type.name, self.allocationuser)
 
     def typed_value(self):
         """
