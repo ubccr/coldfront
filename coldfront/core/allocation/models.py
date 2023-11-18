@@ -781,8 +781,8 @@ class AllocationUserAttribute(TimeStampedModel):
     """links an allocation user attribute type and an allocation user.
 
     Attributes:
-        allocation_attribute_type (AllocationAttributeType): attribute type to link
-        allocation (Allocation): allocation to link
+        allocationuser_attribute_type (AllocationAttributeType): attribute type to link
+        allocationuser (Allocation): allocation to link
         value (str): value of the allocation attribute
     """
     allocationuser_attribute_type = models.ForeignKey(
@@ -835,7 +835,7 @@ class AllocationUserAttribute(TimeStampedModel):
             attribute is of any other type, it is coerced into a str)
         """
         raw_value = self.value
-        atype_name = self.allocation_attribute_type.attribute_type.name
+        atype_name = self.allocationuser_attribute_type.attribute_type.name
         return attribute_expansion.convert_type(
             value=raw_value, type_name=atype_name)
 

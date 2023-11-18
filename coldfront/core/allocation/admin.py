@@ -16,6 +16,8 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationUser,
                                               AllocationUserNote,
                                               AllocationUserStatusChoice,
+                                              AllocationUserAttributeType,
+                                              AllocationUserAttribute,
                                               AttributeType)
 
 
@@ -274,6 +276,52 @@ class AllocationUserAdmin(SimpleHistoryAdmin):
         set_denied,
         set_removed,
     ]
+
+
+@admin.register(AllocationUserAttributeType)
+class AllocationUserAttributeTypeAdmin(admin.ModelAdmin):
+    list_display = ('pk', 'name', 'attribute_type', 'is_changeable', 'is_private')
+
+
+@admin.register(AllocationUserAttribute)
+class AllocationUserAttributeAdmin(SimpleHistoryAdmin):
+    readonly_fields_change = (
+        'allocationuser', 'allocationuser_attribute_type', 'created', 'modified')
+    fields_change = ('allocationuser',
+                     'allocationuser_attribute_type', 'value', 'created', 'modified',)
+    list_display = (
+        'pk', 'allocationuser', 'project', 'resource',
+        'allocationuser_attribute_type', 'value', 'created', 'modified',
+    )
+    list_filter = (UsageValueFilter, 'allocationuser_attribute_type',)
+    search_fields = (
+        'allocationuser__user__first_name',
+        'allocationuser__user__last_name',
+        'allocationuser__user__username',
+    )
+
+    def resource(self, obj):
+        return obj.allocationuser.allocation.get_parent_resource
+
+    def allocationuser_status(self, obj):
+        return obj.allocationuser.status
+
+    def project(self, obj):
+        return textwrap.shorten(obj.allocationuser.allocation.project.title, width=50)
+
+    def project_title(self, obj):
+        return obj.allocationuser.allocation.project.title
+
+    def get_fields(self, request, obj):
+        if obj is None:
+            return super().get_fields(request)
+        return self.fields_change
+
+    def get_readonly_fields(self, request, obj):
+        if obj is None:
+            # We are adding an object
+            return super().get_readonly_fields(request)
+        return self.readonly_fields_change
 
 
 class ValueFilter(admin.SimpleListFilter):

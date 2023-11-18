@@ -10,6 +10,8 @@ from coldfront.core.project.models import Project
 from coldfront.core.allocation.models import (
     AllocationStatusChoice,
     AllocationAttributeType,
+    AllocationUserAttributeType,
+    AllocationUserAttribute,
     AllocationUserStatusChoice,
 )
 from coldfront.core.resource.models import Resource
@@ -48,7 +50,7 @@ class Command(BaseCommand):
         file = options['file']
         cluster_resources = Resource.objects.filter(resource_type__name="Cluster")
         slurm_clusters = {r: self._cluster_from_dump(r, file=file) for r in cluster_resources}
-        slurm_clusters = {r:c for r, c in slurm_clusters.items() if r.name == c.name}
+        slurm_clusters = {r:c for r, c in slurm_clusters.items() if r.get_attribute('slurm_cluster') == c.name}
 
         slurm_acct_name_attr_type_obj = AllocationAttributeType.objects.get(
             name='slurm_account_name')
@@ -58,6 +60,8 @@ class Command(BaseCommand):
             name='Core Usage (Hours)')
         fairshare_attr_type_obj = AllocationAttributeType.objects.get(
             name='Fairshare')
+        user_fairshare_attr_type_obj = AllocationUserAttributeType.objects.get(
+            name="Fairshare")
         auser_status_active = AllocationUserStatusChoice.objects.get(name='Active')
 
         for resource, cluster in slurm_clusters.items():
@@ -116,12 +120,17 @@ class Command(BaseCommand):
                 for user_name, user_account in account.users.items():
                     try:
                         user = get_user_model().objects.get(username=user_name)
-                    except:
+                    except Exception:
                         print("no user found:", user_name)
                         continue
                     alloc_user, _ = allocation_obj.allocationuser_set.get_or_create(
-                        user = get_user_model().objects.get(username=user_name),
-                        defaults = {
+                        user=user,
+                        defaults={
                             'status': auser_status_active, "unit": "CPU Hours"
                         }
+                    )
+                    user_vals = user_account.spec_dict()
+                    alloc_user.allocationuserattribute_set.update_or_create(
+                        allocationuser_attribute_type=user_fairshare_attr_type_obj,
+                        defaults={"value": user_vals['Fairshare']}
                     )
