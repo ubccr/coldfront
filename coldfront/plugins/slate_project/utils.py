@@ -67,9 +67,18 @@ def sync_slate_project_users(allocation_obj):
         if not username in ldap_read_write_usernames:
             if not username in ldap_read_only_usernames:
                 read_write_user.status = AllocationUserStatusChoice.objects.get(name='Removed')
+                logger.info(
+                    f'User {username} was removed from Slate Project allocation '
+                    f'{allocation_obj.pk} during sync'
+                )
             else:
                 read_write_user.role = AllocationUserRoleChoice.objects.get(name='read only')
+                logger.info(
+                    f'User {username}\'s role was changed to read only in Slate Project '
+                    f'allocation {allocation_obj.pk} during sync'
+                )
                 updated_read_only_usernames.append(username)
+            read_only_user.save()
         else:
             updated_read_write_usernames.append(username)
 
@@ -78,9 +87,18 @@ def sync_slate_project_users(allocation_obj):
         if not username in ldap_read_only_usernames:
             if not username in ldap_read_write_usernames:
                 read_write_user.status = AllocationUserStatusChoice.objects.get(name='Removed')
+                logger.info(
+                    f'User {username} was removed from Slate Project allocation '
+                    f'{allocation_obj.pk} during sync'
+                )
             else:
                 read_write_user.role = AllocationUserRoleChoice.objects.get(name='read/write')
+                logger.info(
+                    f'User {username}\'s role was changed to read/write in Slate Project '
+                    f'allocation {allocation_obj.pk} during sync'
+                )
                 updated_read_write_usernames.append(username)
+            read_write_user.save()
         else:
             updated_read_only_usernames.append(username)
 
@@ -104,6 +122,10 @@ def sync_slate_project_users(allocation_obj):
                         status=ProjectUserStatusChoice.objects.get(name='Active'),
                         role=ProjectUserRoleChoice.objects.get(name='User')
                     )
+                logger.info(
+                    f'User {ldap_read_write_username} was added to project '
+                    f'{allocation_obj.project.pk} during sync'
+                )
             else:
                 project_user_obj[0].status = ProjectUserStatusChoice.objects.get(name='Active')
                 project_user_obj[0].save()
@@ -116,10 +138,26 @@ def sync_slate_project_users(allocation_obj):
                     status=AllocationUserStatusChoice.objects.get(name='Active'),
                     role=AllocationUserRoleChoice.objects.get(name='read/write')
                 )
+                logger.info(
+                    f'User {ldap_read_write_username} was added to Slate Project allocation '
+                    f'{allocation_obj.pk} with role read/write during sync'
+                )
             else:
+                old_status = allocation_user_obj[0].status
                 allocation_user_obj[0].status = AllocationUserStatusChoice.objects.get(name='Active')
                 allocation_user_obj[0].role = AllocationUserRoleChoice.objects.get(name='read/write')
                 allocation_user_obj[0].save()
+
+                if old_status.name != 'Active':
+                    logger.info(
+                        f'User {ldap_read_write_username} was added to Slate Project allocation '
+                        f'{allocation_obj.pk} with role read/write during sync'
+                    )
+                else:
+                    logger.info(
+                        f'User {ldap_read_write_username}\'s role was changed to read/write in '
+                        f'Slate Project allocation {allocation_obj.pk} during sync'
+                    )
 
     for ldap_read_only_username in ldap_read_only_usernames:
         if ldap_read_only_username not in updated_read_only_usernames:
@@ -141,6 +179,10 @@ def sync_slate_project_users(allocation_obj):
                         status=ProjectUserStatusChoice.objects.get(name='Active'),
                         role=ProjectUserRoleChoice.objects.get(name='User')
                     )
+                logger.info(
+                    f'User {ldap_read_write_username} was added to project '
+                    f'{allocation_obj.project.pk} during sync'
+                )
             else:
                 project_user_obj[0].status = ProjectUserStatusChoice.objects.get(name='Active')
                 project_user_obj[0].save()
@@ -153,10 +195,26 @@ def sync_slate_project_users(allocation_obj):
                     status=AllocationUserStatusChoice.objects.get(name='Active'),
                     role=AllocationUserRoleChoice.objects.get(name='read only')
                 )
+                logger.info(
+                    f'User {ldap_read_write_username} was added to Slate Project allocation '
+                    f'{allocation_obj.pk} with role read only during sync'
+                )
             else:
+                old_status = allocation_user_obj[0].status
                 allocation_user_obj[0].status = AllocationUserStatusChoice.objects.get(name='Active')
                 allocation_user_obj[0].role = AllocationUserRoleChoice.objects.get(name='read only')
                 allocation_user_obj[0].save()
+
+                if old_status.name != 'Active':
+                    logger.info(
+                        f'User {ldap_read_write_username} was added to Slate Project allocation '
+                        f'{allocation_obj.pk} with role read only during sync'
+                    )
+                else:
+                    logger.info(
+                        f'User {ldap_read_write_username}\'s role was changed to read only in '
+                        f'Slate Project allocation {allocation_obj.pk} during sync'
+                    )
 
 
 def send_expiry_email(allocation_obj):
