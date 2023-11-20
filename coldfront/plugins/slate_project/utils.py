@@ -52,8 +52,8 @@ def sync_slate_project_users(allocation_obj):
     namespace_entry = namespace_entry[0].value
     ldap_group = f'condo_{namespace_entry}'
 
-    read_write_users = allocation_obj.allocationuser_set(role__name='read/write', status__name='Active')
-    read_only_users = allocation_obj.allocationuser_set(role__name='read only', status__name='Active')
+    read_write_users = allocation_obj.allocationuser_set.filter(role__name='read/write', status__name='Active')
+    read_only_users = allocation_obj.allocationuser_set.filter(role__name='read only', status__name='Active')
 
     ldap_conn = LDAPModify()
     ldap_read_write_usernames = ldap_conn.get_users(ldap_group)
@@ -89,7 +89,7 @@ def sync_slate_project_users(allocation_obj):
             user_obj, _ = User.objects.get_or_create(username=ldap_read_write_username)
             project_user_obj = allocation_obj.project.projectuser_set.filter(user=user_obj)
             if not project_user_obj.exists():
-                if user_obj.userprofile.status == 'group':
+                if user_obj.userprofile.title == 'group':
                     ProjectUser.objects.create(
                         project=allocation_obj.project,
                         user=user_obj,
@@ -126,7 +126,7 @@ def sync_slate_project_users(allocation_obj):
             user_obj, _ = User.objects.get_or_create(username=ldap_read_only_username)
             project_user_obj = allocation_obj.project.projectuser_set.filter(user=user_obj)
             if not project_user_obj.exists():
-                if user_obj.userprofile.status == 'group':
+                if user_obj.userprofile.title == 'group':
                     ProjectUser.objects.create(
                         project=allocation_obj.project,
                         user=user_obj,
