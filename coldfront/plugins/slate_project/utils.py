@@ -78,7 +78,7 @@ def sync_slate_project_users(allocation_obj):
                     f'allocation {allocation_obj.pk} during sync'
                 )
                 updated_read_only_usernames.append(username)
-            read_only_user.save()
+            read_write_user.save()
         else:
             updated_read_write_usernames.append(username)
 
@@ -86,19 +86,19 @@ def sync_slate_project_users(allocation_obj):
         username = read_only_user.user.username
         if not username in ldap_read_only_usernames:
             if not username in ldap_read_write_usernames:
-                read_write_user.status = AllocationUserStatusChoice.objects.get(name='Removed')
+                read_only_user.status = AllocationUserStatusChoice.objects.get(name='Removed')
                 logger.info(
                     f'User {username} was removed from Slate Project allocation '
                     f'{allocation_obj.pk} during sync'
                 )
             else:
-                read_write_user.role = AllocationUserRoleChoice.objects.get(name='read/write')
+                read_only_user.role = AllocationUserRoleChoice.objects.get(name='read/write')
                 logger.info(
                     f'User {username}\'s role was changed to read/write in Slate Project '
                     f'allocation {allocation_obj.pk} during sync'
                 )
                 updated_read_write_usernames.append(username)
-            read_write_user.save()
+            read_only_user.save()
         else:
             updated_read_only_usernames.append(username)
 
