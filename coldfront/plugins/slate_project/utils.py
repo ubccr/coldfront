@@ -6,13 +6,18 @@ from datetime import date
 import ldap.filter
 from ldap3 import Connection, Server, MODIFY_ADD, MODIFY_DELETE
 from django.urls import reverse
+from django.contrib.auth.models import User
 
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.mail import send_email_template
-from coldfront.core.allocation.models import (AllocationUserRoleChoice,
+from coldfront.core.allocation.models import (AllocationUserStatusChoice,
+                                              AllocationUserRoleChoice,
                                               AllocationAttributeType,
                                               AllocationAttribute,
                                               AllocationUser)
+from coldfront.core.project.models import (ProjectUserStatusChoice,
+                                           ProjectUserRoleChoice,
+                                           ProjectUser)
 from coldfront.plugins.ldap_user_info.utils import LDAPSearch
 
 logger = logging.getLogger(__name__)
@@ -30,6 +35,128 @@ if EMAIL_ENABLED:
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
     EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
     EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
+
+
+def sync_slate_project_users(allocation_obj):
+    allocation_attribute_type = 'Namespace Entry'
+    namespace_entry = allocation_obj.allocationattribute_set.filter(
+        allocation_attribute_type__name=allocation_attribute_type
+    )
+    if not namespace_entry.exists():
+        logger.error(
+            f'Failed to sync users in a Slate Project allocation. The allocation '
+            f'(pk={allocation_obj.pk}) is missing the allocation attribute '
+            f'"{allocation_attribute_type}"'
+        )
+        return
+    namespace_entry = namespace_entry[0].value
+    ldap_group = f'condo_{namespace_entry}'
+
+    read_write_users = allocation_obj.allocationuser_set(role__name='read/write', status__name='Active')
+    read_only_users = allocation_obj.allocationuser_set(role__name='read only', status__name='Active')
+
+    ldap_conn = LDAPModify()
+    ldap_read_write_usernames = ldap_conn.get_users(ldap_group)
+    ldap_read_only_usernames = ldap_conn.get_users(ldap_group + '-ro')
+
+    updated_read_write_usernames = []
+    updated_read_only_usernames = []
+
+    for read_write_user in read_write_users:
+        username = read_write_user.user.username
+        if not username in ldap_read_write_usernames:
+            if not username in ldap_read_only_usernames:
+                read_write_user.status = AllocationUserStatusChoice.objects.get(name='Removed')
+            else:
+                read_write_user.role = AllocationUserRoleChoice.objects.get(name='read only')
+                updated_read_only_usernames.append(username)
+        else:
+            updated_read_write_usernames.append(username)
+
+    for read_only_user in read_only_users:
+        username = read_only_user.user.username
+        if not username in ldap_read_only_usernames:
+            if not username in ldap_read_write_usernames:
+                read_write_user.status = AllocationUserStatusChoice.objects.get(name='Removed')
+            else:
+                read_write_user.role = AllocationUserRoleChoice.objects.get(name='read/write')
+                updated_read_write_usernames.append(username)
+        else:
+            updated_read_only_usernames.append(username)
+
+    for ldap_read_write_username in ldap_read_write_usernames:
+        if ldap_read_write_username not in updated_read_write_usernames:
+            user_obj, _ = User.objects.get_or_create(username=ldap_read_write_username)
+            project_user_obj = allocation_obj.project.projectuser_set.filter(user=user_obj)
+            if not project_user_obj.exists():
+                if user_obj.userprofile.status == 'group':
+                    ProjectUser.objects.create(
+                        project=allocation_obj.project,
+                        user=user_obj,
+                        status=ProjectUserStatusChoice.objects.get(name='Active'),
+                        role=ProjectUserRoleChoice.objects.get(name='Group'),
+                        enable_notifications=False
+                    )
+                else:
+                    ProjectUser.objects.create(
+                        project=allocation_obj.project,
+                        user=user_obj,
+                        status=ProjectUserStatusChoice.objects.get(name='Active'),
+                        role=ProjectUserRoleChoice.objects.get(name='User')
+                    )
+            else:
+                project_user_obj[0].status = ProjectUserStatusChoice.objects.get(name='Active')
+                project_user_obj[0].save()
+
+            allocation_user_obj = allocation_obj.allocationuser_set.filter(user=user_obj)
+            if not allocation_user_obj.exists():
+                AllocationUser.objects.create(
+                    allocation=allocation_obj,
+                    user=user_obj,
+                    status=AllocationUserStatusChoice.objects.get(name='Active'),
+                    role=AllocationUserRoleChoice.objects.get(name='read/write')
+                )
+            else:
+                allocation_user_obj[0].status = AllocationUserStatusChoice.objects.get(name='Active')
+                allocation_user_obj[0].role = AllocationUserRoleChoice.objects.get(name='read/write')
+                allocation_user_obj[0].save()
+
+    for ldap_read_only_username in ldap_read_only_usernames:
+        if ldap_read_only_username not in updated_read_only_usernames:
+            user_obj, _ = User.objects.get_or_create(username=ldap_read_only_username)
+            project_user_obj = allocation_obj.project.projectuser_set.filter(user=user_obj)
+            if not project_user_obj.exists():
+                if user_obj.userprofile.status == 'group':
+                    ProjectUser.objects.create(
+                        project=allocation_obj.project,
+                        user=user_obj,
+                        status=ProjectUserStatusChoice.objects.get(name='Active'),
+                        role=ProjectUserRoleChoice.objects.get(name='Group'),
+                        enable_notifications=False
+                    )
+                else:
+                    ProjectUser.objects.create(
+                        project=allocation_obj.project,
+                        user=user_obj,
+                        status=ProjectUserStatusChoice.objects.get(name='Active'),
+                        role=ProjectUserRoleChoice.objects.get(name='User')
+                    )
+            else:
+                project_user_obj[0].status = ProjectUserStatusChoice.objects.get(name='Active')
+                project_user_obj[0].save()
+
+            allocation_user_obj = allocation_obj.allocationuser_set.filter(user=user_obj)
+            if not allocation_user_obj.exists():
+                AllocationUser.objects.create(
+                    allocation=allocation_obj,
+                    user=user_obj,
+                    status=AllocationUserStatusChoice.objects.get(name='Active'),
+                    role=AllocationUserRoleChoice.objects.get(name='read only')
+                )
+            else:
+                allocation_user_obj[0].status = AllocationUserStatusChoice.objects.get(name='Active')
+                allocation_user_obj[0].role = AllocationUserRoleChoice.objects.get(name='read only')
+                allocation_user_obj[0].save()
 
 
 def send_expiry_email(allocation_obj):
@@ -610,6 +737,21 @@ class LDAPModify:
             return True
         else:
             return False
+
+    def get_users(self, group_name):
+        searchParameters = {
+            'search_base': self.LDAP_BASE_DN,
+            'search_filter': ldap.filter.filter_format("(cn=%s)", [group_name]),
+            'attributes': ['memberUid'],
+            'size_limit': 1
+        }
+        self.conn.search(**searchParameters)
+        if self.conn.entries:
+            attributes = json.loads(self.conn.entries[0].entry_to_json()).get('attributes')
+        else:
+            attributes = {'memberUid': []}
+
+        return attributes.get('memberUid')
 
 
 class LDAPEligibilityGroup:

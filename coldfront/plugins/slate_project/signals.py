@@ -5,7 +5,8 @@ from coldfront.core.allocation.signals import (allocation_activate_user,
                                                allocation_change_user_role,
                                                allocation_expire, 
                                                allocation_remove,
-                                               allocation_activate)
+                                               allocation_activate,
+                                               visit_allocation_detail)
 from coldfront.core.allocation.views import (AllocationActivateRequestView,
                                              AllocationAddUsersView,
                                              AllocationRemoveUsersView,
@@ -21,7 +22,8 @@ from coldfront.plugins.slate_project.utils import (add_user_to_slate_project_gro
                                                    remove_user_from_slate_project_group,
                                                    change_users_slate_project_groups,
                                                    add_slate_project_groups,
-                                                   send_expiry_email)
+                                                   send_expiry_email,
+                                                   sync_slate_project_users)
 
 @receiver(allocation_activate, sender=AllocationDetailView)
 @receiver(allocation_activate, sender=AllocationActivateRequestView)
@@ -93,3 +95,14 @@ def remove(sender, **kwargs):
         return
     if not allocation_obj.status.name == 'Removed':
         return
+
+@receiver(visit_allocation_detail, sender=AllocationDetailView)
+def sync_users(sender, **kwargs):
+    allocation_pk = kwargs.get('allocation_pk')
+    allocation_obj = Allocation.objects.get(pk=allocation_pk)
+    if not allocation_obj.get_parent_resource.name == 'Slate Project':
+        return
+    if not allocation_obj.status.name == 'Active':
+        return
+
+    sync_slate_project_users(allocation_obj)
