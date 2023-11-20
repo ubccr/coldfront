@@ -127,8 +127,9 @@ def sync_slate_project_users(allocation_obj):
                     f'{allocation_obj.project.pk} during sync'
                 )
             else:
-                project_user_obj[0].status = ProjectUserStatusChoice.objects.get(name='Active')
-                project_user_obj[0].save()
+                project_user_obj = project_user_obj[0]
+                project_user_obj.status = ProjectUserStatusChoice.objects.get(name='Active')
+                project_user_obj.save()
 
             allocation_user_obj = allocation_obj.allocationuser_set.filter(user=user_obj)
             if not allocation_user_obj.exists():
@@ -143,10 +144,11 @@ def sync_slate_project_users(allocation_obj):
                     f'{allocation_obj.pk} with role read/write during sync'
                 )
             else:
-                old_status = allocation_user_obj[0].status
-                allocation_user_obj[0].status = AllocationUserStatusChoice.objects.get(name='Active')
-                allocation_user_obj[0].role = AllocationUserRoleChoice.objects.get(name='read/write')
-                allocation_user_obj[0].save()
+                allocation_user_obj = allocation_user_obj[0]
+                old_status = allocation_user_obj.status
+                allocation_user_obj.status = AllocationUserStatusChoice.objects.get(name='Active')
+                allocation_user_obj.role = AllocationUserRoleChoice.objects.get(name='read/write')
+                allocation_user_obj.save()
 
                 if old_status.name != 'Active':
                     logger.info(
@@ -180,12 +182,13 @@ def sync_slate_project_users(allocation_obj):
                         role=ProjectUserRoleChoice.objects.get(name='User')
                     )
                 logger.info(
-                    f'User {ldap_read_write_username} was added to project '
+                    f'User {ldap_read_only_username} was added to project '
                     f'{allocation_obj.project.pk} during sync'
                 )
             else:
-                project_user_obj[0].status = ProjectUserStatusChoice.objects.get(name='Active')
-                project_user_obj[0].save()
+                project_user_obj = project_user_obj[0]
+                project_user_obj.status = ProjectUserStatusChoice.objects.get(name='Active')
+                project_user_obj.save()
 
             allocation_user_obj = allocation_obj.allocationuser_set.filter(user=user_obj)
             if not allocation_user_obj.exists():
@@ -196,23 +199,24 @@ def sync_slate_project_users(allocation_obj):
                     role=AllocationUserRoleChoice.objects.get(name='read only')
                 )
                 logger.info(
-                    f'User {ldap_read_write_username} was added to Slate Project allocation '
+                    f'User {ldap_read_only_username} was added to Slate Project allocation '
                     f'{allocation_obj.pk} with role read only during sync'
                 )
             else:
-                old_status = allocation_user_obj[0].status
-                allocation_user_obj[0].status = AllocationUserStatusChoice.objects.get(name='Active')
-                allocation_user_obj[0].role = AllocationUserRoleChoice.objects.get(name='read only')
-                allocation_user_obj[0].save()
+                allocation_user_obj = allocation_user_obj[0]
+                old_status = allocation_user_obj.status
+                allocation_user_obj.status = AllocationUserStatusChoice.objects.get(name='Active')
+                allocation_user_obj.role = AllocationUserRoleChoice.objects.get(name='read only')
+                allocation_user_obj.save()
 
                 if old_status.name != 'Active':
                     logger.info(
-                        f'User {ldap_read_write_username} was added to Slate Project allocation '
+                        f'User {ldap_read_only_username} was added to Slate Project allocation '
                         f'{allocation_obj.pk} with role read only during sync'
                     )
                 else:
                     logger.info(
-                        f'User {ldap_read_write_username}\'s role was changed to read only in '
+                        f'User {ldap_read_only_username}\'s role was changed to read only in '
                         f'Slate Project allocation {allocation_obj.pk} during sync'
                     )
 
