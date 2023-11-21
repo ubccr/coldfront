@@ -38,6 +38,12 @@ if EMAIL_ENABLED:
 
 
 def sync_slate_project_users(allocation_obj):
+    """
+    Checks if the Slate Project allocation is in sync with the Slate Project group in ldap. If not
+    it modifies the slate project allocation to re-sync them.
+
+    :param allocation_obj: Allocation object that is checked
+    """
     allocation_attribute_type = 'Namespace Entry'
     namespace_entry = allocation_obj.allocationattribute_set.filter(
         allocation_attribute_type__name=allocation_attribute_type
@@ -222,6 +228,11 @@ def sync_slate_project_users(allocation_obj):
 
 
 def send_expiry_email(allocation_obj):
+    """
+    Sends an email to the Slate Project ticket queue about an expired slate project.
+
+    :param allocation_obj: Expired allocation object    
+    """
     if EMAIL_ENABLED:
         url = f'{CENTER_BASE_URL.strip("/")}{reverse("allocation-detail", kwargs={"pk": allocation_obj.pk})}'
         template_context = {
@@ -241,6 +252,11 @@ def send_expiry_email(allocation_obj):
 
 
 def send_missing_account_email(email_receiver):
+    """
+    Sends an email about needing to create a Slate Project account.
+
+    :param email_receiver: Email address to send the email to
+    """
     if EMAIL_ENABLED:
         template_context = {
             'center_name': EMAIL_CENTER_NAME,
@@ -259,6 +275,17 @@ def send_missing_account_email(email_receiver):
 
 
 def check_slate_project_account(user, ldap_search_conn=None, ldap_eligibility_conn=None):
+    """
+    Checks if the user is in the eligibility group in LDAP. If they aren't it adds them and sends
+    an email to the user about creating a Slate Project account. If they are in it but do not have
+    a Slate Project account it will also send the email.
+
+    :param user: User to check
+    :param ldap_search_conn: Pre-established ldap connection for searching for the Slate Project
+    group
+    :param ldap_eligibility_coon: Pre-established ldap connection for searching for the eligibility
+    group
+    """
     if ldap_search_conn is None:
         ldap_search_conn = LDAPSearch()
     if ldap_eligibility_conn is None:
