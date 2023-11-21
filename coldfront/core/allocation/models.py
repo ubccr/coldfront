@@ -1,10 +1,8 @@
 import datetime
-import importlib
 import logging
 from ast import literal_eval
 from enum import Enum
 
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -16,7 +14,6 @@ from simple_history.models import HistoricalRecords
 from coldfront.core.project.models import Project, ProjectPermission
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import import_from_settings
-import coldfront.core.attribute_expansion as attribute_expansion
 
 logger = logging.getLogger(__name__)
 
@@ -35,8 +32,8 @@ class AllocationPermission(Enum):
     MANAGER = 'MANAGER'
 
 class AllocationStatusChoice(TimeStampedModel):
-    """ A project status choice indicates the status of the project. Examples include Active, Archived, and New. 
-    
+    """ A project status choice indicates the status of the project. Examples include Active, Archived, and New.
+
     Attributes:
         name (str): name of project status choice
     """
@@ -57,8 +54,8 @@ class AllocationStatusChoice(TimeStampedModel):
         return (self.name,)
 
 class Allocation(TimeStampedModel):
-    """ An allocation provides users access to a resource. 
-    
+    """ An allocation provides users access to a resource.
+
     Attributes:
         project (Project): links the project the allocation falls under
         resources (Resource): links resources that this allocation allocates
@@ -134,7 +131,7 @@ class Allocation(TimeStampedModel):
 
     @property
     def expires_in(self):
-        """ 
+        """
         Returns:
             int: the number of days until the allocation expires
         """
@@ -143,7 +140,7 @@ class Allocation(TimeStampedModel):
 
     @property
     def get_information(self):
-        """ 
+        """
         Returns:
             str: the allocation's attribute type, usage out of total value, and usage out of total value as a percentage
         """
@@ -344,7 +341,7 @@ class Allocation(TimeStampedModel):
 
 class AllocationAdminNote(TimeStampedModel):
     """ An allocation admin note is a note that an admin makes on an allocation.
-    
+
     Attributes:
         allocation (Allocation): links the allocation to the note
         author (User): represents the User class of the admin who authored the note
@@ -360,7 +357,7 @@ class AllocationAdminNote(TimeStampedModel):
 
 class AllocationUserNote(TimeStampedModel):
     """ An allocation user note is a note that an user makes on an allocation.
-    
+
     Attributes:
         allocation (Allocation): links the allocation to the note
         author (User): represents the User class of the user who authored the note
@@ -377,8 +374,8 @@ class AllocationUserNote(TimeStampedModel):
         return self.note
 
 class AttributeType(TimeStampedModel):
-    """ An attribute type indicates the data type of the attribute. Examples include Date, Float, Int, Text, and Yes/No. 
-    
+    """ An attribute type indicates the data type of the attribute. Examples include Date, Float, Int, Text, and Yes/No.
+
     Attributes:
         name (str): name of attribute data type
     """
@@ -392,8 +389,8 @@ class AttributeType(TimeStampedModel):
         ordering = ['name', ]
 
 class AllocationAttributeType(TimeStampedModel):
-    """ An allocation attribute type indicates the type of the attribute. Examples include Cloud Account Name and Core Usage (Hours). 
-    
+    """ An allocation attribute type indicates the type of the attribute. Examples include Cloud Account Name and Core Usage (Hours).
+
     Attributes:
         attribute_type (AttributeType): indicates the data type of the attribute
         name (str): name of allocation attribute type
@@ -420,8 +417,8 @@ class AllocationAttributeType(TimeStampedModel):
         ordering = ['name', ]
 
 class AllocationAttribute(TimeStampedModel):
-    """ An allocation attribute class links an allocation attribute type and an allocation. 
-    
+    """ An allocation attribute class links an allocation attribute type and an allocation.
+
     Attributes:
         allocation_attribute_type (AllocationAttributeType): attribute type to link
         allocation (Allocation): allocation to link
@@ -480,8 +477,8 @@ class AllocationAttribute(TimeStampedModel):
         atype_name = self.allocation_attribute_type.attribute_type.name
         return attribute_expansion.convert_type(
             value=raw_value, type_name=atype_name)
-                
-    
+
+
     def expanded_value(self, extra_allocations=[], typed=True):
         """
         Params:
@@ -491,7 +488,7 @@ class AllocationAttribute(TimeStampedModel):
         Returns:
             int, float, str: the value of the attribute after attribute expansion
 
-        For attributes with attribute type of 'Attribute Expanded Text' we look for an attribute with same name suffixed with '_attriblist' (this should be ResourceAttribute of the Resource associated with the attribute). If the attriblist attribute is found, we use it to generate a dictionary to use to expand the attribute value, and the expanded value is returned.  
+        For attributes with attribute type of 'Attribute Expanded Text' we look for an attribute with same name suffixed with '_attriblist' (this should be ResourceAttribute of the Resource associated with the attribute). If the attriblist attribute is found, we use it to generate a dictionary to use to expand the attribute value, and the expanded value is returned.
 
         If the expansion fails, or if no attriblist attribute is found, or if the attribute type is not 'Attribute Expanded Text', we just return the raw value.
         """
@@ -526,10 +523,10 @@ class AllocationAttribute(TimeStampedModel):
             resources = resources,
             allocations = allocs)
         return expanded
-           
+
 class AllocationAttributeUsage(TimeStampedModel):
-    """ Allocation attribute usage indicates the usage of an allocation attribute. 
-    
+    """ Allocation attribute usage indicates the usage of an allocation attribute.
+
     Attributes:
         allocation_attribute (AllocationAttribute): links the usage to its allocation attribute
         value (float): usage value of the allocation attribute
@@ -545,7 +542,7 @@ class AllocationAttributeUsage(TimeStampedModel):
 
 class AllocationUserStatusChoice(TimeStampedModel):
     """ An allocation user status choice indicates the status of an allocation user. Examples include Active, Error, and Removed.
-    
+
     Attributes:
         name (str): name of the allocation user status choice
     """
@@ -567,7 +564,7 @@ class AllocationUserStatusChoice(TimeStampedModel):
 
 class AllocationUser(TimeStampedModel):
     """ An allocation user represents a user on the allocation.
-    
+
     Attributes:
         allocation (Allocation): links user to its allocation
         user (User): represents the User object of the allocation user
@@ -588,9 +585,9 @@ class AllocationUser(TimeStampedModel):
         unique_together = ('user', 'allocation')
 
 class AllocationAccount(TimeStampedModel):
-    """ An allocation account 
+    """ An allocation account
     #come back to
-    
+
     Attributes:
         user (User): represents the User object of the project user
         name (str):
@@ -607,7 +604,7 @@ class AllocationAccount(TimeStampedModel):
 
 class AllocationChangeStatusChoice(TimeStampedModel):
     """ An allocation change status choice represents statuses displayed when a user changes their allocation status (for allocations that have their is_changeable attribute set to True). Examples include Expired and Payment Pending.
-    
+
     Attributes:
         name (str): status name
     """
@@ -622,7 +619,7 @@ class AllocationChangeStatusChoice(TimeStampedModel):
 
 class AllocationChangeRequest(TimeStampedModel):
     """ An allocation change request represents a request from a PI or manager to change their allocation.
-    
+
     Attributes:
         allocation (Allocation): represents the allocation to change
         status (AllocationStatusChoice): represents the allocation status of the changed allocation
@@ -656,11 +653,11 @@ class AllocationChangeRequest(TimeStampedModel):
 
 class AllocationAttributeChangeRequest(TimeStampedModel):
     """ An allocation attribute change request represents a request from a PI/ manager to change their allocation attribute.
-    
+
     Attributes:
         allocation_change_request (AllocationChangeRequest): links the change request from which this attribute change is derived
         allocation_attribute (AllocationAttribute): represents the allocation_attribute to change
-        new_value (str): new value of allocation attribute    
+        new_value (str): new value of allocation attribute
     """
 
     allocation_change_request = models.ForeignKey(AllocationChangeRequest, on_delete=models.CASCADE)
