@@ -105,13 +105,12 @@ class ProjectTable:
         columns = []
         for key, value in data.items():
             if 'display' in key and value:
-                if 'project' in key:  
-                    display_name = ' '.join(key.split('_')[1:])
-                    field_name = key[len('display') + 2:]
-                    columns.append({
-                        'display_name': display_name.title(),
-                        'field_name': field_name
-                    })
+                display_name = ' '.join(key.split('_')[1:])
+                field_name = key[len('display') + 2:]
+                columns.append({
+                    'display_name': display_name.title(),
+                    'field_name': field_name
+                })
 
         self.columns = columns
 
@@ -289,14 +288,13 @@ class AllocationTable:
         columns = []
         for key, value in self.form_data.items():
             if 'display' in key and value:
-                if '__user__' not in key:
-                    display_name = ' '.join(key.split('__')[1:])
-                    display_name = ' '.join(display_name.split('_'))
-                    field_name = key[len('display') + 2:]
-                    columns.append({
-                        'display_name': display_name.title(),
-                        'field_name': field_name
-                    })
+                display_name = ' '.join(key.split('__')[1:])
+                display_name = ' '.join(display_name.split('_'))
+                field_name = key[len('display') + 2:]
+                columns.append({
+                    'display_name': display_name.title(),
+                    'field_name': field_name
+                })
 
         for entry in self.allocation_attribute_form_data:
             allocation_attribute_type = entry.get('allocationattribute__name')
@@ -527,13 +525,12 @@ class UserTable:
         columns = []
         for key, value in data.items():
             if 'display' in key and value:
-                if '__user__' in key:  
-                    display_name = ' '.join(key.split('_')[1:])
-                    field_name = key[len('display') + 2:]
-                    columns.append({
-                        'display_name': display_name.title(),
-                        'field_name': field_name
-                    })
+                display_name = ' '.join(key.split('_')[1:])
+                field_name = key[len('display') + 2:]
+                columns.append({
+                    'display_name': display_name.title(),
+                    'field_name': field_name
+                })
 
         self.columns = columns
 

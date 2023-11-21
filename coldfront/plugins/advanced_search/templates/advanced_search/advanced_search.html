@@ -20,9 +20,29 @@ Project and Allocation Export List
       </div>
       <div id="collapseOne" class="collapse {{expand_accordion}}" data-parent="#accordion">
         <div class="card-body">
-          <form method="GET" action="{% url 'advanced-search' %}" autocomplete="off">
-            {% crispy export_form %}
-          </form>
+            <ul class="nav nav-tabs">
+              <li class="nav-item"><a class="nav-link active" href="#project-search" data-toggle="tab">Project Search</a></li>
+              <li class="nav-item"><a class="nav-link" href="#allocation-search" data-toggle="tab">Allocation Search</a></li>
+              <li class="nav-item"><a class="nav-link" href="#user-search" data-toggle="tab">User Search</a></li>
+            </ul>
+            <div class="tab-content card-body">
+              <div id="project-search" class="tab-pane active">
+                <form method="GET" action="{% url 'advanced-search' %}" autocomplete="off">
+                  {% crispy project_form %}
+                </form>
+              </div>
+              <div id="allocation-search" class="tab-pane">
+                <form method="GET" action="{% url 'advanced-search' %}" autocomplete="off">
+                  {% crispy allocation_form %}
+                </form>
+              </div>
+              <div id="user-search" class="tab-pane">
+                <form method="GET" action="{% url 'advanced-search' %}" autocomplete="off">
+                  {% crispy user_form %}
+                </form>
+              </div>
+            </div>
+          
         </div>
       </div>
     </div>
@@ -104,44 +124,10 @@ Project and Allocation Export List
     $(base_div_id + 'allocationattribute__usage_format').val('whole');
   }
 
-  function toggleCollapsibleSection(collapsible, hyperlink) {
-    collapsible.removeClass().addClass('collapse');
-    hyperlink.toggleClass('ui-state-disabled');
-    hyperlink.addClass('collapsed');
-    hyperlink.prop('ariaExpanded', false);
-  }
-
   $(document).ready(function () {
-    $('a[href="#allocation-project-search"]').on("click", function () {
-      $('#id_full_search-current_tab').val(1);
-    })
-    $('a[href="#user-search"]').on("click", function () {
-      $('#id_full_search-current_tab').val(2);
-    })
-
-    var current_tab = $('#id_full_search-current_tab').val()
-    if (current_tab === '2') {
-      $('a[href="#allocation-project-search"]').toggleClass('active');
-      $('#allocation-project-search').toggleClass('active');
-      $('a[href="#user-search"]').toggleClass('active');
-      $('#user-search').toggleClass('active');
-    }
-
-    if ($("#id_full_search-only_search_projects").is(":checked")) {
-      toggleCollapsibleSection($("#allocations"), $('h5 > a[href="#allocations"]'));
-      toggleCollapsibleSection($("#resources"), $('h5 > a[href="#resources"]'));
-      toggleCollapsibleSection($("#allocation-attributes"), $('h5 > a[href="#allocation-attributes"]'));
-    }
-
-    $("#id_full_search-only_search_projects").on('click', function () {
-      toggleCollapsibleSection($("#allocations"), $('h5 > a[href="#allocations"]'));
-      toggleCollapsibleSection($("#resources"), $('h5 > a[href="#resources"]'));
-      toggleCollapsibleSection($("#allocation-attributes"), $('h5 > a[href="#allocation-attributes"]'));
-    })
-
-    $("#id_full_search-resources__name").on('click', function(evt) {
+    $("#id_allocation_search-resources__name").on('click', function(evt) {
       options = [];
-      selected_resources = $("#id_full_search-resources__name").val();
+      selected_resources = $("#id_allocation_search-resources__name").val();
       for (let i = 0; i < selected_resources.length; i++) {
         options.push(linked_allocation_attribute_types[selected_resources[i]]);
       }

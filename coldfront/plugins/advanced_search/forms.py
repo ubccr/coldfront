@@ -82,18 +82,170 @@ class AllocationAttributeSearchForm(forms.Form):
             self.fields['allocationattribute__name'].queryset = AllocationAttributeType.objects.none() 
 
 
-class SearchForm(forms.Form):
+class ProjectSearchForm(forms.Form):
+    display__project__id = forms.BooleanField(required=False)
+
+    project__title = forms.CharField(
+        label='Project Title Contains', max_length=100, required=False
+    )
+    display__project__title = forms.BooleanField(required=False)
+
+    project__description = forms.CharField(
+        label='Project Description Contains', max_length=100, required=False
+    )
+    display__project__description = forms.BooleanField(required=False)
+
+    project__pi__username = forms.CharField(
+        label='PI Username Contains', max_length=25, required=False
+    )
+    display__project__pi__username = forms.BooleanField(required=False)
+
+    project__requestor__username = forms.CharField(
+        label='Requestor Username Contains', max_length=25, required=False
+    )
+    display__project__requestor__username = forms.BooleanField(required=False)
+
+    project__user_username = forms.CharField(
+        label='Username Contains', max_length=25, required=False, help_text='Active user'
+    )
+
+    project__status__name = forms.ModelMultipleChoiceField(
+        label='Project Status',
+        queryset=ProjectStatusChoice.objects.all().order_by('name'),
+        required=False
+    )
+    display__project__status__name = forms.BooleanField(required=False)
+
+    project__type__name = forms.ModelMultipleChoiceField(
+        label='Project Type',
+        queryset=ProjectTypeChoice.objects.all().order_by('name'),
+        required=False
+    )
+    display__project__type__name = forms.BooleanField(required=False)
+
+    project__class_number = forms.CharField(
+        label='Class Number', max_length=25, required=False
+    )
+    display__project__class_number = forms.BooleanField(required=False)
+
+    display__project__users = forms.BooleanField(
+        required=False,
+        help_text='Active users'
+    )
+
+    display__project__total_users = forms.BooleanField(required=False, help_text='Active users')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.helper = FormHelper(self)
+        self.helper.use_custom_control = False 
+        self.helper.layout = Layout(
+            Accordion(
+                AccordionGroup(
+                    'Filters',
+                    'project__title',
+                    'project__description',
+                    'project__pi__username',
+                    'project__requestor__username',
+                    'project__user_username',
+                    'project__status__name',
+                    'project__type__name',
+                    'project__class_number',
+                    active=False,
+                ),
+            ),
+            Accordion(
+                AccordionGroup(
+                    'Displays',
+                    'display__project__id',
+                    'display__project__title',
+                    'display__project__description',
+                    'display__project__pi__username',
+                    'display__project__requestor__username',
+                    'display__project__status__name',
+                    'display__project__type__name',
+                    'display__project__class_number',
+                    'display__project__users',
+                    'display__project__total_users',
+                    active=False,
+                ),
+            ),
+            FormActions(
+                Submit('submit', 'Project Search'),
+                Reset('reset', 'Reset')
+            ),
+        )
+
+
+class UserSearchForm(forms.Form):
     USER_TYPE_CHOICE = (
         ('all', 'All'),
         ('project', 'Project'),
         ('allocation', 'Allocation')
     )
 
-    only_search_projects = forms.BooleanField(
+    user__usernames = forms.CharField(
+        label="Usernames",
+        max_length=100,
         required=False,
-        help_text='Enables only filtering projects. Disables all other filters and selections.'
+        help_text='username1,username2,...'
     )
+    display__user__username = forms.BooleanField(required=False)
 
+    user__first_name = forms.CharField(label="First Name", max_length=100, required=False)
+    display__user__first_name = forms.BooleanField(required=False)
+
+    user__last_name = forms.CharField(label="Last Name", max_length=100, required=False)
+    display__user__last_name = forms.BooleanField(required=False)
+
+    user__userprofile__department = forms.CharField(label="Department Contains", max_length=100, required=False)
+    display__user__userprofile__department = forms.BooleanField(label='Display user department', required=False)
+
+    user__userprofile__title = forms.CharField(label="Title Contains", max_length=30, required=False)
+    display__user__userprofile__title = forms.BooleanField(label='Display user title', required=False)
+
+    display__user__total_projects = forms.BooleanField(required=False)
+
+    display__user__total_pi_projects = forms.BooleanField(required=False)
+
+    display__user__total_allocations = forms.BooleanField(required=False)
+
+    user__type = forms.ChoiceField(initial='all', choices=USER_TYPE_CHOICE, widget=forms.RadioSelect)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.helper = FormHelper(self)
+        self.helper.use_custom_control = False 
+        self.helper.layout = Layout(
+            Accordion(
+                AccordionGroup('User Profiles',
+                    'user__usernames',
+                    'user__first_name',
+                    'user__last_name',
+                    'user__userprofile__department',
+                    'user__userprofile__title',
+                    InlineRadios('user__type'),
+                    'display__user__username',
+                    'display__user__first_name',
+                    'display__user__last_name',
+                    'display__user__userprofile__department',
+                    'display__user__userprofile__title',
+                    'display__user__total_projects',
+                    'display__user__total_pi_projects',
+                    'display__user__total_allocations',
+                    active=False,
+                ),
+            ),
+            FormActions(
+                Submit('submit', 'User Search'),
+                Reset('reset', 'Reset')
+            )
+        )
+
+
+class SearchForm(forms.Form):
     display__project__id = forms.BooleanField(required=False)
 
     project__title = forms.CharField(
@@ -182,140 +334,78 @@ class SearchForm(forms.Form):
     allocationattribute_form = AllocationAttributeSearchForm()
     allocationattribute_helper = AllocationAttributeFormSetHelper()
 
-    user__usernames = forms.CharField(
-        label="Usernames",
-        max_length=100,
-        required=False,
-        help_text='username1,username2,...'
-    )
-    display__user__username = forms.BooleanField(required=False)
-
-    user__first_name = forms.CharField(label="First Name", max_length=100, required=False)
-    display__user__first_name = forms.BooleanField(required=False)
-
-    user__last_name = forms.CharField(label="Last Name", max_length=100, required=False)
-    display__user__last_name = forms.BooleanField(required=False)
-
-    user__userprofile__department = forms.CharField(label="Department Contains", max_length=100, required=False)
-    display__user__userprofile__department = forms.BooleanField(label='Display user department', required=False)
-
-    user__userprofile__title = forms.CharField(label="Title Contains", max_length=30, required=False)
-    display__user__userprofile__title = forms.BooleanField(label='Display user title', required=False)
-
-    display__user__total_projects = forms.BooleanField(required=False)
-
-    display__user__total_pi_projects = forms.BooleanField(required=False)
-
-    display__user__total_allocations = forms.BooleanField(required=False)
-
-    user__type = forms.ChoiceField(initial='all', choices=USER_TYPE_CHOICE, widget=forms.RadioSelect)
-
-    current_tab = forms.IntegerField(initial=1, widget=forms.HiddenInput)
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.helper = FormHelper(self)
         self.helper.use_custom_control = False 
         self.helper.layout = Layout(
-            TabHolder(
-                Tab('Project & Allocation Search',
+            Accordion(
+                AccordionGroup('Projects',
                     Accordion(
-                        AccordionGroup('Projects',
-                            'only_search_projects',
-                            Accordion(
-                                AccordionGroup(
-                                    'Filters',
-                                    'project__title',
-                                    'project__description',
-                                    'project__pi__username',
-                                    'project__requestor__username',
-                                    'project__user_username',
-                                    'project__status__name',
-                                    'project__type__name',
-                                    'project__class_number',
-                                    active=False,
-                                ),
-                            ),
-                            Accordion(
-                                AccordionGroup(
-                                    'Displays',
-                                    'display__project__id',
-                                    'display__project__title',
-                                    'display__project__description',
-                                    'display__project__pi__username',
-                                    'display__project__requestor__username',
-                                    'display__project__status__name',
-                                    'display__project__type__name',
-                                    'display__project__class_number',
-                                    'display__project__users',
-                                    'display__project__total_users',
-                                    active=False,
-                                ),
-                            ),
+                        AccordionGroup(
+                            'Filters',
+                            'project__title',
+                            'project__description',
+                            'project__pi__username',
+                            'project__requestor__username',
+                            'project__user_username',
+                            'project__status__name',
+                            'project__type__name',
+                            'project__class_number',
                             active=False,
                         ),
                     ),
                     Accordion(
-                        AccordionGroup('Allocations',
-                            'allocation__user_username',
-                            'allocation__status__name',
-                            'display__allocation__id',
-                            'display__allocation__status__name',
-                            'display__allocation__users',
-                            'display__allocation__total_users',
-                            active=False,
-                        )
-                    ),
-                    Accordion(
-                        AccordionGroup('Resources',
-                            'resources__name',
-                            'resources__resource_type__name',
-                            'display__resources__name',
-                            'display__resources__resource_type__name',
-                            active=False,
-                        )
-                    ),
-                    Accordion(
-                        AccordionGroup('Allocation Attributes',
-                            Formset('allocationattribute_form', 'allocationattribute_helper', label='allocationattribute_formset'),
-                            HTML(
-                                '<button id="id_formset_add_allocation_attribute_button" type="button" class="btn btn-primary">Add Allocation Attribute</button>'
-                            ),
-                            active=False,
-                        )
-                    ),
-                    css_id='allocation-project-search'
-                ),
-                Tab('User Search',
-                    Accordion(
-                        AccordionGroup('User Profiles',
-                            'user__usernames',
-                            'user__first_name',
-                            'user__last_name',
-                            'user__userprofile__department',
-                            'user__userprofile__title',
-                            InlineRadios('user__type'),
-                            'display__user__username',
-                            'display__user__first_name',
-                            'display__user__last_name',
-                            'display__user__userprofile__department',
-                            'display__user__userprofile__title',
-                            'display__user__total_projects',
-                            'display__user__total_pi_projects',
-                            'display__user__total_allocations',
+                        AccordionGroup(
+                            'Displays',
+                            'display__project__id',
+                            'display__project__title',
+                            'display__project__description',
+                            'display__project__pi__username',
+                            'display__project__requestor__username',
+                            'display__project__status__name',
+                            'display__project__type__name',
+                            'display__project__class_number',
                             active=False,
                         ),
                     ),
-                    css_id='user-search'
+                    active=False
                 )
             ),
-        
-            FormActions(
-                Submit('submit', 'Search'),
-                Reset('reset', 'Reset')
+            Accordion(
+                AccordionGroup('Allocations',
+                    'allocation__user_username',
+                    'allocation__status__name',
+                    'display__allocation__id',
+                    'display__allocation__status__name',
+                    'display__allocation__users',
+                    'display__allocation__total_users',
+                    active=False,
+                )
             ),
-            'current_tab'
+            Accordion(
+                AccordionGroup('Resources',
+                    'resources__name',
+                    'resources__resource_type__name',
+                    'display__resources__name',
+                    'display__resources__resource_type__name',
+                    active=False,
+                )
+            ),
+            Accordion(
+                AccordionGroup('Allocation Attributes',
+                    Formset('allocationattribute_form', 'allocationattribute_helper', label='allocationattribute_formset'),
+                    HTML(
+                        '<button id="id_formset_add_allocation_attribute_button" type="button" class="btn btn-primary">Add Allocation Attribute</button>'
+                    ),
+                    active=False,
+                )
+            ),
+            FormActions(
+                Submit('submit', 'Allocation Search'),
+                Reset('reset', 'Reset')
+            )
         )
 
 class Formset(LayoutObject):
