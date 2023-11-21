@@ -14,7 +14,7 @@ from coldfront.plugins.advanced_search.forms import (AllocationSearchForm,
                                                      ProjectSearchForm,
                                                      UserSearchForm)
 from coldfront.core.utils.common import Echo
-from coldfront.plugins.advanced_search.util import  ProjectTable, AllocationTable, UserTable
+from coldfront.plugins.advanced_search.utils import  ProjectTable, AllocationTable, UserTable
 
 logger = logging.getLogger(__name__)
 
