@@ -202,6 +202,12 @@ class SearchForm(forms.Form):
     user__userprofile__title = forms.CharField(label="Title Contains", max_length=30, required=False)
     display__user__userprofile__title = forms.BooleanField(label='Display user title', required=False)
 
+    display__user__total_projects = forms.BooleanField(required=False)
+
+    display__user__total_pi_projects = forms.BooleanField(required=False)
+
+    display__user__total_allocations = forms.BooleanField(required=False)
+
     user__type = forms.ChoiceField(initial='all', choices=USER_TYPE_CHOICE, widget=forms.RadioSelect)
 
     current_tab = forms.IntegerField(initial=1, widget=forms.HiddenInput)
@@ -213,7 +219,7 @@ class SearchForm(forms.Form):
         self.helper.use_custom_control = False 
         self.helper.layout = Layout(
             TabHolder(
-                Tab('Allocation & Project Search',
+                Tab('Project & Allocation Search',
                     Accordion(
                         AccordionGroup('Projects',
                             'only_search_projects',
@@ -295,6 +301,9 @@ class SearchForm(forms.Form):
                             'display__user__last_name',
                             'display__user__userprofile__department',
                             'display__user__userprofile__title',
+                            'display__user__total_projects',
+                            'display__user__total_pi_projects',
+                            'display__user__total_allocations',
                             active=False,
                         ),
                     ),

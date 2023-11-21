@@ -487,14 +487,23 @@ class UserTable:
             'userprofile'
         )
         if data.get('user__type') == 'project':
-            project_usernames = set(ProjectUser.objects.all().values_list('user__username', flat=True))
+            project_usernames = set(ProjectUser.objects.filter(
+                status__name='Active',
+                project__status__name='Active'
+            ).values_list('user__username', flat=True))
             users = users.filter(username__in=project_usernames)
         elif data.get('user__type') == 'allocation':
-            allocation_usernames = set(AllocationUser.objects.all().values_list('user__username', flat=True))
+            allocation_usernames = set(AllocationUser.objects.filter(
+                status__name='Active',
+                allocation__status__name='Active',
+                allocation__project__status__name='Active'
+            ).values_list('user__username', flat=True))
             users = users.filter(username__in=allocation_usernames)
 
-        if data.get('user__username'):
-            users = users.filter(username__in=data.get('user__username').split(','))
+        if data.get('user__usernames'):
+            usernames = data.get('user__usernames').split(',')
+            usernames = [username.strip() for username in usernames]
+            users = users.filter(username__in=usernames)
         if data.get('user__first_name'):
             users = users.filter(first_name=data.get('user__first_name'))
         if data.get('user__last_name'):
@@ -543,6 +552,25 @@ class UserTable:
                 if hasattr(current_attribute, attribute):
                     current_attribute = getattr(current_attribute, attribute)
                     continue
+
+                if attribute == 'total_projects':
+                    current_attribute = len(ProjectUser.objects.filter(
+                        user=user_obj, status__name='Active', project__status__name='Active'
+                    ))
+                if attribute == 'total_pi_projects':
+                    current_attribute = len(ProjectUser.objects.filter(
+                        user=user_obj,
+                        project__pi=user_obj,
+                        status__name='Active',
+                        project__status__name='Active'
+                    ))
+                if attribute == 'total_allocations':
+                    current_attribute = len(AllocationUser.objects.filter(
+                        user=user_obj,
+                        status__name='Active',
+                        allocation__status__name='Active',
+                        allocation__project__status__name='Active'
+                    ))
 
             if current_attribute is None:
                 current_attribute = ''
