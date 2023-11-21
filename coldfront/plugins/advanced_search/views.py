@@ -8,7 +8,7 @@ from django.http.response import StreamingHttpResponse
 from django.forms import formset_factory
 
 from coldfront.core.allocation.models import AllocationAttributeType
-from coldfront.plugins.advanced_search.forms import (SearchForm,
+from coldfront.plugins.advanced_search.forms import (AllocationSearchForm,
                                                      AllocationAttributeSearchForm,
                                                      AllocationAttributeFormSetHelper,
                                                      ProjectSearchForm,
@@ -33,7 +33,7 @@ class AdvancedSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         project_search_form = ProjectSearchForm(prefix='project_search')
-        allocation_search_form = SearchForm(prefix='allocation_search')
+        allocation_search_form = AllocationSearchForm(prefix='allocation_search')
         user_search_form = UserSearchForm(prefix='user_search')
 
         allocation_search_formset = formset_factory(AllocationAttributeSearchForm, extra=1)
@@ -53,7 +53,7 @@ class AdvancedSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 project_search_form = ProjectSearchForm(prefix='project_search')
 
         elif self.request.GET.get('submit') == 'Allocation Search':
-            allocation_search_form = SearchForm(self.request.GET, prefix='allocation_search')
+            allocation_search_form = AllocationSearchForm(self.request.GET, prefix='allocation_search')
             selected_resources = None
             if allocation_search_form.is_valid():
                 selected_resources = allocation_search_form.cleaned_data.get('resources__name')
@@ -80,7 +80,7 @@ class AdvancedSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 allocation_table = AllocationTable(allocation_search_form.cleaned_data, allocationattribute_data)
                 rows, columns = allocation_table.build_table()
             else:
-                allocation_search_form = SearchForm(prefix='allocation_search')
+                allocation_search_form = AllocationSearchForm(prefix='allocation_search')
         
         elif self.request.GET.get('submit') == 'User Search':
             user_search_form = UserSearchForm(self.request.GET, prefix='user_search')

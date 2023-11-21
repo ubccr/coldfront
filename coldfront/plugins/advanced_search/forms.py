@@ -245,7 +245,7 @@ class UserSearchForm(forms.Form):
         )
 
 
-class SearchForm(forms.Form):
+class AllocationSearchForm(forms.Form):
     display__project__id = forms.BooleanField(required=False)
 
     project__title = forms.CharField(

@@ -20,29 +20,28 @@ Project and Allocation Export List
       </div>
       <div id="collapseOne" class="collapse {{expand_accordion}}" data-parent="#accordion">
         <div class="card-body">
-            <ul class="nav nav-tabs">
-              <li class="nav-item"><a class="nav-link active" href="#project-search" data-toggle="tab">Project Search</a></li>
-              <li class="nav-item"><a class="nav-link" href="#allocation-search" data-toggle="tab">Allocation Search</a></li>
-              <li class="nav-item"><a class="nav-link" href="#user-search" data-toggle="tab">User Search</a></li>
-            </ul>
-            <div class="tab-content card-body">
-              <div id="project-search" class="tab-pane active">
-                <form method="GET" action="{% url 'advanced-search' %}" autocomplete="off">
-                  {% crispy project_form %}
-                </form>
-              </div>
-              <div id="allocation-search" class="tab-pane">
-                <form method="GET" action="{% url 'advanced-search' %}" autocomplete="off">
-                  {% crispy allocation_form %}
-                </form>
-              </div>
-              <div id="user-search" class="tab-pane">
-                <form method="GET" action="{% url 'advanced-search' %}" autocomplete="off">
-                  {% crispy user_form %}
-                </form>
-              </div>
+          <ul class="nav nav-tabs">
+            <li class="nav-item"><a class="nav-link active" href="#project-search" data-toggle="tab">Project Search</a></li>
+            <li class="nav-item"><a class="nav-link" href="#allocation-search" data-toggle="tab">Allocation Search</a></li>
+            <li class="nav-item"><a class="nav-link" href="#user-search" data-toggle="tab">User Search</a></li>
+          </ul>
+          <div class="tab-content card-body">
+            <div id="project-search" class="tab-pane active">
+              <form method="GET" action="{% url 'advanced-search' %}" autocomplete="off">
+                {% crispy project_form %}
+              </form>
             </div>
-          
+            <div id="allocation-search" class="tab-pane">
+              <form method="GET" action="{% url 'advanced-search' %}" autocomplete="off">
+                {% crispy allocation_form %}
+              </form>
+            </div>
+            <div id="user-search" class="tab-pane">
+              <form method="GET" action="{% url 'advanced-search' %}" autocomplete="off">
+                {% crispy user_form %}
+              </form>
+            </div>
+          </div>
         </div>
       </div>
     </div>
