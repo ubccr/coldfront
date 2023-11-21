@@ -203,5 +203,11 @@ Project and Allocation Export List
     };
     $("#export_data").val(JSON.stringify(data));
   })
+
+  $("#expand_button").click(function() {
+    $('#collapseOne').collapse();
+    icon = $("#plus_minus");
+    icon.toggleClass("fa-plus fa-minus");
+  });
 </script>
 {% endblock %}
