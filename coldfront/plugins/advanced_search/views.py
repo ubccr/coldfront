@@ -44,6 +44,8 @@ class AdvancedSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         ).values_list('id', flat=True))
         rows, columns = [], []
 
+        active_tab = 'project-search'
+
         if self.request.GET.get('submit') == 'Project Search':
             project_search_form = ProjectSearchForm(self.request.GET, prefix='project_search')
             if project_search_form.is_valid():
@@ -53,6 +55,7 @@ class AdvancedSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 project_search_form = ProjectSearchForm(prefix='project_search')
 
         elif self.request.GET.get('submit') == 'Allocation Search':
+            active_tab = 'allocation-search'
             allocation_search_form = AllocationSearchForm(self.request.GET, prefix='allocation_search')
             selected_resources = None
             if allocation_search_form.is_valid():
@@ -83,6 +86,7 @@ class AdvancedSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 allocation_search_form = AllocationSearchForm(prefix='allocation_search')
         
         elif self.request.GET.get('submit') == 'User Search':
+            active_tab = 'user-search'
             user_search_form = UserSearchForm(self.request.GET, prefix='user_search')
             if user_search_form.is_valid():
                 user_table = UserTable(user_search_form.cleaned_data)
@@ -104,7 +108,9 @@ class AdvancedSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         context['columns'] = columns
         num_rows = 0
+        has_results = False
         if columns:
+            has_results = True
             num_rows = len(rows)
         context['entries'] = num_rows
         context['rows'] = rows
@@ -112,6 +118,8 @@ class AdvancedSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         context['linked_allocation_attribute_types'] = linked_allocation_attribute_types
         context['allocationattribute_form'] = formset
         context['allocationattribute_helper'] = AllocationAttributeFormSetHelper()
+        context['active_tab'] = active_tab
+        context['has_results'] = has_results
 
         context['project_form'] = project_search_form
         context['allocation_form'] = allocation_search_form

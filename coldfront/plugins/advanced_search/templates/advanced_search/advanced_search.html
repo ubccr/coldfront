@@ -98,6 +98,8 @@ Project and Allocation Export List
   var form_count = {{ allocationattribute_form.total_form_count | safe}}
   var allocation_attribute_type_ids = {{ allocation_attribute_type_ids | safe}}
   var linked_allocation_attribute_types = {{ linked_allocation_attribute_types | safe }}
+  var active_tab = '{{ active_tab | safe }}'
+  var has_results = '{{ has_results | safe }}'
 
   function toggleUsageFields(value, base_div_id) {
     if (allocation_attribute_type_ids.includes(value)) {
@@ -124,6 +126,24 @@ Project and Allocation Export List
   }
 
   $(document).ready(function () {
+    if (active_tab === 'allocation-search') {
+      $('#project-search').toggleClass('active');
+      $('#allocation-search').toggleClass('active');
+      $('[href="#project-search"]').toggleClass('active');
+      $('[href="#allocation-search"]').toggleClass('active');
+    } else if (active_tab === 'user-search') {
+      $('#project-search').toggleClass('active');
+      $('#user-search').toggleClass('active');
+      $('[href="#project-search"]').toggleClass('active');
+      $('[href="#user-search"]').toggleClass('active');
+    }
+
+    if (has_results === 'False') {
+      $('#collapseOne').collapse();
+      icon = $("#plus_minus");
+      icon.toggleClass("fa-plus fa-minus");
+    }
+
     $("#id_allocation_search-resources__name").on('click', function(evt) {
       options = [];
       selected_resources = $("#id_allocation_search-resources__name").val();
