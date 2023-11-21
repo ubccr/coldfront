@@ -8,6 +8,12 @@ Justification:
 {{resource}} was last recorded as {{used_percentage}}% allocated.
 {% endif %}
 
+{% if unmatched_code %}
+The expense code entered does not match any in the FIINE database.
+Please check it for accuracy and ensure that it is added to FIINE:
+{{expense_code}}
+{% endif %}
+
 {% if nese %}
 Here is a draft ticket to send to NESE:
 
