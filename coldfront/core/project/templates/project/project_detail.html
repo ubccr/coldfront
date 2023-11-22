@@ -264,12 +264,12 @@ Project Detail
             <th scope="col">Username</th>
             <th scope="col">Name</th>
             <th scope="col">Email</th>
-            <th scope="col" class="text-nowrap">Role <a href="#" data-toggle="popover" title="Role" data-trigger="hover" data-content="Manager role grants user access to add/remove users, allocations, grants, and publications to the project.">
-              <i class="fas fa-info-circle" aria-hidden="true"></i>
-              <span class="sr-only">Manager role grants user access to add/remove users, allocations, grants, and publications to the project.</span></a>
-            </th>
-            <th scope="col" class="text-nowrap">Status</th>
-            <!-- This is what I want to add - a usage column; -->
+            <th scope="col" class="text-nowrap">Role
+              <a href="#" data-toggle="popover" title="Role" data-trigger="hover" data-content="Manager role grants user access to add/remove users, allocations, grants, and publications to the project.">
+                <i class="fas fa-info-circle" aria-hidden="true"></i>
+                <span class="sr-only">Manager role grants user access to add/remove users, allocations, grants, and publications to the project.</span>
+              </a>
+           </th>
            <th scope="col" class="nosort">
              <input type="checkbox" class="check" id="selectAll" style="margin-right: 5px;">Notifications On
                <a href="#" title="Enable Notifications" data-toggle="popover" data-trigger="hover" data-content="When disabled, user will not receive notifications for allocation requests and expirations or cloud usage (if applicable).">
@@ -290,16 +290,6 @@ Project Detail
               <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
               <td>{{ user.user.email }}</td>
               <td>{{ user.role.name }}</td>
-
-
-              {% if user.status.name == 'Active' %}
-                <td class="text-success">{{ user.status.name }}</td>
-              {% elif user.status.name == 'Removed' %}
-                <td class="text-danger">Inactive</td>
-              {% else %}
-                <td class="text-info">{{ user.status.name }}</td>
-              {% endif %}
-
               <td>
                 {% if is_allowed_to_update_project %}
                   <input type="checkbox"
@@ -570,6 +560,8 @@ Project Detail
 <!-- End Admin Messages -->
 
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.24/af-2.3.5/b-1.7.0/b-colvis-1.7.0/b-html5-1.7.0/b-print-1.7.0/cr-1.5.3/date-1.0.2/fc-3.3.2/kt-2.6.1/r-2.2.7/rg-1.1.2/rr-1.2.7/sl-1.3.2/datatables.min.css"/>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/pdfmake.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/vfs_fonts.js"></script>
 <script type="text/javascript" src="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.24/af-2.3.5/b-1.7.0/b-colvis-1.7.0/b-html5-1.7.0/b-print-1.7.0/cr-1.5.3/date-1.0.2/fc-3.3.2/kt-2.6.1/r-2.2.7/rg-1.1.2/rr-1.2.7/sl-1.3.2/datatables.min.js"></script>
 
 
@@ -642,10 +634,22 @@ Project Detail
     });
 
     $('#projectuser_table').DataTable({
-       "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
-       "pageLength": 25,
+       'lengthMenu': [[10, 25, 50, -1], [10, 25, 50, 'All']],
+       'pageLength': 25,
+       'aoColumnDefs': [{
+         'bSortable': false,
+         'aTargets': ['nosort']
+       }],
        dom: 'B<"clear">lfrtip',
        order: [[ 3, "desc" ]],
+       buttons: [{
+         name: 'primary',
+         extend: 'collection',
+         background: false,
+         autoClose: true,
+         text: 'Export',
+         buttons: [ 'csv', 'excel', 'pdf' ]
+       }]
     });
 
     $('#invoice_table').DataTable({
