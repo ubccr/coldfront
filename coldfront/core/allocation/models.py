@@ -447,22 +447,30 @@ class AllocationAttribute(TimeStampedModel):
                 self.allocation_attribute_type))
 
         expected_value_type = self.allocation_attribute_type.attribute_type.name.strip()
-
-        if expected_value_type == "Int" and not isinstance(literal_eval(self.value), int):
-            raise ValidationError(
-                'Invalid Value "%s" for "%s". Value must be an integer.' % (self.value, self.allocation_attribute_type.name))
-        elif expected_value_type == "Float" and not (isinstance(literal_eval(self.value), float) or isinstance(literal_eval(self.value), int)):
-            raise ValidationError(
-                'Invalid Value "%s" for "%s". Value must be a float.' % (self.value, self.allocation_attribute_type.name))
+        error = None
+        if expected_value_type in ['Float', 'Int']:
+            try:
+                literal_val = literal_eval(self.value)
+            except SyntaxError as exc:
+                error = 'Value must be entirely numeric. Please remove any non-numeric characters.'
+                raise ValidationError(
+                    f'Invalid Value "{self.value}" for "{self.allocation_attribute_type.name}". {error}'
+                ) from exc
+            if expected_value_type == 'Float' and not isinstance(literal_val, (float,int)):
+                error = 'Value must be a float.'
+            elif expected_value_type == 'Int' and not isinstance(literal_val, int):
+                error = 'Value must be an integer.'
         elif expected_value_type == "Yes/No" and self.value not in ["Yes", "No"]:
-            raise ValidationError(
-                'Invalid Value "%s" for "%s". Allowed inputs are "Yes" or "No".' % (self.value, self.allocation_attribute_type.name))
+            error = 'Allowed inputs are "Yes" or "No".'
         elif expected_value_type == "Date":
             try:
                 datetime.datetime.strptime(self.value.strip(), "%Y-%m-%d")
             except ValueError:
-                raise ValidationError(
-                    'Invalid Value "%s" for "%s". Date must be in format YYYY-MM-DD' % (self.value, self.allocation_attribute_type.name))
+                error = 'Date must be in format YYYY-MM-DD'
+        if error:
+            raise ValidationError(
+                f'Invalid Value "{self.value}" for "{self.allocation_attribute_type.name}". {error}'
+            )
 
     def __str__(self):
         return '%s' % (self.allocation_attribute_type.name)
