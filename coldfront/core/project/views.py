@@ -180,7 +180,8 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             attributes_with_usage.remove(a)
 
         # Only show 'Active Users'
-        project_users = self.object.projectuser_set.order_by('user__username')
+        project_users = self.object.projectuser_set.filter(
+                    status__name='Active').order_by('user__username')
 
         context['mailto'] = 'mailto:' + ','.join([u.user.email for u in project_users])
 

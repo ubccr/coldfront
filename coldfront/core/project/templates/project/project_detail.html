@@ -97,8 +97,8 @@ Project Detail
             <th scope="col">Resource Type</th>
             <th scope="col">Location</th>
             <th scope="col">User Count</th>
-            <th scope="col">Space (TB)</th>
-            <th scope="col">Used (TB)</th>
+            <th scope="col">Space</th>
+            <th scope="col">Used</th>
             <th scope="col">Monthly Cost</th>
             <th scope="col" class="nosort">Actions</th>
           </tr>
@@ -642,36 +642,11 @@ Project Detail
     });
 
     $('#projectuser_table').DataTable({
-       'lengthMenu': [[10, 25, 50, -1], [10, 25, 50, 'All']],
-       'pageLength': 25,
-       'aoColumnDefs': [{
-         'bSortable': false,
-         'aTargets': ['nosort']
-       }],
+       "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
+       "pageLength": 25,
        dom: 'B<"clear">lfrtip',
        order: [[ 3, "desc" ]],
-       buttons: [
-        {
-          name: 'toggleusers',
-          text: function() {
-              return $('#projectuser_table').attr('filter') == "on" ? 'Show All Users' : "Show Active Users"
-            },
-          action: function(e, dt, node, config) {
-            var table = $('#projectuser_table');
-            var filter = table.attr('filter') === "on" ? 'off' : "on";
-            document.querySelector('#projectuser_table').setAttribute('filter', filter);
-            if (filter == 'on') {
-              $.fn.dataTable.ext.search.push(
-                function(settings, data, dataIndex) {
-                    return $(dt.row(dataIndex).node()).attr('status') == "Active";
-                  });
-            } else {$.fn.dataTable.ext.search.pop();}
-            table.DataTable().draw();
-            this.text(filter == 'on' ? 'Show All Users' : "Show Active Users")
-          }
-        }
-      ]}
-    );
+    });
 
     $('#invoice_table').DataTable({
       'aoColumnDefs': [{
