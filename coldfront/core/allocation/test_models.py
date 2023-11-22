@@ -58,3 +58,11 @@ class AllocationAttributeModelTests(TestCase):
         error = 'Value must be entirely numeric. Please remove any non-numeric characters.'
         with self.assertRaisesMessage(ValidationError, error):
             self.allocationattribute.clean()
+
+    def test_allocationattribute_clean_nonnumeric_error2(self):
+        """cleaning non-numeric value for numeric AllocationAttributeType gives useful error message
+        """
+        self.allocationattribute.value = "150%"
+        error = 'Value must be entirely numeric. Please remove any non-numeric characters.'
+        with self.assertRaisesMessage(ValidationError, error):
+            self.allocationattribute.clean()
