@@ -46,13 +46,15 @@ class AllocationAttributeModelTests(TestCase):
         )
 
     def test_allocationattribute_clean_no_error(self):
-        """cleaning a numeric value for an int or float AllocationAttributeType produces no error"""
+        """cleaning numeric value for numeric AllocationAttributeType gives no error
+        """
         self.allocationattribute.value = "1000"
         self.allocationattribute.clean()
 
     def test_allocationattribute_clean_nonnumeric_error(self):
-        """cleaning a non-numeric value for int or float AllocationAttributeTypes returns an informative error message"""
-
+        """cleaning non-numeric value for numeric AllocationAttributeType gives useful error message
+        """
         self.allocationattribute.value = "1000TB"
-        with self.assertRaisesMessage(ValidationError, 'Value must be entirely numeric. Please remove any non-numeric characters.'):
+        error = 'Value must be entirely numeric. Please remove any non-numeric characters.'
+        with self.assertRaisesMessage(ValidationError, error):
             self.allocationattribute.clean()
