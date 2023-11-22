@@ -150,18 +150,7 @@ We do not have information about your research. Please provide a detailed descri
                 [d[:3], d[3:8], d[8:12], d[12:18], d[18:24], d[24:28], d[28:33]]
             )
             cleaned_expensecode = insert_dashes(replace_productcode(digits_only(expense_code)))
-            if 'ifxbilling' in settings.INSTALLED_APPS:
-                try:
-                    matched_fiineaccts = FiineAPI.listAccounts(code=cleaned_expensecode)
-                    if not matched_fiineaccts:
-                        self.add_error(
-                            "expense_code",
-                            "expense code not found in system - please check the code or get in touch with a system administrator."
-                        )
-                except Exception:
-                    #Not authorized to use accounts_list
-                    pass
-                cleaned_data['expense_code'] = cleaned_expensecode
+            cleaned_data['expense_code'] = cleaned_expensecode
         elif existing_expense_codes and existing_expense_codes != '------':
             cleaned_data['expense_code'] = existing_expense_codes
         return cleaned_data

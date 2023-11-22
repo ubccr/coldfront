@@ -68,6 +68,7 @@ from coldfront.core.utils.mail import send_allocation_admin_email, send_allocati
 
 
 if 'ifxbilling' in settings.INSTALLED_APPS:
+    from fiine.client import API as FiineAPI
     from ifxbilling.models import Account, UserProductAccount
 if 'django_q' in settings.INSTALLED_APPS:
     from django_q.tasks import Task
@@ -711,7 +712,19 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             'quantity':quantity,
             'nese': nese,
             'used_percentage': used_percentage,
+            'expense_code': expense_code,
+            'unmatched_code': False,
         }
+
+        if 'ifxbilling' in settings.INSTALLED_APPS:
+            try:
+                matched_fiineaccts = FiineAPI.listAccounts(code=expense_code)
+                if not matched_fiineaccts:
+                    other_vars['unmatched_code'] = True
+            except Exception:
+                #Not authorized to use accounts_list
+                pass
+
         send_allocation_admin_email(
             allocation_obj,
             'New Allocation Request',
