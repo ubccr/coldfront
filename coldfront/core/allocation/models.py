@@ -532,20 +532,29 @@ class AllocationAttribute(TimeStampedModel):
 
         expected_value_type = self.allocation_attribute_type.attribute_type.name.strip()
         error = None
-        if expected_value_type == 'Float' and not isinstance(literal_eval(self.value), (float,int)):
-            error = 'Value must be a float.'
-        elif expected_value_type == 'Int' and not isinstance(literal_eval(self.value), int):
-            error = 'Value must be an integer.'
-        elif expected_value_type == 'Yes/No' and self.value not in ['Yes', 'No']:
+        if expected_value_type in ['Float', 'Int']:
+            try:
+                literal_val = literal_eval(self.value)
+            except SyntaxError as exc:
+                error = 'Value must be entirely numeric. Please remove any non-numeric characters.'
+                raise ValidationError(
+                    f'Invalid Value "{self.value}" for "{self.allocation_attribute_type.name}". {error}'
+                ) from exc
+            if expected_value_type == 'Float' and not isinstance(literal_val, (float,int)):
+                error = 'Value must be a float.'
+            elif expected_value_type == 'Int' and not isinstance(literal_val, int):
+                error = 'Value must be an integer.'
+        elif expected_value_type == "Yes/No" and self.value not in ["Yes", "No"]:
             error = 'Allowed inputs are "Yes" or "No".'
-        elif expected_value_type == 'Date':
+        elif expected_value_type == "Date":
             try:
                 datetime.datetime.strptime(self.value.strip(), '%Y-%m-%d')
             except ValueError:
                 error = 'Date must be in format YYYY-MM-DD'
         if error:
             raise ValidationError(
-                'Invalid Value "%s" for "%s". %s' % (self.value, self.allocation_attribute_type.name, error))
+                f'Invalid Value "{self.value}" for "{self.allocation_attribute_type.name}". {error}'
+            )
 
     def __str__(self):
         return str(self.allocation_attribute_type.name)
