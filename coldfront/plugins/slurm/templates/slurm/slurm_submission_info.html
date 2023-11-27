@@ -1,0 +1,42 @@
+{% if slurm_submission_info %}
+  <div class="card mb-3">
+    <div class="card-header">
+        <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Submitting Slurm Jobs</h3>
+    </div>
+    <div class="card-body">
+        <h4 class="d-inline">Interactive Jobs</h4>
+        <hr>
+        <ul style="list-style-type: none; padding: 0; margin: 0;">
+          {% for resources_name, submit_info in slurm_submission_info.items %}
+            {% if submit_info %}
+              <li>
+                srun
+                {% for slurm_submit_option, submit_info_value in submit_info.items %}
+                  {{ slurm_submit_option }} {{ submit_info_value }}
+                {% endfor %}
+                &lt;other options&gt;
+              </li>
+            {% endif %}
+          {% endfor %}
+        </ul>
+        <hr>
+        <h4 class="d-inline">Batch Jobs</h4>
+        <hr>
+        <div class="row">
+          {% for resources_name, submit_info in slurm_submission_info.items %}
+            {% if submit_info %}
+              <div class="col">
+                <ul style="list-style-type: none; padding: 0; margin: 0;">
+                  {% for slurm_submit_option, submit_info_value in submit_info.items %}
+                    <li>
+                      #SBATCH {{ slurm_submit_option }} {{ submit_info_value }}
+                    </li>
+                  {% endfor %}
+                </ul>
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+    </div>
+  </div>
+{% endif %}

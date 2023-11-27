@@ -1,0 +1,19 @@
+
+<div id="all_slurm_submission_info">
+</div>
+
+<script>
+  $(document).ready(function () {
+    $.ajax({
+      url: "{% url 'all-slurm-submission-info' %}",
+      method: "POST",
+      data: {
+        csrfmiddlewaretoken: "{{ csrf_token }}",
+      },
+      success: function(data) {
+        $('#all_slurm_submission_info').before(data);
+        $('#all_slurm_submission_info').remove();
+      }
+    })
+  })
+</script>

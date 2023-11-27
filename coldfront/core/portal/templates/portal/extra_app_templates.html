@@ -6,6 +6,6 @@
   {% include "system_monitor/system_monitor_div.html" %} 
 {% endif %}
 
-{% if 'coldfront.plugins.slurm' in EXTRA_APPS %}
-  {% include "slurm/slurm_div.html" %} 
+{% if 'coldfront.plugins.slurm' in EXTRA_APPS and user.is_authenticated %}
+  {% include "slurm/all_slurm_submission_info_div.html" %}
 {% endif %}

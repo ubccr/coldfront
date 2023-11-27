@@ -1,18 +1,19 @@
 
-<div id="slurm_help">
+<div id="slurm_submission_info">
 </div>
 
 <script>
   $(document).ready(function () {
     $.ajax({
-      url: "{% url 'get-slurm-accounts' %}",
+      url: "{% url 'slurm-submission-info' %}",
       method: "POST",
       data: {
         csrfmiddlewaretoken: "{{ csrf_token }}",
+        allocation_pk: "{{ allocation.pk }}"
       },
       success: function(data) {
-        $('#slurm_help').after(data);
+        $('#slurm_submission_info').html(data);
       }
     })
   })
-</script>
+</script> 
