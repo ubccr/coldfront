@@ -172,7 +172,7 @@ class Command(BaseCommand):
         for slate_project in slate_projects:
             user_obj, _ = User.objects.get_or_create(username=slate_project.get('owner_netid'))
             project_user_role = ProjectUserRoleChoice.objects.get(name='Manager')
-            if user_obj.userprofile.is_pi:
+            if user_obj.userprofile.title in ['Faculty', 'Staff', 'Academic (ACNP)', ]:
                 project_obj, _ = Project.objects.get_or_create(
                     title=slate_project.get('project_title'),
                     description=slate_project.get('abstract'),
