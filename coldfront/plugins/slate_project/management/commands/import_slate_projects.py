@@ -1,11 +1,6 @@
 import csv
 import datetime
-import os
-import json
 import time
-
-import ldap.filter
-from ldap3 import Connection, Server
 
 from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth.models import User
@@ -24,7 +19,7 @@ from coldfront.core.allocation.models import (Allocation,
                                               AllocationUserStatusChoice,
                                               AllocationUserRoleChoice)
 from coldfront.core.resource.models import Resource
-from coldfront.core.utils.common import import_from_settings
+from coldfront.plugins.slate_project.utils import LDAPModify
 
 
 class Command(BaseCommand):
@@ -115,6 +110,7 @@ class Command(BaseCommand):
             raise CommandError("The limit must be > 0")
 
         print('Importing Slate Projects...')
+        ldap_conn = LDAPModify()
         start_time = time.time()
         file_name = kwargs.get("csv")
         slate_projects = []
@@ -156,8 +152,8 @@ class Command(BaseCommand):
                     "updated_at": line[30],
                     "title": line[31],
                     "can_be_pi": line[32],
-                    "read_write_users": line[33],
-                    "read_only_users": line[34]
+                    # "read_write_users": line[33],
+                    # "read_only_users": line[34]
                 }
                 slate_projects.append(slate_project)
 
@@ -209,8 +205,11 @@ class Command(BaseCommand):
                     status=ProjectUserStatusChoice.objects.get(name='Active')
                 )
 
-            all_users = slate_project.get('read_write_users') + ',' + slate_project.get('read_only_users')
-            for user in all_users.split(','):
+            read_write_users = ldap_conn.get_users(slate_project.get('namespace_entry'))
+            read_only_users = ldap_conn.get_users(slate_project.get('namespace_entry') + '-ro')
+            all_users = read_write_users + read_only_users
+            for user in all_users:
+                enable_notifications = True
                 if not user:
                     continue
                 user_obj, _ = User.objects.get_or_create(username=user)
@@ -218,6 +217,7 @@ class Command(BaseCommand):
                 project_user_role = ProjectUserRoleChoice.objects.get(name='User')
                 if user_profile_obj.title == 'group':
                     project_user_role = ProjectUserRoleChoice.objects.get(name='Group')
+                    enable_notifications = False
 
                 if user_obj == project_obj.pi:
                     project_user_role = ProjectUserRoleChoice.objects.get(name='Manager')
@@ -226,6 +226,7 @@ class Command(BaseCommand):
                     user=user_obj,
                     project=project_obj,
                     role=project_user_role,
+                    enable_notifications=enable_notifications,
                     status=ProjectUserStatusChoice.objects.get(name='Active')
                 )
 
@@ -255,7 +256,7 @@ class Command(BaseCommand):
                     allocation_user_obj.role = AllocationUserRoleChoice.objects.get(name='read/write')
                     allocation_user_obj.save()
             else:
-                for user in slate_project.get("read_write_users").split(','):
+                for user in read_write_users:
                     if not user:
                         continue
                     user_obj, created = User.objects.get_or_create(username=user)
@@ -269,7 +270,7 @@ class Command(BaseCommand):
                         allocation_user_obj.role = AllocationUserRoleChoice.objects.get(name='read/write')
                         allocation_user_obj.save()
 
-                for user in slate_project.get("read_only_users").split(','):
+                for user in read_only_users:
                     if not user:
                         continue
                     user_obj, created = User.objects.get_or_create(username=user)
@@ -283,6 +284,7 @@ class Command(BaseCommand):
                         allocation_user_obj.role = AllocationUserRoleChoice.objects.get(name='read only')
                         allocation_user_obj.save()
 
+            self.create_allocation_attribute(allocation_obj, 'GID', ldap_conn.get_group_gid_number(slate_project.get('namespace_entry')))
             self.create_allocation_attribute(allocation_obj, 'Namespace Entry', slate_project.get('namespace_entry'))
             self.create_allocation_attribute(allocation_obj, 'Allocated Quantity', slate_project.get('allocated_quantity'))
 

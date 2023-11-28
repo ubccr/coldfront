@@ -815,6 +815,21 @@ class LDAPModify:
         
         return None
     
+    def get_group_gid_number(self, group_name):
+        searchParameters = {
+            'search_base': self.LDAP_BASE_DN,
+            'search_filter': ldap.filter.filter_format("(cn=%s)", [group_name]),
+            'attributes': ['gidNumber'],
+            'size_limit': 1
+        }
+        self.conn.search(**searchParameters)
+        if self.conn.entries:
+            attributes = json.loads(self.conn.entries[0].entry_to_json()).get('attributes')
+        else:
+            attributes = {'gidNumber': None}
+
+        return attributes.get('gidNumber')[0]
+    
     def check_group_exists(self, group_name):
         searchParameters = {
             'search_base': f'cn={group_name},{self.LDAP_BASE_DN}',
