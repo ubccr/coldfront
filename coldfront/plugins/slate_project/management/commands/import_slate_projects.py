@@ -154,7 +154,7 @@ class Command(BaseCommand):
                     "ticket_id": line[29],
                     "updated_at": line[30],
                     "title": line[31],
-                    "can_be_pi": line[32],
+                    # "can_be_pi": line[32],
                     # "read_write_users": line[33],
                     # "read_only_users": line[34]
                 }
@@ -172,7 +172,7 @@ class Command(BaseCommand):
         for slate_project in slate_projects:
             user_obj, _ = User.objects.get_or_create(username=slate_project.get('owner_netid'))
             project_user_role = ProjectUserRoleChoice.objects.get(name='Manager')
-            if slate_project.get('can_be_pi') == 'True':
+            if user_obj.userprofile.is_pi:
                 project_obj, _ = Project.objects.get_or_create(
                     title=slate_project.get('project_title'),
                     description=slate_project.get('abstract'),
