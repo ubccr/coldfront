@@ -303,6 +303,9 @@ class LDAPSearch():
         self.server = Server(self.LDAP_SERVER_URI, use_ssl=True, connect_timeout=self.LDAP_CONNECT_TIMEOUT)
         self.conn = Connection(self.server)
 
+        if not self.conn.bind():
+            print(f'Failed to bind to LDAP server: {self.conn.result}')
+
     def get_group_gid_number(self, group_name):
         searchParameters = {
             'search_base': self.LDAP_BASE_DN,
