@@ -1,6 +1,9 @@
 import csv
+import json
 import datetime
 import time
+import ldap.filter
+from ldap3 import Connection, Server
 
 from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth.models import User
@@ -19,7 +22,7 @@ from coldfront.core.allocation.models import (Allocation,
                                               AllocationUserStatusChoice,
                                               AllocationUserRoleChoice)
 from coldfront.core.resource.models import Resource
-from coldfront.plugins.slate_project.utils import LDAPModify
+from coldfront.core.utils.common import import_from_settings
 
 
 class Command(BaseCommand):
@@ -110,7 +113,7 @@ class Command(BaseCommand):
             raise CommandError("The limit must be > 0")
 
         print('Importing Slate Projects...')
-        ldap_conn = LDAPModify()
+        ldap_conn = LDAPSearch()
         start_time = time.time()
         file_name = kwargs.get("csv")
         slate_projects = []
@@ -289,3 +292,43 @@ class Command(BaseCommand):
             self.create_allocation_attribute(allocation_obj, 'Allocated Quantity', slate_project.get('allocated_quantity'))
 
         print(f'Time elapsed: {time.time() - start_time}')
+
+
+class LDAPSearch():
+    def __init__(self):
+        self.LDAP_SERVER_URI = import_from_settings('LDAP_SLATE_PROJECT_SERVER_URI')
+        self.LDAP_BASE_DN = import_from_settings('LDAP_SLATE_PROJECT_BASE_DN')
+        self.LDAP_CONNECT_TIMEOUT = import_from_settings('LDAP_SLATE_PROJECT_CONNECT_TIMEOUT', 2.5)
+
+        self.server = Server(self.LDAP_SERVER_URI, use_ssl=True, connect_timeout=self.LDAP_CONNECT_TIMEOUT)
+        self.conn = Connection(self.server)
+
+    def get_group_gid_number(self, group_name):
+        searchParameters = {
+            'search_base': self.LDAP_BASE_DN,
+            'search_filter': ldap.filter.filter_format("(cn=%s)", [group_name]),
+            'attributes': ['gidNumber'],
+            'size_limit': 1
+        }
+        self.conn.search(**searchParameters)
+        if self.conn.entries:
+            attributes = json.loads(self.conn.entries[0].entry_to_json()).get('attributes')
+        else:
+            attributes = {'gidNumber': ['null']}
+
+        return attributes.get('gidNumber')[0]
+    
+    def get_users(self, group_name):
+        searchParameters = {
+            'search_base': self.LDAP_BASE_DN,
+            'search_filter': ldap.filter.filter_format("(cn=%s)", [group_name]),
+            'attributes': ['memberUid'],
+            'size_limit': 1
+        }
+        self.conn.search(**searchParameters)
+        if self.conn.entries:
+            attributes = json.loads(self.conn.entries[0].entry_to_json()).get('attributes')
+        else:
+            attributes = {'memberUid': []}
+
+        return attributes.get('memberUid')
