@@ -23,6 +23,7 @@ from coldfront.plugins.ldap_user_info.utils import LDAPSearch
 logger = logging.getLogger(__name__)
 
 ENABLE_LDAP_ELIGIBILITY_SERVER = import_from_settings('ENABLE_LDAP_ELIGIBILITY_SERVER', False)
+ENABLE_LDAP_SLATE_PROJECT_SYNCING = import_from_settings('ENABLE_LDAP_SLATE_PROJECT_SYNCING', False)
 if ENABLE_LDAP_ELIGIBILITY_SERVER:
     SLATE_PROJECT_ELIGIBILITY_ACCOUNT = import_from_settings('SLATE_PROJECT_ELIGIBILITY_ACCOUNT')
     SLATE_PROJECT_ACCOUNT = import_from_settings('SLATE_PROJECT_ACCOUNT') 
@@ -44,6 +45,9 @@ def sync_slate_project_users(allocation_obj):
 
     :param allocation_obj: Allocation object that is checked
     """
+    if not ENABLE_LDAP_SLATE_PROJECT_SYNCING:
+        return
+
     allocation_attribute_type = 'Namespace Entry'
     namespace_entry = allocation_obj.allocationattribute_set.filter(
         allocation_attribute_type__name=allocation_attribute_type
