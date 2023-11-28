@@ -826,7 +826,7 @@ class LDAPModify:
         if self.conn.entries:
             attributes = json.loads(self.conn.entries[0].entry_to_json()).get('attributes')
         else:
-            attributes = {'gidNumber': None}
+            attributes = {'gidNumber': ['null']}
 
         return attributes.get('gidNumber')[0]
     

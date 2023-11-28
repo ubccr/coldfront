@@ -205,8 +205,8 @@ class Command(BaseCommand):
                     status=ProjectUserStatusChoice.objects.get(name='Active')
                 )
 
-            read_write_users = ldap_conn.get_users(slate_project.get('namespace_entry'))
-            read_only_users = ldap_conn.get_users(slate_project.get('namespace_entry') + '-ro')
+            read_write_users = ldap_conn.get_users('condo_' + slate_project.get('namespace_entry'))
+            read_only_users = ldap_conn.get_users('condo_' + slate_project.get('namespace_entry') + '-ro')
             all_users = read_write_users + read_only_users
             for user in all_users:
                 enable_notifications = True
