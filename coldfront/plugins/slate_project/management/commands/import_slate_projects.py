@@ -284,7 +284,7 @@ class Command(BaseCommand):
                         allocation_user_obj.role = AllocationUserRoleChoice.objects.get(name='read only')
                         allocation_user_obj.save()
 
-            self.create_allocation_attribute(allocation_obj, 'GID', ldap_conn.get_group_gid_number(slate_project.get('namespace_entry')))
+            self.create_allocation_attribute(allocation_obj, 'GID', ldap_conn.get_group_gid_number('condo_' + slate_project.get('namespace_entry')))
             self.create_allocation_attribute(allocation_obj, 'Namespace Entry', slate_project.get('namespace_entry'))
             self.create_allocation_attribute(allocation_obj, 'Allocated Quantity', slate_project.get('allocated_quantity'))
 
