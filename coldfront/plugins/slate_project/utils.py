@@ -48,7 +48,7 @@ def sync_slate_project_users(allocation_obj):
     if not ENABLE_LDAP_SLATE_PROJECT_SYNCING:
         return
 
-    allocation_attribute_type = 'Namespace Entry'
+    allocation_attribute_type = 'LDAP Group'
     namespace_entry = allocation_obj.allocationattribute_set.filter(
         allocation_attribute_type__name=allocation_attribute_type
     )
@@ -320,7 +320,7 @@ def add_slate_project_groups(allocation_obj):
 
     :param allocation_obj: The allocation the groups are being created from
     """
-    allocation_attribute_type = 'Namespace Entry'
+    allocation_attribute_type = 'LDAP Group'
     namespace_entry = allocation_obj.allocationattribute_set.filter(
         allocation_attribute_type__name=allocation_attribute_type
     )
@@ -425,7 +425,7 @@ def add_user_to_slate_project_group(allocation_user_obj):
 
     :param allocation_user_obj: The allocation user
     """
-    allocation_attribute_type = 'Namespace Entry'
+    allocation_attribute_type = 'LDAP Group'
     allocation_obj = allocation_user_obj.allocation
     namespace_entry = allocation_obj.allocationattribute_set.filter(
         allocation_attribute_type__name=allocation_attribute_type
@@ -468,7 +468,7 @@ def remove_slate_project_groups(allocation_obj):
 
     :param allocation_obj: The allocation the groups are being removed from
     """
-    allocation_attribute_type = 'Namespace Entry'
+    allocation_attribute_type = 'LDAP Group'
     namespace_entry = allocation_obj.allocationattribute_set.filter(
         allocation_attribute_type__name=allocation_attribute_type
     )
@@ -514,7 +514,7 @@ def remove_user_from_slate_project_group(allocation_user_obj):
 
     :param allocation_user_obj: The allocation user
     """
-    allocation_attribute_type = 'Namespace Entry'
+    allocation_attribute_type = 'LDAP Group'
     allocation_obj = allocation_user_obj.allocation
     namespace_entry = allocation_obj.allocationattribute_set.filter(
         allocation_attribute_type__name=allocation_attribute_type
@@ -553,7 +553,7 @@ def change_users_slate_project_groups(allocation_user_obj):
 
     :param allocation_user_obj: The allocation user 
     """
-    allocation_attribute_type = 'Namespace Entry'
+    allocation_attribute_type = 'LDAP Group'
     allocation_obj = allocation_user_obj.allocation
     namespace_entry = allocation_obj.allocationattribute_set.filter(
         allocation_attribute_type__name=allocation_attribute_type
