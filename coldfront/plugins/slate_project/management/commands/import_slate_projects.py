@@ -28,7 +28,8 @@ from coldfront.core.utils.common import import_from_settings
 class Command(BaseCommand):
 
     def add_arguments(self, parser):
-        parser.add_argument("--csv", type=str)
+        parser.add_argument("--json", type=str)
+        parser.add_argument("--out", type=str)
         parser.add_argument("--limit", type=int)
 
     def generate_slurm_account_name(self, project_obj):
@@ -105,58 +106,52 @@ class Command(BaseCommand):
             )
 
     def handle(self, *args, **kwargs):
-        if not kwargs.get("csv"):
-            raise CommandError("CSV does not exist")
+        if not kwargs.get("json"):
+            raise CommandError("JSON file does not exist")
+        
+        if not kwargs.get("out"):
+            raise CommandError("Out file does not exist")
         
         slate_project_import_limit = kwargs.get("limit")
         if slate_project_import_limit is not None and slate_project_import_limit <= 0:
             raise CommandError("The limit must be > 0")
 
         print('Importing Slate Projects...')
-        ldap_conn = LDAPSearch()
         start_time = time.time()
-        file_name = kwargs.get("csv")
+        todays_date = datetime.date.today()
+        file_name = kwargs.get("out")
+        with open(kwargs.get("json"), 'r') as json_file:
+            extra_information = json.load(json_file)
         slate_projects = []
-        with open(file_name, 'r') as ssa_dump:
-            csv_reader = csv.reader(ssa_dump)
-            next(csv_reader)
-            for line in csv_reader:
+        with open(file_name, 'r') as import_file:
+            next(import_file)
+            for line in import_file:
+                line = line.strip('\n')
+                line_split = line.split(',')
+
+                extra_project_information = extra_information.get(line_split[0])
+                if extra_project_information is None:
+                    abstract = f'Slate Project {line_split[0]}'
+                    project_title = f'Imported slate project {line_split[0]}'
+                    allocated_quantity = None
+                    start_date = None
+                else:
+                    abstract = extra_project_information.get('abstract')
+                    project_title = extra_project_information.get('project_title')
+                    allocated_quantity = extra_project_information.get('allocated_quantity')
+                    start_date = extra_project_information.get('start_date')
+
                 slate_project = {
-                    "abstract": line[0],
-                    "account": line[1],
-                    "advisor": line[2],
-                    "allocated_quantity": line[3],
-                    "billable_quantity": line[4],
-                    "campus_affiliation": line[5],
-                    "created_at": line[6],
-                    "deactivate_after": line[7],
-                    "deactivated_at": line[8],
-                    "default_ncto_quantity": line[9],
-                    "discretionary_ncto_quantity": line[10],
-                    "fiscal_officer": line[11],
-                    "id": line[12],
-                    "is_active": line[13],
-                    "is_ephi_intended": line[14],
-                    "namespace_class": line[15],
-                    "namespace_entry": line[16],
-                    "owner_email": line[17],
-                    "owner_firstname": line[18],
-                    "owner_lastname": line[19],
-                    "owner_netid": line[20],
-                    "parent_subscription_id": line[21],
-                    "percent": line[22],
-                    "project_title": line[23],
-                    "project_url": line[24],
-                    "service_type_id": line[25],
-                    "start_date": line[26],
-                    "sub_account": line[27],
-                    "subscription_chain_guid": line[28],
-                    "ticket_id": line[29],
-                    "updated_at": line[30],
-                    "title": line[31],
-                    # "can_be_pi": line[32],
-                    # "read_write_users": line[33],
-                    # "read_only_users": line[34]
+                    "namespace_entry": line_split[0],
+                    # "ldap_group": line_split[1],
+                    "owner_netid": line_split[2],
+                    "gid_number": line_split[3],
+                    "read_write_users": line_split[4].split(' '),
+                    "read_only_users": line_split[5].split(' '),
+                    "abstract": abstract,
+                    "project_title": project_title,
+                    "allocated_quantity": allocated_quantity,
+                    "start_date": start_date
                 }
                 slate_projects.append(slate_project)
 
@@ -208,8 +203,8 @@ class Command(BaseCommand):
                     status=ProjectUserStatusChoice.objects.get(name='Active')
                 )
 
-            read_write_users = ldap_conn.get_users('condo_' + slate_project.get('namespace_entry'))
-            read_only_users = ldap_conn.get_users('condo_' + slate_project.get('namespace_entry') + '-ro')
+            read_write_users = slate_project.get('read_write_users')
+            read_only_users = slate_project.get('read_only_users')
             all_users = read_write_users + read_only_users
             for user in all_users:
                 enable_notifications = True
@@ -233,10 +228,12 @@ class Command(BaseCommand):
                     status=ProjectUserStatusChoice.objects.get(name='Active')
                 )
 
-            allocation_start_date = slate_project.get('start_date').split('/')
-            allocation_start_date = '-'.join(
-                [allocation_start_date[2], allocation_start_date[0], allocation_start_date[1]]
-            )
+            allocation_start_date = todays_date
+            if slate_project.get('start_date'):
+                allocation_start_date = slate_project.get('start_date').split('/')
+                allocation_start_date = '-'.join(
+                    [allocation_start_date[2], allocation_start_date[0], allocation_start_date[1]]
+                )
 
             allocation_obj, created = Allocation.objects.get_or_create(
                 project=project_obj,
@@ -287,9 +284,11 @@ class Command(BaseCommand):
                         allocation_user_obj.role = AllocationUserRoleChoice.objects.get(name='read only')
                         allocation_user_obj.save()
 
-            self.create_allocation_attribute(allocation_obj, 'GID', ldap_conn.get_group_gid_number('condo_' + slate_project.get('namespace_entry')))
+            self.create_allocation_attribute(allocation_obj, 'GID', slate_project.get('gid_number'))
+            # self.create_allocation_attribute(allocation_obj, 'LDAP Group', slate_project.get('ldap_group'))
             self.create_allocation_attribute(allocation_obj, 'Namespace Entry', slate_project.get('namespace_entry'))
-            self.create_allocation_attribute(allocation_obj, 'Allocated Quantity', slate_project.get('allocated_quantity'))
+            if slate_project.get('allocated_quantity'):
+                self.create_allocation_attribute(allocation_obj, 'Allocated Quantity', slate_project.get('allocated_quantity'))
 
         print(f'Time elapsed: {time.time() - start_time}')
 
