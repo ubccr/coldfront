@@ -49,18 +49,17 @@ def sync_slate_project_users(allocation_obj):
         return
 
     allocation_attribute_type = 'LDAP Group'
-    namespace_entry = allocation_obj.allocationattribute_set.filter(
+    ldap_group = allocation_obj.allocationattribute_set.filter(
         allocation_attribute_type__name=allocation_attribute_type
     )
-    if not namespace_entry.exists():
+    if not ldap_group.exists():
         logger.error(
             f'Failed to sync users in a Slate Project allocation. The allocation '
             f'(pk={allocation_obj.pk}) is missing the allocation attribute '
             f'"{allocation_attribute_type}"'
         )
         return
-    namespace_entry = namespace_entry[0].value
-    ldap_group = f'condo_{namespace_entry}'
+    ldap_group = ldap_group[0].value
 
     read_write_users = allocation_obj.allocationuser_set.filter(role__name='read/write', status__name='Active')
     read_only_users = allocation_obj.allocationuser_set.filter(role__name='read only', status__name='Active')
@@ -321,17 +320,16 @@ def add_slate_project_groups(allocation_obj):
     :param allocation_obj: The allocation the groups are being created from
     """
     allocation_attribute_type = 'LDAP Group'
-    namespace_entry = allocation_obj.allocationattribute_set.filter(
+    ldap_group = allocation_obj.allocationattribute_set.filter(
         allocation_attribute_type__name=allocation_attribute_type
     )
-    if not namespace_entry.exists():
+    if not ldap_group.exists():
         logger.error(
             f'Failed to create slate project groups. The allocation (pk={allocation_obj.pk}) is '
             f'missing the allocation attribute "{allocation_attribute_type}"'
         )
         return
-    namespace_entry = namespace_entry[0].value
-    ldap_group = f'condo_{namespace_entry}'
+    ldap_group = ldap_group[0].value
 
     ldap_conn = LDAPModify()
     group_exists = ldap_conn.check_group_exists(ldap_group)
@@ -396,7 +394,7 @@ def add_slate_project_groups(allocation_obj):
         status__name='Active', role__name='read only'
     ).values_list('user__username', flat=True)
     read_only_users = list(read_only_users)
-    ldap_group = f'condo_{namespace_entry}-ro'
+    ldap_group = f'{ldap_group}-ro'
     added, output = ldap_conn.add_group(
         ldap_group, allocation_obj.project.pi.username, read_only_users, read_only_gid_number
     )
@@ -427,23 +425,21 @@ def add_user_to_slate_project_group(allocation_user_obj):
     """
     allocation_attribute_type = 'LDAP Group'
     allocation_obj = allocation_user_obj.allocation
-    namespace_entry = allocation_obj.allocationattribute_set.filter(
+    ldap_group = allocation_obj.allocationattribute_set.filter(
         allocation_attribute_type__name=allocation_attribute_type
     )
     username = allocation_user_obj.user.username
-    if not namespace_entry.exists():
+    if not ldap_group.exists():
         logger.error(
             f'Failed to add user {username} to a ldap group. The allocation (pk={allocation_obj.pk}) '
             f'is missing the allocation attribute "{allocation_attribute_type}"'
         )
         return
-    namespace_entry = namespace_entry[0].value
+    ldap_group = ldap_group[0].value
 
     user_role = allocation_user_obj.role.name
-    if user_role == 'read/write':
-        ldap_group = f'condo_{namespace_entry}'
-    else:
-        ldap_group = f'condo_{namespace_entry}-ro'
+    if user_role == 'read only':
+        ldap_group = f'{ldap_group}-ro'
 
     ldap_conn = LDAPModify()
     added, output = ldap_conn.add_user(ldap_group, username)
@@ -469,19 +465,19 @@ def remove_slate_project_groups(allocation_obj):
     :param allocation_obj: The allocation the groups are being removed from
     """
     allocation_attribute_type = 'LDAP Group'
-    namespace_entry = allocation_obj.allocationattribute_set.filter(
+    ldap_group = allocation_obj.allocationattribute_set.filter(
         allocation_attribute_type__name=allocation_attribute_type
     )
-    if not namespace_entry.exists():
+    if not ldap_group.exists():
         logger.error(
             f'Failed to remove slate project group. The allocation (pk={allocation_obj.pk}) is '
             f'missing the allocation attribute "{allocation_attribute_type}"'
         )
         return
-    namespace_entry = namespace_entry[0].value
+    ldap_group = ldap_group[0].value
 
     ldap_conn = LDAPModify()
-    read_write_group = f'condo_{namespace_entry}'
+    read_write_group = ldap_group
     removed, output = ldap_conn.remove_group(read_write_group)
     if not removed:
         logger.error(
@@ -493,7 +489,7 @@ def remove_slate_project_groups(allocation_obj):
             f'Removed slate project group {read_write_group} in allocation {allocation_obj.pk}'
         )
 
-    read_only_group = f'condo_{namespace_entry[0].value}-ro'
+    read_only_group = f'{ldap_group[0].value}-ro'
 
     ldap_conn = LDAPModify()
     removed, output = ldap_conn.remove_group(read_only_group)
@@ -516,23 +512,21 @@ def remove_user_from_slate_project_group(allocation_user_obj):
     """
     allocation_attribute_type = 'LDAP Group'
     allocation_obj = allocation_user_obj.allocation
-    namespace_entry = allocation_obj.allocationattribute_set.filter(
+    ldap_group = allocation_obj.allocationattribute_set.filter(
         allocation_attribute_type__name=allocation_attribute_type
     )
     username = allocation_user_obj.user.username
-    if not namespace_entry.exists():
+    if not ldap_group.exists():
         logger.error(
             f'Failed to remove user {username} from a slate project group. The allocation '
             f'{allocation_obj.pk} is missing the allocation attribute {allocation_attribute_type}'
         )
         return
-    namespace_entry = namespace_entry[0].value
+    ldap_group = ldap_group[0].value
     
     user_role = allocation_user_obj.role.name
-    if user_role == 'read/write':
-        ldap_group = f'condo_{namespace_entry}'
-    else:
-        ldap_group = f'condo_{namespace_entry}-ro'
+    if user_role == 'read only':
+        ldap_group = f'{ldap_group}-ro'
 
     ldap_conn = LDAPModify()
     removed, output = ldap_conn.remove_user(ldap_group, username)
@@ -555,24 +549,24 @@ def change_users_slate_project_groups(allocation_user_obj):
     """
     allocation_attribute_type = 'LDAP Group'
     allocation_obj = allocation_user_obj.allocation
-    namespace_entry = allocation_obj.allocationattribute_set.filter(
+    ldap_group = allocation_obj.allocationattribute_set.filter(
         allocation_attribute_type__name=allocation_attribute_type
     )
-    if not namespace_entry.exists():
+    if not ldap_group.exists():
         logger.error(
             f'Failed to update user {username}\'s slate project groups from role change. Allocation '
             f'{allocation_obj.pk} is missing the allocation attribute {allocation_attribute_type}'
         )
         return
-    namespace_entry = namespace_entry[0].value
+    ldap_group = ldap_group[0].value
     
     new_role = allocation_user_obj.role.name
     if new_role == 'read/write':
-        remove_from_group = f'condo_{namespace_entry}-ro'
-        add_to_group = f'condo_{namespace_entry}'
+        remove_from_group = f'{ldap_group}-ro'
+        add_to_group = f'{ldap_group}'
     else:
-        remove_from_group = f'condo_{namespace_entry}'
-        add_to_group = f'condo_{namespace_entry}-ro'
+        remove_from_group = f'{ldap_group}'
+        add_to_group = f'{ldap_group}-ro'
     username = allocation_user_obj.user.username
 
     ldap_conn = LDAPModify()
