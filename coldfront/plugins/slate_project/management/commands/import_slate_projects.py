@@ -143,7 +143,7 @@ class Command(BaseCommand):
 
                 slate_project = {
                     "namespace_entry": line_split[0],
-                    # "ldap_group": line_split[1],
+                    "ldap_group": line_split[1],
                     "owner_netid": line_split[2],
                     "gid_number": line_split[3],
                     "read_write_users": line_split[4].split(' '),
@@ -285,7 +285,7 @@ class Command(BaseCommand):
                         allocation_user_obj.save()
 
             self.create_allocation_attribute(allocation_obj, 'GID', slate_project.get('gid_number'))
-            # self.create_allocation_attribute(allocation_obj, 'LDAP Group', slate_project.get('ldap_group'))
+            self.create_allocation_attribute(allocation_obj, 'LDAP Group', slate_project.get('ldap_group'))
             self.create_allocation_attribute(allocation_obj, 'Namespace Entry', slate_project.get('namespace_entry'))
             if slate_project.get('allocated_quantity'):
                 self.create_allocation_attribute(allocation_obj, 'Allocated Quantity', slate_project.get('allocated_quantity'))
