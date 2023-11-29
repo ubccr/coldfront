@@ -65,6 +65,13 @@ def sync_slate_project_users(allocation_obj):
     read_only_users = allocation_obj.allocationuser_set.filter(role__name='read only', status__name='Active')
 
     ldap_conn = LDAPModify()
+    if not ldap_conn.check_group_exists(ldap_group):
+        logger.error(
+            f'LDAP: Slate project groups for allocation {allocation_obj.pk} do not exist. No sync '
+            f'was performed'
+        )
+        return
+
     ldap_read_write_usernames = ldap_conn.get_users(ldap_group)
     ldap_read_only_usernames = ldap_conn.get_users(ldap_group + '-ro')
 
