@@ -32,7 +32,7 @@ class ATTAllocationQuery:
                 'server': 'filesystem',
                 'validation_query':
                         "NOT ((e.SizeGB IS null) OR (e.usedBytes = 0 AND e.SizeGB = 1024)) \
-                        AND (datetime() - duration('P31D') <= datetime(r.DotsLVSUpdateDate)) \
+                        AND (datetime() - duration('P31D') <= datetime(r.DotsLFSUpdateDate)) \
                         AND NOT (e.Path IS null)",
                 'r_updated': 'DotsLFSUpdateDate',
                 'storage_type': 'Quota',
@@ -51,7 +51,7 @@ class ATTAllocationQuery:
                 'validation_query': "r.DotsUpdateDate = d.DotsUpdateDate \
                         AND NOT (e.Path =~ '.*/rc_admin/.*')\
                         AND (e.Path =~ '.*labs.*')\
-                        AND (datetime() - duration('P31D') <= datetime(r.DotsLVSUpdateDate)) \
+                        AND (datetime() - duration('P31D') <= datetime(r.DotsUpdateDate)) \
                         AND NOT (e.SizeGB = 0)",
                 'fs_path':'Path',
                 'r_updated': 'DotsUpdateDate',
@@ -83,7 +83,7 @@ class ATTAllocationQuery:
         d = query_dict[vol_type]
 
         if not volumes:
-            volumes = [r.name.split('/')[0] for r in Resource.objects.all()]
+            volumes = [r.name.split('/')[0] for r in Resource.objects.filter(resource_type__name='Storage')]
         volumes = '|'.join(volumes)
         where = f"(e.{d['server']} =~ '.*({volumes}).*')"
         statement = {
