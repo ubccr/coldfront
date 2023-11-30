@@ -208,6 +208,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context['attributes'] = attributes
         context['allocation_changes'] = allocation_changes
         context['allocation_changes_enabled'] = allocation_changes_enabled
+        context['display_estimated_cost'] = 'coldfront.plugins.slate_project' in settings.INSTALLED_APPS
 
         # Can the user update the project?
         context['is_allowed_to_update_project'] = False

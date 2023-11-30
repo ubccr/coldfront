@@ -1,6 +1,7 @@
 import logging
 import json
 import os
+from decimal import Decimal
 from datetime import date
 
 import ldap.filter
@@ -750,6 +751,17 @@ def get_slate_project_group_info_from_ldap(username):
         return []
 
     return results
+
+
+def get_estimated_storage_cost(allocation_obj):
+    allocated_quantity = allocation_obj.allocationattribute_set.filter(
+        allocation_attribute_type__name='Allocated Quantity'
+    )
+    if not allocated_quantity.exists():
+        return 0
+    
+    storage_cost = max(0, int(allocated_quantity[0].value) - 15) * Decimal('5.12')
+    return storage_cost
 
 
 class LDAPModify:

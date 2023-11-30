@@ -1,6 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 
+from coldfront.core.allocation.models import Allocation
 from coldfront.plugins.slate_project import utils
 
 
@@ -13,3 +14,11 @@ def get_slate_project_info(request):
     }
 
     return render(request, "slate_project/slate_project_info.html", context)
+
+def get_slate_project_estimated_cost(request):
+    allocation_obj = Allocation.objects.get(pk=request.POST.get('allocation_pk'))
+
+    estimated_cost = utils.get_estimated_storage_cost(allocation_obj)
+    context = {'estimated_cost': estimated_cost}
+
+    return render(request, "slate_project/estimated_cost.html", context) 

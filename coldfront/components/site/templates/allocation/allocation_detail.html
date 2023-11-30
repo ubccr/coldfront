@@ -310,6 +310,10 @@ Allocation Detail
   </div>
 {% endif %}
 
+{% if display_estimated_cost and allocation.get_parent_resource.name == 'Slate Project' %}
+  {% include "slate_project/estimated_cost_div.html" %}
+{% endif %}
+
 <!-- Start Allocation Invoices -->
 {% if allocation.get_parent_resource.requires_payment %}
   <div class="card mb-3">
