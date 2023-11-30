@@ -235,7 +235,7 @@ class Command(BaseCommand):
                     project_user_role = ProjectUserRoleChoice.objects.get(name='Group')
                     enable_notifications = False
 
-                if user_obj == project_obj.pi:
+                if user_obj in [project_obj.pi, project_obj.requestor]:
                     project_user_role = ProjectUserRoleChoice.objects.get(name='Manager')
 
                 if not user_profile_obj.title or user_profile_obj.title in ['Former Employee', 'Retired Staff']:
