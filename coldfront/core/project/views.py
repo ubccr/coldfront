@@ -176,51 +176,26 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             ','.join([user.user.email for user in project_users])
 
         if self.request.user.is_superuser or is_manager or self.request.user.has_perm('allocation.can_view_all_allocations'):
-            free_allocations = Allocation.objects.prefetch_related(
+            allocations = Allocation.objects.prefetch_related(
                 'resources'
             ).filter(
                 project=self.object,
-                resources__requires_payment=False
             ).order_by('-end_date')
 
-            paid_allocations = Allocation.objects.prefetch_related(
-                'resources'
-            ).filter(
-                project=self.object,
-                resources__requires_payment=True
-            )
         else:
             if self.object.status.name in ['Active', 'New', 'Waiting For Admin Approval', 'Contacted By Admin', ]:
-                free_allocations = Allocation.objects.filter(
+                allocations = Allocation.objects.filter(
                     Q(project=self.object) &
                     Q(project__projectuser__user=self.request.user) &
                     Q(project__projectuser__status__name__in=['Active', ]) &
-                    Q(resources__requires_payment=False) &
-                    Q(allocationuser__user=self.request.user) &
-                    Q(allocationuser__status__name__in=['Active', ])
-                ).distinct().order_by('-end_date')
-
-                paid_allocations = Allocation.objects.filter(
-                    Q(project=self.object) &
-                    Q(project__projectuser__user=self.request.user) &
-                    Q(project__projectuser__status__name__in=['Active', ]) &
-                    Q(resources__requires_payment=True) &
                     Q(allocationuser__user=self.request.user) &
                     Q(allocationuser__status__name__in=['Active', ])
                 ).distinct().order_by('-end_date')
             else:
-                free_allocations = Allocation.objects.prefetch_related(
+                allocations = Allocation.objects.prefetch_related(
                     'resources'
                 ).filter(
                     project=self.object,
-                    resources__requires_payment=False
-                )
-
-                paid_allocations = Allocation.objects.prefetch_related(
-                    'resources'
-                ).filter(
-                    project=self.object,
-                    resources__requires_payment=True
                 )
 
         context['publications'] = Publication.objects.filter(
@@ -229,8 +204,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             project=self.object).order_by('-created')
         context['grants'] = Grant.objects.filter(
             project=self.object, status__name__in=['Active', 'Pending', 'Archived'])
-        context['free_allocations'] = free_allocations
-        context['paid_allocations'] = paid_allocations
+        context['allocations'] = allocations
         context['project_users'] = project_users
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
         context['PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING'] = PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING
