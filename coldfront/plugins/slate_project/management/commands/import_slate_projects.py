@@ -105,6 +105,11 @@ class Command(BaseCommand):
                 value=value
             )
 
+    def update_user_profile(self, user_obj, ldap_conn):
+        attributes = ldap_conn.search_a_user(user_obj.username, ['title'])
+        user_obj.userprofile.title = attributes.get('title')[0]
+        user_obj.userprofile.save()
+
     def handle(self, *args, **kwargs):
         if not kwargs.get("json"):
             raise CommandError("JSON file does not exist")
@@ -164,8 +169,18 @@ class Command(BaseCommand):
         )
         if slate_project_import_limit is not None:
             slate_projects = slate_projects[:slate_project_import_limit]
+
+        ldap_conn = LDAPSearch()
+        rejected_slate_projects = []
         for slate_project in slate_projects:
-            user_obj, _ = User.objects.get_or_create(username=slate_project.get('owner_netid'))
+            user_obj, created = User.objects.get_or_create(username=slate_project.get('owner_netid'))
+            if not created:
+                self.update_user_profile(user_obj, ldap_conn)
+
+            if not user_obj.userprofile.title or user_obj.userprofile.title in ['Former Employee', 'Retired Staff']:
+                rejected_slate_projects.append(slate_project.get('namespace_entry'))
+                continue
+            
             project_user_role = ProjectUserRoleChoice.objects.get(name='Manager')
             if user_obj.userprofile.title in ['Faculty', 'Staff', 'Academic (ACNP)', ]:
                 project_obj, _ = Project.objects.get_or_create(
@@ -210,9 +225,12 @@ class Command(BaseCommand):
                 enable_notifications = True
                 if not user:
                     continue
-                user_obj, _ = User.objects.get_or_create(username=user)
+                user_obj, created = User.objects.get_or_create(username=user)
+                if not created:
+                    self.update_user_profile(user_obj, ldap_conn)
                 user_profile_obj = UserProfile.objects.get(user=user_obj)
                 project_user_role = ProjectUserRoleChoice.objects.get(name='User')
+                status = ProjectUserStatusChoice.objects.get(name='Active')
                 if user_profile_obj.title == 'group':
                     project_user_role = ProjectUserRoleChoice.objects.get(name='Group')
                     enable_notifications = False
@@ -220,12 +238,15 @@ class Command(BaseCommand):
                 if user_obj == project_obj.pi:
                     project_user_role = ProjectUserRoleChoice.objects.get(name='Manager')
 
+                if not user_profile_obj.title or user_profile_obj.title in ['Former Employee', 'Retired Staff']:
+                    status = ProjectUserStatusChoice.objects.get(name='Inactive')
+
                 ProjectUser.objects.get_or_create(
                     user=user_obj,
                     project=project_obj,
                     role=project_user_role,
                     enable_notifications=enable_notifications,
-                    status=ProjectUserStatusChoice.objects.get(name='Active')
+                    status=status
                 )
 
             allocation_start_date = todays_date
@@ -247,10 +268,13 @@ class Command(BaseCommand):
 
             if not all_users:
                 user_obj, created = User.objects.get_or_create(username=slate_project.get('owner_netid'))
+                status = AllocationUserStatusChoice.objects.get(name='Active')
+                if not user_obj.userprofile.title or user_obj.userprofile.title in ['Former Employee', 'Retired Staff']:
+                    status = AllocationUserStatusChoice.objects.get(name='Inactive')
                 allocation_user_obj, created = AllocationUser.objects.get_or_create(
                     user=user_obj,
                     allocation=allocation_obj,
-                    status=AllocationUserStatusChoice.objects.get(name='Active')
+                    status=status
                 )
                 if created:
                     allocation_user_obj.role = AllocationUserRoleChoice.objects.get(name='read/write')
@@ -260,10 +284,13 @@ class Command(BaseCommand):
                     if not user:
                         continue
                     user_obj, created = User.objects.get_or_create(username=user)
+                    status = AllocationUserStatusChoice.objects.get(name='Active')
+                    if not user_obj.userprofile.title or user_obj.userprofile.title in ['Former Employee', 'Retired Staff']:
+                        status = AllocationUserStatusChoice.objects.get(name='Inactive')
                     allocation_user_obj, created = AllocationUser.objects.get_or_create(
                         user=user_obj,
                         allocation=allocation_obj,
-                        status=AllocationUserStatusChoice.objects.get(name='Active')
+                        status=status
                     )
 
                     if created:
@@ -274,10 +301,13 @@ class Command(BaseCommand):
                     if not user:
                         continue
                     user_obj, created = User.objects.get_or_create(username=user)
+                    status = AllocationUserStatusChoice.objects.get(name='Active')
+                    if not user_obj.userprofile.title or user_obj.userprofile.title in ['Former Employee', 'Retired Staff']:
+                        status = AllocationUserStatusChoice.objects.get(name='Inactive')
                     allocation_user_obj, created = AllocationUser.objects.get_or_create(
                         user=user_obj,
                         allocation=allocation_obj,
-                        status=AllocationUserStatusChoice.objects.get(name='Active')
+                        status=status
                     )
 
                     if created:
@@ -290,47 +320,33 @@ class Command(BaseCommand):
             if slate_project.get('allocated_quantity'):
                 self.create_allocation_attribute(allocation_obj, 'Allocated Quantity', slate_project.get('allocated_quantity'))
 
+        print(f'Slate projects not imported: {", ".join(rejected_slate_projects)}')
         print(f'Time elapsed: {time.time() - start_time}')
 
 
 class LDAPSearch():
     def __init__(self):
-        self.LDAP_SERVER_URI = import_from_settings('LDAP_SLATE_PROJECT_SERVER_URI')
-        self.LDAP_BASE_DN = import_from_settings('LDAP_SLATE_PROJECT_BASE_DN')
-        self.LDAP_CONNECT_TIMEOUT = import_from_settings('LDAP_SLATE_PROJECT_CONNECT_TIMEOUT', 2.5)
+        self.LDAP_SERVER_URI = import_from_settings('LDAP_USER_SEARCH_SERVER_URI')
+        self.LDAP_USER_SEARCH_BASE = import_from_settings('LDAP_USER_SEARCH_BASE')
+        self.LDAP_BIND_DN = import_from_settings('LDAP_USER_SEARCH_BIND_DN', None)
+        self.LDAP_BIND_PASSWORD = import_from_settings('LDAP_USER_SEARCH_BIND_PASSWORD', None)
+        self.LDAP_CONNECT_TIMEOUT = import_from_settings('LDAP_USER_SEARCH_CONNECT_TIMEOUT', 2.5)
 
         self.server = Server(self.LDAP_SERVER_URI, use_ssl=True, connect_timeout=self.LDAP_CONNECT_TIMEOUT)
-        self.conn = Connection(self.server)
+        self.conn = Connection(self.server, self.LDAP_BIND_DN, self.LDAP_BIND_PASSWORD, auto_bind=True)
 
-        if not self.conn.bind():
-            print(f'Failed to bind to LDAP server: {self.conn.result}')
+    def search_a_user(self, user_search_string, search_attributes_list=None):
+        # Add check if debug is true to run this. If debug is not then write an error to log file.
+        assert type(search_attributes_list) is list, 'search_attributes_list should be a list'
 
-    def get_group_gid_number(self, group_name):
-        searchParameters = {
-            'search_base': self.LDAP_BASE_DN,
-            'search_filter': ldap.filter.filter_format("(cn=%s)", [group_name]),
-            'attributes': ['gidNumber'],
-            'size_limit': 1
-        }
+        searchParameters = {'search_base': self.LDAP_USER_SEARCH_BASE,
+                            'search_filter': ldap.filter.filter_format("(cn=%s)", [user_search_string]),
+                            'attributes': search_attributes_list,
+                            'size_limit': 1}
         self.conn.search(**searchParameters)
         if self.conn.entries:
             attributes = json.loads(self.conn.entries[0].entry_to_json()).get('attributes')
         else:
-            attributes = {'gidNumber': ['null']}
+            attributes = dict.fromkeys(search_attributes_list, [''])
 
-        return attributes.get('gidNumber')[0]
-    
-    def get_users(self, group_name):
-        searchParameters = {
-            'search_base': self.LDAP_BASE_DN,
-            'search_filter': ldap.filter.filter_format("(cn=%s)", [group_name]),
-            'attributes': ['memberUid'],
-            'size_limit': 1
-        }
-        self.conn.search(**searchParameters)
-        if self.conn.entries:
-            attributes = json.loads(self.conn.entries[0].entry_to_json()).get('attributes')
-        else:
-            attributes = {'memberUid': []}
-
-        return attributes.get('memberUid')
+        return attributes
