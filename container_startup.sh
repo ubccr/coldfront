@@ -9,7 +9,7 @@
 service redis-server start
 python ./manage.py qcluster &
 python ./manage.py add_scheduled_tasks
-python ./manage.py collectstatic
+python ./manage.py collectstatic --noinput
 # initial_setup does not appear to work as requested.
 python ./manage.py initial_setup &
 
