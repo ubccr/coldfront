@@ -165,9 +165,7 @@ class AllTheThingsConn:
         self.volumes = volumes
 
     def post_query(self, query):
-        resp = requests.post(
-            self.url, headers=self.headers, data=json.dumps(query), verify=False
-        )
+        resp = requests.post(self.url, headers=self.headers, data=json.dumps(query))
         return json.loads(resp.text)
 
     def format_query_results(self, resp_json):
