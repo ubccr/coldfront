@@ -54,8 +54,8 @@ def select_one_project_allocation(project_obj, resource_obj, dirpath=None):
     resource_obj
     """
     filter_vals = {'resources__id': resource_obj.id}
-    if dirpath:
-        filter_vals['allocationattribute__value'] = dirpath
+    # if dirpath:
+    #     filter_vals['allocationattribute__value'] = dirpath
     allocation_query = project_obj.allocation_set.filter(**filter_vals)
     if allocation_query.count() == 1:
         allocation_obj = allocation_query.first()
