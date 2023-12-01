@@ -145,11 +145,12 @@ Project Detail
         <tfoot>
           <tr style="background-color:#C2C2C2;font-weight:bold">
             <td>Total</td>
-            <td>{{ allocation_total.resources.first.name}}</td>
-            <td>{{ allocation_total.path}}</td>
-            <td>{{ allocation_total.allocation_user_count}}</td>
-            <td>{{ allocation_total.size|floatformat:1}}</td>
-            <td>${{allocation_total.cost|floatformat:2 }}</td>
+            <td>{{ allocation_total.resources.first.name }}</td>
+            <td>{{ allocation_total.path }}</td>
+            <td>{{ allocation_total.allocation_user_count }}</td>
+            <td>{{ allocation_total.size|floatformat:1 }}</td>
+            <td>{{ allocation_total.usage|floatformat:1 }}</td>
+            <td>${{ allocation_total.cost|floatformat:2 }}</td>
             <td></td>
             <td></td>
           </tr>

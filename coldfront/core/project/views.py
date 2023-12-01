@@ -204,7 +204,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         allocations = allocations.filter(
             status__name__in=['Active', 'Paid', 'Ready for Review','Payment Requested']
         ).distinct().order_by('-end_date')
-        allocation_total = {'allocation_user_count': 0, 'size': 0, 'cost': 0}
+        allocation_total = {'allocation_user_count': 0, 'size': 0, 'cost': 0, 'usage': 0}
         for allocation in allocations:
             if allocation.cost:
                 allocation_total['cost'] += allocation.cost
@@ -212,6 +212,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 allocation.allocationuser_set.count()
             )
             allocation_total['size'] += float(allocation.size)
+            allocation_total['usage'] += float(allocation.usage)
 
         try:
             time_chart_data = generate_usage_history_graph(self.object)
