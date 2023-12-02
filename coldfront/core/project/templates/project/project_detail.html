@@ -94,24 +94,23 @@ Project Detail
         <thead>
           <tr>
             <th scope="col">Resource Name</th>
-            <th scope="col">Resource Type</th>
             <th scope="col">Location</th>
             <th scope="col">User Count</th>
-            <th scope="col">Space (TB)</th>
-            <th scope="col">Used (TB)</th>
+            <th scope="col">Space</th>
+            <th scope="col">Used</th>
             <th scope="col">Monthly Cost</th>
             <th scope="col" class="nosort">Actions</th>
           </tr>
         </thead>
         <tbody>
           {% for allocation in allocations %}
+          {% if allocation.get_parent_resource.resource_type.name == 'Storage' %}
           {% if allocation.status.name == 'Active' %}
           <tr style="background-color:#FFFFFF">
             <td>{{ allocation.get_parent_resource.name }}</td>
-            <td>{{ allocation.get_parent_resource.resource_type.name }}</td>
             <td>{{ allocation.path }}</td>
             <td>{{ allocation.allocationuser_set.count }}</td>
-            <td>{{ allocation.size|floatformat:1 }}</td>
+            <td>{{ allocation.size|floatformat:1 }} {{ allocation.get_parent_resource.unit }}</td>
             <td>{{ allocation.usage|floatformat:1 }}</td>
             <td>${{allocation.cost|floatformat:2 }}</td>
             <td>
@@ -137,7 +136,8 @@ Project Detail
               {% if allocation.get_parent_resource.get_ondemand_status == 'Yes' and ondemand_url %}
               <a href = "{{ ondemand_url }}" target="_blank"> <img src="/static/core/portal/imgs/ondemand.png" alt="ondemand cta" width="25" height="25"></a>
             {% endif %}
-            </td>
+            </td
+            {% endif %}
           </tr>
           {% endif %}
           {% endfor %}
