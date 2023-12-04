@@ -11,12 +11,11 @@ from coldfront.core.allocation.models import (
     AllocationStatusChoice,
     AllocationAttributeType,
     AllocationUserAttributeType,
-    AllocationUserAttribute,
     AllocationUserStatusChoice,
 )
 from coldfront.core.resource.models import Resource
-from coldfront.plugins.slurm.associations import SlurmCluster
-from coldfront.plugins.slurm.utils import slurm_dump_cluster, SlurmError
+from coldfront.plugins.slurm.utils import SlurmError, slurm_dump_cluster
+from coldfront.plugins.slurm.fasrc import SlurmClusterFasrc
 
 logger = logging.getLogger(__name__)
 
@@ -27,19 +26,20 @@ class Command(BaseCommand):
         parser.add_argument("-f", "--file",
             help="designate a file with sacctmgr dump data to use as ")
 
-
     def _cluster_from_dump(self, cluster, file=None):
         slurm_cluster = None
         if file:
             with open(file) as data:
-                slurm_cluster = SlurmCluster.new_from_stream(data)
+                slurm_cluster = SlurmClusterFasrc.new_from_stream(data)
+                slurm_cluster.pull_fairshares()
         else:
             with tempfile.TemporaryDirectory() as tmpdir:
                 fname = os.path.join(tmpdir, 'cluster.cfg')
                 try:
                     slurm_dump_cluster(cluster, fname)
                     with open(fname) as fh:
-                        slurm_cluster = SlurmCluster.new_from_stream(fh)
+                        slurm_cluster = SlurmClusterFasrc.new_from_stream(fh)
+                        slurm_cluster.pull_fairshares()
                 except SlurmError as e:
                     logger.error("Failed to dump Slurm cluster %s: %s", cluster, e)
 
@@ -50,7 +50,9 @@ class Command(BaseCommand):
         file = options['file']
         cluster_resources = Resource.objects.filter(resource_type__name="Cluster")
         slurm_clusters = {r: self._cluster_from_dump(r, file=file) for r in cluster_resources}
-        slurm_clusters = {r:c for r, c in slurm_clusters.items() if r.get_attribute('slurm_cluster') == c.name}
+        slurm_clusters = {
+            r:c for r, c in slurm_clusters.items() if r.get_attribute('slurm_cluster') == c.name
+        }
 
         slurm_acct_name_attr_type_obj = AllocationAttributeType.objects.get(
             name='slurm_account_name')
@@ -99,21 +101,20 @@ class Command(BaseCommand):
                 # 'Cloud Account Name'? XDMOD_CLOUD_PROJECT_ATTRIBUTE_NAME
                 allocation_obj.allocationattribute_set.get_or_create(
                     allocation_attribute_type=cloud_acct_name_attr_type_obj,
-                    value=name)
+                    value=name
+                )
 
                 allocation_obj.allocationattribute_set.get_or_create(
                     allocation_attribute_type=hours_attr_type_obj,
                     defaults={'value': 0}
                 )
 
-                account_spec_dict = account.spec_dict()
+                group_fairshare = account.fairshare_dict.get('FairShare', None)
 
-                fairshare = account_spec_dict['Fairshare']
-
-                if fairshare:
+                if group_fairshare:
                     allocation_obj.allocationattribute_set.get_or_create(
                         allocation_attribute_type=fairshare_attr_type_obj,
-                        defaults={'value': fairshare}
+                        defaults={'value': group_fairshare['FairShare']}
                     )
 
                 # add allocationusers from account
@@ -129,8 +130,8 @@ class Command(BaseCommand):
                             'status': auser_status_active, "unit": "CPU Hours"
                         }
                     )
-                    user_vals = user_account.spec_dict()
+                    user_fairshare = user_account.fairshare_dict.get('FairShare', None)
                     alloc_user.allocationuserattribute_set.update_or_create(
                         allocationuser_attribute_type=user_fairshare_attr_type_obj,
-                        defaults={"value": user_vals['Fairshare']}
+                        defaults={"value": user_fairshare}
                     )
