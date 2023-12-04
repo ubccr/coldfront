@@ -15,7 +15,7 @@ from coldfront.core.allocation.models import (
 )
 from coldfront.core.resource.models import Resource
 from coldfront.plugins.slurm.utils import SlurmError, slurm_dump_cluster
-from coldfront.plugins.slurm.fasrc import SlurmClusterFasrc
+from coldfront.plugins.slurm.associations import SlurmCluster
 
 logger = logging.getLogger(__name__)
 
@@ -30,19 +30,17 @@ class Command(BaseCommand):
         slurm_cluster = None
         if file:
             with open(file) as data:
-                slurm_cluster = SlurmClusterFasrc.new_from_stream(data)
-                slurm_cluster.pull_fairshares()
+                slurm_cluster = SlurmCluster.new_from_stream(data)
         else:
             with tempfile.TemporaryDirectory() as tmpdir:
                 fname = os.path.join(tmpdir, 'cluster.cfg')
                 try:
                     slurm_dump_cluster(cluster, fname)
                     with open(fname) as fh:
-                        slurm_cluster = SlurmClusterFasrc.new_from_stream(fh)
-                        slurm_cluster.pull_fairshares()
+                        slurm_cluster = SlurmCluster.new_from_stream(fh)
                 except SlurmError as e:
                     logger.error("Failed to dump Slurm cluster %s: %s", cluster, e)
-
+        slurm_cluster.pull_fairshares()
         return slurm_cluster
 
     def handle(self, *args, **options):

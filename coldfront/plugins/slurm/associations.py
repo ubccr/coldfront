@@ -9,6 +9,8 @@ from coldfront.plugins.slurm.utils import (SLURM_ACCOUNT_ATTRIBUTE_NAME,
                                            SLURM_CLUSTER_ATTRIBUTE_NAME,
                                            SLURM_SPECS_ATTRIBUTE_NAME,
                                            SLURM_USER_SPECS_ATTRIBUTE_NAME,
+                                           slurm_collect_fairshares,
+                                           slurm_collect_usage,
                                            SlurmError)
 
 logger = logging.getLogger(__name__)
@@ -147,6 +149,57 @@ class SlurmCluster(SlurmBase):
         account.add_allocation(allocation, user_specs=user_specs)
         account.specs += specs
         self.accounts[name] = account
+
+    def pull_fairshares(self):
+        """append sshare fairshare data to accounts and users"""
+        fairshares = slurm_collect_fairshares(cluster=self.name)
+        # select all fairshare lines with no user val, pin to SlurmAccounts.
+        acct_fairshares = [d for d in fairshares if not d['User']]
+        # pair acct_fairshares with SlurmAccounts
+        for acct_share in acct_fairshares:
+            account = next([a for a in self.accounts if a.name == acct_share['Account']], None)
+            user_shares = [d for d in fairshares if d['Account'] == account.name and d['User']]
+            for user_share in user_shares:
+                user = next(u for u in account.users if u.name == user_share['User'])
+                if not user:
+                    print(f"no user for {user_share}")
+                    continue
+                if not hasattr(user, 'fairshare_dict'):
+                    user.fairshare_dict = user_share
+                else:
+                    print("OVERWRITE BLOCKED:", user, user.fairshare_dict, user_share)
+            if not account:
+                print(f"no account for {acct_share}")
+                continue
+            if not hasattr(account, 'fairshare_dict'):
+                account.fairshare_dict = acct_share
+            else:
+                print("OVERWRITE BLOCKED:", account, account.fairshare_dict, acct_share)
+
+    def pull_usage(self):
+        """append sreport usage data to accounts and users"""
+        usages = slurm_collect_usage(cluster=self.name)
+        acct_usages = [d for d in usages if not d['Login']]
+        for acct_usage in acct_usages:
+            account = next([a for a in self.accounts if a.name == acct_usage['Account']], None)
+            user_usages = [d for d in usages if d['Account'] == account.name and d['Login']]
+            for user_usage in user_usages:
+                user = next(u for u in account.users if u.name == user_usage['Login'])
+                if not user:
+                    print(f"no user for {user_usage}")
+                    continue
+                if not hasattr(user, 'usage_dict'):
+                    user.usage_dict = user_usage
+                else:
+                    print("OVERWRITE BLOCKED:", user, user.usage_dict, user_usage)
+            if not account:
+                print(f"no account for {acct_usage}")
+                continue
+            if not hasattr(account, 'usage_dict'):
+                account.usage_dict = acct_usage
+            else:
+                print("OVERWRITE BLOCKED:", account, account.usage_dict, acct_usage)
+
 
     def write(self, out):
         self._write(out, "# ColdFront Allocation Slurm associations dump {}\n".format(
