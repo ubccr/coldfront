@@ -150,9 +150,13 @@ class SlurmCluster(SlurmBase):
         account.specs += specs
         self.accounts[name] = account
 
-    def pull_fairshares(self):
+    def pull_fairshares(self, file=None):
         """append sshare fairshare data to accounts and users"""
-        fairshares = slurm_collect_fairshares(cluster=self.name)
+        if not file:
+            fairshares = slurm_collect_fairshares(cluster=self.name)
+        else:
+            with open(file, 'r') as fairsharefile:
+                fairshares = fairsharefile.read()
         # select all fairshare lines with no user val, pin to SlurmAccounts.
         acct_fairshares = [d for d in fairshares if not d['User']]
         # pair acct_fairshares with SlurmAccounts
