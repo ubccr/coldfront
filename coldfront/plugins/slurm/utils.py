@@ -6,11 +6,17 @@ from io import StringIO
 
 from coldfront.core.utils.common import import_from_settings
 
-SLURM_CLUSTER_ATTRIBUTE_NAME = import_from_settings('SLURM_CLUSTER_ATTRIBUTE_NAME', 'slurm_cluster')
-SLURM_ACCOUNT_ATTRIBUTE_NAME = import_from_settings('SLURM_ACCOUNT_ATTRIBUTE_NAME', 'slurm_account_name')
-SLURM_SPECS_ATTRIBUTE_NAME = import_from_settings('SLURM_SPECS_ATTRIBUTE_NAME', 'slurm_specs')
-SLURM_USER_SPECS_ATTRIBUTE_NAME = import_from_settings('SLURM_USER_SPECS_ATTRIBUTE_NAME', 'slurm_user_specs')
-SLURM_SACCTMGR_PATH = import_from_settings('SLURM_SACCTMGR_PATH', '/usr/bin/sacctmgr')
+SLURM_CLUSTER_ATTRIBUTE_NAME = import_from_settings(
+    'SLURM_CLUSTER_ATTRIBUTE_NAME', 'slurm_cluster')
+SLURM_ACCOUNT_ATTRIBUTE_NAME = import_from_settings(
+    'SLURM_ACCOUNT_ATTRIBUTE_NAME', 'slurm_account_name')
+SLURM_SPECS_ATTRIBUTE_NAME = import_from_settings(
+    'SLURM_SPECS_ATTRIBUTE_NAME', 'slurm_specs')
+SLURM_USER_SPECS_ATTRIBUTE_NAME = import_from_settings(
+    'SLURM_USER_SPECS_ATTRIBUTE_NAME', 'slurm_user_specs')
+SLURM_SACCTMGR_PATH = import_from_settings(
+    'SLURM_SACCTMGR_PATH', '/usr/bin/sacctmgr')
+
 SLURM_CMD_REMOVE_USER = SLURM_SACCTMGR_PATH + ' -Q -i delete user where name={} cluster={} account={}'
 SLURM_CMD_REMOVE_QOS = SLURM_SACCTMGR_PATH + ' -Q -i modify user where name={} cluster={} account={} set {}'
 SLURM_CMD_REMOVE_ACCOUNT = SLURM_SACCTMGR_PATH + ' -Q -i delete account where name={} cluster={}'
@@ -27,19 +33,21 @@ class SlurmError(Exception):
 
 def _run_slurm_cmd(cmd, noop=True):
     if noop:
-        logger.warn('NOOP - Slurm cmd: %s', cmd)
+        logger.warning('NOOP - Slurm cmd: %s', cmd)
         return
 
     try:
-        result = subprocess.run(shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+        result = subprocess.run(
+            shlex.split(cmd), stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True
+        )
     except subprocess.CalledProcessError as e:
         if 'Nothing deleted' in str(e.stdout):
             # We tried to delete something that didn't exist. Don't throw error
-            logger.warn('Nothing to delete: %s', cmd)
+            logger.warning('Nothing to delete: %s', cmd)
             return e.stdout
         if 'Nothing new added' in str(e.stdout):
             # We tried to add something that already exists. Don't throw error
-            logger.warn('Nothing new to add: %s', cmd)
+            logger.warning('Nothing new to add: %s', cmd)
             return e.stdout
 
         logger.error('Slurm command failed: %s', cmd)
@@ -52,11 +60,15 @@ def _run_slurm_cmd(cmd, noop=True):
     return result.stdout
 
 def slurm_remove_assoc(user, cluster, account, noop=False):
-    cmd = SLURM_CMD_REMOVE_USER.format(shlex.quote(user), shlex.quote(cluster), shlex.quote(account))
+    cmd = SLURM_CMD_REMOVE_USER.format(
+        shlex.quote(user), shlex.quote(cluster), shlex.quote(account)
+    )
     _run_slurm_cmd(cmd, noop=noop)
 
 def slurm_remove_qos(user, cluster, account, qos, noop=False):
-    cmd = SLURM_CMD_REMOVE_QOS.format(shlex.quote(user), shlex.quote(cluster), shlex.quote(account), shlex.quote(qos))
+    cmd = SLURM_CMD_REMOVE_QOS.format(
+        shlex.quote(user), shlex.quote(cluster), shlex.quote(account), shlex.quote(qos)
+    )
     _run_slurm_cmd(cmd, noop=noop)
 
 def slurm_remove_account(cluster, account, noop=False):
@@ -84,8 +96,10 @@ def slurm_block_account(cluster, account, noop=False):
     _run_slurm_cmd(cmd, noop=noop)
 
 def slurm_check_assoc(user, cluster, account):
-    cmd = SLURM_CMD_CHECK_ASSOCIATION.format(shlex.quote(user), shlex.quote(cluster), shlex.quote(account))
-    output = _run_slurm_cmd(cmd, noop=False) 
+    cmd = SLURM_CMD_CHECK_ASSOCIATION.format(
+        shlex.quote(user), shlex.quote(cluster), shlex.quote(account)
+    )
+    output = _run_slurm_cmd(cmd, noop=False)
 
     with StringIO(output.decode("UTF-8")) as fh:
         reader = csv.DictReader(fh, delimiter='|')
