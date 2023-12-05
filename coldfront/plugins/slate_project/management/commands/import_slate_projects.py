@@ -107,7 +107,11 @@ class Command(BaseCommand):
 
     def update_user_profile(self, user_obj, ldap_conn):
         attributes = ldap_conn.search_a_user(user_obj.username, ['title'])
-        user_obj.userprofile.title = attributes.get('title')[0]
+        title = attributes.get('title')
+        if title:
+            user_obj.userprofile.title = title[0]
+        else:
+            user_obj.userprofile.title = ''
         user_obj.userprofile.save()
 
     def handle(self, *args, **kwargs):
@@ -347,6 +351,6 @@ class LDAPSearch():
         if self.conn.entries:
             attributes = json.loads(self.conn.entries[0].entry_to_json()).get('attributes')
         else:
-            attributes = dict.fromkeys(search_attributes_list, [''])
+            attributes = dict.fromkeys(search_attributes_list, [])
 
         return attributes
