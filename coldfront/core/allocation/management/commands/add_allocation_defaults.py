@@ -32,7 +32,9 @@ class Command(BaseCommand):
             AllocationUserStatusChoice.objects.get_or_create(name=choice)
 
         for name, attribute_type, is_private in (
-            ('Fairshare', 'Int', False),
+            ('Fairshare', 'Float', False),
+            ('Normshares', 'Float', False),
+            ('RawUsage', 'Int', False),
         ):
             AllocationUserAttributeType.objects.update_or_create(
                 name=name,
@@ -57,7 +59,9 @@ class Command(BaseCommand):
             ('High Security', 'Yes/No', False, False),
             ('DUA', 'Yes/No', False, False),
             ('External Sharing', 'Yes/No', False, False),
-            ('Fairshare', 'Int', False, False),
+            ('Fairshare', 'Float', False, False),
+            ('Normshares', 'Float', False, False),
+            ('RawUsage', 'Int', False, False),
             # UBCCR defaults
             ('Cloud Account Name', 'Text', False, False),
             # ('CLOUD_USAGE_NOTIFICATION', 'Yes/No', False, True),

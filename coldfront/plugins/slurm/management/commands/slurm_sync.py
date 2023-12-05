@@ -58,10 +58,6 @@ class Command(BaseCommand):
             name='Cloud Account Name')
         hours_attr_type_obj = AllocationAttributeType.objects.get(
             name='Core Usage (Hours)')
-        fairshare_attr_type_obj = AllocationAttributeType.objects.get(
-            name='Fairshare')
-        user_fairshare_attr_type_obj = AllocationUserAttributeType.objects.get(
-            name="Fairshare")
         auser_status_active = AllocationUserStatusChoice.objects.get(name='Active')
 
         for resource, cluster in slurm_clusters.items():
@@ -107,17 +103,19 @@ class Command(BaseCommand):
                     defaults={'value': 0}
                 )
 
-                try:
-                    group_fairshare = account.fairshare_dict.get('FairShare', None)
-                except AttributeError:
-                    group_fairshare = None
-                print("GROUP_FAIRSHARE", group_fairshare)
+                for shareval in ['FairShare', 'NormShares', 'RawUsage']:
+                    try:
+                        group_val = account.fairshare_dict.get(shareval, None)
+                    except AttributeError:
+                        group_val = None
 
-                if group_fairshare:
-                    allocation_obj.allocationattribute_set.update_or_create(
-                        allocation_attribute_type=fairshare_attr_type_obj,
-                        defaults={'value': group_fairshare}
-                    )
+                    if group_val:
+                        attr_type = AllocationAttributeType.objects.get(
+                            name=shareval.capitalize())
+                        allocation_obj.allocationattribute_set.update_or_create(
+                            allocation_attribute_type=attr_type,
+                            defaults={'value': group_val}
+                        )
 
                 # add allocationusers from account
                 for user_name, user_account in account.users.items():
@@ -133,12 +131,15 @@ class Command(BaseCommand):
                         }
                     )
 
-                    try:
-                        user_fairshare = user_account.fairshare_dict.get('FairShare', None)
-                    except AttributeError:
-                        user_fairshare = None
-                    if user_fairshare:
-                        alloc_user.allocationuserattribute_set.update_or_create(
-                            allocationuser_attribute_type=user_fairshare_attr_type_obj,
-                            defaults={"value": user_fairshare}
-                        )
+                    for shareval in ['FairShare', 'NormShares', 'RawUsage']:
+                        try:
+                            user_val = user_account.fairshare_dict.get(shareval, None)
+                        except AttributeError:
+                            user_val = None
+                        if user_val:
+                            attr_type = AllocationUserAttributeType.objects.get(
+                                name=shareval.capitalize())
+                            alloc_user.allocationuserattribute_set.update_or_create(
+                                allocationuser_attribute_type=attr_type,
+                                defaults={"value": user_val}
+                            )
