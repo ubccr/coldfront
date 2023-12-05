@@ -768,7 +768,10 @@ def get_inactive_users():
     allocation_users = AllocationUser.objects.filter(
         status__name='Inactive', allocation__resources__name='Slate Project'
     ).prefetch_related(
-        'allocation__allocationattribute_set', 'allocation__project__projectuser_set', 'user'
+        'allocation__allocationattribute_set',
+        'allocation__project__projectuser_set',
+        'allocation__project__pi',
+        'user'
     )
     inactive_users = {}
     for allocation_user in allocation_users:
@@ -779,8 +782,16 @@ def get_inactive_users():
         project_user = allocation_user.allocation.project.projectuser_set.filter(user=allocation_user.user)
         if project_user.exists():
             username = allocation_user.user.username
+            pi_username = allocation_user.allocation.project.pi.username
             if not inactive_users.get(username):
                 inactive_users[username] = {}
+
+            if pi_username == username:
+                if not inactive_users[username].get('PI'):
+                    inactive_users[username]['PI'] = [namespace_entry]
+                else:
+                    inactive_users[username]['PI'].append(namespace_entry)
+                continue
 
             role = project_user[0].role.name
             if not inactive_users[username].get(role):
