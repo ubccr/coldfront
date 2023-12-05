@@ -180,7 +180,8 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             attributes_with_usage.remove(a)
 
         # Only show 'Active Users'
-        project_users = self.object.projectuser_set.order_by('user__username')
+        project_users = self.object.projectuser_set.filter(
+                    status__name='Active').order_by('user__username')
 
         context['mailto'] = 'mailto:' + ','.join([u.user.email for u in project_users])
 
@@ -203,18 +204,19 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         allocations = allocations.filter(
             status__name__in=['Active', 'Paid', 'Ready for Review','Payment Requested']
         ).distinct().order_by('-end_date')
+        storage_allocations = allocations.filter(resources__resource_type__name='Storage')
+        compute_allocations = allocations.filter(resources__resource_type__name='Cluster')
         allocation_total = {'allocation_user_count': 0, 'size': 0, 'cost': 0, 'usage':0}
-        for allocation in allocations:
-            if allocation.get_parent_resource.resource_type.name == "Storage":
-                if allocation.cost:
-                    allocation_total['cost'] += allocation.cost
-                if allocation.size:
-                    allocation_total['size'] += allocation.size
-                if allocation.usage:
-                    allocation_total['usage'] += allocation.usage
-                allocation_total['allocation_user_count'] += int(
-                    allocation.allocationuser_set.count()
-                )
+        for allocation in storage_allocations:
+            if allocation.cost:
+                allocation_total['cost'] += allocation.cost
+            if allocation.size:
+                allocation_total['size'] += allocation.size
+            if allocation.usage:
+                allocation_total['usage'] += allocation.usage
+            allocation_total['allocation_user_count'] += int(
+                allocation.allocationuser_set.count()
+            )
 
         try:
             time_chart_data = generate_usage_history_graph(self.object)
@@ -251,7 +253,8 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['grants'] = Grant.objects.filter(
             project=self.object, status__name__in=['Active', 'Pending', 'Archived']
         )
-        context['allocations'] = allocations
+        context['storage_allocations'] = storage_allocations
+        context['compute_allocations'] = compute_allocations
         context['allocation_total'] = allocation_total
         context['attributes'] = attributes
         context['guage_data'] = guage_data

@@ -109,8 +109,7 @@ Project Detail
           </tr>
         </thead>
         <tbody>
-          {% for allocation in allocations %}
-          {% if allocation.get_parent_resource.resource_type.name == 'Storage' %}
+          {% for allocation in storage_allocations %}
           {% if allocation.status.name == 'Active' %}
           <tr style="background-color:#FFFFFF">
             <td>{{ allocation.get_parent_resource.name }}</td>
@@ -143,10 +142,9 @@ Project Detail
             </td
             {% endif %}
           </tr>
-          {% endif %}
           {% endfor %}
         </tbody>
-        {% if allocation_total.size > allocation.first.size %}
+        {% if storage_allocations|length > 1 %}
           <tfoot>
             <tr style="background-color:#C2C2C2;font-weight:bold">
               <td>Total Storage</td>
@@ -172,7 +170,7 @@ Project Detail
           </tr>
         </thead>
         <tbody>
-          {% for allocation in allocations %}
+          {% for allocation in compute_allocations %}
             {% if allocation.get_parent_resource.resource_type.name == 'Cluster' %}
             {% if allocation.status.name == 'Active' %}
             <tr style="background-color:#FFFFFF">
@@ -692,26 +690,33 @@ Project Detail
        order: [[ 3, "desc" ]],
        buttons: [
         {
-          name: 'toggleusers',
-          text: function() {
-              return $('#projectuser_table').attr('filter') == "on" ? 'Show All Users' : "Show Active Users"
-            },
-          action: function(e, dt, node, config) {
-            var table = $('#projectuser_table');
-            var filter = table.attr('filter') === "on" ? 'off' : "on";
-            document.querySelector('#projectuser_table').setAttribute('filter', filter);
-            if (filter == 'on') {
-              $.fn.dataTable.ext.search.push(
-                function(settings, data, dataIndex) {
-                    return $(dt.row(dataIndex).node()).attr('status') == "Active";
-                  });
-            } else {$.fn.dataTable.ext.search.pop();}
-            table.DataTable().draw();
-            this.text(filter == 'on' ? 'Show All Users' : "Show Active Users")
-          }
+          name: 'primary',
+          extend: 'collection',
+          background: false,
+          autoClose: true,
+          text: 'Export',
+          buttons: [ 'csv', 'excel', 'pdf' ]
         }
-      ]}
-    );
+        // {
+    //     name: 'toggleusers',
+    //     text: function() {
+    //         return $('#projectuser_table').attr('filter') == "on" ? 'Show All Users' : "Show Active Users"
+    //       },
+    //     action: function(e, dt, node, config) {
+    //       var table = $('#projectuser_table');
+    //       var filter = table.attr('filter') === "on" ? 'off' : "on";
+    //       document.querySelector('#projectuser_table').setAttribute('filter', filter);
+    //       if (filter == 'on') {
+    //         $.fn.dataTable.ext.search.push(
+    //           function(settings, data, dataIndex) {
+    //               return $(dt.row(dataIndex).node()).attr('status') == "Active";
+    //             });
+    //       } else {$.fn.dataTable.ext.search.pop();}
+    //       table.DataTable().draw();
+    //       this.text(filter == 'on' ? 'Show All Users' : "Show Active Users")
+    //     }
+      ]
+    });
 
     $('#allocation_history').DataTable({
       'aoColumnDefs': [{
