@@ -175,7 +175,7 @@ class SlurmCluster(SlurmBase):
                 d for d in fairshares if d['Account'] == acct_share['Account'] and d['User']
             ]
             for user_share in user_shares:
-                user = next((u for u in account.users if u.name == user_share['User']), None)
+                user = next((u for u in account.users.values() if u.name == user_share['User']), None)
                 if not user:
                     print(f"no user for {user_share}")
                     continue
@@ -193,13 +193,13 @@ class SlurmCluster(SlurmBase):
         usages = slurm_collect_usage(cluster=self.name)
         acct_usages = [d for d in usages if not d['Login']]
         for acct_usage in acct_usages:
-            account = next((a for a in self.accounts if a.name == acct_usage['Account']), None)
+            account = next((a for a in self.accounts.values() if a.name == acct_usage['Account']), None)
             if not account:
                 print(f"no account for {acct_usage}")
                 continue
             user_usages = [d for d in usages if d['Account'] == account.name and d['Login']]
             for user_usage in user_usages:
-                user = next((u for u in account.users if u.name == user_usage['Login']), None)
+                user = next((u for u in account.users.values() if u.name == user_usage['Login']), None)
                 if not user:
                     print(f"no user for {user_usage}")
                     continue
