@@ -107,12 +107,16 @@ class Command(BaseCommand):
                     defaults={'value': 0}
                 )
 
-                group_fairshare = account.fairshare_dict.get('FairShare', None)
+                try:
+                    group_fairshare = account.fairshare_dict.get('FairShare', None)
+                except AttributeError:
+                    group_fairshare = None
+                print("GROUP_FAIRSHARE", group_fairshare)
 
                 if group_fairshare:
-                    allocation_obj.allocationattribute_set.get_or_create(
+                    allocation_obj.allocationattribute_set.update_or_create(
                         allocation_attribute_type=fairshare_attr_type_obj,
-                        defaults={'value': group_fairshare['FairShare']}
+                        defaults={'value': group_fairshare}
                     )
 
                 # add allocationusers from account
@@ -128,8 +132,13 @@ class Command(BaseCommand):
                             'status': auser_status_active, "unit": "CPU Hours"
                         }
                     )
-                    user_fairshare = user_account.fairshare_dict.get('FairShare', None)
-                    alloc_user.allocationuserattribute_set.update_or_create(
-                        allocationuser_attribute_type=user_fairshare_attr_type_obj,
-                        defaults={"value": user_fairshare}
-                    )
+
+                    try:
+                        user_fairshare = user_account.fairshare_dict.get('FairShare', None)
+                    except AttributeError:
+                        user_fairshare = None
+                    if user_fairshare:
+                        alloc_user.allocationuserattribute_set.update_or_create(
+                            allocationuser_attribute_type=user_fairshare_attr_type_obj,
+                            defaults={"value": user_fairshare}
+                        )

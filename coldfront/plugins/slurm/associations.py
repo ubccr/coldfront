@@ -5,13 +5,16 @@ import re
 import sys
 
 from coldfront.core.resource.models import Resource
-from coldfront.plugins.slurm.utils import (SLURM_ACCOUNT_ATTRIBUTE_NAME,
-                                           SLURM_CLUSTER_ATTRIBUTE_NAME,
-                                           SLURM_SPECS_ATTRIBUTE_NAME,
-                                           SLURM_USER_SPECS_ATTRIBUTE_NAME,
-                                           slurm_collect_fairshares,
-                                           slurm_collect_usage,
-                                           SlurmError)
+from coldfront.plugins.slurm.utils import (
+    SLURM_ACCOUNT_ATTRIBUTE_NAME,
+    SLURM_CLUSTER_ATTRIBUTE_NAME,
+    SLURM_SPECS_ATTRIBUTE_NAME,
+    SLURM_USER_SPECS_ATTRIBUTE_NAME,
+    slurm_collect_fairshares,
+    slurm_collect_usage,
+    slurm_fixed_width_lines_to_dict,
+    SlurmError
+)
 
 logger = logging.getLogger(__name__)
 
@@ -156,15 +159,23 @@ class SlurmCluster(SlurmBase):
             fairshares = slurm_collect_fairshares(cluster=self.name)
         else:
             with open(file, 'r') as fairsharefile:
-                fairshares = fairsharefile.read()
+                fairshare_data = list(fairsharefile)
+                fairshares = slurm_fixed_width_lines_to_dict(fairshare_data)
         # select all fairshare lines with no user val, pin to SlurmAccounts.
         acct_fairshares = [d for d in fairshares if not d['User']]
         # pair acct_fairshares with SlurmAccounts
         for acct_share in acct_fairshares:
-            account = next([a for a in self.accounts if a.name == acct_share['Account']], None)
-            user_shares = [d for d in fairshares if d['Account'] == account.name and d['User']]
+            account = next(
+                (a for a in self.accounts.values() if a.name == acct_share['Account']), None
+            )
+            if not account:
+                print(f"no account for {acct_share}")
+                continue
+            user_shares = [
+                d for d in fairshares if d['Account'] == acct_share['Account'] and d['User']
+            ]
             for user_share in user_shares:
-                user = next(u for u in account.users if u.name == user_share['User'])
+                user = next((u for u in account.users if u.name == user_share['User']), None)
                 if not user:
                     print(f"no user for {user_share}")
                     continue
@@ -172,9 +183,6 @@ class SlurmCluster(SlurmBase):
                     user.fairshare_dict = user_share
                 else:
                     print("OVERWRITE BLOCKED:", user, user.fairshare_dict, user_share)
-            if not account:
-                print(f"no account for {acct_share}")
-                continue
             if not hasattr(account, 'fairshare_dict'):
                 account.fairshare_dict = acct_share
             else:
@@ -185,10 +193,13 @@ class SlurmCluster(SlurmBase):
         usages = slurm_collect_usage(cluster=self.name)
         acct_usages = [d for d in usages if not d['Login']]
         for acct_usage in acct_usages:
-            account = next([a for a in self.accounts if a.name == acct_usage['Account']], None)
+            account = next((a for a in self.accounts if a.name == acct_usage['Account']), None)
+            if not account:
+                print(f"no account for {acct_usage}")
+                continue
             user_usages = [d for d in usages if d['Account'] == account.name and d['Login']]
             for user_usage in user_usages:
-                user = next(u for u in account.users if u.name == user_usage['Login'])
+                user = next((u for u in account.users if u.name == user_usage['Login']), None)
                 if not user:
                     print(f"no user for {user_usage}")
                     continue
@@ -196,9 +207,6 @@ class SlurmCluster(SlurmBase):
                     user.usage_dict = user_usage
                 else:
                     print("OVERWRITE BLOCKED:", user, user.usage_dict, user_usage)
-            if not account:
-                print(f"no account for {acct_usage}")
-                continue
             if not hasattr(account, 'usage_dict'):
                 account.usage_dict = acct_usage
             else:
@@ -206,18 +214,18 @@ class SlurmCluster(SlurmBase):
 
 
     def write(self, out):
-        self._write(out, "# ColdFront Allocation Slurm associations dump {}\n".format(
-            datetime.datetime.now().date()))
-        self._write(out, "Cluster - '{}':{}\n".format(
-            self.name,
-            self.format_specs(),
-        ))
+        self._write(
+            out,
+            f"# ColdFront Allocation Slurm associations dump {datetime.datetime.now().date()}\n"
+        )
+        self._write(out, f"Cluster - '{self.name}':{self.format_specs()}\n")
         if 'root' in self.accounts:
             self.accounts['root'].write(out)
         else:
             self._write(out, "Parent - 'root'\n")
             self._write(
-                out, "User - 'root':DefaultAccount='root':AdminLevel='Administrator':Fairshare=1\n")
+                out, "User - 'root':DefaultAccount='root':AdminLevel='Administrator':Fairshare=1\n"
+            )
 
         for account in self.accounts.values():
             if account.name == 'root':
@@ -280,10 +288,7 @@ class SlurmAccount(SlurmBase):
 
     def write(self, out):
         if self.name != 'root':
-            self._write(out, "Account - '{}':{}\n".format(
-                self.name,
-                self.format_specs(),
-            ))
+            self._write(out, f"Account - '{self.name}':{self.format_specs()}\n")
 
     def write_users(self, out):
         self._write(out, f"Parent - '{self.name}'\n")
