@@ -764,6 +764,45 @@ def get_estimated_storage_cost(allocation_obj):
     return storage_cost
 
 
+def get_inactive_users():
+    allocation_users = AllocationUser.objects.filter(
+        status__name='Inactive', allocation__resources__name='Slate Project'
+    ).prefetch_related(
+        'allocation__allocationattribute_set', 'allocation__project__projectuser_set', 'user'
+    )
+    inactive_users = {}
+    for allocation_user in allocation_users:
+        # Assumes there's never more than one slate project allocation in a project
+        namespace_entry = allocation_user.allocation.allocationattribute_set.get(
+            allocation_attribute_type__name='Namespace Entry'
+        ).value
+        project_user = allocation_user.allocation.project.projectuser_set.filter(user=allocation_user.user)
+        if project_user.exists():
+            username = allocation_user.user.username
+            if not inactive_users.get(username):
+                inactive_users[username] = {}
+
+            role = project_user[0].role.name
+            if not inactive_users[username].get(role):
+                inactive_users[username][role] = [namespace_entry]
+            else:
+                inactive_users[username][role].append(namespace_entry)
+
+    if EMAIL_ENABLED and inactive_users:
+        template_context = {
+            'inactive_users': inactive_users,
+            'current_date': date.today().isoformat(),
+        }
+
+        send_email_template(
+            'Inactive Users',
+            'slate_project/email/inactive_users.txt',
+            template_context,
+            EMAIL_TICKET_SYSTEM_ADDRESS,
+            [SLATE_PROJECT_EMAIL]
+        )
+
+
 class LDAPModify:
     def __init__(self):
         self.LDAP_SERVER_URI = import_from_settings('LDAP_SLATE_PROJECT_SERVER_URI')
