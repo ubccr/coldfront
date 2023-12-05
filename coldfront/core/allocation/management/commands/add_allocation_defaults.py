@@ -61,7 +61,7 @@ class Command(BaseCommand):
             ('External Sharing', 'Yes/No', False, False),
             ('Fairshare', 'Float', False, False),
             ('Normshares', 'Float', False, False),
-            ('RawUsage', 'Int', False, False),
+            ('Rawusage', 'Int', False, False),
             # UBCCR defaults
             ('Cloud Account Name', 'Text', False, False),
             # ('CLOUD_USAGE_NOTIFICATION', 'Yes/No', False, True),

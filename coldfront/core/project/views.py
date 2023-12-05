@@ -210,11 +210,11 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                     allocation_total['cost'] += allocation.cost
                 if allocation.size:
                     allocation_total['size'] += allocation.size
-            if allocation.usage:
-                allocation_total['usage'] += allocation.usage
-            allocation_total['allocation_user_count'] += int(
-                allocation.allocationuser_set.count()
-            )
+                if allocation.usage:
+                    allocation_total['usage'] += allocation.usage
+                allocation_total['allocation_user_count'] += int(
+                    allocation.allocationuser_set.count()
+                )
 
         try:
             time_chart_data = generate_usage_history_graph(self.object)
