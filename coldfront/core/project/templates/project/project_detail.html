@@ -90,6 +90,7 @@ Project Detail
   </div>
   <div class="card-body">
     <div class="table-responsive">
+      {% if storage_allocations %}
         <table id="invoice_table" class="table table-hover">
         <h4>Storage Allocations</h4>
         <thead>
@@ -99,8 +100,7 @@ Project Detail
             <th scope="col">User Count</th>
             <th scope="col">Space</th>
             <th scope="col">Used</th>
-            <th scope="col">
-              Monthly Cost
+            <th scope="col">Monthly Cost
               <a class="info-button" title="Monthly Cost" data-toggle="popover" data-trigger="hover" data-content="Monthly cost for each allocation (not necessarily billed to project)">
                 <i class="fas fa-info-circle" aria-hidden="true"></i>
               </a>
@@ -159,6 +159,8 @@ Project Detail
           </tfoot>
         {% endif %}
       </table>
+      {% endif %}
+      {% if compute_allocations %}
       <table id="cluster_table" class="table table-hover">
        <h4>Cluster Allocations</h4>
         <thead>
@@ -194,6 +196,7 @@ Project Detail
           {% endfor %}
         </tbody>
       </table>
+      {% endif %}
     </div>
 
   </div>
@@ -308,7 +311,6 @@ Project Detail
                 <i class="fas fa-info-circle" aria-hidden="true"></i>
               </a>
             </th>
-            <th scope="col" class="text-nowrap">Status</th>
             <!-- This is what I want to add - a usage column; -->
            <th scope="col" class="nosort">
              <input type="checkbox" class="check" id="selectAll" style="margin-right: 5px;">Notifications On
@@ -329,16 +331,6 @@ Project Detail
               <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
               <td>{{ user.user.email }}</td>
               <td>{{ user.role.name }}</td>
-
-
-              {% if user.status.name == 'Active' %}
-                <td class="text-success">{{ user.status.name }}</td>
-              {% elif user.status.name == 'Removed' %}
-                <td class="text-danger">Inactive</td>
-              {% else %}
-                <td class="text-info">{{ user.status.name }}</td>
-              {% endif %}
-
               <td>
                 {% if is_allowed_to_update_project %}
                   <input type="checkbox"
