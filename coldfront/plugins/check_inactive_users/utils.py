@@ -1,3 +1,4 @@
+import json
 import logging
 import ldap.filter
 from ldap3 import Connection, Server
@@ -16,8 +17,11 @@ def check_inactive_project_user_with_ldap(project_pk):
     ldap_search = LDAPSearch()
     for project_user_obj in project_user_objs:
         user_obj = project_user_obj.user
-        result = ldap_search.search_a_user(user_obj.username, ['title'])
-        if not result:
+        attributes = ldap_search.search_a_user(user_obj.username, ['title'])
+        title = attributes.get('title')[0]
+        user_obj.userprofile.title = title
+        user_obj.userprofile.save()
+        if not title or title in ['Former Employee', 'Retired Staff']:
             project_user_obj.status = ProjectUserStatusChoice.objects.get(name='Inactive')
             project_user_obj.save()
             logger.info(
@@ -68,4 +72,9 @@ class LDAPSearch:
                             'attributes': search_attributes_list,
                             'size_limit': 1}
         self.conn.search(**searchParameters)
-        return self.conn.entries
+        if self.conn.entries:
+            attributes = json.loads(self.conn.entries[0].entry_to_json()).get('attributes')
+        else:
+            attributes = dict.fromkeys(search_attributes_list, [''])
+
+        return attributes
