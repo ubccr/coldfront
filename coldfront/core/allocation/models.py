@@ -749,7 +749,6 @@ class AllocationUser(TimeStampedModel):
         Returns:
             str: the value of the first attribute found for this allocation with the specified name
         """
-
         attr = self.allocationuserattribute_set.filter(
             allocationuser_attribute_type__name=name).first()
         if attr:
@@ -848,7 +847,7 @@ class AllocationUserAttribute(TimeStampedModel):
                 )
 
     def __str__(self):
-        return str(self.allocationuser_attribute_type.name, self.allocationuser)
+        return '%s %s' % (self.allocationuser_attribute_type.name, self.allocationuser)
 
     def typed_value(self):
         """
