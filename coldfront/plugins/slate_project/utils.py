@@ -48,6 +48,9 @@ def sync_slate_project_users(allocation_obj, ldap_conn=None):
     """
     if not ENABLE_LDAP_SLATE_PROJECT_SYNCING:
         return
+    
+    if allocation_obj.status.name != 'Active':
+        return
 
     allocation_attribute_type = 'LDAP Group'
     ldap_group = allocation_obj.allocationattribute_set.filter(
