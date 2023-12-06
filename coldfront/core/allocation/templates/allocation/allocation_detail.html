@@ -346,16 +346,18 @@ Allocation Detail
         </div>
       {% endif %}
 
-      {% if attributes_with_usage %}
-        <hr>
-        {% for attribute in attributes_with_usage %}
-          <div class="card mb-3 mr-1">
-            <div class="card-body">
-              <h4 class="card-title">{{attribute}}</h4>
-              <div id="gauge-{{forloop.counter0}}"></div>
+      {% if "Storage" in allocation.get_parent_resource.resource_type.name %}
+        {% if attributes_with_usage %}
+          <hr>
+          {% for attribute in attributes_with_usage %}
+            <div class="card mb-3 mr-1">
+              <div class="card-body">
+                <h4 class="card-title">{{attribute}}</h4>
+                <div id="gauge-{{forloop.counter0}}"></div>
+              </div>
             </div>
-          </div>
-        {% endfor %}
+          {% endfor %}
+        {% endif %}
       {% endif %}
     </div>
   </div>
