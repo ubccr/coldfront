@@ -31,10 +31,10 @@ Allocation Detail
     This is an {{ allocation.status.name | lower }} allocation! You cannot make any changes.
   </div>
 {% endif %}
-<div id = "allocation">
+<div id="allocation">
 <div class="mb-3">
   <h2>Allocation Detail</h2>
-  <button class = "btn btn-primary" id = "download"> Download PDF </button>
+  <button class="btn btn-primary" id="download"> Download PDF </button>
   <hr>
 </div>
 
@@ -66,7 +66,7 @@ Allocation Detail
     <form method="post">
       {% csrf_token %}
       <div class="table-responsive">
-        <div class = "container mb-3 mt-3">
+        <div class="container mb-3 mt-3">
         <table class="table table-bordered table-sm">
           <tr>
             <th scope="row" class="text-nowrap">Project:</th>
@@ -149,12 +149,12 @@ Allocation Detail
           {% if "Cluster" in allocation.get_parent_resource.resource_type.name %}
             <tr>
                 <th scope="row" class="text-nowrap">Fairshare:</th>
-                <td id = "group_quota">{{ allocation.fairshare }}</td>
+                <td id="fairshare">{{ allocation.fairshare }}</td>
             </tr>
           {% elif "Storage" in allocation.get_parent_resource.resource_type.name %}
             <tr>
                 <th scope="row" class="text-nowrap">Quota (TB):</th>
-                <td id = "group_quota">{{ allocation.size|floatformat:2 }}</td>
+                <td id="group_quota">{{ allocation.size|floatformat:2 }}</td>
             </tr>
             <tr>
                 <th style="background-color:#D3D3D3" bordercolor="red" scope="row" class="text-nowrap">Total Amount Due:	</th>
@@ -442,9 +442,9 @@ Allocation Detail
   </div>
   <div class="card-body">
     <div class="table-responsive">
-    <div class = "container mb-3 mt-3">
+    <div class="container mb-3 mt-3">
       <!-- <table  class="table table-hover mydatatable" > -->
-        <table id = "mydatatable" class = "table table-striped table-bordered" filter = "off">
+        <table id="mydatatable" class="table table-striped table-bordered" filter="off">
         <thead>
           <tr>
             <!-- <th scope="col">Username</th> -->
@@ -456,7 +456,11 @@ Allocation Detail
             {% if "Storage" in allocation.get_parent_resource.resource_type.name %}
               <th scope="col">Cost Per User (TB/month)</th>
             {% else %}
-              <th scope="col">Fairshare</th>
+              <th scope="col">Fairshare
+                <a class="info-button" title="Fairshare" data-toggle="popover" data-trigger="hover" data-content="Calculated fairshare per user. For more information on fairshare usage, go <a href='https://docs.rc.fas.harvard.edu/kb/fairshare/#articleTOC_4' title='fairshare calculation'>here</a>.">
+                  <i class="fas fa-info-circle" aria-hidden="true"></i>
+                </a>
+              </th>
             {% endif %}
             <!-- <th scope="col">Status</th> -->
             <!-- <th scope="col">Last Modified</th> -->
@@ -472,7 +476,7 @@ Allocation Detail
               {% firstof user.usage_bytes as userusage %}
               {% firstof allocation.usage_exact as allocationusage %}
             {% endif %}
-            <tr status = "{{ user.status }}">
+            <tr status="{{ user.status }}">
               <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
 
               {% if user.status.name == 'Active' %}
@@ -482,7 +486,7 @@ Allocation Detail
               {% else %}
                 <td class="text-info">{{ user.status.name }}</td>
               {% endif %}
-              <td data-sort = "{{userusage}}" name = "usage_bytes">
+              <td data-sort="{{userusage}}" name="usage_bytes">
                 {% if userusage is None %}
                   0 {{ user.unit }}
                 {% else %}

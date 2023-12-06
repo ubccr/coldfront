@@ -139,7 +139,19 @@ class Allocation(TimeStampedModel):
 
     @property
     def fairshare(self):
-        return self.get_attribute('Fairshare')
+        return self.get_attribute('FairShare')
+
+    @property
+    def normshares(self):
+        return self.get_attribute('NormShares')
+
+    @property
+    def effectvusage(self):
+        return self.get_attribute('EffectvUsage')
+
+    @property
+    def rawusage(self):
+        return self.get_attribute('RawUsage')
 
     @property
     def expense_code(self):
@@ -748,7 +760,19 @@ class AllocationUser(TimeStampedModel):
 
     @property
     def fairshare(self):
-        return self.get_attribute('Fairshare')
+        return self.get_attribute('FairShare')
+
+    @property
+    def normshares(self):
+        return self.get_attribute('NormShares')
+
+    @property
+    def effectvusage(self):
+        return self.get_attribute('EffectvUsage')
+
+    @property
+    def rawusage(self):
+        return self.get_attribute('RawUsage')
 
 
 class AllocationUserAttributeType(TimeStampedModel):
