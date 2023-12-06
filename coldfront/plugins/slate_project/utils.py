@@ -39,7 +39,7 @@ if EMAIL_ENABLED:
     EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
 
 
-def sync_slate_project_users(allocation_obj):
+def sync_slate_project_users(allocation_obj, ldap_conn=None):
     """
     Checks if the Slate Project allocation is in sync with the Slate Project group in ldap. If not
     it modifies the slate project allocation to re-sync them.
@@ -65,7 +65,8 @@ def sync_slate_project_users(allocation_obj):
     read_write_users = allocation_obj.allocationuser_set.filter(role__name='read/write', status__name='Active')
     read_only_users = allocation_obj.allocationuser_set.filter(role__name='read only', status__name='Active')
 
-    ldap_conn = LDAPModify()
+    if ldap_conn is None:
+        ldap_conn = LDAPModify()
     if not ldap_conn.check_group_exists(ldap_group):
         logger.error(
             f'LDAP: Slate project groups for allocation {allocation_obj.pk} do not exist. No sync '
@@ -765,6 +766,9 @@ def get_estimated_storage_cost(allocation_obj):
 
 
 def get_inactive_users():
+    """
+    Finds and adds inactive users to an email report.
+    """
     allocation_users = AllocationUser.objects.filter(
         status__name='Inactive', allocation__resources__name='Slate Project'
     ).prefetch_related(
