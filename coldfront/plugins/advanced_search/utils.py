@@ -59,6 +59,11 @@ class ProjectTable:
                 projectuser__user__username__icontains=data.get('project__user_username'),
                 projectuser__status__name='Active'
             )
+        if data.get('projects_using_ai'):
+            projects = projects.filter(
+                allocation__allocationattribute__allocation_attribute_type__name='Has DL Workflow',
+                allocation__allocationattribute__value='Yes'
+            )
 
         self.project_queryset = projects
 
