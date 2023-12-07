@@ -1313,6 +1313,24 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                     'Your project has reached the max allocations it can have with this resource.'
                 )
                 return self.form_invalid(form)
+        
+        allocation_limit_per_pi = resource_obj.get_attribute('allocation_limit_per_pi')
+        if allocation_limit_per_pi is not None:
+            allocations = Allocation.objects.filter(
+                project__status__name='Active',
+                project__pi=project_obj.pi,
+                status__name__in=['Active', 'New', 'Renewal Requested'],
+                resources__name='Slate Project'
+            )
+            if len(allocations) > allocation_limit_per_pi:
+                error_message = 'This PI has reached their limit on owning Slate Projects.'
+                if self.request.user == project_obj.pi:
+                    error_message = 'You have reached your limit on owning Slate Projects'
+                form.add_error(
+                    None,
+                    error_message
+                )
+                return self.form_invalid(form)
 
         total_cost = None
         cost = resource_obj.get_attribute('cost')
