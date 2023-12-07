@@ -1969,7 +1969,7 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         context['project'] = project_obj
         context['project_review_form'] = project_review_form
         context['project_users'] = ', '.join(['{} {}'.format(ele.user.first_name, ele.user.last_name)
-                                              for ele in project_obj.projectuser_set.filter(status__name__=['Active','Inactive']).order_by('user__last_name')])
+                                              for ele in project_obj.projectuser_set.filter(status__name__in=['Active','Inactive']).order_by('user__last_name')])
 
         context['formset'] = []
         allocation_data = self.get_allocation_data(project_obj)
