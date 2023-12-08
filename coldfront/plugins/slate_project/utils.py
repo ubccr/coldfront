@@ -370,7 +370,7 @@ def add_slate_project_groups(allocation_obj):
     read_only_gid_number = read_write_gid_number + 1
     gid_attribute_type = AllocationAttributeType.objects.filter(name='GID')
     if not gid_attribute_type.exists():
-        logger.warning(
+        logger.error(
             f'Allocation attribute type {gid_attribute_type[0]} does not exists. GID attribute was '
             f'not created for allocation {allocation_obj.pk}'
         )
