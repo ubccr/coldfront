@@ -44,7 +44,7 @@ def activate_user(sender, **kwargs):
     allocation_user_obj = AllocationUser.objects.get(pk=allocation_user_pk)
     if not allocation_user_obj.allocation.get_parent_resource.name == 'Slate Project':
         return
-    if not allocation_user_obj.allocation.status.name == 'Active':
+    if not allocation_user_obj.allocation.status.name in ['Active', 'Renewal Requested']:
         return
     if not allocation_user_obj.status.name == 'Active':
         return
@@ -102,7 +102,7 @@ def sync_users(sender, **kwargs):
     allocation_obj = Allocation.objects.get(pk=allocation_pk)
     if not allocation_obj.get_parent_resource.name == 'Slate Project':
         return
-    if not allocation_obj.status.name == 'Active':
+    if not allocation_obj.status.name in ['Active', 'Renewal Requested']:
         return
 
     sync_slate_project_users(allocation_obj)
