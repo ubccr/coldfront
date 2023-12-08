@@ -343,10 +343,17 @@ def add_slate_project_groups(allocation_obj):
     ldap_conn = LDAPModify()
     group_exists = ldap_conn.check_group_exists(ldap_group)
     if group_exists:
-        logger.info(
-            f'LDAP: Slate project groups for allocation {allocation_obj.pk} already exist. No new '
-            f'groups were created'    
+        # Renewed allocations will also trigger this so we should use the GID to check if the 
+        # group that exists matches the group we tried to add. If not, log an error.
+        group_gid = ldap_conn.get_group_gid_number(ldap_conn)
+        gid = allocation_obj.allocationattribute_set.filter(
+            allocation_attribute_type__name='GID'
         )
+        if not gid or not group_gid == gid:
+            logger.info(
+                f'LDAP: Slate project groups for allocation {allocation_obj.pk} already exist. No new '
+                f'groups were created'    
+            )
         return
 
     gid_number = ldap_conn.find_highest_gid()
