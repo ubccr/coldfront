@@ -11,18 +11,25 @@ from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand
 
 from coldfront.core.project.models import ProjectStatusChoice
-from coldfront.core.allocation.models import (AllocationUser,
-                                            AllocationAttribute,
-                                            AllocationAttributeType,
-                                            AllocationStatusChoice,
-                                            AllocationUserStatusChoice)
+from coldfront.core.allocation.models import (
+    AllocationUser,
+    AllocationAttribute,
+    AllocationStatusChoice,
+    AllocationAttributeType,
+    AllocationUserStatusChoice,
+)
 from coldfront.core.utils.fasrc import update_csv, select_one_project_allocation, save_json
 from coldfront.core.resource.models import Resource
-from coldfront.plugins.sftocf.utils import (StarFishRedash,
-                                            STARFISH_SERVER,
-                                            pull_sf_push_cf_redash)
-from coldfront.plugins.fasrc.utils import (AllTheThingsConn,
-                            match_entries_with_projects, push_quota_data)
+from coldfront.plugins.sftocf.utils import (
+    StarFishRedash,
+    STARFISH_SERVER,
+    pull_sf_push_cf_redash
+)
+from coldfront.plugins.fasrc.utils import (
+    AllTheThingsConn,
+    match_entries_with_projects,
+    push_quota_data
+)
 
 logger = logging.getLogger(__name__)
 
@@ -52,24 +59,28 @@ class Command(BaseCommand):
 
         redash_api = StarFishRedash(STARFISH_SERVER)
         allocation_usages = redash_api.return_query_results(query='subdirectory')
-        subdir_type = AllocationAttributeType.objects.get(name="Subdirectory")
+        subdir_type = AllocationAttributeType.objects.get(name='Subdirectory')
 
-        for lab, allocations in result_json_cleaned.items():
-            project = proj_models.get(title=lab)
+        for project in proj_models:
             if project.status.name == 'New':
                 project.status = ProjectStatusChoice.objects.get(name='Active')
                 project.save()
+
+        for lab, allocations in result_json_cleaned.items():
+            project = proj_models.get(title=lab)
             for entry in allocations:
                 lab_name = entry['lab']
                 lab_server = entry['server']
                 lab_path = entry['fs_path'].replace(f'/n/{entry["server"]}/', '')
 
-                resource = Resource.objects.get(name__contains=entry["server"])
-                alloc_obj = select_one_project_allocation(project, resource, dirpath=entry['fs_path'])
+                resource = Resource.objects.get(name__contains=entry['server'])
+                alloc_obj = select_one_project_allocation(project, resource, dirpath=lab_path)
                 if alloc_obj is not None:
                     continue
-                lab_usage_entries = [i for i in allocation_usages if i['vol_name'] == lab_server
-                            and lab_path in i['path'] and i['group_name'] == lab_name]
+                lab_usage_entries = [
+                    i for i in allocation_usages if i['vol_name'] == lab_server
+                    and lab_path in i['path'] and i['group_name'] == lab_name
+                ]
                 if not lab_usage_entries:
                     continue
 
@@ -81,27 +92,30 @@ class Command(BaseCommand):
                         'start_date': datetime.now(),
                         'is_changeable': True,
                         'justification': f'Allocation Information for {lab_name}',
-                        }
-                    )
+                    }
+                )
                 # do not modify status of inactive allocations
+                allocation_str = f'{lab_name}  {lab_server}  {lab_path}'
                 if created:
                     allocation.resources.add(resource)
                     AllocationAttribute.objects.create(
                         allocation=allocation,
                         allocation_attribute_type_id=subdir_type.pk,
                         value=lab_path
-                        )
-                    print(f'allocation created: {lab_name}')
+                    )
+                    print(f'allocation created: {allocation_str}')
                     allocation.save()
-                    command_report['allocations_added'].append(f'{lab_name}  {lab_server}  {lab_path}')
-                    row = {'project_title': lab_name,
-                                'server': lab_server,
-                                'path': lab_path,
-                                'date': datetime.now()}
+                    command_report['allocations_added'].append(allocation_str)
+                    row = {
+                        'project_title': lab_name,
+                        'server': lab_server,
+                        'path': lab_path,
+                        'date': datetime.now()
+                    }
 
                     added_allocations_df = added_allocations_df.append(row, ignore_index=True)
                 else:
-                    command_report['allocations_existing'].append(f'{lab_name}  {lab_server}  {lab_path}')
+                    command_report['allocations_existing'].append(allocation_str)
                     continue
                 pi_obj = project.pi
                 try:
@@ -112,7 +126,8 @@ class Command(BaseCommand):
                         'status': AllocationUserStatusChoice.objects.get(name='Active')}
                     )
                 except ValidationError:
-                    logger.warning('adding PI %s to allocation %s failed', pi_obj.pi.username, allocation.pk)
+                    logger.warning('adding PI %s to allocation %s failed',
+                                    pi_obj.pi.username, allocation.pk)
                     created = None
                 if created:
                     print('PI added: ' + project.pi.username)

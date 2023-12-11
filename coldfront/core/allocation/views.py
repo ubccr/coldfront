@@ -68,6 +68,7 @@ from coldfront.core.utils.mail import send_allocation_admin_email, send_allocati
 
 
 if 'ifxbilling' in settings.INSTALLED_APPS:
+    from fiine.client import API as FiineAPI
     from ifxbilling.models import Account, UserProductAccount
 if 'django_q' in settings.INSTALLED_APPS:
     from django_q.tasks import Task
@@ -560,6 +561,10 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         quantity = form_data.get('quantity', 1)
         allocation_account = form_data.get('allocation_account', None)
 
+        if resource_obj.name == "Tier 3" and quantity % 20 != 0:
+            form.add_error("quantity", format_html("Tier 3 quantity must be a multiple of 20."))
+            return self.form_invalid(form)
+
         # A resource is selected that requires an account name selection but user has no account names
         if (
             ALLOCATION_ACCOUNT_ENABLED
@@ -659,7 +664,19 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             'quantity':quantity,
             'nese': nese,
             'used_percentage': used_percentage,
+            'expense_code': expense_code,
+            'unmatched_code': False,
         }
+
+        if 'ifxbilling' in settings.INSTALLED_APPS:
+            try:
+                matched_fiineaccts = FiineAPI.listAccounts(code=expense_code)
+                if not matched_fiineaccts:
+                    other_vars['unmatched_code'] = True
+            except Exception:
+                #Not authorized to use accounts_list
+                pass
+
         send_allocation_admin_email(
             allocation_obj,
             'New Allocation Request',
@@ -1800,7 +1817,6 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                 if new_value != attribute_change.new_value:
                     attribute_change.new_value = new_value
                     attribute_change.save()
-
         if action == 'update':
             message = 'Allocation change request updated!'
         if action == 'approve':
@@ -1986,11 +2002,21 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         if form_data.get('end_date_extension') != 0:
             change_requested = True
+
+        # if requested resource is on NESE, add to vars
+        nese = bool(allocation_obj.resources.filter(name__contains="nesetape"))
+
         if attrs_to_change:
             for entry in formset:
                 formset_data = entry.cleaned_data
 
                 new_value = formset_data.get('new_value')
+                # require nese shares to be divisible by 20
+                tbs = int(new_value) if formset_data['name'] == 'Storage Quota (TB)' else False
+                if nese and tbs and tbs % 20 != 0:
+                    messages.error(request, "Tier 3 quantity must be a multiple of 20.")
+                    return HttpResponseRedirect(reverse('allocation-change', kwargs={'pk': pk}))
+
                 if new_value != '':
                     change_requested = True
                     allocation_attribute = AllocationAttribute.objects.get(
@@ -2027,17 +2053,19 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             for a in attribute_changes_to_make
             if a[0].allocation_attribute_type.name == 'Storage Quota (TB)'
         ]
-        # if requested resource is on NESE, add to vars
-        nese = bool(allocation_obj.resources.filter(name__contains="nesetape"))
 
         email_vars = {'justification': justification}
         if quantity:
             quantity_num = int(float(quantity[0][1]))
             difference = quantity_num - int(float(allocation_obj.size))
             used_percentage = allocation_obj.get_parent_resource.used_percentage
+            current_size = allocation_obj.size
+            if nese:
+                current_size = round(current_size, -1)
+                difference = round(difference, -1)
             email_vars['quantity'] = quantity_num
             email_vars['nese'] = nese
-            email_vars['current_size'] = allocation_obj.size
+            email_vars['current_size'] = current_size
             email_vars['difference'] = difference
             email_vars['used_percentage'] = used_percentage
 

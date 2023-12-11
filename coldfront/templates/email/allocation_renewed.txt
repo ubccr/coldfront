@@ -1,2 +1,3 @@
-A allocation has been renewed for {{pi}} - {{resource}}. Please activate the allocation:
+A allocation has been renewed for {{pi_name}} ({{pi_username}}) - {{resource}}.
+Please activate the allocation:
 {{url}}
