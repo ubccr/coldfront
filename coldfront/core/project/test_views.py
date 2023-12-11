@@ -111,12 +111,12 @@ class ProjectDetailViewTest(ProjectViewTestBase):
 
     def test_projectdetail_request_allocation_button_visibility(self):
         """Test visibility of project detail request allocation button to different projectuser levels"""
-        utils.page_contains_for_user(self, self.admin_user, self.url, 'Request New Allocation') # admin can see request allocation button
+        utils.page_contains_for_user(self, self.admin_user, self.url, 'Request Storage Allocation') # admin can see request allocation button
 
-        utils.page_contains_for_user(self, self.pi_user, self.url, 'Request New Allocation') # pi can see request allocation button
+        utils.page_contains_for_user(self, self.pi_user, self.url, 'Request Storage Allocation') # pi can see request allocation button
 
         response = utils.login_and_get_page(self.client, self.project_user, self.url)
-        self.assertNotContains(response, 'Request New Allocation') # non-manager user cannot see request allocation button
+        self.assertNotContains(response, 'Request Storage Allocation') # non-manager user cannot see request allocation button
 
     def test_projectdetail_edituser_button_visibility(self):
         """Test visibility of project detail edit button to different projectuser levels"""
