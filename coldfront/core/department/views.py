@@ -203,20 +203,38 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 name__in=['Core Usage (Hours)', 'Storage Quota (TB)']
             )
 
-        pi_dict = {p.pi: [] for p in project_objs}
+        storage_pi_dict = {p.pi: [] for p in project_objs}
+        compute_pi_dict = {p.pi: [] for p in project_objs}
         for p in project_objs:
 
             p.allocs = p.allocation_set.filter(
                 allocationattribute__allocation_attribute_type__in=quota_attrs,
                 status__name__in=['Active', 'New'],
             )
-            pi_dict[p.pi].extend(list(p.allocs))
-        pi_dict = {pi:allocs for pi, allocs in pi_dict.items() if allocs}
-        for pi, allocs in pi_dict.items():
-            pi.total_price = sum(float(a.cost) for a in allocs)
+            p.storage_allocs = p.allocation_set.filter(
+                allocationattribute__allocation_attribute_type__in=quota_attrs,
+                resources__resource_type__name="Storage",
+                status__name__in=['Active', 'New'],
+            )
+            p.compute_allocs = p.allocation_set.filter(
+                allocationattribute__allocation_attribute_type__in=quota_attrs,
+                resources__resource_type__name="Cluster",
+                status__name__in=['Active', 'New'],
+            )
+            storage_pi_dict[p.pi].extend(list(p.storage_allocs))
+            compute_pi_dict[p.pi].extend(list(p.compute_allocs))
+        storage_pi_dict = {pi:allocs for pi, allocs in storage_pi_dict.items() if allocs}
+        compute_pi_dict = {pi:allocs for pi, allocs in compute_pi_dict.items() if allocs}
+        ieo = [sum(float(a.cost) for a in allocs)for pi, allocs in storage_pi_dict.items()]
+        for pi, allocs in storage_pi_dict.items():
+            pi.storage_total_price = sum(float(a.cost) for a in allocs)
+        for pi, allocs in compute_pi_dict.items():
+            pi.compute_total_price = sum(float(a.cost) for a in allocs)
 
-        context['pi_dict'] = pi_dict
-        context['full_price'] = sum(pi.total_price for pi in pi_dict.keys())
+        context['compute_pi_dict'] = compute_pi_dict
+        context['storage_pi_dict'] = storage_pi_dict
+        context['storage_full_price'] = sum(pi.storage_total_price for pi in storage_pi_dict.keys())
+        context['compute_full_price'] = sum(pi.compute_total_price for pi in compute_pi_dict.keys())
         context['projects'] = project_objs
         context['department'] = department_obj
 
