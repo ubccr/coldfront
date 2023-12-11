@@ -5,6 +5,7 @@ Daemon that watches for unseen ifxapps mailings
 '''
 import logging
 from time import sleep
+from django.db import connection
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from ifxbilling.fiine import handle_fiine_ifxapps_messages
@@ -80,3 +81,4 @@ class Command(BaseCommand):
                 logger.error(e)
 
             sleep(sleep_seconds)
+            connection.close()

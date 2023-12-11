@@ -1,5 +1,5 @@
 {% load mathfilters %}
-A new allocation has been requested for {{pi}} - {{resource}}.
+A new allocation has been requested for {{pi_name}} ({{pi_username}}) - {{resource}}.
 Requested size: {{quantity}} TB.
 Justification:
 {{justification}}
@@ -8,15 +8,21 @@ Justification:
 {{resource}} was last recorded as {{used_percentage}}% allocated.
 {% endif %}
 
+{% if unmatched_code %}
+The expense code entered does not match any in the FIINE database.
+Please check it for accuracy and ensure that it is added to FIINE:
+{{expense_code}}
+{% endif %}
+
 {% if nese %}
 Here is a draft ticket to send to NESE:
 
 To: help@nese.mghpcc.org
 Subject: TB Globus tape setup for HU
 
-Service (access type) = S3 vs Globus:
-If Globus, short description for Globus Share:
-Tennant name (8 char max - Ex. acohen): {{pi.username}}
+Service (access type) = S3 vs Globus: Globus
+If Globus, short description for Globus Share: {{pi_name}}
+Tennant name (8 char max - Ex. acohen): {{pi_username}}
 Size in 20TB allotments: {{quantity|div:19.48|floatformat:"0"}}
 Any additional details:
 Any additional administrators (if applicable):

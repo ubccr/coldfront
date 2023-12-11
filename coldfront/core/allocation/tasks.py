@@ -31,6 +31,7 @@ EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS = import_from_settings(
 
 EMAIL_ADMINS_ON_ALLOCATION_EXPIRE = import_from_settings('EMAIL_ADMINS_ON_ALLOCATION_EXPIRE')
 EMAIL_ADMIN_LIST = import_from_settings('EMAIL_ADMIN_LIST')
+ADMIN_REMINDER_EMAIL = import_from_settings('ADMIN_REMINDER_EMAIL')
 
 def update_statuses():
 
@@ -69,12 +70,14 @@ def send_request_reminder_emails():
             'signature': EMAIL_SIGNATURE,
             'url_base': f'{CENTER_BASE_URL.strip("/")}/allocation/change-request/'
         }
-        send_admin_email_template(
-            'Pending Allocation Changes',
-            'email/pending_allocation_changes.txt',
-            allocation_change_template_context,
-        )
 
+        send_email_template(
+            subject='Pending Allocation Changes',
+            template_name='email/pending_allocation_changes.txt',
+            template_context=allocation_change_template_context,
+            sender=EMAIL_SENDER,
+            receiver_list=[ADMIN_REMINDER_EMAIL,],
+        )
     # Allocation Requests are allocations marked as "new"
     pending_allocations = Allocation.objects.filter(
         status__name = 'New', created__lte=req_alert_date
@@ -87,11 +90,15 @@ def send_request_reminder_emails():
             'signature': EMAIL_SIGNATURE,
             'url_base': f'{CENTER_BASE_URL.strip("/")}/allocation/'
         }
-        send_admin_email_template(
-            'Pending Allocations',
-            'email/pending_allocations.txt',
-            new_allocation_template_context,
+
+        send_email_template(
+            subject='Pending Allocations',
+            template_name='email/pending_allocations.txt',
+            template_context=new_allocation_template_context,
+            sender=EMAIL_SENDER,
+            receiver_list=[ADMIN_REMINDER_EMAIL,],
         )
+
     # return statement for testing
     return (pending_changerequests, pending_allocations)
 
