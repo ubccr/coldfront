@@ -15,21 +15,33 @@ Help
 <h2>Coldfront Help Resources</h2>
 <hr>
 
-
 <div class="card mb-3 border-primary">
   <div class="card-header bg-primary text-white">
-    <i class="fas fa-question-circle" aria-hidden="true"></i> Documentation
+    <i class="fas fa-exclamation-circle" aria-hidden="true"></i> Submit a Ticket
   </div>
   <div class="card-body">
     <p class="card-text text-justify">
-      <a href=https://docs.rc.fas.harvard.edu/kb/coldfront-allocation-management/>Coldfront Usage Guide</a>
+      <a href=mailto:rchelp@rc.fas.harvard.edu>Submit via email</a>
     </p>
     <p class="card-text text-justify">
-      <a href=https://docs.rc.fas.harvard.edu/kb/storage-service-center/>Storage Service Center Overview</a>
-    </p>
-    <p class="card-text text-justify">
-      <a href=https://docs.rc.fas.harvard.edu/kb/storage-service-center-bill/>how to read your storage center bill</a>
+      <a href=https://portal.rc.fas.harvard.edu/rcrt/submit_ticket>Submit via Portal</a>
     </p>
   </div>
 </div>
+
+{%for title, links in doc_pages.items %}
+<div class="card mb-3 border-primary">
+  <div class="card-header bg-primary text-white">
+    <i class="fas fa-question-circle" aria-hidden="true"></i> {{title}}
+  </div>
+  <div class="card-body">
+    {% for entry in links %}
+    <p class="card-text text-justify">
+      <a href=https://docs.rc.fas.harvard.edu/kb/{{entry.href}}>{{entry.title}}</a>
+    </p>
+    {% endfor %}
+  </div>
+</div>
+{% endfor %}
+
 {% endblock %}

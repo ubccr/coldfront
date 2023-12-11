@@ -4,6 +4,7 @@ from coldfront.core.allocation.models import (AttributeType,
                                               AllocationAttributeType,
                                               AllocationStatusChoice,
                                               AllocationChangeStatusChoice,
+                                              AllocationUserAttributeType,
                                               AllocationUserStatusChoice)
 
 
@@ -30,6 +31,20 @@ class Command(BaseCommand):
         for choice in ('Active', 'Error', 'Removed', ):
             AllocationUserStatusChoice.objects.get_or_create(name=choice)
 
+        for name, attribute_type, is_private in (
+            ('FairShare', 'Float', False),
+            ('NormShares', 'Float', False),
+            ('EffectvUsage', 'Float', False),
+            ('RawUsage', 'Int', False),
+        ):
+            AllocationUserAttributeType.objects.update_or_create(
+                name=name,
+                defaults={
+                    'attribute_type': AttributeType.objects.get(name=attribute_type),
+                    'is_private': is_private,
+                }
+            )
+
         for name, attribute_type, has_usage, is_private in (
             # FASRC defaults
             ('Storage Quota (TB)', 'Float', True, False),
@@ -45,10 +60,14 @@ class Command(BaseCommand):
             ('High Security', 'Yes/No', False, False),
             ('DUA', 'Yes/No', False, False),
             ('External Sharing', 'Yes/No', False, False),
+            ('FairShare', 'Float', False, False),
+            ('NormShares', 'Float', False, False),
+            ('EffectvUsage', 'Float', False, False),
+            ('RawUsage', 'Int', False, False),
             # UBCCR defaults
-            # ('Cloud Account Name', 'Text', False, False),
+            ('Cloud Account Name', 'Text', False, False),
             # ('CLOUD_USAGE_NOTIFICATION', 'Yes/No', False, True),
-            # ('Core Usage (Hours)', 'Int', True, False),
+            ('Core Usage (Hours)', 'Float', True, False),
             # ('Accelerator Usage (Hours)', 'Int', True, False),
             # ('Cloud Storage Quota (TB)', 'Float', True, False),
             # ('EXPIRE NOTIFICATION', 'Yes/No', False, True),
@@ -60,13 +79,13 @@ class Command(BaseCommand):
             # ('Paid Storage Support (Hours)', 'Float', True, True),
             # ('Purchase Order Number', 'Int', False, True),
             # ('send_expiry_email_on_date', 'Date', False, True),
-            # ('slurm_account_name', 'Text', False, False),
+            ('slurm_account_name', 'Text', False, False),
             # ('slurm_specs', 'Attribute Expanded Text', False, True),
             # ('slurm_specs_attriblist', 'Text', False, True),
             # ('slurm_user_specs', 'Attribute Expanded Text', False, True),
             # ('slurm_user_specs_attriblist', 'Text', False, True),
             # ('Storage Quota (GB)', 'Int', False, False),
-            # ('Storage_Group_Name', 'Text', False, False),
+            ('Storage_Group_Name', 'Text', False, False),
             # ('SupportersQOS', 'Yes/No', False, False),
             # ('SupportersQOSExpireDate', 'Date', False, False),
         ):

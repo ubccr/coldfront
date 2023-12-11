@@ -22,6 +22,7 @@ urlpatterns = static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + [
     path('allocation-summary', portal_views.allocation_summary, name='allocation-summary'),
     path('allocation-by-fos', portal_views.allocation_by_fos, name='allocation-by-fos'),
     path('user/', include('coldfront.core.user.urls')),
+    # path('opt_out/', portal_views.opt_out, name='opt-out'),
     # path('__debug__/', include('debug_toolbar.urls')),
     path('project/', include('coldfront.core.project.urls')),
     path('allocation/', include('coldfront.core.allocation.urls')),
@@ -52,4 +53,4 @@ if 'coldfront.plugins.fasrc_monitoring' in settings.INSTALLED_APPS:
     urlpatterns.append(path('', include('coldfront.plugins.fasrc_monitoring.urls')))
 
 if 'django_prometheus' in settings.INSTALLED_APPS:
-    urlpatterns.append(path('metrics', include('coldfront.plugins.fasrc_monitoring.urls')))
+    urlpatterns.append(path('', include('django_prometheus.urls')))

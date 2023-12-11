@@ -9,7 +9,7 @@ from django.views.generic import DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 
 from coldfront.core.utils.views import ColdfrontListView, NoteCreateView, NoteUpdateView
-from coldfront.core.allocation.models import Allocation, AllocationUser
+from coldfront.core.allocation.models import Allocation, AllocationUser, AllocationAttributeType
 from coldfront.core.department.forms import DepartmentSearchForm
 from coldfront.core.department.models import (
     Department,
@@ -170,8 +170,14 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 status__name__in=['New', 'Active'], projectuser__user=self.request.user
             )
 
+        quota_attr_ids = [
+            attr.pk for attr in AllocationAttributeType.objects.filter(
+                name__in=['Core Usage (Hours)', 'Storage Quota (TB)']
+            )
+        ]
+
         attribute_filter = (
-            Q(allocation__allocationattribute__allocation_attribute_type_id=1)
+            Q(allocation__allocationattribute__allocation_attribute_type_id__in=quota_attr_ids)
             & Q(allocation__status_id__in=[1, 2])
         )
         attribute_string = 'allocation__allocationattribute__value'
@@ -193,19 +199,42 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
         allocationuser_filter = (Q(status__name='Active') & ~Q(usage_bytes__isnull=True))
 
-        pi_dict = {p.pi: [] for p in project_objs}
+        quota_attrs = AllocationAttributeType.objects.filter(
+                name__in=['Core Usage (Hours)', 'Storage Quota (TB)']
+            )
+
+        storage_pi_dict = {p.pi: [] for p in project_objs}
+        compute_pi_dict = {p.pi: [] for p in project_objs}
         for p in project_objs:
+
             p.allocs = p.allocation_set.filter(
-                allocationattribute__allocation_attribute_type_id=1,
+                allocationattribute__allocation_attribute_type__in=quota_attrs,
                 status__name__in=['Active', 'New'],
             )
-            pi_dict[p.pi].extend(list(p.allocs))
-        pi_dict = {pi:allocs for pi, allocs in pi_dict.items() if allocs}
-        for pi, allocs in pi_dict.items():
-            pi.total_price = sum(float(a.cost) for a in allocs)
+            p.storage_allocs = p.allocation_set.filter(
+                allocationattribute__allocation_attribute_type__in=quota_attrs,
+                resources__resource_type__name="Storage",
+                status__name__in=['Active', 'New'],
+            )
+            p.compute_allocs = p.allocation_set.filter(
+                allocationattribute__allocation_attribute_type__in=quota_attrs,
+                resources__resource_type__name="Cluster",
+                status__name__in=['Active', 'New'],
+            )
+            storage_pi_dict[p.pi].extend(list(p.storage_allocs))
+            compute_pi_dict[p.pi].extend(list(p.compute_allocs))
+        storage_pi_dict = {pi:allocs for pi, allocs in storage_pi_dict.items() if allocs}
+        compute_pi_dict = {pi:allocs for pi, allocs in compute_pi_dict.items() if allocs}
+        ieo = [sum(float(a.cost) for a in allocs)for pi, allocs in storage_pi_dict.items()]
+        for pi, allocs in storage_pi_dict.items():
+            pi.storage_total_price = sum(float(a.cost) for a in allocs)
+        for pi, allocs in compute_pi_dict.items():
+            pi.compute_total_price = sum(float(a.cost) for a in allocs)
 
-        context['pi_dict'] = pi_dict
-        context['full_price'] = sum(pi.total_price for pi in pi_dict.keys())
+        context['compute_pi_dict'] = compute_pi_dict
+        context['storage_pi_dict'] = storage_pi_dict
+        context['storage_full_price'] = sum(pi.storage_total_price for pi in storage_pi_dict.keys())
+        context['compute_full_price'] = sum(pi.compute_total_price for pi in compute_pi_dict.keys())
         context['projects'] = project_objs
         context['department'] = department_obj
 

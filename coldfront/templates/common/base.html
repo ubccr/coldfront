@@ -65,5 +65,7 @@
   {% include 'common/footer.html' %}
   {% block javascript %} {% endblock %}
 </body>
-
+<script>
+  $("[data-toggle=popover]").popover({html:true});
+</script>
 </html>

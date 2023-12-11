@@ -244,7 +244,7 @@ class ProjectUserMessage(TimeStampedModel):
         project (Project): links the project the message is from to the message
         author (User): represents the user who authored the message
         is_private (bool): indicates whether or not the message is private
-        message (str): text input from the user containing the message
+        note (str): text input from the user containing the message
     """
 
     project = models.ForeignKey(Project, on_delete=models.CASCADE)

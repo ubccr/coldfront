@@ -17,16 +17,6 @@ class Command(BaseCommand):
         parser.add_argument("-c", "--cluster", help="Only output specific Slurm cluster")
 
     def handle(self, *args, **options):
-        verbosity = int(options['verbosity'])
-        root_logger = logging.getLogger('')
-        if verbosity == 0:
-            root_logger.setLevel(logging.ERROR)
-        elif verbosity == 2:
-            root_logger.setLevel(logging.INFO)
-        elif verbosity == 3:
-            root_logger.setLevel(logging.DEBUG)
-        else:
-            root_logger.setLevel(logging.WARN)
 
         out_dir = None
         if options['output']:
@@ -34,9 +24,10 @@ class Command(BaseCommand):
             if not os.path.isdir(out_dir):
                 os.mkdir(out_dir, 0o0700)
 
-            logger.warn("Writing output to directory: %s", out_dir)
+            logger.warning("Writing output to directory: %s", out_dir)
 
-        for attr in ResourceAttribute.objects.filter(resource_attribute_type__name=SLURM_CLUSTER_ATTRIBUTE_NAME):
+        for attr in ResourceAttribute.objects.filter(
+                resource_attribute_type__name=SLURM_CLUSTER_ATTRIBUTE_NAME):
             if options['cluster'] and options['cluster'] != attr.value:
                 continue
 
@@ -48,5 +39,5 @@ class Command(BaseCommand):
                 cluster.write(self.stdout)
                 continue
 
-            with open(os.path.join(out_dir, '{}.cfg'.format(cluster.name)), 'w') as fh:
+            with open(os.path.join(out_dir, f'{cluster.name}.cfg'), 'w') as fh:
                 cluster.write(fh)

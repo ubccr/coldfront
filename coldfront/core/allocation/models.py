@@ -133,56 +133,118 @@ class Allocation(TimeStampedModel):
 
         super().save(*args, **kwargs)
 
-    def pull_allocationattribute(self, attr_name):
-        try:
-            return self.allocationattribute_set.get(
-                allocation_attribute_type__name=attr_name
-            ).value
-        except ObjectDoesNotExist:
-            return None
-
     @property
     def offer_letter_code(self):
-        return self.pull_allocationattribute('Offer Letter Code')
+        return self.get_attribute('Offer Letter Code')
+
+    @property
+    def fairshare(self):
+        return self.get_attribute('FairShare')
+
+    @property
+    def normshares(self):
+        return self.get_attribute('NormShares')
+
+    @property
+    def effectvusage(self):
+        return self.get_attribute('EffectvUsage')
+
+    @property
+    def rawusage(self):
+        return self.get_attribute('RawUsage')
 
     @property
     def expense_code(self):
-        return self.pull_allocationattribute('Expense Code')
+        return self.get_attribute('Expense Code')
 
     @property
     def heavy_io(self):
-        return self.pull_allocationattribute('Heavy IO')
+        return self.get_attribute('Heavy IO')
 
     @property
     def mounted(self):
-        return self.pull_allocationattribute('Mounted')
+        return self.get_attribute('Mounted')
 
     @property
     def external_sharing(self):
-        return self.pull_allocationattribute('External Sharing')
+        return self.get_attribute('External Sharing')
 
     @property
     def high_security(self):
-        return self.pull_allocationattribute('High Security')
+        return self.get_attribute('High Security')
 
     @property
     def dua(self):
-        return self.pull_allocationattribute('DUA')
+        return self.get_attribute('DUA')
+
+    def _return_size_attr_name(self, s_type='display'):
+        parent_resource = self.get_parent_resource
+        if not parent_resource:
+            return None
+        if parent_resource.resource_type.name == 'Cluster':
+            size_attr_name = 'Core Usage (Hours)'
+        elif 'Storage' in parent_resource.resource_type.name:
+            if s_type == 'exact':
+                size_attr_name = 'Quota_In_Bytes'
+            elif s_type=='display':
+                size_attr_name = 'Storage Quota (TB)'
+        else:
+            return None
+        return size_attr_name
 
     @property
     def size(self):
-        try:
-            return self.allocationattribute_set.get(allocation_attribute_type_id=1).value
-        except ObjectDoesNotExist:
+        size_attr_name = self._return_size_attr_name()
+        if not size_attr_name:
             return None
-
+        try:
+            return float(self.get_attribute(size_attr_name))
+        except ObjectDoesNotExist:
+            if self.size_exact:
+                if 'TB' in self.get_parent_resource.quantity_label:
+                    divisor = 1099511627776
+                    return self.size_exact/divisor
+            return None
+        except TypeError:
+            return None
 
     @property
     def usage(self):
+        size_attr_name = self._return_size_attr_name()
+        if not size_attr_name:
+            return None
         try:
-            return self.allocationattribute_set.get(
-                allocation_attribute_type_id=1
-            ).allocationattributeusage.value
+            return float(self.allocationattribute_set.get(
+                allocation_attribute_type__name=size_attr_name
+            ).allocationattributeusage.value)
+        except ObjectDoesNotExist:
+            if self.usage_exact:
+                if 'TB' in self.get_parent_resource.quantity_label:
+                    divisor = 1099511627776
+                    return self.usage_exact/divisor
+            return None
+        except TypeError:
+            return None
+
+    @property
+    def size_exact(self):
+        size_attr_name = self._return_size_attr_name(s_type='exact')
+        if not size_attr_name:
+            return None
+        try:
+            return self.get_attribute(size_attr_name, typed=True)
+        except ObjectDoesNotExist:
+            return None
+
+    @property
+    def usage_exact(self):
+        size_attr_name = self._return_size_attr_name(s_type='exact')
+        if not size_attr_name:
+            return None
+        try:
+            return float(self.allocationattribute_set.get(
+                allocation_attribute_type__name=size_attr_name
+            ).allocationattributeusage.value)
         except ObjectDoesNotExist:
             return None
 
@@ -204,7 +266,11 @@ class Allocation(TimeStampedModel):
             return None
         except TypeError:
             return None
-        size = self.allocationattribute_set.get(allocation_attribute_type_id=1).value
+        size_attr_name = self._return_size_attr_name()
+        if not size_attr_name:
+            return None
+        size = self.allocationattribute_set.get(
+                    allocation_attribute_type__name=size_attr_name).value
         return 0 if not size else price * float(size)
 
     @property
@@ -464,7 +530,6 @@ class AttributeType(TimeStampedModel):
     Attributes:
         name (str): name of attribute data type
     """
-
     name = models.CharField(max_length=64)
 
     def __str__(self):
@@ -472,6 +537,7 @@ class AttributeType(TimeStampedModel):
 
     class Meta:
         ordering = ['name', ]
+
 
 class AllocationAttributeType(TimeStampedModel):
     """ An allocation attribute type indicates the type of the attribute. Examples include Cloud Account Name and Core Usage (Hours).
@@ -501,6 +567,7 @@ class AllocationAttributeType(TimeStampedModel):
     class Meta:
         ordering = ['name', ]
 
+
 class AllocationAttribute(TimeStampedModel):
     """ An allocation attribute class links an allocation attribute type and an allocation.
 
@@ -509,7 +576,6 @@ class AllocationAttribute(TimeStampedModel):
         allocation (Allocation): allocation to link
         value (str): value of the allocation attribute
     """
-
     allocation_attribute_type = models.ForeignKey(
         AllocationAttributeType, on_delete=models.CASCADE)
     allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE)
@@ -569,7 +635,6 @@ class AllocationAttribute(TimeStampedModel):
         atype_name = self.allocation_attribute_type.attribute_type.name
         return attribute_expansion.convert_type(
             value=raw_value, type_name=atype_name)
-
 
     def expanded_value(self, extra_allocations=[], typed=True):
         """
@@ -684,6 +749,129 @@ class AllocationUser(TimeStampedModel):
         verbose_name_plural = 'Allocation User Status'
         unique_together = ('user', 'allocation')
 
+    def get_attribute(self, name, typed=True):
+        """
+        Params:
+            name (str): name of the allocation attribute type
+            typed (bool): indicates whether or not to convert the attribute value to an int/ float/ str based on the base AttributeType name
+
+        Returns:
+            str: the value of the first attribute found for this allocation with the specified name
+        """
+        attr = self.allocationuserattribute_set.filter(
+            allocationuser_attribute_type__name=name).first()
+        if attr:
+            if typed:
+                return attr.typed_value()
+            return attr.value
+        return None
+
+    @property
+    def fairshare(self):
+        return self.get_attribute('FairShare')
+
+    @property
+    def normshares(self):
+        return self.get_attribute('NormShares')
+
+    @property
+    def effectvusage(self):
+        return self.get_attribute('EffectvUsage')
+
+    @property
+    def rawusage(self):
+        return self.get_attribute('RawUsage')
+
+
+class AllocationUserAttributeType(TimeStampedModel):
+    """indicates the type of the allocationuser attribute. Examples: Fairshare, usage_in_bytes.
+
+    Attributes:
+        attribute_type (AttributeType): indicates the data type of the attribute
+        name (str): name of allocation attribute type
+        is_required (bool): indicates whether or not the attribute is required
+        is_unique (bool): indicates whether or not the value is unique
+        is_private (bool): indicates whether or not the attribute type is private
+        is_changeable (bool): indicates whether or not the attribute type is changeable
+    """
+
+    attribute_type = models.ForeignKey(AttributeType, on_delete=models.CASCADE)
+    name = models.CharField(max_length=50)
+    is_required = models.BooleanField(default=False)
+    is_unique = models.BooleanField(default=False)
+    is_private = models.BooleanField(default=True)
+    is_changeable = models.BooleanField(default=False)
+    history = HistoricalRecords()
+
+    def __str__(self):
+        return '%s' % (self.name)
+
+    class Meta:
+        ordering = ['name', ]
+
+class AllocationUserAttribute(TimeStampedModel):
+    """links an allocation user attribute type and an allocation user.
+
+    Attributes:
+        allocationuser_attribute_type (AllocationAttributeType): attribute type to link
+        allocationuser (Allocation): allocation to link
+        value (str): value of the allocation attribute
+    """
+    allocationuser_attribute_type = models.ForeignKey(
+        AllocationUserAttributeType, on_delete=models.CASCADE)
+    allocationuser = models.ForeignKey(AllocationUser, on_delete=models.CASCADE)
+    value = models.CharField(max_length=128)
+    history = HistoricalRecords()
+
+    def clean(self):
+        """Validate allocationuser attribute, raise errors if the attribute is invalid."""
+
+        if (
+            self.allocation_attribute_type.is_unique
+            and self.allocation.allocationattribute_set.filter(
+                allocation_attribute_type=self.allocation_attribute_type
+            ).exclude(id=self.pk).exists()
+        ):
+            raise ValidationError(
+                f"'{self.allocation_attribute_type}' attribute already exists for this allocation."
+            )
+
+        expected_value_type = self.allocation_attribute_type.attribute_type.name.strip()
+        error = None
+        if expected_value_type == 'Float' and not isinstance(literal_eval(self.value), (float,int)):
+            error = 'Value must be a float.'
+        elif expected_value_type == 'Int' and not isinstance(literal_eval(self.value), int):
+            error = 'Value must be an integer.'
+        elif expected_value_type == 'Yes/No' and self.value not in ['Yes', 'No']:
+            error = 'Allowed inputs are "Yes" or "No".'
+        elif expected_value_type == 'Date':
+            try:
+                datetime.datetime.strptime(self.value.strip(), '%Y-%m-%d')
+            except ValueError:
+                error = 'Date must be in format YYYY-MM-DD'
+        if error:
+            raise ValidationError(
+                'Invalid Value "%s" for "%s". %s' % (
+                    self.value, self.allocation_attribute_type.name, error)
+                )
+
+    def __str__(self):
+        return '%s %s' % (self.allocationuser_attribute_type.name, self.allocationuser)
+
+    def typed_value(self):
+        """
+        Returns:
+            int, float, str: the value of the attribute with proper type and
+            is used for computing expanded_value() (coerced into int or float
+            for attributes with Int or Float types; if it fails or the
+            attribute is of any other type, it is coerced into a str)
+        """
+        raw_value = self.value
+        atype_name = self.allocationuser_attribute_type.attribute_type.name
+        return attribute_expansion.convert_type(
+            value=raw_value, type_name=atype_name)
+
+
 class AllocationAccount(TimeStampedModel):
     """ An allocation account
     #come back to
@@ -692,16 +880,15 @@ class AllocationAccount(TimeStampedModel):
         user (User): represents the User object of the project user
         name (str):
     """
-
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     name = models.CharField(max_length=64, unique=True)
-
 
     def __str__(self):
         return self.name
 
     class Meta:
         ordering = ['name', ]
+
 
 class AllocationChangeStatusChoice(TimeStampedModel):
     """ An allocation change status choice represents statuses displayed when a user changes their allocation status (for allocations that have their is_changeable attribute set to True). Examples include Expired and Payment Pending.
@@ -709,7 +896,6 @@ class AllocationChangeStatusChoice(TimeStampedModel):
     Attributes:
         name (str): status name
     """
-
     name = models.CharField(max_length=64)
 
     def __str__(self):
@@ -717,6 +903,7 @@ class AllocationChangeStatusChoice(TimeStampedModel):
 
     class Meta:
         ordering = ['name', ]
+
 
 class AllocationChangeRequest(TimeStampedModel):
     """ An allocation change request represents a request from a PI or manager to change their allocation.

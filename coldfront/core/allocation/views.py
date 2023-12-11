@@ -101,51 +101,6 @@ def attribute_and_usage_as_floats(attribute):
     attribute = float(attribute.value)
     return (attribute, usage)
 
-def return_allocation_bytes_values(attrs_with_usage, allocation_users):
-    """
-    Return the quota and usage values for an allocation in bytes through one of
-    several mechanisms.
-    If Quota_In_Bytes is set for an allocation, return those values as floats.
-    If not, convert the value for the Storage Quota (TB) attribute and its usage
-    to bytes and return them.
-    If usage_bytes is returned as 0 due to too little usage to register on the TB
-    level, calculate bytes from user usage.
-
-    Parameters
-    ----------
-    attributes_with_usage : list
-    allocation_users : list
-
-    Returns
-    -------
-    quota_bytes
-    usage_bytes
-    """
-
-    quota_bytes = next((
-        a for a in attrs_with_usage if a.allocation_attribute_type.name == 'Quota_In_Bytes'
-    ), None)
-    if quota_bytes:
-        quota_b, usage_b = attribute_and_usage_as_floats(quota_bytes)
-        return (quota_b, usage_b)
-
-    bytes_in_tb = 1099511627776
-    allocation_quota_tb = next((a for a in attrs_with_usage if \
-        a.allocation_attribute_type.name == 'Storage Quota (TB)'), None)
-
-    if allocation_quota_tb:
-        quota_tb, usage_tb = attribute_and_usage_as_floats(allocation_quota_tb)
-    else:
-        return (0, 0)
-    quota_bytes = float(quota_tb)*bytes_in_tb
-    if usage_tb != 0:
-        usage_bytes = usage_tb*bytes_in_tb
-    else:
-        usage_bytes_list = [u.usage_bytes for u in allocation_users if u.usage_bytes != None]
-        user_usage_sum = sum(usage_bytes_list)
-        usage_bytes = user_usage_sum
-    return (quota_bytes, usage_bytes)
-
 def make_allocation_change_message(allocation_change_obj, approval):
     return 'Allocation change request to {} has been {} for {} {} ({})'.format(
         allocation_change_obj.allocation.get_parent_resource,
@@ -154,7 +109,6 @@ def make_allocation_change_message(allocation_change_obj, approval):
         allocation_change_obj.allocation.project.pi.last_name,
         allocation_change_obj.allocation.project.pi.username
     )
-
 
 class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     model = Allocation
@@ -172,18 +126,19 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context = super().get_context_data(**kwargs)
         context['note_update_link'] = 'allocation-note-update'
         allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
+        if allocation_obj.get_parent_resource.resource_type.name == "Storage":
+            user_filter = (~Q(usage_bytes=0) & Q(usage_bytes__isnull=False))
+        else:
+            user_filter = (~Q(usage=0) & Q(usage__isnull=False))
         allocation_users = (
-            allocation_obj.allocationuser_set.exclude(usage_bytes__isnull=True)
-            .exclude(usage_bytes=0).order_by('user__username')
+            allocation_obj.allocationuser_set.filter(user_filter).order_by('user__username')
         )
-        # set visible usage attributes
         alloc_attr_set = allocation_obj.get_attribute_set(self.request.user)
+
         attributes_with_usage = [
             a for a in alloc_attr_set if hasattr(a, 'allocationattributeusage')
         ]
-        attributes = alloc_attr_set
-
-        allocation_changes = allocation_obj.allocationchangerequest_set.all().order_by('-pk')
+        attributes = list(alloc_attr_set)
 
         guage_data = []
         invalid_attributes = []
@@ -193,21 +148,17 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                     attribute.allocation_attribute_type.name,
                     float(attribute.value),
                     float(attribute.allocationattributeusage.value)
-                ))
+                )
+            )
             except ValueError:
-                attrname = attribute.allocation_attribute_type.name
-                err = f"Allocation attribute '{attrname}' is not an int but has a usage"
-                logger.error(err)
+                logger.error(
+                    f"Allocation attribute '%s' is not an int but has a usage",
+                    attribute.allocation_attribute_type.name,
+                )
                 invalid_attributes.append(attribute)
 
         for a in invalid_attributes:
             attributes_with_usage.remove(a)
-
-        allocation_quota_tb = next((a for a in attributes_with_usage
-            if a.allocation_attribute_type.name == 'Storage Quota (TB)'), None)
-        quota_bytes, usage_bytes = return_allocation_bytes_values(
-            attributes_with_usage, allocation_obj.allocationuser_set.all()
-        )
 
         if 'django_q' in settings.INSTALLED_APPS:
             # get last successful runs of djangoq task responsible for allocationuser data pull
@@ -220,11 +171,15 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context['user_sync_dt'] = user_sync_dt
 
         if 'ifxbilling' in settings.INSTALLED_APPS:
-            expense_codes = UserProductAccount.objects.filter(
-                user=allocation_obj.project.pi,
-                is_valid=1,
-                product__product_name=allocation_obj.get_parent_resource.name
-            )
+            try:
+                expense_codes = UserProductAccount.objects.filter(
+                    user=allocation_obj.project.pi,
+                    is_valid=1,
+                    product__product_name=allocation_obj.get_parent_resource.name
+                )
+            except AttributeError:
+                logger.error('allocation has no parent resource: %s', allocation_obj.pk)
+                expense_codes = None
             context['expense_codes'] = expense_codes
 
         offer_letter_code_type = AllocationAttributeType.objects.get(name="Expense Code")
@@ -232,24 +187,17 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             allocation_attribute_type=offer_letter_code_type
         )
 
-        context['allocation_quota_bytes'] = quota_bytes
-        context['allocation_usage_bytes'] = usage_bytes
-        quota_tb = 0 if not quota_bytes else quota_bytes / 1099511627776
-        context['allocation_quota_tb'] = quota_tb
-        usage_tb = 0 if not usage_bytes else usage_bytes / 1099511627776
-        context['allocation_usage_tb'] = usage_tb
-
-        context['allocation_users'] = allocation_users
         context['guage_data'] = guage_data
         context['attributes_with_usage'] = attributes_with_usage
         context['attributes'] = attributes
-        context['allocation_changes'] = allocation_changes
 
         # Can the user update the project?
         project_update_perm = allocation_obj.project.has_perm(
             self.request.user, ProjectPermission.UPDATE
         )
         context['is_allowed_to_update_project'] = project_update_perm
+        context['allocation_users'] = allocation_users
+        context['note_update_link'] = 'allocation-note-update'
 
         context['notes'] = self.return_visible_notes(allocation_obj)
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
@@ -439,8 +387,9 @@ class AllocationListView(ColdfrontListView):
         if allocation_search_form.is_valid():
             data = allocation_search_form.cleaned_data
 
-            if data.get('show_all_allocations') and (self.request.user.is_superuser or self.request.user.has_perm(
-                                        'allocation.can_view_all_allocations')):
+            if data.get('show_all_allocations') and (
+                self.request.user.is_superuser or self.request.user.has_perm(
+            'allocation.can_view_all_allocations')):
                 allocations = allocations.order_by(order_by)
             else:
                 allocations = allocations.filter(
@@ -484,7 +433,8 @@ class AllocationListView(ColdfrontListView):
             # Allocation Attribute Name
             if data.get('allocation_attribute_name') and data.get('allocation_attribute_value'):
                 allocations = allocations.filter(
-                    Q(allocationattribute__allocation_attribute_type=data.get('allocation_attribute_name')) &
+                    Q(allocationattribute__allocation_attribute_type=data.get(
+                        'allocation_attribute_name')) &
                     Q(allocationattribute__value=data.get('allocation_attribute_value'))
                 )
 
@@ -568,7 +518,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                     if attr_name == 'quantity_default_value':
                         resources_form_default_quantities[resource.id] = int(value)
                     if attr_name == 'quantity_label':
-                        resources_form_label_texts[resource.id] = mark_safe(f'<strong>{value}*</strong>')
+                        resources_form_label_texts[resource.id] = mark_safe(
+                                f'<strong>{value}*</strong>')
                     if attr_name == 'eula':
                         resources_with_eula[resource.id] = value
 
@@ -580,7 +531,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             if allo.get_parent_resource:
                 tiers_with_allocations[str(allo.get_parent_resource.pk)] = allo.pk
                 if allo.get_parent_resource.parent_resource:
-                    tiers_with_allocations[str(allo.get_parent_resource.parent_resource.pk)] = allo.pk
+                    tiers_with_allocations[str(
+                        allo.get_parent_resource.parent_resource.pk)] = allo.pk
 
         context['tiers_with_allocations'] = tiers_with_allocations
         context['resources_form_default_quantities'] = resources_form_default_quantities
@@ -700,7 +652,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             AllocationUser.objects.create(
                 allocation=allocation_obj,
                 user=user,
-                status=allocation_user_active_status
+                status=allocation_user_active_status,
             )
 
         # if requested resource is on NESE, add to vars
@@ -1382,8 +1334,7 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
         allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
         allocation_users = (
             allocation_obj.allocationuser_set.exclude(status__name__in=['Removed'])
-            .exclude(usage_bytes__isnull=True)
-            .order_by('user__username')
+            .exclude(usage_bytes__isnull=True).order_by('user__username')
         )
         alloc_attr_set = allocation_obj.get_attribute_set(self.request.user)
 
@@ -1412,17 +1363,6 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
 
         for a in invalid_attributes:
             attributes_with_usage.remove(a)
-
-        # allocation_usage_tb = float(allocation_quota_tb.allocationattributeusage.value)
-        quota_bytes, usage_bytes = return_allocation_bytes_values(
-            attributes_with_usage, allocation_users
-        )
-        context['allocation_quota_bytes'] = quota_bytes
-        context['allocation_usage_bytes'] = usage_bytes
-        quota_tb = 0 if not quota_bytes else quota_bytes / 1099511627776
-        context['allocation_quota_tb'] = quota_tb
-        usage_tb = 0 if not usage_bytes else usage_bytes / 1099511627776
-        context['allocation_usage_tb'] = usage_tb
 
         context['guage_data'] = guage_data
         context['attributes_with_usage'] = attributes_with_usage

@@ -13,13 +13,14 @@ def page_does_not_contain_for_user(test_case, user, url, text):
 def collect_all_ids_in_listpage(client, listpage):
     """collect all the ids displayed in the template of a given list view."""
     response = client.get(listpage)
-    num_pages = response.context_data['paginator'].num_pages
     obj_ids = [o.id for o in response.context_data['object_list']]
-    if num_pages > 1:
-        pages = range(2, num_pages)
-        for page in pages:
-            response = client.get(f"{listpage}&page={page}")
-            obj_ids.extend([o.id for o in response.context_data['object_list']])
+    if response.context_data['paginator']:
+        num_pages = response.context_data['paginator'].num_pages
+        if num_pages > 1:
+            pages = range(2, num_pages)
+            for page in pages:
+                response = client.get(f"{listpage}&page={page}")
+                obj_ids.extend([o.id for o in response.context_data['object_list']])
     return obj_ids
 
 def login_and_get_page(client, user, page):

@@ -125,32 +125,32 @@
   <script>
       const selectElement = document.getElementById('billingPeriod');
       console.log(selectElement);
-      var price = {{ allocation_quota_bytes | div:1073741824|floatformat:2 }} * 1 / 12 * 50;
+      var price = {{ allocation.size_exact | div:1073741824|floatformat:2 }} * 1 / 12 * 50;
       var n = price.toFixed(2);
 
       document.getElementById("totalamount").innerHTML = n;
       selectElement.addEventListener('change', (event) => {
             if (event.target.value=="1month") {
-              var price = {{ allocation_quota_bytes | div:1073741824|floatformat:2 }} * 1 / 12 * 50;
+              var price = {{ allocation.size_exact | div:1073741824|floatformat:2 }} * 1 / 12 * 50;
               var n = price.toFixed(2);
 
               document.getElementById("totalamount").innerHTML = n;
             }
             // console.log(event.target.value);
             if (event.target.value=="3month") {
-              var price = {{ allocation_quota_bytes | div:1073741824|floatformat:2 }} * 3 / 12 * 50;
+              var price = {{ allocation.size_exact | div:1073741824|floatformat:2 }} * 3 / 12 * 50;
               var n = price.toFixed(2);
 
               document.getElementById("totalamount").innerHTML = n;
             }
             if (event.target.value=="6month") {
-              var price = {{ allocation_quota_bytes | div:1073741824|floatformat:2 }} * 6 / 12 * 50;
+              var price = {{ allocation.size_exact | div:1073741824|floatformat:2 }} * 6 / 12 * 50;
               var n = price.toFixed(2);
 
               document.getElementById("totalamount").innerHTML = n;
             }
             if (event.target.value=="1year") {
-              var price = {{ allocation_quota_bytes | div:1073741824|floatformat:2 }} * 12 / 12 * 50;
+              var price = {{ allocation.size_exact | div:1073741824|floatformat:2 }} * 12 / 12 * 50;
               var n = price.toFixed(2);
 
               document.getElementById("totalamount").innerHTML = n;
@@ -210,13 +210,13 @@
               <!-- <td>{{ user.usage}}</td> -->
 
               <td data-sort = "{{user.usage}}">{{ user.usage }}</td>
-              <td>{{user.usage|div:1024|div:allocation_usage_bytes|mul:100|floatformat:2}}</td>
-              <td>{{4.167|mul:allocation_quota_bytes|div:1073741824|mul:user.usage|div:1024|div:allocation_usage_bytes|floatformat:2}}</td>
+              <td>{{user.usage|div:1024|div:allocation.usage_exact|mul:100|floatformat:2}}</td>
+              <td>{{4.167|mul:allocation.size_exact|div:1073741824|mul:user.usage|div:1024|div:allocation.usage_exact|floatformat:2}}</td>
 
-              {% comment %} <td>{{user.usage|mul:100 | div:allocation_usage_bytes|floatformat:2}}</td>
-              <td>{{user.usage|mul:100 | div:allocation_usage_bytes|floatformat:2|div:100|mul:allocation_quota_bytes|mul:50|div:12|floatformat:2}}</td> {% endcomment %}
+              {% comment %} <td>{{user.usage|mul:100 | div:allocation.usage_exact|floatformat:2}}</td>
+              <td>{{user.usage|mul:100 | div:allocation.usage_exact|floatformat:2|div:100|mul:allocation.size_exact|mul:50|div:12|floatformat:2}}</td> {% endcomment %}
 
-              <!-- <td>{{user.usage|mul:100 | div:allocation_usage_bytes|floatformat:2|mul:50|mul:50| div:12|floatformat:2}}</td> -->
+              <!-- <td>{{user.usage|mul:100 | div:allocation.usage_exact|floatformat:2|mul:50|mul:50| div:12|floatformat:2}}</td> -->
 
             </tr>
 

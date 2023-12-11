@@ -32,6 +32,7 @@ class Command(BaseCommand):
             # ('Owner', 'Text'),
             ('quantity_default_value', 'Int'),
             ('quantity_label', 'Text'),
+            ('xdmod_resource', 'Text'),
             # ('eula', 'Text'),
             # ('OnDemand','Yes/No'),
             # ('ServiceEnd', 'Date'),

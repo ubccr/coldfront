@@ -13,9 +13,13 @@
   background: #E2E2E2;
 }
 
-
-
-
+.info-button {
+  tabindex: 0;
+  role: button;
+  color: blue;
+  data-toggle: popover;
+  data-trigger: hover;
+}
 
 html {
   position: relative;

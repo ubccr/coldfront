@@ -188,6 +188,32 @@ def center_summary(request):
 
 def help_page(request):
     context = {}
+    doc_pages = {
+        'General Documentation':[
+            {
+                'href': 'coldfront-allocation-management',
+                'title': 'Coldfront Usage Guide',
+            },
+        ],
+        'Storage Documentation':[
+            {
+                'href': 'storage-service-center',
+                'title': 'Storage Service Center Overview'
+            },
+            {
+                'href': 'storage-service-center-bill',
+                'title': 'How to read your storage center bill'
+            },
+        ],
+        'Cluster Documentation':[
+            {
+                'href': 'fairshare',
+                'title': 'About Cluster Fairshares',
+            },
+        ],
+    }
+    context['doc_pages'] = doc_pages
+
     return render(request, 'portal/help_page.html', context)
 
 

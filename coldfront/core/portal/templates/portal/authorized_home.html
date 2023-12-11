@@ -98,7 +98,7 @@
         <ul class="list-group">
           {% for department in department_list %}
             <li class="list-group-item">
-              <a href="{% url 'department-detail' department.pk %}"><i class="fa fa-folder fa-lg" aria-hidden="true"></i> ;{{department.name}}</a>
+              <a href="{% url 'department-detail' department.pk %}"><i class="fa fa-folder fa-lg" aria-hidden="true"></i> {{department.name}}</a>
             </li>
           {% endfor %}
         </ul>

@@ -12,6 +12,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
     && apt-get install -y redis redis-server \
     && apt-get install -y libsasl2-dev libldap2-dev libssl-dev \
+    && apt-get install -y sssd sssd-tools supervisor \
     && rm -rf /var/lib/apt/lists/*
 RUN mkdir ~/.ssh && echo "Host git*\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
 
@@ -49,6 +50,10 @@ RUN pip install ldap3 django_auth_ldap django-author==1.0.2 django-prometheus gu
 ENV PYTHONPATH /usr/src/app:/usr/src/app/ifxreport
 
 RUN mkdir -p /usr/src/app/media/reports
+
+RUN printf "deb http://ftp.us.debian.org/debian buster main" > /etc/apt/sources.list.d/backports.list && \
+    apt-get update && apt-get install libreadline7 && \
+    rm -rf /var/lib/apt/lists/*
 
 EXPOSE 80
 EXPOSE 25
