@@ -448,11 +448,13 @@ Allocation Detail
             <th scope="col">Name</th>
             <!-- <th scope="col">Email</th> -->
             <th scope="col">Status</th>
-            <th scope="col">Logical Usage</th>
-            <th scope="col">Percent Usage</th>
             {% if "Storage" in allocation.get_parent_resource.resource_type.name %}
+              <th scope="col">Logical Usage</th>
+              <th scope="col">Percent Usage</th>
               <th scope="col">Cost Per User (TB/month)</th>
             {% else %}
+              <th scope="col">CPU Hours</th>
+              <th scope="col">Percent Usage</th>
               <th scope="col">EffectvUsage
                 <a class="info-button" title="EffectvUsage" data-toggle="popover" data-trigger="hover" data-content="The fraction of the cluster the account has been granted. For more information, go <a href='https://docs.rc.fas.harvard.edu/kb/fairshare/#articleTOC_4' title='fairshare calculation'>here</a>.">
                   <i class="fas fa-info-circle" aria-hidden="true"></i>

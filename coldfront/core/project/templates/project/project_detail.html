@@ -84,7 +84,7 @@ Project Detail
     <div class="float-right">
       {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
         <a class="btn btn-success" href="{% url 'allocation-create' project.pk %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i>
-          Request New Allocation</a>
+          Request New Storage Allocation</a>
       {% endif %}
     </div>
   </div>
@@ -92,7 +92,7 @@ Project Detail
     <div class="table-responsive">
       {% if storage_allocations %}
         <table id="invoice_table" class="table table-hover">
-        <h4>Storage Allocations</h4>
+        <h4>Storage</h4>
         <thead>
           <tr>
             <th scope="col">Resource Name</th>
@@ -162,7 +162,7 @@ Project Detail
       {% endif %}
       {% if compute_allocations %}
       <table id="cluster_table" class="table table-hover">
-       <h4>Cluster Allocations</h4>
+       <h4>Cluster</h4>
         <thead>
           <tr>
             <th scope="col">Resource Name</th>
