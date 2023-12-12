@@ -1,21 +1,12 @@
-import datetime
 import os
 
 from django.conf import settings
 from django.contrib.auth.models import Group
 from django.contrib.auth import get_user_model
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.core.exceptions import ObjectDoesNotExist
 
 from csv import reader
-
-from coldfront.core.field_of_science.models import FieldOfScience
-from coldfront.core.project.models import (Project, ProjectStatusChoice,
-                                            ProjectUser, ProjectUserRoleChoice,
-                                            ProjectUserStatusChoice)
-from coldfront.core.allocation.models import (AllocationUser,
-                                              AllocationUserStatusChoice)
-from coldfront.config.env import ENV, PROJECT_ROOT
 
 base_dir = settings.BASE_DIR
 
@@ -35,7 +26,7 @@ class Command(BaseCommand):
         lab_list = []
         for f in files:
             f_name = f.split('.')
-            if (f_name[len(f_name)-1] == 'csv'):
+            if f_name[len(f_name)-1] == 'csv':
                 if f_name[len(f_name)-2] != 'Quota':
                     print("line39:",f_name[len(f_name)-2])
                     file = f_name[len(f_name)-2]+('.csv')
@@ -48,7 +39,7 @@ class Command(BaseCommand):
             lab_name = lab_list[0]
             file_path = os.path.join(base_dir, 'local_data', file_name)
             print("line34 file_name is:", file_name)
-            if (file_name != "rc_admin.csv"):
+            if file_name != "rc_admin.csv":
                 # open file in read mode
                 with open (file_path, 'r') as read_obj:
                     csv_reader = reader(read_obj) # opt out the first line

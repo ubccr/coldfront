@@ -10,8 +10,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError, MultipleObjectsReturned
 from django.core.management.base import BaseCommand
 
-from coldfront.core.allocation.models import (Allocation,
-                                            AllocationUser,
+from coldfront.core.allocation.models import (AllocationUser,
                                             AllocationAttribute,
                                             AllocationAttributeType,
                                             AllocationStatusChoice,

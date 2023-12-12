@@ -1,28 +1,12 @@
-import datetime
-import os
-import json
-
-from dateutil.relativedelta import relativedelta
 from django.conf import settings
-from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
 from coldfront.core.allocation.models import (Allocation, AllocationAttribute,
                                               AllocationAttributeType,
-                                              AllocationStatusChoice,
-                                              AllocationUser,
-                                              AllocationUserStatusChoice)
-from coldfront.core.field_of_science.models import FieldOfScience
-from coldfront.core.grant.models import (Grant, GrantFundingAgency,
-                                         GrantStatusChoice)
-from coldfront.core.project.models import (Project, ProjectStatusChoice,
-                                           ProjectUser, ProjectUserRoleChoice,
-                                           ProjectUserStatusChoice)
-from coldfront.core.publication.models import Publication, PublicationSource
-from coldfront.core.resource.models import (Resource, ResourceAttribute,
-                                            ResourceAttributeType,
-                                            ResourceType)
-from coldfront.core.user.models import UserProfile
+                                              AllocationStatusChoice)
+from coldfront.core.resource.models import (Resource,
+                                            ResourceAttribute,
+                                            ResourceAttributeType)
 
 base_dir = settings.BASE_DIR
 

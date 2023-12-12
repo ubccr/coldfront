@@ -1,7 +1,4 @@
-import os
-
 from django.conf import settings
-from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
 from coldfront.core.project.models import Project
@@ -17,8 +14,8 @@ class Command(BaseCommand):
                 status__name='Active').values_list('user__username', flat=True))
             users_in_allocation = []
             for allocation in project.allocation_set.filter(status__name__in=('Active',
-                                                                              'New', 'Paid', 'Payment Pending',
-                                                                              'Payment Requested', 'Renewal Requested')):
+                  'New', 'Paid', 'Payment Pending',
+                  'Payment Requested', 'Renewal Requested')):
 
                 users_in_allocation.extend(allocation.allocationuser_set.filter(
                     status__name='Active').values_list('user__username', flat=True))

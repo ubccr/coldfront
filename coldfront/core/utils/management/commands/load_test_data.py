@@ -560,33 +560,49 @@ class Command(BaseCommand):
             name='quantity_label'), resource=Resource.objects.get(name='University Cloud'), value='Enter number of compute allocations to purchase')
         ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
             name='quantity_label'), resource=Resource.objects.get(name='ProjectStorage'), value='Enter storage in 1TB increments')
-        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='quantity_label'), resource=Resource.objects.get(name='Budgetstorage'), value='Enter storage in 10TB increments (minimum purchase is 10TB)')
+        ResourceAttribute.objects.get_or_create(
+            resource_attribute_type=ResourceAttributeType.objects.get(name='quantity_label'),
+            resource=Resource.objects.get(name='Budgetstorage'),
+            value='Enter storage in 10TB increments (minimum purchase is 10TB)')
 
-        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='slurm_cluster'), resource=Resource.objects.get(name='Chemistry'), value='chemistry')
-        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='slurm_cluster'), resource=Resource.objects.get(name='Physics'), value='physics')
-        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='slurm_cluster'), resource=Resource.objects.get(name='Industry'), value='industry')
-        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='slurm_cluster'), resource=Resource.objects.get(name='University HPC'), value='university-hpc')
-        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='slurm_cluster'), resource=Resource.objects.get(name='University Metered HPC'), 
+        ResourceAttribute.objects.get_or_create(
+            resource_attribute_type=ResourceAttributeType.objects.get(name='slurm_cluster'),
+            resource=Resource.objects.get(name='Chemistry'),
+            value='chemistry')
+        ResourceAttribute.objects.get_or_create(
+            resource_attribute_type=ResourceAttributeType.objects.get(name='slurm_cluster'),
+            resource=Resource.objects.get(name='Physics'), value='physics')
+        ResourceAttribute.objects.get_or_create(
+            resource_attribute_type=ResourceAttributeType.objects.get(name='slurm_cluster'),
+            resource=Resource.objects.get(name='Industry'), value='industry')
+        ResourceAttribute.objects.get_or_create(
+            resource_attribute_type=ResourceAttributeType.objects.get(name='slurm_cluster'),
+            resource=Resource.objects.get(name='University HPC'), value='university-hpc')
+        ResourceAttribute.objects.get_or_create(
+            resource_attribute_type=ResourceAttributeType.objects.get(name='slurm_cluster'),
+            resource=Resource.objects.get(name='University Metered HPC'),
             value='metered-hpc')
 
         ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
             name='slurm_specs'), resource=Resource.objects.get(name='Chemistry-scavenger'), value='QOS+=scavenger:Fairshare=100')
-        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='slurm_specs'), resource=Resource.objects.get(name='Physics-scavenger'), value='QOS+=scavenger:Fairshare=100')
-        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='slurm_specs'), resource=Resource.objects.get(name='Industry-scavenger'), value='QOS+=scavenger:Fairshare=100')
-        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='slurm_specs'), resource=Resource.objects.get(name='Chemistry-cgray'), value='QOS+=cgray:Fairshare=100')
-        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='slurm_specs'), resource=Resource.objects.get(name='Physics-sfoster'), value='QOS+=sfoster:Fairshare=100')
-        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='slurm_specs'), resource=Resource.objects.get(name='University Metered HPC'), 
+        ResourceAttribute.objects.get_or_create(
+            resource_attribute_type=ResourceAttributeType.objects.get(name='slurm_specs'),
+            resource=Resource.objects.get(name='Physics-scavenger'),
+            value='QOS+=scavenger:Fairshare=100')
+        ResourceAttribute.objects.get_or_create(
+            resource_attribute_type=ResourceAttributeType.objects.get(name='slurm_specs'),
+            resource=Resource.objects.get(name='Industry-scavenger'),
+            value='QOS+=scavenger:Fairshare=100')
+        ResourceAttribute.objects.get_or_create(
+            resource_attribute_type=ResourceAttributeType.objects.get(name='slurm_specs'),
+            resource=Resource.objects.get(name='Chemistry-cgray'),
+            value='QOS+=cgray:Fairshare=100')
+        ResourceAttribute.objects.get_or_create(
+            resource_attribute_type=ResourceAttributeType.objects.get(name='slurm_specs'),
+            resource=Resource.objects.get(name='Physics-sfoster'), value='QOS+=sfoster:Fairshare=100')
+        ResourceAttribute.objects.get_or_create(
+            resource_attribute_type=ResourceAttributeType.objects.get(name='slurm_specs'),
+            resource=Resource.objects.get(name='University Metered HPC'),
             value='GrpTRESMins=cpu={cpumin}')
 
         #slurm_specs_attrib_list for University Metered HPC
@@ -598,7 +614,7 @@ class Command(BaseCommand):
             'cpumin *= 60'
         ]
         ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='slurm_specs_attriblist'), resource=Resource.objects.get(name='University Metered HPC'), 
+            name='slurm_specs_attriblist'), resource=Resource.objects.get(name='University Metered HPC'),
             value="\n".join(attriblist_list))
 
         # call_command('loaddata', 'test_data.json')

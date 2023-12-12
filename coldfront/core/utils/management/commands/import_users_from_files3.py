@@ -1,21 +1,12 @@
-import datetime
 import os
 
 from django.conf import settings
 from django.contrib.auth.models import Group
 from django.contrib.auth import get_user_model
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.core.exceptions import ObjectDoesNotExist
 
 from csv import reader
-
-from coldfront.core.field_of_science.models import FieldOfScience
-from coldfront.core.project.models import (Project, ProjectStatusChoice,
-                                            ProjectUser, ProjectUserRoleChoice,
-                                            ProjectUserStatusChoice)
-from coldfront.core.allocation.models import (AllocationUser,
-                                              AllocationUserStatusChoice)
-from coldfront.config.env import ENV, PROJECT_ROOT
 
 base_dir = settings.BASE_DIR
 
