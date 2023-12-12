@@ -62,8 +62,12 @@ def sync_slate_project_users(allocation_obj, ldap_conn=None):
         return
     ldap_group = ldap_group[0].value
 
-    read_write_users = allocation_obj.allocationuser_set.filter(role__name='read/write', status__name='Active')
-    read_only_users = allocation_obj.allocationuser_set.filter(role__name='read only', status__name='Active')
+    read_write_users = allocation_obj.allocationuser_set.filter(
+        role__name='read/write', status__name__in=['Active', 'Inactive']
+    )
+    read_only_users = allocation_obj.allocationuser_set.filter(
+        role__name='read only', status__name__in=['Active', 'Inactive']
+    )
 
     if ldap_conn is None:
         ldap_conn = LDAPModify()
