@@ -651,7 +651,7 @@ def get_estimated_storage_cost(allocation_obj):
     return storage_cost
 
 
-def get_inactive_users():
+def send_inactive_users_report():
     """
     Finds and adds inactive users to an email report.
     """
