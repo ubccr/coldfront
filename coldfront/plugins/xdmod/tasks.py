@@ -1,6 +1,6 @@
 from django.core.management import call_command
 
 def xdmod_usage():
-    """ID and add new slurm allocations from ADGroup and ADUser data
+    """Add xdmod usage data
     """
-    call_command('slurm_sync', sync=True)
+    call_command('xdmod_usage', sync=True)
