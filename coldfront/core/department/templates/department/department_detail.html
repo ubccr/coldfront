@@ -89,12 +89,12 @@
 
                 {% comment %} <td  style="background-color:#D3D3D3" id = "totalamount"></td> {% endcomment %}
             </tr>
-            <tr>
+            <!-- <tr>
                 <th style="background-color:#D3D3D3" bordercolor="red" scope="row" class="text-nowrap">Total Amount Due, Quarterly Compute:   </th>
                 <td style="background-color:#D3D3D3">${{ compute_full_price|floatformat:2 }}</td>
 
                 {% comment %} <td  style="background-color:#D3D3D3" id = "totalamount"></td> {% endcomment %}
-            </tr>
+            </tr> -->
             {% else %}
             <tr>
               <th scope="row" class="text-nowrap">Your Labs:</th>
@@ -113,7 +113,7 @@
                 <td>{{ allocation_users.count }}</td>
             </tr>
             <tr>
-                <th  style="background-color:#D3D3D3" bordercolor="red" scope="row" class="text-nowrap">Amount Due for Projects:   </th>
+                <th  style="background-color:#D3D3D3" bordercolor="red" scope="row" class="text-nowrap">Total Amount Due, Monthly Storage:</th>
                 <td style="background-color:#D3D3D3">${{ storage_full_price|floatformat:2 }}</td>
 
                 {% comment %} <td  style="background-color:#D3D3D3" id = "totalamount"></td> {% endcomment %}
@@ -224,7 +224,7 @@
     <div class="html2pdf__page-break"></div>
     <div class="card mb-3">
       <div class="card-header">
-        <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i>Quarterly Compute Invoice Details</h3>
+        <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i>Quarterly Cluster Usage Details</h3>
         <span class="badge badge-secondary">{{compute_pi_dict.keys|length}}</span>
       </div>
       <div class="card-body">
@@ -238,7 +238,7 @@
                 <th scope="col">Allocation</th>
                 <th scope="col">Users</th>
                 <th scope="col">Quota (TB)</th>
-                <th scope="col">Quarterly Cost to Date</th>
+                <!-- <th scope="col">Quarterly Cost to Date</th> -->
               </tr>
             </thead>
             <tbody>
@@ -256,7 +256,6 @@
                   </td>
                 </tr>
                 {% for allocation in allocs %}
-		  {% if allocation.resources.first.resource_type.name == "Cluster" %}
                   <tr style="background-color:#FFFFFF" class="child-allocation">
                     <td data-search="{{ pi.full_name }}" data-sort="{{ pi.full_name }}"></td>
                     <td data-search="{{allocation.project.title}}">
@@ -274,9 +273,8 @@
                     </td>
                     <td>{{ allocation.allocationuser_set.count }}</td>
                     <td>{{ allocation.size|floatformat:1 }}</td>
-                    <td>${{ allocation.cost|floatformat:2 }}</td>
+                    <!-- <td>${{ allocation.cost|floatformat:2 }}</td> -->
                   </tr>
-		  {% endif %}
                 {% endfor %}
               {% endfor %}
             </tbody>
