@@ -18,7 +18,12 @@ class Command(BaseCommand):
                  schedule_type=Schedule.DAILY,
                  next_run=date)
 
-        date = date.replace(month=date.month % 12 + 1, day=1)
+        current_month = date.month
+        next_month = current_month % 12 + 1
+        if next_month < current_month:
+            date = date.replace(year=date.year + 1, month=next_month, day=1)
+        else:
+            date = date.replace(month=next_month, day=1)
         schedule('coldfront.plugins.slate_project.tasks.send_inactive_user_email_report',
                  schedule_type=Schedule.MONTHLY,
                  next_run=date)
