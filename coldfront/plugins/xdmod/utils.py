@@ -116,7 +116,6 @@ class XDModFetcher:
         payload['group_by'] = self.group_by[group_by]
         payload['statistic'] = statistic
         payload['realm'] = realm
-        print("PAYLOAD:", payload)
         if group_by == 'total':
             core_hours = self.fetch_value(payload, search_item=account)
         elif group_by == 'per-user':
