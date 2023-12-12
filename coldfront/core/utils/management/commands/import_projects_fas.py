@@ -4,7 +4,6 @@ import csv
 import datetime
 
 from django.conf import settings
-from django.contrib.auth.models import Group
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.utils import timezone
@@ -14,7 +13,6 @@ from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.project.models import (Project, ProjectStatusChoice,
                                             ProjectUser, ProjectUserRoleChoice,
                                             ProjectUserStatusChoice)
-from coldfront.core.user.models import (UserProfile)
 from coldfront.config.env import ENV
 
 base_dir = settings.BASE_DIR
@@ -120,12 +118,12 @@ class Command(BaseCommand):
                                 writer.writerow(tocsv)
                                 continue
                 project_obj = Project.objects.get(title = title)
-                if (project_obj != ""):
+                if project_obj != "":
                     for project_user in user_dict:
-                        if (project_user != ""):
+                        if project_user != "":
                             username = project_user['samaccountname']
                             enable_email = False
-                            if (username == pi_username):
+                            if username == pi_username:
                                 role = 'PI'
                                 enable_email = True
                             else:

@@ -87,20 +87,6 @@ class Command(BaseCommand):
                 with open(lab_data) as f:
                     data = json.load(f)
 
-                # if (not filtered_query): # if not found project, then create project
-                #     project_obj, _ = Project.objects.get_or_create(
-                #         #pi = pi1,
-                #         title = lab_name,
-                #         description= lab_name + ' storage allocation',
-                #         field_of_science=FieldOfScience.objects.get(
-                #             #FIXME: Description of the DEPT
-                #             description='Other'),
-                #         status=ProjectStatusChoice.objects.get(name='Active'),
-                #         force_review=True
-                #     )
-                #     start_date = datetime.datetime.now()
-                #     end_date = datetime.datetime.now() + relativedelta(days=365)
-
                 # else: # found project
                 allocations = Allocation.objects.filter(project=filtered_query, resources__name=resource_name, status__name='Active')
                 if allocations.count() == 0:
@@ -140,22 +126,17 @@ class Command(BaseCommand):
                 lab_usage_in_tb = round(lab_usage_in_tb, 2)
                 # lab_usage_in_tb_str = str(lab_usage_in_tb)
                 allocation= allocations[0]
-                if (allocation): # get allocation
+                if allocation: # get allocation
                     allocation_attribute_type_obj = AllocationAttributeType.objects.get(
                         name='Storage Quota (TB)')
-                    try:
-                        allocation_attribute_obj = AllocationAttribute.objects.get(
-                            allocation_attribute_type=allocation_attribute_type_obj,
-                            allocation=allocation,
-                        )
-                        allocation_attribute_obj.value = lab_allocation_in_tb_str
-                        allocation_attribute_obj.save()
-                        allocation_attribute_exist = True
-                    except AllocationAttribute.DoesNotExist:
-                        allocation_attribute_exist = False
+                    allocation_attribute_obj, created = AllocationAttribute.objects.get_or_create(
+                        allocation_attribute_type=allocation_attribute_type_obj,
+                        allocation=allocation,
+                        defaults={'value': lab_allocation_in_tb_str}
+                    )
 
-                    if (not allocation_attribute_exist):
-                        allocation_attribute_obj,_ =AllocationAttribute.objects.get_or_create(
+                    if created:
+                        allocation_attribute_obj, _ = AllocationAttribute.objects.get_or_create(
                             allocation_attribute_type=allocation_attribute_type_obj,
                             allocation=allocation,
                             value = lab_allocation_in_tb_str)
@@ -175,9 +156,9 @@ class Command(BaseCommand):
                     # checking my user_json_dictinary
                     # loop through my allocation_users set
                     for allocation_user in allocation_users:
-                        allocation_user_username = (allocation_user.user.username)
+                        allocation_user_username = allocation_user.user.username
+                        user_obj = get_user_model().objects.get(username=allocation_user_username)
                         if allocation_user_username in user_json_dict:
-                            user_obj = get_user_model().objects.get(username = allocation_user_username)
                             allocationuser_obj = AllocationUser.objects.get(user=user_obj)
                             allocationuser_obj.status = AllocationUserStatusChoice.objects.get(name='Active')
                             one_user_logical_usage = user_json_dict[allocation_user_username]['logical_usage']
@@ -189,20 +170,16 @@ class Command(BaseCommand):
                             allocation.save()
                             user_json_dict.pop(allocation_user_username)
                         else:
-                            try:
-                                user_obj = get_user_model().objects.get(username = allocation_user_username)
-                                allocationuser_obj = AllocationUser.objects.get(user=user_obj)
-                                allocationuser_obj.status = AllocationUserStatusChoice.objects.get(name='Removed')
-                                allocationuser_obj.usage = 0
-                                allocationuser_obj.usage_bytes = 0
-                                allocationuser_obj.unit = ''
-                                allocationuser_obj.allocation_group_usage_bytes = lab_data["kbytes"]
-                                allocationuser_obj.allocation_group_quota = lab_data["quota"]
-                                allocationuser_obj.save()
-                                allocation.save()
-                            except Exception as e:
-                                print(f'Error: {e}')
-                                # allocation_users.remove(allocation_user) # remove this particular allocation_user
+                            allocationuser_obj, _ = AllocationUser.objects.update_or_create(
+                                user=user_obj,
+                                allocation=allocation,
+                                defaults={
+                                    'status': AllocationUserStatusChoice.objects.get(name='Removed'),
+                                    'usage': 0,
+                                    'usage_bytes': 0,
+                                    'unit': '',
+                                }
+                            )
 
                     for json_user in user_json_dict:
                         try:
@@ -228,31 +205,18 @@ class Command(BaseCommand):
                             # )
                             # get_user_model().objects.get(username=json_user).save()
 
-                            # raise Exception(f'Cannot find user {json_user}')
-
-                        try:
-                            allocationuser_obj = AllocationUser.objects.get(user=user_obj)
-                            print(allocationuser_obj.status)
-                            allocationuser_obj.status= AllocationUserStatusChoice.objects.get(name='Active')
-                        except AllocationUser.DoesNotExist:
-                            # create allocationuser object
-                            allocationuser_obj = AllocationUser(
-                                allocation=allocation,
-                                user=user_obj,
-                                status=AllocationUserStatusChoice.objects.get(name='Active'),
-                            )
-
-                        # only updating allocation user object
                         usage_string = user_json_dict[json_user]['usage']
                         num, alpha = splitString(usage_string)
-                        allocationuser_obj.usage = num
-                        allocationuser_obj.usage_bytes = user_json_dict[json_user]['logical_usage']
-                        allocationuser_obj.unit = alpha
-                        allocationuser_obj.allocation_group_usage_bytes = lab_data["kbytes"]
-                        allocationuser_obj.allocation_group_quota = lab_data["quota"]
-                        allocationuser_obj.save()
-                        allocation.save()
-                        # get_user_model().objects.get(username=json_user).save()
+                        allocationuser_obj, created = AllocationUser.objects.get_or_create(
+                            user=user_obj,
+                            allocation=allocation,
+                            defaults={
+                                'status':AllocationUserStatusChoice.objects.get(name='Active'),
+                                'usage': num,
+                                'usage_bytes': user_json_dict[json_user]['logical_usage'],
+                                'unit': alpha,
+                            }
+                        )
+
             except Exception as e:
-                # logger.exception(e)
                 print(f'Error: {e}')

@@ -162,7 +162,9 @@ def slurm_collect_fairshares(cluster=None, output_file=None):
     output_str = f' > {output_file}' if output_file else ''
     cmd = SLURM_CMD_PULL_FAIRSHARE + cluster_str + output_str
 
-    fairshare_data = _run_slurm_cmd(cmd)
+    fairshare_data = _run_slurm_cmd(cmd, noop=False)
     fairshare_data = fairshare_data.decode('utf-8').split('\n')
+    if "-----" not in fairshare_data[1]:
+        fairshare_data = fairshare_data[1:]
     fairshare_data = slurm_fixed_width_lines_to_dict(fairshare_data)
     return fairshare_data

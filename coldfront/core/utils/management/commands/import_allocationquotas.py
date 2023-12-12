@@ -1,19 +1,13 @@
 import csv
-import datetime
 import os
-import json
 import logging
 
-from dateutil.relativedelta import relativedelta
 from django.conf import settings
-from django.contrib.auth import get_user, get_user_model
-from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
 from coldfront.core.allocation.models import (Allocation, AllocationAttribute,
                                               AllocationAttributeType)
 from coldfront.core.project.models import (Project)
-from coldfront.core.resource.models import (Resource, )
 from coldfront.config.env import ENV
 
 import pandas as pd
@@ -38,14 +32,14 @@ class Command(BaseCommand):
             default='tier0',
             help='Storage tier',
         )
-    
+
     def handle(self, *args, **options):
 
         LOCALDATA_ROOT = ENV.str('LOCALDATA_ROOT', default=base_dir)
-        storage = options['storage'] 
+        storage = options['storage']
         print(storage)
         fileName = storage +  "_allocation.csv"
-        tier = options['tier']  
+        tier = options['tier']
         resource_name = storage + '/' + tier
         print("Loading data for: " + resource_name)
         lab_list_file = os.path.join(LOCALDATA_ROOT, 'local_data/',fileName)
@@ -66,14 +60,14 @@ class Command(BaseCommand):
             try:
                 filtered_query = Project.objects.get(title = lab_name) # find project
                 allocations = Allocation.objects.filter(project = filtered_query, resources__name=resource_name, status__name='Active')
-                if(allocations.count() == 0):
+                if allocations.count() == 0:
                     print("Allocation not found:" + lab_name + ": "+resource_name)
                     tocsv = [lab_name,resource_name,"Allocation"]
-                    writer.writerow(tocsv) 
+                    writer.writerow(tocsv)
                     continue
 
                 allocation= allocations[0]
-                if (allocation): # get allocation
+                if allocation: # get allocation
                     allocation_attribute_type_obj = AllocationAttributeType.objects.get(
                         name='Storage Quota (TB)')
                     try:
@@ -87,28 +81,27 @@ class Command(BaseCommand):
                     except AllocationAttribute.DoesNotExist:
                         allocation_attribute_exist = False
 
-                    if (not allocation_attribute_exist):
+                    if not allocation_attribute_exist:
                         allocation_attribute_obj,_ =AllocationAttribute.objects.get_or_create(
                             allocation_attribute_type=allocation_attribute_type_obj,
                             allocation=allocation,
                             value = lab_allocation)
                         allocation_attribute_type_obj.save()
-                    
+
 
                     allocation_attribute_obj.allocationattributeusage.value = lab_usage
                     allocation_attribute_obj.allocationattributeusage.save()
-                    
+
                     allocation_attribute_type_payment = AllocationAttributeType.objects.get(
                     name='RequiresPayment')
                     allocation_attribute_payment, _ = AllocationAttribute.objects.get_or_create(
                     allocation_attribute_type=allocation_attribute_type_payment,
                     allocation=allocation,
-                    value=True) 
+                    value=True)
                     allocation_attribute_payment.save()
             except Project.DoesNotExist:
                 print("Project not found: " + lab_name)
                 tocsv = [lab_name,resource_name,"Project"]
-                writer.writerow(tocsv) 
+                writer.writerow(tocsv)
                 continue
         proj_allocation.close()
-     

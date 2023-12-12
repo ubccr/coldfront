@@ -28,6 +28,8 @@ class Command(BaseCommand):
             'fasrc': ['import_quotas', 'id_import_allocations'],
             'sftocf': ['pullsf_pushcf_redash', 'pull_resource_data'],
             'ldap': ['update_group_membership_ldap', 'id_add_projects'],
+            'slurm': ['slurm_sync'],
+            'xdmod': ['xdmod_usage'],
         }
         scheduled = [task.func for task in Schedule.objects.all()]
 

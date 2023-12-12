@@ -34,8 +34,9 @@ class Command(BaseCommand):
         else:
             with tempfile.TemporaryDirectory() as tmpdir:
                 fname = os.path.join(tmpdir, 'cluster.cfg')
+                cluster_name = cluster.get_attribute("slurm_cluster")
                 try:
-                    slurm_dump_cluster(cluster, fname)
+                    slurm_dump_cluster(cluster_name, fname)
                     with open(fname) as fh:
                         slurm_cluster = SlurmCluster.new_from_stream(fh)
                 except SlurmError as e:
@@ -46,7 +47,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         # make new SlurmCluster obj containing the dump from the cluster
         file = options['file']
-        cluster_resources = Resource.objects.filter(resource_type__name='Cluster')
+        cluster_resources = Resource.objects.filter(
+            resource_type__name='Cluster', is_available=True
+        )
         slurm_clusters = {r: self._cluster_from_dump(r, file=file) for r in cluster_resources}
         slurm_clusters = {
             r:c for r, c in slurm_clusters.items() if r.get_attribute('slurm_cluster') == c.name

@@ -101,10 +101,6 @@ class Command(BaseCommand):
         admin_user.is_staff = True
         admin_user.save()
 
-        for user in get_user_model().objects.all():
-            user.set_password('test1234')
-            user.save()
-
         for resource in resources:
 
             resource_type, parent_resource, name, description, is_available, is_public, is_allocatable = resource
