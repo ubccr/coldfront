@@ -1,4 +1,3 @@
-import datetime
 # import the logging library
 import logging
 

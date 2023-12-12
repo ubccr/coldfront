@@ -21,11 +21,7 @@ from coldfront.core.utils.fasrc import (
     select_one_project_allocation,
 )
 from coldfront.core.project.models import Project
-from coldfront.core.resource.models import (
-    Resource,
-    ResourceAttribute,
-    ResourceAttributeType,
-)
+from coldfront.core.resource.models import Resource, ResourceAttributeType
 from coldfront.core.allocation.models import (
     Allocation,
     AllocationUser,
@@ -77,7 +73,6 @@ class StarFishServer:
         token = response_json['token']
         return token
 
-
     # 2A. Generate list of volumes to search, along with top-level paths
     @record_process
     def get_volume_names(self):
@@ -91,7 +86,6 @@ class StarFishServer:
     def get_volumes_in_coldfront(self):
         resource_volume_list = [r.name.split('/')[0] for r in Resource.objects.all()]
         return [v for v in self.volumes if v in resource_volume_list]
-
 
     def get_volume_attributes(self):
         url = self.api_url + 'volume/'
@@ -120,20 +114,20 @@ class StarFishServer:
         scans = self.get_scans()
         volumes = self.get_volumes_in_coldfront()
         for volume in volumes:
-            latest_time = max([
+            latest_time = max(
                 s['creation_time'] for s in scans['scans'] if s['volume'] == volume
-            ])
+            )
             latest_scan = next(
                 s for s in scans['scans']
                 if s['creation_time'] == latest_time and s['volume'] == volume
             )
             scans_narrowed.append(latest_scan)
             if latest_scan['state']['is_running'] or latest_scan['state']['is_successful']:
-                last_completed_time = max([
+                last_completed_time = max(
                     s['creation_time'] for s in scans['scans']
                     if not s['state']['is_running']
                     and s['state']['is_successful'] and s['volume'] == volume
-                ])
+                )
                 last_completed = next(
                     s for s in scans['scans']
                     if s['creation_time'] == last_completed_time
@@ -141,7 +135,6 @@ class StarFishServer:
                 )
                 scans_narrowed.append(last_completed)
         return scans_narrowed
-
 
     @record_process
     def get_subpaths(self, volpath):
@@ -206,7 +199,6 @@ class StarFishRedash:
         self.base_url = f'https://{server_name}.rc.fas.harvard.edu/redash/api/'
         self.queries = import_from_settings('REDASH_API_KEYS')
 
-
     def submit_query(self, queryname):
         """submit a query and return a json of the results.
         """
@@ -214,7 +206,6 @@ class StarFishRedash:
         query_url = f'{self.base_url}queries/{query[0]}/results?api_key={query[1]}'
         result = return_get_json(query_url, headers={})
         return result
-
 
     def get_vol_stats(self):
         result = self.submit_query('vol_query')
@@ -227,7 +218,6 @@ class StarFishRedash:
         ]
         result = [r for r in result if r['volume_name'] in resource_names]
         return result
-
 
     def return_query_results(self, query='path_usage_query', volumes=None):
         """
@@ -250,7 +240,6 @@ class AsyncQuery:
         self.headers = headers
         self.query_id = self.post_async_query(query, group_by, volpath)
         self.result = self.return_results_once_prepared(sec=sec)
-
 
     @record_process
     def post_async_query(self, query, group_by, volpath, q_format='parent_path +rec_aggrs'):
@@ -441,6 +430,7 @@ def split_num_string(x):
     n = re.search(r'\d*\.?\d+', x).group()
     s = x.replace(n, '')
     return n, s
+
 
 def return_get_json(url, headers):
     response = requests.get(url, headers=headers)
