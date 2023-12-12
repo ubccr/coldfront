@@ -210,7 +210,7 @@ class AllocationForm(forms.Form):
 
         if after_project_creation:
             form_actions = FormActions(
-                Submit('submit', 'Next'),
+                Submit('submit', 'Submit and Continue'),
             )
         else:
             form_actions = FormActions(
