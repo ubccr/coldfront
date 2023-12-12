@@ -1,10 +1,8 @@
 import datetime
-import os
 
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
 from coldfront.core.allocation.models import (Allocation, AllocationAttribute,
@@ -23,7 +21,6 @@ from coldfront.core.publication.models import Publication, PublicationSource
 from coldfront.core.resource.models import (Resource, ResourceAttribute,
                                             ResourceAttributeType,
                                             ResourceType)
-from coldfront.core.user.models import UserProfile
 
 base_dir = settings.BASE_DIR
 
@@ -154,11 +151,13 @@ class Command(BaseCommand):
                 email=email.strip()
             )
 
-        admin_user, _ = get_user_model().objects.get_or_create(username='admin')
-        admin_user.is_superuser = True
-        admin_user.is_staff = True
-        admin_user.save()
-
+        admin_user, _ = get_user_model().objects.get_or_create(
+            username='admin',
+            defaults={
+                'is_superuser': True,
+                'is_staff': True
+            }
+        )
         for user in get_user_model().objects.all():
             user.set_password('test1234')
             user.save()
@@ -237,8 +236,7 @@ class Command(BaseCommand):
 
         publication_source = PublicationSource.objects.get(name='doi')
 
-
-        project_user_obj, _ = ProjectUser.objects.get_or_create(
+        ProjectUser.objects.get_or_create(
             user=pi1,
             project=project_obj,
             role=ProjectUserRoleChoice.objects.get(name='Manager'),
@@ -276,7 +274,7 @@ class Command(BaseCommand):
             allocation=allocation_obj,
             value='Fairshare=parent')
 
-        allocation_user_obj = AllocationUser.objects.create(
+        AllocationUser.objects.create(
             allocation=allocation_obj,
             user=pi1,
             status=AllocationUserStatusChoice.objects.get(name='Active')
@@ -330,7 +328,7 @@ class Command(BaseCommand):
             allocation=allocation_obj,
             value='2022-01-01')
 
-        allocation_user_obj = AllocationUser.objects.create(
+        AllocationUser.objects.create(
             allocation=allocation_obj,
             user=pi1,
             status=AllocationUserStatusChoice.objects.get(name='Active')

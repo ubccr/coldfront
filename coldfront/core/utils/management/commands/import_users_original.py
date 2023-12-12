@@ -4,13 +4,7 @@ from django.conf import settings
 from django.contrib.auth.models import Group
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
-from django.core.exceptions import ObjectDoesNotExist
 base_dir = settings.BASE_DIR
-
-for user in get_user_model().objects.all():
-    user.set_password('test1234')
-    print(user.username)
-    user.save()
 
 class Command(BaseCommand):
 
@@ -18,7 +12,6 @@ class Command(BaseCommand):
         print('Adding users now ...')
         file_path = os.path.join(base_dir, 'local_data', 'users.tsv')
         print("file path is:",file_path)
-
 
         with open(file_path, 'r') as fp:
             for line in fp:
@@ -35,17 +28,22 @@ class Command(BaseCommand):
                     groups = ''
 
                  # duplicated user
-                try:
-                    user = get_user_model().objects.get(username=username)
+                user_obj, created = get_user_model().objects.get_or_create(
+                    username=username,
+                    defaults={
+                        'username': username,
+                        'first_name': first_name,
+                        'last_name': last_name,
+                        'email': email,
+                        'is_active': is_active,
+                        'is_staff': is_staff,
+                        'is_superuser': is_superuser,
+                    }
+                )
+                print(username, first_name, last_name, email, is_active, is_staff, is_superuser, groups)
+                if not created:
                     print(username, "already exist")
-                    print(username, first_name, last_name, email, is_active, is_staff, is_superuser, groups)
-
                     continue
-
-                except ObjectDoesNotExist:
-                    print("adding new object")
-                    print(username, first_name, last_name, email, is_active, is_staff, is_superuser, groups)
-
 
                 group_objs = []
 
@@ -53,19 +51,7 @@ class Command(BaseCommand):
                     group_obj, _ = Group.objects.get_or_create(name=group.strip())
                     group_objs.append(group_obj)
 
-                user_obj = get_user_model().objects.create(
-                    username=username,
-                    first_name=first_name,
-                    last_name=last_name,
-                    email=email,
-                    is_active=is_active,
-                    is_staff=is_staff,
-                    is_superuser=is_superuser,
-                )
-
                 print(group_objs)
-
-
 
                 if group_objs:
                     print("group_objs exist")
