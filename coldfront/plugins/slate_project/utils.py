@@ -278,7 +278,7 @@ def send_missing_account_email(email_receiver):
             'center_name': EMAIL_CENTER_NAME,
             'url': 'https://access.iu.edu/Accounts/Create',
             'signature': EMAIL_SIGNATURE,
-            'help_email': EMAIL_TICKET_SYSTEM_ADDRESS
+            'help_email': SLATE_PROJECT_EMAIL
         }
 
         send_email_template(
