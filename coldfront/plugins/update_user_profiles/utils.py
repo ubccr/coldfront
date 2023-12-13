@@ -22,14 +22,21 @@ def update_all_user_profiles():
     allocation_user_inactive_status = AllocationUserStatusChoice.objects.get(name='Inactive')
     for user_profile in user_profiles:
         current_title = user_profile.title
-        attributes = ldap_search.search_a_user(user_profile.user.username, ['title'])
+        current_department = user_profile.department
+        attributes = ldap_search.search_a_user(user_profile.user.username, ['title', 'department'])
         title = attributes.get('title')
         if title:
             title = title[0]
         else:
             title = ''
-        if title != current_title:
+        department = attributes.get('department')
+        if department:
+            department = department[0]
+        else:
+            department = ''
+        if title != current_title or department != current_department:
             user_profile.title = title
+            user_profile.department = department
             user_profile.save()
 
         if not title or title in ['Former Employee', 'Retired Staff']:
