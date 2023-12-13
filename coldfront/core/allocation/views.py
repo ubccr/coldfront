@@ -152,7 +152,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             )
             except ValueError:
                 logger.error(
-                    f"Allocation attribute '%s' is not an int but has a usage",
+                    "Allocation attribute '%s' is not an int but has a usage",
                     attribute.allocation_attribute_type.name,
                 )
                 invalid_attributes.append(attribute)
@@ -160,11 +160,17 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         for a in invalid_attributes:
             attributes_with_usage.remove(a)
 
+        user_sync_task = None
         if 'django_q' in settings.INSTALLED_APPS:
             # get last successful runs of djangoq task responsible for allocationuser data pull
+            if allocation_obj.get_parent_resource.resource_type.name == "Storage":
+                sync_task_name = "pullsf_pushcf_redash"
+            elif allocation_obj.get_parent_resource.resource_type.name == "Cluster":
+                sync_task_name = "xdmod_usage"
             user_sync_task = Task.objects.filter(
-                func__contains="pullsf_pushcf_redash", success=True
+                func__contains=sync_task_name, success=True
             ).order_by('started').last()
+
             user_sync_dt = None if not user_sync_task else user_sync_task.started
         else:
             user_sync_dt = None
@@ -1817,6 +1823,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                 if new_value != attribute_change.new_value:
                     attribute_change.new_value = new_value
                     attribute_change.save()
+
         if action == 'update':
             message = 'Allocation change request updated!'
         if action == 'approve':
@@ -2053,6 +2060,8 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             for a in attribute_changes_to_make
             if a[0].allocation_attribute_type.name == 'Storage Quota (TB)'
         ]
+        # if requested resource is on NESE, add to vars
+        nese = bool(allocation_obj.resources.filter(name__contains="nesetape"))
 
         email_vars = {'justification': justification}
         if quantity:

@@ -4,12 +4,14 @@ from django.db import models
 from django.conf import settings
 from ifxuser.models import Organization, OrgRelation, UserAffiliation
 from model_utils.models import TimeStampedModel
+from simple_history.models import HistoricalRecords
 
 from coldfront.core.project.models import Project
 from coldfront.plugins.ifx.models import ProjectOrganization
 
 
 class DepartmentSelector(models.Manager):
+
     def get_queryset(self):
         """
         collect non-lab Organization objects that are in the Research
@@ -43,6 +45,7 @@ class Department(Organization):
     Billing org_tree.
     """
     objects = DepartmentSelector()
+    history = HistoricalRecords()
 
 
     class Meta:
@@ -127,6 +130,7 @@ class DepartmentMember(UserAffiliation):
     """subset of UserAffiliation records that are related to Department records.
     """
     objects = DepartmentMemberManager()
+    history = HistoricalRecords()
 
     class Meta:
         proxy = True

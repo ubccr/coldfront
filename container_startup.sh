@@ -10,8 +10,6 @@ service redis-server start
 python ./manage.py qcluster &
 python ./manage.py add_scheduled_tasks
 python ./manage.py collectstatic --noinput
-# initial_setup does not appear to work as requested.
-python ./manage.py initial_setup &
 
 if [ "$BUILD_ENV" == 'dev' ]; then
     python ./manage.py runserver 0.0.0.0:80 --insecure
