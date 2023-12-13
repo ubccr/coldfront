@@ -239,6 +239,21 @@
             src: "{{ git_prefix }}/{{ reponame }}/bootstrap/ansible/logrotate.tmpl"
             dest: /etc/logrotate.d/{{ logrotate_entry_name }}
 
+        - name: Check if an existent directory is given for backing up Django API and portal logs
+          stat:
+            path: "{{ log_backup_dir_path }}"
+          register: log_backup_dir_info
+
+        - name: Install a cron job to back up rotated Django API and portal logs if a directory is given
+          # This job is installed to /var/spool/cron/root.
+          ansible.builtin.cron:
+            name: "Back up rotated Django API and portal logs"
+            minute: "0"
+            hour: "0"
+            day: "15"
+            job: "mv {{ log_path }}/*.gz {{ log_backup_dir_path }}"
+          when: log_backup_dir_info.stat.exists and log_backup_dir_info.stat.isdir
+
         # Prepare the Python virtual environment for the Django application.
 
         - name: Create Python virtual environment directory
