@@ -83,7 +83,9 @@ class ATTAllocationQuery:
         d = query_dict[vol_type]
 
         if not volumes:
-            volumes = [r.name.split('/')[0] for r in Resource.objects.filter(resource_type__name='Storage')]
+            volumes = [
+                r.name.split('/')[0] for r in Resource.objects.filter(resource_type__name='Storage')
+            ]
         volumes = '|'.join(volumes)
         where = f"(e.{d['server']} =~ '.*({volumes}).*')"
         statement = {
@@ -145,7 +147,7 @@ class QuotaDataPuller:
         data['storage_type'] = 'tape'
         data['byte_allocation'] = data['mib_capacity'] * 1048576
         data['byte_usage'] = data['mib_used'] * 1048576
-        data['tb_allocation'] = data['mib_capacity'] / 953674.3164
+        data['tb_allocation'] = round((data['mib_capacity'] / 953674.3164), -1)
         data['tb_usage'] = data['mib_used'] / 953674.3164
         data['fs_path'] = None
         data = data[[
