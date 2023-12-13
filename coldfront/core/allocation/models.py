@@ -203,7 +203,10 @@ class Allocation(TimeStampedModel):
             if self.size_exact:
                 if 'TB' in self.get_parent_resource.quantity_label:
                     divisor = 1099511627776
-                    return self.size_exact/divisor
+                    size = self.size_exact/divisor
+                    if 'nesetape' in self.get_parent_resource.name:
+                        size = round(size, -1)
+                    return size
             return None
         except TypeError:
             return None
