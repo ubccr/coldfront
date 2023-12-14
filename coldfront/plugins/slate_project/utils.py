@@ -290,13 +290,14 @@ def send_missing_account_email(email_receiver):
         )
 
 
-def check_slate_project_account(user, ldap_search_conn=None, ldap_eligibility_conn=None):
+def check_slate_project_account(user, notifications_enabled, ldap_search_conn=None, ldap_eligibility_conn=None):
     """
     Checks if the user is in the eligibility group in LDAP. If they aren't it adds them and sends
     an email to the user about creating a Slate Project account. If they are in it but do not have
     a Slate Project account it will also send the email.
 
     :param user: User to check
+    :param notifications_enabled: Whether or not the user should receive an email
     :param ldap_search_conn: Pre-established ldap connection for searching for the Slate Project
     group
     :param ldap_eligibility_coon: Pre-established ldap connection for searching for the eligibility
@@ -320,9 +321,11 @@ def check_slate_project_account(user, ldap_search_conn=None, ldap_eligibility_co
             logger.info(
                 f'LDAP: Added user {user.username} to the HPFS ADS eligibility group'
             )
-        send_missing_account_email(user.email)
+        if notifications_enabled:
+            send_missing_account_email(user.email)
     elif not SLATE_PROJECT_ACCOUNT in accounts:
-        send_missing_account_email(user.email)
+        if notifications_enabled:
+            send_missing_account_email(user.email)
 
 
 def add_slate_project_groups(allocation_obj):
@@ -387,10 +390,10 @@ def add_slate_project_groups(allocation_obj):
 
     read_write_users = allocation_obj.allocationuser_set.filter(
         status__name='Active', role__name='read/write'
-    ).values_list('user__username', flat=True)
-    read_write_users = list(read_write_users)
+    ).values_list('user', flat=True)
+    read_write_usernames = [read_write_user.username for read_write_user in read_write_users]
     added, output = ldap_conn.add_group(
-        ldap_group, allocation_obj.project.pi.username, read_write_users, read_write_gid_number
+        ldap_group, allocation_obj.project.pi.username, read_write_usernames, read_write_gid_number
     )
     if not added:
         logger.error(
@@ -405,18 +408,30 @@ def add_slate_project_groups(allocation_obj):
         if ENABLE_LDAP_ELIGIBILITY_SERVER:
             ldap_search_conn = LDAPSearch()
             ldap_eligibility_conn = LDAPEligibilityGroup()
+            project_users = allocation_obj.project.projectuser_set.filter(
+                user__in=read_write_users
+            ).prefetch_related('user')
+            notifications_enabled = {}
+            for project_user in project_users:
+                notifications_enabled[project_user.user.username] = project_user.enable_notifications
             for allocation_user in read_write_users:
+                notifications_enabled = allocation_obj.project.projectuser_set.get(
+                    user=allocation_user
+                ).enable_notifications
                 check_slate_project_account(
-                    allocation_user.user, ldap_search_conn, ldap_eligibility_conn
+                    allocation_user,
+                    notifications_enabled.get(allocation_user.username),
+                    ldap_search_conn,
+                    ldap_eligibility_conn
                 )
 
     read_only_users = allocation_obj.allocationuser_set.filter(
         status__name='Active', role__name='read only'
-    ).values_list('user__username', flat=True)
-    read_only_users = list(read_only_users)
+    ).values_list('user', flat=True)
+    read_only_usernames = [read_only_user.username for read_only_user in read_only_users]
     ldap_group = f'{ldap_group}-ro'
     added, output = ldap_conn.add_group(
-        ldap_group, allocation_obj.project.pi.username, read_only_users, read_only_gid_number
+        ldap_group, allocation_obj.project.pi.username, read_only_usernames, read_only_gid_number
     )
     if not added:
         logger.error(
@@ -431,9 +446,18 @@ def add_slate_project_groups(allocation_obj):
         if ENABLE_LDAP_ELIGIBILITY_SERVER:
             ldap_search_conn = LDAPSearch()
             ldap_eligibility_conn = LDAPEligibilityGroup()
+            project_users = allocation_obj.project.projectuser_set.filter(
+                user__in=read_only_users
+            ).prefetch_related('user')
+            notifications_enabled = {}
+            for project_user in project_users:
+                notifications_enabled[project_user.user.username] = project_user.enable_notifications
             for allocation_user in read_only_users:
                 check_slate_project_account(
-                    allocation_user.user, ldap_search_conn, ldap_eligibility_conn
+                    allocation_user,
+                    notifications_enabled.get(allocation_user.username),
+                    ldap_search_conn,
+                    ldap_eligibility_conn
                 )
 
 def add_user_to_slate_project_group(allocation_user_obj):
@@ -475,7 +499,10 @@ def add_user_to_slate_project_group(allocation_user_obj):
         )
 
     if ENABLE_LDAP_ELIGIBILITY_SERVER:
-        check_slate_project_account(allocation_user_obj.user)
+        notifications_enabled = allocation_user_obj.allocation.project.projectuser_set.get(
+            user=allocation_user_obj.user
+        ).enable_notifications
+        check_slate_project_account(allocation_user_obj.user, notifications_enabled)
 
 
 def remove_slate_project_groups(allocation_obj):
