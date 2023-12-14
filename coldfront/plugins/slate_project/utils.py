@@ -355,8 +355,8 @@ def add_slate_project_groups(allocation_obj):
         group_gid = ldap_conn.get_group_gid_number(ldap_group)
         gid = allocation_obj.allocationattribute_set.filter(
             allocation_attribute_type__name='GID'
-        ).value
-        if not gid or not group_gid == gid:
+        )
+        if not gid.exists() or not group_gid == gid[0].value:
             logger.error(
                 f'LDAP: Slate project groups for allocation {allocation_obj.pk} already exist. No new '
                 f'groups were created'    
