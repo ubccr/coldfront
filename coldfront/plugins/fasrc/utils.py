@@ -147,7 +147,7 @@ class QuotaDataPuller:
         data['storage_type'] = 'tape'
         data['byte_allocation'] = data['mib_capacity'] * 1048576
         data['byte_usage'] = data['mib_used'] * 1048576
-        data['tb_allocation'] = round((data['mib_capacity'] / 953674.3164), -1)
+        data['tb_allocation'] = round(((data['mib_capacity']+ data['mib_capacity']*0.025) / 953674.3164), -1)
         data['tb_usage'] = data['mib_used'] / 953674.3164
         data['fs_path'] = None
         data = data[[
