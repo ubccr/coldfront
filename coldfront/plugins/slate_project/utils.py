@@ -390,7 +390,8 @@ def add_slate_project_groups(allocation_obj):
 
     read_write_users = allocation_obj.allocationuser_set.filter(
         status__name='Active', role__name='read/write'
-    ).values_list('user', flat=True)
+    ).prefetch_related('user')
+    read_write_users = [read_write_user.user for read_write_user in read_write_users]
     read_write_usernames = [read_write_user.username for read_write_user in read_write_users]
     added, output = ldap_conn.add_group(
         ldap_group, allocation_obj.project.pi.username, read_write_usernames, read_write_gid_number
@@ -427,7 +428,8 @@ def add_slate_project_groups(allocation_obj):
 
     read_only_users = allocation_obj.allocationuser_set.filter(
         status__name='Active', role__name='read only'
-    ).values_list('user', flat=True)
+    ).prefetch_related('user')
+    read_only_users = [read_only_user.user for read_only_user in read_only_users]
     read_only_usernames = [read_only_user.username for read_only_user in read_only_users]
     ldap_group = f'{ldap_group}-ro'
     added, output = ldap_conn.add_group(
