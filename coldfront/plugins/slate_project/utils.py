@@ -416,9 +416,6 @@ def add_slate_project_groups(allocation_obj):
             for project_user in project_users:
                 notifications_enabled[project_user.user.username] = project_user.enable_notifications
             for allocation_user in read_write_users:
-                notifications_enabled = allocation_obj.project.projectuser_set.get(
-                    user=allocation_user
-                ).enable_notifications
                 check_slate_project_account(
                     allocation_user,
                     notifications_enabled.get(allocation_user.username),
