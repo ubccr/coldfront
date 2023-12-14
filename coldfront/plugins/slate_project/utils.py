@@ -352,7 +352,7 @@ def add_slate_project_groups(allocation_obj):
     if group_exists:
         # Renewed allocations will also trigger this so we should use the GID to check if the 
         # group that exists matches the group we tried to add. If not, log an error.
-        group_gid = ldap_conn.get_group_gid_number(ldap_conn)
+        group_gid = ldap_conn.get_group_gid_number(ldap_group)
         gid = allocation_obj.allocationattribute_set.filter(
             allocation_attribute_type__name='GID'
         )
