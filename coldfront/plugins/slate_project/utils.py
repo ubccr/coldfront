@@ -735,6 +735,7 @@ def send_inactive_users_report():
             EMAIL_TICKET_SYSTEM_ADDRESS,
             [SLATE_PROJECT_EMAIL]
         )
+        logger.info('Inactive users email report sent')
 
 
 def send_ineligible_pi_report():

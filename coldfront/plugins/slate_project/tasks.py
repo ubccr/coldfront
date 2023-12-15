@@ -22,7 +22,6 @@ def sync_all_slate_project_allocations():
 
 def send_inactive_user_email_report():
     send_inactive_users_report()
-    logger.info('Inactive users email report sent')
 
 
 def send_ineligible_pi_email_report():
