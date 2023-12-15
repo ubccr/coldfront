@@ -2,8 +2,16 @@ from django import forms
 from django.template.loader import render_to_string
 
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import  Layout, Submit, HTML, Row, Column,  Reset, LayoutObject, Div
-from crispy_forms.bootstrap import  FormActions,  AccordionGroup, Accordion, TabHolder, Tab, InlineRadios
+from crispy_forms.layout import  (Layout,
+                                  Submit,
+                                  HTML,
+                                  Row, 
+                                  Column,
+                                  Reset,
+                                  LayoutObject,
+                                  Div,
+                                  Fieldset)
+from crispy_forms.bootstrap import  FormActions,  AccordionGroup, Accordion, InlineRadios
 
 from coldfront.core.project.models import ProjectTypeChoice, ProjectStatusChoice
 from coldfront.core.allocation.models import AllocationStatusChoice, AllocationAttributeType
@@ -135,6 +143,20 @@ class ProjectSearchForm(forms.Form):
 
     display__project__total_users = forms.BooleanField(required=False, help_text='Active users')
 
+    project__created_after_date = forms.DateField(
+        widget=forms.TextInput(attrs={'class': 'datepicker'}),
+        label='After',
+        required=False,
+        help_text='Includes date'
+    )
+    project__created_before_date = forms.DateField(
+        widget=forms.TextInput(attrs={'class': 'datepicker'}),
+        label='Before',
+        required=False,
+        help_text='Does not include date'
+    )
+    display__project__created = forms.BooleanField(required=False)
+
     projects_using_ai = forms.BooleanField(label='Only AI', required=False)
 
     def __init__(self, *args, **kwargs):
@@ -155,6 +177,13 @@ class ProjectSearchForm(forms.Form):
                     'project__type__name',
                     'project__class_number',
                     'projects_using_ai',
+                    Fieldset('Created Date Range',
+                        Div(
+                            Div('project__created_after_date', css_class='col'),
+                            Div('project__created_before_date', css_class='col'),
+                            css_class='row'
+                        )
+                    ),
                     active=False,
                 ),
             ),
@@ -171,6 +200,7 @@ class ProjectSearchForm(forms.Form):
                     'display__project__class_number',
                     'display__project__users',
                     'display__project__total_users',
+                    'display__project__created',
                     active=False,
                 ),
             ),
@@ -341,6 +371,20 @@ class AllocationSearchForm(forms.Form):
 
     display__allocation__total_users = forms.BooleanField(required=False, help_text='Active users')
 
+    allocation__created_after_date = forms.DateField(
+        widget=forms.TextInput(attrs={'class': 'datepicker'}),
+        label='After',
+        required=False,
+        help_text='Includes date'
+    )
+    allocation__created_before_date = forms.DateField(
+        widget=forms.TextInput(attrs={'class': 'datepicker'}),
+        label='Before',
+        required=False,
+        help_text='Does not include date'
+    )
+    display__allocation__created = forms.BooleanField(required=False)
+
     resources__name = forms.ModelMultipleChoiceField(
         label='Resource Name',
         queryset=Resource.objects.filter(is_allocatable=True).order_by('name'),
@@ -401,10 +445,18 @@ class AllocationSearchForm(forms.Form):
                 AccordionGroup('Allocations',
                     'allocation__user_username',
                     'allocation__status__name',
+                    Fieldset('Created Date Range',
+                        Div(
+                            Div('allocation__created_after_date', css_class='col'),
+                            Div('allocation__created_before_date', css_class='col'),
+                            css_class='row'
+                        )
+                    ),
                     'display__allocation__id',
                     'display__allocation__status__name',
                     'display__allocation__users',
                     'display__allocation__total_users',
+                    'display__allocation__created',
                     active=False,
                 )
             ),

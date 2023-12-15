@@ -126,6 +126,20 @@ Project and Allocation Export List
   }
 
   $(document).ready(function () {
+    var date = new Date();
+    var currentYear = date.getFullYear();
+    $(".datepicker")
+      .wrap('<div class="input-group">')
+      .datepicker({
+        changeMonth: true,
+        changeYear: true,
+        yearRange: (currentYear - 5) + ':' + (currentYear),
+        showOn: "button",
+        buttonText: "Select Date"
+      })
+      .next("button")
+      .addClass("btn btn-secondary")
+
     if (active_tab === 'allocation-search') {
       $('#project-search').toggleClass('active');
       $('#allocation-search').toggleClass('active');

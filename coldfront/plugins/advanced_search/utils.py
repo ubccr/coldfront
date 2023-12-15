@@ -1,3 +1,4 @@
+import datetime
 from django.contrib.auth.models import User
 
 from coldfront.core.project.models import Project, ProjectUser
@@ -64,6 +65,10 @@ class ProjectTable:
                 allocation__allocationattribute__allocation_attribute_type__name='Has DL Workflow',
                 allocation__allocationattribute__value='Yes'
             )
+        if data.get('project__created_after_date'):
+            projects = projects.filter(created__gt=data.get('project__created_after_date'))
+        if data.get('project__created_before_date'):
+            projects = projects.filter(created__lt=data.get('project__created_before_date'))
 
         self.project_queryset = projects
 
@@ -96,6 +101,10 @@ class ProjectTable:
 
             if current_attribute is None:
                 current_attribute = ''
+
+            if type(current_attribute) == datetime.datetime:
+                current_attribute = current_attribute.isoformat()
+            
             row.append(current_attribute)
         return row
 
@@ -174,6 +183,15 @@ class AllocationTable:
         if data.get('allocation__status__name'):
             allocations = allocations.filter(
                 status__in=data.get('allocation__status__name')
+            )
+
+        if data.get('allocation__created_after_date'):
+            allocations = allocations.filter(
+                created__gt=data.get('allocation__created_after_date')
+            )
+        if data.get('allocation__created_before_date'):
+            allocations = allocations.filter(
+                created__lt=data.get('allocation__created_before_date')
             )
 
         return allocations
@@ -412,6 +430,10 @@ class AllocationTable:
 
             if current_attribute is None:
                 current_attribute = ""
+
+            if type(current_attribute) == datetime.datetime:
+                current_attribute = current_attribute.isoformat()
+
             row.append(current_attribute)
 
         return row
