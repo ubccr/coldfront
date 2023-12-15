@@ -734,6 +734,47 @@ def send_inactive_users_report():
         )
 
 
+def send_ineligible_pi_report():
+    allocations = Allocation.objects.filter(
+        resources__name='Slate Project',
+        status__name='Active'
+    ).select_related(
+        'project__pi',
+    )
+    inactive_users = {}
+    for allocation in allocations:
+        # Assumes there's never more than one slate project allocation in a project
+        namespace_entry = allocation.allocationattribute_set.get(
+            allocation_attribute_type__name='Namespace Entry'
+        ).value
+        pi = allocation.project.pi
+        pi_status = allocation.project.projectuser_set.get(user=pi).status.name
+        if pi_status == 'Inactive':
+            username = pi.username
+            if not inactive_users.get(username):
+                inactive_users[username] = {}
+
+            if not inactive_users[username].get('PI'):
+                inactive_users[username]['PI'] = [namespace_entry]
+            else:
+                inactive_users[username]['PI'].append(namespace_entry)
+
+    if EMAIL_ENABLED and inactive_users:
+        template_context = {
+            'inactive_users': inactive_users,
+            'current_date': date.today().isoformat(),
+        }
+
+        send_email_template(
+            'Inactive Users',
+            'slate_project/email/inactive_users.txt',
+            template_context,
+            EMAIL_TICKET_SYSTEM_ADDRESS,
+            [SLATE_PROJECT_EMAIL]
+        )
+        logger.info('Ineligible PIs email report sent')
+
+
 class LDAPModify:
     def __init__(self):
         self.LDAP_SERVER_URI = import_from_settings('LDAP_SLATE_PROJECT_SERVER_URI')
