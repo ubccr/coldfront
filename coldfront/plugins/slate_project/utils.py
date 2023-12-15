@@ -15,7 +15,8 @@ from coldfront.core.allocation.models import (AllocationUserStatusChoice,
                                               AllocationUserRoleChoice,
                                               AllocationAttributeType,
                                               AllocationAttribute,
-                                              AllocationUser)
+                                              AllocationUser,
+                                              Allocation)
 from coldfront.core.project.models import (ProjectUserStatusChoice,
                                            ProjectUserRoleChoice,
                                            ProjectUser)
@@ -686,7 +687,9 @@ def send_inactive_users_report():
     Finds and adds inactive users to an email report.
     """
     allocation_users = AllocationUser.objects.filter(
-        status__name='Inactive', allocation__resources__name='Slate Project'
+        status__name='Inactive',
+        allocation__resources__name='Slate Project',
+        allocation__status__name='Active'
     ).prefetch_related(
         'allocation__allocationattribute_set',
         'allocation__project__projectuser_set',
