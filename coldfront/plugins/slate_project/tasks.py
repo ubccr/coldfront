@@ -30,4 +30,4 @@ def send_ineligible_pi_email_report():
 
 
 def import_new_slate_projects(json, out):
-    import_slate_projects(json = json, out = out)
+    import_slate_projects(json_file_name = json, out_file_name = out)

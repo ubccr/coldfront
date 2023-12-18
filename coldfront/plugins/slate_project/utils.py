@@ -825,12 +825,12 @@ def update_user_profile(user_obj, ldap_conn):
     user_obj.userprofile.save()
 
 
-def import_slate_projects(limit=None, json=None, out=None):
+def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
     todays_date = datetime.date.today()
-    with open(json, 'r') as json_file:
+    with open(json_file_name, 'r') as json_file:
         extra_information = json.load(json_file)
     slate_projects = []
-    with open(out, 'r') as import_file:
+    with open(out_file_name, 'r') as import_file:
         next(import_file)
         for line in import_file:
             line = line.strip('\n')
@@ -875,6 +875,11 @@ def import_slate_projects(limit=None, json=None, out=None):
     ldap_conn = LDAPImportSearch()
     rejected_slate_projects = []
     for slate_project in slate_projects:
+        exists = AllocationAttribute.objects.filter(
+            allocation_attribute_type__name='LDAP Group', value=slate_project.get('ldap_group')
+        ).exists()
+        if exists:
+            continue
         user_obj, created = User.objects.get_or_create(username=slate_project.get('owner_netid'))
         if not created:
             update_user_profile(user_obj, ldap_conn)
@@ -1020,9 +1025,11 @@ def import_slate_projects(limit=None, json=None, out=None):
         create_allocation_attribute(allocation_obj, 'LDAP Group', slate_project.get('ldap_group'))
         create_allocation_attribute(allocation_obj, 'Namespace Entry', slate_project.get('namespace_entry'))
         if slate_project.get('allocated_quantity'):
-            create_allocation_attribute(allocation_obj, 'Allocated Quantity', slate_project.get('allocated_quantity'))
+            create_allocation_attribute(
+                allocation_obj, 'Allocated Quantity', slate_project.get('allocated_quantity')
+            )
 
-    print(f'Slate projects not imported: {", ".join(rejected_slate_projects)}')
+    print(f'Slate projects not imported due to ineligible PI: {", ".join(rejected_slate_projects)}')
 
 
 class LDAPImportSearch():
