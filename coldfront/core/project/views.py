@@ -62,7 +62,8 @@ from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email, send_email_template
 from coldfront.core.project.utils import (get_new_end_date_from_list,
                                           create_admin_action,
-                                          get_project_user_emails)
+                                          get_project_user_emails,
+                                          generate_slurm_account_name)
 from coldfront.core.allocation.utils import send_added_user_email, set_default_allocation_user_role
 from coldfront.core.utils.slack import send_message
 
@@ -716,17 +717,6 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         if self.request.user.userprofile.is_pi:  # and max_projects - project_count > 0:
             return True
 
-    def generate_slurm_account_name(self, project_obj):
-        num = str(project_obj.pk)
-        string = '00000'
-        string = string[:-len(num)] + num
-        project_type = project_obj.type.name
-        letter = 'r'
-        if project_type == 'Class':
-            letter = 'c'
-
-        return letter + string
-
     def check_max_project_type_count_reached(self, project_type_obj, pi_obj):
         limit = PROJECT_TYPE_LIMIT_MAPPING.get(project_type_obj.name)
         user_profile = UserProfile.objects.get(user=pi_obj)
@@ -829,7 +819,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         project_obj.save()
         self.object = project_obj
 
-        project_obj.slurm_account_name = self.generate_slurm_account_name(project_obj)
+        project_obj.slurm_account_name = generate_slurm_account_name(project_obj)
         project_obj.save()
 
         project_user_obj = ProjectUser.objects.create(

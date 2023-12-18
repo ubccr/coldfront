@@ -18,6 +18,14 @@ class Command(BaseCommand):
                  schedule_type=Schedule.DAILY,
                  next_run=date)
 
+        schedule('coldfront.plugins.slate_project.tasks.send_ineligible_pi_email_report',
+                 schedule_type=Schedule.DAILY,
+                 next_run=date)
+        
+        schedule('coldfront.plugins.slate_project.tasks.import_slate_projects',
+                 schedule_type=Schedule.DAILY,
+                 next_run=date)
+
         current_month = date.month
         next_month = current_month % 12 + 1
         if next_month < current_month:

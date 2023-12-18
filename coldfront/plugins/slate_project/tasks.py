@@ -4,6 +4,7 @@ from coldfront.core.allocation.models import Allocation
 from coldfront.plugins.slate_project.utils import (sync_slate_project_users,
                                                    send_inactive_users_report,
                                                    send_ineligible_pi_report,
+                                                   import_slate_projects,
                                                    LDAPModify)
 
 logger = logging.getLogger(__name__)
@@ -26,3 +27,7 @@ def send_inactive_user_email_report():
 
 def send_ineligible_pi_email_report():
     send_ineligible_pi_report()
+
+
+def import_new_slate_projects(json, out):
+    import_slate_projects(json = json, out = out)
