@@ -140,6 +140,8 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         ]
         attributes = list(alloc_attr_set)
 
+        allocation_changes = allocation_obj.allocationchangerequest_set.all().order_by('-pk')
+
         guage_data = []
         invalid_attributes = []
         for attribute in attributes_with_usage:
@@ -199,6 +201,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context['guage_data'] = guage_data
         context['attributes_with_usage'] = attributes_with_usage
         context['attributes'] = attributes
+        context['allocation_changes'] = allocation_changes
 
         # Can the user update the project?
         project_update_perm = allocation_obj.project.has_perm(
