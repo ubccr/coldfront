@@ -49,6 +49,7 @@ Request Allocation Change
               <th scope="row" class="text-nowrap">Start Date:</th>
               <td>{{ allocation.start_date }}</td>
             </tr>
+            {% comment %}
             <tr>
               <th scope="row" class="text-nowrap">End Date:</th>
                 <td>
@@ -68,6 +69,8 @@ Request Allocation Change
                 </td>
               </tr>
             {% endif %}
+            {% endcomment %}
+
             <tr>
               <th scope="row" class="text-nowrap">Description:</th>
               <td>{{allocation.description|default_if_none:""}}</td>

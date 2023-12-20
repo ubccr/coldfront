@@ -1705,14 +1705,14 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
         allocation_change_form = AllocationChangeForm(
             initial={
                 'justification': allocation_change_obj.justification,
-                # 'end_date_extension': allocation_change_obj.end_date_extension,
+                'end_date_extension': allocation_change_obj.end_date_extension,
             }
         )
         allocation_change_form.fields['justification'].disabled = True
-        # if allocation_change_obj.status.name != 'Pending':
-        #     allocation_change_form.fields['end_date_extension'].disabled = True
-        # if not self.request.user.is_staff and not self.request.user.is_superuser:
-        #     allocation_change_form.fields['end_date_extension'].disabled = True
+        if allocation_change_obj.status.name != 'Pending':
+            allocation_change_form.fields['end_date_extension'].disabled = True
+        if not self.request.user.is_staff and not self.request.user.is_superuser:
+            allocation_change_form.fields['end_date_extension'].disabled = True
 
         note_form = AllocationChangeNoteForm(
             initial={'notes': allocation_change_obj.notes}
@@ -1741,7 +1741,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
             request.POST,
             initial={
                 'justification': alloc_change_obj.justification,
-                # 'end_date_extension': alloc_change_obj.end_date_extension,
+                'end_date_extension': alloc_change_obj.end_date_extension,
             },
         )
         allocation_change_form.fields['justification'].required = False
@@ -1810,14 +1810,14 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
             return self.redirect_to_detail(pk)
 
         form_data = allocation_change_form.cleaned_data
-        # end_date_extension = form_data.get('end_date_extension')
+        end_date_extension = form_data.get('end_date_extension')
 
-        if not attrs_to_change:# and end_date_extension == 0:
+        if not attrs_to_change and end_date_extension == 0:
             messages.error(request, 'You must make a change to the allocation.')
             return self.redirect_to_detail(pk)
 
-        # if end_date_extension != alloc_change_obj.end_date_extension:
-        #     alloc_change_obj.end_date_extension = end_date_extension
+        if end_date_extension != alloc_change_obj.end_date_extension:
+            alloc_change_obj.end_date_extension = end_date_extension
 
         if attrs_to_change:
             for entry in formset:
@@ -1838,11 +1838,11 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
             )
             alloc_change_obj.status = status_approved_obj
 
-            # if alloc_change_obj.end_date_extension > 0:
-            #     rdelta = relativedelta(days=ALLOCATION_DEFAULT_ALLOCATION_LENGTH)
-            #     new_end_date = alloc_change_obj.allocation.end_date + rdelta
-            #     alloc_change_obj.allocation.end_date = new_end_date
-            #     alloc_change_obj.allocation.save()
+            if alloc_change_obj.end_date_extension > 0:
+                rdelta = relativedelta(days=ALLOCATION_DEFAULT_ALLOCATION_LENGTH)
+                new_end_date = alloc_change_obj.allocation.end_date + rdelta
+                alloc_change_obj.allocation.end_date = new_end_date
+                alloc_change_obj.allocation.save()
 
             if attrs_to_change:
                 attr_changes = (
@@ -2013,8 +2013,8 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         form_data = form.cleaned_data
 
-        # if form_data.get('end_date_extension') != 0:
-        #     change_requested = True
+        if form_data.get('end_date_extension') != 0:
+            change_requested = True
 
         # if requested resource is on NESE, add to vars
         nese = bool(allocation_obj.resources.filter(name__contains="nesetape"))
@@ -2041,13 +2041,13 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             messages.error(request, 'You must request a change.')
             return HttpResponseRedirect(reverse('allocation-change', kwargs={'pk': pk}))
 
-        # end_date_extension = form_data.get('end_date_extension')
+        end_date_extension = form_data.get('end_date_extension')
         justification = form_data.get('justification')
         change_request_status = AllocationChangeStatusChoice.objects.get(name='Pending')
 
         allocation_change_request_obj = AllocationChangeRequest.objects.create(
             allocation=allocation_obj,
-            # end_date_extension=end_date_extension,
+            end_date_extension=end_date_extension,
             justification=justification,
             status=change_request_status,
         )
