@@ -165,11 +165,14 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             # get last successful runs of djangoq task responsible for allocationuser data pull
             if allocation_obj.get_parent_resource.resource_type.name == "Storage":
                 sync_task_name = "pullsf_pushcf_redash"
+                user_sync_task = Task.objects.filter(
+                    func__contains=sync_task_name, success=True
+                ).order_by('started').last()
             elif allocation_obj.get_parent_resource.resource_type.name == "Cluster":
                 sync_task_name = "xdmod_usage"
-            user_sync_task = Task.objects.filter(
-                func__contains=sync_task_name, success=True
-            ).order_by('started').last()
+                user_sync_task = Task.objects.filter(
+                    func__contains=sync_task_name, success=True
+                ).order_by('started').last()
 
             user_sync_dt = None if not user_sync_task else user_sync_task.started
         else:
@@ -388,7 +391,7 @@ class AllocationListView(ColdfrontListView):
         allocation_search_form = AllocationSearchForm(self.request.GET)
 
         allocations = Allocation.objects.prefetch_related(
-            'project', 'project__pi', 'status'
+            'project', 'project__pi', 'status', 'resources'
         )
         if allocation_search_form.is_valid():
             data = allocation_search_form.cleaned_data
