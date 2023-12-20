@@ -155,7 +155,8 @@ class Command(BaseCommand):
             fetcher = XDModFetcher(resources=resources)
             try:
                 usage = fetcher.xdmod_fetch_storage(
-                        account_name, statistics='avg_physical_usage'
+                        account_name, start_date=s.start_date,
+                        end_date=s.end_date, statistic='avg_physical_usage'
                 )
             except XdmodNotFoundError:
                 logger.warning(
@@ -211,7 +212,8 @@ class Command(BaseCommand):
             fetcher = XDModFetcher(resources=resources)
             try:
                 usage = fetcher.xdmod_fetch_cpu_hours(
-                        account_name, statistics='total_gpu_hours'
+                    account_name, start_date=s.start_date, end_date=s.end_date,
+                    statistics='total_gpu_hours'
                 )
             except XdmodNotFoundError:
                 logger.warning(
@@ -368,7 +370,8 @@ class Command(BaseCommand):
 
             fetcher = XDModFetcher(resources=resources)
             try:
-                usage = fetcher.xdmod_fetch_cloud_core_time(project_name)
+                usage = fetcher.xdmod_fetch_cloud_core_time(
+                    project_name, start_date=s.start_date, end_date=s.end_date)
             except XdmodNotFoundError:
                 logger.warning(
                     "No data in XDMoD found for allocation %s project %s resources %s",

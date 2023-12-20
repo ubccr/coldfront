@@ -115,13 +115,17 @@ class XDModFetcher:
             stats[username] = cells[1].find('value').text
         return stats
 
-    def xdmod_fetch(self, account, statistic, realm, group_by='total'):
+    def xdmod_fetch(self, account, statistic, realm, start_date=None, end_date=None, group_by='total'):
         """fetch either total or per-user usage stats for specified project"""
         payload = dict(self.payload)
         payload['pi_filter'] = f'"{account}"'
         payload['group_by'] = self.group_by[group_by]
         payload['statistic'] = statistic
         payload['realm'] = realm
+        if start_date:
+            payload['start_date'] = start_date
+        if end_date:
+            payload['end_date'] = end_date
         if group_by == 'total':
             core_hours = self.fetch_value(payload, search_item=account)
         elif group_by == 'per-user':
@@ -139,24 +143,28 @@ class XDModFetcher:
         stats = self.fetch_table(payload)
         return stats
 
-    def xdmod_fetch_cpu_hours(self, account, group_by='total', statistics='total_cpu_hours'):
+    def xdmod_fetch_cpu_hours(self, account, start_date=None, end_date=None, group_by='total', statistics='total_cpu_hours'):
         """fetch either total or per-user cpu hours"""
-        core_hours = self.xdmod_fetch(account, statistics, 'Jobs', group_by=group_by)
+        core_hours = self.xdmod_fetch(account, statistics, 'Jobs', start_date=start_date, end_date=end_date, group_by=group_by)
         return core_hours
 
-    def xdmod_fetch_storage(self, account, group_by='total', statistic='physical_usage'):
+    def xdmod_fetch_storage(self, account, start_date=None, end_date=None, group_by='total', statistic='physical_usage'):
         """fetch total or per-user storage stats."""
-        stats = self.xdmod_fetch(account, statistic, 'Storage', group_by=group_by)
+        stats = self.xdmod_fetch(account, statistic, 'Storage', start_date=start_date, end_date=end_date, group_by=group_by)
         physical_usage = float(stats) / 1E9
         return physical_usage
 
-    def xdmod_fetch_cloud_core_time(self, project):
+    def xdmod_fetch_cloud_core_time(self, project, start_date=None, end_date=None):
         """fetch cloud core time."""
         payload = dict(self.payload)
         payload['project_filter'] = project
         payload['group_by'] = 'project'
         payload['realm'] = 'Cloud'
         payload['statistic'] = 'cloud_core_time'
+        if start_date:
+            payload['start_date'] = start_date
+        if end_date:
+            payload['end_date'] = end_date
 
         core_hours = self.fetch_value(payload, search_item=project)
         return core_hours
