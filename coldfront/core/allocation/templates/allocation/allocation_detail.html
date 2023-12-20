@@ -377,7 +377,7 @@ Allocation Detail
             <tr>
               <th scope="col">Date Requested</th>
               <th scope="col">Status</th>
-              <th scope="col">Notes</th>
+              <th scope="col">Justification</th>
               <th scope="col">Actions</th>
             </tr>
           </thead>
@@ -392,8 +392,8 @@ Allocation Detail
                   {% else %}
                     <td class="text-info">{{ change_request.status.name }}</td>
                   {% endif %}
-                  {% if change_request.notes %}
-                    <td>{{change_request.notes}}</td>
+                  {% if change_request.justification %}
+                    <td>{{change_request.justification}}</td>
                   {% else %}
                     <td></td>
                   {% endif %}
