@@ -257,23 +257,6 @@ class Command(BaseCommand):
         )
         allocations = self.filter_allocations(allocations)
 
-
-        # # bulk collection
-        # resource_filter = (
-        # Q(resourceattribute__resource_attribute_type__name=XDMOD_RESOURCE_ATTRIBUTE_NAME) |
-        # Q(parent_resource__resourceattribute__resource_attribute_type__name=XDMOD_RESOURCE_ATTRIBUTE_NAME)
-        # )
-        # resources_all = Resource.objects.filter(
-        #     id__in=[r.id for a in allocations for r in a.resources.all()]
-        # ).filter(resource_filter)
-        #
-        # fetcher = XDModFetcher(resources=resources_all)
-        # try:
-        #     usage = fetcher.xdmod_fetch_all_project_usages('total_cpu_hours')
-        # except XdmodNotFoundError:
-        #     raise XdmodNotFoundError(
-        #         "No data in XDMoD found for resources %s", resources_all)
-
         for s in allocations.distinct():
             account_name = self.attribute_check(s, XDMOD_ACCOUNT_ATTRIBUTE_NAME)
             cpu_hours = self.attribute_check(s, XDMOD_CPU_HOURS_ATTRIBUTE_NAME, num=True)
