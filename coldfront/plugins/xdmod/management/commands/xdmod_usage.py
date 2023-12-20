@@ -213,7 +213,7 @@ class Command(BaseCommand):
             try:
                 usage = fetcher.xdmod_fetch_cpu_hours(
                     account_name, start_date=s.start_date, end_date=s.end_date,
-                    statistics='total_gpu_hours'
+                    statistic='total_gpu_hours'
                 )
             except XdmodNotFoundError:
                 logger.warning(

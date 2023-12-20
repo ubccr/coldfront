@@ -143,9 +143,9 @@ class XDModFetcher:
         stats = self.fetch_table(payload)
         return stats
 
-    def xdmod_fetch_cpu_hours(self, account, start_date=None, end_date=None, group_by='total', statistics='total_cpu_hours'):
+    def xdmod_fetch_cpu_hours(self, account, start_date=None, end_date=None, group_by='total', statistic='total_cpu_hours'):
         """fetch either total or per-user cpu hours"""
-        core_hours = self.xdmod_fetch(account, statistics, 'Jobs', start_date=start_date, end_date=end_date, group_by=group_by)
+        core_hours = self.xdmod_fetch(account, statistic, 'Jobs', start_date=start_date, end_date=end_date, group_by=group_by)
         return core_hours
 
     def xdmod_fetch_storage(self, account, start_date=None, end_date=None, group_by='total', statistic='physical_usage'):
