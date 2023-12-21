@@ -14,5 +14,5 @@ python ./manage.py collectstatic --noinput
 if [ "$BUILD_ENV" == 'dev' ]; then
     python ./manage.py runserver 0.0.0.0:80 --insecure
 else
-    gunicorn coldfront.config.wsgi:application --bind 0.0.0.0:80 --reload
+    gunicorn coldfront.config.wsgi:application --bind 0.0.0.0:80 --reload --timeout 144000
 fi

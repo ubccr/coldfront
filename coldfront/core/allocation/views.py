@@ -1838,7 +1838,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
             )
             alloc_change_obj.status = status_approved_obj
 
-            if alloc_change_obj.end_date_extension > 0:
+            if alloc_change_obj.allocation.end_date and alloc_change_obj.end_date_extension > 0:
                 rdelta = relativedelta(days=ALLOCATION_DEFAULT_ALLOCATION_LENGTH)
                 new_end_date = alloc_change_obj.allocation.end_date + rdelta
                 alloc_change_obj.allocation.end_date = new_end_date
