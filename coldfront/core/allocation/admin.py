@@ -194,6 +194,21 @@ class AllocationAdmin(SimpleHistoryAdmin):
         else:
             formset.save()
 
+    def set_locked(self, request, queryset):
+        queryset.update(is_locked=True)
+
+    def set_unlocked(self, request, queryset):
+        queryset.update(is_locked=False)
+
+    set_locked.short_description = "Lock Selected Allocations"
+
+    set_unlocked.short_description = "Unlock Selected Allocations"
+
+    actions = [
+        set_locked,
+        set_unlocked
+    ]
+
 
 @admin.register(AttributeType)
 class AttributeTypeAdmin(admin.ModelAdmin):
