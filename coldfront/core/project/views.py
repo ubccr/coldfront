@@ -2098,6 +2098,7 @@ class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
         for pi_project_obj in pi_project_objs:
             pi_projects.append(
                 {
+                    'pk': pi_project_obj.pk,
                     'title': pi_project_obj.title,
                     'pi': pi_project_obj.pi.username,
                     'description': pi_project_obj.description,
