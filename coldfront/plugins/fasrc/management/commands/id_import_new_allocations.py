@@ -20,11 +20,12 @@ from coldfront.core.allocation.models import (
 )
 from coldfront.core.utils.fasrc import update_csv, select_one_project_allocation, save_json
 from coldfront.core.resource.models import Resource
-from coldfront.plugins.sftocf.utils import (
-    StarFishRedash,
-    STARFISH_SERVER,
-    pull_sf_push_cf_redash
-)
+if ENV.bool('PLUGIN_SFTOCF', default=False):
+    from coldfront.plugins.sftocf.utils import (
+        StarFishRedash,
+        STARFISH_SERVER,
+        pull_sf_push_cf_redash
+    )
 from coldfront.plugins.fasrc.utils import (
     AllTheThingsConn,
     match_entries_with_projects,
