@@ -2,7 +2,8 @@
 Custom billing calculator class for Coldfront
 '''
 import logging
-from collections import defaultdict
+import re
+from collections import defaultdict, OrderedDict
 from decimal import Decimal
 from django.core.exceptions import MultipleObjectsReturned
 from django.db import connection, transaction
@@ -11,6 +12,7 @@ from django.contrib.auth import get_user_model
 from django.conf import settings
 from ifxbilling.calculator import BasicBillingCalculator, NewBillingCalculator
 from ifxbilling.models import Account, Product, ProductUsage, Rate, BillingRecord
+from ifxuser.models import Organization
 from coldfront.core.allocation.models import Allocation, AllocationStatusChoice
 from coldfront.plugins.ifx import adjust
 from .models import AllocationUserProductUsage
@@ -25,6 +27,52 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
     OFFER_LETTER_TB_ATTRIBUTE = 'Offer Letter'
     OFFER_LETTER_CODE_ATTRIBUTE = 'Offer Letter Code'
     STORAGE_QUOTA_ATTRIBUTE = 'Storage Quota (TB)'
+    STORAGE_RESOURCE_TYPE = 'Storage'
+
+    def calculate_billing_month(self, year, month, organizations=None, recalculate=False, verbosity=0):
+        '''
+        Calculate a month of billing for the given year and month
+
+        Returns a dict keyed by organization name that includes a count of successfully processed
+        product usages along with a list of error messages for each one that failed.
+
+        Adjusts march 2023 due to bad DR issues
+
+        :param year: Year that will be assigned to :class:`~ifxbilling.models.BillingRecord` objects
+        :type year: int
+
+        :param month: Month that will be assigned to :class:`~ifxbilling.models.BillingRecord` objects
+        :type month: int
+
+        :param organizations: List of specific organizations to process.  If not set, all Harvard org_tree organizations will be processed.
+        :type organizations: list, optional
+
+        :param recalculate: If set to True, will delete existing :class:`~ifxbilling.models.BillingRecord` objects
+        :type recalculate: bool, optional
+
+        :param verbosity: Determines the amount of error reporting.  Can be set to self.QUIET (no logger output),
+            self.CHATTY (use logger.error for errors), or self.LOUD (use logger.exception for errors).  Defaults to QUIET.
+        :type verbosity: int, optional
+
+        :return: dict keyed by organization name.  Value is a dict of "successes" (a list of :class:`~ifxbilling.models.BillingRecord` objects) and
+            "errors" (a list of error messages)
+        :rtype: dict
+        '''
+        self.verbosity = verbosity
+
+        organizations_to_process = organizations
+        if not organizations_to_process:
+            organizations_to_process = Organization.objects.filter(org_tree='Harvard')
+
+        results = {}
+        for organization in organizations_to_process:
+            result = self.generate_billing_records_for_organization(year, month, organization, recalculate)
+            results[organization.name] = result
+
+        if year == 2023 and (month == 3 or month == 4):
+            adjust.march_april_2023_dr()
+
+        return Resultinator(results)
 
     def generate_billing_records_for_organization(self, year, month, organization, recalculate, **kwargs):
         '''
@@ -64,45 +112,54 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
         successes = []
         errors = []
 
-        projects = [po.project for po in organization.projectorganization_set.all()]
-        if not projects:
-            errors.append(f'No project found for {organization.name}')
-        else:
-            active = AllocationStatusChoice.objects.get(name='Active')
-            for project in projects:
-                for allocation in project.allocation_set.filter(status=active):
-                    try:
-                        allocation_tb = self.get_allocation_tb(allocation)
-                        offer_letter_br, remaining_tb = self.process_offer_letter(year, month, organization, allocation, allocation_tb, recalculate)
-                        if offer_letter_br:
-                            successes.append(offer_letter_br)
-                        if remaining_tb > Decimal('0'):
-                            user_allocation_percentages = self.get_user_allocation_percentages(year, month, allocation)
-                            for user_id, allocation_percentage_data in user_allocation_percentages.items():
+        if organization.org_tree == 'Harvard':
+            projects = [po.project for po in organization.projectorganization_set.all()]
+            if not projects:
+                errors.append(f'No project found for {organization.name}')
+            else:
+                active = AllocationStatusChoice.objects.get(name='Active')
+                for project in projects:
+                    for allocation in project.allocation_set.filter(status=active):
+                        resources = allocation.resources.all()
+                        if resources.count() == 1:
+                            if resources[0].resource_type.name == self.STORAGE_RESOURCE_TYPE:
                                 try:
-                                    user = get_user_model().objects.get(id=user_id)
-                                except get_user_model().DoesNotExist:
-                                    raise Exception(f'Cannot find user with id {user_id}')
-                                brs = self.generate_billing_records_for_allocation_user(
-                                    year,
-                                    month,
-                                    user,
-                                    organization,
-                                    allocation,
-                                    allocation_percentage_data['fraction'],
-                                    allocation_tb,
-                                    recalculate,
-                                    remaining_tb,
-                                )
-                                if brs:
-                                    successes.extend(brs)
-                    except Exception as e:
-                        errors.append(str(e))
-                        if self.verbosity == self.CHATTY:
-                            logger.error(e)
-                        if self.verbosity == self.LOUD:
-                            logger.exception(e)
-
+                                    allocation_tb = self.get_allocation_tb(allocation)
+                                    offer_letter_br, remaining_tb = self.process_offer_letter(year, month, organization, allocation, allocation_tb, recalculate)
+                                    if offer_letter_br:
+                                        successes.append(offer_letter_br)
+                                    if remaining_tb > Decimal('0'):
+                                        user_allocation_percentages = self.get_user_allocation_percentages(year, month, allocation)
+                                        for user_id, allocation_percentage_data in user_allocation_percentages.items():
+                                            try:
+                                                user = get_user_model().objects.get(id=user_id)
+                                            except get_user_model().DoesNotExist:
+                                                raise Exception(f'Cannot find user with id {user_id}')
+                                            brs = self.generate_billing_records_for_allocation_user(
+                                                year,
+                                                month,
+                                                user,
+                                                organization,
+                                                allocation,
+                                                allocation_percentage_data['fraction'],
+                                                allocation_tb,
+                                                recalculate,
+                                                remaining_tb,
+                                            )
+                                            if brs:
+                                                successes.extend(brs)
+                                except Exception as e:
+                                    errors.append(str(e))
+                                    if self.verbosity == self.CHATTY:
+                                        logger.error(e)
+                                    if self.verbosity == self.LOUD:
+                                        logger.exception(e)
+                            else:
+                                errors.append(f'Allocation {allocation} is not a storage allocation.  Skipping.')
+                        else:
+                            errors.append(f'Allocation {allocation} has more than one resource.')
+        else:
+            errors.append(f'Organization {organization.slug} is not a Harvard organization.')
         return (successes, errors)
 
     def process_offer_letter(self, year, month, organization, allocation, allocation_tb, recalculate):
@@ -643,16 +700,6 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
 
         return aupu.product_usage
 
-    def calculate_billing_month(self, year, month, organizations=None, recalculate=False, verbosity=0):
-        '''
-        Adjust march 2023 due to bad DR issues
-        '''
-        results = super().calculate_billing_month(year, month, organizations, recalculate, verbosity)
-        if year == 2023 and (month == 3 or month == 4):
-            adjust.march_april_2023_dr()
-
-        return results
-
 
 
 class Resultinator():
@@ -665,9 +712,14 @@ class Resultinator():
         init
         '''
         self.results = results
-        self.error_types = {
-            ''
-        }
+        self.error_types = OrderedDict([
+            ('Not a Storage Allocation', r'^Allocation .*? is not a storage allocation.  Skipping.'),
+            ('No AllocationProductUsage Found', r'^No AllocationUserProductUsage was found.*'),
+            # ('No Active User Account', r'^Unable to find an active user account record.*'),
+            ('Not a Harvard Organization', r'^Organization .*? is not a Harvard organization'),
+            ('Billing Record Exists for 0Tb usage', r'^Billing record already exists for usage 0.00 TB.*'),
+            ('Other', r'.*'), # Has to be last
+        ])
 
     def get_errors_by_organization(self, organization_name=None):
         '''
@@ -697,5 +749,25 @@ class Resultinator():
         Returns a dictionary keyed by error type and listing the organization names with that issue.
         Errors that don't match are used as individual keys
         '''
-        pass
+        # Set up the dict so that the named types are in order
+        errors_by_type = OrderedDict([('No project', [])])
+        for k in self.error_types.keys():
+            if k != 'Other':
+                errors_by_type[k] = []
 
+        for lab, output in self.results.items():
+            if output[1]:
+                if 'No project' in output[1][0]:
+                    errors_by_type['No project'].append(lab)
+                else:
+                    for error in output[1]:
+                        for error_type, regex in self.error_types.items():
+                            # Other is the last one in the list and collects unmatched errors
+                            if error_type == 'Other':
+                                if error not in errors_by_type:
+                                    errors_by_type[error] = []
+                                errors_by_type[error].append(lab)
+                            elif re.search(regex, error):
+                                errors_by_type[error_type].append(lab)
+                                break
+        return errors_by_type

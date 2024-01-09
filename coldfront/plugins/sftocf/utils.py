@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 import requests
 from django.utils import timezone
 
+from coldfront.config.env import ENV
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.fasrc import (
     read_json,
@@ -33,7 +34,9 @@ from coldfront.core.allocation.models import (
 datestr = datetime.today().strftime('%Y%m%d')
 logger = logging.getLogger('sftocf')
 
-STARFISH_SERVER = import_from_settings('STARFISH_SERVER')
+if ENV.bool('PLUGIN_SFTOCF', default=False):
+    STARFISH_SERVER = import_from_settings('STARFISH_SERVER')
+
 svp = read_json('coldfront/plugins/sftocf/servers.json')
 
 
