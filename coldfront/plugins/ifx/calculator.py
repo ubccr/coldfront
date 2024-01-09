@@ -72,7 +72,7 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
         if year == 2023 and (month == 3 or month == 4):
             adjust.march_april_2023_dr()
 
-        return results
+        return Resultinator(results)
 
     def generate_billing_records_for_organization(self, year, month, organization, recalculate, **kwargs):
         '''
