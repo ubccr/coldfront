@@ -383,7 +383,9 @@ Allocation Detail
             {% endif %}
             <th scope="col">Status</th>
             <th scope="col">Last Modified</th>
-            <th scope="col">Action</th>
+            {% if is_allowed_to_update_project %}
+              <th scope="col">Action</th>
+            {% endif %}
           </tr>
         </thead>
         <tbody>
@@ -403,13 +405,13 @@ Allocation Detail
                 <td class="text-primary"><strong>{{ user.status.name }}</strong></td>
               {% endif %}
               <td>{{ user.modified|date:"M. d, Y" }}</td>
-              <td>
-                {% if is_allowed_to_update_project %}
+              {% if is_allowed_to_update_project %}
+                <td>
                   <a title="Edit user" href="{% url 'allocation-user-detail' allocation.pk user.id %}">
                     <i class="fas fa-user-edit" aria-hidden="true"></i><span class="sr-only">Edit</span>
                   </a>
-                {% endif %}
-              </td>
+                </td>
+              {% endif %}
             </tr>
           {% endfor %}
         </tbody>
