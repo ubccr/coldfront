@@ -5378,6 +5378,7 @@ class AllocationUserDetailView(LoginRequiredMixin, UserPassesTestMixin, Template
                 pk=allocation_user_pk)
 
             allocation_user_update_form = AllocationUserUpdateForm(
+                resource=allocation_obj.get_parent_resource,
                 initial={
                     'role': allocation_user_obj.role,
                 },
@@ -5387,6 +5388,7 @@ class AllocationUserDetailView(LoginRequiredMixin, UserPassesTestMixin, Template
             context['allocation_obj'] = allocation_obj
             context['allocation_user_update_form'] = allocation_user_update_form
             context['allocation_user_obj'] = allocation_user_obj
+            context['allocation_user_roles_enabled'] = check_if_roles_are_enabled(allocation_obj)
 
             return render(request, self.template_name, context)
 
@@ -5419,15 +5421,15 @@ class AllocationUserDetailView(LoginRequiredMixin, UserPassesTestMixin, Template
 
             allocation_user_update_form = AllocationUserUpdateForm(
                 request.POST,
+                resource=allocation_obj.get_parent_resource,
                 initial={
-                    'role': allocation_user_obj.role.name,
+                    'role': allocation_user_obj.role,
                 },
             )
 
             if allocation_user_update_form.is_valid():
                 form_data = allocation_user_update_form.cleaned_data
-                allocation_user_obj.role = AllocationUserRoleChoice.objects.get(
-                    name=form_data.get('role'))
+                allocation_user_obj.role = form_data.get('role')
                 allocation_user_obj.save()
                 allocation_change_user_role.send(
                     sender=self.__class__,
@@ -5447,7 +5449,7 @@ class AllocationUserDetailView(LoginRequiredMixin, UserPassesTestMixin, Template
                     )
                 )
             else:
-                messages.error(request, allocation_user_update_form.errors)
+                messages.error(request, allocation_user_update_form.errors.get('__all__'))
                 return HttpResponseRedirect(
                     reverse(
                         'allocation-user-detail',
