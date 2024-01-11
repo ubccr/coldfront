@@ -5363,12 +5363,6 @@ class AllocationUserDetailView(LoginRequiredMixin, UserPassesTestMixin, Template
         if allocation_obj.project.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
             return True
 
-    def check_user_is_manager(self, project_user_obj):
-        if project_user_obj.role == ProjectUserRoleChoice.objects.get(name='Manager'):
-            return True
-
-        return False
-
     def get(self, request, *args, **kwargs):
         allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
         allocation_user_pk = self.kwargs.get('allocation_user_pk')
@@ -5385,6 +5379,7 @@ class AllocationUserDetailView(LoginRequiredMixin, UserPassesTestMixin, Template
             )
 
             context = {}
+            context['can_update'] = not allocation_obj.project.pi == allocation_user_obj.user
             context['allocation_obj'] = allocation_obj
             context['allocation_user_update_form'] = allocation_user_update_form
             context['allocation_user_obj'] = allocation_user_obj
@@ -5429,6 +5424,15 @@ class AllocationUserDetailView(LoginRequiredMixin, UserPassesTestMixin, Template
 
             if allocation_user_update_form.is_valid():
                 form_data = allocation_user_update_form.cleaned_data
+                if allocation_user_obj.role == form_data.get('role'):
+                    return HttpResponseRedirect(
+                        reverse(
+                            'allocation-user-detail',
+                            kwargs={
+                                'pk': allocation_obj.pk, 'allocation_user_pk': allocation_user_obj.pk
+                            }
+                        )
+                    )
                 allocation_user_obj.role = form_data.get('role')
                 allocation_user_obj.save()
                 allocation_change_user_role.send(
