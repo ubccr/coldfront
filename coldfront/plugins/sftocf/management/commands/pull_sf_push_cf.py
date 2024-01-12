@@ -1,10 +1,10 @@
-import os
+
 import logging
 
 from django.core.management.base import BaseCommand
 
 from coldfront.core.utils.fasrc import read_json
-from coldfront.plugins.sftocf.utils import pull_sf, push_cf
+from coldfront.plugins.sftocf.utils import RESTDataPipeline, RedashDataPipeline
 
 logger = logging.getLogger(__name__)
 
@@ -18,22 +18,26 @@ class Command(BaseCommand):
             '--volume',
             dest='volume',
             default=None,
-            help='name of volume',
+            help='name of volume, if update is to be confined to just one',
         )
         parser.add_argument(
-            '--clean',
-            dest='clean',
-            default=False,
-            help='if true, remove json after entry',
+            '--pulltype',
+            dest='pulltype',
+            default='redash',
+            help='use either "redash" or "rest" pipeline',
         )
 
     def handle(self, *args, **kwargs):
         volume = volume = kwargs['volume']
-        clean = clean = kwargs['clean']
-        filepaths = pull_sf(volume=volume)
-        for f in filepaths:
-            content = read_json(f)
-            errors = push_cf(content)
-            if not errors and clean:
-                os.remove(f)
-        logger.debug('push_cf complete')
+        pulltype = pulltype = kwargs['pulltype']
+        if pulltype == 'redash':
+            data_pull = RedashDataPipeline(volume)
+        elif pulltype == 'rest':
+            data_pull = RESTDataPipeline(volume)
+        else:
+            raise ValueError('unrecognized type argument')
+
+        allocationquerymatch_objs, user_models = data_pull.clean_collected_data()
+        data_pull.update_coldfront_objects(allocationquerymatch_objs, user_models)
+
+        logger.debug('pull_sf_push_cf complete')
