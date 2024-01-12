@@ -20,7 +20,7 @@ Add Users to Project
       {% if after_project_creation == 'true' %}
         <div class="form-inline" style="display: flex;">
           <button id="search-button" type="submit" style="width: 80%; margin-right: 1%;" class="btn btn-success"><i class="fas fa-search" aria-hidden="true"></i> Search</button>
-          <a class="btn btn-secondary" style="width: 19%;" href="{% url 'project-detail' pk %}?after_project_creation=true" role="button">Skip This Step and Submit</a><br>
+          <a class="btn btn-secondary" style="width: 19%;" href="{% url 'project-detail' pk %}?after_project_creation=true" role="button">Skip This Step and Finish</a><br>
         </div>
       {% else %}
         <div class="form-inline" style="display: flex;">
@@ -113,6 +113,7 @@ Add Users to Project
   $(document).ready(function(){
     $('#search_results').hide();
     $('#selected_users').hide();
+    $('#div_id_search_by').hide();
     $('[data-toggle="popover"]').popover(); 
   });
 </script>

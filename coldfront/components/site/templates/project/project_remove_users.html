@@ -9,6 +9,9 @@
 <hr>
 
 {% if formset %}
+  {% if display_warning %}
+    {% include "slate_project/project_warning_message.html" %}
+  {% endif %}
   <div class="card border-light">
     <div class="card-body">
 

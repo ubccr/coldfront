@@ -8,9 +8,13 @@ from django.http.response import StreamingHttpResponse
 from django.forms import formset_factory
 
 from coldfront.core.allocation.models import AllocationAttributeType
-from coldfront.plugins.advanced_search.forms import SearchForm, AllocationAttributeSearchForm, AllocationAttributeFormSetHelper
+from coldfront.plugins.advanced_search.forms import (AllocationSearchForm,
+                                                     AllocationAttributeSearchForm,
+                                                     AllocationAttributeFormSetHelper,
+                                                     ProjectSearchForm,
+                                                     UserSearchForm)
 from coldfront.core.utils.common import Echo
-from coldfront.plugins.advanced_search.util import build_table
+from coldfront.plugins.advanced_search.utils import  ProjectTable, AllocationTable, UserTable
 
 logger = logging.getLogger(__name__)
 
@@ -28,41 +32,67 @@ class AdvancedSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        search_form = SearchForm(self.request.GET, prefix='full_search')
-
-        selected_resources = None
-        if search_form.is_valid():
-            context['export_form'] = search_form
-            data = search_form.cleaned_data
-            selected_resources = data.get('resources__name')
-        else:
-            context['export_form'] = SearchForm(prefix='full_search')
+        project_search_form = ProjectSearchForm(prefix='project_search')
+        allocation_search_form = AllocationSearchForm(prefix='allocation_search')
+        user_search_form = UserSearchForm(prefix='user_search')
 
         allocation_search_formset = formset_factory(AllocationAttributeSearchForm, extra=1)
-        if not self.request.GET:
-            formset = allocation_search_formset(prefix='allocationattribute')
-        else:
+        formset = allocation_search_formset(prefix='allocationattribute')
+        allocationattribute_data = []
+        allocation_attribute_types_with_usage = list(AllocationAttributeType.objects.filter(
+            has_usage=True
+        ).values_list('id', flat=True))
+        rows, columns = [], []
+
+        active_tab = 'project-search'
+
+        if self.request.GET.get('submit') == 'Project Search':
+            project_search_form = ProjectSearchForm(self.request.GET, prefix='project_search')
+            if project_search_form.is_valid():
+                project_table = ProjectTable(project_search_form.cleaned_data)
+                rows, columns = project_table.build_table()
+            else:
+                project_search_form = ProjectSearchForm(prefix='project_search')
+
+        elif self.request.GET.get('submit') == 'Allocation Search':
+            active_tab = 'allocation-search'
+            allocation_search_form = AllocationSearchForm(self.request.GET, prefix='allocation_search')
+            selected_resources = None
+            if allocation_search_form.is_valid():
+                selected_resources = allocation_search_form.cleaned_data.get('resources__name')
+
+            allocation_search_formset = formset_factory(AllocationAttributeSearchForm, extra=1)
             formset = allocation_search_formset(
                 self.request.GET,
                 prefix='allocationattribute',
                 form_kwargs={'resources': selected_resources}
             )
+            allocation_attribute_types_with_usage = list(AllocationAttributeType.objects.filter(
+                has_usage=True
+            ).values_list('id', flat=True))
+            for form in formset:
+                if form.is_valid():
+                    data = form.cleaned_data
+                    name = data['allocationattribute__name']
+                    if not name or not name.id in allocation_attribute_types_with_usage: 
+                        data['allocationattribute__has_usage'] = '0'
 
-        allocation_attribute_types_with_usage = list(AllocationAttributeType.objects.filter(
-            has_usage=True
-        ).values_list('id', flat=True))
-        allocationattribute_data = []
-        for form in formset:
-            if form.is_valid():
-                data = form.cleaned_data
-                name = data['allocationattribute__name']
-                if not name or not name.id in allocation_attribute_types_with_usage: 
-                    data['allocationattribute__has_usage'] = '0'
+                    allocationattribute_data.append(form.cleaned_data)
 
-                allocationattribute_data.append(form.cleaned_data)
-        context['allocationattribute_form'] = formset
-        helper = AllocationAttributeFormSetHelper()
-        context['allocationattribute_helper'] = helper
+            if allocation_search_form.is_valid():
+                allocation_table = AllocationTable(allocation_search_form.cleaned_data, allocationattribute_data)
+                rows, columns = allocation_table.build_table()
+            else:
+                allocation_search_form = AllocationSearchForm(prefix='allocation_search')
+        
+        elif self.request.GET.get('submit') == 'User Search':
+            active_tab = 'user-search'
+            user_search_form = UserSearchForm(self.request.GET, prefix='user_search')
+            if user_search_form.is_valid():
+                user_table = UserTable(user_search_form.cleaned_data)
+                rows, columns = user_table.build_table()
+            else:
+                user_search_form = ProjectSearchForm(prefix='user_search')
 
         linked_allocation_attribute_types = {}
         for allocation_attribute_type in AllocationAttributeType.objects.all():
@@ -76,19 +106,25 @@ class AdvancedSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                         f'<option value="{allocation_attribute_type.id}">{allocation_attribute_type}</option>'
                     )
 
-        if search_form.is_valid():
-            data = search_form.cleaned_data
-            rows, columns = build_table(data, allocationattribute_data, self.request.GET)
-        else:
-            rows, columns = [], []
         context['columns'] = columns
         num_rows = 0
+        has_results = False
         if columns:
+            has_results = True
             num_rows = len(rows)
         context['entries'] = num_rows
         context['rows'] = rows
         context['allocation_attribute_type_ids'] = allocation_attribute_types_with_usage
         context['linked_allocation_attribute_types'] = linked_allocation_attribute_types
+        context['allocationattribute_form'] = formset
+        context['allocationattribute_helper'] = AllocationAttributeFormSetHelper()
+        context['active_tab'] = active_tab
+        context['has_results'] = has_results
+
+        context['project_form'] = project_search_form
+        context['allocation_form'] = allocation_search_form
+        context['user_form'] = user_search_form
+
         return context
 
 

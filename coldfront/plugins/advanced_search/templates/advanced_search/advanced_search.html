@@ -20,9 +20,28 @@ Project and Allocation Export List
       </div>
       <div id="collapseOne" class="collapse {{expand_accordion}}" data-parent="#accordion">
         <div class="card-body">
-          <form method="GET" action="{% url 'advanced-search' %}" autocomplete="off">
-            {% crispy export_form %}
-          </form>
+          <ul class="nav nav-tabs">
+            <li class="nav-item"><a class="nav-link active" href="#project-search" data-toggle="tab">Project Search</a></li>
+            <li class="nav-item"><a class="nav-link" href="#allocation-search" data-toggle="tab">Allocation Search</a></li>
+            <li class="nav-item"><a class="nav-link" href="#user-search" data-toggle="tab">User Search</a></li>
+          </ul>
+          <div class="tab-content card-body">
+            <div id="project-search" class="tab-pane active">
+              <form method="GET" action="{% url 'advanced-search' %}" autocomplete="off">
+                {% crispy project_form %}
+              </form>
+            </div>
+            <div id="allocation-search" class="tab-pane">
+              <form method="GET" action="{% url 'advanced-search' %}" autocomplete="off">
+                {% crispy allocation_form %}
+              </form>
+            </div>
+            <div id="user-search" class="tab-pane">
+              <form method="GET" action="{% url 'advanced-search' %}" autocomplete="off">
+                {% crispy user_form %}
+              </form>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -79,6 +98,8 @@ Project and Allocation Export List
   var form_count = {{ allocationattribute_form.total_form_count | safe}}
   var allocation_attribute_type_ids = {{ allocation_attribute_type_ids | safe}}
   var linked_allocation_attribute_types = {{ linked_allocation_attribute_types | safe }}
+  var active_tab = '{{ active_tab | safe }}'
+  var has_results = '{{ has_results | safe }}'
 
   function toggleUsageFields(value, base_div_id) {
     if (allocation_attribute_type_ids.includes(value)) {
@@ -104,73 +125,42 @@ Project and Allocation Export List
     $(base_div_id + 'allocationattribute__usage_format').val('whole');
   }
 
-  function toggleCollapsibleSection(collapsible, hyperlink) {
-    collapsible.removeClass().addClass('collapse');
-    hyperlink.toggleClass('ui-state-disabled');
-    hyperlink.addClass('collapsed');
-    hyperlink.prop('ariaExpanded', false);
-  }
-
   $(document).ready(function () {
-    toggleCollapsibleSection($("#user-profiles"), $('h5 > a[href="#user-profiles"]'));
+    var date = new Date();
+    var currentYear = date.getFullYear();
+    $(".datepicker")
+      .wrap('<div class="input-group">')
+      .datepicker({
+        changeMonth: true,
+        changeYear: true,
+        yearRange: (currentYear - 5) + ':' + (currentYear),
+        showOn: "button",
+        buttonText: "Select Date"
+      })
+      .next("button")
+      .addClass("btn btn-secondary")
 
-    if ($("#id_full_search-only_search_projects").is(":checked")) {
-      toggleCollapsibleSection($("#allocations"), $('h5 > a[href="#allocations"]'));
-      toggleCollapsibleSection($("#resources"), $('h5 > a[href="#resources"]'));
-      toggleCollapsibleSection($("#allocation-attributes"), $('h5 > a[href="#allocation-attributes"]'));
-      $('#id_full_search-display__project__users').prop('disabled', false);
-      if ($("#id_full_search-display__project__users").is(":checked")) {
-        toggleCollapsibleSection($("#user-profiles"), $('h5 > a[href="#user-profiles"]'));
-      }
-    } else {
-      $('#id_full_search-display__project__users').prop('disabled', true);
-      if ($("#id_full_search-display__allocation__users").is(":checked")) {
-        toggleCollapsibleSection($("#user-profiles"), $('h5 > a[href="#user-profiles"]'));
-      }
+    if (active_tab === 'allocation-search') {
+      $('#project-search').toggleClass('active');
+      $('#allocation-search').toggleClass('active');
+      $('[href="#project-search"]').toggleClass('active');
+      $('[href="#allocation-search"]').toggleClass('active');
+    } else if (active_tab === 'user-search') {
+      $('#project-search').toggleClass('active');
+      $('#user-search').toggleClass('active');
+      $('[href="#project-search"]').toggleClass('active');
+      $('[href="#user-search"]').toggleClass('active');
     }
 
-    $("#id_full_search-only_search_projects").on('click', function () {
-      var is_checked = $("#id_full_search-only_search_projects").is(":checked");
+    if (has_results === 'False') {
+      $('#collapseOne').collapse();
+      icon = $("#plus_minus");
+      icon.toggleClass("fa-plus fa-minus");
+    }
 
-      toggleCollapsibleSection($("#allocations"), $('h5 > a[href="#allocations"]'));
-      toggleCollapsibleSection($("#resources"), $('h5 > a[href="#resources"]'));
-      toggleCollapsibleSection($("#allocation-attributes"), $('h5 > a[href="#allocation-attributes"]'));
-      display_project_users = $('#id_full_search-display__project__users');
-      if (is_checked) {
-        display_project_users.prop('disabled', false);
-        if ($("#id_full_search-display__project__users").is(":checked")) {
-          if ($('h5 > a[href="#user-profiles"]').hasClass('ui-state-disabled')) {
-            toggleCollapsibleSection($("#user-profiles"), $('h5 > a[href="#user-profiles"]'));
-          }
-        } else {
-          if (!$('h5 > a[href="#user-profiles"]').hasClass('ui-state-disabled')) {
-            toggleCollapsibleSection($("#user-profiles"), $('h5 > a[href="#user-profiles"]'));
-          }
-        }
-      } else {
-        display_project_users.prop('disabled', true);
-        if ($("#id_full_search-display__allocation__users").is(":checked")) {
-          if ($('h5 > a[href="#user-profiles"]').hasClass('ui-state-disabled')) {
-            toggleCollapsibleSection($("#user-profiles"), $('h5 > a[href="#user-profiles"]'));
-          }
-        } else {
-          if (!$('h5 > a[href="#user-profiles"]').hasClass('ui-state-disabled')) {
-            toggleCollapsibleSection($("#user-profiles"), $('h5 > a[href="#user-profiles"]'));
-          }
-        }
-      }
-    })
-
-    $("#id_full_search-display__project__users").on('click', function () {
-      toggleCollapsibleSection($("#user-profiles"), $('h5 > a[href="#user-profiles"]'));
-    })
-    $("#id_full_search-display__allocation__users").on('click', function () {
-      toggleCollapsibleSection($("#user-profiles"), $('h5 > a[href="#user-profiles"]'));
-    })
-
-    $("#id_full_search-resources__name").on('click', function(evt) {
+    $("#id_allocation_search-resources__name").on('click', function(evt) {
       options = [];
-      selected_resources = $("#id_full_search-resources__name").val();
+      selected_resources = $("#id_allocation_search-resources__name").val();
       for (let i = 0; i < selected_resources.length; i++) {
         options.push(linked_allocation_attribute_types[selected_resources[i]]);
       }
@@ -247,5 +237,11 @@ Project and Allocation Export List
     };
     $("#export_data").val(JSON.stringify(data));
   })
+
+  $("#expand_button").click(function() {
+    $('#collapseOne').collapse();
+    icon = $("#plus_minus");
+    icon.toggleClass("fa-plus fa-minus");
+  });
 </script>
 {% endblock %}

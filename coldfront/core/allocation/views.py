@@ -5,6 +5,7 @@ import csv
 from datetime import date
 
 from dateutil.relativedelta import relativedelta
+from django.conf import settings
 from django import forms
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -79,7 +80,8 @@ from coldfront.core.allocation.signals import (allocation_activate,
                                                allocation_remove_user,
                                                allocation_change_approved,
                                                allocation_change_user_role,
-                                               allocation_remove)
+                                               allocation_remove,
+                                               visit_allocation_detail)
 from coldfront.core.project.models import (Project, ProjectUser,
                                            ProjectUserStatusChoice,
                                            ProjectUserRoleChoice)
@@ -165,6 +167,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         pk = self.kwargs.get('pk')
+        visit_allocation_detail.send(sender=self.__class__, allocation_pk=pk)
         allocation_obj = get_object_or_404(Allocation, pk=pk)
         allocation_users = allocation_obj.allocationuser_set.exclude(
             status__name__in=['Removed']).order_by('user__username')
@@ -205,6 +208,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context['attributes'] = attributes
         context['allocation_changes'] = allocation_changes
         context['allocation_changes_enabled'] = allocation_changes_enabled
+        context['display_estimated_cost'] = 'coldfront.plugins.slate_project' in settings.INSTALLED_APPS
 
         # Can the user update the project?
         context['is_allowed_to_update_project'] = False
@@ -605,7 +609,7 @@ class AllocationRemoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
         if new_status.name == 'Removed':
             allocation_remove.send(sender=self.__class__, allocation_pk=allocation_obj.pk)
-            allocation_users = allocation_obj.allocationuser_set.filter(status__name__in=['Active'])
+            allocation_users = allocation_obj.allocationuser_set.filter(status__name__in=['Active', 'Inactive'])
             for allocation_user in allocation_users:
                 allocation_remove_user.send(
                     sender=self.__class__, allocation_user_pk=allocation_user.pk)
@@ -752,7 +756,7 @@ class AllocationApproveRemovalRequestView(LoginRequiredMixin, UserPassesTestMixi
         allocation_obj.save()
 
         allocation_remove.send(sender=self.__class__, allocation_pk=allocation_obj.pk)
-        allocation_users = allocation_obj.allocationuser_set.filter(status__name__in=['Active'])
+        allocation_users = allocation_obj.allocationuser_set.filter(status__name__in=['Active', 'Inactive'])
         for allocation_user in allocation_users:
             allocation_remove_user.send(
                 sender=self.__class__, allocation_user_pk=allocation_user.pk)
@@ -1250,6 +1254,28 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         return license_end_date
 
+    def check_user_accounts(self, usernames, resource_obj):
+        denied_users = []
+        approved_users = []
+        if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
+            from coldfront.plugins.ldap_user_info.utils import get_users_info
+            results = get_users_info(usernames, ['memberOf'])
+            for username in usernames:
+                if not resource_obj.check_user_account_exists(username, results.get(username).get('memberOf')):
+                    denied_users.append(username)
+                else:
+                    approved_users.append(username)
+
+        if denied_users:
+            messages.warning(self.request, format_html(
+                'The following users do not have an account on {} and were not added: {}. Please\
+                direct them to\
+                <a href="https://access.iu.edu/Accounts/Create">https://access.iu.edu/Accounts/Create</a>\
+                to create an account.'
+                .format(resource_obj.name, ', '.join(denied_users))
+            ))
+        return approved_users
+
     def form_valid(self, form):
         form_data = form.cleaned_data
         project_obj = get_object_or_404(
@@ -1285,6 +1311,24 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 form.add_error(
                     None,
                     'Your project has reached the max allocations it can have with this resource.'
+                )
+                return self.form_invalid(form)
+        
+        allocation_limit_per_pi = resource_obj.get_attribute('allocation_limit_per_pi')
+        if allocation_limit_per_pi is not None:
+            allocations = Allocation.objects.filter(
+                project__status__name='Active',
+                project__pi=project_obj.pi,
+                status__name__in=['Active', 'New', 'Renewal Requested'],
+                resources__name='Slate Project'
+            )
+            if len(allocations) > allocation_limit_per_pi:
+                error_message = 'This PI has reached their limit on owning Slate Projects.'
+                if self.request.user == project_obj.pi:
+                    error_message = 'You have reached your limit on owning Slate Projects'
+                form.add_error(
+                    None,
+                    error_message
                 )
                 return self.form_invalid(form)
 
@@ -1341,37 +1385,15 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 ))
                 return self.form_invalid(form)
 
-        users = [User.objects.get(username=username) for username in usernames]
-        resource_account = resource_obj.get_attribute('check_user_account')
-        if resource_account and not resource_obj.check_user_account_exists(self.request.user.username, resource_account):
-
+        if not resource_obj.check_user_account_exists(self.request.user.username):
             form.add_error(
                 None,
                 format_html('You do not have an account on {}. You will need to create one\
                 <a href="https://access.iu.edu/Accounts/Create">here</a> in order to submit a\
-                resource request for this resource.'.format(resource_account))
+                resource request for this resource.'.format(resource_obj.name))
             )
             return self.form_invalid(form)
-
-        denied_users = []
-        approved_users = []
-        for user in users:
-            username = user.username
-            if resource_account is not None:
-                if not resource_obj.check_user_account_exists(username, resource_account):
-                    denied_users.append(username)
-                else:
-                    approved_users.append(user)
-        users = approved_users
-
-        if denied_users:
-            messages.warning(self.request, format_html(
-                'The following users do not have an account on {} and were not added: {}. Please\
-                direct them to\
-                <a href="https://access.iu.edu/Accounts/Create">https://access.iu.edu/Accounts/Create</a>\
-                to create an account.'
-                .format(resource_account, ', '.join(denied_users))
-            ))
+        usernames = self.check_user_accounts(usernames, resource_obj)
 
         if INVOICE_ENABLED and resource_obj.requires_payment:
             allocation_status_obj = AllocationStatusChoice.objects.get(
@@ -1463,6 +1485,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         for linked_resource in resource_obj.linked_resources.all():
             allocation_obj.resources.add(linked_resource)
+
+        users = [User.objects.get(username=username) for username in usernames]
 
         new_user_requests = []
         allocation_user_active_status_choice = AllocationUserStatusChoice.objects.get(name='Active')
@@ -1571,6 +1595,12 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         logger.info(
             f'User {self.request.user.username} submitted a request for a '
             f'{allocation_obj.get_parent_resource.name} allocation (allocation pk={allocation_obj.pk})'
+        )
+
+        added_users = [user.username for user in users if user != self.request.user]
+        logger.info (
+            f'User {self.request.user.username} added {", ".join(added_users)} to a new allocation '
+            f'(allocation pk={allocation_obj.pk})'
         )
         return super().form_valid(form)
 
@@ -1701,6 +1731,23 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         total_users += len(self.get_list_of_users_to_add(formset))
 
         return total_users
+    
+    def get_users_accounts(self, formset):
+        selected_users_accounts = {}
+        selected_users_usernames = []
+        for form in formset:
+            user_form_data = form.cleaned_data
+            if user_form_data.get('selected'):
+                selected_users_usernames.append(user_form_data.get('username'))
+                selected_users_accounts[user_form_data.get('username')] = []
+
+        if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
+            from coldfront.plugins.ldap_user_info.utils import get_users_info
+            results = get_users_info(selected_users_usernames, ['memberOf'])
+            for username, result in results.items():
+                selected_users_accounts[username] = result.get('memberOf')
+
+        return selected_users_accounts
 
     def get(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
@@ -1768,6 +1815,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             if requires_user_request is not None and requires_user_request == 'Yes':
                 allocation_user_status_choice = allocation_user_pending_add_status_choice
 
+            selected_users_accounts = self.get_users_accounts(formset)
             requestor_user = User.objects.get(username=request.user)
             for form in formset:
                 user_form_data = form.cleaned_data
@@ -1777,7 +1825,8 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                         username=user_form_data.get('username'))
 
                     username = user_obj.username
-                    if allocation_obj.check_user_account_exists_on_resource(username):
+                    accounts = selected_users_accounts.get(username)
+                    if allocation_obj.get_parent_resource.check_user_account_exists(username, accounts):
                         added_users.append(username)
                         added_users_objs.append(user_obj)
                     else:
@@ -1845,7 +1894,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                     )
 
                     logger.info(
-                        f'User {request.user.username} added {len(added_users)} user(s) '
+                        f'User {request.user.username} added {", ".join(added_users)} '
                         f'to a {allocation_obj.get_parent_resource.name} allocation '
                         f'(allocation pk={allocation_obj.pk})'
                     )
@@ -2096,7 +2145,7 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
                     )
 
                     logger.info(
-                        f'User {request.user.username} removed {len(removed_users)} user(s) from a '
+                        f'User {request.user.username} removed {", ".join(removed_users)} from a '
                         f'{allocation_obj.get_parent_resource.name} allocation (allocation pk={allocation_obj.pk})'
                     )
 
@@ -5262,7 +5311,7 @@ class AllocationExportView(LoginRequiredMixin, UserPassesTestMixin, View):
             ]
 
             for allocation in allocations:
-                allocation_users = allocation.allocationuser_set.filter(status__name__in=['Active', ]).order_by('user__username')
+                allocation_users = allocation.allocationuser_set.filter(status__name__in=['Active', 'Inactive']).order_by('user__username')
 
                 for allocation_user in allocation_users:
                     row = [
@@ -5314,12 +5363,6 @@ class AllocationUserDetailView(LoginRequiredMixin, UserPassesTestMixin, Template
         if allocation_obj.project.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
             return True
 
-    def check_user_is_manager(self, project_user_obj):
-        if project_user_obj.role == ProjectUserRoleChoice.objects.get(name='Manager'):
-            return True
-
-        return False
-
     def get(self, request, *args, **kwargs):
         allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
         allocation_user_pk = self.kwargs.get('allocation_user_pk')
@@ -5329,15 +5372,18 @@ class AllocationUserDetailView(LoginRequiredMixin, UserPassesTestMixin, Template
                 pk=allocation_user_pk)
 
             allocation_user_update_form = AllocationUserUpdateForm(
+                resource=allocation_obj.get_parent_resource,
                 initial={
                     'role': allocation_user_obj.role,
                 },
             )
 
             context = {}
+            context['can_update'] = not allocation_obj.project.pi == allocation_user_obj.user
             context['allocation_obj'] = allocation_obj
             context['allocation_user_update_form'] = allocation_user_update_form
             context['allocation_user_obj'] = allocation_user_obj
+            context['allocation_user_roles_enabled'] = check_if_roles_are_enabled(allocation_obj)
 
             return render(request, self.template_name, context)
 
@@ -5370,15 +5416,24 @@ class AllocationUserDetailView(LoginRequiredMixin, UserPassesTestMixin, Template
 
             allocation_user_update_form = AllocationUserUpdateForm(
                 request.POST,
+                resource=allocation_obj.get_parent_resource,
                 initial={
-                    'role': allocation_user_obj.role.name,
+                    'role': allocation_user_obj.role,
                 },
             )
 
             if allocation_user_update_form.is_valid():
                 form_data = allocation_user_update_form.cleaned_data
-                allocation_user_obj.role = AllocationUserRoleChoice.objects.get(
-                    name=form_data.get('role'))
+                if allocation_user_obj.role == form_data.get('role'):
+                    return HttpResponseRedirect(
+                        reverse(
+                            'allocation-user-detail',
+                            kwargs={
+                                'pk': allocation_obj.pk, 'allocation_user_pk': allocation_user_obj.pk
+                            }
+                        )
+                    )
+                allocation_user_obj.role = form_data.get('role')
                 allocation_user_obj.save()
                 allocation_change_user_role.send(
                     sender=self.__class__,
@@ -5398,7 +5453,7 @@ class AllocationUserDetailView(LoginRequiredMixin, UserPassesTestMixin, Template
                     )
                 )
             else:
-                messages.error(request, allocation_user_update_form.errors)
+                messages.error(request, allocation_user_update_form.errors.get('__all__'))
                 return HttpResponseRedirect(
                     reverse(
                         'allocation-user-detail',

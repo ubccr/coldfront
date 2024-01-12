@@ -12,7 +12,7 @@ Create Project
  <form method="post">
   {% csrf_token %}
   {{ form|crispy }}
-  <input class="btn btn-primary" type="submit" value="Next" />
+  <input class="btn btn-primary" type="submit" value="Submit and Continue" />
   <a class="btn btn-secondary" href="{% url 'project-list' %}" role="button">Cancel</a>
 </form>
 

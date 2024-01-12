@@ -51,6 +51,7 @@ from coldfront.core.project.models import (Project, ProjectReview,
                                            ProjectUserStatusChoice,
                                            ProjectUserMessage,
                                            ProjectDescriptionRecord)
+from coldfront.core.project.signals import visit_project_detail
 from coldfront.core.publication.models import Publication
 from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.user.forms import UserSearchForm
@@ -61,7 +62,8 @@ from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email, send_email_template
 from coldfront.core.project.utils import (get_new_end_date_from_list,
                                           create_admin_action,
-                                          get_project_user_emails)
+                                          get_project_user_emails,
+                                          generate_slurm_account_name)
 from coldfront.core.allocation.utils import send_added_user_email, set_default_allocation_user_role
 from coldfront.core.utils.slack import send_message
 
@@ -141,6 +143,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        visit_project_detail.send(sender=self.__class__, project_pk=self.object.pk)
         allocation_submitted = self.request.GET.get('allocation_submitted')
         after_project_creation_get = self.request.GET.get('after_project_creation')
         context['display_modal'] = 'false'
@@ -168,57 +171,32 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
         # Only show 'Active Users'
         project_users = self.object.projectuser_set.filter(
-            status__name='Active').order_by('user__username')
+            status__name__in=['Active', 'Inactive']).order_by('user__username')
 
         context['mailto'] = 'mailto:' + \
             ','.join([user.user.email for user in project_users])
 
         if self.request.user.is_superuser or is_manager or self.request.user.has_perm('allocation.can_view_all_allocations'):
-            free_allocations = Allocation.objects.prefetch_related(
+            allocations = Allocation.objects.prefetch_related(
                 'resources'
             ).filter(
                 project=self.object,
-                resources__requires_payment=False
             ).order_by('-end_date')
 
-            paid_allocations = Allocation.objects.prefetch_related(
-                'resources'
-            ).filter(
-                project=self.object,
-                resources__requires_payment=True
-            )
         else:
             if self.object.status.name in ['Active', 'New', 'Waiting For Admin Approval', 'Contacted By Admin', ]:
-                free_allocations = Allocation.objects.filter(
+                allocations = Allocation.objects.filter(
                     Q(project=self.object) &
                     Q(project__projectuser__user=self.request.user) &
                     Q(project__projectuser__status__name__in=['Active', ]) &
-                    Q(resources__requires_payment=False) &
-                    Q(allocationuser__user=self.request.user) &
-                    Q(allocationuser__status__name__in=['Active', ])
-                ).distinct().order_by('-end_date')
-
-                paid_allocations = Allocation.objects.filter(
-                    Q(project=self.object) &
-                    Q(project__projectuser__user=self.request.user) &
-                    Q(project__projectuser__status__name__in=['Active', ]) &
-                    Q(resources__requires_payment=True) &
                     Q(allocationuser__user=self.request.user) &
                     Q(allocationuser__status__name__in=['Active', ])
                 ).distinct().order_by('-end_date')
             else:
-                free_allocations = Allocation.objects.prefetch_related(
+                allocations = Allocation.objects.prefetch_related(
                     'resources'
                 ).filter(
                     project=self.object,
-                    resources__requires_payment=False
-                )
-
-                paid_allocations = Allocation.objects.prefetch_related(
-                    'resources'
-                ).filter(
-                    project=self.object,
-                    resources__requires_payment=True
                 )
 
         context['publications'] = Publication.objects.filter(
@@ -227,8 +205,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             project=self.object).order_by('-created')
         context['grants'] = Grant.objects.filter(
             project=self.object, status__name__in=['Active', 'Pending', 'Archived'])
-        context['free_allocations'] = free_allocations
-        context['paid_allocations'] = paid_allocations
+        context['allocations'] = allocations
         context['project_users'] = project_users
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
         context['PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING'] = PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING
@@ -740,17 +717,6 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         if self.request.user.userprofile.is_pi:  # and max_projects - project_count > 0:
             return True
 
-    def generate_slurm_account_name(self, project_obj):
-        num = str(project_obj.pk)
-        string = '00000'
-        string = string[:-len(num)] + num
-        project_type = project_obj.type.name
-        letter = 'r'
-        if project_type == 'Class':
-            letter = 'c'
-
-        return letter + string
-
     def check_max_project_type_count_reached(self, project_type_obj, pi_obj):
         limit = PROJECT_TYPE_LIMIT_MAPPING.get(project_type_obj.name)
         user_profile = UserProfile.objects.get(user=pi_obj)
@@ -853,7 +819,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         project_obj.save()
         self.object = project_obj
 
-        project_obj.slurm_account_name = self.generate_slurm_account_name(project_obj)
+        project_obj.slurm_account_name = generate_slurm_account_name(project_obj)
         project_obj.save()
 
         project_user_obj = ProjectUser.objects.create(
@@ -1098,7 +1064,7 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
         project_obj = get_object_or_404(Project, pk=pk)
 
         users_to_exclude = [ele.user.username for ele in project_obj.projectuser_set.filter(
-            status__name='Active')]
+            status__name__in=['Active', 'Inactive'])]
 
         cobmined_user_search_obj = CombinedUserSearch(
             user_search_string, search_by, users_to_exclude)
@@ -1106,17 +1072,19 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
         context = cobmined_user_search_obj.search()
         context['after_project_creation'] = after_project_creation
 
-        ldap_user_info_enabled = False
-        if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
-            from coldfront.plugins.ldap_user_info.utils import get_user_info
-            ldap_user_info_enabled = True
-
         # Initial data for ProjectAddUserForm
         matches = context.get('matches')
-        for match in matches:
-            if ldap_user_info_enabled and get_user_info(match.get('username'), ['title'])['title'][0] == 'group':
-                match.update({'role': ProjectUserRoleChoice.objects.get(name='Group')})
-            else:
+        if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
+            from coldfront.plugins.ldap_user_info.utils import get_users_info
+            users = [match.get('username') for match in matches]
+            results = get_users_info(users, ['title'])
+            for match in matches:
+                if results.get(match.get('username')).get('title')[0] == 'group':
+                    match.update({'role': ProjectUserRoleChoice.objects.get(name='Group')})
+                else:
+                    match.update({'role': ProjectUserRoleChoice.objects.get(name='User')})
+        else:
+            for match in matches:
                 match.update({'role': ProjectUserRoleChoice.objects.get(name='User')})
 
         if matches:
@@ -1136,7 +1104,6 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
         status_list = ['Active', 'New', 'Renewal Requested', 'Billing Information Submitted']
         allocations = project_obj.allocation_set.filter(
             status__name__in=status_list,
-            allocationuser__user=request.user
         )
         initial_data = self.get_initial_data(request, allocations)
 
@@ -1224,6 +1191,23 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
         #             disable_select_list[i] = True
 
         return disable_select_list
+    
+    def get_users_accounts(self, formset):
+        selected_users_accounts = {}
+        selected_users_usernames = []
+        for form in formset:
+            user_form_data = form.cleaned_data
+            if user_form_data.get('selected'):
+                selected_users_usernames.append(user_form_data.get('username'))
+                selected_users_accounts[user_form_data.get('username')] = []
+
+        if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
+            from coldfront.plugins.ldap_user_info.utils import get_users_info
+            results = get_users_info(selected_users_usernames, ['memberOf'])
+            for username, result in results.items():
+                selected_users_accounts[username] = result.get('memberOf')
+
+        return selected_users_accounts
 
     def post(self, request, *args, **kwargs):
         user_search_string = request.POST.get('q')
@@ -1234,24 +1218,26 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
         project_obj = get_object_or_404(Project, pk=pk)
 
         users_to_exclude = [ele.user.username for ele in project_obj.projectuser_set.filter(
-            status__name='Active')]
+            status__name__in=['Active', 'Inactive'])]
 
         cobmined_user_search_obj = CombinedUserSearch(
             user_search_string, search_by, users_to_exclude)
 
         context = cobmined_user_search_obj.search()
 
-        ldap_user_info_enabled = False
-        if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
-            from coldfront.plugins.ldap_user_info.utils import get_user_info
-            ldap_user_info_enabled = True
-
         # Initial data for ProjectAddUserForm
         matches = context.get('matches')
-        for match in matches:
-            if ldap_user_info_enabled and get_user_info(match.get('username'), ['title'])['title'][0] == 'group':
-                match.update({'role': ProjectUserRoleChoice.objects.get(name='Group')})
-            else:
+        if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
+            from coldfront.plugins.ldap_user_info.utils import get_users_info
+            users = [match.get('username') for match in matches]
+            results = get_users_info(users, ['title'])
+            for match in matches:
+                if results.get(match.get('username')).get('title')[0] == 'group':
+                    match.update({'role': ProjectUserRoleChoice.objects.get(name='Group')})
+                else:
+                    match.update({'role': ProjectUserRoleChoice.objects.get(name='User')})
+        else:
+            for match in matches:
                 match.update({'role': ProjectUserRoleChoice.objects.get(name='User')})
 
         formset = formset_factory(ProjectAddUserForm, max_num=len(matches))
@@ -1293,6 +1279,12 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             managers_rejected = []
             resources_requiring_user_request = {}
             requestor_user = User.objects.get(username=request.user)
+            for allocation in allocation_formset:
+                cleaned_data = allocation.cleaned_data
+                if cleaned_data['selected']:
+                    selected_users_accounts = self.get_users_accounts(formset)
+                    break
+
             for form in formset:
                 user_form_data = form.cleaned_data
 
@@ -1348,11 +1340,12 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
                             resource_name = allocation.get_parent_resource.name
                             # If the user does not have an account on the resource in the allocation then do not add them to it.
-                            if not allocation.check_user_account_exists_on_resource(username):
+                            accounts = selected_users_accounts.get(username)
+                            if not allocation.get_parent_resource.check_user_account_exists(username, accounts):
                                 display_warning = True
                                 # Make sure there are no duplicates for a user if there's more than one instance of a resource.
-                                if allocation.get_parent_resource.get_attribute('check_user_account') not in no_accounts[username]:
-                                    no_accounts[username].append(allocation.get_parent_resource.get_attribute('check_user_account'))
+                                if allocation.get_parent_resource.name not in no_accounts[username]:
+                                    no_accounts[username].append(allocation.get_parent_resource.name)
                                 continue
 
                             requires_user_request = allocation.get_parent_resource.get_attribute(
@@ -1404,10 +1397,11 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             if display_warning:
                 warning_message = 'The following users were not added to the selected resources due to missing accounts:<ul>'
                 for username, no_account_list in no_accounts.items():
-                    warning_message += '<li>{} is missing an account for {}</li>'.format(
-                        username,
-                        ', '.join(no_account_list)
-                    )
+                    if no_account_list:
+                        warning_message += '<li>{} is missing an account for {}</li>'.format(
+                            username,
+                            ', '.join(no_account_list)
+                        )
                 warning_message += '</ul>'
                 if warning_message != '':
                     warning_message += 'They cannot be added until they create one. Please direct them to <a href="https://access.iu.edu/Accounts/Create">https://access.iu.edu/Accounts/Create</a> to create one.'
@@ -1446,10 +1440,6 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                             if project_obj.pi.email not in allocations_added_users_emails:
                                 allocations_added_users_emails.append(project_obj.pi.email)
 
-                        logger.info(
-                            f'User {request.user.username} added {len(allocations_added_users)} user(s) to a '
-                            f'{allocation.get_parent_resource.name} allocation (allocation pk={allocation.pk})'
-                        )
                         send_added_user_email(
                             request,
                             allocation,
@@ -1458,9 +1448,17 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                         )
 
             logger.info(
-                f'User {request.user.username} added {added_users_count} user(s) to a project '
+                f'User {request.user.username} added {", ".join(added_users)} to a project '
                 f'(project pk={project_obj.pk})'
             )
+            if allocations_added_to:
+                for allocation, values in allocations_added_to.items():
+                    allocations_added_users = values[0]
+                    if allocations_added_users:
+                        logger.info(
+                            f'User {request.user.username} added {", ".join(allocations_added_users)} to a '
+                            f'{allocation.get_parent_resource.name} allocation (allocation pk={allocation.pk})'
+                        )
             messages.success(
                 request, 'Added {} users to project.'.format(added_users_count))
         else:
@@ -1524,7 +1522,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
              'email': ele.user.email,
              'role': ele.role}
 
-            for ele in project_obj.projectuser_set.filter(status__name='Active').order_by('user__username') if ele.user != self.request.user and ele.user != project_obj.pi
+            for ele in project_obj.projectuser_set.filter(status__name__in=['Active', 'Inactive']).order_by('user__username') if ele.user != self.request.user and ele.user != project_obj.pi
         ]
 
         return users_to_remove
@@ -1576,7 +1574,9 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             context['formset'] = formset
 
         # context['data_managers'] = self.get_data_managers(project_obj)
-        context['project'] = get_object_or_404(Project, pk=pk)
+        project_obj = get_object_or_404(Project, pk=pk)
+        context['project'] = project_obj
+        context['display_warning'] = project_obj.allocation_set.filter(resources__name='Slate Project')
 
         return render(request, self.template_name, context)
 
@@ -1626,7 +1626,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                     allocations_to_remove_user_from = project_obj.allocation_set.filter(
                         status__name__in=['Active', 'New', 'Renewal Requested'])
                     for allocation in allocations_to_remove_user_from:
-                        for allocation_user_obj in allocation.allocationuser_set.filter(user=user_obj, status__name__in=['Active', 'Pending - Add', 'Pending - Remove']):
+                        for allocation_user_obj in allocation.allocationuser_set.filter(user=user_obj, status__name__in=['Active', 'Inactive', 'Pending - Add', 'Pending - Remove']):
                             resource = allocation.get_parent_resource
                             requires_user_requests = resource.get_attribute(
                                 'requires_user_request'
@@ -1679,7 +1679,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                     )
 
                 logger.info(
-                    f'User {request.user.username} removed {remove_users_count} user(s) from a '
+                    f'User {request.user.username} removed {", ".join(removed_users)} from a '
                     f'project (project pk={project_obj.pk})'
                 )
 
@@ -1938,7 +1938,7 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                             '{} {}'.format(
                                 ele.user.first_name, ele.user.last_name
                             ) for ele in allocation.allocationuser_set.filter(
-                                status__name='Active'
+                                status__name__in=['Active', 'Inactive']
                             ).order_by('user__last_name')
                         ]
                     ),
@@ -1958,7 +1958,7 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         context['project'] = project_obj
         context['project_review_form'] = project_review_form
         context['project_users'] = ', '.join(['{} {}'.format(ele.user.first_name, ele.user.last_name)
-                                              for ele in project_obj.projectuser_set.filter(status__name='Active').order_by('user__last_name')])
+                                              for ele in project_obj.projectuser_set.filter(status__name__in=['Active','Inactive']).order_by('user__last_name')])
 
         context['formset'] = []
         allocation_data = self.get_allocation_data(project_obj)
@@ -2097,6 +2097,7 @@ class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
         for pi_project_obj in pi_project_objs:
             pi_projects.append(
                 {
+                    'pk': pi_project_obj.pk,
                     'title': pi_project_obj.title,
                     'pi': pi_project_obj.pi.username,
                     'description': pi_project_obj.description,
@@ -2624,6 +2625,12 @@ class ProjectRequestEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView)
         project_obj = get_object_or_404(Project, pk=pk)
         form_data = form.cleaned_data
 
+        project_status_obj = ProjectStatusChoice.objects.get(name='Contacted By Admin')
+        create_admin_action(self.request.user, {'status': project_status_obj}, project_obj)
+
+        project_obj.status = project_status_obj
+        project_obj.save()
+
         if EMAIL_ENABLED:
             receiver_list = [project_obj.requestor.email]
             cc = form_data.get('cc').strip()
@@ -2647,9 +2654,6 @@ class ProjectRequestEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView)
             )
             if cc:
                 success_text += ' CCed: {}'.format(', '.join(cc))
-
-            project_obj.status = ProjectStatusChoice.objects.get(name='Contacted By Admin')
-            project_obj.save()
 
             messages.success(self.request, success_text)
         else:

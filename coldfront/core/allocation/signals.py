@@ -1,5 +1,8 @@
 import django.dispatch
 
+visit_allocation_detail = django.dispatch.Signal(
+    providing_args=["allocation_pk"])
+
 allocation_activate = django.dispatch.Signal(
     providing_args=["allocation_pk"])
 allocation_disable = django.dispatch.Signal(

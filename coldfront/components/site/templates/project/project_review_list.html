@@ -154,6 +154,9 @@ Project Review List
         `<div class="card mb-3">\
           <div class="card-header">\
             <strong>${project.title}</strong>\
+            <a title="Details" href="/project/${project.pk}" target="_blank">\
+              <i class="far fa-folder-open" aria-hidden="true"></i><span class="sr-only">Details</span>\
+            </a>\
           </div>\
           <div class="card-body">\
             ${project.description}\

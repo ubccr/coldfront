@@ -96,3 +96,15 @@ def get_project_user_emails(project_obj, only_project_managers=False):
 
 
     return list(project_users)
+
+
+def generate_slurm_account_name(project_obj):
+    num = str(project_obj.pk)
+    string = '00000'
+    string = string[:-len(num)] + num
+    project_type = project_obj.type.name
+    letter = 'r'
+    if project_type == 'Class':
+        letter = 'c'
+
+    return letter + string

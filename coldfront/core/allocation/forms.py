@@ -210,7 +210,7 @@ class AllocationForm(forms.Form):
 
         if after_project_creation:
             form_actions = FormActions(
-                Submit('submit', 'Next'),
+                Submit('submit', 'Submit and Continue'),
             )
         else:
             form_actions = FormActions(
@@ -323,8 +323,7 @@ class AllocationForm(forms.Form):
                             errors[name] = 'This username is not valid'
                             continue
             if resource_attribute_obj.resource_account_is_required:
-                check_resource_account = resource_obj.get_attribute('check_user_account')
-                if not resource_obj.check_user_account_exists(field_value, check_resource_account):
+                if not resource_obj.check_user_account_exists(field_value):
                     errors[name] = 'This user does not have an account on this resource'
                     continue
 
@@ -407,20 +406,21 @@ class AllocationAddUserForm(forms.Form):
     first_name = forms.CharField(max_length=30, required=False, disabled=True)
     last_name = forms.CharField(max_length=150, required=False, disabled=True)
     email = forms.EmailField(max_length=100, required=False, disabled=True)
-    role = forms.ModelChoiceField(queryset=AllocationUserRoleChoice.objects.all(), required=False)
+    role = forms.ModelChoiceField(
+        queryset=AllocationUserRoleChoice.objects.none(), required=False, disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
 
-    def __init__(self, *args, resource=None, **kwargs):
+    def __init__(self, *args, **kwargs):
+        resource = kwargs.pop('resource', None)
         super().__init__(*args, **kwargs)
-        self.requires_role = False
-        if resource:
-            self.requires_role = resource.requires_user_roles
+        if resource and resource.requires_user_roles:
+            self.fields['role'].disabled = False
             self.fields['role'].queryset = AllocationUserRoleChoice.objects.filter(resources=resource)
 
     def clean(self):
         cleaned_data = super().clean()
         if cleaned_data.get('selected'):
-            if self.requires_role and not cleaned_data.get('role'):
+            if not self.fields['role'].disabled and not cleaned_data.get('role'):
                 raise ValidationError('This resource requires user roles')
 
         return cleaned_data
@@ -714,14 +714,23 @@ class AllocationExportForm(forms.Form):
 
 class AllocationUserUpdateForm(forms.Form):
     role = forms.ModelChoiceField(
-        queryset=AllocationUserRoleChoice.objects.all(), empty_label=None)
+        queryset=AllocationUserRoleChoice.objects.none(), required=False, disabled=True)
     enable_notifications = forms.BooleanField(initial=False, required=False)
 
     def __init__(self, *args, **kwargs):
-        disable_role = kwargs.pop('disable_role', False)
         disable_enable_notifications = kwargs.pop('disable_enable_notifications', False)
+        resource = kwargs.pop('resource', None)
         super().__init__(*args, **kwargs)
-        if disable_role:
-            self.fields['role'].disabled = True
+        if resource and resource.requires_user_roles:
+            self.fields['role'].disabled = False
+            self.fields['role'].queryset = AllocationUserRoleChoice.objects.filter(resources=resource)
+
         if disable_enable_notifications:
             self.fields['enable_notifications'].disabled = True
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if not self.fields['role'].disabled and not cleaned_data.get('role'):
+            raise ValidationError('This resource requires user roles')
+
+        return cleaned_data
