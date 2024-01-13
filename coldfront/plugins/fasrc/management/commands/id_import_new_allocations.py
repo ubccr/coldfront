@@ -10,6 +10,7 @@ import pandas as pd
 from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand
 
+from coldfront.core.settings import ENV
 from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.allocation.models import (
     AllocationUser,
@@ -23,8 +24,7 @@ from coldfront.core.resource.models import Resource
 if ENV.bool('PLUGIN_SFTOCF', default=False):
     from coldfront.plugins.sftocf.utils import (
         StarFishRedash,
-        STARFISH_SERVER,
-        pull_sf_push_cf_redash
+        RedashDataPipeline,
     )
 from coldfront.plugins.fasrc.utils import (
     AllTheThingsConn,
@@ -58,7 +58,7 @@ class Command(BaseCommand):
         # Remove allocations for labs not in Coldfront, add those labs to a list
         result_json_cleaned, proj_models = match_entries_with_projects(resp_json_by_lab)
 
-        redash_api = StarFishRedash(STARFISH_SERVER)
+        redash_api = StarFishRedash()
         allocation_usages = redash_api.return_query_results(query='subdirectory')
         subdir_type = AllocationAttributeType.objects.get(name='Subdirectory')
 
@@ -137,5 +137,7 @@ class Command(BaseCommand):
             update_csv(added_allocations_df.to_dict(orient='records'),
                 './local_data/', f'added_allocations_{datetime.today().date()}.csv')
         push_quota_data(result_file)
-        pull_sf_push_cf_redash()
+        data_pull = RedashDataPipeline()
+        allocationquerymatch_objs, user_models = data_pull.clean_collected_data()
+        data_pull.update_coldfront_objects(allocationquerymatch_objs, user_models)
         return json.dumps(command_report, indent=2)

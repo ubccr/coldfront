@@ -5,7 +5,7 @@ from django.core.management.base import BaseCommand
 
 from coldfront.core.resource.models import Resource
 from coldfront.core.allocation.models import Allocation
-from coldfront.plugins.sftocf.utils import StarFishRedash, compare_cf_sf_volumes, STARFISH_SERVER
+from coldfront.plugins.sftocf.utils import StarFishRedash, StarFishServer
 
 
 logger = logging.getLogger(__name__)
@@ -27,12 +27,12 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         errors = []
-        redash = StarFishRedash(STARFISH_SERVER)
+        redash = StarFishRedash()
         subdir_results = redash.submit_query("subdirectory")
         data = subdir_results['query_result']['data']['rows']
         data = [result for result in data if result['group_name']]
-        vols_to_collect = compare_cf_sf_volumes()
-        searched_resources = [Resource.objects.get(name__contains=vol) for vol in vols_to_collect]
+        starfishserver = StarFishServer()
+        searched_resources = starfishserver.get_volumes_in_coldfront()
         allocations = Allocation.objects.filter(resources__in=searched_resources)
         for allocation in allocations:
             lab = allocation.project.title

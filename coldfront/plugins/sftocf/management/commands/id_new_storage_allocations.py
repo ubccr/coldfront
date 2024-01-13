@@ -8,7 +8,7 @@ import pandas as pd
 from django.core.management.base import BaseCommand
 
 from coldfront.core.allocation.models import Allocation
-from coldfront.plugins.sftocf.utils import StarFishRedash, STARFISH_SERVER
+from coldfront.plugins.sftocf.utils import StarFishRedash
 
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ class Command(BaseCommand):
 
 
     def handle(self, *args, **kwargs):
-        redash = StarFishRedash(STARFISH_SERVER)
+        redash = StarFishRedash()
         subdir_results = redash.submit_query('subdirectory')
         data = subdir_results['query_result']['data']['rows']
         # remove entries with no group name or with group names that are not projects
