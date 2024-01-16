@@ -26,7 +26,7 @@ class Command(BaseCommand):
         kwargs = {  "repeats":-1, }
         plugins_tasks = {
             'fasrc': ['import_quotas', 'id_import_allocations'],
-            'sftocf': ['pullsf_pushcf_redash', 'pull_resource_data'],
+            'sftocf': ['pull_sf_push_cf', 'pull_resource_data'],
             'ldap': ['update_group_membership_ldap', 'id_add_projects'],
             'slurm': ['slurm_sync'],
             'xdmod': ['xdmod_usage'],
