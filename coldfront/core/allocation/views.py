@@ -2896,6 +2896,12 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
                 request, 'It is too late to renew your allocation.'
             )
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
+        
+        if allocation_obj.is_locked:
+            messages.error(
+                request, 'You cannot renew this allocation.'
+            )
+            return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
         return super().dispatch(request, *args, **kwargs)
 

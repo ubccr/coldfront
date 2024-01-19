@@ -319,6 +319,9 @@ def check_slate_project_account(user, notifications_enabled, ldap_search_conn=No
     attributes = ldap_search_conn.search_a_user(user.username, ['memberOf'])
     accounts = attributes.get('memberOf')
     if not SLATE_PROJECT_ELIGIBILITY_ACCOUNT in accounts:
+        # Do nothing if they have a slate project account but are not in the eligibility account
+        if SLATE_PROJECT_ACCOUNT in accounts:
+            return
         added, output = ldap_eligibility_conn.add_user(user.username)
         if not added:
             logger.error(
@@ -1178,6 +1181,7 @@ class LDAPEligibilityGroup:
         self.LDAP_BIND_DN = import_from_settings('LDAP_ELIGIBILITY_BIND_DN')
         self.LDAP_BIND_PASSWORD = import_from_settings('LDAP_ELIGIBILITY_BIND_PASSWORD')
         self.LDAP_CONNECT_TIMEOUT = import_from_settings('LDAP_ELIGIBILITY_CONNECT_TIMEOUT', 2.5)
+        self.LDAP_ADS_NETID_FORMAT = import_from_settings('LDAP_ADS_NETID_FORMAT')
 
         self.server = Server(self.LDAP_SERVER_URI, use_ssl=True, connect_timeout=self.LDAP_CONNECT_TIMEOUT)
         self.conn = Connection(self.server, self.LDAP_BIND_DN, self.LDAP_BIND_PASSWORD, auto_bind=True)
@@ -1186,16 +1190,20 @@ class LDAPEligibilityGroup:
             logger.error(f'LDAPEligibilityGroup: Failed to bind to LDAP server: {self.conn.result}')
 
     def add_user(self, username):
-        # self.conn.add(self.LDAP_BASE_DN, attributes={'netId': username})
-        return True, ''
+        added = self.conn.add(self.LDAP_BASE_DN, attributes={'member': self.LDAP_ADS_NETID_FORMAT.format(username)})
+        return added, self.conn.result.get("description")
 
     def check_user_exists(self, username):
         searchParameters = {'search_base': self.LDAP_BASE_DN,
-            'search_filter': ldap.filter.filter_format(f"(netId={[username]})"),
+            'search_filter': "(member=*)",
+            'attributes': ['member'],
             'size_limit': 1
         }
         self.conn.search(**searchParameters)
-        if self.conn.entries:
-            return True
+        members = json.loads(self.conn.entries[0].entry_to_json()).get("attributes").get("member")
+        netid = self.LDAP_ADS_NETID_FORMAT.format(username)
+        for member in members:
+            if netid == member:
+                return True
         
         return False
