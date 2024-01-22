@@ -4,6 +4,7 @@ import logging
 from django.conf import settings
 from django.db import transaction
 
+from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AllocationUser
 from coldfront.core.allocation.models import AllocationUserAttribute
@@ -13,7 +14,6 @@ from coldfront.core.allocation.models import ClusterAccessRequestStatusChoice
 from coldfront.core.allocation.utils import review_cluster_access_requests_url
 from coldfront.core.allocation.utils import set_allocation_user_attribute_value
 from coldfront.core.project.models import ProjectUser
-from coldfront.core.resource.utils import get_primary_compute_resource
 from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.common import utc_now_offset_aware
@@ -197,13 +197,17 @@ class ClusterAccessRequestCompleteRunner(object):
         self._send_emails_safe()
 
     def _conditionally_set_user_service_units(self):
-        """If the Allocation is to the primary cluster's compute
-        Resource, set the user's service units to that of the
-        Allocation."""
-        primary_compute_resource = get_primary_compute_resource()
-        if self.allocation.resources.filter(
-                pk=primary_compute_resource.pk).exists():
-            self._set_user_service_units()
+        """If the Allocation has service units, set the user's service
+        units to the same value of the Allocation."""
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Service Units')
+        try:
+            allocation_service_units = \
+                self.allocation.allocationattribute_set.get(
+                    allocation_attribute_type=allocation_attribute_type)
+        except AllocationAttribute.DoesNotExist:
+            return
+        self._set_user_service_units(allocation_service_units.value)
 
     def _log_success_messages(self):
         """Write success messages to the log.
@@ -252,16 +256,11 @@ class ClusterAccessRequestCompleteRunner(object):
         message = (f'Set username for user {self.user.pk}.')
         self._success_messages.append(message)
 
-    def _set_user_service_units(self):
+    def _set_user_service_units(self, num_service_units_str):
         """Set the AllocationUser's 'Service Units' attribute value to
-        that of the Allocation."""
-        allocation_attribute_type = AllocationAttributeType.objects.get(
-            name='Service Units')
-        allocation_service_units = self.allocation.allocationattribute_set.get(
-            allocation_attribute_type=allocation_attribute_type)
+        the given number, represented as a str."""
         set_allocation_user_attribute_value(
-            self.allocation_user, 'Service Units',
-            allocation_service_units.value)
+            self.allocation_user, 'Service Units', num_service_units_str)
 
         # Create a ProjectUserTransaction to store the change in service units.
         project_user = ProjectUser.objects.get(
@@ -270,7 +269,7 @@ class ClusterAccessRequestCompleteRunner(object):
         project_user_transaction = ProjectUserTransaction.objects.create(
             project_user=project_user,
             date_time=utc_now_offset_aware(),
-            allocation=Decimal(allocation_service_units.value))
+            allocation=Decimal(num_service_units_str))
 
         message = (f'Set service units for allcoation user '
                    f'{self.allocation_user.pk}. Created ProjectUserTransaction '
