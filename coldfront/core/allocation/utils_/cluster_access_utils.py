@@ -13,8 +13,7 @@ from coldfront.core.allocation.models import ClusterAccessRequest
 from coldfront.core.allocation.models import ClusterAccessRequestStatusChoice
 from coldfront.core.allocation.utils import review_cluster_access_requests_url
 from coldfront.core.allocation.utils import set_allocation_user_attribute_value
-from coldfront.core.project.models import ProjectUser
-from coldfront.core.statistics.models import ProjectUserTransaction
+from coldfront.core.allocation.utils_.accounting_utils import allocate_service_units_to_user
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.email.email_strategy import SendEmailStrategy
@@ -202,12 +201,12 @@ class ClusterAccessRequestCompleteRunner(object):
         allocation_attribute_type = AllocationAttributeType.objects.get(
             name='Service Units')
         try:
-            allocation_service_units = \
-                self.allocation.allocationattribute_set.get(
-                    allocation_attribute_type=allocation_attribute_type)
+            allocation_attribute = self.allocation.allocationattribute_set.get(
+                allocation_attribute_type=allocation_attribute_type)
         except AllocationAttribute.DoesNotExist:
             return
-        self._set_user_service_units(allocation_service_units.value)
+        num_service_units = Decimal(allocation_attribute.value)
+        self._set_user_service_units(num_service_units)
 
     def _log_success_messages(self):
         """Write success messages to the log.
@@ -256,24 +255,12 @@ class ClusterAccessRequestCompleteRunner(object):
         message = (f'Set username for user {self.user.pk}.')
         self._success_messages.append(message)
 
-    def _set_user_service_units(self, num_service_units_str):
-        """Set the AllocationUser's 'Service Units' attribute value to
-        the given number, represented as a str."""
-        set_allocation_user_attribute_value(
-            self.allocation_user, 'Service Units', num_service_units_str)
+    def _set_user_service_units(self, num_service_units):
+        """Set service units to the user."""
+        allocate_service_units_to_user(self.allocation_user, num_service_units)
 
-        # Create a ProjectUserTransaction to store the change in service units.
-        project_user = ProjectUser.objects.get(
-            user=self.user,
-            project=self.project)
-        project_user_transaction = ProjectUserTransaction.objects.create(
-            project_user=project_user,
-            date_time=utc_now_offset_aware(),
-            allocation=Decimal(num_service_units_str))
-
-        message = (f'Set service units for allcoation user '
-                   f'{self.allocation_user.pk}. Created ProjectUserTransaction '
-                   f'{project_user_transaction.pk} to record change in SUs.')
+        message = (
+            f'Set service units for AllocationUser {self.allocation_user.pk}.')
         self._success_messages.append(message)
 
     def _send_complete_emails(self):

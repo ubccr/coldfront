@@ -9,11 +9,31 @@ from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AllocationAttributeUsage
 from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.allocation.models import AllocationUserAttributeUsage
+from coldfront.core.allocation.utils import set_allocation_user_attribute_value
 from coldfront.core.project.models import ProjectUser
 from coldfront.core.statistics.models import ProjectTransaction
 from coldfront.core.statistics.models import ProjectUserTransaction
 from coldfront.core.utils.common import assert_obj_type
 from coldfront.core.utils.common import utc_now_offset_aware
+
+
+def allocate_service_units_to_user(allocation_user, num_service_units):
+    """Grant the given AllocationUser the given number of service units
+    (Decimal).
+
+    1. Get or create an AllocationUserAttribute of type "Service Units".
+    2. Set its value and track the change.
+
+    TODO: Reconcile multiple methods for doing the same thing.
+        - This method creates the attribute if it does not exist before
+          setting its value.
+        - See also api.statistics.utils.
+    """
+    with transaction.atomic():
+        allocation_user_attribute = set_allocation_user_attribute_value(
+            allocation_user, 'Service Units', str(num_service_units))
+        set_allocation_user_service_units_allowance(
+            allocation_user_attribute, num_service_units)
 
 
 def assert_attribute_type_is_service_units(attribute):
@@ -161,6 +181,10 @@ def set_allocation_user_service_units_allowance(allocation_user_attribute,
         - AssertionError
         - MultipleObjectsReturned
         - ObjectDoesNotExist
+
+    TODO: Reconcile multiple methods for doing the same thing.
+        - This method assumes that the attribute already exists.
+        - See also api.statistics.utils.
     """
     model = AllocationUserAttribute
 
