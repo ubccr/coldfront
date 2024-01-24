@@ -7,6 +7,7 @@ from django.core import mail
 
 from coldfront.api.statistics.utils import create_project_allocation
 from coldfront.api.statistics.utils import create_user_project_allocation
+from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AllocationUserAttribute
 from coldfront.core.allocation.models import AllocationUserStatusChoice
@@ -134,7 +135,11 @@ class TestClusterAccessRequestCompleteRunner(TestClusterAccessRunnersBase):
         self.user0.refresh_from_db()
         self.alloc_obj.allocation.refresh_from_db()
         self.alloc_user_obj.allocation_user.refresh_from_db()
-        self.alloc_user_obj.allocation_user_attribute.refresh_from_db()
+        try:
+            # This may have been intentionally deleted.
+            self.alloc_user_obj.allocation_user_attribute.refresh_from_db()
+        except AllocationUserAttribute.DoesNotExist:
+            pass
 
     def _assert_pre_state(self):
         """Assert that the relevant objects have the expected state,
@@ -149,14 +154,21 @@ class TestClusterAccessRequestCompleteRunner(TestClusterAccessRunnersBase):
                             self.alloc_obj.allocation_attribute.value)
         self.assertFalse(self._get_cluster_account_status_attr().exists())
 
-    def _assert_post_state(self):
+    def _assert_post_state(self, skip_service_units=False):
         """Assert that the relevant objects have the expected state,
-        assuming that the runner has run successfully."""
+        assuming that the runner has run successfully.
+
+        Optionally skip asserting the expected value of the "Service
+        Units" AllocationUserAttribute, which may justifiably not exist
+        in some cases.
+        """
         self._refresh_objects()
         self.assertEqual(self.user0.userprofile.cluster_uid, self.cluster_uid)
         self.assertEqual(self.user0.username, self.new_username)
-        self.assertEqual(self.alloc_user_obj.allocation_user_attribute.value,
-                         self.alloc_obj.allocation_attribute.value)
+        if not skip_service_units:
+            self.assertEqual(
+                self.alloc_user_obj.allocation_user_attribute.value,
+                self.alloc_obj.allocation_attribute.value)
         self.assertTrue(self._get_cluster_account_status_attr().exists())
         self.assertEqual(self._get_cluster_account_status_attr().first().value,
                          'Active')
@@ -174,6 +186,77 @@ class TestClusterAccessRequestCompleteRunner(TestClusterAccessRunnersBase):
                             self.cluster_uid)
 
         self._assert_post_state()
+
+        self.assertGreater(len(cm.output), 0)
+        self._assert_emails_sent()
+
+        self.assertFalse(self.runner.get_warning_messages())
+
+    def test_service_units_attribute_created(self):
+        """Test that, if Allocation has a "Service Units" attribute, but
+        the AllocationUser does not, one is created with the same
+        value."""
+        self.assertEqual(len(mail.outbox), 0)
+        self._assert_pre_state()
+
+        # Delete the "Service Units" AllocationUserAttribute, which should not
+        # exist prior to the processing of the request.
+        self.alloc_user_obj.allocation_user_attribute.delete()
+
+        pre_time = utc_now_offset_aware()
+
+        with self.assertLogs(self._module, 'INFO') as cm:
+            self.runner.run(self.new_username, self.cluster_uid)
+
+        post_time = utc_now_offset_aware()
+
+        # An attribute should have been created as a result of the runner.
+        self._refresh_objects()
+        service_units_attribute = AllocationUserAttribute.objects.get(
+            allocation_attribute_type__name='Service Units',
+            allocation_user=self.alloc_user_obj.allocation_user)
+        self.assertTrue(
+            pre_time <= service_units_attribute.created <= post_time)
+
+        # All objects should be as expected. The attribute's value should be
+        # equal to that of the Allocation's attribute.
+        self.alloc_user_obj.allocation_user_attribute = service_units_attribute
+        self._assert_post_state(skip_service_units=False)
+
+        self.assertGreater(len(cm.output), 0)
+        self._assert_emails_sent()
+
+        self.assertFalse(self.runner.get_warning_messages())
+
+    def test_service_units_attribute_not_created(self):
+        """Test that, if the Allocation does not have a "Service Units"
+        attribute, one is not created for the AllocationUser."""
+        self.assertEqual(len(mail.outbox), 0)
+        self._assert_pre_state()
+
+        # Delete the "Service Units" AllocationUserAttribute, which should not
+        # exist prior to the processing of the request.
+        self.alloc_user_obj.allocation_user_attribute.delete()
+
+        # Delete the "Service Units" AllocationAttribute such that its value is
+        # not propagated to a new AllocationUserAttribute.
+        AllocationAttribute.objects.filter(
+            allocation_attribute_type__name='Service Units',
+            allocation=self.alloc_user_obj.allocation).delete()
+
+        with self.assertLogs(self._module, 'INFO') as cm:
+            self.runner.run(self.new_username, self.cluster_uid)
+
+        # An attribute should not have been created.
+        self._refresh_objects()
+        with self.assertRaises(AllocationUserAttribute.DoesNotExist) as _:
+            AllocationUserAttribute.objects.get(
+                allocation_attribute_type__name='Service Units',
+                allocation_user=self.alloc_user_obj.allocation_user)
+
+        # Objects other than the "Service Units" attribute should have been
+        # updated normally.
+        self._assert_post_state(skip_service_units=True)
 
         self.assertGreater(len(cm.output), 0)
         self._assert_emails_sent()

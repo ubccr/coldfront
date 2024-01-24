@@ -4,6 +4,7 @@ import logging
 from django.conf import settings
 from django.db import transaction
 
+from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AllocationUser
 from coldfront.core.allocation.models import AllocationUserAttribute
@@ -12,9 +13,7 @@ from coldfront.core.allocation.models import ClusterAccessRequest
 from coldfront.core.allocation.models import ClusterAccessRequestStatusChoice
 from coldfront.core.allocation.utils import review_cluster_access_requests_url
 from coldfront.core.allocation.utils import set_allocation_user_attribute_value
-from coldfront.core.project.models import ProjectUser
-from coldfront.core.resource.utils import get_primary_compute_resource
-from coldfront.core.statistics.models import ProjectUserTransaction
+from coldfront.core.allocation.utils_.accounting_utils import allocate_service_units_to_user
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.common import utc_now_offset_aware
 from coldfront.core.utils.email.email_strategy import SendEmailStrategy
@@ -197,13 +196,17 @@ class ClusterAccessRequestCompleteRunner(object):
         self._send_emails_safe()
 
     def _conditionally_set_user_service_units(self):
-        """If the Allocation is to the primary cluster's compute
-        Resource, set the user's service units to that of the
-        Allocation."""
-        primary_compute_resource = get_primary_compute_resource()
-        if self.allocation.resources.filter(
-                pk=primary_compute_resource.pk).exists():
-            self._set_user_service_units()
+        """If the Allocation has service units, set the user's service
+        units to the same value of the Allocation."""
+        allocation_attribute_type = AllocationAttributeType.objects.get(
+            name='Service Units')
+        try:
+            allocation_attribute = self.allocation.allocationattribute_set.get(
+                allocation_attribute_type=allocation_attribute_type)
+        except AllocationAttribute.DoesNotExist:
+            return
+        num_service_units = Decimal(allocation_attribute.value)
+        self._set_user_service_units(num_service_units)
 
     def _log_success_messages(self):
         """Write success messages to the log.
@@ -252,29 +255,12 @@ class ClusterAccessRequestCompleteRunner(object):
         message = (f'Set username for user {self.user.pk}.')
         self._success_messages.append(message)
 
-    def _set_user_service_units(self):
-        """Set the AllocationUser's 'Service Units' attribute value to
-        that of the Allocation."""
-        allocation_attribute_type = AllocationAttributeType.objects.get(
-            name='Service Units')
-        allocation_service_units = self.allocation.allocationattribute_set.get(
-            allocation_attribute_type=allocation_attribute_type)
-        set_allocation_user_attribute_value(
-            self.allocation_user, 'Service Units',
-            allocation_service_units.value)
+    def _set_user_service_units(self, num_service_units):
+        """Set service units to the user."""
+        allocate_service_units_to_user(self.allocation_user, num_service_units)
 
-        # Create a ProjectUserTransaction to store the change in service units.
-        project_user = ProjectUser.objects.get(
-            user=self.user,
-            project=self.project)
-        project_user_transaction = ProjectUserTransaction.objects.create(
-            project_user=project_user,
-            date_time=utc_now_offset_aware(),
-            allocation=Decimal(allocation_service_units.value))
-
-        message = (f'Set service units for allcoation user '
-                   f'{self.allocation_user.pk}. Created ProjectUserTransaction '
-                   f'{project_user_transaction.pk} to record change in SUs.')
+        message = (
+            f'Set service units for AllocationUser {self.allocation_user.pk}.')
         self._success_messages.append(message)
 
     def _send_complete_emails(self):

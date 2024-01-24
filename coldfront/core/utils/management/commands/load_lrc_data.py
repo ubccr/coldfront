@@ -865,7 +865,8 @@ class Command(BaseCommand):
         For Users who are in the corresponding Project on the cluster,
         set the 'Cluster Account Status' attribute to 'Active'.
 
-        Do not set Service Units, since they are not relevant."""
+        Set Service Units to the maximum amount, since these projects
+        have no limits."""
         allocation_kwargs = {
             'start_date': None,
             'end_date': None,
