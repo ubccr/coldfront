@@ -13,15 +13,16 @@ from coldfront.core.utils.common import add_argparse_dry_run_argument
 
 import logging
 
-"""An admin command that ensures that all users across all projects are
-allocated the same number of service units as the project."""
+"""An admin command that ensures that all users across all active
+projects are allocated the same number of service units as the
+project."""
 
 
 class Command(BaseCommand):
 
     help = (
-        'Across all projects, ensure that the number of service units '
-        'allocated to each user is equal to that of the project.')
+        'Across all active projects, ensure that the number of service '
+        'units allocated to each user is equal to that of the project.')
 
     logger = logging.getLogger(__name__)
 
@@ -35,7 +36,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         dry_run = options['dry_run']
-        for project in Project.objects.all():
+        for project in Project.objects.filter(status__name='Active'):
             self._handle_project(project, dry_run)
 
     def _handle_discrepant_user_attribute(self, project, user, allocation_user,
