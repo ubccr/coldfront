@@ -256,6 +256,10 @@ class BillingIDUsagesSearchView(LoginRequiredMixin, UserPassesTestMixin,
                 'full_id': full_id,
             })
 
+        # Only display a Recharge entry if the user has one of the following
+        # statuses on the project.
+        relevant_project_user_status_names = [
+            'Active', 'Pending - Add', 'Pending - Remove']
         for allocation_user_attribute in usages.recharge:
             pk = int(allocation_user_attribute.value)
             if billing_id:
@@ -267,6 +271,14 @@ class BillingIDUsagesSearchView(LoginRequiredMixin, UserPassesTestMixin,
                 full_id_by_billing_activity_pk[pk] = full_id
             project = allocation_user_attribute.allocation.project
             user = allocation_user_attribute.allocation_user.user
+
+            user_has_relevant_status_on_project = ProjectUser.objects.filter(
+                project=project,
+                user=user,
+                status__name__in=relevant_project_user_status_names).exists()
+            if not user_has_relevant_status_on_project:
+                continue
+
             context['recharge_usages'].append(
                 {
                     'project_pk': project.pk,
