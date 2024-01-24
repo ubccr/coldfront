@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django.core.management.base import BaseCommand
 
+from coldfront.core.allocation.models import Allocation
 from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.allocation.models import AllocationAttributeType
 from coldfront.core.allocation.models import AllocationUserAttribute
@@ -76,7 +77,12 @@ class Command(BaseCommand):
 
     def _handle_project(self, project, dry_run):
         """Handle corrections for the given Project."""
-        allocation = get_project_compute_allocation(project)
+        try:
+            allocation = get_project_compute_allocation(project)
+        except Allocation.DoesNotExist:
+            message = f'Project {project.name} has no compute allocation.'
+            self.stderr.write(self.style.ERROR(message))
+            return
         try:
             allocation_attribute = AllocationAttribute.objects.get(
                 allocation_attribute_type=self._allocation_attribute_type,
