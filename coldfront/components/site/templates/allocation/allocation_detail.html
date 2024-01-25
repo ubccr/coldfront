@@ -116,20 +116,21 @@ Allocation Detail
                       </span>
                     </a>
                   {% elif is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Expired' and ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING < 0  %}
-                    <a href="{% url 'allocation-renew' allocation.pk %}">
-                      {% if allocation.can_be_renewed %}
+                    {% if allocation.can_be_renewed %}
+                      <a href="{% url 'allocation-renew' allocation.pk %}">
                         <span class="badge badge-warning"><i class="fas fa-redo-alt" aria-hidden="true"></i>
                           Click to renew 
                         </span>
-                      {% endif %}
-                    </a>
+                      </a>
+                    {% endif %}
                   {% elif is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Expired' and allocation.expires_in >= ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING|change_sign %}
-                    <a href="{% url 'allocation-renew' allocation.pk %}">
-                      <span class="badge badge-warning"><i class="fas fa-redo-alt" aria-hidden="true"></i>
-                        {{ allocation.expires_in|add:ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING }} days left to renew
-                        {% if allocation.can_be_renewed %} Click to renew {% endif %}
-                      </span>
-                    </a>
+                    {% if allocation.can_be_renewed %}
+                      <a href="{% url 'allocation-renew' allocation.pk %}">
+                        <span class="badge badge-warning"><i class="fas fa-redo-alt" aria-hidden="true"></i>
+                          {{ allocation.expires_in|add:ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING }} days left to renew - Click to renew
+                        </span>
+                      </a>
+                    {% endif %}
                   {% endif %}
                 {% endif %}
               </td>
