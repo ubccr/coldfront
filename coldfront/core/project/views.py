@@ -684,6 +684,7 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
             name='Expired')
         end_date = datetime.datetime.now()
         project.status = project_status_archive
+        project.end_date = end_date
         project.save()
         for allocation in project.allocation_set.filter(status__name='Active'):
             allocation.status = allocation_status_expired
