@@ -508,12 +508,11 @@ def add_user_to_slate_project_group(allocation_user_obj):
             f'LDAP: Added user {username} to the slate project group {ldap_group} in allocation '
             f'{allocation_obj.pk}'
         )
-
-    if ENABLE_LDAP_ELIGIBILITY_SERVER:
-        notifications_enabled = allocation_user_obj.allocation.project.projectuser_set.get(
-            user=allocation_user_obj.user
-        ).enable_notifications
-        check_slate_project_account(allocation_user_obj.user, notifications_enabled)
+        if ENABLE_LDAP_ELIGIBILITY_SERVER:
+            notifications_enabled = allocation_user_obj.allocation.project.projectuser_set.get(
+                user=allocation_user_obj.user
+            ).enable_notifications
+            check_slate_project_account(allocation_user_obj.user, notifications_enabled)
 
 
 def remove_slate_project_groups(allocation_obj):
