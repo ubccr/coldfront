@@ -17,6 +17,8 @@ from coldfront.plugins.xdmod.utils import (XDMOD_ACCOUNT_ATTRIBUTE_NAME,
                                            XDMOD_STORAGE_ATTRIBUTE_NAME,
                                            XDMOD_STORAGE_GROUP_ATTRIBUTE_NAME,
                                            XdmodNotFoundError,
+                                           XdmodJsonReturnError,
+                                           XdmodNoRowsError,
                                            XDModFetcher)
 
 logger = logging.getLogger(__name__)
@@ -155,11 +157,11 @@ class Command(BaseCommand):
             fetcher = XDModFetcher(resources=resources)
             try:
                 usage = fetcher.xdmod_fetch_storage(
-                        account_name, statistics='avg_physical_usage'
+                    account_name, statistic='avg_physical_usage'
                 )
             except XdmodNotFoundError:
                 logger.warning(
-                    "No data in XDMoD found for allocation %s account %s resources %s",
+                    "No XDMoD physical usage data found for allocation %s account %s resources %s",
                     s, account_name, resources)
                 continue
 
@@ -200,6 +202,7 @@ class Command(BaseCommand):
         )
         allocations = self.filter_allocations(allocations)
 
+        no_xdmodrows = []
         for s in allocations.distinct():
             account_name = self.attribute_check(s, XDMOD_ACCOUNT_ATTRIBUTE_NAME)
             cpu_hours = self.attribute_check(s, XDMOD_ACC_HOURS_ATTRIBUTE_NAME, num=True)
@@ -213,14 +216,18 @@ class Command(BaseCommand):
                 usage = fetcher.xdmod_fetch_cpu_hours(
                         account_name, statistics='total_gpu_hours'
                 )
-            except XdmodNotFoundError:
+            except XdmodJsonReturnError as e:
                 logger.warning(
-                    "No data in XDMoD found for allocation %s account %s resources %s",
-                    s, account_name, resources)
+                    "No XDMoD GPU Hour data found for allocation %s account %s resource %s : %s",
+                    s, account_name, resources, e
+                )
+                continue
+            except XdmodNoRowsError:
+                no_xdmodrows.append([s, account_name, resources])
                 continue
 
             logger.warning(
-                "Total Accelerator hours = %s for allocation %s account %s gpu_hours %s resources %s",
+                "Total Accelerator hours = %s for allocation %s account %s gpu_hours %s resource %s",
                         usage, s, account_name, cpu_hours, resources)
             if self.sync:
                 s.set_usage(XDMOD_ACC_HOURS_ATTRIBUTE_NAME, usage)
@@ -233,6 +240,9 @@ class Command(BaseCommand):
                 str(cpu_hours),
                 str(usage),
             ]))
+        if no_xdmodrows:
+            logger.warning("XDmod rows not found for the following items: %s", no_xdmodrows)
+
 
     def process_total_cpu_hours(self):
         header = [
@@ -255,23 +265,7 @@ class Command(BaseCommand):
         )
         allocations = self.filter_allocations(allocations)
 
-
-        # # bulk collection
-        # resource_filter = (
-        # Q(resourceattribute__resource_attribute_type__name=XDMOD_RESOURCE_ATTRIBUTE_NAME) |
-        # Q(parent_resource__resourceattribute__resource_attribute_type__name=XDMOD_RESOURCE_ATTRIBUTE_NAME)
-        # )
-        # resources_all = Resource.objects.filter(
-        #     id__in=[r.id for a in allocations for r in a.resources.all()]
-        # ).filter(resource_filter)
-        #
-        # fetcher = XDModFetcher(resources=resources_all)
-        # try:
-        #     usage = fetcher.xdmod_fetch_all_project_usages('total_cpu_hours')
-        # except XdmodNotFoundError:
-        #     raise XdmodNotFoundError(
-        #         "No data in XDMoD found for resources %s", resources_all)
-
+        no_xdmodrows = []
         for s in allocations.distinct():
             account_name = self.attribute_check(s, XDMOD_ACCOUNT_ATTRIBUTE_NAME)
             cpu_hours = self.attribute_check(s, XDMOD_CPU_HOURS_ATTRIBUTE_NAME, num=True)
@@ -283,15 +277,21 @@ class Command(BaseCommand):
             fetcher = XDModFetcher(resources=resources)
             try:
                 usage = fetcher.xdmod_fetch_cpu_hours(account_name)
-            except XdmodNotFoundError as e:
+            except XdmodJsonReturnError as e:
                 logger.warning(
-                    "No data in XDMoD found for allocation %s account %s resources %s: %s",
-                    s, account_name, resources, e)
+                    "No XDMoD CPU hour data found for allocation %s account %s resource %s: %s",
+                    s, account_name, resources, e
+                )
+                continue
+            except XdmodNoRowsError:
+                no_xdmodrows.append([s, account_name, resources])
                 continue
 
-            logger.warning(
-                    "Total CPU hours = %s for allocation %s account %s cpu_hours %s resources %s",
-                        usage, s, account_name, cpu_hours, resources)
+
+            logger.info(
+                "Total CPU hours = %s for allocation %s account %s cpu_hours %s resource %s",
+                usage, s, account_name, cpu_hours, resources
+            )
             # collect user-level usage and update allocationuser entries with them
             auser_status_active = AllocationUserStatusChoice.objects.get(name='Active')
 
@@ -335,6 +335,9 @@ class Command(BaseCommand):
                 str(cpu_hours),
                 str(usage),
             ]))
+        if no_xdmodrows:
+            logger.warning("XDmod rows not found for the following items: %s", no_xdmodrows)
+
 
     def process_cloud_core_time(self):
         header = [
@@ -371,7 +374,7 @@ class Command(BaseCommand):
                 usage = fetcher.xdmod_fetch_cloud_core_time(project_name)
             except XdmodNotFoundError:
                 logger.warning(
-                    "No data in XDMoD found for allocation %s project %s resources %s",
+                    "No XDMoD cloud core time data found for allocation %s project %s resource %s",
                     s, project_name, resources)
                 continue
 

@@ -11,11 +11,15 @@ from django.db.models import Q
 from django.contrib.auth import get_user_model
 from ifxbilling.models import Product
 
+from coldfront.core.utils.common import import_from_settings
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
 
 
 MISSING_DATA_DIR = './local_data/missing/'
+
+username_ignore_list = import_from_settings('username_ignore_list', [])
+groupname_ignore_list = import_from_settings('groupname_ignore_list', [])
 
 
 def get_quarter_start_end():
@@ -135,7 +139,10 @@ def id_present_missing_projects(title_list):
     """
     present_projects = Project.objects.filter(title__in=title_list)
     proj_titles = list(present_projects.values_list('title', flat=True))
-    missing_project_titles = [{'title': title} for title in title_list if title not in proj_titles]
+    missing_project_titles = [
+        {'title': title} for title in title_list
+        if title not in proj_titles and title not in groupname_ignore_list
+    ]
     return (present_projects, missing_project_titles)
 
 
@@ -158,7 +165,9 @@ def id_present_missing_projectusers(projectuser_tuple_list):
     present_users = get_user_model().objects.filter(username__in=username_list)
     present_usernames = list(present_users.values_list('username', flat=True))
     missing_projusers = [{'project': tuple[0], 'username':tuple[1]}
-            for tuple in projectuser_tuple_list if tuple[1] not in present_usernames]
+        for tuple in projectuser_tuple_list
+        if tuple[1] not in present_usernames and tuple[1] not in username_ignore_list
+    ]
     return (present_users, missing_projusers)
 
 
@@ -169,7 +178,10 @@ def id_present_missing_users(username_list):
     """
     present_users = get_user_model().objects.filter(username__in=username_list)
     present_usernames = list(present_users.values_list('username', flat=True))
-    missing_usernames = [{'username': n} for n in username_list if n not in present_usernames]
+    missing_usernames = [
+        {'username': n} for n in username_list
+        if n not in present_usernames and n not in username_ignore_list
+    ]
     return (present_users, missing_usernames)
 
 

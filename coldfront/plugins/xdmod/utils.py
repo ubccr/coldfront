@@ -52,6 +52,12 @@ class XdmodError(Exception):
 class XdmodNotFoundError(XdmodError):
     pass
 
+class XdmodJsonReturnError(XdmodNotFoundError):
+    pass
+
+class XdmodNoRowsError(XdmodNotFoundError):
+    pass
+
 class XDModFetcher:
     def __init__(self, start=QUARTER_START, end=QUARTER_END, resources=None):
         self.url = f'{XDMOD_API_URL}{_ENDPOINT_CORE_HOURS}'
@@ -71,8 +77,8 @@ class XDModFetcher:
 
         try:
             error = r.json()
-            raise XdmodNotFoundError(f'Got json response but expected XML: {error}')
-        except json.decoder.JSONDecodeError as e:
+            raise XdmodJsonReturnError(f'Got json response but expected XML: {error}')
+        except json.decoder.JSONDecodeError:
             pass
 
         try:
@@ -82,7 +88,7 @@ class XDModFetcher:
 
         rows = root.find('rows')
         if len(rows) < 1:
-            raise XdmodNotFoundError(
+            raise XdmodNoRowsError(
                 f'Rows not found for {search_item} - {self.payload["resource_filter"]}'
             )
         return rows

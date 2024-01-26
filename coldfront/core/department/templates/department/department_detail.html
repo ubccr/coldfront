@@ -230,7 +230,7 @@
       <div class="card-body">
         <div class="table-responsive">
         <div class="container mb-3 mt-3">
-          <table id="mydatatable" class="table table-striped table-bordered">
+          <table id="clustertable" class="table table-striped table-bordered">
             <thead>
               <tr>
                 <th scope="col">PI</th>
@@ -243,21 +243,9 @@
             </thead>
             <tbody>
               {% for pi, allocs in compute_pi_dict.items %}
-                <tr style="background-color:#C2C2C2" class="parent-project" id="{{ pi }}">
-                  <td nowrap="nowrap" data-search="{{ pi.full_name }}" data-sort="{{ pi.full_name }}">
-                    {{ pi.full_name }}
-                  </td>
-                  <td data-search="{% for a in allocs %}{{a.project.title}} {% endfor %}"></td>
-                  <td data-search="{% for a in allocs %}{{a.resources.first.name}} {{a.path}} {% endfor %}"></td>
-                  <td></td>
-                  <td></td>
-                  <td data-sort="{{ pi.compute_total_price }}">
-                    ${{ pi.compute_total_price|floatformat:2 }}
-                  </td>
-                </tr>
                 {% for allocation in allocs %}
                   <tr style="background-color:#FFFFFF" class="child-allocation">
-                    <td data-search="{{ pi.full_name }}" data-sort="{{ pi.full_name }}"></td>
+                    <td data-search="{{ pi.full_name }}" data-sort="{{ pi.full_name }}">{{ pi.full_name }}</td>
                     <td data-search="{{allocation.project.title}}">
                       <a href="{% url 'project-detail' allocation.project.pk %}">
                         {{ allocation.project.title }}
@@ -273,7 +261,7 @@
                     </td>
                     <td>{{ allocation.allocationuser_set.count }}</td>
                     <td>{{ allocation.size|floatformat:1 }}</td>
-                    <!-- <td>${{ allocation.cost|floatformat:2 }}</td> -->
+		    <!-- <td>${{ allocation.cost|floatformat:2 }}</td> -->
                   </tr>
                 {% endfor %}
               {% endfor %}

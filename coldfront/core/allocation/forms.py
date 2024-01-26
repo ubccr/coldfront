@@ -354,7 +354,7 @@ class AllocationChangeForm(forms.Form):
         (0, "No Extension")
     ]
     for choice in ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS:
-        EXTENSION_CHOICES.append((choice, "{} days".format(choice)))
+        EXTENSION_CHOICES.append((choice, f"{choice} days"))
 
     end_date_extension = forms.TypedChoiceField(
         label='Request End Date Extension',

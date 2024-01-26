@@ -18,23 +18,34 @@ LOGGING = {
     'formatters': {
         'key-events': {
             "()": "django.utils.log.ServerFormatter",
-            "format": "[{server_time}] {levelname} {message}",
+            "format": "[{server_time}] {name} {levelname} {message}",
             "style": "{",
-        }
+        },
+        'default': {
+            "()": "django.utils.log.ServerFormatter",
+            "format": "[{server_time}] {name} {levelname} {message}",
+            "style": "{",
+        },
     },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
         },
         'django-q': {
-            'class': 'logging.FileHandler',
-            'filename': 'django-q.log',
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': 'logs/django-q.log',
+            'when': 'midnight',
+            'backupCount': 10,
+            'formatter': 'key-events',
+            'level': 'DEBUG',
         },
         'key-events': {
             'class': 'logging.handlers.TimedRotatingFileHandler',
             'filename': 'logs/key-events.log',
-            'when': 'D',
+            'when': 'midnight',
+            'backupCount': 10,
             'formatter': 'key-events',
+            'level': 'WARNING',
         },
         # 'file': {
         #     'class': 'logging.FileHandler',
@@ -48,26 +59,21 @@ LOGGING = {
             'handlers': ['console', ],
         },
         'django': {
-            'handlers': ['console'],
+            'handlers': ['console', 'key-events'],
             'level': 'INFO',
         },
         'django-q': {
-            'handlers': ['django-q'],
-            'level': 'DEBUG',
+            'handlers': ['django-q', 'key-events'],
         },
         'ifx': {
-            'handlers': ['console'],
+            'handlers': ['console', 'key-events'],
             'level': 'INFO',
         },
         'ifxbilling': {
-            'handlers': ['console'],
+            'handlers': ['console', 'key-events'],
             'level': 'INFO',
         },
-        'coldfront.core.project': {
-            'handlers': ['key-events'],
-            'level': 'INFO',
-        },
-        'coldfront.core.allocation': {
+        'coldfront': {
             'handlers': ['key-events'],
             'level': 'INFO',
         }

@@ -7,18 +7,13 @@ INSTALLED_APPS += [ 'coldfront.plugins.fasrc' ]
 
 NEO4JP = ENV.str('NEO4JP')
 
-LOGGING['formatters']['fasrc'] = {
-            "()": "django.utils.log.ServerFormatter",
-            "format": "[{server_time}] {message}",
-            "style": "{",
-        }
-
 LOGGING['handlers']['fasrc'] = {
             'class': 'logging.handlers.TimedRotatingFileHandler',
             'filename': 'logs/fasrc.log',
             'backupCount': 10,
             'when': 'midnight',
-            'formatter': 'fasrc',
+            'formatter': 'default',
+            'level': 'DEBUG',
         }
 
 LOGGING['handlers']['import_quotas'] = {
@@ -26,7 +21,8 @@ LOGGING['handlers']['import_quotas'] = {
             'filename': 'logs/import_quotas.log',
             'backupCount': 10,
             'when': 'midnight',
-            'formatter': 'fasrc',
+            'formatter': 'default',
+            'level': 'DEBUG',
         }
 
 LOGGING['handlers']['add_allocations'] = {
@@ -34,20 +30,18 @@ LOGGING['handlers']['add_allocations'] = {
             'filename': 'logs/add_allocations.log',
             'backupCount': 10,
             'when': 'midnight',
-            'formatter': 'fasrc',
+            'formatter': 'default',
+            'level': 'DEBUG',
         }
 
 LOGGING['loggers']['coldfront.plugins.fasrc'] = {
             'handlers': ['fasrc'],
-            'level': 'DEBUG',
         }
 
-LOGGING['loggers']['import_quotas'] = {
+LOGGING['loggers']['coldfront.import_quotas'] = {
             'handlers': ['import_quotas'],
-            'level': 'DEBUG',
         }
 
 LOGGING['loggers']['coldfront.plugins.fasrc.management.commands.id_import_new_allocations'] = {
             'handlers': ['add_allocations'],
-            'level': 'DEBUG',
         }

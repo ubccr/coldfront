@@ -10,7 +10,7 @@ import pandas as pd
 from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand
 
-from coldfront.core.settings import ENV
+from coldfront.config.settings import ENV
 from coldfront.core.project.models import ProjectStatusChoice
 from coldfront.core.allocation.models import (
     AllocationUser,
