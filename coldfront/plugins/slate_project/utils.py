@@ -843,7 +843,7 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
             extra_project_information = extra_information.get(line_split[0])
             if extra_project_information is None:
                 abstract = f'Slate Project {line_split[0]}'
-                project_title = f'Imported slate project {line_split[0]}'
+                project_title = f'Slate Project {line_split[0]}'
                 allocated_quantity = None
                 start_date = None
             else:
