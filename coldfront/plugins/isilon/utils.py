@@ -1,12 +1,13 @@
+import logging
+
 import isilon_sdk.v9_3_0
 from isilon_sdk.v9_3_0.rest import ApiException
-import requests
 
-from coldfront.config.env import ENV
 from coldfront.core.allocation.models import Allocation, AllocationAttributeType
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import import_from_settings
 
+logger = logging.getLogger(__name__)
 
 def connect(cluster_name):
     configuration = isilon_sdk.v9_3_0.Configuration()
@@ -48,8 +49,9 @@ def update_quotas_usages():
             api_client = connect(resource_name)
             isilon_clusters[resource.name] = isilon_sdk.v9_3_0.QuotaApi(api_client)
         except Exception as e:
-            print(f'Could not connect to {resource_name} - will not update quotas for allocations on this resource')
-            print(e)
+            message = f'Could not connect to {resource_name} - will not update quotas for allocations on this resource'
+            logger.warning("%s Error: %s", message, e)
+            print(f"{message} Error: {e}")
             # isilon_clusters[resource.name] = None
 
     isilon_allocations = Allocation.objects.filter(
@@ -68,7 +70,9 @@ def update_quotas_usages():
                 recurse_path_children=True,
             )
         except ApiException as e:
-            print("Exception when calling QuotaApi->list_quotas: %s\n" % e)
+            message = f'Exception when calling QuotaApi->list_quotas: {e}'
+            print(message)
+            logger.warning(message)
             continue
         # update the quota and usage for this allocation
         quota = api_response['thresholds']['hard']
