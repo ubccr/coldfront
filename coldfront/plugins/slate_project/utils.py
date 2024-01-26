@@ -333,8 +333,8 @@ def check_slate_project_account(user, notifications_enabled, ldap_search_conn=No
             logger.info(
                 f'LDAP: Added user {user.username} to the HPFS ADS eligibility group'
             )
-        if notifications_enabled:
-            send_missing_account_email(user.email)
+            if notifications_enabled:
+                send_missing_account_email(user.email)
     elif not SLATE_PROJECT_ACCOUNT in accounts:
         if notifications_enabled:
             send_missing_account_email(user.email)
