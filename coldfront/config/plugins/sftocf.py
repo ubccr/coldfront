@@ -10,21 +10,15 @@ SFPASS = ENV.str('SFPASS')
 STARFISH_SERVER = 'starfish'
 
 
-LOGGING['formatters']['sftocf'] = {
-            "()": "django.utils.log.ServerFormatter",
-            "format": "[{server_time}] {levelname} {message}",
-            "style": "{",
-        }
-
 LOGGING['handlers']['sftocf'] = {
             'class': 'logging.handlers.TimedRotatingFileHandler',
             'filename': 'logs/sftocf.log',
             'when': 'D',
-            'backupCount': 30, # how many backup files to keep
-            'formatter': 'sftocf',
+            'backupCount': 10, # how many backup files to keep
+            'formatter': 'default',
+            'level': 'DEBUG',
         }
 
-LOGGING['loggers']['sftocf'] = {
+LOGGING['loggers']['coldfront.plugins.sftocf'] = {
             'handlers': ['sftocf'],
-            'level': 'DEBUG',
         }

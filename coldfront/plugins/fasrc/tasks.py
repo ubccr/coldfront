@@ -12,7 +12,7 @@ def import_quotas(volumes=None):
     ----------
     volumes : string of volume names separated by commas. Optional, default None
     """
-    logger = logging.getLogger('import_quotas')
+    logger = logging.getLogger('coldfront.import_quotas')
     if volumes:
         volumes = volumes.split(",")
     pull_push_quota_data()

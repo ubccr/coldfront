@@ -9,13 +9,11 @@ from datetime import datetime, timedelta
 import requests
 from django.utils import timezone
 
-from coldfront.config.env import ENV
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.fasrc import (
     read_json,
     save_json,
     log_missing,
-    slate_for_check,
     determine_size_fmt,
     id_present_missing_users,
     locate_or_create_dirpath,
@@ -31,14 +29,15 @@ from coldfront.core.allocation.models import (
 
 DATESTR = datetime.today().strftime('%Y%m%d')
 DATAPATH = "./coldfront/plugins/sftocf/data/"
-logger = logging.getLogger('sftocf')
+STARFISH_SERVER = import_from_settings('STARFISH_SERVER', '')
 
-if ENV.bool('PLUGIN_SFTOCF', default=False):
-    STARFISH_SERVER = import_from_settings('STARFISH_SERVER')
+logger = logging.getLogger(__name__)
 
 svp = read_json('coldfront/plugins/sftocf/servers.json')
 
-locate_or_create_dirpath('./coldfront/plugins/sftocf/data/')
+username_ignore_list = import_from_settings('username_ignore_list', [])
+
+locate_or_create_dirpath(DATAPATH)
 
 def record_process(func):
     """Wrapper function for logging"""
@@ -52,7 +51,10 @@ def record_process(func):
 
 
 # Define filter for allocations to be slated for collection here as you see fit
-ALLOCATIONS_FOR_COLLECTION = Allocation.objects.filter(status__name__in=['Active'])
+ALLOCATIONS_FOR_COLLECTION = Allocation.objects.filter(
+    status__name__in=['Active'],
+    resources__resource_type__name='Storage'
+)
 
 
 class StarFishServer:
@@ -305,7 +307,9 @@ def generate_headers(token):
 class AllocationQueryMatch:
     """class to hold Allocations and related query results together."""
     def __new__(cls, allocation, total_usage_entries, user_usage_entries):
-        allocation_data = (allocation.pk, allocation.project.title)
+        allocation_data = (
+            allocation.pk, allocation.project.title, allocation.resources.first()
+        )
         message = None
         if not total_usage_entries:
             message = f'No starfish allocation usage result for allocation {allocation_data}; deactivation suggested'
@@ -313,11 +317,7 @@ class AllocationQueryMatch:
             message = f'too many total_usage_entries for allocation {allocation_data}; investigation required'
         if message:
             print(message)
-            slate_for_check([{
-                'error': message,
-                'program': 'pull_sf_push_cf_redash',
-                'urls': f'/allocation/{allocation.pk}/'
-            }])
+            logger.warning(message)
             return None
         return super().__new__(cls)
 
@@ -443,6 +443,7 @@ class UsageDataPipelineBase:
                     'path': d.get('path', None),
                 }
                 for d in obj.users_in_list(missing_username_list)
+                if d['username'] not in username_ignore_list
             ]
             log_missing('user', missing_unames_metadata)
             for i in obj.users_in_list(missing_username_list):
@@ -450,7 +451,7 @@ class UsageDataPipelineBase:
         return allocationquerymatch_objects, user_models
 
     def update_coldfront_objects(self, allocationquerymatch_objects, user_models):
-        
+
         allocation_attribute_types = AllocationAttributeType.objects.all()
 
         quota_bytes_attributetype = allocation_attribute_types.get(name='Quota_In_Bytes')

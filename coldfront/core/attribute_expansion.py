@@ -27,7 +27,7 @@ def is_expandable_type(attribute_type):
     ATTRIBUTE_EXPANSION_TYPE_PREFIX
     """
 
-    atype_name = attribute_type.name;
+    atype_name = attribute_type.name
     return atype_name.startswith(ATTRIBUTE_EXPANSION_TYPE_PREFIX)
 
 def get_attriblist_str(attribute_name, resources=[], allocations=[]):
@@ -110,12 +110,11 @@ def get_attribute_parameter_value(
             #Good string literal
             tmpstr = tmpstr[:-1]
             return tmpstr
-        else:
-            #Bad string literal
-            logger.warn("Bad string literal '{}' found while processing "
-                "{}; missing final single quote".format(
-                argument, error_text))
-            return None
+        #Bad string literal
+        logger.warning(
+            "Bad string literal '%s' found while processing %s; missing final single quote",
+            argument, error_text)
+        return None
 
     # If argument if prefixed with any of the strings in attrib_sources,
     # strip the prefix and set attrib_source accordingly
@@ -132,18 +131,17 @@ def get_attribute_parameter_value(
     # Try expanding as a parameter/attribute
     # We do attribute_parameter_dict first, then allocations, then
     # resources to try to get value most specific to use case
-    if ( attribute_parameter_dict is not None and
-        (attrib_source == ':' or attrib_source == 'APDICT:')):
+    if attribute_parameter_dict is not None and attrib_source in [':', 'APDICT:']:
         if argument in attribute_parameter_dict:
             return attribute_parameter_dict[argument]
 
-    if attrib_source == ':' or attrib_source == 'ALLOCATION:':
+    if attrib_source in [':', 'ALLOCATION:']:
         for alloc in allocations:
             tmp = alloc.get_attribute(argument)
             if tmp is not None:
                 return tmp
 
-    if attrib_source == ':' or attrib_source == 'RESOURCE:':
+    if attrib_source in [':', 'RESOURCE:']:
         for res in resources:
             tmp = res.get_attribute(argument)
             if tmp is not None:
@@ -164,9 +162,9 @@ def get_attribute_parameter_value(
             value = float(argument)
             return value
         except ValueError:
-            logger.warn("Unable to evaluate argument '{arg}' while "
-                "processing {etxt}, returning None".format(
-                arg=argument, etxt=error_text))
+            logger.warning("Unable to evaluate argument '%s' while "
+                "processing %s, returning None",
+                argument, error_text)
             return None
 
     # Should not reach here
@@ -227,8 +225,7 @@ def process_attribute_parameter_operation(
             # Defaulting operation
             if oldvalue is None:
                 return argument
-            else:
-                return oldvalue
+            return oldvalue
         if opcode == '+':
             # Addition/concatenation operation
             if isinstance(oldvalue, int) or isinstance(oldvalue, float):
@@ -255,15 +252,14 @@ def process_attribute_parameter_operation(
             if argument == 'floor':
                 newval = math.floor(oldvalue)
             else:
-                logger.error('Unrecognized function named {} in {}= for '
-                    '{}, returning None'.format(
-                    argument, opcode, error_text))
+                logger.error(
+                    'Unrecognized function named %s in %s= for %s, returning None',
+                    argument, opcode, error_text)
                 return None
         # If reached here, we do not recognize opcode
-        logger.error('Unrecognized operation {}= in {}, '
-            'returning None'.format( opcode, error_text))
+        logger.error('Unrecognized operation %s= in %s, returning None', opcode, error_text)
     except Exception as xcept:
-        logger.warn("Error performing operator {op}= on oldvalue='{old}' "
+        logger.warning("Error performing operator {op}= on oldvalue='{old}' "
             "and argument={arg} in {errtext}".format(
             op=opcode, old=oldvalue, arg=argument, errtext=error_text))
         return None
@@ -313,10 +309,9 @@ def process_attribute_parameter_string(
     if len(tmp) != 2:
         # No '=' found, so invalid format of parmstr
         # Log error and return unmodified attribute_parameter_dict
-        logger.error("Invalid parameter string '{pstr}', no '=', while "
-            "creating attribute parameter dictionary for expanding "
-            "attribute {aname}".format(
-            aname=attribute_name, pstr=parameter_string))
+        logger.error("Invalid parameter string '%s', no '=', while creating "
+            "attribute parameter dictionary for expanding attribute %s",
+            attribute_name, parameter_string)
         return attribute_parameter_dict
     pname = tmp[0]
     argument = tmp[1].strip()
@@ -456,8 +451,7 @@ def expand_attribute(raw_value, attribute_name, attriblist_string,
         # referencing a parameter not defined in apdict to divide by
         # zero errors in processing apdict.  We just log it and then
         # return raw_value
-        logger.error("Error expanding {aname}: {error}".format(
-            aname=attribute_name, error=xcept))
+        logger.error("Error expanding %s: %s", attribute_name, xcept)
         return raw_value
 
 
@@ -479,7 +473,7 @@ def convert_type(value, type_name, error_text='unknown'):
     future "Attribute Expanded ..." types.
     """
     if type_name is None:
-        logger.error('No AttributeType found for {}'.format(error_text))
+        logger.error('No AttributeType found for %s', error_text)
         return value
 
     if type_name.endswith('Text'):
@@ -487,8 +481,8 @@ def convert_type(value, type_name, error_text='unknown'):
             newval = str(value)
             return newval
         except ValueError:
-            logger.error('Error converting "{}" to {} in {}'.format(
-                value, 'Text', error_text))
+            logger.error('Error converting "%s" to %s in %s',
+                        value, 'Text', error_text)
             return value
 
     if type_name.endswith('Int'):

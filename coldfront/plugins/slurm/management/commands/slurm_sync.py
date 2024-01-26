@@ -66,11 +66,13 @@ class Command(BaseCommand):
         for resource, cluster in slurm_clusters.items():
 
             # create an allocation for each account
+            undetected_projs = []
             for name, account in cluster.accounts.items():
                 try:
                     project_obj = Project.objects.get(title=name)
                 except Project.DoesNotExist:
                     print(f'no project with title {name} detected.')
+                    undetected_projs.append(name)
                     continue
 
                 allocation_objs = project_obj.allocation_set.filter(
@@ -87,6 +89,10 @@ class Command(BaseCommand):
                     allocation_obj = allocation_objs.first()
                 elif len(allocation_objs) > 1:
                     print('Too many allocations:', allocation_objs)
+                    logger.warning(
+                        'multiple allocations returned for project %s resource %s',
+                        project_obj.title, resource.name
+                    )
                     continue
                 # used in XDMOD to correspond with pi_filter, I think
                 # 'slurm_account_name'? XDMOD_ACCOUNT_ATTRIBUTE_NAME
@@ -144,3 +150,8 @@ class Command(BaseCommand):
                                 allocationuser_attribute_type=attr_type,
                                 defaults={'value': user_val}
                             )
+            if undetected_projs:
+                logger.warning(
+                    '%s Accounts without corresponding projects detected: %s',
+                    resource, undetected_projs
+                )

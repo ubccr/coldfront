@@ -21,21 +21,16 @@ AUTH_LDAP_BIND_PASSWORD = ENV.str('AUTH_LDAP_BIND_PASSWORD')
 AUTH_LDAP_USER_SEARCH_BASE = ENV.str('AUTH_LDAP_USER_SEARCH_BASE')
 AUTH_LDAP_GROUP_SEARCH_BASE = ENV.str('AUTH_LDAP_GROUP_SEARCH_BASE')
 
-LOGGING['formatters']['ldap_fasrc'] = {
-            "()": "django.utils.log.ServerFormatter",
-            "format": "[{server_time}] {message}",
-            "style": "{",
-        }
 
 LOGGING['handlers']['ldap_fasrc'] = {
             'class': 'logging.handlers.TimedRotatingFileHandler',
             'filename': 'logs/ldap_fasrc.log',
             'backupCount': 10,
             'when': 'midnight',
-            'formatter': 'ldap_fasrc',
+            'formatter': 'default',
+            'level': 'DEBUG',
         }
 
 LOGGING['loggers']['coldfront.plugins.ldap'] = {
             'handlers': ['ldap_fasrc'],
-            'level': 'DEBUG',
         }

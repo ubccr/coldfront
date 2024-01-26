@@ -82,10 +82,11 @@ class Command(BaseCommand):
                         allocation_attribute_exist = False
 
                     if not allocation_attribute_exist:
-                        allocation_attribute_obj,_ =AllocationAttribute.objects.get_or_create(
+                        allocation_attribute_obj,_ = AllocationAttribute.objects.get_or_create(
                             allocation_attribute_type=allocation_attribute_type_obj,
                             allocation=allocation,
-                            value = lab_allocation)
+                            defaults={'value': lab_allocation}
+                        )
                         allocation_attribute_type_obj.save()
 
 
@@ -95,9 +96,10 @@ class Command(BaseCommand):
                     allocation_attribute_type_payment = AllocationAttributeType.objects.get(
                     name='RequiresPayment')
                     allocation_attribute_payment, _ = AllocationAttribute.objects.get_or_create(
-                    allocation_attribute_type=allocation_attribute_type_payment,
-                    allocation=allocation,
-                    value=True)
+                        allocation_attribute_type=allocation_attribute_type_payment,
+                        allocation=allocation,
+                        defaults={'value': True}
+                    )
                     allocation_attribute_payment.save()
             except Project.DoesNotExist:
                 print("Project not found: " + lab_name)

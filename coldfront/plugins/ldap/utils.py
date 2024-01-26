@@ -17,7 +17,6 @@ from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.utils.fasrc import (
     id_present_missing_users,
     log_missing,
-    slate_for_check,
     sort_by,
 )
 from coldfront.core.project.models import (
@@ -30,6 +29,7 @@ from coldfront.core.project.models import (
 
 logger = logging.getLogger(__name__)
 
+username_ignore_list = import_from_settings('username_ignore_list', [])
 
 class LDAPConn:
     """
@@ -59,8 +59,13 @@ class LDAPConn:
         self.LDAP_GROUP_SEARCH_BASE = import_from_settings(AUTH_LDAP_GROUP_SEARCH_BASE, None)
         self.LDAP_CONNECT_TIMEOUT = import_from_settings(LDAP_CONNECT_TIMEOUT, 20)
         self.LDAP_USE_SSL = import_from_settings(AUTH_LDAP_USE_SSL, False)
-        self.server = Server(self.LDAP_SERVER_URI, use_ssl=self.LDAP_USE_SSL, connect_timeout=self.LDAP_CONNECT_TIMEOUT)
-        self.conn = Connection(self.server, self.LDAP_BIND_DN, self.LDAP_BIND_PASSWORD, auto_bind=True)
+        self.server = Server(
+            self.LDAP_SERVER_URI,
+            use_ssl=self.LDAP_USE_SSL, connect_timeout=self.LDAP_CONNECT_TIMEOUT
+        )
+        self.conn = Connection(
+            self.server, self.LDAP_BIND_DN, self.LDAP_BIND_PASSWORD, auto_bind=True
+        )
 
     def search(self, attr_search_dict, search_base, attributes=ALL_ATTRIBUTES):
         """Run an LDAP search.
@@ -285,7 +290,7 @@ class GroupUserCollection:
             logger.debug('(%s of %s users valid)', len(self.current_ad_users), len(self.members))
             ad_users = [u['sAMAccountName'][0] for u in self.current_ad_users]
         else:
-            logger.warning('WARNING: NO AD USERS RETURNED FOR %s', self.project.title)
+            logger.warning('NO AD USERS FOUND FOR %s', self.project.title)
             ad_users = []
         proj_usernames = [
             pu.user.username for pu in self.project.projectuser_set.filter(
@@ -531,7 +536,9 @@ def add_new_projects(groupusercollections, errortracker):
     ]
     missing_pi_groups = [g for g in groupusercollections if g not in active_present_pi_groups]
     missing_pis = [
-        {'username': g.pi['sAMAccountName'][0], 'group': g.name} for g in missing_pi_groups
+        {'username': g.pi['sAMAccountName'][0], 'group': g.name}
+        for g in missing_pi_groups
+        if g.pi['sAMAccountName'][0] not in username_ignore_list
     ]
     log_missing('user', missing_pis)
     # record and remove projects where pis aren't available
@@ -545,7 +552,10 @@ def add_new_projects(groupusercollections, errortracker):
         # collect group membership entries
         member_usernames = {u['sAMAccountName'][0] for u in group.current_ad_users} - missing_usernames
         missing_members = [
-            {'username': m['sAMAccountName'][0], 'group': group.name} for m in group.members
+            {'username': m['sAMAccountName'][0], 'group': group.name}
+            for m in group.members
+            if m['sAMAccountName'][0] in missing_usernames
+            and m['sAMAccountName'][0] not in username_ignore_list
         ]
         log_missing('user', missing_members)
 
@@ -562,14 +572,7 @@ def add_new_projects(groupusercollections, errortracker):
             errortracker['no_fos'].append(group.name)
             message = f'no department for AD group {group.name}, will not add unless fixed'
             logger.warning(message)
-            print(f'HALTING: {message}')
-            issue = {
-                'error': message,
-                'program': 'ldap.utils.add_new_projects',
-                'url': 'NA; AD issue',
-            }
-            slate_for_check([issue])
-            print(group.pi)
+            print(f'HALTING: {message} | group pi: {group.pi}')
             continue
 
         ### CREATE PROJECT ###

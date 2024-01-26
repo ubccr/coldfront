@@ -219,7 +219,7 @@ class AllTheThingsConn:
         ----------
         volumes : List of volume names to collect. Optional, default None.
         """
-        logger = logging.getLogger('import_quotas')
+        logger = logging.getLogger('coldfront.import_quotas')
         query = ATTAllocationQuery()
         query.produce_query_statement('isilon', volumes=self.volumes)
         query.produce_query_statement('quota', volumes=self.volumes)
@@ -230,19 +230,23 @@ class AllTheThingsConn:
 
 
 def matched_dict_processing(allocation, data_dicts, paired_allocs, log_message):
-    logger = logging.getLogger('import_quotas')
+    logger = logging.getLogger('coldfront.import_quotas')
     if len(data_dicts) == 1:
         logger.debug(log_message)
         paired_allocs[allocation] = data_dicts[0]
     else:
-        logger.warning('too many matches for allocation %s: %s', allocation, data_dicts)
+        logger.warning('too many matches for allocation %s %s: %s',
+            allocation.pk, allocation, data_dicts)
     return paired_allocs
 
 
 def pair_allocations_data(project, quota_dicts):
     """pair allocations with usage dicts"""
-    logger = logging.getLogger('import_quotas')
-    unpaired_allocs = project.allocation_set.filter(status__name='Active')
+    logger = logging.getLogger('coldfront.import_quotas')
+    unpaired_allocs = project.allocation_set.filter(
+        status__name='Active',
+        resources__resource_type__name='Storage'
+    )
     paired_allocs = {}
     # first, pair allocations with those that have same
     for allocation in unpaired_allocs:
@@ -270,7 +274,7 @@ def pair_allocations_data(project, quota_dicts):
     unpaired_dicts = [d for d in unpaired_dicts if d not in paired_allocs.values()]
     if unpaired_dicts or unpaired_allocs:
         logger.warning(
-            "WARNING: unpaired allocation data: %s %s", unpaired_allocs, unpaired_dicts
+            "unpaired allocation data. Allocation: %s | Dict: %s", unpaired_allocs, unpaired_dicts
         )
     return paired_allocs
 
@@ -278,7 +282,7 @@ def pair_allocations_data(project, quota_dicts):
 def push_quota_data(result_file):
     """update group quota & usage values in Coldfront from a JSON of quota data.
     """
-    logger = logging.getLogger('import_quotas')
+    logger = logging.getLogger('coldfront.import_quotas')
     errored_allocations = {}
     missing_allocations = []
     result_json = read_json(result_file)
@@ -326,7 +330,7 @@ def push_quota_data(result_file):
                 # 5. AllocationAttribute
                 allocation.allocationattribute_set.update_or_create(
                     allocation_attribute_type=allocation_attribute_type_payment,
-                    defaults={'value':True}
+                    defaults={'value': True}
                 )
                 counts['complete'] += 1
             except Exception as exc:
@@ -334,7 +338,8 @@ def push_quota_data(result_file):
                 errored_allocations[allocation_name] = exc
     log_missing('allocation', missing_allocations)
     logger.warning('error counts: %s', counts)
-    logger.warning('errored_allocations:\n%s', errored_allocations)
+    if errored_allocations:
+        logger.warning('errored_allocations:\n%s', errored_allocations)
 
 
 def match_entries_with_projects(result_json):
@@ -342,7 +347,10 @@ def match_entries_with_projects(result_json):
     # produce lists of present labs & labs w/o projects
     lablist = list(set(k for k in result_json))
     proj_models, missing_projs = id_present_missing_projects(lablist)
+
     log_missing('project', missing_projs)
+    if missing_projs:
+        logger.warning('missing projects: %s', missing_projs)
     # remove them from result_json
     missing_proj_titles = [list(p.values())[0] for p in missing_projs]
     [result_json.pop(t) for t in missing_proj_titles]
@@ -350,7 +358,7 @@ def match_entries_with_projects(result_json):
 
 
 def pull_push_quota_data(volumes=None):
-    logger = logging.getLogger('import_quotas')
+    logger = logging.getLogger('coldfront.import_quotas')
     att_data = QuotaDataPuller(volumes=volumes).pull('ATTQuery')
     nese_data = QuotaDataPuller(volumes=volumes).pull('NESEfile')
     combined_data = att_data + nese_data
@@ -360,7 +368,6 @@ def pull_push_quota_data(volumes=None):
     result_file = 'local_data/att_nese_quota_data.json'
     save_json(result_file, resp_json_by_lab)
     push_quota_data(result_file)
-    logger.debug("This shows here")
 
 
 def generate_headers(token):
