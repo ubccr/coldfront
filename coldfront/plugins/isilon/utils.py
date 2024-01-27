@@ -20,7 +20,7 @@ def connect(cluster_name):
 
 
 def update_quota_and_usage(alloc, usage_attribute_type, value_list):
-    usage_attribute, _ = alloc.allocation.allocationattribute_set.get_or_create(
+    usage_attribute, _ = alloc.allocationattribute_set.get_or_create(
         allocation_attribute_type=usage_attribute_type
     )
     usage_attribute.value = value_list[0]
@@ -41,6 +41,7 @@ def update_quotas_usages():
     # create isilon connections to all isilon clusters in coldfront
     isilon_resources = Resource.objects.filter(name__contains='tier1')
     for resource in isilon_resources:
+        report = {"complete": 0, "no entry": [], "empty quota": []}
         resource_name = resource.name.split('/')[0]
         # try connecting to the cluster. If it fails, display an error and
         # replace the resource with a dummy resource
@@ -61,17 +62,40 @@ def update_quotas_usages():
         )
 
         # get all allocation quotas and usoges
-        api_response = api_instance.list_quota_quotas(
-            path='/ifs/rc_labs/',
-            recurse_path_children=True,
-        )
-
+        try:
+            rc_labs = api_instance.list_quota_quotas(
+                path='/ifs/rc_labs/',
+                recurse_path_children=True,
+            )
+            l3_labs = api_instance.list_quota_quotas(
+                path='/ifs/rc_fasse_labs/',
+                recurse_path_children=True,
+            )
+        except Exception as e:
+            message = f'Could not connect to {resource_name} - will not update quotas for allocations on this resource'
+            logger.warning("%s Error: %s", message, e)
+            print(f"{message} Error: {e}")
+            # isilon_clusters[resource.name] = None
+            continue
+        quotas = rc_labs.quotas + l3_labs.quotas
         for allocation in isilon_allocations:
             # get the api_response entry for this allocation. If it doesn't exist, skip
-            api_entry = next(e for e in api_response.quota_quotas if e['path'] == f'/ifs/{allocation.path}')
+
+            try:
+                api_entry = next(e for e in quotas if e.path == f'/ifs/{allocation.path}')
+            except StopIteration as e:
+                logger.error('no isilon quota entry for allocation %s', allocation)
+                print('no isilon quota entry for allocation', allocation)
+                report['no entry'].append(f'{allocation.pk} {allocation.path} {allocation}')
+                continue
             # update the quota and usage for this allocation
-            quota = api_entry['thresholds']['hard']
-            usage = api_entry['usage']['fslogical']
+            quota = api_entry.thresholds.hard
+            usage = api_entry.usage.fslogical
+            if quota is None:
+                logger.error('no hard threshold set for allocation %s', allocation)
+                print('no hard threshold set for allocation', allocation)
+                report['empty quota'].append(f'{allocation.pk} {allocation.path} {allocation}')
+                continue
             quota_tb = quota / 1024 / 1024 / 1024 / 1024
             usage_tb = usage / 1024 / 1024 / 1024 / 1024
             update_quota_and_usage(
@@ -80,3 +104,7 @@ def update_quotas_usages():
             update_quota_and_usage(
                 allocation, quota_tbs_attributetype, [quota_tb, usage_tb]
             )
+            print("SUCCESS:update for allocation", allocation, "complete")
+            report['complete'] += 1
+        print(report)
+        logger.warning("isilon update report for %s: %s", resource_name, report)
