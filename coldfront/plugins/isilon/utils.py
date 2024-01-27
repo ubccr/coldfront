@@ -40,48 +40,43 @@ def update_quotas_usages():
         name='Storage Quota (TB)')
     # create isilon connections to all isilon clusters in coldfront
     isilon_resources = Resource.objects.filter(name__contains='tier1')
-    isilon_clusters = {}
     for resource in isilon_resources:
         resource_name = resource.name.split('/')[0]
         # try connecting to the cluster. If it fails, display an error and
         # replace the resource with a dummy resource
         try:
             api_client = connect(resource_name)
-            isilon_clusters[resource.name] = isilon_sdk.v9_3_0.QuotaApi(api_client)
+            api_instance = isilon_sdk.v9_3_0.QuotaApi(api_client)
         except Exception as e:
             message = f'Could not connect to {resource_name} - will not update quotas for allocations on this resource'
             logger.warning("%s Error: %s", message, e)
             print(f"{message} Error: {e}")
             # isilon_clusters[resource.name] = None
-
-    isilon_allocations = Allocation.objects.filter(
-        is_active=True,
-        resource__in=isilon_clusters.keys(),
-    )
-
-    for allocation in isilon_allocations:
-        # get the api instance for this allocation. If it doesn't exist, skip
-        api_instance = isilon_clusters[allocation.resource.name]
-        if not api_instance:
             continue
-        try:
-            api_response = api_instance.get_quota_quota(
-                path=allocation.resource.path,
-                recurse_path_children=True,
+
+        # get all active allocations for this resource
+        isilon_allocations = Allocation.objects.filter(
+            status__name='Active',
+            resources__name=resource.name,
+        )
+
+        # get all allocation quotas and usoges
+        api_response = api_instance.list_quota_quotas(
+            path='/ifs/rc_labs/',
+            recurse_path_children=True,
+        )
+
+        for allocation in isilon_allocations:
+            # get the api_response entry for this allocation. If it doesn't exist, skip
+            api_entry = next(e for e in api_response.quota_quotas if e['path'] == f'/ifs/{allocation.path}')
+            # update the quota and usage for this allocation
+            quota = api_entry['thresholds']['hard']
+            usage = api_entry['usage']['fslogical']
+            quota_tb = quota / 1024 / 1024 / 1024 / 1024
+            usage_tb = usage / 1024 / 1024 / 1024 / 1024
+            update_quota_and_usage(
+                allocation, quota_bytes_attributetype, [quota, usage]
             )
-        except ApiException as e:
-            message = f'Exception when calling QuotaApi->list_quotas: {e}'
-            print(message)
-            logger.warning(message)
-            continue
-        # update the quota and usage for this allocation
-        quota = api_response['thresholds']['hard']
-        usage = api_response['usage']['fslogical']
-        quota_tb = quota / 1024 / 1024 / 1024 / 1024
-        usage_tb = usage / 1024 / 1024 / 1024 / 1024
-        update_quota_and_usage(
-            allocation, quota_bytes_attributetype, [quota, usage]
-        )
-        update_quota_and_usage(
-            allocation, quota_tbs_attributetype, [quota_tb, usage_tb]
-        )
+            update_quota_and_usage(
+                allocation, quota_tbs_attributetype, [quota_tb, usage_tb]
+            )
