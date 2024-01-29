@@ -711,16 +711,18 @@ def get_slate_project_info(username):
 
     slate_projects = []
     for allocation_user_obj in allocation_user_objs:
-        namespace_entry_obj = allocation_user_obj.allocation.allocationattribute_set.get(
-            allocation_attribute_type__name='Namespace Entry'
+        attribute_obj = allocation_user_obj.allocation.allocationattribute_set.filter(
+            allocation_attribute_type__name='Slate Project Directory'
         )
+        if not attribute_obj.exists():
+            continue
         owner = allocation_user_obj.allocation.project.pi.username
         # For imported projects that have a project owner who can't be a PI.
         if owner == 'thcrowe' and allocation_user_obj.allocation.project.requestor:
             owner = allocation_user_obj.allocation.project.requestor.username
         slate_projects.append(
             {
-                'name': namespace_entry_obj.value,
+                'name': attribute_obj.value.split('/')[-1],
                 'access': allocation_user_obj.role.name,
                 'owner': allocation_user_obj.allocation.project.pi.username
             }
@@ -756,10 +758,13 @@ def send_inactive_users_report():
     )
     inactive_users = {}
     for allocation_user in allocation_users:
-        # Assumes there's never more than one slate project allocation in a project
-        namespace_entry = allocation_user.allocation.allocationattribute_set.get(
-            allocation_attribute_type__name='Namespace Entry'
-        ).value
+        attribute_obj = allocation_user.allocation.allocationattribute_set.filter(
+            allocation_attribute_type__name='Slate Project Directory'
+        )
+        if not attribute_obj.exist():
+            directory = None
+        else:
+            directory = attribute_obj[0].value
         project_user = allocation_user.allocation.project.projectuser_set.filter(user=allocation_user.user)
         if project_user.exists():
             username = allocation_user.user.username
@@ -769,16 +774,16 @@ def send_inactive_users_report():
 
             if pi_username == username:
                 if not inactive_users[username].get('PI'):
-                    inactive_users[username]['PI'] = [namespace_entry]
+                    inactive_users[username]['PI'] = [directory]
                 else:
-                    inactive_users[username]['PI'].append(namespace_entry)
+                    inactive_users[username]['PI'].append(directory)
                 continue
 
             role = project_user[0].role.name
             if not inactive_users[username].get(role):
-                inactive_users[username][role] = [namespace_entry]
+                inactive_users[username][role] = [directory]
             else:
-                inactive_users[username][role].append(namespace_entry)
+                inactive_users[username][role].append(directory)
 
     if EMAIL_ENABLED and inactive_users:
         template_context = {
@@ -805,10 +810,13 @@ def send_ineligible_pi_report():
     )
     inactive_users = {}
     for allocation in allocations:
-        # Assumes there's never more than one slate project allocation in a project
-        namespace_entry = allocation.allocationattribute_set.get(
-            allocation_attribute_type__name='Namespace Entry'
-        ).value
+        attribute_obj = allocation.allocationattribute_set.filter(
+            allocation_attribute_type__name='Slate Project Directory'
+        )
+        if not attribute_obj.exist():
+            directory = None
+        else:
+            directory = attribute_obj[0].value
         pi = allocation.project.pi
         pi_status = allocation.project.projectuser_set.get(user=pi).status.name
         if pi_status == 'Inactive':
@@ -817,9 +825,9 @@ def send_ineligible_pi_report():
                 inactive_users[username] = {}
 
             if not inactive_users[username].get('PI'):
-                inactive_users[username]['PI'] = [namespace_entry]
+                inactive_users[username]['PI'] = [directory]
             else:
-                inactive_users[username]['PI'].append(namespace_entry)
+                inactive_users[username]['PI'].append(directory)
 
     if EMAIL_ENABLED and inactive_users:
         template_context = {
@@ -1074,7 +1082,11 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
 
         create_allocation_attribute(allocation_obj, 'GID', slate_project.get('gid_number'))
         create_allocation_attribute(allocation_obj, 'LDAP Group', slate_project.get('ldap_group'))
-        create_allocation_attribute(allocation_obj, 'Namespace Entry', slate_project.get('namespace_entry'))
+        create_allocation_attribute(
+            allocation_obj,
+            'Slate Project Directory',
+            '/N/project/' + slate_project.get('namespace_entry')
+        )
         if slate_project.get('allocated_quantity'):
             create_allocation_attribute(
                 allocation_obj, 'Allocated Quantity', slate_project.get('allocated_quantity')
