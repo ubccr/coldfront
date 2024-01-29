@@ -48,6 +48,57 @@ if EMAIL_ENABLED:
     EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
 
 
+def sync_slate_project_ldap_group(allocation_obj, ldap_conn):
+    """
+    Checks if the Slate Project allocation ldap group still matches what is in LDAP. If not then
+    update it. 
+
+    :param ldap_conn: LDAPModify initialized connection
+    :param allocation_obj: Allocation object that is checked
+    """
+    allocation_attribute_type = 'GID'
+    ldap_group_gid = allocation_obj.allocationattribute_set.filter(
+        allocation_attribute_type__name=allocation_attribute_type
+    )
+    if not ldap_group_gid.exists():
+        logger.error(
+            f'Failed to sync ldap group in a Slate Project allocation. The allocation '
+            f'(pk={allocation_obj.pk}) is missing the allocation attribute '
+            f'"{allocation_attribute_type}"'
+        )
+        return
+    ldap_group_gid = ldap_group_gid[0].value
+
+    if ldap_conn is None:
+        ldap_conn = LDAPModify()
+    if not ldap_conn.check_attribute_exists('gidNumber', ldap_group_gid):
+        logger.error(
+            f'LDAP: Slate Project GID for allocation {allocation_obj.pk} does not exist. No sync '
+            f'was performed'
+        )
+        return
+    
+    allocation_ldap_group = allocation_obj.allocationattribute_set.filter(
+        allocation_attribute_type__name='LDAP Group'
+    )
+    if not allocation_ldap_group.exists():
+        logger.error(
+            f'Failed to sync ldap group in a Slate Project allocation. The allocation '
+            f'(pk={allocation_obj.pk}) is missing the allocation attribute '
+            f'"{allocation_attribute_type}"'
+        )
+        return
+    allocation_ldap_group = allocation_ldap_group[0]
+    ldap_group = ldap_conn.get_attribute('cn', ldap_group_gid)
+    if ldap_group != allocation_ldap_group.value:
+        old_ldap_group = allocation_ldap_group.value
+        allocation_ldap_group.value = ldap_group
+        allocation_ldap_group.save()
+        logger.info(
+            f'LDAP: Slate Project LDAP group name changed from {old_ldap_group} to {ldap_group}'
+        )
+    
+
 def sync_slate_project_users(allocation_obj, ldap_conn=None):
     """
     Checks if the Slate Project allocation is in sync with the Slate Project group in ldap. If not
