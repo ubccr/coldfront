@@ -716,13 +716,14 @@ def get_slate_project_info(username):
         )
         if not attribute_obj.exists():
             continue
+        directory = attribute_obj[0]
         owner = allocation_user_obj.allocation.project.pi.username
         # For imported projects that have a project owner who can't be a PI.
         if owner == 'thcrowe' and allocation_user_obj.allocation.project.requestor:
             owner = allocation_user_obj.allocation.project.requestor.username
         slate_projects.append(
             {
-                'name': attribute_obj.value.split('/')[-1],
+                'name': directory.value.split('/')[-1],
                 'access': allocation_user_obj.role.name,
                 'owner': allocation_user_obj.allocation.project.pi.username
             }
