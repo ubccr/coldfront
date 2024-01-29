@@ -48,7 +48,31 @@ if EMAIL_ENABLED:
     EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
 
 
-def sync_slate_project_ldap_group(allocation_obj, ldap_conn):
+def sync_slate_project_directory_name(allocation_obj, ldap_group):
+    allocation_attribute_type = 'Slate Project Directory'
+    slate_project_directory = allocation_obj.allocationattribute_set.filter(
+        allocation_attribute_type__name=allocation_attribute_type
+    )
+    if not slate_project_directory.exists():
+        logger.error(
+            f'Failed to sync slate project directory in a Slate Project allocation. The allocation '
+            f'(pk={allocation_obj.pk}) is missing the allocation attribute '
+            f'"{allocation_attribute_type}"'
+        )
+        return
+    slate_project_directory = slate_project_directory[0]
+    ldap_group_split = ldap_group.split('_', 1)
+    if len(ldap_group_split) < 2 or ldap_group_split[0] != 'condo':
+        logger.error(
+            f'Failed to sync slate project directory in a Slate Project allocation. The '
+            f'allocation\'s (pk={allocation_obj.pk}) ldap group condo assumption failed.'
+        )
+        return
+    slate_project_directory.value = ldap_group_split[1]
+    slate_project_directory.save()
+
+
+def sync_slate_project_ldap_group(allocation_obj, ldap_conn=None):
     """
     Checks if the Slate Project allocation ldap group still matches what is in LDAP. If not then
     update it. 
@@ -95,8 +119,9 @@ def sync_slate_project_ldap_group(allocation_obj, ldap_conn):
         allocation_ldap_group.value = ldap_group
         allocation_ldap_group.save()
         logger.info(
-            f'LDAP: Slate Project LDAP group name changed from {old_ldap_group} to {ldap_group}'
+            f'LDAP: "Slate Project LDAP group name changed" from {old_ldap_group} to {ldap_group}'
         )
+        sync_slate_project_directory_name(allocation_obj, ldap_group)
     
 
 def sync_slate_project_users(allocation_obj, ldap_conn=None):
