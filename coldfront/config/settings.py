@@ -30,7 +30,7 @@ plugin_configs = {
     'PLUGIN_ISILON': 'plugins/isilon.py',
     'PLUGIN_IQUOTA': 'plugins/iquota.py',
     'PLUGIN_SFTOCF': 'plugins/sftocf.py',
-    'PLUGIN_SYSMON': 'plugins/system_montior.py',
+    'PLUGIN_SYSMON': 'plugins/system_monitor.py',
     'PLUGIN_SLURM': 'plugins/slurm.py',
     'PLUGIN_XDMOD': 'plugins/xdmod.py',
 }
