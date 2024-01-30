@@ -91,7 +91,7 @@ def sync_slate_project_ldap_group(allocation_obj, ldap_conn=None):
             f'"{allocation_attribute_type}"'
         )
         return
-    ldap_group_gid = ldap_group_gid[0].value
+    ldap_group_gid = int(ldap_group_gid[0].value)
 
     if ldap_conn is None:
         ldap_conn = LDAPModify()
@@ -146,7 +146,7 @@ def sync_slate_project_users(allocation_obj, ldap_conn=None):
             f'"{allocation_attribute_type}"'
         )
         return
-    ldap_group_gid = ldap_group_gid[0].value
+    ldap_group_gid = int(ldap_group_gid[0].value)
 
     if ldap_conn is None:
         ldap_conn = LDAPModify()
@@ -557,7 +557,7 @@ def add_user_to_slate_project_group(allocation_user_obj):
             f'is missing the allocation attribute "{allocation_attribute_type}"'
         )
         return
-    ldap_group_gid = ldap_group_gid[0].value
+    ldap_group_gid = int(ldap_group_gid[0].value)
 
     user_role = allocation_user_obj.role.name
     if user_role == 'read only':
@@ -599,7 +599,7 @@ def remove_slate_project_groups(allocation_obj):
             f'missing the allocation attribute "{allocation_attribute_type}"'
         )
         return
-    ldap_group_gid = ldap_group_gid[0].value
+    ldap_group_gid = int(ldap_group_gid[0].value)
 
     ldap_conn = LDAPModify()
     removed, output = ldap_conn.remove_group(ldap_group_gid)
@@ -648,7 +648,7 @@ def remove_user_from_slate_project_group(allocation_user_obj):
             f'{allocation_obj.pk} is missing the allocation attribute {allocation_attribute_type}'
         )
         return
-    ldap_group_gid = ldap_group_gid[0].value
+    ldap_group_gid = int(ldap_group_gid[0].value)
     
     user_role = allocation_user_obj.role.name
     if user_role == 'read only':
@@ -685,7 +685,7 @@ def change_users_slate_project_groups(allocation_user_obj):
             f'{allocation_obj.pk} is missing the allocation attribute {allocation_attribute_type}'
         )
         return
-    ldap_group_gid = ldap_group_gid[0].value
+    ldap_group_gid = int(ldap_group_gid[0].value)
     
     new_role = allocation_user_obj.role.name
     if new_role == 'read/write':
