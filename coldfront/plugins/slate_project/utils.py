@@ -926,24 +926,22 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
                 abstract = f'Slate Project {line_split[0]}'
                 project_title = f'Slate Project {line_split[0]}'
                 allocated_quantity = None
-                start_date = None
             else:
                 abstract = extra_project_information.get('abstract')
                 project_title = extra_project_information.get('project_title')
                 allocated_quantity = extra_project_information.get('allocated_quantity')
-                start_date = extra_project_information.get('start_date')
 
             slate_project = {
                 "namespace_entry": line_split[0],
                 "ldap_group": line_split[1],
                 "owner_netid": line_split[2],
-                "gid_number": line_split[3],
-                "read_write_users": line_split[4].split(' '),
-                "read_only_users": line_split[5].split(' '),
+                "gid_number": line_split[4],
+                "read_write_users": line_split[5].split(' '),
+                "read_only_users": line_split[6].split(' '),
                 "abstract": abstract,
                 "project_title": project_title,
                 "allocated_quantity": allocated_quantity,
-                "start_date": start_date
+                "start_date": '-'.join([line_split[3][:4], line_split[3][4:6], line_split[3][6:8]])
             }
             slate_projects.append(slate_project)
 
@@ -1043,10 +1041,7 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
 
         allocation_start_date = todays_date
         if slate_project.get('start_date'):
-            allocation_start_date = slate_project.get('start_date').split('/')
-            allocation_start_date = '-'.join(
-                [allocation_start_date[2], allocation_start_date[0], allocation_start_date[1]]
-            )
+            allocation_start_date = slate_project.get('start_date')
 
         allocation_obj, created = Allocation.objects.get_or_create(
             project=project_obj,
