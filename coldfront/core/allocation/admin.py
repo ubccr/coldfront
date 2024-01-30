@@ -29,7 +29,7 @@ class AllocationStatusChoiceAdmin(admin.ModelAdmin):
 class AllocationUserInline(admin.TabularInline):
     model = AllocationUser
     extra = 0
-    fields = ('id', 'user', 'status', 'usage',)
+    fields = ('id', 'user', 'status', 'usage', 'usage_bytes', 'unit')
 
 
 class AllocationAttributeInline(admin.TabularInline):
