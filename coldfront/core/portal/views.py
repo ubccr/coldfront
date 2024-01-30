@@ -132,7 +132,10 @@ def center_summary(request):
 
             allocation_sizes = [float(allocation.size) for allocation in resource_allocations if allocation.size]
             # volume['avgsize'] = allocation_sizes
-            volume['avgsize'] = round(sum(allocation_sizes)/len(allocation_sizes), 2)
+            try:
+                volume['avgsize'] = round(sum(allocation_sizes)/len(allocation_sizes), 2)
+            except ZeroDivisionError:
+                volume['avgsize'] = 0
 
             project_ids = set(resource_allocations.values_list('project'))
             volume['lab_count'] = len(project_ids)

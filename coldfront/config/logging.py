@@ -30,6 +30,8 @@ LOGGING = {
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
+            "format": "[{server_time}] {name} {levelname} {message}",
+            "style": "{",
         },
         'django-q': {
             'class': 'logging.handlers.TimedRotatingFileHandler',
