@@ -70,6 +70,9 @@ def sync_slate_project_directory_name(allocation_obj, ldap_group):
         return
     slate_project_directory.value = ldap_group_split[1]
     slate_project_directory.save()
+    logger.info(
+        f'Slate Project attribute {allocation_attribute_type} was updated during sync'
+    )
 
 
 def sync_slate_project_ldap_group(allocation_obj, ldap_conn=None):
@@ -119,7 +122,7 @@ def sync_slate_project_ldap_group(allocation_obj, ldap_conn=None):
         allocation_ldap_group.value = ldap_group
         allocation_ldap_group.save()
         logger.info(
-            f'LDAP: "Slate Project LDAP group name changed" from {old_ldap_group} to {ldap_group}'
+            f'Slate Project LDAP group name changed from {old_ldap_group} to {ldap_group} during sync'
         )
         sync_slate_project_directory_name(allocation_obj, ldap_group)
     
