@@ -1227,7 +1227,7 @@ class LDAPModify:
     def get_attribute(self, attribute, gid_number):
         search_parameters = {
             'search_base': self.LDAP_BASE_DN,
-            'search_filter': ldap.filter.filter_format('(gidNumber=%s)', [gid_number]),
+            'search_filter': ldap.filter.filter_format('(gidNumber=%s)', [str(gid_number)]),
             'attributes': [attribute],
             'size_limit': 1
         }
@@ -1246,7 +1246,7 @@ class LDAPModify:
     def check_attribute_exists(self, attribute, gid_number):
         search_parameters = {
             'search_base': self.LDAP_BASE_DN,
-            'search_filter': ldap.filter.filter_format('(gidNumber=%s)', [gid_number]),
+            'search_filter': ldap.filter.filter_format('(gidNumber=%s)', [str(gid_number)]),
             'attributes': [attribute]
         }
         self.conn.search(**search_parameters)
