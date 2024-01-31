@@ -564,7 +564,7 @@ def add_user_to_slate_project_group(allocation_user_obj):
         ldap_group_gid += 1
 
     ldap_conn = LDAPModify()
-    added, output = ldap_conn.add_user(ldap_group_gid, username)
+    added, output = ldap_conn.add_user(username, ldap_group_gid)
     if not added:
         logger.error(
             f'LDAP: Failed to add user {username} to the slate project group with '
