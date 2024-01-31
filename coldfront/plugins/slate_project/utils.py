@@ -158,8 +158,8 @@ def sync_slate_project_users(allocation_obj, ldap_conn=None):
         role__name='read only', status__name__in=['Active', 'Inactive']
     )
 
-    ldap_read_write_usernames = ldap_conn.get_attribute('memberUid', ldap_group_gid)
-    ldap_read_only_usernames = ldap_conn.get_attribute('memberUid', ldap_group_gid + 1)
+    ldap_read_write_usernames = ldap_conn.get_users(ldap_group_gid)
+    ldap_read_only_usernames = ldap_conn.get_users(ldap_group_gid + 1)
 
     updated_read_write_usernames = []
     updated_read_only_usernames = []
@@ -1224,6 +1224,21 @@ class LDAPModify:
         
         return None
 
+    def get_users(self, gid_number):
+        searchParameters = {
+            'search_base': self.LDAP_BASE_DN,
+            'search_filter': ldap.filter.filter_format('(gidNumber=%s)', [str(gid_number)]),
+            'attributes': ['memberUid'],
+            'size_limit': 1
+        }
+        self.conn.search(**searchParameters)
+        if self.conn.entries:
+            attributes = json.loads(self.conn.entries[0].entry_to_json()).get('attributes')
+        else:
+            attributes = {'memberUid': []}
+            
+        return attributes.get('memberUid')
+
     def get_attribute(self, attribute, gid_number):
         search_parameters = {
             'search_base': self.LDAP_BASE_DN,
@@ -1236,12 +1251,9 @@ class LDAPModify:
         if self.conn.entries:
             attributes = json.loads(self.conn.entries[0].entry_to_json()).get('attributes')
         else:
-            attributes = {attribute: []}
+            attributes = {attribute: ['']}
 
-        result = attributes.get(attribute)
-        if len(result) > 1:
-            return result
-        return result[0]
+        return attributes.get(attribute)[0]
     
     def check_attribute_exists(self, attribute, gid_number):
         search_parameters = {
