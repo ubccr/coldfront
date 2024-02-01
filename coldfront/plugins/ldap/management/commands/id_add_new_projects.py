@@ -25,13 +25,24 @@ logger = logging.getLogger(__name__)
 class Command(BaseCommand):
     help = 'Identify AD Groups that do not have a corresponding ColdFront Project and add them.'
 
-    def handle(self, *args, **options):
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--groups',
+           dest='groups',
+           default='*_lab,*_l3',
+           help='specific groups to add, with commas separating the names',
+        )
+
+    def handle(self, *args, **kwargs):
+        groups = groups = kwargs['groups']
+        if groups:
+            groups = groups.split(",")
         # compare projects in AD to projects in coldfront
         ldap_conn = LDAPConn()
         project_titles = [project.title for project in Project.objects.all()]
         # get all AD groups that have a manager and a name ending in _lab or _l3
         ad_groups = ldap_conn.search_groups({
-                        'sAMAccountName': ['*_lab', '*_l3'],
+                        'sAMAccountName': groups,
                         'managedBy': '*'
                         }, attributes=['sAMAccountName'])
         ad_group_names = [group['sAMAccountName'][0] for group in ad_groups] # get all AD group names
