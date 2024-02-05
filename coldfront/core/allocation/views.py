@@ -2025,7 +2025,14 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
                 new_value = formset_data.get('new_value')
                 # require nese shares to be divisible by 20
-                tbs = int(new_value) if formset_data['name'] == 'Storage Quota (TB)' else False
+                if formset_data['name'] == 'Storage Quota (TB)':
+                    try:
+                        tbs = int(new_value)
+                    except ValueError:
+                        messages.error(request, 'Requested storage quota must be an integer.')
+                        return HttpResponseRedirect(reverse('allocation-change', kwargs={'pk': pk}))
+                else:
+                    tbs = False
                 if nese and tbs and tbs % 20 != 0:
                     messages.error(request, "Tier 3 quantity must be a multiple of 20.")
                     return HttpResponseRedirect(reverse('allocation-change', kwargs={'pk': pk}))
