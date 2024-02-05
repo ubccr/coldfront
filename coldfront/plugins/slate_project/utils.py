@@ -68,7 +68,7 @@ def sync_slate_project_directory_name(allocation_obj, ldap_group):
             f'allocation\'s (pk={allocation_obj.pk}) ldap group condo assumption failed.'
         )
         return
-    slate_project_directory.value = ldap_group_split[1]
+    slate_project_directory.value = "/N/project/" + ldap_group_split[1]
     slate_project_directory.save()
     logger.info(
         f'Slate Project allocation {allocation_obj.pk}\'s "{allocation_attribute_type}" attribute '
