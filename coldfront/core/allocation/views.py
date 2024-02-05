@@ -2873,7 +2873,7 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
                 allocation_obj.status.name))
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
-        if allocation_obj.project.status.name in ['Review Pending', 'Denied', 'Expired', ]:
+        if allocation_obj.project.status.name in ['Review Pending', 'Denied', 'Expired', 'Archived', ]:
             messages.error(
                 request, 'You cannot renew an allocation with project status "{}".'.format(
                     allocation_obj.project.status.name

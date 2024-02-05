@@ -23,7 +23,8 @@ from coldfront.plugins.slate_project.utils import (add_user_to_slate_project_gro
                                                    change_users_slate_project_groups,
                                                    add_slate_project_groups,
                                                    send_expiry_email,
-                                                   sync_slate_project_users)
+                                                   sync_slate_project_users,
+                                                   sync_slate_project_ldap_group)
 
 @receiver(allocation_activate, sender=AllocationDetailView)
 @receiver(allocation_activate, sender=AllocationActivateRequestView)
@@ -97,7 +98,7 @@ def remove(sender, **kwargs):
         return
 
 @receiver(visit_allocation_detail, sender=AllocationDetailView)
-def sync_users(sender, **kwargs):
+def sync_slate_project(sender, **kwargs):
     allocation_pk = kwargs.get('allocation_pk')
     allocation_obj = Allocation.objects.get(pk=allocation_pk)
     if not allocation_obj.get_parent_resource.name == 'Slate Project':
@@ -105,4 +106,5 @@ def sync_users(sender, **kwargs):
     if not allocation_obj.status.name in ['Active', 'Renewal Requested']:
         return
 
+    sync_slate_project_ldap_group(allocation_obj)
     sync_slate_project_users(allocation_obj)

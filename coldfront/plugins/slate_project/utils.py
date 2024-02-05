@@ -38,6 +38,7 @@ if ENABLE_LDAP_ELIGIBILITY_SERVER:
     SLATE_PROJECT_ACCOUNT = import_from_settings('SLATE_PROJECT_ACCOUNT') 
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 CENTER_BASE_URL = import_from_settings('CENTER_BASE_URL')
+PROJECT_DEFAULT_MAX_MANAGERS = import_from_settings('PROJECT_DEFAULT_MAX_MANAGERS', 3)
 if EMAIL_ENABLED:
     SLATE_PROJECT_EMAIL = import_from_settings('SLATE_PROJECT_EMAIL')
     EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
@@ -47,28 +48,113 @@ if EMAIL_ENABLED:
     EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
 
 
+def sync_slate_project_directory_name(allocation_obj, ldap_group):
+    allocation_attribute_type = 'Slate Project Directory'
+    slate_project_directory = allocation_obj.allocationattribute_set.filter(
+        allocation_attribute_type__name=allocation_attribute_type
+    )
+    if not slate_project_directory.exists():
+        logger.error(
+            f'Failed to sync slate project directory in a Slate Project allocation. The allocation '
+            f'(pk={allocation_obj.pk}) is missing the allocation attribute '
+            f'"{allocation_attribute_type}"'
+        )
+        return
+    slate_project_directory = slate_project_directory[0]
+    ldap_group_split = ldap_group.split('_', 1)
+    if len(ldap_group_split) < 2 or ldap_group_split[0] != 'condo':
+        logger.error(
+            f'Failed to sync slate project directory in a Slate Project allocation. The '
+            f'allocation\'s (pk={allocation_obj.pk}) ldap group condo assumption failed.'
+        )
+        return
+    slate_project_directory.value = ldap_group_split[1]
+    slate_project_directory.save()
+    logger.info(
+        f'Slate Project allocation {allocation_obj.pk}\'s "{allocation_attribute_type}" attribute '
+        f'was updated during sync'
+    )
+
+
+def sync_slate_project_ldap_group(allocation_obj, ldap_conn=None):
+    """
+    Checks if the Slate Project allocation ldap group still matches what is in LDAP. If not then
+    update it. 
+
+    :param ldap_conn: LDAPModify initialized connection
+    :param allocation_obj: Allocation object that is checked
+    """
+    allocation_attribute_type = 'GID'
+    ldap_group_gid = allocation_obj.allocationattribute_set.filter(
+        allocation_attribute_type__name=allocation_attribute_type
+    )
+    if not ldap_group_gid.exists():
+        logger.error(
+            f'Failed to sync ldap group in a Slate Project allocation. The allocation '
+            f'(pk={allocation_obj.pk}) is missing the allocation attribute '
+            f'"{allocation_attribute_type}"'
+        )
+        return
+    ldap_group_gid = int(ldap_group_gid[0].value)
+
+    if ldap_conn is None:
+        ldap_conn = LDAPModify()
+    if not ldap_conn.check_attribute_exists('gidNumber', ldap_group_gid):
+        logger.error(
+            f'LDAP: Slate Project GID for allocation {allocation_obj.pk} does not exist. No sync '
+            f'was performed'
+        )
+        return
+    
+    allocation_ldap_group = allocation_obj.allocationattribute_set.filter(
+        allocation_attribute_type__name='LDAP Group'
+    )
+    if not allocation_ldap_group.exists():
+        logger.error(
+            f'Failed to sync ldap group in a Slate Project allocation. The allocation '
+            f'(pk={allocation_obj.pk}) is missing the allocation attribute '
+            f'"{allocation_attribute_type}"'
+        )
+        return
+    allocation_ldap_group = allocation_ldap_group[0]
+    ldap_group = ldap_conn.get_attribute('cn', ldap_group_gid)
+    if ldap_group != allocation_ldap_group.value:
+        old_ldap_group = allocation_ldap_group.value
+        allocation_ldap_group.value = ldap_group
+        allocation_ldap_group.save()
+        logger.info(
+            f'Slate Project allocation {allocation_obj.pk}\'s "LDAP Group" attribute changed from '
+            f'{old_ldap_group} to {ldap_group} during sync'
+        )
+        sync_slate_project_directory_name(allocation_obj, ldap_group)
+    
+
 def sync_slate_project_users(allocation_obj, ldap_conn=None):
     """
     Checks if the Slate Project allocation is in sync with the Slate Project group in ldap. If not
     it modifies the slate project allocation to re-sync them.
 
+    :param ldap_conn: LDAPModify initialized connection
     :param allocation_obj: Allocation object that is checked
     """
     if not ENABLE_LDAP_SLATE_PROJECT_SYNCING:
         return
 
-    allocation_attribute_type = 'LDAP Group'
-    ldap_group = allocation_obj.allocationattribute_set.filter(
+    allocation_attribute_type = 'GID'
+    ldap_group_gid = allocation_obj.allocationattribute_set.filter(
         allocation_attribute_type__name=allocation_attribute_type
     )
-    if not ldap_group.exists():
+    if not ldap_group_gid.exists():
         logger.error(
             f'Failed to sync users in a Slate Project allocation. The allocation '
             f'(pk={allocation_obj.pk}) is missing the allocation attribute '
             f'"{allocation_attribute_type}"'
         )
         return
-    ldap_group = ldap_group[0].value
+    ldap_group_gid = int(ldap_group_gid[0].value)
+
+    if ldap_conn is None:
+        ldap_conn = LDAPModify()
 
     read_write_users = allocation_obj.allocationuser_set.filter(
         role__name='read/write', status__name__in=['Active', 'Inactive']
@@ -77,17 +163,8 @@ def sync_slate_project_users(allocation_obj, ldap_conn=None):
         role__name='read only', status__name__in=['Active', 'Inactive']
     )
 
-    if ldap_conn is None:
-        ldap_conn = LDAPModify()
-    if not ldap_conn.check_group_exists(ldap_group):
-        logger.error(
-            f'LDAP: Slate project groups for allocation {allocation_obj.pk} do not exist. No sync '
-            f'was performed'
-        )
-        return
-
-    ldap_read_write_usernames = ldap_conn.get_users(ldap_group)
-    ldap_read_only_usernames = ldap_conn.get_users(ldap_group + '-ro')
+    ldap_read_write_usernames = ldap_conn.get_users(ldap_group_gid)
+    ldap_read_only_usernames = ldap_conn.get_users(ldap_group_gid + 1)
 
     updated_read_write_usernames = []
     updated_read_only_usernames = []
@@ -332,8 +409,8 @@ def check_slate_project_account(user, notifications_enabled, ldap_search_conn=No
             logger.info(
                 f'LDAP: Added user {user.username} to the HPFS ADS eligibility group'
             )
-        if notifications_enabled:
-            send_missing_account_email(user.email)
+            if notifications_enabled:
+                send_missing_account_email(user.email)
     elif not SLATE_PROJECT_ACCOUNT in accounts:
         if notifications_enabled:
             send_missing_account_email(user.email)
@@ -342,37 +419,40 @@ def check_slate_project_account(user, notifications_enabled, ldap_search_conn=No
 def add_slate_project_groups(allocation_obj):
     """
     Creates a new slate project read/write and read only group and adds all of the active
-    allocation users.
+    allocation users. If the allocation already has a GID then no new groups are created.
 
     :param allocation_obj: The allocation the groups are being created from
     """
-    allocation_attribute_type = 'LDAP Group'
+    gid_attribute_type = AllocationAttributeType.objects.filter(name='GID')
+    if not gid_attribute_type.exists():
+        logger.error(
+            f'Allocation attribute type GID does not exists. No new ldap groups were created.'
+        )
+        allocation_obj.status = AllocationStatusChoice.objects.get('New')
+        allocation_obj.save()
+        return
+
+    ldap_conn = LDAPModify()
+    ldap_group_gid = allocation_obj.allocationattribute_set.filter(
+        allocation_attribute_type__name='GID'
+    )
+    if ldap_group_gid.exists():
+        logger.error(
+            f'LDAP: Slate Project allocation GID for allocation {allocation_obj.pk} already ' 
+            f'exists. No new groups were created'
+        )
+        return
+
     ldap_group = allocation_obj.allocationattribute_set.filter(
-        allocation_attribute_type__name=allocation_attribute_type
+        allocation_attribute_type__name='LDAP Group'
     )
     if not ldap_group.exists():
         logger.error(
             f'Failed to create slate project groups. The allocation (pk={allocation_obj.pk}) is '
-            f'missing the allocation attribute "{allocation_attribute_type}"'
+            f'missing the allocation attribute "LDAP Group"'
         )
         return
     ldap_group = ldap_group[0].value
-
-    ldap_conn = LDAPModify()
-    group_exists = ldap_conn.check_group_exists(ldap_group)
-    if group_exists:
-        # Renewed allocations will also trigger this so we should use the GID to check if the 
-        # group that exists matches the group we tried to add. If not, log an error.
-        group_gid = ldap_conn.get_group_gid_number(ldap_group)
-        gid = allocation_obj.allocationattribute_set.filter(
-            allocation_attribute_type__name='GID'
-        )
-        if not gid.exists() or not str(group_gid) == gid[0].value:
-            logger.error(
-                f'LDAP: Slate project groups for allocation {allocation_obj.pk} already exist. No new '
-                f'groups were created'    
-            )
-        return
 
     gid_number = ldap_conn.find_highest_gid()
     if gid_number is None:
@@ -386,18 +466,12 @@ def add_slate_project_groups(allocation_obj):
     if not read_write_gid_number % 2 == 0:
         read_write_gid_number += 1
     read_only_gid_number = read_write_gid_number + 1
-    gid_attribute_type = AllocationAttributeType.objects.filter(name='GID')
-    if not gid_attribute_type.exists():
-        logger.error(
-            f'Allocation attribute type {gid_attribute_type[0]} does not exists. GID attribute was '
-            f'not created for allocation {allocation_obj.pk}'
-        )
-    else:
-        AllocationAttribute.objects.create(
-            allocation_attribute_type=gid_attribute_type[0],
-            allocation=allocation_obj,
-            value=read_write_gid_number
-        )
+
+    AllocationAttribute.objects.create(
+        allocation_attribute_type=gid_attribute_type[0],
+        allocation=allocation_obj,
+        value=read_write_gid_number
+    )
 
     read_write_users = allocation_obj.allocationuser_set.filter(
         status__name='Active', role__name='read/write'
@@ -472,47 +546,46 @@ def add_slate_project_groups(allocation_obj):
 
 def add_user_to_slate_project_group(allocation_user_obj):
     """
-    Adds the allocation user to the slate project group associated with the allocation. The 
-    allocation must be active.
+    Adds the allocation user to the slate project group associated with the allocation.
 
     :param allocation_user_obj: The allocation user
     """
-    allocation_attribute_type = 'LDAP Group'
+    allocation_attribute_type = 'GID'
     allocation_obj = allocation_user_obj.allocation
-    ldap_group = allocation_obj.allocationattribute_set.filter(
+    ldap_group_gid = allocation_obj.allocationattribute_set.filter(
         allocation_attribute_type__name=allocation_attribute_type
     )
     username = allocation_user_obj.user.username
-    if not ldap_group.exists():
+    if not ldap_group_gid.exists():
         logger.error(
             f'Failed to add user {username} to a ldap group. The allocation (pk={allocation_obj.pk}) '
             f'is missing the allocation attribute "{allocation_attribute_type}"'
         )
         return
-    ldap_group = ldap_group[0].value
+    ldap_group_gid = int(ldap_group_gid[0].value)
 
     user_role = allocation_user_obj.role.name
     if user_role == 'read only':
-        ldap_group = f'{ldap_group}-ro'
+        ldap_group_gid += 1
 
     ldap_conn = LDAPModify()
-    added, output = ldap_conn.add_user(ldap_group, username)
+    added, output = ldap_conn.add_user(username, ldap_group_gid)
     if not added:
         logger.error(
-            f'LDAP: Failed to add user {username} to slate project group {ldap_group} in '
-            f'allocation {allocation_obj.pk}. Reason: {output}'
+            f'LDAP: Failed to add user {username} to the slate project group with '
+            f'{allocation_attribute_type}={ldap_group_gid} in allocation {allocation_obj.pk}. '
+            f'Reason: {output}'
         )
     else:
         logger.info(
-            f'LDAP: Added user {username} to the slate project group {ldap_group} in allocation '
-            f'{allocation_obj.pk}'
+            f'LDAP: Added user {username} to the slate project group with '
+            f'{allocation_attribute_type}={ldap_group_gid} in allocation {allocation_obj.pk}'
         )
-
-    if ENABLE_LDAP_ELIGIBILITY_SERVER:
-        notifications_enabled = allocation_user_obj.allocation.project.projectuser_set.get(
-            user=allocation_user_obj.user
-        ).enable_notifications
-        check_slate_project_account(allocation_user_obj.user, notifications_enabled)
+        if ENABLE_LDAP_ELIGIBILITY_SERVER:
+            notifications_enabled = allocation_user_obj.allocation.project.projectuser_set.get(
+                user=allocation_user_obj.user
+            ).enable_notifications
+            check_slate_project_account(allocation_user_obj.user, notifications_enabled)
 
 
 def remove_slate_project_groups(allocation_obj):
@@ -521,43 +594,44 @@ def remove_slate_project_groups(allocation_obj):
 
     :param allocation_obj: The allocation the groups are being removed from
     """
-    allocation_attribute_type = 'LDAP Group'
-    ldap_group = allocation_obj.allocationattribute_set.filter(
+    allocation_attribute_type = 'GID'
+    ldap_group_gid = allocation_obj.allocationattribute_set.filter(
         allocation_attribute_type__name=allocation_attribute_type
     )
-    if not ldap_group.exists():
+    if not ldap_group_gid.exists():
         logger.error(
             f'Failed to remove slate project group. The allocation (pk={allocation_obj.pk}) is '
             f'missing the allocation attribute "{allocation_attribute_type}"'
         )
         return
-    ldap_group = ldap_group[0].value
+    ldap_group_gid = int(ldap_group_gid[0].value)
 
     ldap_conn = LDAPModify()
-    read_write_group = ldap_group
-    removed, output = ldap_conn.remove_group(read_write_group)
+    removed, output = ldap_conn.remove_group(ldap_group_gid)
     if not removed:
         logger.error(
-            f'Failed to remove slate project group {read_write_group} in allocation '
-            f'{allocation_obj.pk}. Reason: {output}'
+            f'Failed to remove slate project group with {allocation_attribute_type}={ldap_group_gid} '
+            f'in allocation {allocation_obj.pk}. Reason: {output}'
         )
     else:
         logger.info(
-            f'Removed slate project group {read_write_group} in allocation {allocation_obj.pk}'
+            f'Removed slate project group with {allocation_attribute_type}={ldap_group_gid} in '
+            f'allocation {allocation_obj.pk}'
         )
 
-    read_only_group = f'{ldap_group[0].value}-ro'
+    ldap_group_gid += ldap_group_gid
 
     ldap_conn = LDAPModify()
-    removed, output = ldap_conn.remove_group(read_only_group)
+    removed, output = ldap_conn.remove_group(ldap_group_gid)
     if not removed:
         logger.error(
-            f'LDAP: Failed to remove LDAP group {read_only_group} in allocation '
-            f'{allocation_obj.pk}. Reason: {output}'
+            f'LDAP: Failed to remove LDAP group {allocation_attribute_type}={ldap_group_gid} in '
+            f'allocation {allocation_obj.pk}. Reason: {output}'
         )
     else:
         logger.info(
-            f'LDAP: Removed LDAP group {read_only_group} in allocation {allocation_obj.pk}'
+            f'LDAP: Removed LDAP group {allocation_attribute_type}={ldap_group_gid} in allocation '
+            f'{allocation_obj.pk}'
         )
 
 
@@ -567,35 +641,36 @@ def remove_user_from_slate_project_group(allocation_user_obj):
 
     :param allocation_user_obj: The allocation user
     """
-    allocation_attribute_type = 'LDAP Group'
+    allocation_attribute_type = 'GID'
     allocation_obj = allocation_user_obj.allocation
-    ldap_group = allocation_obj.allocationattribute_set.filter(
+    ldap_group_gid = allocation_obj.allocationattribute_set.filter(
         allocation_attribute_type__name=allocation_attribute_type
     )
     username = allocation_user_obj.user.username
-    if not ldap_group.exists():
+    if not ldap_group_gid.exists():
         logger.error(
             f'Failed to remove user {username} from a slate project group. The allocation '
             f'{allocation_obj.pk} is missing the allocation attribute {allocation_attribute_type}'
         )
         return
-    ldap_group = ldap_group[0].value
+    ldap_group_gid = int(ldap_group_gid[0].value)
     
     user_role = allocation_user_obj.role.name
     if user_role == 'read only':
-        ldap_group = f'{ldap_group}-ro'
+        ldap_group_gid += 1
 
     ldap_conn = LDAPModify()
-    removed, output = ldap_conn.remove_user(ldap_group, username)
+    removed, output = ldap_conn.remove_user(username, ldap_group_gid)
     if not removed:
         logger.error(
-            f'LDAP: Failed to remove user {username} from the slate project group {ldap_group} '
-            f'in allocation {allocation_obj.pk}. Reason: {output}'
+            f'LDAP: Failed to remove user {username} from the slate project group with  '
+            f'{allocation_attribute_type}={ldap_group_gid} in allocation {allocation_obj.pk}. '
+            f'Reason: {output}'
         )
     else:
         logger.info(
-            f'LDAP: Removed user {username} from the slate project group {ldap_group} in '
-            f'allocation {allocation_obj.pk}'
+            f'LDAP: Removed user {username} from the slate project group with '
+            f'{allocation_attribute_type}={ldap_group_gid} in allocation {allocation_obj.pk}'
         )
 
 def change_users_slate_project_groups(allocation_user_obj):
@@ -604,47 +679,50 @@ def change_users_slate_project_groups(allocation_user_obj):
 
     :param allocation_user_obj: The allocation user 
     """
-    allocation_attribute_type = 'LDAP Group'
+    allocation_attribute_type = 'GID'
     allocation_obj = allocation_user_obj.allocation
-    ldap_group = allocation_obj.allocationattribute_set.filter(
+    ldap_group_gid = allocation_obj.allocationattribute_set.filter(
         allocation_attribute_type__name=allocation_attribute_type
     )
-    if not ldap_group.exists():
+    if not ldap_group_gid.exists():
         logger.error(
             f'Failed to update user {username}\'s slate project groups from role change. Allocation '
             f'{allocation_obj.pk} is missing the allocation attribute {allocation_attribute_type}'
         )
         return
-    ldap_group = ldap_group[0].value
+    ldap_group_gid = int(ldap_group_gid[0].value)
     
     new_role = allocation_user_obj.role.name
     if new_role == 'read/write':
-        remove_from_group = f'{ldap_group}-ro'
-        add_to_group = f'{ldap_group}'
+        remove_from_group = ldap_group_gid + 1
+        add_to_group = ldap_group_gid
     else:
-        remove_from_group = f'{ldap_group}'
-        add_to_group = f'{ldap_group}-ro'
+        remove_from_group = ldap_group_gid
+        add_to_group = ldap_group_gid + 1
     username = allocation_user_obj.user.username
 
     ldap_conn = LDAPModify()
-    added, output = ldap_conn.add_user(add_to_group, username)
+    added, output = ldap_conn.add_user(username, add_to_group)
     if not added:
         logger.error(
-            f'LDAP: Failed to add user {username} to slate project group {add_to_group} '
-            f'from role change in allocation {allocation_obj.pk}. Reason: {output}'
+            f'LDAP: Failed to add user {username} to the slate project group with '
+            f'{allocation_attribute_type}={add_to_group} from role change in allocation '
+            f'{allocation_obj.pk}. Reason: {output}'
         )
         return 
-    removed, output = ldap_conn.remove_user(remove_from_group, username)
+    removed, output = ldap_conn.remove_user(username, remove_from_group)
     if not removed:
         logger.error(
-            f'LDAP: Failed to remove user {username} from slate project group {add_to_group} '
-            f'from role change in allocation {allocation_obj.pk}. Reason: {output}'
+            f'LDAP: Failed to remove user {username} from the slate project group with'
+            f'{allocation_attribute_type}={add_to_group} from role change in allocation '
+            f'{allocation_obj.pk}. Reason: {output}'
         )
         return 
         
     logger.info(
-        f'LDAP: Changed user {username}\'s slate project group from {remove_from_group} to '
-        f'{add_to_group} in allocation {allocation_obj.pk}'
+        f'LDAP: Changed user {username}\'s slate project group from one with '
+        f'{allocation_attribute_type}={remove_from_group} to {allocation_attribute_type}={add_to_group} '
+        f'in allocation {allocation_obj.pk}'
     )
 
 
@@ -663,16 +741,19 @@ def get_slate_project_info(username):
 
     slate_projects = []
     for allocation_user_obj in allocation_user_objs:
-        namespace_entry_obj = allocation_user_obj.allocation.allocationattribute_set.get(
-            allocation_attribute_type__name='Namespace Entry'
+        attribute_obj = allocation_user_obj.allocation.allocationattribute_set.filter(
+            allocation_attribute_type__name='Slate Project Directory'
         )
+        if not attribute_obj.exists():
+            continue
+        directory = attribute_obj[0]
         owner = allocation_user_obj.allocation.project.pi.username
         # For imported projects that have a project owner who can't be a PI.
         if owner == 'thcrowe' and allocation_user_obj.allocation.project.requestor:
             owner = allocation_user_obj.allocation.project.requestor.username
         slate_projects.append(
             {
-                'name': namespace_entry_obj.value,
+                'name': directory.value.split('/')[-1],
                 'access': allocation_user_obj.role.name,
                 'owner': allocation_user_obj.allocation.project.pi.username
             }
@@ -708,10 +789,13 @@ def send_inactive_users_report():
     )
     inactive_users = {}
     for allocation_user in allocation_users:
-        # Assumes there's never more than one slate project allocation in a project
-        namespace_entry = allocation_user.allocation.allocationattribute_set.get(
-            allocation_attribute_type__name='Namespace Entry'
-        ).value
+        attribute_obj = allocation_user.allocation.allocationattribute_set.filter(
+            allocation_attribute_type__name='Slate Project Directory'
+        )
+        if not attribute_obj.exist():
+            directory = None
+        else:
+            directory = attribute_obj[0].value
         project_user = allocation_user.allocation.project.projectuser_set.filter(user=allocation_user.user)
         if project_user.exists():
             username = allocation_user.user.username
@@ -721,16 +805,16 @@ def send_inactive_users_report():
 
             if pi_username == username:
                 if not inactive_users[username].get('PI'):
-                    inactive_users[username]['PI'] = [namespace_entry]
+                    inactive_users[username]['PI'] = [directory]
                 else:
-                    inactive_users[username]['PI'].append(namespace_entry)
+                    inactive_users[username]['PI'].append(directory)
                 continue
 
             role = project_user[0].role.name
             if not inactive_users[username].get(role):
-                inactive_users[username][role] = [namespace_entry]
+                inactive_users[username][role] = [directory]
             else:
-                inactive_users[username][role].append(namespace_entry)
+                inactive_users[username][role].append(directory)
 
     if EMAIL_ENABLED and inactive_users:
         template_context = {
@@ -757,10 +841,13 @@ def send_ineligible_pi_report():
     )
     inactive_users = {}
     for allocation in allocations:
-        # Assumes there's never more than one slate project allocation in a project
-        namespace_entry = allocation.allocationattribute_set.get(
-            allocation_attribute_type__name='Namespace Entry'
-        ).value
+        attribute_obj = allocation.allocationattribute_set.filter(
+            allocation_attribute_type__name='Slate Project Directory'
+        )
+        if not attribute_obj.exist():
+            directory = None
+        else:
+            directory = attribute_obj[0].value
         pi = allocation.project.pi
         pi_status = allocation.project.projectuser_set.get(user=pi).status.name
         if pi_status == 'Inactive':
@@ -769,9 +856,9 @@ def send_ineligible_pi_report():
                 inactive_users[username] = {}
 
             if not inactive_users[username].get('PI'):
-                inactive_users[username]['PI'] = [namespace_entry]
+                inactive_users[username]['PI'] = [directory]
             else:
-                inactive_users[username]['PI'].append(namespace_entry)
+                inactive_users[username]['PI'].append(directory)
 
     if EMAIL_ENABLED and inactive_users:
         template_context = {
@@ -842,26 +929,24 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
             extra_project_information = extra_information.get(line_split[0])
             if extra_project_information is None:
                 abstract = f'Slate Project {line_split[0]}'
-                project_title = f'Imported slate project {line_split[0]}'
+                project_title = f'Slate Project {line_split[0]}'
                 allocated_quantity = None
-                start_date = None
             else:
                 abstract = extra_project_information.get('abstract')
                 project_title = extra_project_information.get('project_title')
                 allocated_quantity = extra_project_information.get('allocated_quantity')
-                start_date = extra_project_information.get('start_date')
 
             slate_project = {
                 "namespace_entry": line_split[0],
                 "ldap_group": line_split[1],
                 "owner_netid": line_split[2],
-                "gid_number": line_split[3],
-                "read_write_users": line_split[4].split(' '),
-                "read_only_users": line_split[5].split(' '),
+                "gid_number": line_split[4],
+                "read_write_users": line_split[5].split(' '),
+                "read_only_users": line_split[6].split(' '),
                 "abstract": abstract,
                 "project_title": project_title,
                 "allocated_quantity": allocated_quantity,
-                "start_date": start_date
+                "start_date": '-'.join([line_split[3][:4], line_split[3][4:6], line_split[3][6:8]])
             }
             slate_projects.append(slate_project)
 
@@ -879,7 +964,7 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
     rejected_slate_projects = []
     for slate_project in slate_projects:
         exists = AllocationAttribute.objects.filter(
-            allocation_attribute_type__name='LDAP Group', value=slate_project.get('ldap_group')
+            allocation_attribute_type__name='GID', value=slate_project.get('gid_number')
         ).exists()
         if exists:
             continue
@@ -897,7 +982,7 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
                 title=slate_project.get('project_title'),
                 description=slate_project.get('abstract'),
                 pi=user_obj,
-                max_managers=3,
+                max_managers=PROJECT_DEFAULT_MAX_MANAGERS,
                 requestor=user_obj,
                 type=ProjectTypeChoice.objects.get(name='Research'),
                 status=ProjectStatusChoice.objects.get(name='Active'),
@@ -961,10 +1046,7 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
 
         allocation_start_date = todays_date
         if slate_project.get('start_date'):
-            allocation_start_date = slate_project.get('start_date').split('/')
-            allocation_start_date = '-'.join(
-                [allocation_start_date[2], allocation_start_date[0], allocation_start_date[1]]
-            )
+            allocation_start_date = slate_project.get('start_date')
 
         allocation_obj, created = Allocation.objects.get_or_create(
             project=project_obj,
@@ -1026,7 +1108,11 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
 
         create_allocation_attribute(allocation_obj, 'GID', slate_project.get('gid_number'))
         create_allocation_attribute(allocation_obj, 'LDAP Group', slate_project.get('ldap_group'))
-        create_allocation_attribute(allocation_obj, 'Namespace Entry', slate_project.get('namespace_entry'))
+        create_allocation_attribute(
+            allocation_obj,
+            'Slate Project Directory',
+            '/N/project/' + slate_project.get('namespace_entry')
+        )
         if slate_project.get('allocated_quantity'):
             create_allocation_attribute(
                 allocation_obj, 'Allocated Quantity', slate_project.get('allocated_quantity')
@@ -1090,12 +1176,20 @@ class LDAPModify:
         added = self.conn.add(dn, attributes=attributes)
         return added, self.conn.result.get("description")
 
-    def remove_group(self, group_name):
+    def remove_group(self, gid_number):
+        group_name = self.get_attribute('cn', gid_number)
+        if not group_name:
+            return False, f"LDAP Group name missing for GID {gid_number}"
+
         dn = f"cn={group_name},{self.LDAP_BASE_DN}"
         removed = self.conn.delete(dn)
         return removed, self.conn.result.get("description")
 
-    def add_user(self, group_name, username):
+    def add_user(self, username, gid_number):
+        group_name = self.get_attribute('cn', gid_number)
+        if not group_name:
+            return False, f"LDAP Group name missing for GID {gid_number}"
+
         dn = f"cn={group_name},{self.LDAP_BASE_DN}"
         changes = {
             "memberUid": [(MODIFY_ADD, [username])]
@@ -1103,7 +1197,11 @@ class LDAPModify:
         added = self.conn.modify(dn, changes)
         return added, self.conn.result.get("description")
 
-    def remove_user(self, group_name, username):
+    def remove_user(self, username, gid_number):
+        group_name = self.get_attribute('cn', gid_number)
+        if not group_name:
+            return False, f"LDAP Group name missing for GID {gid_number}"
+
         dn = f"cn={group_name},{self.LDAP_BASE_DN}"
         changes = {
             "memberUid": [(MODIFY_DELETE, [username])]
@@ -1130,38 +1228,11 @@ class LDAPModify:
             return highest_gid_number
         
         return None
-    
-    def get_group_gid_number(self, group_name):
+
+    def get_users(self, gid_number):
         searchParameters = {
             'search_base': self.LDAP_BASE_DN,
-            'search_filter': ldap.filter.filter_format("(cn=%s)", [group_name]),
-            'attributes': ['gidNumber'],
-            'size_limit': 1
-        }
-        self.conn.search(**searchParameters)
-        if self.conn.entries:
-            attributes = json.loads(self.conn.entries[0].entry_to_json()).get('attributes')
-        else:
-            attributes = {'gidNumber': ['null']}
-
-        return attributes.get('gidNumber')[0]
-    
-    def check_group_exists(self, group_name):
-        searchParameters = {
-            'search_base': f'cn={group_name},{self.LDAP_BASE_DN}',
-            'search_filter': "(objectClass=posixGroup)",
-            'attributes': ['cn']
-        }
-        self.conn.search(**searchParameters)
-        if self.conn.entries:
-            return True
-        else:
-            return False
-
-    def get_users(self, group_name):
-        searchParameters = {
-            'search_base': self.LDAP_BASE_DN,
-            'search_filter': ldap.filter.filter_format("(cn=%s)", [group_name]),
+            'search_filter': ldap.filter.filter_format('(gidNumber=%s)', [str(gid_number)]),
             'attributes': ['memberUid'],
             'size_limit': 1
         }
@@ -1170,8 +1241,36 @@ class LDAPModify:
             attributes = json.loads(self.conn.entries[0].entry_to_json()).get('attributes')
         else:
             attributes = {'memberUid': []}
-
+            
         return attributes.get('memberUid')
+
+    def get_attribute(self, attribute, gid_number):
+        search_parameters = {
+            'search_base': self.LDAP_BASE_DN,
+            'search_filter': ldap.filter.filter_format('(gidNumber=%s)', [str(gid_number)]),
+            'attributes': [attribute],
+            'size_limit': 1
+        }
+
+        self.conn.search(**search_parameters)
+        if self.conn.entries:
+            attributes = json.loads(self.conn.entries[0].entry_to_json()).get('attributes')
+        else:
+            attributes = {attribute: ['']}
+
+        return attributes.get(attribute)[0]
+    
+    def check_attribute_exists(self, attribute, gid_number):
+        search_parameters = {
+            'search_base': self.LDAP_BASE_DN,
+            'search_filter': ldap.filter.filter_format('(gidNumber=%s)', [str(gid_number)]),
+            'attributes': [attribute]
+        }
+        self.conn.search(**search_parameters)
+        if self.conn.entries:
+            return True
+        else:
+            return False
 
 
 class LDAPEligibilityGroup:

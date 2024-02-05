@@ -2,6 +2,7 @@ import logging
 
 from coldfront.core.allocation.models import Allocation
 from coldfront.plugins.slate_project.utils import (sync_slate_project_users,
+                                                   sync_slate_project_ldap_group,
                                                    send_inactive_users_report,
                                                    send_ineligible_pi_report,
                                                    import_slate_projects,
@@ -17,6 +18,7 @@ def sync_all_slate_project_allocations():
     ldap_conn = LDAPModify()
     logger.info('Running sync...')
     for slate_project_allocation in slate_project_allocations:
+        sync_slate_project_ldap_group(slate_project_allocation, ldap_conn)
         sync_slate_project_users(slate_project_allocation, ldap_conn)
     logger.info('Sync complete')
 
