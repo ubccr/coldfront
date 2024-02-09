@@ -12,7 +12,9 @@ from ldap3 import Connection, Server, ALL_ATTRIBUTES
 from ldap3.extend.microsoft.addMembersToGroups import ad_add_members_to_groups
 from ldap3.extend.microsoft.removeMembersFromGroups import ad_remove_members_from_groups
 
-from coldfront.core.utils.common import import_from_settings
+from coldfront.core.utils.common import (
+    import_from_settings, uniques_and_intersection
+)
 from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.utils.fasrc import (
     id_present_missing_users,
@@ -32,8 +34,7 @@ logger = logging.getLogger(__name__)
 username_ignore_list = import_from_settings('username_ignore_list', [])
 
 class LDAPConn:
-    """
-    LDAP connection object
+    """LDAP connection object
     """
     def __init__(self, test=False):
 
@@ -159,35 +160,34 @@ class LDAPConn:
             raise ValueError("no groups returned")
         return group[0]
 
-    def add_member_to_group(self, user_name, group_name):
-        # get group
+    def add_user_to_group(self, user_name, group_name):
         group = self.return_group_by_name(group_name)
-        # get user
-        try:
-            user = self.return_user_by_name(user_name)
-        except ValueError as e:
-            raise e
+        user = self.return_user_by_name(user_name)
+        self.add_member_to_group(user, group)
+
+    def add_group_to_group(self, group_name, parent_group_name):
+        group = self.return_group_by_name(group_name)
+        parent_group = self.return_group_by_name(parent_group_name)
+        self.add_member_to_group(group, parent_group)
+
+    def add_member_to_group(self, member, group):
         group_dn = group['distinguishedName']
-        user_dn = user['distinguishedName']
+        member_dn = member['distinguishedName']
         try:
-            result = ad_add_members_to_groups(self.conn, [user_dn], group_dn, fix=True)
+            result = ad_add_members_to_groups(
+                self.conn, [member_dn], group_dn, fix=True)
         except Exception as e:
             raise e
         return result
 
     def remove_member_from_group(self, user_name, group_name):
         # get group
-        try:
-            group = self.return_group_by_name(group_name)
-        except ValueError as e:
-            raise e
+        group = self.return_group_by_name(group_name)
         # get user
-        try:
-            user = self.return_user_by_name(user_name)
-        except ValueError as e:
-            raise e
+        user = self.return_user_by_name(user_name)
         if user['gidNumber'] == group['gidNumber']:
-            raise ValueError("group is user's primary group - please contact FASRC support to remove this user from your group.")
+            raise ValueError(
+                "Group is user's primary group. Please contact FASRC support to remove this user from your group.")
         group_dn = group['distinguishedName']
         user_dn = user['distinguishedName']
         try:
@@ -327,13 +327,6 @@ def format_template_assertions(attr_search_dict, search_operator='and'):
         search_filter = f'({match_operator[search_operator]}'+search_filter+')'
     return search_filter
 
-def uniques_and_intersection(list1, list2):
-    intersection = list(set(list1) & set(list2))
-    list1_unique = list(set(list1) - set(list2))
-    list2_unique = list(set(list2) - set(list1))
-    return (list1_unique, intersection, list2_unique)
-
-
 def is_string(value):
     return isinstance(value, str)
 
@@ -348,7 +341,7 @@ def sort_dict_on_conditional(dict1, condition):
 def cleaned_membership_query(proj_membs_mans):
     search_errors, proj_membs_mans = sort_dict_on_conditional(proj_membs_mans, is_string)
     if search_errors:
-        logger.error('could not return members and manager for some groups:\n%s',
+        logger.error('could not return members and manager for some groups: %s',
                         search_errors)
     return proj_membs_mans, search_errors
 

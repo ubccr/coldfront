@@ -56,7 +56,7 @@ class Command(BaseCommand):
         save_json(result_file, resp_json_by_lab)
 
         # Remove allocations for labs not in Coldfront, add those labs to a list
-        result_json_cleaned, proj_models = match_entries_with_projects(resp_json_by_lab)
+        result_cleaned, proj_models = match_entries_with_projects(resp_json_by_lab)
 
         redash_api = StarFishRedash()
         allocation_usages = redash_api.return_query_results(query='subdirectory')
@@ -67,7 +67,7 @@ class Command(BaseCommand):
                 project.status = ProjectStatusChoice.objects.get(name='Active')
                 project.save()
 
-        for lab, allocations in result_json_cleaned.items():
+        for lab, allocations in result_cleaned.items():
             project = proj_models.get(title=lab)
             for entry in allocations:
                 lab_name = entry['lab']

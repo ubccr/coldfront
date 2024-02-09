@@ -92,7 +92,11 @@ Project Detail
     <div class="table-responsive">
       {% if storage_allocations %}
         <table id="invoice_table" class="table table-hover">
-        <h4>Storage</h4>
+        <h4>Storage &nbsp;
+	{% if project.sf_zone %}
+	  <a class="btn btn-success" href="https://starfish.rc.fas.harvard.edu/#/browser?zone={{project.sf_zone}}" role="button"> View detailed storage allocation information on Starfish </a>
+	{% endif %}
+	</h4>
         <thead>
           <tr>
             <th scope="col">Resource Name</th>

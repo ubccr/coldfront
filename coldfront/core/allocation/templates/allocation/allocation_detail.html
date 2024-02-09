@@ -26,6 +26,9 @@ Allocation Detail
 <div class="mb-3">
   <h2>Allocation Detail</h2>
   <button class="btn btn-primary" id="download"> Download PDF </button>
+  {% if allocation.project.sf_zone and "tier" in allocation.get_parent_resource.name %}
+  <a class="btn btn-success" href="https://starfish.rc.fas.harvard.edu/#/browser?zone={{allocation.project.sf_zone}}" role="button" id="starfish"> View more information about your storage on Starfish </a>
+  {% endif %}
   <hr>
 </div>
 

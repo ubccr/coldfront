@@ -670,7 +670,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
                     if 'coldfront.plugins.ldap' in settings.INSTALLED_APPS:
                         try:
-                            ldap_conn.add_member_to_group(
+                            ldap_conn.add_user_to_group(
                                 user_obj.username, project_obj.title,
                             )
                             logger.info(

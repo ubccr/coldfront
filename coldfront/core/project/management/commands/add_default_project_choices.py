@@ -28,9 +28,10 @@ class Command(BaseCommand):
             AttributeType.objects.get_or_create(name=attribute_type)
 
         for name, attribute_type, has_usage, is_private in (
+            ('Starfish Zone', 'Int', False, False),
             # UBCCR defaults
-            ('Project ID', 'Text', False, False),
-            ('Account Number', 'Int', False, True),
+            # ('Project ID', 'Text', False, False),
+            # ('Account Number', 'Int', False, True),
         ):
             ProjectAttributeType.objects.update_or_create(
                 name=name,

@@ -1,15 +1,19 @@
-import re
+import operator
 from operator import itemgetter
 from itertools import groupby
+from functools import reduce
 import time
 import logging
 from pathlib import Path
 from datetime import datetime, timedelta
 
 import requests
+from django.conf import settings
+from django.db.models import Q
 from django.utils import timezone
 
-from coldfront.core.utils.common import import_from_settings
+from coldfront.core.utils.common import (
+    import_from_settings, uniques_and_intersection)
 from coldfront.core.utils.fasrc import (
     read_json,
     save_json,
@@ -19,6 +23,7 @@ from coldfront.core.utils.fasrc import (
     locate_or_create_dirpath,
 )
 from coldfront.core.resource.models import Resource, ResourceAttributeType
+from coldfront.core.project.models import Project
 from coldfront.core.allocation.models import (
     Allocation,
     AllocationUser,
@@ -26,10 +31,12 @@ from coldfront.core.allocation.models import (
     AllocationAttributeUsage,
     AllocationUserStatusChoice,
 )
+if 'coldfront.plugins.ldap' in settings.INSTALLED_APPS:
+    from coldfront.plugins.ldap.utils import LDAPConn
 
 DATESTR = datetime.today().strftime('%Y%m%d')
-DATAPATH = "./coldfront/plugins/sftocf/data/"
-STARFISH_SERVER = import_from_settings('STARFISH_SERVER', '')
+DATAPATH = './coldfront/plugins/sftocf/data/'
+STARFISH_SERVER = import_from_settings('STARFISH_SERVER', 'starfish')
 
 logger = logging.getLogger(__name__)
 
@@ -50,11 +57,83 @@ def record_process(func):
     return call
 
 
-# Define filter for allocations to be slated for collection here as you see fit
-ALLOCATIONS_FOR_COLLECTION = Allocation.objects.filter(
-    status__name__in=['Active'],
-    resources__resource_type__name='Storage'
-)
+def zone_report():
+    """Check of SF zone alignment with pipeline specs.
+    Report on:
+        Coldfront projects with storage allocations vs. SF zones
+        AD groups corresponding to SF zones that don't belong to AD group starfish_groups
+        SF zones have all allocations that correspond to Coldfront project allocations
+        SF zones that don’t have groups
+        SF zones that have users as opposed to groups
+    """
+    report = {
+        'projects_with_allocations_no_zones': [],
+        'zones_with_no_projects': [],
+        'zones_with_no_groups': [],
+        'zones_with_users': [],
+    }
+    # start by getting all zones
+    server = StarFishServer(STARFISH_SERVER)
+    # get list of all zones in server
+    zones = server.get_zones()
+
+    # get all projects with at least one storage allocation
+    projects = Project.objects.filter(
+        allocation__status__name__in=['Active', 'Updated', 'Ready for Review'],
+        allocation__resources__in=server.get_corresponding_coldfront_resources(),
+    ).distinct()
+    # check which of these projects have zones
+    project_titles = [p.title for p in projects]
+    zone_names = [z['name'] for z in zones]
+    projs_no_zones, projs_with_zones, zones_no_projs = uniques_and_intersection(project_titles, zone_names)
+    report['projs_with_zones'] = {p['name']:p['id'] for p in [z for z in zones if z['name'] in projs_with_zones]}
+    report['projects_with_allocations_no_zones'] = projs_no_zones
+    report['zones_with_no_projects'] = zones_no_projs
+    no_group_zones = [z['name'] for z in zones if not z['managing_groups']]
+    report['zones_with_no_groups'] = no_group_zones
+    user_zones = [z for z in zones if z['managers']]
+    report['zones_with_users'] = [
+        f"{z['name']}: {z['managers']}" for z in user_zones
+    ]
+    report_nums = {k: len(v) for k, v in report.items()}
+    for r in [report, report_nums]:
+        print(r)
+        logger.warning(r)
+
+def allocation_to_zone(allocation):
+    """
+    1. Check whether the allocation is in Starfish
+    2. If so, check whether a zone exists for the allocation's project.
+    3. If not, create a zone for the allocation's project.
+    4. Add the allocation to the zone.
+    """
+    server = StarFishServer(STARFISH_SERVER)
+    resource = allocation.resources.first()
+    if not any(sf_res in resource.title for sf_res in server.volumes):
+        return None
+    project = allocation.project
+    zone = server.get_zone_by_name(project.title)
+    if zone:
+        zone_paths = zone['paths']
+        new_path = f"{allocation.resources.first().name.split('/')[0]}:{allocation.path}"
+        zone_paths.append(new_path)
+        zone.update_zone(paths=zone_paths)
+    else:
+        zone = server.zone_from_project(project.title)
+    return zone
+
+def add_zone_group_to_ad(group_name):
+    if 'coldfront.plugins.ldap' in settings.INSTALLED_APPS:
+        ldap_conn = LDAPConn()
+        try:
+            ldap_conn.add_group_to_group(group_name, 'starfish_users')
+        except Exception as e:
+            # no exception if group is already present
+            # exception if group doesn't exist
+            error = f'Error adding {group_name} to starfish_users: {e}'
+            print(error)
+            logger.warning(error)
+            raise
 
 
 class StarFishServer:
@@ -87,10 +166,88 @@ class StarFishServer:
     def get_volume_names(self):
         """Generate a list of the volumes available on the server.
         """
-        url = self.api_url + 'storage/'
-        response = return_get_json(url, self.headers)
-        volnames = [i['name'] for i in response['items']]
+        response = self.get_volume_attributes()
+        volnames = [i['vol'] for i in response]
         return volnames
+
+    def get_groups(self):
+        """get set of group names on starfish"""
+        url = self.api_url + 'mapping/group/'
+        response = return_get_json(url, self.headers)
+        groupnames = {g['name'] for g in response}
+        return groupnames
+
+    def get_zones(self, zone_id=''):
+        """Get all zones from the API, or the zone with the corresponding ID
+        """
+        url = self.api_url + f'zone/{zone_id}'
+        response = return_get_json(url, self.headers)
+        return response
+
+    def get_zone_by_name(self, zone_name):
+        """Get a zone by name"""
+        zones = self.get_zones()
+        return next((z for z in zones if z['name'] == zone_name), None)
+
+
+    def create_zone(self, zone_name, paths, managers, managing_groups):
+        """Create a zone via the API"""
+        url = self.api_url + 'zone/'
+        data = {
+            "name": zone_name,
+            "paths": paths,
+            "managers": managers,
+            "managing_groups": managing_groups,
+        }
+        logger.debug(data)
+        response = return_post_json(url, data=data, headers=self.headers)
+        logger.debug(response)
+        return response
+
+    def delete_zone(self, zone_id, zone_name=None):
+        """Delete a zone via the API"""
+        if not zone_id:
+            zone = self.get_zone_by_name(zone_name)
+            zone_id = zone['id']
+        url = self.api_url + f'zone/{zone_id}'
+        response = requests.delete(url, headers=self.headers)
+        return response
+
+    def update_zone(self, zone_name, paths=None, managers=None, managing_groups=None):
+        """Update a zone via the API"""
+        zone_data = self.get_zone_by_name(zone_name)
+        zone_id = zone_data['id']
+        url = self.api_url + f'zone/{zone_id}/'
+        data = {'name': zone_name}
+        data['paths'] = paths if paths else zone_data['paths']
+        data['managers'] = managers if managers else zone_data['managers']
+        data['managing_groups'] = managing_groups if managing_groups else zone_data['managing_groups']
+        for group in managing_groups:
+            add_zone_group_to_ad(group['groupname'])
+        response = return_put_json(url, data=data, headers=self.headers)
+        return response
+
+    def zone_from_project(self, project_obj):
+        """Create a zone from a project object"""
+        zone_name = project_obj.title
+        paths = [
+            f"{a.resources.first().name.split('/')[0]}:{a.path}"
+            for a in project_obj.allocation_set.filter(
+                status__name__in=['Active', 'New', 'Updated', 'Ready for Review'],
+                resources__in=self.get_corresponding_coldfront_resources()
+            )
+            if a.path
+        ]
+        managers = [f'{project_obj.pi.username}']
+        managing_groups = [{'groupname': project_obj.title}]
+        add_zone_group_to_ad(project_obj.title)
+        return self.create_zone(zone_name, paths, [], managing_groups)
+
+    def get_corresponding_coldfront_resources(self):
+        resources = Resource.objects.filter(
+            reduce(operator.or_,(Q(name__contains=x) for x in self.volumes))
+        )
+        return resources
 
     def get_volumes_in_coldfront(self):
         resource_volume_list = [r.name.split('/')[0] for r in Resource.objects.all()]
@@ -109,7 +266,7 @@ class StarFishServer:
     def get_scans(self):
         """Collect scans of all volumes in Coldfront
         """
-        volumes = '&'.join([f'volume={volume}' for volume in self.get_volumes_in_coldfront()])
+        volumes = '&'.join([f'volume={v}' for v in self.get_volumes_in_coldfront()])
         url = self.api_url + 'scan/?' + volumes
         response_raw = requests.get(url, headers=self.headers)
         response = response_raw.json()
@@ -124,7 +281,8 @@ class StarFishServer:
         volumes = self.get_volumes_in_coldfront()
         for volume in volumes:
             latest_time = max(
-                s['creation_time'] for s in scans['scans'] if s['volume'] == volume
+                s['creation_time'] for s in scans['scans']
+                if s['volume'] == volume
             )
             latest_scan = next(
                 s for s in scans['scans']
@@ -208,6 +366,13 @@ class StarFishRedash:
         self.base_url = f'https://{server_name}.rc.fas.harvard.edu/redash/api/'
         self.queries = import_from_settings('REDASH_API_KEYS')
 
+    def get_corresponding_coldfront_resources(self):
+        volumes = [r['volume_name'] for r in self.get_vol_stats()]
+        resources = Resource.objects.filter(
+            reduce(operator.or_,(Q(name__contains=x) for x in volumes))
+        )
+        return resources
+
     def submit_query(self, queryname):
         """submit a query and return a json of the results.
         """
@@ -223,7 +388,7 @@ class StarFishRedash:
             k.replace(' ', '_').replace('(','').replace(')','') : v for k, v in d.items()
         } for d in result]
         resource_names = [
-            re.sub(r'\/.+','',n) for n in Resource.objects.values_list('name',flat=True)
+            n.split('/')[0] for n in Resource.objects.values_list('name',flat=True)
         ]
         result = [r for r in result if r['volume_name'] in resource_names]
         return result
@@ -269,8 +434,7 @@ class AsyncQuery:
             'humanize_nested': 'false',
             'mount_agent': 'None',
         }
-        r = requests.post(query_url, params=params, headers=self.headers)
-        response = r.json()
+        response = return_post_json(query_url, params=params, headers=self.headers)
         logger.debug('response: %s', response)
         return response['query_id']
 
@@ -294,14 +458,20 @@ def return_get_json(url, headers):
     response = requests.get(url, headers=headers)
     return response.json()
 
+def return_put_json(url, data, headers):
+    response = requests.put(url, json=data, headers=headers)
+    response.raise_for_status()
+    return response.json()
+
+def return_post_json(url, params=None, data=None, headers=None):
+    response = requests.post(url, params=params, json=data, headers=headers)
+    response.raise_for_status()
+    return response.json()
+
 def generate_headers(token):
     """Generate 'headers' attribute by using the 'token' attribute.
     """
-    headers = {
-        'accept': 'application/json',
-        'Authorization': 'Bearer {}'.format(token),
-    }
-    return headers
+    return {'accept': 'application/json', 'Authorization': f'Bearer {token}'}
 
 
 class AllocationQueryMatch:
@@ -397,9 +567,16 @@ class UsageDataPipelineBase:
     """Base class for usage data pipeline classes."""
 
     def __init__(self, volume=None):
-        self.volume = volume
-        self.resource_volumes = None
         self.connection_obj = self.return_connection_obj()
+        if volume:
+            self.volumes = [volume]
+        else:
+            self.volumes = self.connection_obj.get_corresponding_coldfront_resources()
+
+        self.allocations = Allocation.objects.filter(
+            status__name__in=['Active', 'New', 'Updated', 'Ready for Review'],
+            resources__in=self.volumes
+        )
         # self.collection_filter = self.set_collection_parameters()
         self.sf_user_data = self.collect_sf_user_data()
         self.sf_usage_data = self.collect_sf_usage_data()
@@ -425,12 +602,7 @@ class UsageDataPipelineBase:
         logger.debug('allocation_usage:\n%s', self.sf_usage_data)
 
         # limit allocations to those in the volumes collected
-        vols_collected = {e['volume'] for e in self.sf_usage_data}
-        searched_resources = [Resource.objects.get(name__contains=vol) for vol in vols_collected]
-        allocations = Allocation.objects.filter(
-            resources__in=searched_resources,
-            status__name__in=['Active', 'New', 'Updated', 'Ready for Review']
-        ).prefetch_related('project','allocationattribute_set', 'allocationuser_set')
+        allocations = self.allocations.prefetch_related('project','allocationattribute_set', 'allocationuser_set')
         allocationquerymatch_objects = match_allocations_with_usage_entries(
             allocations, self.sf_user_data, self.sf_usage_data
         )
@@ -541,10 +713,8 @@ class RedashDataPipeline(UsageDataPipelineBase):
 
     def collect_sf_user_data(self):
         """Collect starfish data using the Redash API. Return the results."""
-        # 1. grab data from redash
-        resource_volume_list = [r.name.split('/')[0] for r in Resource.objects.all()]
         user_usage = self.connection_obj.return_query_results(
-            query='path_usage_query', volumes=resource_volume_list
+            query='path_usage_query', volumes=self.volumes
         )
         for d in user_usage:
             d['username'] = d.pop('user_name')
@@ -553,9 +723,8 @@ class RedashDataPipeline(UsageDataPipelineBase):
         return user_usage
 
     def collect_sf_usage_data(self):
-        resource_volume_list = [r.name.split('/')[0] for r in Resource.objects.all()]
         allocation_usage = self.connection_obj.return_query_results(
-            query='subdirectory', volumes=resource_volume_list
+            query='subdirectory', volumes=self.volumes
         )
         for d in allocation_usage:
             d['username'] = d.pop('user_name')
@@ -568,6 +737,7 @@ class RESTDataPipeline(UsageDataPipelineBase):
 
     def return_connection_obj(self):
         return StarFishServer()
+
 
     @record_process
     def produce_lab_dict(self):
@@ -582,7 +752,7 @@ class RESTDataPipeline(UsageDataPipelineBase):
             Structured as follows:
             'lab_name': [('volume', 'path'), ('volume', 'path')]
         """
-        pr_objs = ALLOCATIONS_FOR_COLLECTION.only('id', 'project')
+        pr_objs = self.allocations.only('id', 'project')
         labs_resources = {allocation.project.title: [] for allocation in pr_objs}
         for allocation in pr_objs:
             proj_name = allocation.project.title
@@ -590,9 +760,11 @@ class RESTDataPipeline(UsageDataPipelineBase):
             if resource:
                 vol_name = resource.name.split('/')[0]
             else:
-                print("no resource for allocation owned by", proj_name)
+                message = f'no resource for allocation owned by {proj_name}'
+                print(message)
+                logger.error(message)
                 continue
-            if self.volume and resource != self.volume:
+            if resource not in self.volumes:
                 continue
             if allocation.path:
                 labs_resources[proj_name].append((vol_name, allocation.path))
@@ -620,7 +792,7 @@ class RESTDataPipeline(UsageDataPipelineBase):
         filepaths = []
         to_collect = []
         labs_resources = [(l, res) for l, r in lr.items() for res in r]
-        logger.debug("labs_resources:%s", labs_resources)
+        logger.debug('labs_resources:%s', labs_resources)
 
         yesterdaystr = (datetime.today()-timedelta(1)).strftime("%Y%m%d")
         dates = [yesterdaystr, DATESTR]
@@ -642,10 +814,12 @@ class RESTDataPipeline(UsageDataPipelineBase):
         """Clean sequence for the data produced from the usage query.
         """
         data = [d for d in data if d['username'] != 'root']
+        items_to_pop = ['physical_nlinks_size_sum', 'rec_aggrs', 'fn', 'count',
+            'physical_nlinks_size_sum_hum', 'size_sum_hum', 'volume_display_name']
         for entry in data:
             # entry['size_sum'] = entry['rec_aggrs']['size']
             # entry['full_path'] = entry['parent_path']+'/'+entry['fn']
-            for item in ['physical_nlinks_size_sum', 'rec_aggrs', 'fn', 'count', 'physical_nlinks_size_sum_hum', 'size_sum_hum', 'volume_display_name']:
+            for item in items_to_pop:
                 entry.pop(item, None)
         # remove any directory that is a subdirectory of a directory owned by the same user
         return data
@@ -662,7 +836,7 @@ class RESTDataPipeline(UsageDataPipelineBase):
         for volume in vols:
             # volumepath = svp["volumes"][volume]
             projects = [t for t in to_collect if t[1] == volume]
-            logger.debug("vol: %s\nto_collect_subset: %s", volume, projects)
+            logger.debug('vol: %s\nto_collect_subset: %s', volume, projects)
 
             ### OLD METHOD ###
             for tup in projects:
@@ -716,10 +890,12 @@ class RESTDataPipeline(UsageDataPipelineBase):
         vol_set = {i[1] for i in lab_res}
         vols = [vol for vol in vol_set if vol in svp['volumes']]
         entries = []
+        items_to_remove = ['size_sum_hum', 'rec_aggrs', 'physical_nlinks_size_sum',
+            'physical_nlinks_size_sum_hum', 'volume_display_name', 'count', 'fn']
         for volume in vols:
-            volumepath = svp["volumes"][volume]
+            volumepath = svp['volumes'][volume]
             projects = [t for t in lab_res if t[1] == volume]
-            logger.debug("vol: %s\nto_collect_subset: %s", volume, projects)
+            logger.debug('vol: %s\nto_collect_subset: %s', volume, projects)
 
             ### OLD METHOD ###
             for tup in projects:
@@ -753,27 +929,46 @@ class RESTDataPipeline(UsageDataPipelineBase):
                         'project': p,
                         'date': DATESTR,
                     })
-                    for item in ['count', 'size_sum_hum','rec_aggrs','fn', 'volume_display_name', 'physical_nlinks_size_sum', 'physical_nlinks_size_sum_hum']:
+                    for item in items_to_remove:
                         entry.pop(item)
                     entries.append(entry)
         return entries
 
 
-def pull_resource_data():
+def pull_resource_data(source='rest_api'):
     """Pull data from starfish and save to ResourceAttribute objects"""
-    starfish_redash = StarFishRedash(STARFISH_SERVER)
-    volumes = starfish_redash.get_vol_stats()
-    volumes = [
-        {
-            'name': vol['volume_name'],
-            'attrs': {
-                'capacity_tb': vol['capacity_TB'],
-                'free_tb': vol['free_TB'],
-                'file_count': vol['regular_files'],
+    if source == 'rest_api':
+        sf = StarFishServer(STARFISH_SERVER)
+        volumes = sf.get_volume_attributes()
+        volumes = [
+            {
+                'name': vol['vol'],
+                'attrs': {
+                    'capacity_tb': vol['total_capacity']/(1024**4),
+                    'free_tb': vol['free_space']/(1024**4),
+                    'file_count': vol['number_of_files'],
+                }
             }
-        }
-        for vol in volumes
-    ]
+            for vol in volumes
+        ]
+
+    elif source == 'redash':
+        sf = StarFishRedash(STARFISH_SERVER)
+        volumes = sf.get_vol_stats()
+        volumes = [
+            {
+                'name': vol['volume_name'],
+                'attrs': {
+                    'capacity_tb': vol['capacity_TB'],
+                    'free_tb': vol['free_TB'],
+                    'file_count': vol['regular_files'],
+                }
+            }
+            for vol in volumes
+        ]
+    else:
+        raise ValueError('source must be "rest_api" or "redash"')
+
     # collect user and lab counts, allocation sizes for each volume
     res_attr_types = ResourceAttributeType.objects.all()
 
@@ -781,8 +976,9 @@ def pull_resource_data():
         resource = Resource.objects.get(name__contains=volume['name'])
 
         for attr_name, attr_val in volume['attrs'].items():
-            attr_type_obj = res_attr_types.get(name=attr_name)
-            resource.resourceattribute_set.update_or_create(
-                resource_attribute_type=attr_type_obj,
-                defaults={'value': attr_val}
-            )
+            if attr_val:
+                attr_type_obj = res_attr_types.get(name=attr_name)
+                resource.resourceattribute_set.update_or_create(
+                    resource_attribute_type=attr_type_obj,
+                    defaults={'value': attr_val}
+                )

@@ -45,7 +45,8 @@ class Command(BaseCommand):
                         'sAMAccountName': groups,
                         'managedBy': '*'
                         }, attributes=['sAMAccountName'])
-        ad_group_names = [group['sAMAccountName'][0] for group in ad_groups] # get all AD group names
+        # get all AD group names
+        ad_group_names = [group['sAMAccountName'][0] for group in ad_groups]
         # remove AD groups that already have a corresponding ColdFront project
         ad_only = list(set(ad_group_names) - set(project_titles))
         errortracker = {
@@ -72,7 +73,7 @@ class Command(BaseCommand):
         added_projects, errortracker = add_new_projects(groupusercollections, errortracker)
         print(f"added {len(added_projects)} projects: ", [a[0] for a in added_projects])
         print("errs: ", errortracker)
-        logger.warning(errortracker)
+        logger.warning("errors: %s", errortracker)
         not_added = [
             {'title': i, 'info': k} for k, v in errortracker.items() for i in v
         ]

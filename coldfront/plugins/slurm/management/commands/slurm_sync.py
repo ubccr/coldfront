@@ -41,6 +41,7 @@ class Command(BaseCommand):
                         slurm_cluster = SlurmCluster.new_from_stream(fh)
                 except SlurmError as e:
                     logger.error('Failed to dump Slurm cluster %s: %s', cluster, e)
+                    raise
         slurm_cluster.pull_fairshares()
         return slurm_cluster
 

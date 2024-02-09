@@ -31,9 +31,9 @@ class ATTAllocationQuery:
                 'match': "(e:Quota) MATCH (d:ConfigValue {Name: 'Quota.Invocation'})",
                 'server': 'filesystem',
                 'validation_query':
-                        "NOT ((e.SizeGB IS null) OR (e.usedBytes = 0 AND e.SizeGB = 1024)) \
-                        AND (datetime() - duration('P31D') <= datetime(r.DotsLFSUpdateDate)) \
-                        AND NOT (e.Path IS null)",
+                    "NOT ((e.SizeGB IS null) OR (e.usedBytes = 0 AND e.SizeGB = 1024)) \
+                    AND (datetime() - duration('P31D') <= datetime(r.DotsLFSUpdateDate)) \
+                    AND NOT (e.Path IS null)",
                 'r_updated': 'DotsLFSUpdateDate',
                 'storage_type': 'Quota',
                 'usedgb': 'usedGB',
@@ -49,10 +49,10 @@ class ATTAllocationQuery:
                 'match': "(e:IsilonPath) MATCH (d:ConfigValue {Name: 'IsilonPath.Invocation'})",
                 'server': 'Isilon',
                 'validation_query': "r.DotsUpdateDate = d.DotsUpdateDate \
-                        AND NOT (e.Path =~ '.*/rc_admin/.*')\
-                        AND (e.Path =~ '.*labs.*')\
-                        AND (datetime() - duration('P31D') <= datetime(r.DotsUpdateDate)) \
-                        AND NOT (e.SizeGB = 0)",
+                    AND NOT (e.Path =~ '.*/rc_admin/.*')\
+                    AND (e.Path =~ '.*labs.*')\
+                    AND (datetime() - duration('P31D') <= datetime(r.DotsUpdateDate)) \
+                    AND NOT (e.SizeGB = 0)",
                 'fs_path':'Path',
                 'r_updated': 'DotsUpdateDate',
                 'storage_type': 'Isilon',
@@ -253,6 +253,7 @@ def pair_allocations_data(project, quota_dicts):
         dicts = [
             d for d in quota_dicts
             if d['fs_path'] and allocation.path.lower() == d['fs_path'].lower()
+            and d['server'] in allocation.resources.first().name
         ]
         if dicts:
             log_message = f'Path-based match: {allocation}, {allocation.path}, {dicts[0]}'

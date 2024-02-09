@@ -136,6 +136,10 @@ We do not have information about your research. Please provide a detailed descri
         return None
 
     @property
+    def sf_zone(self):
+        return self.get_attribute('Starfish Zone')
+
+    @property
     def needs_review(self):
         """
         Returns:
@@ -215,11 +219,36 @@ We do not have information about your research. Please provide a detailed descri
         perms = self.user_permissions(user)
         return perm in perms
 
+    def get_attribute(self, name):
+        """
+        Params:
+            name (str): name of the project attribute type
+
+        Returns:
+            str: value of the first attribute found for this project with the specified name
+        """
+        attr = self.projectattribute_set.filter(proj_attr_type__name=name).first()
+        if attr:
+            return attr.value
+        return None
+
+    def get_attribute_list(self, name):
+        """
+        Params:
+            name (str): name of the project attribute type
+
+        Returns:
+            list: the list of values of the attributes found with specified name
+        """
+        attr = self.projectattribute_set.filter(proj_attr_type__name=name)
+        return [a.value for a in attr]
+
     def __str__(self):
         return self.title
 
     def natural_key(self):
         return (self.title,) + self.pi.natural_key()
+
 
 class ProjectAdminComment(TimeStampedModel):
     """ A project admin comment is a comment that an admin can make on a project.

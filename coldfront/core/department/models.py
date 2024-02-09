@@ -47,10 +47,8 @@ class Department(Organization):
     objects = DepartmentSelector()
     history = HistoricalRecords()
 
-
     class Meta:
         proxy = True
-
 
     def get_projects(self):
         """Get all projects related to the Department, either directly or indirectly.
