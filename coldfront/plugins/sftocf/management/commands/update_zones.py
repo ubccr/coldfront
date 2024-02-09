@@ -64,7 +64,6 @@ class Command(BaseCommand):
             zone = sf.get_zones(zone_id)
 
             # has all the allocation paths associated with the project
-            update_paths = zone['paths']
             storage_allocations = project.allocation_set.filter(
                 status__name='Active',
                 resources__in=sf.get_corresponding_coldfront_resources(),
@@ -80,11 +79,11 @@ class Command(BaseCommand):
                         a.pk, a)
             if missing_paths:
                 continue
+
+            update = False
             paths = [f'{a.resources.first().name.split("/")[0]}:{a.path}' for a in storage_allocations] + zone_paths_not_in_cf
             if not set(paths) == set(zone['paths']):
-                if not dry_run:
-                    update_paths['paths'] = paths
-                    sf.update_zone(zone['name'], paths=update_paths)
+                update = True
                 report['updated_zone_paths'].append({
                     'zone': zone['name'],
                     'old_paths': zone['paths'],
@@ -95,15 +94,15 @@ class Command(BaseCommand):
             update_groups = zone['managing_groups']
             zone_group_names = [g['groupname'] for g in update_groups]
             if project.title not in zone_group_names:
-                if not dry_run:
-                    update_groups.append({'groupname': project.title})
-                    sf.update_zone(zone, managing_groups=update_groups)
+                update = True
+                update_groups.append({'groupname': project.title})
                 report['updated_zone_groups'].append({
                     'zone': zone['name'],
                     'old_groups': zone_group_names,
                     'new_groups': zone_group_names + [project.title],
                 })
-                
+            if update and not dry_run:
+                sf.update_zone(zone['name'], paths=paths, managing_groups=update_groups)
         # if project lacks "Starfish Zone" attribute, create or update the zone and save zone id to ProjectAttribute "Starfish Zone"
         projects_without_zones = projects_with_allocations.exclude(
             projectattribute__proj_attr_type=starfish_zone_attr_type,

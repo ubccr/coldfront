@@ -213,7 +213,7 @@ class StarFishServer:
         response = requests.delete(url, headers=self.headers)
         return response
 
-    def update_zone(self, zone_name, paths=None, managers=None, managing_groups=None):
+    def update_zone(self, zone_name, paths=[], managers=[], managing_groups=[]):
         """Update a zone via the API"""
         zone_data = self.get_zone_by_name(zone_name)
         zone_id = zone_data['id']
