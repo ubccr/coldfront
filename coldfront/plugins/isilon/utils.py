@@ -1,25 +1,84 @@
 import logging
 
-import isilon_sdk.v9_3_0
+import isilon_sdk.v9_3_0 as isilon_api
 from isilon_sdk.v9_3_0.rest import ApiException
 
-from coldfront.core.allocation.models import Allocation, AllocationAttributeType
-from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import import_from_settings
 
 logger = logging.getLogger(__name__)
 
-def connect(cluster_name):
-    configuration = isilon_sdk.v9_3_0.Configuration()
-    configuration.host = f'http://{cluster_name}01.rc.fas.harvard.edu:8080'
-    configuration.username = import_from_settings('ISILON_USER')
-    configuration.password = import_from_settings('ISILON_PASS')
-    configuration.verify_ssl = False
-    api_client = isilon_sdk.v9_3_0.ApiClient(configuration)
-    return api_client
+class IsilonConnection:
+    """Convenience class containing methods for collecting data from an isilon cluster
+    """
+    def __init__(self, cluster_name):
+        self.cluster_name = cluster_name
+        self.api_client = self.connect(cluster_name)
+        self.quota_client = isilon_api.QuotaApi(self.api_client)
+        self.pools_client = isilon_api.StoragepoolApi(self.api_client)
+
+    def connect(self, cluster_name):
+        configuration = isilon_api.Configuration()
+        configuration.host = f'http://{cluster_name}01.rc.fas.harvard.edu:8080'
+        configuration.username = import_from_settings('ISILON_USER')
+        configuration.password = import_from_settings('ISILON_PASS')
+        configuration.verify_ssl = False
+        api_client = isilon_api.ApiClient(configuration)
+        return api_client
+
+    def get_isilon_volume_unallocated_space(self):
+        """get the total unallocated space on a volume
+        calculated as total usable space minus sum of all quotas on the volume
+        """
+        try:
+            quotas = self.quota_client.list_quota_quotas(type='directory')
+            quota_sum = sum(
+                [q.thresholds.hard for q in quotas.quotas if q.thresholds.hard])
+            pool_query = self.pools_client.get_storagepool_storagepools(
+                toplevels=True)
+            total_space = pool_query.usage.usable_bytes
+            return total_space - quota_sum
+        except ApiException as e:
+            err = f'ERROR: could not get quota for {self.cluster_name} - {e}'
+            print_log_error(e, err)
+            return None
 
 
-def update_quota_and_usage(alloc, usage_attribute_type, value_list):
+def update_isilon_allocation_quota(allocation, quota):
+    """Update the quota for an allocation on an isilon cluster
+
+    Parameters
+    ----------
+    api_instance : isilon_api.QuotaApi
+    allocation : coldfront.core.allocation.models.Allocation
+    quota : int
+    """
+    # make isilon connection to the allocation's resource
+    isilon_resource = allocation.resources.first().split('/')[0]
+    isilon_conn = IsilonConnection(isilon_resource)
+    path = f'/ifs/{allocation.path}'
+
+    # check if enough space exists on the volume
+    quota_bytes = quota * 1024**3
+    unallocated_space = isilon_conn.get_isilon_volume_unallocated_space()
+    allowable_space = unallocated_space * 0.8
+    if allowable_space < quota_bytes:
+        raise ValueError(
+            'ERROR: not enough space on volume to set quota to %s for %s'
+            % (quota, allocation)
+        )
+    try:
+        isilon_conn.quota_client.update_quota_quota(path=path, threshold_hard=quota)
+        print(f"SUCCESS: updated quota for {allocation} to {quota}")
+        logger.info("SUCCESS: updated quota for %s to %s", allocation, quota)
+    except ApiException as e:
+        err = f"ERROR: could not update quota for {allocation} to {quota} - {e}"
+        print_log_error(e, err)
+
+def print_log_error(e, message):
+    print(f'ERROR: {message} - {e}')
+    logger.error("%s - %s", message, e)
+
+def update_coldfront_quota_and_usage(alloc, usage_attribute_type, value_list):
     usage_attribute, _ = alloc.allocationattribute_set.get_or_create(
         allocation_attribute_type=usage_attribute_type
     )
@@ -30,81 +89,3 @@ def update_quota_and_usage(alloc, usage_attribute_type, value_list):
     usage.save()
     return usage_attribute
 
-def update_quotas_usages():
-    """For all active tier1 allocations, update quota and usage
-    1. run a query that collects all active tier1 allocations
-    """
-    quota_bytes_attributetype = AllocationAttributeType.objects.get(
-        name='Quota_In_Bytes')
-    quota_tbs_attributetype = AllocationAttributeType.objects.get(
-        name='Storage Quota (TB)')
-    # create isilon connections to all isilon clusters in coldfront
-    isilon_resources = Resource.objects.filter(name__contains='tier1')
-    for resource in isilon_resources:
-        report = {"complete": 0, "no entry": [], "empty quota": []}
-        resource_name = resource.name.split('/')[0]
-        # try connecting to the cluster. If it fails, display an error and
-        # replace the resource with a dummy resource
-        try:
-            api_client = connect(resource_name)
-            api_instance = isilon_sdk.v9_3_0.QuotaApi(api_client)
-        except Exception as e:
-            message = f'Could not connect to {resource_name} - will not update quotas for allocations on this resource'
-            logger.warning("%s Error: %s", message, e)
-            print(f"{message} Error: {e}")
-            # isilon_clusters[resource.name] = None
-            continue
-
-        # get all active allocations for this resource
-        isilon_allocations = Allocation.objects.filter(
-            status__name='Active',
-            resources__name=resource.name,
-        )
-
-        # get all allocation quotas and usoges
-        try:
-            rc_labs = api_instance.list_quota_quotas(
-                path='/ifs/rc_labs/',
-                recurse_path_children=True,
-            )
-            l3_labs = api_instance.list_quota_quotas(
-                path='/ifs/rc_fasse_labs/',
-                recurse_path_children=True,
-            )
-        except Exception as e:
-            message = f'Could not connect to {resource_name} - will not update quotas for allocations on this resource'
-            logger.warning("%s Error: %s", message, e)
-            print(f"{message} Error: {e}")
-            # isilon_clusters[resource.name] = None
-            continue
-        quotas = rc_labs.quotas + l3_labs.quotas
-        for allocation in isilon_allocations:
-            # get the api_response entry for this allocation. If it doesn't exist, skip
-
-            try:
-                api_entry = next(e for e in quotas if e.path == f'/ifs/{allocation.path}')
-            except StopIteration as e:
-                logger.error('no isilon quota entry for allocation %s', allocation)
-                print('no isilon quota entry for allocation', allocation)
-                report['no entry'].append(f'{allocation.pk} {allocation.path} {allocation}')
-                continue
-            # update the quota and usage for this allocation
-            quota = api_entry.thresholds.hard
-            usage = api_entry.usage.fslogical
-            if quota is None:
-                logger.error('no hard threshold set for allocation %s', allocation)
-                print('no hard threshold set for allocation', allocation)
-                report['empty quota'].append(f'{allocation.pk} {allocation.path} {allocation}')
-                continue
-            quota_tb = quota / 1024 / 1024 / 1024 / 1024
-            usage_tb = usage / 1024 / 1024 / 1024 / 1024
-            update_quota_and_usage(
-                allocation, quota_bytes_attributetype, [quota, usage]
-            )
-            update_quota_and_usage(
-                allocation, quota_tbs_attributetype, [quota_tb, usage_tb]
-            )
-            print("SUCCESS:update for allocation", allocation, "complete")
-            report['complete'] += 1
-        print(report)
-        logger.warning("isilon update report for %s: %s", resource_name, report)
