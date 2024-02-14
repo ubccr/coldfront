@@ -40,10 +40,10 @@ class ExpenseCodeField(forms.CharField):
                     "Input must consist only of digits (or x'es) and dashes."
                 )
             if len(digits_only(value)) != 33:
-                raise ValidationError("Input must contain exactly 33 digits.")
+                raise ValidationError('Input must contain exactly 33 digits.')
             if 'x' in digits_only(value)[:8]+digits_only(value)[12:]:
                 raise ValidationError(
-                    "xes are only allowed in place of the product code (the third grouping of characters in the code)"
+                    'xes are only allowed in place of the product code (the third grouping of characters in the code)'
                 )
 
     def clean(self, value):
@@ -123,7 +123,7 @@ We do not have information about your research. Please provide a detailed descri
         ).order_by("user__username").exclude(user=project_obj.pi)
         # if user_query_set:
         #     self.fields['users'].choices = ((user.user.username, "%s %s (%s)" % (
-        #         user.user.first_name, user.user.last_name, user.user.username)) for user in user_query_set)
+        #         u.user.first_name, u.user.last_name, u.user.username)) for u in user_query_set)
         #     self.fields['users'].help_text = '<br/>Select users in your project to add to this allocation.'
         # else:
         #     self.fields['users'].widget = forms.HiddenInput()
@@ -379,6 +379,25 @@ class AllocationChangeNoteForm(forms.Form):
             required=False,
             widget=forms.Textarea,
             help_text="Leave any feedback about the allocation change request.")
+
+
+ALLOCATION_AUTOUPDATE_OPTIONS = [
+    ('1', 'I have already manually modified the allocation.'),
+    ('2', 'I would like Coldfront to modify the allocation for me. If Coldfront experiences any issues with the modification process, I understand that I will need to modify the allocation manually instead.'),
+]
+
+class AllocationAutoUpdateForm(forms.Form):
+    sheetcheck = forms.BooleanField(
+        label='I have ensured that enough space is available on this resource.'
+    )
+    auto_update_opts = forms.ChoiceField(
+        label='How will this allocation be modified?',
+        required=True,
+        widget=forms.RadioSelect,
+        choices=ALLOCATION_AUTOUPDATE_OPTIONS,
+    )
+
+
 
 class AllocationAttributeCreateForm(forms.ModelForm):
     class Meta:
