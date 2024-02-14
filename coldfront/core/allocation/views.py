@@ -154,7 +154,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             user=self.request.user, status__name__in=['Active', 'New', ]).exists()
 
         user_can_access_allocation = allocation_obj.allocationuser_set.filter(
-            user=self.request.user, status__name__in=['Active', 'Pending - Remove']).exists()
+            user=self.request.user, status__name__in=['Active', 'Pending - Remove', 'Eligible', 'Disabled']).exists()
         if not user_can_access_allocation:
             user_can_access_allocation = allocation_obj.project.projectuser_set.filter(
                 user=self.request.user, role__name='Manager').exists()
@@ -255,7 +255,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             context['user_has_permissions'] = True
 
         context['user_exists_in_allocation'] = allocation_obj.allocationuser_set.filter(
-            user=self.request.user, status__name__in=['Active', 'Pending - Remove']).exists()
+            user=self.request.user, status__name__in=['Active', 'Pending - Remove', 'Eligible', 'Disabled']).exists()
 
         context['project'] = allocation_obj.project
         context['notes'] = notes
@@ -911,7 +911,7 @@ class AllocationListView(LoginRequiredMixin, ListView):
                     Q(project__projectuser__user=self.request.user) &
                     Q(project__projectuser__status__name='Active') &
                     Q(allocationuser__user=self.request.user) &
-                    Q(allocationuser__status__name='Active')
+                    Q(allocationuser__status__name__in= ['Active', 'Pending - Remove', 'Eligible', 'Disabled'])
                 ).distinct().order_by(order_by)
 
             # Project Title
@@ -924,7 +924,7 @@ class AllocationListView(LoginRequiredMixin, ListView):
                 allocations = allocations.filter(
                     Q(project__pi__username__icontains=data.get('username')) |
                     Q(allocationuser__user__username__icontains=data.get('username')) &
-                    Q(allocationuser__status__name='Active')
+                    Q(allocationuser__status__name__in= ['Active', 'Pending - Remove', 'Eligible', 'Disabled'])
                 )
 
             # Resource Type
@@ -965,7 +965,7 @@ class AllocationListView(LoginRequiredMixin, ListView):
         else:
             allocations = Allocation.objects.prefetch_related('project', 'project__pi', 'status',).filter(
                 Q(allocationuser__user=self.request.user) &
-                Q(allocationuser__status__name='Active')
+                Q(allocationuser__status__name__in= ['Active', 'Pending - Remove', 'Eligible', 'Disabled'])
             ).order_by(order_by)
 
         return allocations.distinct()
