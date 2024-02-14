@@ -1441,17 +1441,18 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                             if project_obj.pi.email not in allocations_added_users_emails:
                                 allocations_added_users_emails.append(project_obj.pi.email)
 
-                        send_added_user_email(
-                            request,
-                            allocation,
-                            allocations_added_users,
-                            allocations_added_users_emails
-                        )
+                            send_added_user_email(
+                                request,
+                                allocation,
+                                allocations_added_users,
+                                allocations_added_users_emails
+                            )
 
-            logger.info(
-                f'User {request.user.username} added {", ".join(added_users)} to a project '
-                f'(project pk={project_obj.pk})'
-            )
+            if added_users:
+                logger.info(
+                    f'User {request.user.username} added {", ".join(added_users)} to a project '
+                    f'(project pk={project_obj.pk})'
+                )
             if allocations_added_to:
                 for allocation, values in allocations_added_to.items():
                     allocations_added_users = values[0]
