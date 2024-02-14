@@ -64,7 +64,7 @@ class ProjectTable:
             projects = projects.filter(
                 allocation__allocationattribute__allocation_attribute_type__name='Has DL Workflow',
                 allocation__allocationattribute__value='Yes'
-            )
+            ).distinct()
         if data.get('project__created_after_date'):
             projects = projects.filter(created__gt=data.get('project__created_after_date'))
         if data.get('project__created_before_date'):
