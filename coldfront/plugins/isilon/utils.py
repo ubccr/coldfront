@@ -73,6 +73,7 @@ def update_isilon_allocation_quota(allocation, quota):
     except ApiException as e:
         err = f"ERROR: could not update quota for {allocation} to {quota} - {e}"
         print_log_error(e, err)
+        raise
 
 def print_log_error(e, message):
     print(f'ERROR: {message} - {e}')
@@ -88,4 +89,3 @@ def update_coldfront_quota_and_usage(alloc, usage_attribute_type, value_list):
     usage.value = value_list[1]
     usage.save()
     return usage_attribute
-
