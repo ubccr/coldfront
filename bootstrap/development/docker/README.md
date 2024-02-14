@@ -56,10 +56,10 @@ Note that these steps must be run from the root directory of the repo.
        up
    ```
 
-7. Run Django scripts to set up the database and perform other tasks.
+7. Run Django scripts to set up the database and perform other tasks. You must provide the name of your Docker project.
 
    ```bash
-   sh bootstrap/development/docker/scripts/docker_run_django_scripts.sh
+   sh bootstrap/development/docker/scripts/docker_run_django_scripts.sh $DOCKER_PROJECT_NAME
    ```
 
    Notes:
