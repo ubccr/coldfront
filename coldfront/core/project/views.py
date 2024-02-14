@@ -1104,7 +1104,7 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
 
         status_list = ['Active', 'New', 'Renewal Requested', 'Billing Information Submitted']
         allocations = project_obj.allocation_set.filter(
-            status__name__in=status_list,
+            status__name__in=status_list, is_locked=False
         )
         initial_data = self.get_initial_data(request, allocations)
 
