@@ -1,0 +1,66 @@
+services:
+
+  db-postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets:
+      - mode: 444
+        source: db-postgres.postgres_password
+        target: postgres_password
+    volumes:
+      - db-postgres:/var/lib/postgresql/data
+
+  kv:
+    image: redis:latest
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    secrets:
+      - mode: 400
+        source: kv.redis_password
+        target: redis_password
+    volumes:
+      - kv:/data
+      - ./config/redis.conf:/usr/local/etc/redis/redis.conf
+
+  email-server:
+    image: coldfront-email-server
+
+  db-postgres-shell:
+    image: coldfront-db-postgres-shell
+    environment:
+      POSTGRES_HOST: db-postgres
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets:
+      - mode: 444
+        source: db-postgres.postgres_password
+        target: postgres_password
+    volumes:
+      - ../../..:/var/www/coldfront_app/coldfront
+
+  app-shell:
+    image: coldfront-app-shell
+    volumes:
+      - ../../..:/var/www/coldfront_app/coldfront
+
+  web:
+    image: coldfront-web
+    ports:
+      - ${WEB_PORT}:80
+    volumes:
+      - ../../..:/var/www/coldfront_app/coldfront
+
+volumes:
+  db-postgres:
+    external: false
+  kv:
+    external: false
+
+secrets:
+  db-postgres.postgres_password:
+    file: ./secrets/db-postgres.postgres_password
+  kv.redis_password:
+    file: ./secrets/kv.redis_password

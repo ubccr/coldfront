@@ -1,0 +1,27 @@
+db_name: cf_lrc_db
+
+log_path: /var/log/user_portals/cf_mylrc
+portal_log_file: cf_mylrc_portal.log
+api_log_file: cf_mylrc_api.log
+logrotate_entry_name: cf_mylrc
+
+wsgi_conf_file_name: cf_mylrc_wsgi.conf
+wsgi_conf_log_prefix: cf_lrc
+
+flag_basic_auth_enabled: False
+flag_sso_enabled: True
+flag_link_login_enabled: False
+flag_brc_enabled: False
+flag_lrc_enabled: True
+flag_next_period_renewal_requestable_month: 9
+flag_multiple_email_addresses_allowed: False
+
+portal_name: MyLRC
+program_name_long: Laboratory Research Computing
+program_name_short: LRC
+primary_cluster_name: Lawrencium
+center_user_guide: https://it.lbl.gov/service/scienceit/high-performance-computing/lrc/
+center_login_guide: https://it.lbl.gov/resource/hpc/for-users/getting-started/
+center_help_email: hpcshelp@lbl.gov
+
+email_subject_prefix: "[MyLRC-User-Portal]"

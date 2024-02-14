@@ -1,0 +1,27 @@
+db_name: cf_brc_db 
+
+log_path: /var/log/user_portals/cf_mybrc
+portal_log_file: cf_mybrc_portal.log
+api_log_file: cf_mybrc_api.log
+logrotate_entry_name: cf_mybrc
+
+wsgi_conf_file_name: cf_mybrc_wsgi.conf
+wsgi_conf_log_prefix: cf_brc
+
+flag_basic_auth_enabled: False
+flag_sso_enabled: True
+flag_link_login_enabled: True
+flag_brc_enabled: True
+flag_lrc_enabled: False
+flag_next_period_renewal_requestable_month: 5
+flag_multiple_email_addresses_allowed: False
+
+portal_name: MyBRC
+program_name_long: Berkeley Research Computing
+program_name_short: BRC
+primary_cluster_name: Savio
+center_user_guide: https://docs-research-it.berkeley.edu/services/high-performance-computing/user-guide/
+center_login_guide: https://docs-research-it.berkeley.edu/services/high-performance-computing/user-guide/logging-brc-clusters/#Logging-in
+center_help_email: brc-hpc-help@berkeley.edu
+
+email_subject_prefix: "[MyBRC-User-Portal]"

@@ -500,6 +500,10 @@ INTERNAL_IPS += EXTRA_INTERNAL_IPS
 LOGGING['handlers']['file']['filename'] = LOG_PATH
 LOGGING['handlers']['api_file']['filename'] = API_LOG_PATH
 
+if STREAM_LOGS_TO_STDOUT:
+    LOGGING['handlers']['file'] = {'class': 'logging.StreamHandler'}
+    LOGGING['handlers']['api_file'] = {'class': 'logging.StreamHandler'}
+
 # Update allauth settings based on potentially-updated variables.
 SOCIALACCOUNT_PROVIDERS['cilogon']['APP']['client_id'] = CILOGON_APP_CLIENT_ID
 SOCIALACCOUNT_PROVIDERS['cilogon']['APP']['secret'] = CILOGON_APP_SECRET

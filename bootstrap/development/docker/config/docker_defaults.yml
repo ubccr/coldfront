@@ -1,0 +1,16 @@
+debug: True
+
+db_host: db-postgres
+email_host: email-server
+email_port: 1025
+redis_host: kv
+
+stream_logs_to_stdout: true
+
+hostname: localhost
+host_ip: 127.0.0.1
+
+from_email: developer@localhost
+admin_email: developer@localhost
+email_admin_list: ['developer@localhost']
+request_approval_cc_list: ['developer@localhost']

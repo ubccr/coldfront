@@ -25,7 +25,11 @@ coldfront.db*
 db.json
 coldfront.db.self.broken
 main.yml
+secrets.yml
+cilogon.yml
 *.dump
 .vagrant
 .coverage
 htmlcov
+secrets
+redis.conf

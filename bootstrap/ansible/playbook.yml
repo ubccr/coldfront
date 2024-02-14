@@ -179,7 +179,7 @@
             name: postgres-repository
             description: postgres repository
             baseurl: https://download.postgresql.org/pub/repos/yum/{{ postgres_version }}/redhat/rhel-7-x86_64/
-            gpgkey: http://yum.postgresql.org/RPM-GPG-KEY-PGDG-94
+            gpgkey: https://yum.postgresql.org/keys/PGDG-RPM-GPG-KEY-RHEL7
 
         - name: Install Postgresql packages
           yum:
