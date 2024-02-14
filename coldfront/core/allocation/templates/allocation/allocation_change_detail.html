@@ -50,6 +50,10 @@ Allocation Change Detail
         <div class="table-responsive">
           <table class="table table-bordered table-sm">
             <tr>
+              <th scope="row" class="text-nowrap">Allocation:</th>
+              <td><a href="{% url 'allocation-detail' allocation_change.allocation.pk %}">{{ allocation_change.allocation }}</a></td>
+            </tr>
+            <tr>
               <th scope="row" class="text-nowrap">Project:</th>
               <td><a href="{% url 'project-detail' allocation_change.allocation.project.pk %}">{{ allocation_change.allocation.project }}</a></td>
             </tr>
