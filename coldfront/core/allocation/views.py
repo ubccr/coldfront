@@ -1896,7 +1896,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                             messages.error(request, err)
                             return self.redirect_to_detail(pk)
                     else:
-                        err = ("There is an issue with the configuration of"
+                        err = ("There is an issue with the configuration of "
                             "Coldfront's auto-updating capabilities. Please contact Coldfront "
                             "administration and/or manually update the allocation.")
                         messages.error(request, err)
