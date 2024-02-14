@@ -571,11 +571,12 @@ class UsageDataPipelineBase:
         if volume:
             self.volumes = [volume]
         else:
-            self.volumes = self.connection_obj.get_corresponding_coldfront_resources()
+            resources = self.connection_obj.get_corresponding_coldfront_resources()
+            self.volumes = [r.name.split('/')[0] for r in resources]
 
         self.allocations = Allocation.objects.filter(
             status__name__in=['Active', 'New', 'Updated', 'Ready for Review'],
-            resources__in=self.volumes
+            resources__in=resources
         )
         # self.collection_filter = self.set_collection_parameters()
         self.sf_user_data = self.collect_sf_user_data()
@@ -973,8 +974,11 @@ def pull_resource_data(source='rest_api'):
     res_attr_types = ResourceAttributeType.objects.all()
 
     for volume in volumes:
-        resource = Resource.objects.get(name__contains=volume['name'])
-
+        try:
+            resource = Resource.objects.get(name__contains=volume['name'])
+        except Exception as e:
+            logger.error("error encountered with pull_resource_data resource location: %s", e)
+        continue
         for attr_name, attr_val in volume['attrs'].items():
             if attr_val:
                 attr_type_obj = res_attr_types.get(name=attr_name)
