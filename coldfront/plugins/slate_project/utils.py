@@ -659,8 +659,8 @@ def add_user_to_slate_project_group(allocation_user_obj):
             notifications_enabled = allocation_user_obj.allocation.project.projectuser_set.get(
                 user=allocation_user_obj.user
             ).enable_notifications
+            check_slate_project_account(allocation_user_obj.user, notifications_enabled)
 
-        check_slate_project_account(allocation_user_obj.user, notifications_enabled)
         allocation_user_obj.status = get_new_user_status(username)
         allocation_user_obj.save()
 
@@ -1238,7 +1238,7 @@ class LDAPImportSearch():
         assert type(search_attributes_list) is list, 'search_attributes_list should be a list'
 
         searchParameters = {'search_base': self.LDAP_USER_SEARCH_BASE,
-                            'search_filter': ldap.filter.filter_format("(cn=%s)", [user_search_string]),
+                            'search_filter': ldap.filter.filter_format("(sAMAccountName=%s)", [user_search_string]),
                             'attributes': search_attributes_list,
                             'size_limit': 1}
         self.conn.search(**searchParameters)
