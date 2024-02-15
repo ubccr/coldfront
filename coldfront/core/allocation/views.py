@@ -1598,10 +1598,11 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         )
 
         added_users = [user.username for user in users if user != self.request.user]
-        logger.info (
-            f'User {self.request.user.username} added {", ".join(added_users)} to a new allocation '
-            f'(allocation pk={allocation_obj.pk})'
-        )
+        if added_users:
+            logger.info (
+                f'User {self.request.user.username} added {", ".join(added_users)} to a new allocation '
+                f'(allocation pk={allocation_obj.pk})'
+            )
         return super().form_valid(form)
 
     def reverse_with_params(self, path, **kwargs):
