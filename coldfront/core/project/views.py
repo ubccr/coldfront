@@ -163,7 +163,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                     )
                 )
             except ValueError:
-                err = "Allocation attribute '{}' is not an int but has a usage".format(
+                err = "Project attribute '{}' is not an int but has a usage".format(
                     attribute.allocation_attribute_type.name
                 )
                 logger.error(err)
@@ -178,9 +178,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
         context['mailto'] = 'mailto:' + ','.join([u.user.email for u in project_users])
 
-        allocations = Allocation.objects.prefetch_related('resources').filter(
-            Q(project=self.object)
-        )
+        allocations = self.object.allocation_set.prefetch_related('resources')
         allocation_history_records = self.return_status_change_records(allocations)
 
         if not self.request.user.is_superuser and not self.request.user.has_perm(

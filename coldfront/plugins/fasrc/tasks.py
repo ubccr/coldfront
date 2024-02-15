@@ -18,6 +18,9 @@ def import_quotas(volumes=None):
     pull_push_quota_data()
 
 def id_import_allocations():
-    """ID and import new allocations using ATT and Starfish data
-    """
+    """ID and import new allocations using ATT and Starfish data"""
     management.call_command('id_import_new_allocations')
+
+
+def pull_resource_data():
+    management.call_command('pull_resource_data')
