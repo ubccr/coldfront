@@ -74,7 +74,7 @@ if 'ifxbilling' in settings.INSTALLED_APPS:
 if 'django_q' in settings.INSTALLED_APPS:
     from django_q.tasks import Task
 if 'coldfront.plugins.isilon' in settings.INSTALLED_APPS:
-    from coldfront.plugins.isilon import update_isilon_allocation_quota
+    from coldfront.plugins.isilon.utils import update_isilon_allocation_quota
 
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
     'ALLOCATION_ENABLE_ALLOCATION_RENEWAL', True)
@@ -1881,7 +1881,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                         messages.error(request, err)
                         return self.redirect_to_detail(pk)
 
-                    new_quota_value = new_quota['value']
+                    new_quota_value = int(new_quota['new_value'])
                     plugin = resources_plugins[rtype]
                     if plugin in settings.INSTALLED_APPS:
                         # try to run the thing

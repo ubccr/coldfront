@@ -33,7 +33,8 @@ class IsilonConnection:
         if self._total_space is None:
             pool_query = self.pools_client.get_storagepool_storagepools(
                 toplevels=True)
-            self._total_space = pool_query.usage.usable_bytes
+            pools_bytes = [int(sp.usage.usable_bytes) for sp in pool_query.storagepools]
+            self._total_space = sum(pools_bytes)
         return self._total_space
 
     @property
@@ -53,7 +54,17 @@ class IsilonConnection:
     def to_tb(self, bytes_value):
         return bytes_value / (1024**3)
 
-def update_isilon_allocation_quota(allocation, quota):
+    def get_quota_from_path(self, path):
+        current_quota = self.quota_client.list_quota_quotas(
+            path=path, recurse_path_children=False, recurse_path_parents=False, type='directory')
+        if len(current_quota.quotas) > 1:
+            raise Exception(f'more than one quota returned for quota {self.cluster_name}:{path}')
+        elif len(current_quota.quotas) == 0:
+            raise Exception(f'no quotas returned for quota {self.cluster_name}:{path}')
+        return current_quota.quotas[0]
+
+
+def update_isilon_allocation_quota(allocation, new_quota):
     """Update the quota for an allocation on an isilon cluster
 
     Parameters
@@ -63,25 +74,35 @@ def update_isilon_allocation_quota(allocation, quota):
     quota : int
     """
     # make isilon connection to the allocation's resource
-    isilon_resource = allocation.resources.first().split('/')[0]
+    isilon_resource = allocation.resources.first().name.split('/')[0]
     isilon_conn = IsilonConnection(isilon_resource)
     path = f'/ifs/{allocation.path}'
 
     # check if enough space exists on the volume
-    quota_bytes = quota * 1024**3
+    new_quota_bytes = new_quota * 1024**4
     unallocated_space = isilon_conn.free_space
-    allowable_space = unallocated_space * 0.8
-    if allowable_space < quota_bytes:
+    current_quota_obj = isilon_conn.get_quota_from_path(path)
+    current_quota = current_quota_obj.thresholds.hard
+    logger.warning("changing allocation %s %s from %s (%s TB) to %s (%s TB)",
+       allocation.path, allocation, current_quota, allocation.size, new_quota_bytes, new_quota
+    )
+    if unallocated_space < (new_quota_bytes-current_quota):
         raise ValueError(
-            'ERROR: not enough space on volume to set quota to %s for %s'
-            % (quota, allocation)
+            'ERROR: not enough space on volume to set quota to %s TB for %s'
+            % (new_quota, allocation)
+        )
+    elif current_quota > new_quota_bytes:
+        raise ValueError(
+            'ERROR: cannot automatically shrink the size of allocations at this time. Current size: %s Desired size: %s Allocation: %s'
+            % (allocation.size, new_quota, allocation)
         )
     try:
-        isilon_conn.quota_client.update_quota_quota(path=path, threshold_hard=quota)
-        print(f'SUCCESS: updated quota for {allocation} to {quota}')
-        logger.info('SUCCESS: updated quota for %s to %s', allocation, quota)
+        new_quota_obj = {'thresholds': {'hard': new_quota_bytes}}
+        isilon_conn.quota_client.update_quota_quota(new_quota_obj, current_quota_obj.id)
+        print(f'SUCCESS: updated quota for {allocation} to {new_quota}')
+        logger.info('SUCCESS: updated quota for %s to %s', allocation, new_quota)
     except ApiException as e:
-        err = f'ERROR: could not update quota for {allocation} to {quota} - {e}'
+        err = f'ERROR: could not update quota for {allocation} to {new_quota} - {e}'
         print_log_error(e, err)
         raise
 

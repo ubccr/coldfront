@@ -24,7 +24,8 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            'source',
+            '--source',
+            dest='source',
             default='rest_api',
             help='Do not make any changes to Starfish, just print what changes would be slated',
         )
@@ -77,8 +78,9 @@ class Command(BaseCommand):
                 }
                 update_resource_attr_types_from_dict(resource, attr_pairs)
             else:
-                volume = next([vol for vol in volumes if vol['name'] == resource_name], None)
-                if not volume:
+                try:
+                    volume = [v for v in volumes if v['name'] == resource_name][0]
+                except:
                     logger.error('resource not found in starfish: %s', resource)
                     continue
                 update_resource_attr_types_from_dict(resource, volume['attrs'])
