@@ -40,10 +40,10 @@ class ExpenseCodeField(forms.CharField):
                     "Input must consist only of digits (or x'es) and dashes."
                 )
             if len(digits_only(value)) != 33:
-                raise ValidationError("Input must contain exactly 33 digits.")
+                raise ValidationError('Input must contain exactly 33 digits.')
             if 'x' in digits_only(value)[:8]+digits_only(value)[12:]:
                 raise ValidationError(
-                    "xes are only allowed in place of the product code (the third grouping of characters in the code)"
+                    'xes are only allowed in place of the product code (the third grouping of characters in the code)'
                 )
 
     def clean(self, value):
@@ -81,7 +81,7 @@ We do not have information about your research. Please provide a detailed descri
     )
 
     expense_code = ExpenseCodeField(
-        label="...or add a new 33 digit expense code manually here.", required=False
+        label='...or add a new 33 digit expense code manually here.', required=False
     )
 
     tier = forms.ModelChoiceField(
@@ -110,7 +110,7 @@ We do not have information about your research. Please provide a detailed descri
         project_obj = get_object_or_404(Project, pk=project_pk)
         self.fields['tier'].queryset = get_user_resources(request_user).filter(
             resource_type__name='Storage Tier'
-        ).order_by(Lower("name"))
+        ).order_by(Lower('name'))
         existing_expense_codes = [(None, '------')] + [
             (a.code, f'{a.code} ({a.name})') for a in Account.objects.filter(
                 userproductaccount__is_valid=1,
@@ -120,10 +120,10 @@ We do not have information about your research. Please provide a detailed descri
         self.fields['existing_expense_codes'].choices = existing_expense_codes
         user_query_set = project_obj.projectuser_set.select_related('user').filter(
             status__name__in=['Active', ]
-        ).order_by("user__username").exclude(user=project_obj.pi)
+        ).order_by('user__username').exclude(user=project_obj.pi)
         # if user_query_set:
         #     self.fields['users'].choices = ((user.user.username, "%s %s (%s)" % (
-        #         user.user.first_name, user.user.last_name, user.user.username)) for user in user_query_set)
+        #         u.user.first_name, u.user.last_name, u.user.username)) for u in user_query_set)
         #     self.fields['users'].help_text = '<br/>Select users in your project to add to this allocation.'
         # else:
         #     self.fields['users'].widget = forms.HiddenInput()
@@ -131,8 +131,8 @@ We do not have information about your research. Please provide a detailed descri
     def clean(self):
         cleaned_data = super().clean()
         # Remove all dashes from the input string to count the number of digits
-        expense_code = cleaned_data.get("expense_code")
-        existing_expense_codes = cleaned_data.get("existing_expense_codes")
+        expense_code = cleaned_data.get('expense_code')
+        existing_expense_codes = cleaned_data.get('existing_expense_codes')
         trues = sum(x for x in [
             (expense_code not in ['', '------']),
             (existing_expense_codes not in ['', '------']),
@@ -140,8 +140,8 @@ We do not have information about your research. Please provide a detailed descri
         digits_only = lambda v: re.sub(r'[^0-9xX]', '', v)
         if trues != 1:
             self.add_error(
-                "existing_expense_codes",
-                "You must either select an existing expense code or manually enter a new one."
+                'existing_expense_codes',
+                'You must either select an existing expense code or manually enter a new one.'
             )
 
         elif expense_code and expense_code != '------':
@@ -169,7 +169,7 @@ class AllocationUpdateForm(forms.Form):
         label='Resource', queryset=Resource.objects.all(), required=False
     )
     status = forms.ModelChoiceField(
-        queryset=AllocationStatusChoice.objects.all().order_by(Lower("name")), empty_label=None)
+        queryset=AllocationStatusChoice.objects.all().order_by(Lower('name')), empty_label=None)
     start_date = forms.DateField(
         label='Start Date',
         widget=forms.DateInput(attrs={'class': 'datepicker'}),
@@ -204,8 +204,8 @@ class AllocationUpdateForm(forms.Form):
 
     def clean(self):
         cleaned_data = super().clean()
-        start_date = cleaned_data.get("start_date")
-        end_date = cleaned_data.get("end_date")
+        start_date = cleaned_data.get('start_date')
+        end_date = cleaned_data.get('end_date')
         if start_date and end_date and end_date < start_date:
             raise forms.ValidationError('End date cannot be less than start date')
         return cleaned_data
@@ -214,7 +214,7 @@ class AllocationUpdateForm(forms.Form):
 class AllocationInvoiceUpdateForm(forms.Form):
     status = forms.ModelChoiceField(queryset=AllocationStatusChoice.objects.filter(
         name__in=['Payment Pending', 'Payment Requested', 'Payment Declined', 'Paid']
-    ).order_by(Lower("name")), empty_label=None)
+    ).order_by(Lower('name')), empty_label=None)
 
 
 class AllocationAddUserForm(forms.Form):
@@ -250,16 +250,16 @@ class AllocationSearchForm(forms.Form):
     username = forms.CharField(label='Username', max_length=100, required=False)
     resource_type = forms.ModelChoiceField(
         label='Resource Type',
-        queryset=ResourceType.objects.all().order_by(Lower("name")),
+        queryset=ResourceType.objects.all().order_by(Lower('name')),
         required=False)
     resource_name = forms.ModelMultipleChoiceField(
         label='Resource Name',
         queryset=Resource.objects.filter(
-            is_allocatable=True).order_by(Lower("name")),
+            is_allocatable=True).order_by(Lower('name')),
         required=False)
     allocation_attribute_name = forms.ModelChoiceField(
         label='Allocation Attribute Name',
-        queryset=AllocationAttributeType.objects.all().order_by(Lower("name")),
+        queryset=AllocationAttributeType.objects.all().order_by(Lower('name')),
         required=False)
     allocation_attribute_value = forms.CharField(
         label='Allocation Attribute Value', max_length=100, required=False)
@@ -273,7 +273,7 @@ class AllocationSearchForm(forms.Form):
         required=False)
     status = forms.ModelMultipleChoiceField(
         widget=forms.CheckboxSelectMultiple,
-        queryset=AllocationStatusChoice.objects.all().order_by(Lower("name")),
+        queryset=AllocationStatusChoice.objects.all().order_by(Lower('name')),
         required=False)
     show_all_allocations = forms.BooleanField(initial=False, required=False)
 
@@ -323,7 +323,7 @@ class AllocationAttributeChangeForm(forms.Form):
     def clean(self):
         cleaned_data = super().clean()
 
-        if cleaned_data.get('new_value') != "":
+        if cleaned_data.get('new_value') != '':
             allocation_attribute = AllocationAttribute.objects.get(pk=cleaned_data.get('pk'))
             allocation_attribute.value = cleaned_data.get('new_value')
             allocation_attribute.clean()
@@ -351,10 +351,10 @@ class AllocationAttributeUpdateForm(forms.Form):
 
 class AllocationChangeForm(forms.Form):
     EXTENSION_CHOICES = [
-        (0, "No Extension")
+        (0, 'No Extension')
     ]
     for choice in ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS:
-        EXTENSION_CHOICES.append((choice, f"{choice} days"))
+        EXTENSION_CHOICES.append((choice, f'{choice} days'))
 
     end_date_extension = forms.TypedChoiceField(
         label='Request End Date Extension',
@@ -378,7 +378,26 @@ class AllocationChangeNoteForm(forms.Form):
             label='Notes',
             required=False,
             widget=forms.Textarea,
-            help_text="Leave any feedback about the allocation change request.")
+            help_text='Leave any feedback about the allocation change request.')
+
+
+ALLOCATION_AUTOUPDATE_OPTIONS = [
+    ('1', 'I have already manually modified the allocation.'),
+    ('2', 'I would like Coldfront to modify the allocation for me. If Coldfront experiences any issues with the modification process, I understand that I will need to modify the allocation manually instead.'),
+]
+
+class AllocationAutoUpdateForm(forms.Form):
+    sheetcheck = forms.BooleanField(
+        label='I have ensured that enough space is available on this resource.'
+    )
+    auto_update_opts = forms.ChoiceField(
+        label='How will this allocation be modified?',
+        required=True,
+        widget=forms.RadioSelect,
+        choices=ALLOCATION_AUTOUPDATE_OPTIONS,
+    )
+
+
 
 class AllocationAttributeCreateForm(forms.ModelForm):
     class Meta:

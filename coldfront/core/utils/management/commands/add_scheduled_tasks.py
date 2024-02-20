@@ -25,8 +25,8 @@ class Command(BaseCommand):
         # if plugins are installed, add their tasks
         kwargs = {  "repeats":-1, }
         plugins_tasks = {
-            'fasrc': ['import_quotas', 'id_import_allocations'],
-            'sftocf': ['pull_sf_push_cf', 'pull_resource_data'],
+            'fasrc': ['import_quotas', 'id_import_allocations', 'pull_resource_data'],
+            'sftocf': ['pull_sf_push_cf', 'update_zones'],
             'ldap': ['update_group_membership_ldap', 'id_add_projects'],
             'slurm': ['slurm_sync'],
             'xdmod': ['xdmod_usage'],
@@ -40,11 +40,12 @@ class Command(BaseCommand):
                         schedule(f'coldfront.plugins.{plugin}.tasks.{task}',
                             next_run=date,
                             schedule_type=Schedule.DAILY,
+                            name=task,
                             **kwargs)
 
-        if f'coldfront.core.allocation.tasks.send_request_reminder_emails' not in scheduled:
+        if 'coldfront.core.allocation.tasks.send_request_reminder_emails' not in scheduled:
             schedule(
-                f'coldfront.core.allocation.tasks.send_request_reminder_emails',
+                'coldfront.core.allocation.tasks.send_request_reminder_emails',
                 next_run=date,
                 schedule_type=Schedule.WEEKLY,
                 **kwargs

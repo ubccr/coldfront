@@ -32,6 +32,7 @@ plugin_configs = {
     'PLUGIN_FASRC': 'plugins/fasrc.py',
     'PLUGIN_IFX': 'plugins/ifx.py',
     'PLUGIN_FASRC_MONITORING': 'plugins/fasrc_monitoring.py',
+    'PLUGIN_ISILON': 'plugins/isilon.py',
 }
 
 # This allows plugins to be enabled via environment variables. Can alternatively

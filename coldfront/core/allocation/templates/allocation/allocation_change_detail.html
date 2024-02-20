@@ -197,8 +197,9 @@ Allocation Change Detail
       </div>
       <div class="card-body">
 
-
-            {% csrf_token %}
+          {% csrf_token %}
+            {{autoupdate_form.sheetcheck | as_crispy_field}}
+            {{autoupdate_form.auto_update_opts | as_crispy_field}}
             {{note_form.notes | as_crispy_field}}
             <div style="float: right;">
               {% if allocation_change.status.name == 'Pending' %}
@@ -209,7 +210,6 @@ Allocation Change Detail
                 <i class="fas fa-sync" aria-hidden="true"></i> Update
               </button>
             </div>
-        </div>
       </div>
     </div>
   {% endif %}

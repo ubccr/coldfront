@@ -30,7 +30,6 @@ LOGGING = {
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
-            'formatter': 'key-events',
         },
         'django-q': {
             'class': 'logging.handlers.TimedRotatingFileHandler',
@@ -60,7 +59,7 @@ LOGGING = {
             'handlers': ['console', ],
         },
         'django': {
-            'handlers': ['console', 'key-events'],
+            'handlers': ['console'],
             'level': 'INFO',
         },
         'django-q': {

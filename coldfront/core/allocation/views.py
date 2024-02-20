@@ -35,6 +35,7 @@ from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationAttributeChangeForm,
                                              AllocationAttributeUpdateForm,
                                              AllocationForm,
+                                             AllocationAutoUpdateForm,
                                              AllocationInvoiceNoteDeleteForm,
                                              AllocationInvoiceUpdateForm,
                                              AllocationRemoveUserForm,
@@ -72,6 +73,8 @@ if 'ifxbilling' in settings.INSTALLED_APPS:
     from ifxbilling.models import Account, UserProductAccount
 if 'django_q' in settings.INSTALLED_APPS:
     from django_q.tasks import Task
+if 'coldfront.plugins.isilon' in settings.INSTALLED_APPS:
+    from coldfront.plugins.isilon.utils import update_isilon_allocation_quota
 
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
     'ALLOCATION_ENABLE_ALLOCATION_RENEWAL', True)
@@ -1718,9 +1721,12 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
             initial={'notes': allocation_change_obj.notes}
         )
 
+        autoupdate_form = AllocationAutoUpdateForm()
+
         context = self.get_context_data()
 
         context['allocation_change_form'] = allocation_change_form
+        context['autoupdate_form'] = autoupdate_form
         context['note_form'] = note_form
         return render(request, self.template_name, context)
 
@@ -1765,7 +1771,10 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
             context['allocation_change_form'] = allocation_change_form
             return render(request, self.template_name, context)
 
+
         action = request.POST.get('action')
+
+        autoupdate_form = AllocationAutoUpdateForm(request.POST)
         if action not in ['update', 'approve', 'deny']:
             return HttpResponseBadRequest('Invalid request')
 
@@ -1845,9 +1854,54 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                 alloc_change_obj.allocation.save()
 
             if attrs_to_change:
-                attr_changes = (
-                    alloc_change_obj.allocationattributechangerequest_set.all()
-                )
+                attr_changes = alloc_change_obj.allocationattributechangerequest_set.all()
+
+                autoupdate_choice = autoupdate_form.data.get('auto_update_opts')
+                if autoupdate_choice == '2':
+                    # check resource type, see if appropriate plugin is available
+                    resource = alloc_change_obj.allocation.resources.first().name
+                    resources_plugins = {
+                        'isilon': 'coldfront.plugins.isilon',
+                        # 'lfs': 'coldfront.plugins.lustre',
+                    }
+                    rtype = next((k for k in resources_plugins), None)
+                    if not rtype:
+                        err = ('You cannot auto-update non-isilon resources at this '
+                            'time. Please manually update the resource before '
+                            'approving this change request.')
+                        messages.error(request, err)
+                        return self.redirect_to_detail(pk)
+                    # get new quota value
+                    new_quota = next((
+                        a for a in attrs_to_change if a['name'] == 'Storage Quota (TB)'), None)
+                    if not new_quota:
+                        err = ('You can only auto-update resource quotas at this '
+                            'time. Please manually update the resource before '
+                            'approving this change request.')
+                        messages.error(request, err)
+                        return self.redirect_to_detail(pk)
+
+                    new_quota_value = int(new_quota['new_value'])
+                    plugin = resources_plugins[rtype]
+                    if plugin in settings.INSTALLED_APPS:
+                        # try to run the thing
+                        try:
+                            update_isilon_allocation_quota(
+                                alloc_change_obj.allocation, new_quota_value
+                            )
+                        except Exception as e:
+                            err = ("An error was encountered while auto-updating"
+                                "the allocation quota. Please contact Coldfront "
+                                "administration and/or manually update the allocation.")
+                            messages.error(request, err)
+                            return self.redirect_to_detail(pk)
+                    else:
+                        err = ("There is an issue with the configuration of "
+                            "Coldfront's auto-updating capabilities. Please contact Coldfront "
+                            "administration and/or manually update the allocation.")
+                        messages.error(request, err)
+                        return self.redirect_to_detail(pk)
+
                 for attribute_change in attr_changes:
                     new_value = attribute_change.new_value
                     attribute_change.allocation_attribute.value = new_value

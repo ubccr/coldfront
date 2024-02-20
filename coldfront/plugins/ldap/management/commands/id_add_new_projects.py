@@ -34,7 +34,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **kwargs):
-        groups = groups = kwargs['groups']
+        groups = kwargs['groups']
         if groups:
             groups = groups.split(",")
         # compare projects in AD to projects in coldfront
