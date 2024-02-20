@@ -18,21 +18,21 @@ coldfront_configs = [
 
 # ColdFront plugin settings
 plugin_configs = {
-    'PLUGIN_API': 'plugins/api.py',
+    'PLUGIN_SLURM': 'plugins/slurm.py',
+    'PLUGIN_IQUOTA': 'plugins/iquota.py',
+    'PLUGIN_FREEIPA': 'plugins/freeipa.py',
+    'PLUGIN_SYSMON': 'plugins/system_montior.py',
+    'PLUGIN_XDMOD': 'plugins/xdmod.py',
     'PLUGIN_AUTH_OIDC': 'plugins/openid.py',
     'PLUGIN_AUTH_LDAP': 'plugins/ldap.py',
-    'PLUGIN_LDAP': 'plugins/ldap_fasrc.py',
     'PLUGIN_LDAP_USER_SEARCH': 'plugins/ldap_user_search.py',
-    'PLUGIN_FASRC': 'plugins/fasrc.py',
-    'PLUGIN_FASRC_MONITORING': 'plugins/fasrc_monitoring.py',
-    'PLUGIN_FREEIPA': 'plugins/freeipa.py',
-    'PLUGIN_IFX': 'plugins/ifx.py',
-    'PLUGIN_ISILON': 'plugins/isilon.py',
-    'PLUGIN_IQUOTA': 'plugins/iquota.py',
+    'PLUGIN_API': 'plugins/api.py',
+    'PLUGIN_LDAP': 'plugins/ldap_fasrc.py',
     'PLUGIN_SFTOCF': 'plugins/sftocf.py',
-    'PLUGIN_SYSMON': 'plugins/system_monitor.py',
-    'PLUGIN_SLURM': 'plugins/slurm.py',
-    'PLUGIN_XDMOD': 'plugins/xdmod.py',
+    'PLUGIN_FASRC': 'plugins/fasrc.py',
+    'PLUGIN_IFX': 'plugins/ifx.py',
+    'PLUGIN_FASRC_MONITORING': 'plugins/fasrc_monitoring.py',
+    'PLUGIN_ISILON': 'plugins/isilon.py',
 }
 
 # This allows plugins to be enabled via environment variables. Can alternatively
