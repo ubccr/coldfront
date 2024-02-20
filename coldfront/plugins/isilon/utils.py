@@ -92,10 +92,13 @@ def update_isilon_allocation_quota(allocation, new_quota):
             % (new_quota, allocation)
         )
     elif current_quota > new_quota_bytes:
-        raise ValueError(
-            'ERROR: cannot automatically shrink the size of allocations at this time. Current size: %s Desired size: %s Allocation: %s'
-            % (allocation.size, new_quota, allocation)
-        )
+        current_quota_usage = current_quota_obj.usage.physical
+        space_needed = new_quota_bytes * .8
+        if current_quota_usage > space_needed:
+            raise ValueError(
+                'ERROR: cannot automatically shrink the size of allocations to a quota smaller than 80% of the space in use. Current size: %s Desired size: %s Space used: %s Allocation: %s'
+                % (allocation.size, new_quota, allocation.usage, allocation)
+            )
     try:
         new_quota_obj = {'thresholds': {'hard': new_quota_bytes}}
         isilon_conn.quota_client.update_quota_quota(new_quota_obj, current_quota_obj.id)
