@@ -571,11 +571,12 @@ class UsageDataPipelineBase:
         if volume:
             self.volumes = [volume]
         else:
-            self.volumes = self.connection_obj.get_corresponding_coldfront_resources()
+            resources = self.connection_obj.get_corresponding_coldfront_resources()
+            self.volumes = [r.name.split('/')[0] for r in resources]
 
         self.allocations = Allocation.objects.filter(
             status__name__in=['Active', 'New', 'Updated', 'Ready for Review'],
-            resources__in=self.volumes
+            resources__in=resources
         )
         # self.collection_filter = self.set_collection_parameters()
         self.sf_user_data = self.collect_sf_user_data()
