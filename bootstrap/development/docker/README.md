@@ -56,6 +56,9 @@ Note that these steps must be run from the root directory of the repo.
        up
    ```
 
+   Notes:
+     - Some services (e.g., `web`) are expected to be failing at this point.
+
 7. Run Django scripts to set up the database and perform other tasks. You must provide the name of your Docker project.
 
    ```bash
