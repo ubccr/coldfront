@@ -2081,6 +2081,7 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 # require nese shares to be divisible by 20
                 if formset_data['name'] == 'Storage Quota (TB)':
                     try:
+                        new_value = re.sub('\.0$', '', new_value)
                         tbs = int(new_value)
                     except ValueError:
                         messages.error(request, 'Requested storage quota must be an integer.')

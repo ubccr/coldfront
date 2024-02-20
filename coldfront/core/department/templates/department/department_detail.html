@@ -345,6 +345,7 @@
         }]
     });
 
+
     $('#mydatatable').DataTable({
        "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
        "pageLength": 25,
@@ -356,6 +357,28 @@
        "columnDefs": [
          { "searchable": false, "targets": [3,4,5] },
          { "orderable": false, "targets": [1,2,3,4,5] }
+       ],
+       "buttons": [
+         {
+           "name": 'primary',
+           "extend": 'collection',
+           "background": false,
+           "autoClose": true,
+           "text": 'Export',
+           "buttons": ['csv', 'excel', 'pdf']
+         }
+       ]
+     });
+
+    $('#clustertable').DataTable({
+       "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
+       "pageLength": 25,
+       "iDisplayLength": -1,
+       "dom": 'B<"clear">lfrtip',
+
+       "columnDefs": [
+         { "searchable": false, "targets": [3,4] },
+         { "orderable": false, "targets": [1,2,3,4] }
        ],
        "buttons": [
          {
