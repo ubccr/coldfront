@@ -6,9 +6,9 @@ Vagrant.configure("2") do |config|
 
   config.vm.synced_folder ".", "/vagrant/coldfront_app/coldfront"
 
-  config.vm.provision "shell", inline: "/vagrant/coldfront_app/coldfront/bootstrap/development/update_curl.sh", privileged: true
-  config.vm.provision "shell", inline: "/vagrant/coldfront_app/coldfront/bootstrap/development/fix_certs.sh", privileged: true
-  config.vm.provision "shell", inline: "/vagrant/coldfront_app/coldfront/bootstrap/development/configure_firewalld.sh", privileged: true
+  config.vm.provision "shell", inline: "/vagrant/coldfront_app/coldfront/bootstrap/development/vm/update_curl.sh", privileged: true
+  config.vm.provision "shell", inline: "/vagrant/coldfront_app/coldfront/bootstrap/development/vm/fix_certs.sh", privileged: true
+  config.vm.provision "shell", inline: "/vagrant/coldfront_app/coldfront/bootstrap/development/vm/configure_firewalld.sh", privileged: true
 
   # Run Ansible from the Vagrant VM
   config.vm.provision "ansible_local" do |ansible|
