@@ -56,6 +56,8 @@ DATABASES = {
 LOG_PATH = '/var/log/user_portals/cf_mybrc/cf_mybrc_portal.log'
 API_LOG_PATH = '/var/log/user_portals/cf_mybrc/cf_mybrc_api.log'
 
+STREAM_LOGS_TO_STDOUT = False
+
 # A list of admin email addresses to CC when certain requests are approved.
 REQUEST_APPROVAL_CC_LIST = ['test@test.test']
 
