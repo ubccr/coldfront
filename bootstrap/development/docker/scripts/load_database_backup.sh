@@ -8,9 +8,9 @@ PGPASSWORD=$(cat "$POSTGRES_PASSWORD_FILE") psql \
     -h $POSTGRES_HOST \
     -U $POSTGRES_USER \
     -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE pid <> pg_backend_pid() AND datname = '$POSTGRES_DB';
-        DROP DATABASE $POSTGRES_DB; \
-        CREATE DATABASE $POSTGRES_DB OWNER $POSTGRES_USER; \
-        CREATE USER IF NOT EXISTS postgres; \
+        DROP DATABASE $POSTGRES_DB;
+        CREATE DATABASE $POSTGRES_DB OWNER $POSTGRES_USER;
+        CREATE USER IF NOT EXISTS postgres;
         ALTER USER postgres WITH SUPERUSER;" \
     postgres
 
