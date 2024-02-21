@@ -350,7 +350,7 @@ class ProjectArchivedListView(ColdfrontListView):
         project_search_form = ProjectSearchForm(self.request.GET)
 
         projects = Project.objects.prefetch_related('pi', 'status').filter(
-            status__name__in=['Archived', 'Inactive']
+            status__name__in=['Archived']
         )
         if project_search_form.is_valid():
             data = project_search_form.cleaned_data
@@ -399,8 +399,9 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
     def test_func(self):
         """UserPassesTestMixin Tests"""
-        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
+        # project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+        # if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
+        if self.request.user.is_superuser:
             return True
         return False
 

@@ -31,8 +31,7 @@ Project Detail
   <hr>
 </div>
 
-{% comment %}
-{% if project.status.name != 'Archived' and is_allowed_to_update_project %}
+{% if project.status.name != 'Archived' and request.user.is_superuser %}
   <div class="card mb-3 bg-light">
     <div class="card-header">
       <h3 class="d-inline" id="manage-project"><i class="fas fa-cubes" aria-hidden="true"></i> Manage Project</h3>
@@ -43,15 +42,16 @@ Project Detail
         {% endif %}
       </div>
     </div>
+    {% comment %}
     <div class="card-body">
         <a class="btn btn-success" href="{% url 'project-add-users-search' project.pk %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
         <a class="btn btn-success" href="{% url 'grant-create' project.id %}" role="button"><i class="fas fa-trophy" aria-hidden="true"></i> Add Grant</a>
         <a class="btn btn-success" href="{% url 'publication-search' project.pk %}" role="button"><i class="fas fa-newspaper" aria-hidden="true"></i> Add Publication</a>
         <a class="btn btn-success" href="{% url 'add-research-output' project.pk %}" role="button"><i class="far fa-newspaper" aria-hidden="true"></i> Add Research Output</a>
     </div>
+    {% endcomment %}
   </div>
 {% endif %}
-{% endcomment %}
 
 <!-- Start Project Heading -->
 <div class="card mb-3">
