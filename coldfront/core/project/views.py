@@ -350,7 +350,7 @@ class ProjectArchivedListView(ColdfrontListView):
         project_search_form = ProjectSearchForm(self.request.GET)
 
         projects = Project.objects.prefetch_related('pi', 'status').filter(
-            status__name__in=['Archived']
+            status__name__in=['Archived', 'Inactive']
         )
         if project_search_form.is_valid():
             data = project_search_form.cleaned_data
