@@ -608,8 +608,15 @@ class AllocationAttribute(TimeStampedModel):
                 error = 'Value must be entirely numeric. Please remove any non-numeric characters.'
                 raise ValidationError(
                     f'Invalid Value "{self.value}" for "{self.allocation_attribute_type.name}". {error}'
-                ) from exc
-            if expected_value_type == 'Float' and not isinstance(literal_val, (float,int)):
+                )
+            except ValueError as exc:
+                error = 'Value must be numeric. Please enter a numeric value.'
+                raise ValidationError(
+                    f'Invalid Value "{self.value}" for "{self.allocation_attribute_type.name}". {error}'
+                )
+            if str(self.value) in ['True', 'False']:
+                error = 'Value must be numeric. Please enter a numeric value.'
+            elif expected_value_type == 'Float' and not isinstance(literal_val, (float,int)):
                 error = 'Value must be a float.'
             elif expected_value_type == 'Int' and not isinstance(literal_val, int):
                 error = 'Value must be an integer.'

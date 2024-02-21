@@ -1,0 +1,52 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load common_tags %}
+{% load static %}
+
+
+{% block title %}
+Edit Allocation Attributes
+{% endblock %}
+
+
+{% block content %}
+<h2>Edit allocation attributes for {{allocation.get_parent_resource}} for PI {{ allocation.project.pi.first_name }}
+  {{ allocation.project.pi.last_name }} ({{ allocation.project.pi.username }})</h2>
+
+<form method="post">
+  {% csrf_token %}
+  {% if formset %}
+    <div class="card mb-3">
+      <div class="card-header">
+        <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Allocation Attributes</h3>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-bordered table-sm">
+            <thead>
+              <tr>
+                <th scope="col">Attribute</th>
+                <th scope="col">Current Value</th>
+                <th scope="col">New Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for form in formset %}
+                <tr>
+                  <td>{{form.name.value}}</td>
+                  <td>{{form.value.value}}</td>
+                  <td>{{form.new_value}}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {{ formset.management_form }}
+      </div>
+    </div>
+  {% endif %}
+  <input class="btn btn-success" type="submit" value="Submit Edits" />
+  <a class="btn btn-secondary" href="{% url 'allocation-detail' allocation.pk %}" role="button">Back to
+    Allocation</a><br>
+</form>
+{% endblock %}
