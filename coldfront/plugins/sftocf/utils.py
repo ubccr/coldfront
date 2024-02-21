@@ -22,13 +22,11 @@ from coldfront.core.utils.fasrc import (
     id_present_missing_users,
     locate_or_create_dirpath,
 )
-from coldfront.core.resource.models import Resource, ResourceAttributeType
+from coldfront.core.resource.models import Resource
 from coldfront.core.project.models import Project
 from coldfront.core.allocation.models import (
     Allocation,
-    AllocationUser,
     AllocationAttributeType,
-    AllocationAttributeUsage,
     AllocationUserStatusChoice,
 )
 if 'coldfront.plugins.ldap' in settings.INSTALLED_APPS:
@@ -322,7 +320,7 @@ class StarFishServer:
         subpaths = [i['Basename'] for i in pathdicts]
         return subpaths
 
-    def create_query(self, query, group_by, volpath, sec=3, qformat='parent_path +aggrs.by_uid'):
+    def create_query(self, query, group_by, volpath, qformat='parent_path +aggrs.by_uid'):
         """Produce a Query class object.
         Parameters
         ----------
@@ -336,8 +334,13 @@ class StarFishServer:
         query : Query class object
         """
         query = AsyncQuery(
-            self.headers, self.api_url, query, group_by, volpath, sec=sec, qformat=qformat
+            self.headers, self.api_url, query, group_by, volpath, qformat=qformat
         )
+        data = query.result
+        if not data:
+            logger.warning('No starfish result for query %s', query)
+        elif isinstance(data, dict) and 'error' in data:
+            logger.warning('Error in starfish result for query %s:\n%s', query, data)
         return query
 
     @record_process
@@ -369,13 +372,12 @@ class StarFishRedash:
     def get_corresponding_coldfront_resources(self):
         volumes = [r['volume_name'] for r in self.get_vol_stats()]
         resources = Resource.objects.filter(
-            reduce(operator.or_,(Q(name__contains=x) for x in volumes))
+            reduce(operator.or_,(Q(name__contains=vol) for vol in volumes))
         )
         return resources
 
     def submit_query(self, queryname):
-        """submit a query and return a json of the results.
-        """
+        """submit a query and return a json of the results."""
         query = self.queries[queryname]
         query_url = f'{self.base_url}queries/{query[0]}/results?api_key={query[1]}'
         result = return_get_json(query_url, headers={})
@@ -394,7 +396,7 @@ class StarFishRedash:
         return result
 
     def return_query_results(self, query='path_usage_query', volumes=None):
-        """
+        """Return query results.
         """
         result = self.submit_query(query)
         if 'query_result' in result and result['query_result']:
@@ -407,11 +409,13 @@ class StarFishRedash:
 
 
 class AsyncQuery:
-    def __init__(self, headers, api_url, query, group_by, volpath, qformat='parent_path +aggrs.by_uid', sec=3):
+    def __init__(
+        self, headers, api_url, query, group_by, volpath, qformat='parent_path +aggrs.by_uid'
+    ):
         self.api_url = api_url
         self.headers = headers
         self.query_id = self.post_async_query(query, group_by, volpath, qformat=qformat)
-        self.result = self.return_results_once_prepared(sec=sec)
+        self._result = None
 
     @record_process
     def post_async_query(self, query, group_by, volpath, qformat='parent_path +aggrs.by_uid'):
@@ -438,15 +442,20 @@ class AsyncQuery:
         logger.debug('response: %s', response)
         return response['query_id']
 
-    @record_process
-    def return_results_once_prepared(self, sec=3):
+    @property
+    def result(self):
+        if self._result:
+            return self._result
         while True:
             query_check_url = self.api_url + 'async/query/' + self.query_id
             response = return_get_json(query_check_url, self.headers)
             if response['is_done'] == True:
                 result = self.return_query_result()
-                return result
-            time.sleep(sec)
+                if isinstance(result, dict) and 'error' in result:
+                    raise ValueError(f'Error in starfish result:\n{result}')
+                self._result = result
+                return self._result
+            time.sleep(3)
 
     def return_query_result(self):
         query_result_url = self.api_url + 'async/query_result/' + self.query_id
@@ -480,14 +489,14 @@ class AllocationQueryMatch:
         allocation_data = (
             allocation.pk, allocation.project.title, allocation.resources.first()
         )
-        message = None
+        msg = None
         if not total_usage_entries:
-            message = f'No starfish allocation usage result for allocation {allocation_data}; deactivation suggested'
+            msg = f'No starfish allocation usage result for allocation {allocation_data}; deactivation suggested'
         elif len(total_usage_entries) > 1:
-            message = f'too many total_usage_entries for allocation {allocation_data}; investigation required'
-        if message:
-            print(message)
-            logger.warning(message)
+            msg = f'too many total_usage_entries for allocation {allocation_data}; investigation required'
+        if msg:
+            print(msg)
+            logger.warning(msg)
             return None
         return super().__new__(cls)
 
@@ -510,12 +519,13 @@ class AllocationQueryMatch:
     def query_usernames(self):
         return [u['username'] for u in self.user_usage_entries]
 
-    def produce_updated_usage_attr(self, usage_attribute_type, usage_value):
+    def update_usage_attr(self, usage_attribute_type, usage_value):
         usage_attribute, _ = self.allocation.allocationattribute_set.get_or_create(
             allocation_attribute_type=usage_attribute_type
         )
         usage = usage_attribute.allocationattributeusage
         usage.value = usage_value
+        usage.save()
         return usage
 
     def users_in_list(self, username_list):
@@ -532,35 +542,6 @@ def return_dict_of_groupings(dict_list, sort_key):
     """
     grouped = groupby(sorted(dict_list, key=sort_key), key=sort_key)
     return {k: list(g) for k, g in grouped}
-
-@record_process
-def match_allocations_with_usage_entries(allocations, user_usage, allocation_usage):
-    allocation_list = [
-        (allocation.get_parent_resource.name.split('/')[0], allocation.path)
-        for allocation in allocations
-    ]
-
-    total_sort_key = itemgetter('path','volume')
-    allocation_usage_grouped = return_dict_of_groupings(allocation_usage, total_sort_key)
-    missing_allocations = [
-        (k,a) for k, a in allocation_usage_grouped if k not in allocation_list
-    ]
-
-    user_usage = [user for user in user_usage if user['path'] is not None]
-    user_sort_key = itemgetter('path','volume')
-    user_usage_grouped = return_dict_of_groupings(user_usage, user_sort_key)
-
-    missing_users = [u for k, u in user_usage_grouped.items() if k not in allocation_list]
-
-    allocationquerymatch_objs = []
-    for allocation in allocations:
-        a = (str(allocation.path), str(allocation.get_parent_resource.name.split('/')[0]))
-        total_usage_entries = allocation_usage_grouped.get(a, None)
-        user_usage_entries = user_usage_grouped.get(a, [])
-        allocationquerymatch_objs.append(
-            AllocationQueryMatch(allocation, total_usage_entries, user_usage_entries)
-        )
-    return [a for a in allocationquerymatch_objs if a]
 
 
 class UsageDataPipelineBase:
@@ -581,6 +562,7 @@ class UsageDataPipelineBase:
         # self.collection_filter = self.set_collection_parameters()
         self.sf_user_data = self.collect_sf_user_data()
         self.sf_usage_data = self.collect_sf_usage_data()
+        self._allocationquerymatches = None
 
     def return_connection_obj(self):
         raise NotImplementedError
@@ -590,6 +572,41 @@ class UsageDataPipelineBase:
 
     def collect_sf_usage_data(self):
         raise NotImplementedError
+
+    @property
+    def allocationquerymatches(self):
+        # limit allocations to those in the volumes collected
+        if self._allocationquerymatches:
+            return self._allocationquerymatches
+        allocations = self.allocations.prefetch_related(
+            'project','allocationattribute_set', 'allocationuser_set')
+        allocation_list = [
+            (a.get_parent_resource.name.split('/')[0], a.path) for a in allocations
+        ]
+
+        total_sort_key = itemgetter('path','volume')
+        allocation_usage_grouped = return_dict_of_groupings(self.sf_usage_data, total_sort_key)
+        missing_allocations = [
+            (k,a) for k, a in allocation_usage_grouped if k not in allocation_list
+        ]
+        logger.warning('starfish allocations missing in coldfront: %s', missing_allocations)
+
+        user_usage = [user for user in self.sf_user_data if user['path'] is not None]
+        user_sort_key = itemgetter('path','volume')
+        user_usage_grouped = return_dict_of_groupings(user_usage, user_sort_key)
+
+        missing_users = [u for k, u in user_usage_grouped.items() if k not in allocation_list]
+
+        allocationquerymatch_objs = []
+        for allocation in allocations:
+            a = (str(allocation.path), str(allocation.get_parent_resource.name.split('/')[0]))
+            total_usage_entries = allocation_usage_grouped.get(a, None)
+            user_usage_entries = user_usage_grouped.get(a, [])
+            allocationquerymatch_objs.append(
+                AllocationQueryMatch(allocation, total_usage_entries, user_usage_entries)
+            )
+        self._allocationquerymatches = [a for a in allocationquerymatch_objs if a]
+        return self._allocationquerymatches
 
     def clean_collected_data(self):
         """clean data
@@ -602,13 +619,8 @@ class UsageDataPipelineBase:
         missing_username_list = [d['username'] for d in missing_usernames]
         logger.debug('allocation_usage:\n%s', self.sf_usage_data)
 
-        # limit allocations to those in the volumes collected
-        allocations = self.allocations.prefetch_related('project','allocationattribute_set', 'allocationuser_set')
-        allocationquerymatch_objects = match_allocations_with_usage_entries(
-            allocations, self.sf_user_data, self.sf_usage_data
-        )
         # identify and remove allocation users that are no longer in the AD group
-        for obj in allocationquerymatch_objects:
+        for obj in self.allocationquerymatches:
             missing_unames_metadata = [
                 {
                     'username': d['username'],
@@ -621,35 +633,25 @@ class UsageDataPipelineBase:
             log_missing('user', missing_unames_metadata)
             for i in obj.users_in_list(missing_username_list):
                 obj.user_usage_entries.remove(i)
-        return allocationquerymatch_objects, user_models
+        return self.allocationquerymatches, user_models
 
-    def update_coldfront_objects(self, allocationquerymatch_objects, user_models):
-
+    def update_coldfront_objects(self, user_models):
+        """update coldfront objects"""
         allocation_attribute_types = AllocationAttributeType.objects.all()
 
-        quota_bytes_attributetype = allocation_attribute_types.get(name='Quota_In_Bytes')
-        quota_tbs_attributetype = allocation_attribute_types.get(name='Storage Quota (TB)')
+        quota_b_attrtype = allocation_attribute_types.get(name='Quota_In_Bytes')
+        quota_tb_attrtype = allocation_attribute_types.get(name='Storage Quota (TB)')
         # 3. iterate across allocations
-        attributes_to_update = []
-        updated_allocationusers = []
-        for obj in allocationquerymatch_objects:
-            logger.debug(
-                'adding allocation for %s %s (path %s)',
+        for obj in self.allocationquerymatches:
+            logger.debug('updating allocation %s %s (path %s)',
                 obj.lab, obj.volume, obj.allocation.path
             )
-            bytes_attr = obj.produce_updated_usage_attr(
-                quota_bytes_attributetype, obj.total_usage_entry['total_size']
-            )
-            tbs_attr = obj.produce_updated_usage_attr(
-                quota_tbs_attributetype, obj.total_usage_tb
-            )
+            obj.update_usage_attr(quota_b_attrtype, obj.total_usage_entry['total_size'])
+            obj.update_usage_attr(quota_tb_attrtype, obj.total_usage_tb)
 
-            logger.info(
-                'allocation usage for allocation %s: %s bytes, %s terabytes',
+            logger.info('allocation usage for allocation %s: %s bytes, %s terabytes',
                 obj.allocation.pk, obj.total_usage_entry['total_size'], obj.total_usage_tb
             )
-            attributes_to_update.extend([bytes_attr, tbs_attr])
-
             # identify and remove allocation users that are no longer in the AD group
             self.zero_out_absent_allocationusers(obj.query_usernames, obj.allocation)
 
@@ -661,21 +663,11 @@ class UsageDataPipelineBase:
                 usage_bytes = int(userdict['size_sum'])
                 usage, unit = determine_size_fmt(userdict['size_sum'])
 
-                allocationuser = self.update_user_usage(
-                    user, usage_bytes, usage, unit, obj.allocation
-                )
-                updated_allocationusers.append(allocationuser)
+                self.update_user_usage(user, usage_bytes, usage, unit, obj.allocation)
                 logger.debug('saving %s', userdict)
 
-        AllocationUser.objects.bulk_update(
-            updated_allocationusers, ['usage_bytes', 'usage', 'unit']
-        )
-        AllocationAttributeUsage.objects.bulk_update(attributes_to_update, ['value'])
-
     def zero_out_absent_allocationusers(self, redash_usernames, allocation):
-        """
-        Find AllocationUsers that aren't in the StarfishRedash usage
-        stats and change their usage to 0.
+        """Change usage of AllocationUsers not in StarfishRedash usage stats to 0.
         """
         allocationusers_not_in_redash = allocation.allocationuser_set.exclude(
             user__username__in=redash_usernames
@@ -688,7 +680,7 @@ class UsageDataPipelineBase:
             allocationusers_not_in_redash.update(usage=0, usage_bytes=0)
 
     def update_user_usage(self, user, usage_bytes, usage, unit, allocation):
-        """get or create an allocationuser object with updated usage values
+        """Get or create an allocationuser object with updated usage values.
         """
         allocationuser, created = allocation.allocationuser_set.get_or_create(
             user=user,
@@ -702,6 +694,7 @@ class UsageDataPipelineBase:
         allocationuser.usage_bytes = usage_bytes
         allocationuser.usage = usage
         allocationuser.unit = unit
+        allocationuser.save()
         return allocationuser
 
 
@@ -738,7 +731,6 @@ class RESTDataPipeline(UsageDataPipelineBase):
 
     def return_connection_obj(self):
         return StarFishServer()
-
 
     @record_process
     def produce_lab_dict(self):
@@ -811,19 +803,20 @@ class RESTDataPipeline(UsageDataPipelineBase):
                 to_collect.append((lab, resource, path, fpath,))
         return filepaths, to_collect
 
-    def clean_dirs_data(self, data):
-        """Clean sequence for the data produced from the usage query.
-        """
-        data = [d for d in data if d['username'] != 'root']
-        items_to_pop = ['physical_nlinks_size_sum', 'rec_aggrs', 'fn', 'count',
-            'physical_nlinks_size_sum_hum', 'size_sum_hum', 'volume_display_name']
-        for entry in data:
-            # entry['size_sum'] = entry['rec_aggrs']['size']
-            # entry['full_path'] = entry['parent_path']+'/'+entry['fn']
-            for item in items_to_pop:
-                entry.pop(item, None)
-        # remove any directory that is a subdirectory of a directory owned by the same user
+    def return_usage_query_data(self, usage_query):
+        try:
+            data = usage_query.result
+            if not data:
+                logger.warning('No starfish result for usage_query %s', usage_query)
+        except ValueError as err:
+            logger.warning('error with query: %s', err)
+            data = None
         return data
+
+    @property
+    def items_to_pop(self):
+        return ['size_sum_hum', 'rec_aggrs', 'physical_nlinks_size_sum',
+            'physical_nlinks_size_sum_hum', 'volume_display_name', 'count', 'fn']
 
     def collect_sf_user_data(self):
         """Collect starfish data using the REST API. Return the results."""
@@ -835,7 +828,6 @@ class RESTDataPipeline(UsageDataPipelineBase):
         vol_set = {i[1] for i in to_collect}
         vols = [vol for vol in vol_set if vol in svp['volumes']]
         for volume in vols:
-            # volumepath = svp["volumes"][volume]
             projects = [t for t in to_collect if t[1] == volume]
             logger.debug('vol: %s\nto_collect_subset: %s', volume, projects)
 
@@ -850,26 +842,25 @@ class RESTDataPipeline(UsageDataPipelineBase):
                     'volume,username,groupname',
                     f'{volume}:{lab_volpath}',
                 )
-                data = usage_query.result
-                if not data:
-                    logger.warning('No starfish result for lab %s', p)
-
-                elif isinstance(data, dict) and 'error' in data:
-                    logger.warning('Error in starfish result for lab %s:\n%s', p, data)
-                else:
-                    data = usage_query.result
-                    data = self.clean_dirs_data(data)
+                data = self.return_usage_query_data(usage_query.result)
+                if data:
+                    contents = [d for d in data if d['username'] != 'root']
+                    for entry in contents:
+                        # entry['size_sum'] = entry['rec_aggrs']['size']
+                        # entry['full_path'] = entry['parent_path']+'/'+entry['fn']
+                        for item in self.items_to_pop:
+                            entry.pop(item, None)
                     record = {
                         'server': self.connection_obj.name,
                         'volume': volume,
                         'path': lab_volpath,
                         'project': p,
                         'date': DATESTR,
-                        'contents': data,
+                        'contents': contents,
                     }
                     save_json(filepath, record)
                     filepaths.append(filepath)
-        # return set(filepaths)
+
         collected_data = []
         for filepath in filepaths:
             content = read_json(filepath)
@@ -891,8 +882,6 @@ class RESTDataPipeline(UsageDataPipelineBase):
         vol_set = {i[1] for i in lab_res}
         vols = [vol for vol in vol_set if vol in svp['volumes']]
         entries = []
-        items_to_remove = ['size_sum_hum', 'rec_aggrs', 'physical_nlinks_size_sum',
-            'physical_nlinks_size_sum_hum', 'volume_display_name', 'count', 'fn']
         for volume in vols:
             volumepath = svp['volumes'][volume]
             projects = [t for t in lab_res if t[1] == volume]
@@ -909,17 +898,11 @@ class RESTDataPipeline(UsageDataPipelineBase):
                     f'{volume}:{lab_volpath}',
                     qformat='parent_path +aggrs.by_gid',
                 )
-                data = usage_query.result
-                if not data:
-                    logger.warning('No starfish result for lab %s', p)
-
-                elif isinstance(data, dict) and 'error' in data:
-                    logger.warning('Error in starfish result for lab %s:\n%s', p, data)
-                else:
-                    data = usage_query.result
+                data = self.return_usage_query_data(usage_query.result)
+                if data:
                     if len(data) > 1:
-                        print(data)
-                        raise ValueError('length of data is longer than expected')
+                        logger.error('too many data entries for %s: %s', p, data)
+                        continue
                     entry = data[0]
                     entry.update({
                         'size_sum': entry['rec_aggrs']['size'],
@@ -930,7 +913,7 @@ class RESTDataPipeline(UsageDataPipelineBase):
                         'project': p,
                         'date': DATESTR,
                     })
-                    for item in items_to_remove:
+                    for item in self.items_to_pop:
                         entry.pop(item)
                     entries.append(entry)
         return entries
