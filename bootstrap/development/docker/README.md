@@ -67,6 +67,7 @@ Note that these steps must be run from the root directory of the repo.
 
    Notes:
      - This step may be run multiple times.
+     - `pg_restore` will likely raise some errors, but these should not be an issue, provided the command finishes successfully.
 
 8. Retrieve a PostgreSQL database dump file that will be provided for you. Place it in the root directory of the repo. Load it into your instance. You must provide the name of your Docker project.
 
