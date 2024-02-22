@@ -1,5 +1,7 @@
 {% load mathfilters %}
 A new allocation has been requested for {{pi_name}} ({{pi_username}}) - {{resource}}.
+The request was made by user {{user.full_name}} ({{user.username}}). This user's email is {{user.email}}
+
 Requested size: {{quantity}} TB.
 Justification:
 {{justification}}

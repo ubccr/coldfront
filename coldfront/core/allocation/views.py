@@ -681,6 +681,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             'used_percentage': used_percentage,
             'expense_code': expense_code,
             'unmatched_code': False,
+            'user': self.request.user,
         }
 
         if 'ifxbilling' in settings.INSTALLED_APPS:
@@ -2228,7 +2229,10 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         # if requested resource is on NESE, add to vars
         nese = bool(allocation_obj.resources.filter(name__contains="nesetape"))
 
-        email_vars = {'justification': justification}
+        email_vars = {
+            'justification': justification,
+            'user': self.request.user,
+        }
         if quantity:
             quantity_num = int(float(quantity[0][1]))
             difference = quantity_num - int(float(allocation_obj.size))
