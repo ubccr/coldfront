@@ -48,6 +48,6 @@ def su_login_callback(user):
     if user.is_active and user.is_superuser:
         return True
 
-    logger.warn(
-        'User {} requested to login as another user but does not have permissions', user)
+    logger.warning(
+        'User %s requested to login as another user but does not have permissions', user)
     return False
