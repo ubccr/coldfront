@@ -19,10 +19,13 @@ class Command(BaseCommand):
         ):
             AttributeType.objects.get_or_create(name=attribute_type)
 
-        for choice in ('Active', 'Denied', 'Expired',
-                       'New', 'Paid', 'Payment Pending',
-                       'Payment Requested', 'Payment Declined',
-                       'Renewal Requested', 'Revoked', 'Unpaid',):
+        for choice in (
+            'Active', 'Denied', 'Expired', 'Inactive', 'New',
+            'Pending Deactivation',
+            # UBCCR Defaults
+            # 'Paid', 'Payment Pending', 'Payment Requested',
+            # 'Payment Declined', 'Revoked', 'Renewal Requested', 'Unpaid',
+        ):
             AllocationStatusChoice.objects.get_or_create(name=choice)
 
         for choice in ('Pending', 'Approved', 'Denied',):
