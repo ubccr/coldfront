@@ -57,7 +57,7 @@ def add_user_group(allocation_user_pk):
 
 def remove_user_group(allocation_user_pk):
     allocation_user = AllocationUser.objects.get(pk=allocation_user_pk)
-    if allocation_user.allocation.status.name not in ['Active', 'Pending', 'Inactive (Renewed)', ]:
+    if allocation_user.allocation.status.name not in ['Active', 'Pending']:
         logger.warn(
             "Allocation is not active or pending. Will not remove groups.")
         return

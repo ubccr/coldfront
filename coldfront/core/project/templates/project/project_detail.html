@@ -244,8 +244,8 @@ Project Detail
               <td class="text-info">{{ Requested }}</td>
             {% elif allocation.status.name == 'Active' %}
               <td class="text-success">{{ allocation.status.name }}</td>
-            {% elif allocation.status.name in 'Denied,Inactive' %}
-              <td class="text-danger">Inactive</td>
+            {% elif allocation.status.name in 'Pending Deactivation,Denied,Inactive' %}
+              <td class="text-danger">{{ allocation.status.name }}</td>
             {% else %}
               <td class="text-info">{{ allocation.status.name }}</td>
             {% endif %}

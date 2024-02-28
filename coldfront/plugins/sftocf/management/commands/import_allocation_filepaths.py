@@ -41,7 +41,7 @@ class Command(BaseCommand):
             matched_subdirs = [entry for entry in data if entry['group_name'].lower() == lab
             and entry['vol_name'] == volume]
             if not matched_subdirs:
-                if allocation.status.name == "Inactive":
+                if allocation.status.name in ['Pending Deactivation', 'Inactive']:
                     pass
                     # errors.append({"lab":lab, "allocation":allocation, "issue": "no_results_inactive","url": f"https://coldfront.rc.fas.harvard.edu/allocation/{allocation.pk}"})
                 else:
