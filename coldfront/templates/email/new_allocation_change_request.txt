@@ -7,7 +7,7 @@ Requested total size: {{quantity}} TB.
 This will require adding {{difference|floatformat}} TB to the current size of {{current_size|floatformat}} TB.
 {% if used_percentage %}
 
-{{resource}} was last recorded as {{used_percentage}}% allocated.
+{{resource}} was last recorded as {{used_percentage}}% full.
 {% endif %}
 {% endif %}
 

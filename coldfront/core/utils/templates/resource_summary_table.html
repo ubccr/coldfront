@@ -1,0 +1,14 @@
+
+<!-- Summary table for an isilon resource -->
+<div class="table-responsive">
+  <div class="container mb-3 mt-3">
+    <table class="table table-bordered table-sm">
+      {% for label, value in res_attr_table.items %}
+        <tr>
+          <th scope="row" class="text-nowrap">{{ label }}:</th>
+          <td>{{ value }}</td>
+        </tr>
+      {% endfor %}
+   </table>
+  </div>
+</div>

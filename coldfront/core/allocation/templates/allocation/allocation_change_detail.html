@@ -1,5 +1,6 @@
 {% extends "common/base.html" %}
 {% load crispy_forms_tags %}
+{% load fasrc_tags %}
 {% load static %}
 
 
@@ -60,17 +61,7 @@ Allocation Change Detail
             <tr>
               <th scope="row" class="text-nowrap">Resource{{ allocation_change.allocation.resources.all|pluralize }} in allocation:</th>
               <td>{{ allocation_change.allocation.get_resources_as_string }}
-              {% if allocation_change.allocation.get_parent_resource.used_percentage %}
-                {% if allocation_change.allocation.get_parent_resource.used_percentage > 79.5 %}
-                <span class="badge badge-danger">
-                {% elif allocation_change.allocation.get_parent_resource.used_percentage > 75 %}
-                  <span class="badge badge-warning">
-                {% else %}
-                <span class="badge badge-info">
-                {% endif %}
-                  {{ allocation_change.allocation.get_parent_resource.used_percentage }}% allocated
-                </span>
-              {% endif %}
+              {% resource_fullness_badge allocation_change.allocation.get_parent_resource %}
               </td>
             </tr>
             <tr>
@@ -196,6 +187,7 @@ Allocation Change Detail
         <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Actions</h3>
       </div>
       <div class="card-body">
+          {% resource_summary_table allocation_change.allocation.get_parent_resource %}
 
           {% csrf_token %}
             {{autoupdate_form.sheetcheck | as_crispy_field}}

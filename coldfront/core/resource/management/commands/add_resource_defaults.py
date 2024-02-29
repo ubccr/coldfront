@@ -24,7 +24,9 @@ class Command(BaseCommand):
         for resource_attribute_type, attribute_type in (
             ('capacity_tb', 'Float'),
             ('free_tb', 'Float'),
+            ('used_tb', 'Float'),
             ('file_count', 'Int'),
+            ('allocated_tb', 'Float'),
             # ('Core Count', 'Int'),
             # ('expiry_time', 'Int'),
             # ('fee_applies', 'Yes/No'),

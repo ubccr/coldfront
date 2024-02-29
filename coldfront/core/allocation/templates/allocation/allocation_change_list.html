@@ -1,6 +1,7 @@
 {% extends "common/base.html" %}
 {% load crispy_forms_tags %}
 {% load common_tags %}
+{% load fasrc_tags %}
 {% load static %}
 
 
@@ -44,17 +45,7 @@ Allocation Review New and Pending Change Requests
             <td>{{change.allocation.project.pi.first_name}} {{change.allocation.project.pi.last_name}}
               ({{change.allocation.project.pi.username}})</td>
             <td>{{change.allocation.get_parent_resource}}
-            {% if change.allocation.get_parent_resource.used_percentage != None %}
-              {% if change.allocation.get_parent_resource.used_percentage > 79.5 %}
-                <span class="badge badge-danger">
-              {% elif change.allocation.get_parent_resource.used_percentage > 75 %}
-                <span class="badge badge-warning">
-              {% else %}
-                <span class="badge badge-info">
-              {% endif %}
-              {{change.allocation.get_parent_resource.used_percentage}}% full
-              </span>
-            {% endif %}
+              {% resource_fullness_badge change.allocation.get_parent_resource %}
             </td>
             <td>
               {% if change.end_date_extension != 0 %}

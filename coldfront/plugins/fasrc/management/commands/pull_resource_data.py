@@ -56,6 +56,7 @@ class Command(BaseCommand):
                     'attrs': {
                         'capacity_tb': vol['capacity_TB'],
                         'free_tb': vol['free_TB'],
+                        'used_tb': vol['used_physical_TB'],
                         'file_count': vol['regular_files'],
                     }
                 }
@@ -71,10 +72,14 @@ class Command(BaseCommand):
             if 'isilon' in resource.name:
                 isilon_api = IsilonConnection(resource_name)
                 isilon_capacity_tb = isilon_api.to_tb(isilon_api.total_space)
-                isilon_free_tb = isilon_api.to_tb(isilon_api.free_space)
+                isilon_free_tb = isilon_api.to_tb(isilon_api.unused_space)
+                isilon_allocated_tb = isilon_api.to_tb(isilon_api.allocated_space)
+                isilon_used_tb = isilon_api.to_tb(isilon_api.used_space)
                 attr_pairs = {
                     'capacity_tb': isilon_capacity_tb,
+                    'allocated_tb': isilon_allocated_tb,
                     'free_tb': isilon_free_tb,
+                    'used_tb': isilon_used_tb,
                 }
                 update_resource_attr_types_from_dict(resource, attr_pairs)
             else:

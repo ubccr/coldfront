@@ -163,10 +163,26 @@ class Resource(TimeStampedModel):
             return None
 
     @property
+    def allocated_tb(self):
+        """Returns value of allocated_tb resourceattribute object"""
+        try:
+            return float(self.resourceattribute_set.get(resource_attribute_type__name='allocated_tb').value)
+        except ObjectDoesNotExist:
+            return None
+
+    @property
     def free_capacity(self):
         """Returns value of free_tb resourceattribute object"""
         try:
             return float(self.resourceattribute_set.get(resource_attribute_type__name='free_tb').value)
+        except ObjectDoesNotExist:
+            return None
+
+    @property
+    def used_tb(self):
+        """Returns value of used_tb resourceattribute object"""
+        try:
+            return float(self.resourceattribute_set.get(resource_attribute_type__name='used_tb').value)
         except ObjectDoesNotExist:
             return None
 

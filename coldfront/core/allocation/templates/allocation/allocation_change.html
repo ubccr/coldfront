@@ -98,35 +98,35 @@ Request Allocation Change
   </div>
 
   {% if formset %}
-      <div class="card mb-3">
-        <div class="card-header">
-          <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Allocation Attributes</h3>
-        </div>
-        <div class="card-body">
-          <div class="table-responsive">
-            <table class="table table-bordered table-sm">
-              <thead>
-                <tr>
-                  <th scope="col">Attribute</th>
-                  <th scope="col">Current Value</th>
-                  <th scope="col">Request New Value</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for form in formset %}
-                    <tr>
-                      <td>{{form.name.value}}</td>
-                      <td>{{form.value.value}}</td>
-                      <td>{{form.new_value}}</td>
-                    </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-          {{ formset.management_form }}
-        </div>
+    <div class="card mb-3">
+      <div class="card-header">
+        <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Allocation Attributes</h3>
       </div>
-    {% endif %}
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-bordered table-sm">
+            <thead>
+              <tr>
+                <th scope="col">Attribute</th>
+                <th scope="col">Current Value</th>
+                <th scope="col">Request New Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for form in formset %}
+                  <tr>
+                    <td>{{form.name.value}}</td>
+                    <td>{{form.value.value}}</td>
+                    <td>{{form.new_value}}</td>
+                  </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {{ formset.management_form }}
+      </div>
+    </div>
+  {% endif %}
 
     <div>
       {{form.justification | as_crispy_field }}
