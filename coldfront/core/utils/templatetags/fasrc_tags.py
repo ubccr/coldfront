@@ -56,14 +56,14 @@ def resource_fullness_badge(resource):
     if resource.allocated_tb:
         label = 'allocated'
         pct = round(resource.allocated_tb / resource.capacity * 100, 2)
+    elif resource.used_percentage:
+        label = 'in use'
+        pct = resource.used_percentage
+    if pct:
         if pct > 79.5:
             badge_type = "danger"
         elif pct > 75:
             badge_type = "warning"
-    if resource.used_percentage:
-        label = 'in use'
-        pct = resource.used_percentage
-    if pct:
         return format_html('<span class="badge badge-{}">{}% {}</span>',
             badge_type, pct, label
         )
