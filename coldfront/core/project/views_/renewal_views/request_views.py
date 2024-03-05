@@ -217,7 +217,7 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
         'new_project_survey':
             'project/project_renewal/new_project_survey.html',
         'renewal_survey':
-            'project/project_renewal/renewal_survey.html',
+            'project/project_renewal/project_renewal_survey.html',
         'review_and_submit': 'project/project_renewal/review_and_submit.html',
     }
 
