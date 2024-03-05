@@ -561,18 +561,21 @@ class AllocationRenewalRequestUnderProjectView(LoginRequiredMixin,
     FORMS = [
         ('allocation_period', SavioProjectAllocationPeriodForm),
         ('pi_selection', ProjectRenewalPISelectionForm),
+        ('renewal_survey', ProjectRenewalSurveyForm),
         ('review_and_submit', ProjectRenewalReviewAndSubmitForm),
     ]
 
     TEMPLATES = {
         'allocation_period': 'project/project_renewal/allocation_period.html',
         'pi_selection': 'project/project_renewal/pi_selection.html',
+        'renewal_survey': 'project/project_renewal/project_renewal_survey.html',
         'review_and_submit': 'project/project_renewal/review_and_submit.html',
     }
 
     form_list = [
         SavioProjectAllocationPeriodForm,
         ProjectRenewalPISelectionForm,
+        ProjectRenewalSurveyForm,
         ProjectRenewalReviewAndSubmitForm,
     ]
 
