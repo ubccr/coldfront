@@ -214,6 +214,9 @@ class ProjectRenewalSurveyForm(forms.Form):
             'Choose an option:'),
         required=False,
         widget=forms.CheckboxSelectMultiple())
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 class ProjectRenewalReviewAndSubmitForm(forms.Form):
 
