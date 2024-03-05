@@ -191,6 +191,29 @@ class ProjectRenewalProjectSelectionForm(forms.Form):
         self.fields['project'].queryset = Project.objects.filter(
             **_filter).exclude(**exclude).order_by('name')
 
+class ProjectRenewalSurveyForm(forms.Form):
+
+    q1 = forms.CharField(
+        label='Question',
+        required=True,
+        widget=forms.Textarea(attrs={'rows': 3}))
+    q2 = forms.CharField(
+        label='Question',
+        required=True,
+        widget=forms.Textarea(attrs={'rows': 3}))
+    q3 = forms.MultipleChoiceField(
+        choices=(
+            ('1', (
+                '1')),
+            ('2', (
+                '2')),
+            ('3', (
+                '3')),
+        ),
+        label=(
+            'Choose an option:'),
+        required=False,
+        widget=forms.CheckboxSelectMultiple())
 
 class ProjectRenewalReviewAndSubmitForm(forms.Form):
 
