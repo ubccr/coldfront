@@ -9,6 +9,7 @@ from coldfront.core.project.forms_.new_project_forms.request_forms import SavioP
 from coldfront.core.project.forms_.renewal_forms.request_forms import ProjectRenewalPISelectionForm
 from coldfront.core.project.forms_.renewal_forms.request_forms import ProjectRenewalPoolingPreferenceForm
 from coldfront.core.project.forms_.renewal_forms.request_forms import ProjectRenewalProjectSelectionForm
+from coldfront.core.project.forms_.renewal_forms.request_forms import ProjectRenewalSurveyForm
 from coldfront.core.project.forms_.renewal_forms.request_forms import ProjectRenewalReviewAndSubmitForm
 from coldfront.core.project.models import Project
 from coldfront.core.project.models import ProjectAllocationRequestStatusChoice
@@ -201,6 +202,7 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
         ('project_selection', ProjectRenewalProjectSelectionForm),
         ('new_project_details', SavioProjectDetailsForm),
         ('new_project_survey', SavioProjectSurveyForm),
+        ('renewal_survey', ProjectRenewalSurveyForm),
         ('review_and_submit', ProjectRenewalReviewAndSubmitForm),
     ]
 
@@ -214,6 +216,8 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
             'project/project_renewal/new_project_details.html',
         'new_project_survey':
             'project/project_renewal/new_project_survey.html',
+        'renewal_survey':
+            'project/project_renewal/renewal_survey.html',
         'review_and_submit': 'project/project_renewal/review_and_submit.html',
     }
 
@@ -224,6 +228,7 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
         ProjectRenewalProjectSelectionForm,
         SavioProjectDetailsForm,
         SavioProjectSurveyForm,
+        ProjectRenewalSurveyForm,
         ProjectRenewalReviewAndSubmitForm,
     ]
 
