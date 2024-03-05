@@ -484,6 +484,8 @@ class AllocationRenewalRequest(TimeStampedModel):
     approval_time = models.DateTimeField(null=True, blank=True)
     completion_time = models.DateTimeField(null=True, blank=True)
 
+    #survey_answers = models.JSONField()
+
     state = models.JSONField(default=allocation_renewal_request_state_schema)
     extra_fields = models.JSONField(default=dict)
 
