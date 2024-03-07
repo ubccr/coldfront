@@ -129,7 +129,7 @@ class AllocationRenewalMixin(object):
 
     @staticmethod
     def create_allocation_renewal_request(requester, pi, computing_allowance,
-                                          allocation_period, pre_project,
+                                          allocation_period, renewal_survey_answers, pre_project,
                                           post_project,
                                           new_project_request=None):
         """Create a new AllocationRenewalRequest."""
@@ -141,6 +141,7 @@ class AllocationRenewalMixin(object):
         request_kwargs['status'] = \
             AllocationRenewalRequestStatusChoice.objects.get(
                 name='Under Review')
+        request_kwargs['renewal_survey_answers'] = renewal_survey_answers
         request_kwargs['pre_project'] = pre_project
         request_kwargs['post_project'] = post_project
         request_kwargs['new_project_request'] = new_project_request
@@ -316,6 +317,8 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
             kwargs['computing_allowance'] = self.computing_allowance
         elif step == self.step_numbers_by_form_name['new_project_survey']:
             kwargs['computing_allowance'] = self.computing_allowance
+        elif step == self.step_numbers_by_form_name['project_renewal_survey']:
+            kwargs['survey_answers'] = self.__get_survey_data()
         return kwargs
 
     def get_template_names(self):
