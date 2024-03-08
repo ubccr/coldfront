@@ -317,8 +317,6 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
             kwargs['computing_allowance'] = self.computing_allowance
         elif step == self.step_numbers_by_form_name['new_project_survey']:
             kwargs['computing_allowance'] = self.computing_allowance
-        elif step == self.step_numbers_by_form_name['project_renewal_survey']:
-            kwargs['survey_answers'] = self.__get_survey_data()
         return kwargs
 
     def get_template_names(self):
@@ -360,7 +358,7 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
 
             request = self.create_allocation_renewal_request(
                 self.request.user, pi, self.computing_allowance,
-                allocation_period, tmp['current_project'], requested_project,
+                allocation_period, tmp['renewal_survey_answers'], tmp['current_project'], requested_project,
                 new_project_request=new_project_request)
 
             self.send_emails(request)
@@ -618,7 +616,7 @@ class AllocationRenewalRequestUnderProjectView(LoginRequiredMixin,
 
             request = self.create_allocation_renewal_request(
                 self.request.user, pi, self.computing_allowance,
-                allocation_period, self.project_obj, self.project_obj)
+                allocation_period, tmp['renewal_survey_answers'], self.project_obj, self.project_obj)
 
             self.send_emails(request)
         except Exception as e:
@@ -703,3 +701,10 @@ class AllocationRenewalRequestUnderProjectView(LoginRequiredMixin,
                 dictionary['breadcrumb_pooling_preference'] = \
                     form_class.SHORT_DESCRIPTIONS.get(
                         pooling_preference, 'Unknown')
+
+        renewal_survey_form_step = self.step_numbers_by_form_name['renewal_survey']
+        if step > renewal_survey_form_step:
+            data = self.get_cleaned_data_for_step(str(renewal_survey_form_step))
+            if data:
+                dictionary.update(data)
+                dictionary['renewal_survey_answers'] = data
