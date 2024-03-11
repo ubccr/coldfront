@@ -552,6 +552,13 @@ class AllocationRenewalRequestView(LoginRequiredMixin, UserPassesTestMixin,
             if data:
                 dictionary.update(data)
                 dictionary['requested_project'] = data['name']
+                
+        renewal_survey_form_step = self.step_numbers_by_form_name['renewal_survey']
+        if step > renewal_survey_form_step:
+            data = self.get_cleaned_data_for_step(str(renewal_survey_form_step))
+            if data:
+                dictionary.update(data)
+                dictionary['renewal_survey_answers'] = data
 
 
 class AllocationRenewalRequestUnderProjectView(LoginRequiredMixin,
