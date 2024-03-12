@@ -13,6 +13,7 @@ from coldfront.core.project.utils_.renewal_utils import pis_with_renewal_request
 from coldfront.core.resource.utils_.allowance_utils.computing_allowance import ComputingAllowance
 from coldfront.core.resource.utils_.allowance_utils.interface import ComputingAllowanceInterface
 
+from flags.state import flag_enabled
 from django import forms
 
 
@@ -193,27 +194,50 @@ class ProjectRenewalProjectSelectionForm(forms.Form):
 
 class ProjectRenewalSurveyForm(forms.Form):
 
-    q1 = forms.CharField(
-        label='Question',
-        required=True,
-        widget=forms.Textarea(attrs={'rows': 3}))
-    q2 = forms.CharField(
-        label='Question',
-        required=True,
-        widget=forms.Textarea(attrs={'rows': 3}))
-    q3 = forms.MultipleChoiceField(
-        choices=(
-            ('1', (
-                '1')),
-            ('2', (
-                '2')),
-            ('3', (
-                '3')),
-        ),
-        label=(
-            'Choose an option:'),
-        required=False,
-        widget=forms.CheckboxSelectMultiple())
+    if flag_enabled('BRC_ONLY'):
+        q1 = forms.CharField(
+            label='BRC Question 1',
+            required=True,
+            widget=forms.Textarea(attrs={'rows': 3}))
+        q2 = forms.CharField(
+            label='BRC Question 2',
+            required=True,
+            widget=forms.Textarea(attrs={'rows': 3}))
+        q3 = forms.MultipleChoiceField(
+            choices=(
+                ('1', (
+                    '1')),
+                ('2', (
+                    '2')),
+                ('3', (
+                    '3')),
+            ),
+            label=(
+                'BRC Choose an option:'),
+            required=False,
+            widget=forms.CheckboxSelectMultiple())
+    elif flag_enabled('LRC_ONLY'):
+        q1 = forms.CharField(
+            label='LRC Question 1',
+            required=True,
+            widget=forms.Textarea(attrs={'rows': 3}))
+        q2 = forms.CharField(
+            label='LRC Question 2',
+            required=True,
+            widget=forms.Textarea(attrs={'rows': 3}))
+        q3 = forms.MultipleChoiceField(
+            choices=(
+                ('1', (
+                    '1')),
+                ('2', (
+                    '2')),
+                ('3', (
+                    '3')),
+            ),
+            label=(
+                'LRC Choose an option:'),
+            required=False,
+            widget=forms.CheckboxSelectMultiple())
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
