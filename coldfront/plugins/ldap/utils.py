@@ -152,8 +152,10 @@ class LDAPConn:
             raise ValueError("no users returned")
         return user[0]
 
-    def return_group_by_name(self, groupname, return_as='dict'):
-        group = self.search_groups({"sAMAccountName": groupname}, return_as=return_as)
+    def return_group_by_name(self, groupname, return_as='dict', attributes=ALL_ATTRIBUTES):
+        group = self.search_groups(
+            {"sAMAccountName": groupname}, return_as=return_as, attributes=attributes
+        )
         if len(group) > 1:
             raise ValueError("too many groups in value returned")
         if not group:
@@ -480,7 +482,7 @@ def collect_update_project_status_membership():
         for pu in projectusers_to_remove
     ], ['status'])
     logger.info('changing status of these ProjectUsers to "Removed":%s',
-            [(pu.user.username, pu.project.title) for pu in projectusers_to_remove])
+                [{"uname":pu.user.username, "lab": pu.project.title} for pu in projectusers_to_remove])
 
 def import_projects_projectusers(projects_list):
     """Use AD user and group information to automatically create new

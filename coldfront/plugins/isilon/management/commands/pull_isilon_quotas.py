@@ -13,8 +13,7 @@ from coldfront.plugins.isilon.utils import (
 logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
-    """
-    Pull Isilon quotas
+    """Pull Isilon quotas
     """
     help = 'Pull Isilon quotas'
 

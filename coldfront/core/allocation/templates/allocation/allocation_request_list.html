@@ -15,11 +15,7 @@ Allocation Review New and Pending Requests
 <hr>
 
 <p class="text-justify">
-  For each allocation request below, there is the option to activate the allocation request and to view the allocation's detail page.
-</p>
-
-<p class="text-justify">
-  To activate a new allocation, select a resource for it on this page or on the detail page.
+  To approve or deny an allocation request, review the request by clicking "details".
 </p>
 
 {% if allocation_list %}
@@ -31,8 +27,8 @@ Allocation Review New and Pending Requests
           <th scope="col">Project Title</th>
           <th scope="col">PI</th>
 
-          <th scope="col" class="text-nowrap">Resource Tier</th>
-          <th scope="col">Resource Volume</th>
+          <th scope="col" class="text-nowrap">Resource or Tier</th>
+          <!-- <th scope="col">Resource Volume</th> -->
           {% if PROJECT_ENABLE_PROJECT_REVIEW %}
             <th scope="col" class="text-nowrap">Project Review Status</th>
           {% endif %}
@@ -53,7 +49,7 @@ Allocation Review New and Pending Requests
             <td>
               {{form.initial.get_parent_resource}}
             </td>
-            <td>
+            <!-- <td>
               {% if form.initial.get_parent_resource.resource_type.name == 'Storage Tier' %}
                 {{ form.resource }}
               {% elif not form.initial.get_parent_resource %}
@@ -61,7 +57,7 @@ Allocation Review New and Pending Requests
               {% else %}
                 {{ form.initial.get_parent_resource.name }}
               {% endif %}
-            </td>
+            </td> -->
             <td>{{form.initial.status}}</td>
             {% if PROJECT_ENABLE_PROJECT_REVIEW %}
             <td class="text-center">{{form.status}}</td>
@@ -71,9 +67,9 @@ Allocation Review New and Pending Requests
               <div class="row">
                 <input type="hidden" name="status" value="{{ allocation_status_active.id }}" />
                 <input type="hidden" name="pk" value="{{ form.initial.pk }}" />
-                  <button type="submit" name="action" value="auto-approve" class="btn btn-success mr-1{% if form.initial.get_information == '' %} confirm-activate{% endif %}">
+                  <!-- <button type="submit" name="action" value="auto-approve" class="btn btn-success mr-1{% if form.initial.get_information == '' %} confirm-activate{% endif %}">
                   Approve
-                </button>
+                </button> -->
                 <a href="{% url 'allocation-detail' form.initial.pk %}">
                   <button type="button" class="btn btn-primary mr-1">Details
                   </button>

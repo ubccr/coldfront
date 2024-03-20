@@ -104,7 +104,6 @@ We do not have information about your research. Please provide a detailed descri
     #users = forms.MultipleChoiceField(
     #    widget=forms.CheckboxSelectMultiple, required=False)
 
-
     def __init__(self, request_user, project_pk,  *args, **kwargs):
         super().__init__(*args, **kwargs)
         project_obj = get_object_or_404(Project, pk=project_pk)
@@ -154,6 +153,36 @@ We do not have information about your research. Please provide a detailed descri
         elif existing_expense_codes and existing_expense_codes != '------':
             cleaned_data['expense_code'] = existing_expense_codes
         return cleaned_data
+
+
+ALLOCATION_AUTOCREATE_OPTIONS = [
+    ('1', 'I have already created the allocation.'),
+    ('2', 'I would like to use the automated allocation creation process. If issues arise in the course of creation, I understand I may need to manually complete the allocation creation process.'),
+]
+
+class AllocationApprovalForm(forms.Form):
+
+    sheetcheck = forms.BooleanField(
+        label='I have ensured that enough space is available on this resource.',
+        required=True
+    )
+    auto_create_opts = forms.ChoiceField(
+        label='How will this allocation be created?',
+        required=True,
+        widget=forms.RadioSelect,
+        choices=ALLOCATION_AUTOCREATE_OPTIONS,
+    )
+
+    automation_specifications = forms.MultipleChoiceField(
+        label='If you have opted for automatic allocation creation, please select from the following options:',
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        choices=(
+            ('snapshots', 'Enable daily snapshots, 7 days of retention, for this allocation'),
+            ('nfs_share', 'Create a NFS share for this allocation'),
+            ('cifs_share', 'Create a CIFS share for this allocation'),
+        ),
+    )
 
 
 class AllocationResourceChoiceField(forms.ModelChoiceField):
@@ -382,13 +411,14 @@ class AllocationChangeNoteForm(forms.Form):
 
 
 ALLOCATION_AUTOUPDATE_OPTIONS = [
-    ('1', 'I have already manually modified the allocation.'),
-    ('2', 'I would like Coldfront to modify the allocation for me. If Coldfront experiences any issues with the modification process, I understand that I will need to modify the allocation manually instead.'),
+    ('1', 'I have already modified the allocation.'),
+    ('2', 'I would like to use the automated allocation modification process. If any issues arise in the course of the modification process, I understand I may need to modify the allocation manually instead.'),
 ]
 
 class AllocationAutoUpdateForm(forms.Form):
     sheetcheck = forms.BooleanField(
-        label='I have ensured that enough space is available on this resource.'
+        label='I have ensured that enough space is available on this resource.',
+        required=True
     )
     auto_update_opts = forms.ChoiceField(
         label='How will this allocation be modified?',
@@ -396,7 +426,6 @@ class AllocationAutoUpdateForm(forms.Form):
         widget=forms.RadioSelect,
         choices=ALLOCATION_AUTOUPDATE_OPTIONS,
     )
-
 
 
 class AllocationAttributeCreateForm(forms.ModelForm):

@@ -249,7 +249,6 @@ Allocation Detail
               {% endif %}
             </td>
           </tr>
-
        </table>
       </div>
       <tr>
@@ -279,25 +278,42 @@ Allocation Detail
         {% if request.user.is_superuser or request.user.is_staff %}
           <tr>
             <th scope="row" class="text-nowrap">Allow Change Requests:</th>
-            <td>
-              {{ form.is_changeable }}
-            </td>
+            <td>{{ form.is_changeable }}</td>
           </tr>
         {% endif %}
       </div>
-      {% if request.user.is_superuser %}
-      <div class="float-right">
-        {% if allocation.status.name == 'New' or allocation.status.name == 'Renewal Requested' %}
-          <button type="submit" name="action" value="approve" class="btn btn-success mr-1 confirm-activate">Approve</button>
-          <button type="submit" name="action" value="deny" class="btn btn-danger mr-1 confirm-deny">Deny</button>
-        {% else %}
-          <button type="submit" name="action" value="update" class="btn btn-primary"><i class="fas fa-sync" aria-hidden="true"></i> Update</button>
-        {% endif %}
+
+      <!-- New Allocation Action Form -->
+      {% if request.user.is_superuser or request.user.is_staff and allocation.status.name == 'New' %}
+        <div class="container mb-3 mt-3">
+          <p class="text-justify"><i>
+            To approve the request, select a resource volume in the field above and fill out the form below before clicking "Approve". To deny the request, simply click "Deny".
+          </i></p>
+          <div id=resource_summary_table></div>
+            {% csrf_token %}
+            {{ approval_form |crispy }}
+        </div>
       {% endif %}
-      </div>
+      <!-- End New Allocation Action Form -->
+
+      {% if request.user.is_superuser %}
+        <div class="float-right">
+          {% if not allocation.status.name in 'New,Renewal Requested' %}
+            <button type="submit" name="action" value="update" class="btn btn-primary"><i class="fas fa-sync" aria-hidden="true"></i> Update</button>
+          {% else %}
+            <button type="submit" name="action" value="approve" class="btn btn-success mr-1 confirm-activate">Approve</button>
+            <button type="submit" name="action" value="deny" class="btn btn-danger mr-1 confirm-deny">Deny</button>
+          {% endif %}
+        </div>
+      {% endif %}
+
+
     </form>
   </div>
 </div>
+
+
+
 {% if attributes or attributes_with_usage or request.user.is_superuser %}
   <div class="card mb-3">
     <div class="card-header">
@@ -628,6 +644,30 @@ window.onload = function () {
 }
 </script>
 <script>
+
+  // if the allocation status is new and the user is an admin,
+  // when the user selects a resource in form.resource,
+  // display a link to that resource's resource detail page
+  $('#id_resource').change(function () {
+    var resource_id = $(this).val();
+    var allocation_status = '{{ allocation.status }}';
+    var user_is_admin = {{ request.user.is_superuser | lower }};
+    var code = [];
+    if (allocation_status == 'New' && user_is_admin && resource_id !== '') {
+      $.ajax({
+        url: "{% url 'resource-detail' 0 %}".replace('0', resource_id),
+        type: 'GET',
+        success: function (data) {
+          code.push('<a href="{% url "resource-detail" 0 %}">'.replace('0', resource_id) + 'View Detail Page for the selected Resource</a><br/><br/>');
+          $('#resource_summary_table').html(code.join(''));
+        }
+      });
+    }
+    else {
+      $('#resource_summary_table').html('');
+    }
+  });
+
   $(document).ready(function () {
 
     var guage_data = {{ guage_data | safe }};

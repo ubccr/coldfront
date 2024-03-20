@@ -123,6 +123,7 @@ class DepartmentNoteUpdateView(NoteUpdateView):
     def get_success_url(self):
         return reverse_lazy('department-detail', kwargs={'pk': self.object.department.pk})
 
+
 class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     """Department Stats, Projects, Allocations, and invoice details."""
 
@@ -186,46 +187,28 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 total_quota=Sum(attribute_string, filter=attribute_filter)
             )
         )
-        # invalidated by dependence on new org tree
-        # child_depts = Department.objects.filter(parents=department_obj)
-        # if child_depts:
-        #     for dept in child_depts:
-        #         child_projs = list(
-        #             dept.projects.filter(projectview_filter).annotate(
-        #                 total_quota=Sum(attribute_string, filter=attribute_filter)
-        #             )
-        #         )
-        #         project_objs.extend(child_projs)
 
         allocationuser_filter = (Q(status__name='Active') & ~Q(usage_bytes__isnull=True))
 
         quota_attrs = AllocationAttributeType.objects.filter(
-                name__in=['Core Usage (Hours)', 'Storage Quota (TB)']
-            )
+            name__in=['Core Usage (Hours)', 'Storage Quota (TB)']
+        )
 
         storage_pi_dict = {p.pi: [] for p in project_objs}
         compute_pi_dict = {p.pi: [] for p in project_objs}
         for p in project_objs:
-
             p.allocs = p.allocation_set.filter(
                 allocationattribute__allocation_attribute_type__in=quota_attrs,
-                status__name__in=['Active', 'New'],
+                status__name='Active',
             )
-            p.storage_allocs = p.allocation_set.filter(
-                allocationattribute__allocation_attribute_type__in=quota_attrs,
-                resources__resource_type__name="Storage",
-                status__name__in=['Active', 'New'],
-            )
-            p.compute_allocs = p.allocation_set.filter(
-                allocationattribute__allocation_attribute_type__in=quota_attrs,
-                resources__resource_type__name="Cluster",
-                status__name__in=['Active', 'New'],
-            )
+            p.storage_allocs = p.allocs.filter(
+                resources__resource_type__name='Storage')
+            p.compute_allocs = p.allocs.filter(
+                resources__resource_type__name='Cluster')
             storage_pi_dict[p.pi].extend(list(p.storage_allocs))
             compute_pi_dict[p.pi].extend(list(p.compute_allocs))
         storage_pi_dict = {pi:allocs for pi, allocs in storage_pi_dict.items() if allocs}
         compute_pi_dict = {pi:allocs for pi, allocs in compute_pi_dict.items() if allocs}
-        ieo = [sum(float(a.cost) for a in allocs)for pi, allocs in storage_pi_dict.items()]
         for pi, allocs in storage_pi_dict.items():
             pi.storage_total_price = sum(float(a.cost) for a in allocs)
         for pi, allocs in compute_pi_dict.items():
@@ -233,8 +216,6 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
         context['compute_pi_dict'] = compute_pi_dict
         context['storage_pi_dict'] = storage_pi_dict
-        context['storage_full_price'] = sum(pi.storage_total_price for pi in storage_pi_dict.keys())
-        context['compute_full_price'] = sum(pi.compute_total_price for pi in compute_pi_dict.keys())
         context['projects'] = project_objs
         context['department'] = department_obj
 
@@ -243,14 +224,35 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             status__name__in=['Active', 'New'],
         )
 
-        context['allocations_count'] = allocation_objs.count()
-
         allocation_users = AllocationUser.objects.filter(
             Q(allocation_id__in=[o.id for o in allocation_objs]) & allocationuser_filter
         ).order_by('user__username')
-        context['allocation_users'] = allocation_users
         context['notes'] = self.return_visible_notes(department_obj)
         context['note_update_link'] = 'department-note-update'
+
+        storage_full_price = sum(pi.storage_total_price for pi in storage_pi_dict.keys())
+        # compute_full_price = sum(pi.compute_total_price for pi in compute_pi_dict.keys())
+        detail_table = [
+            ('Department', department_obj.name),
+        ]
+        if self.request.user.is_superuser or 'approver' in member_permissions:
+            detail_table.extend([
+                ('Total Labs in Bill', len(project_objs)),
+                ('Total Allocations in Bill', allocation_objs.count()),
+                ('Total Users in Bill', allocation_users.count()),
+            ])
+        else:
+            detail_table.extend([
+                ('Your Labs', len(project_objs)),
+                ('Your Allocations', allocation_objs.count()),
+                ('Total Users in Your Allocations', allocation_users.count()),
+            ])
+        detail_table.extend([
+            ('Service Period', '1 Month'),
+            ('Total Amount Due, Monthly Storage', f'${round(storage_full_price, 2)}'),
+            # ( 'Total Amount Due, Quarterly Compute':f'${round(compute_full_price, 2)}')
+        ])
+        context['detail_table'] = detail_table
 
         try:
             context['ondemand_url'] = settings.ONDEMAND_URL
