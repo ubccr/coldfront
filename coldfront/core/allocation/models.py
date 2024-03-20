@@ -656,7 +656,11 @@ class AllocationChangeRequest(TimeStampedModel):
             return self.allocation.resources.filter(is_allocatable=True).first()
 
     def __str__(self):
-        return "%s (%s)" % (self.get_parent_resource.name, self.allocation.project.pi)
+        parent_resource = self.get_parent_resource
+        parent_resource_name = "No Resources"
+        if parent_resource is not None:
+            parent_resource_name = parent_resource.name
+        return "%s (%s)" % (parent_resource_name, self.allocation.project.pi)
 
 class AllocationAttributeChangeRequest(TimeStampedModel):
     """ An allocation attribute change request represents a request from a PI/ manager to change their allocation attribute.
