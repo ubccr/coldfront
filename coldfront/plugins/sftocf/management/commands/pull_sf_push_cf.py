@@ -38,6 +38,6 @@ class Command(BaseCommand):
             raise ValueError('unrecognized type argument')
 
         allocationquerymatch_objs, user_models = data_pull.clean_collected_data()
-        data_pull.update_coldfront_objects(allocationquerymatch_objs, user_models)
+        data_pull.update_coldfront_objects(user_models)
 
         logger.debug('pull_sf_push_cf complete')

@@ -139,5 +139,5 @@ class Command(BaseCommand):
         push_quota_data(result_file)
         data_pull = RedashDataPipeline()
         allocationquerymatch_objs, user_models = data_pull.clean_collected_data()
-        data_pull.update_coldfront_objects(allocationquerymatch_objs, user_models)
+        data_pull.update_coldfront_objects(user_models)
         return json.dumps(command_report, indent=2)
