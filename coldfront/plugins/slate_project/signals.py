@@ -24,7 +24,8 @@ from coldfront.plugins.slate_project.utils import (add_user_to_slate_project_gro
                                                    add_slate_project_groups,
                                                    send_expiry_email,
                                                    sync_slate_project_users,
-                                                   sync_slate_project_ldap_group)
+                                                   sync_slate_project_ldap_group,
+                                                   sync_user_statuses)
 
 @receiver(allocation_activate, sender=AllocationDetailView)
 @receiver(allocation_activate, sender=AllocationActivateRequestView)
@@ -108,3 +109,9 @@ def sync_slate_project(sender, **kwargs):
 
     sync_slate_project_ldap_group(allocation_obj)
     sync_slate_project_users(allocation_obj)
+
+    slate_project_user_objs = AllocationUser.objects.filter(
+        allocation = allocation_obj,
+        status__name__in=['Active', 'Eligible', 'Disabled', 'Retired']
+    ).select_related('user', 'status', 'allocation', 'allocation__project')
+    sync_user_statuses(slate_project_user_objs)

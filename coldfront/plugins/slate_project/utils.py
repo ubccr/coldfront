@@ -47,6 +47,41 @@ if EMAIL_ENABLED:
     EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
 
 
+def sync_user_statuses(slate_project_user_objs):
+    """
+    Updates the statuses of Slate Project allocation users.
+
+    :param slate_project_user_objs: Queryset of slate project allocation users
+    """
+    status_objs = {
+        'Active': AllocationUserStatusChoice.objects.get(name='Active'),
+        'Eligible': AllocationUserStatusChoice.objects.get(name='Eligible'),
+        'Disabled': AllocationUserStatusChoice.objects.get(name='Disabled'),
+        'Retired': AllocationUserStatusChoice.objects.get(name='Retired'),
+        'Error': AllocationUserStatusChoice.objects.get(name='Error')
+    }
+    ldap_search_conn = LDAPImportSearch()
+    for slate_project_user_obj in slate_project_user_objs:
+        new_status = get_new_user_status(slate_project_user_obj.user.username, ldap_search_conn, False)
+        if not new_status == slate_project_user_obj.status.name:
+            new_status_obj = status_objs.get(new_status)
+            if new_status_obj is None:
+                logger.error(f'Status {new_status} object is missing')
+                new_status_obj = status_objs.get('Error')
+            slate_project_user_obj.status = new_status_obj
+            slate_project_user_obj.save()
+            if new_status == 'Retired':
+                project_obj = slate_project_user_obj.allocation.project
+                project_pi_obj = project_obj.projectuser_set.get(user=project_obj.pi)
+                if project_pi_obj.enable_notifications:
+                    send_access_removed_email(slate_project_user_obj, project_pi_obj.user.email)
+
+            logger.info(
+                f'User {slate_project_user_obj.user.username}\'s status in allocation ' 
+                f'{slate_project_user_obj.allocation.pk} was changed to {new_status}'
+            )
+
+
 def sync_slate_project_directory_name(allocation_obj, ldap_group):
     """
     Updates the Slate Project directory to match the name of the Slate Project LDAP group.
