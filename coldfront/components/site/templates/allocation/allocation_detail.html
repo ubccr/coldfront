@@ -405,7 +405,7 @@ Allocation Detail
               {% else %}
                 <td class="text-primary"><strong>{{ user.status.name }}</strong></td>
               {% endif %}
-              <td>{{ user.modified|date:"M. d, Y" }}</td>
+              <td>{{ user.modified|date:"M. d, Y g:i a" }}</td>
               {% if is_allowed_to_update_project %}
                 <td>
                   <a title="Edit user" href="{% url 'allocation-user-detail' allocation.pk user.id %}">
