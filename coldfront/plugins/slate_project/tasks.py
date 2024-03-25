@@ -3,7 +3,7 @@ import logging
 from coldfront.core.allocation.models import Allocation, AllocationUser, AllocationUserStatusChoice
 from coldfront.plugins.slate_project.utils import (sync_slate_project_users,
                                                    sync_slate_project_ldap_group,
-                                                   sync_user_statuses,
+                                                   sync_slate_project_user_statuses,
                                                    send_ineligible_users_report,
                                                    send_ineligible_pis_report,
                                                    import_slate_projects,
@@ -46,4 +46,4 @@ def update_all_user_statuses():
         allocation__status__name__in=['Active', 'Renewal Requested'],
         status__name__in=['Active', 'Eligible', 'Disabled', 'Retired']
     ).select_related('user', 'status', 'allocation', 'allocation__project')
-    sync_user_statuses(slate_project_user_objs)
+    sync_slate_project_user_statuses(slate_project_user_objs)

@@ -47,7 +47,7 @@ if EMAIL_ENABLED:
     EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
 
 
-def sync_user_statuses(slate_project_user_objs):
+def sync_slate_project_user_statuses(slate_project_user_objs):
     """
     Updates the statuses of Slate Project allocation users.
 
