@@ -54,6 +54,7 @@ INSTALLED_APPS = [
 sys.modules['fontawesome_free'] = __import__('fontawesome-free')
 INSTALLED_APPS += [
     'crispy_forms',
+    'crispy_bootstrap4',
     'sslserver',
     'django_q',
     'simple_history',
