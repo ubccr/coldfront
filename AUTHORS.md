@@ -27,3 +27,5 @@
 - Steve Anthony
 - Jim Culbert
 - Alex Tucker
+- Claire Peters
+- Cecilia Lau
