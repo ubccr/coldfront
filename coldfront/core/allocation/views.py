@@ -5,6 +5,7 @@ import json
 
 from dateutil.relativedelta import relativedelta
 from django import forms
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
@@ -167,6 +168,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context = self.get_context_data()
         context['form'] = form
         context['allocation'] = allocation_obj
+        context['display_slurm_submission_info'] = 'coldfront.plugins.slurm' in settings.INSTALLED_APPS
         return self.render_to_response(context)
 
     def post(self, request, *args, **kwargs):

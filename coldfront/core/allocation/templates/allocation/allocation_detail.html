@@ -234,6 +234,10 @@ Allocation Detail
   </div>
 {% endif %}
 
+{% if display_slurm_submission_info %}
+  {% include "slurm/slurm_submission_info_div.html" %} 
+{% endif %}
+
 <!-- Start Allocation Change Requests -->
 <div class="card mb-3">
   <div class="card-header">

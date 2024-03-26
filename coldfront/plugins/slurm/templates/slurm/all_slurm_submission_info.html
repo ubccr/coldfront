@@ -1,0 +1,62 @@
+{% load slurm_tags %}
+
+{% if slurm_submission_info %}
+  <div class="col">
+    <div class="card mb-3">
+      <div class="card-header">
+        Submitting Slurm Jobs
+      </div>
+      <div class="card-body">
+        {% for project_pk, allocations in slurm_submission_info.items %}
+          <hr>
+          <h3><strong>{{ project_titles|dictitem:project_pk }}</strong></h3>
+          <hr>
+          <h4>Interactive Jobs</h4>
+          <hr>
+          <div class="table-responsive">
+            <table class="table table-bordered table-sm">
+              {% for resources in allocations %}
+                {% for resources_name, submit_info in resources.items %}
+                  {% if submit_info %}
+                    <tr>
+                      <th scope="row" class="text-nowrap">{{ resources_name }}</th>
+                      <td>
+                        srun
+                        {% for slurm_submit_option, slurm_submit_option_value in submit_info.items %}
+                          {{ slurm_submit_option }} {{ slurm_submit_option_value }}
+                        {% endfor %}
+                        &lt;other options&gt;
+                      </td>
+                    </tr>
+                  {% endif %}
+                {% endfor %}
+              {% endfor %}
+            </table>
+          </div>
+          <hr>
+          <h4>Batch Jobs</h4>
+          <div class="row">
+            {% for resources in allocations %}
+              {% for resources_name, submit_info in resources.items %}
+                {% if submit_info %}
+                  <div class="col-4">
+                    <hr>
+                    <strong>{{ resources_name }}</strong>
+                    <hr>
+                    <ul style="list-style-type: none; padding: 0; margin: 0;">
+                      {% for slurm_submit_option, slurm_submit_option_value in submit_info.items %}
+                        <li>
+                          #SBATCH {{ slurm_submit_option }} {{ slurm_submit_option_value }}
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  </div>
+                {% endif %}
+              {% endfor %}
+            {% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+{% endif %}
