@@ -13,7 +13,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     keywords='high-performance-computing resource-allocation',
-    url='http://coldfront.io',
+    url='https://coldfront.readthedocs.io',
     project_urls={
         'Bug Tracker': 'https://github.com/ubccr/coldfront/issues',
         'Documentation': 'https://coldfront.readthedocs.io',
@@ -21,7 +21,7 @@ setup(
     },
     author='Andrew E. Bruno, Dori Sajdak, Mohammad Zia',
     license='GNU General Public License v3 (GPLv3)',
-    python_requires='>=3.6',
+    python_requires='>=3.8',
     packages=find_packages(),
     install_requires=[
         'arrow==1.3.0',
