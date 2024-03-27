@@ -188,7 +188,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                     Q(project__projectuser__user=self.request.user) &
                     Q(project__projectuser__status__name__in=['Active', ]) &
                     Q(allocationuser__user=self.request.user) &
-                    Q(allocationuser__status__name__in=['Active', ])
+                    Q(allocationuser__status__name__in=['Active', 'Eligible', 'Disabled', 'Retired'])
                 ).distinct().order_by('-end_date')
             else:
                 allocations = Allocation.objects.prefetch_related(
@@ -1565,7 +1565,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                     allocations_to_remove_user_from = project_obj.allocation_set.filter(
                         status__name__in=['Active', 'New', 'Renewal Requested'])
                     for allocation in allocations_to_remove_user_from:
-                        for allocation_user_obj in allocation.allocationuser_set.filter(user=user_obj, status__name__in=['Active', 'Inactive', 'Pending - Add', 'Pending - Remove']):
+                        for allocation_user_obj in allocation.allocationuser_set.filter(user=user_obj, status__name__in=['Active', 'Inactive', 'Pending - Add', 'Pending - Remove', 'Eligible', 'Disabled', 'Retired']):
                             resource = allocation.get_parent_resource
                             requires_user_requests = resource.get_attribute(
                                 'requires_user_request'
@@ -1877,7 +1877,7 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                             '{} {}'.format(
                                 ele.user.first_name, ele.user.last_name
                             ) for ele in allocation.allocationuser_set.filter(
-                                status__name__in=['Active', 'Inactive']
+                                status__name__in=['Active', 'Inactive', 'Eligible', 'Disabled', 'Retired']
                             ).order_by('user__last_name')
                         ]
                     ),
