@@ -33,9 +33,8 @@ logger = logging.getLogger(__name__)
 
 ENABLE_LDAP_ELIGIBILITY_SERVER = import_from_settings('ENABLE_LDAP_ELIGIBILITY_SERVER', False)
 ENABLE_LDAP_SLATE_PROJECT_SYNCING = import_from_settings('ENABLE_LDAP_SLATE_PROJECT_SYNCING', False)
-if ENABLE_LDAP_ELIGIBILITY_SERVER:
-    SLATE_PROJECT_ELIGIBILITY_ACCOUNT = import_from_settings('SLATE_PROJECT_ELIGIBILITY_ACCOUNT')
-    SLATE_PROJECT_ACCOUNT = import_from_settings('SLATE_PROJECT_ACCOUNT') 
+SLATE_PROJECT_ELIGIBILITY_ACCOUNT = import_from_settings('SLATE_PROJECT_ELIGIBILITY_ACCOUNT', '')
+SLATE_PROJECT_ACCOUNT = import_from_settings('SLATE_PROJECT_ACCOUNT', '') 
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 CENTER_BASE_URL = import_from_settings('CENTER_BASE_URL')
 PROJECT_DEFAULT_MAX_MANAGERS = import_from_settings('PROJECT_DEFAULT_MAX_MANAGERS', 3)
@@ -48,19 +47,60 @@ if EMAIL_ENABLED:
     EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
 
 
+def sync_slate_project_user_statuses(slate_project_user_objs):
+    """
+    Updates the statuses of Slate Project allocation users.
+
+    :param slate_project_user_objs: Queryset of slate project allocation users
+    """
+    status_objs = {
+        'Active': AllocationUserStatusChoice.objects.get(name='Active'),
+        'Eligible': AllocationUserStatusChoice.objects.get(name='Eligible'),
+        'Disabled': AllocationUserStatusChoice.objects.get(name='Disabled'),
+        'Retired': AllocationUserStatusChoice.objects.get(name='Retired'),
+        'Error': AllocationUserStatusChoice.objects.get(name='Error')
+    }
+    ldap_search_conn = LDAPImportSearch()
+    for slate_project_user_obj in slate_project_user_objs:
+        new_status = get_new_user_status(slate_project_user_obj.user.username, ldap_search_conn, False)
+        if not new_status == slate_project_user_obj.status.name:
+            new_status_obj = status_objs.get(new_status)
+            if new_status_obj is None:
+                logger.error(f'Status {new_status} object is missing')
+                new_status_obj = status_objs.get('Error')
+            slate_project_user_obj.status = new_status_obj
+            slate_project_user_obj.save()
+            if new_status == 'Retired':
+                project_obj = slate_project_user_obj.allocation.project
+                project_pi_obj = project_obj.projectuser_set.get(user=project_obj.pi)
+                if project_pi_obj.enable_notifications:
+                    send_access_removed_email(slate_project_user_obj, project_pi_obj.user.email)
+
+            logger.info(
+                f'User {slate_project_user_obj.user.username}\'s status in allocation ' 
+                f'{slate_project_user_obj.allocation.pk} was changed to {new_status}'
+            )
+
+
 def sync_slate_project_directory_name(allocation_obj, ldap_group):
+    """
+    Updates the Slate Project directory to match the name of the Slate Project LDAP group.
+
+    :allocation_obj: Allocation the slate project directory name should be updated in
+    :ldap_group: The name of the Slate Project LDAP group
+    """
     allocation_attribute_type = 'Slate Project Directory'
-    slate_project_directory = allocation_obj.allocationattribute_set.filter(
+    slate_project_directory_obj = allocation_obj.allocationattribute_set.filter(
         allocation_attribute_type__name=allocation_attribute_type
     )
-    if not slate_project_directory.exists():
+    if not slate_project_directory_obj.exists():
         logger.error(
             f'Failed to sync slate project directory in a Slate Project allocation. The allocation '
             f'(pk={allocation_obj.pk}) is missing the allocation attribute '
             f'"{allocation_attribute_type}"'
         )
         return
-    slate_project_directory = slate_project_directory[0]
+    slate_project_directory_obj = slate_project_directory_obj[0]
     ldap_group_split = ldap_group.split('_', 1)
     if len(ldap_group_split) < 2 or ldap_group_split[0] != 'condo':
         logger.error(
@@ -68,8 +108,8 @@ def sync_slate_project_directory_name(allocation_obj, ldap_group):
             f'allocation\'s (pk={allocation_obj.pk}) ldap group condo assumption failed.'
         )
         return
-    slate_project_directory.value = "/N/project/" + ldap_group_split[1]
-    slate_project_directory.save()
+    slate_project_directory_obj.value = "/N/project/" + ldap_group_split[1]
+    slate_project_directory_obj.save()
     logger.info(
         f'Slate Project allocation {allocation_obj.pk}\'s "{allocation_attribute_type}" attribute '
         f'was updated during sync'
@@ -85,17 +125,17 @@ def sync_slate_project_ldap_group(allocation_obj, ldap_conn=None):
     :param allocation_obj: Allocation object that is checked
     """
     allocation_attribute_type = 'GID'
-    ldap_group_gid = allocation_obj.allocationattribute_set.filter(
+    ldap_group_gid_obj = allocation_obj.allocationattribute_set.filter(
         allocation_attribute_type__name=allocation_attribute_type
     )
-    if not ldap_group_gid.exists():
+    if not ldap_group_gid_obj.exists():
         logger.error(
             f'Failed to sync ldap group in a Slate Project allocation. The allocation '
             f'(pk={allocation_obj.pk}) is missing the allocation attribute '
             f'"{allocation_attribute_type}"'
         )
         return
-    ldap_group_gid = int(ldap_group_gid[0].value)
+    ldap_group_gid = int(ldap_group_gid_obj[0].value)
 
     if ldap_conn is None:
         ldap_conn = LDAPModify()
@@ -106,22 +146,22 @@ def sync_slate_project_ldap_group(allocation_obj, ldap_conn=None):
         )
         return
     
-    allocation_ldap_group = allocation_obj.allocationattribute_set.filter(
+    allocation_ldap_group_obj = allocation_obj.allocationattribute_set.filter(
         allocation_attribute_type__name='LDAP Group'
     )
-    if not allocation_ldap_group.exists():
+    if not allocation_ldap_group_obj.exists():
         logger.error(
             f'Failed to sync ldap group in a Slate Project allocation. The allocation '
             f'(pk={allocation_obj.pk}) is missing the allocation attribute '
             f'"{allocation_attribute_type}"'
         )
         return
-    allocation_ldap_group = allocation_ldap_group[0]
+    allocation_ldap_group_obj = allocation_ldap_group_obj[0]
     ldap_group = ldap_conn.get_attribute('cn', ldap_group_gid)
-    if ldap_group != allocation_ldap_group.value:
-        old_ldap_group = allocation_ldap_group.value
-        allocation_ldap_group.value = ldap_group
-        allocation_ldap_group.save()
+    if ldap_group != allocation_ldap_group_obj.value:
+        old_ldap_group = allocation_ldap_group_obj.value
+        allocation_ldap_group_obj.value = ldap_group
+        allocation_ldap_group_obj.save()
         logger.info(
             f'Slate Project allocation {allocation_obj.pk}\'s "LDAP Group" attribute changed from '
             f'{old_ldap_group} to {ldap_group} during sync'
@@ -129,7 +169,7 @@ def sync_slate_project_ldap_group(allocation_obj, ldap_conn=None):
         sync_slate_project_directory_name(allocation_obj, ldap_group)
     
 
-def sync_slate_project_users(allocation_obj, ldap_conn=None):
+def sync_slate_project_users(allocation_obj, ldap_conn=None, ldap_search_conn=None):
     """
     Checks if the Slate Project allocation is in sync with the Slate Project group in ldap. If not
     it modifies the slate project allocation to re-sync them.
@@ -141,26 +181,28 @@ def sync_slate_project_users(allocation_obj, ldap_conn=None):
         return
 
     allocation_attribute_type = 'GID'
-    ldap_group_gid = allocation_obj.allocationattribute_set.filter(
+    ldap_group_gid_obj = allocation_obj.allocationattribute_set.filter(
         allocation_attribute_type__name=allocation_attribute_type
     )
-    if not ldap_group_gid.exists():
+    if not ldap_group_gid_obj.exists():
         logger.error(
             f'Failed to sync users in a Slate Project allocation. The allocation '
             f'(pk={allocation_obj.pk}) is missing the allocation attribute '
             f'"{allocation_attribute_type}"'
         )
         return
-    ldap_group_gid = int(ldap_group_gid[0].value)
+    ldap_group_gid = int(ldap_group_gid_obj[0].value)
 
     if ldap_conn is None:
         ldap_conn = LDAPModify()
+    if ldap_search_conn is None:
+        ldap_search_conn = LDAPImportSearch()
 
-    read_write_users = allocation_obj.allocationuser_set.filter(
-        role__name='read/write', status__name__in=['Active', 'Inactive']
+    read_write_user_objs = allocation_obj.allocationuser_set.filter(
+        role__name='read/write', status__name__in=['Active', 'Eligible', 'Disabled', 'Retired']
     )
-    read_only_users = allocation_obj.allocationuser_set.filter(
-        role__name='read only', status__name__in=['Active', 'Inactive']
+    read_only_user_objs = allocation_obj.allocationuser_set.filter(
+        role__name='read only', status__name__in=['Active', 'Eligible', 'Disabled', 'Retired']
     )
 
     ldap_read_write_usernames = ldap_conn.get_users(ldap_group_gid)
@@ -169,43 +211,43 @@ def sync_slate_project_users(allocation_obj, ldap_conn=None):
     updated_read_write_usernames = []
     updated_read_only_usernames = []
 
-    for read_write_user in read_write_users:
-        username = read_write_user.user.username
+    for read_write_user_obj in read_write_user_objs:
+        username = read_write_user_obj.user.username
         if not username in ldap_read_write_usernames:
             if not username in ldap_read_only_usernames:
-                read_write_user.status = AllocationUserStatusChoice.objects.get(name='Removed')
+                read_write_user_obj.status = AllocationUserStatusChoice.objects.get(name='Removed')
                 logger.info(
                     f'User {username} was removed from Slate Project allocation '
                     f'{allocation_obj.pk} during sync'
                 )
             else:
-                read_write_user.role = AllocationUserRoleChoice.objects.get(name='read only')
+                read_write_user_obj.role = AllocationUserRoleChoice.objects.get(name='read only')
                 logger.info(
                     f'User {username}\'s role was changed to read only in Slate Project '
                     f'allocation {allocation_obj.pk} during sync'
                 )
                 updated_read_only_usernames.append(username)
-            read_write_user.save()
+            read_write_user_obj.save()
         else:
             updated_read_write_usernames.append(username)
 
-    for read_only_user in read_only_users:
-        username = read_only_user.user.username
+    for read_only_user_obj in read_only_user_objs:
+        username = read_only_user_obj.user.username
         if not username in ldap_read_only_usernames:
             if not username in ldap_read_write_usernames:
-                read_only_user.status = AllocationUserStatusChoice.objects.get(name='Removed')
+                read_only_user_obj.status = AllocationUserStatusChoice.objects.get(name='Removed')
                 logger.info(
                     f'User {username} was removed from Slate Project allocation '
                     f'{allocation_obj.pk} during sync'
                 )
             else:
-                read_only_user.role = AllocationUserRoleChoice.objects.get(name='read/write')
+                read_only_user_obj.role = AllocationUserRoleChoice.objects.get(name='read/write')
                 logger.info(
                     f'User {username}\'s role was changed to read/write in Slate Project '
                     f'allocation {allocation_obj.pk} during sync'
                 )
                 updated_read_write_usernames.append(username)
-            read_only_user.save()
+            read_only_user_obj.save()
         else:
             updated_read_only_usernames.append(username)
 
@@ -243,7 +285,7 @@ def sync_slate_project_users(allocation_obj, ldap_conn=None):
                 AllocationUser.objects.create(
                     allocation=allocation_obj,
                     user=user_obj,
-                    status=AllocationUserStatusChoice.objects.get(name='Active'),
+                    status=get_new_user_status(user_obj.username, ldap_search_conn),
                     role=AllocationUserRoleChoice.objects.get(name='read/write')
                 )
                 logger.info(
@@ -253,7 +295,7 @@ def sync_slate_project_users(allocation_obj, ldap_conn=None):
             else:
                 allocation_user_obj = allocation_user_obj[0]
                 old_status = allocation_user_obj.status
-                allocation_user_obj.status = AllocationUserStatusChoice.objects.get(name='Active')
+                allocation_user_obj.status = get_new_user_status(user_obj.username, ldap_search_conn)
                 allocation_user_obj.role = AllocationUserRoleChoice.objects.get(name='read/write')
                 allocation_user_obj.save()
 
@@ -302,7 +344,7 @@ def sync_slate_project_users(allocation_obj, ldap_conn=None):
                 AllocationUser.objects.create(
                     allocation=allocation_obj,
                     user=user_obj,
-                    status=AllocationUserStatusChoice.objects.get(name='Active'),
+                    status=get_new_user_status(user_obj.username, ldap_search_conn),
                     role=AllocationUserRoleChoice.objects.get(name='read only')
                 )
                 logger.info(
@@ -312,7 +354,7 @@ def sync_slate_project_users(allocation_obj, ldap_conn=None):
             else:
                 allocation_user_obj = allocation_user_obj[0]
                 old_status = allocation_user_obj.status
-                allocation_user_obj.status = AllocationUserStatusChoice.objects.get(name='Active')
+                allocation_user_obj.status = get_new_user_status(user_obj.username, ldap_search_conn)
                 allocation_user_obj.role = AllocationUserRoleChoice.objects.get(name='read only')
                 allocation_user_obj.save()
 
@@ -361,7 +403,6 @@ def send_missing_account_email(email_receiver):
     if EMAIL_ENABLED:
         template_context = {
             'center_name': EMAIL_CENTER_NAME,
-            'url': 'https://access.iu.edu/Accounts/Create',
             'signature': EMAIL_SIGNATURE,
             'help_email': SLATE_PROJECT_EMAIL
         }
@@ -375,13 +416,73 @@ def send_missing_account_email(email_receiver):
         )
 
 
-def check_slate_project_account(user, notifications_enabled, ldap_search_conn=None, ldap_eligibility_conn=None):
+def get_new_user_status(username, ldap_search_conn=None, return_obj=True):
+    """
+    Grabs an allocation user status choice based on what accounts the user is in.
+
+    :param allocation_user: Username to check
+    :param ldap_search_conn: Pre-established ldap connection for searching for the user
+    group
+    :param return_obj: Whether or not an allocation user status choice object should be return. If
+    not the name of the status is returned.
+    """
+    if ldap_search_conn is None:
+        ldap_search_conn = LDAPImportSearch()
+
+    attributes = ldap_search_conn.search_a_user(username, ['memberOf'])
+    accounts = attributes.get('memberOf')
+    if SLATE_PROJECT_ELIGIBILITY_ACCOUNT in accounts and SLATE_PROJECT_ACCOUNT in accounts:
+        status = 'Active'
+    elif SLATE_PROJECT_ELIGIBILITY_ACCOUNT in accounts and not SLATE_PROJECT_ACCOUNT in accounts:
+        status = 'Eligible'
+    elif not SLATE_PROJECT_ELIGIBILITY_ACCOUNT in accounts and SLATE_PROJECT_ACCOUNT in accounts:
+        status = 'Disabled'
+    elif not SLATE_PROJECT_ELIGIBILITY_ACCOUNT in accounts and not SLATE_PROJECT_ACCOUNT in accounts:
+        status = 'Retired'
+
+    if return_obj:
+        return AllocationUserStatusChoice.objects.get(name=status)
+
+    return status
+
+
+def send_access_removed_email(allocation_user, receiver):
+    """
+    Sends an email to the receiver about a user losing access to their Slate Project.
+
+    :allocation_user: Allocation user who lost access
+    :receiver: Email address of who should receive the email
+    """
+    if EMAIL_ENABLED:
+        allocation_obj = allocation_user.allocation
+        user = allocation_user.user
+        if user.first_name:
+            name = f'{user.first_name} {user.last_name}'
+        else:
+            name = user.username
+        template_context = {
+            'name': name,
+            'project_title': allocation_obj.project.title,
+            'center_name': EMAIL_CENTER_NAME,
+            'signature': EMAIL_SIGNATURE
+        }
+
+        send_email_template(
+            f'{name}\'s Slate Project Access Has Been Removed',
+            'slate_project/email/access_removed.txt',
+            template_context,
+            SLATE_PROJECT_EMAIL,
+            [receiver]
+        )
+
+
+def check_slate_project_account(user_obj, notifications_enabled, ldap_search_conn=None, ldap_eligibility_conn=None):
     """
     Checks if the user is in the eligibility group in LDAP. If they aren't it adds them and sends
     an email to the user about creating a Slate Project account. If they are in it but do not have
     a Slate Project account it will also send the email.
 
-    :param user: User to check
+    :param user_obj: User to check
     :param notifications_enabled: Whether or not the user should receive an email
     :param ldap_search_conn: Pre-established ldap connection for searching for the Slate Project
     group
@@ -393,27 +494,27 @@ def check_slate_project_account(user, notifications_enabled, ldap_search_conn=No
     if ldap_eligibility_conn is None:
         ldap_eligibility_conn = LDAPEligibilityGroup()
 
-    attributes = ldap_search_conn.search_a_user(user.username, ['memberOf'])
+    attributes = ldap_search_conn.search_a_user(user_obj.username, ['memberOf'])
     accounts = attributes.get('memberOf')
     if not SLATE_PROJECT_ELIGIBILITY_ACCOUNT in accounts:
         # Do nothing if they have a slate project account but are not in the eligibility account
         if SLATE_PROJECT_ACCOUNT in accounts:
             return
-        added, output = ldap_eligibility_conn.add_user(user.username)
+        added, output = ldap_eligibility_conn.add_user(user_obj.username)
         if not added:
             logger.error(
-                f'LDAP: Failed to add user {user.username} to the HPFS ADS eligibility '
+                f'LDAP: Failed to add user {user_obj.username} to the HPFS ADS eligibility '
                 f'group. Reason: {output}'
             )
         else:
             logger.info(
-                f'LDAP: Added user {user.username} to the HPFS ADS eligibility group'
+                f'LDAP: Added user {user_obj.username} to the HPFS ADS eligibility group'
             )
             if notifications_enabled:
-                send_missing_account_email(user.email)
+                send_missing_account_email(user_obj.email)
     elif not SLATE_PROJECT_ACCOUNT in accounts:
         if notifications_enabled:
-            send_missing_account_email(user.email)
+            send_missing_account_email(user_obj.email)
 
 
 def add_slate_project_groups(allocation_obj):
@@ -433,26 +534,26 @@ def add_slate_project_groups(allocation_obj):
         return
 
     ldap_conn = LDAPModify()
-    ldap_group_gid = allocation_obj.allocationattribute_set.filter(
+    ldap_group_gid_obj = allocation_obj.allocationattribute_set.filter(
         allocation_attribute_type__name='GID'
     )
-    if ldap_group_gid.exists():
+    if ldap_group_gid_obj.exists():
         logger.error(
             f'LDAP: Slate Project allocation GID for allocation {allocation_obj.pk} already ' 
             f'exists. No new groups were created'
         )
         return
 
-    ldap_group = allocation_obj.allocationattribute_set.filter(
+    ldap_group_obj = allocation_obj.allocationattribute_set.filter(
         allocation_attribute_type__name='LDAP Group'
     )
-    if not ldap_group.exists():
+    if not ldap_group_obj.exists():
         logger.error(
             f'Failed to create slate project groups. The allocation (pk={allocation_obj.pk}) is '
             f'missing the allocation attribute "LDAP Group"'
         )
         return
-    ldap_group = ldap_group[0].value
+    ldap_group = ldap_group_obj[0].value
 
     gid_number = ldap_conn.find_highest_gid()
     if gid_number is None:
@@ -473,10 +574,10 @@ def add_slate_project_groups(allocation_obj):
         value=read_write_gid_number
     )
 
-    read_write_users = allocation_obj.allocationuser_set.filter(
+    read_write_allocation_user_objs = allocation_obj.allocationuser_set.filter(
         status__name='Active', role__name='read/write'
     ).prefetch_related('user')
-    read_write_users = [read_write_user.user for read_write_user in read_write_users]
+    read_write_users = [read_write_user.user for read_write_user in read_write_allocation_user_objs]
     read_write_usernames = [read_write_user.username for read_write_user in read_write_users]
     added, output = ldap_conn.add_group(
         ldap_group, allocation_obj.project.pi.username, read_write_usernames, read_write_gid_number
@@ -494,24 +595,28 @@ def add_slate_project_groups(allocation_obj):
         if ENABLE_LDAP_ELIGIBILITY_SERVER:
             ldap_search_conn = LDAPSearch()
             ldap_eligibility_conn = LDAPEligibilityGroup()
-            project_users = allocation_obj.project.projectuser_set.filter(
+            project_user_objs = allocation_obj.project.projectuser_set.filter(
                 user__in=read_write_users
             ).prefetch_related('user')
             notifications_enabled = {}
-            for project_user in project_users:
-                notifications_enabled[project_user.user.username] = project_user.enable_notifications
-            for allocation_user in read_write_users:
+            for project_user_obj in project_user_objs:
+                notifications_enabled[project_user_obj.user.username] = project_user_obj.enable_notifications
+            for allocation_user_obj in read_write_allocation_user_objs:
                 check_slate_project_account(
-                    allocation_user,
-                    notifications_enabled.get(allocation_user.username),
+                    allocation_user_obj.user,
+                    notifications_enabled.get(allocation_user_obj.user.username),
                     ldap_search_conn,
                     ldap_eligibility_conn
                 )
+                allocation_user_obj.status = get_new_user_status(
+                    allocation_user_obj.user.username, ldap_search_conn
+                )
+                allocation_user_obj.save()
 
-    read_only_users = allocation_obj.allocationuser_set.filter(
+    read_only_allocation_user_objs = allocation_obj.allocationuser_set.filter(
         status__name='Active', role__name='read only'
     ).prefetch_related('user')
-    read_only_users = [read_only_user.user for read_only_user in read_only_users]
+    read_only_users = [read_only_user.user for read_only_user in read_only_allocation_user_objs]
     read_only_usernames = [read_only_user.username for read_only_user in read_only_users]
     ldap_group = f'{ldap_group}-ro'
     added, output = ldap_conn.add_group(
@@ -530,19 +635,23 @@ def add_slate_project_groups(allocation_obj):
         if ENABLE_LDAP_ELIGIBILITY_SERVER:
             ldap_search_conn = LDAPSearch()
             ldap_eligibility_conn = LDAPEligibilityGroup()
-            project_users = allocation_obj.project.projectuser_set.filter(
+            project_user_objs = allocation_obj.project.projectuser_set.filter(
                 user__in=read_only_users
             ).prefetch_related('user')
             notifications_enabled = {}
-            for project_user in project_users:
-                notifications_enabled[project_user.user.username] = project_user.enable_notifications
-            for allocation_user in read_only_users:
+            for project_user_obj in project_user_objs:
+                notifications_enabled[project_user_obj.user.username] = project_user_obj.enable_notifications
+            for allocation_user_obj in read_only_allocation_user_objs:
                 check_slate_project_account(
-                    allocation_user,
-                    notifications_enabled.get(allocation_user.username),
+                    allocation_user_obj.user,
+                    notifications_enabled.get(allocation_user_obj.user.username),
                     ldap_search_conn,
                     ldap_eligibility_conn
                 )
+                allocation_user_obj.status = get_new_user_status(
+                    allocation_user_obj.user.username, ldap_search_conn
+                )
+                allocation_user_obj.save()
 
 def add_user_to_slate_project_group(allocation_user_obj):
     """
@@ -552,17 +661,17 @@ def add_user_to_slate_project_group(allocation_user_obj):
     """
     allocation_attribute_type = 'GID'
     allocation_obj = allocation_user_obj.allocation
-    ldap_group_gid = allocation_obj.allocationattribute_set.filter(
+    ldap_group_gid_obj = allocation_obj.allocationattribute_set.filter(
         allocation_attribute_type__name=allocation_attribute_type
     )
     username = allocation_user_obj.user.username
-    if not ldap_group_gid.exists():
+    if not ldap_group_gid_obj.exists():
         logger.error(
             f'Failed to add user {username} to a ldap group. The allocation (pk={allocation_obj.pk}) '
             f'is missing the allocation attribute "{allocation_attribute_type}"'
         )
         return
-    ldap_group_gid = int(ldap_group_gid[0].value)
+    ldap_group_gid = int(ldap_group_gid_obj[0].value)
 
     user_role = allocation_user_obj.role.name
     if user_role == 'read only':
@@ -587,6 +696,9 @@ def add_user_to_slate_project_group(allocation_user_obj):
             ).enable_notifications
             check_slate_project_account(allocation_user_obj.user, notifications_enabled)
 
+        allocation_user_obj.status = get_new_user_status(username)
+        allocation_user_obj.save()
+
 
 def remove_slate_project_groups(allocation_obj):
     """
@@ -595,16 +707,16 @@ def remove_slate_project_groups(allocation_obj):
     :param allocation_obj: The allocation the groups are being removed from
     """
     allocation_attribute_type = 'GID'
-    ldap_group_gid = allocation_obj.allocationattribute_set.filter(
+    ldap_group_gid_obj = allocation_obj.allocationattribute_set.filter(
         allocation_attribute_type__name=allocation_attribute_type
     )
-    if not ldap_group_gid.exists():
+    if not ldap_group_gid_obj.exists():
         logger.error(
             f'Failed to remove slate project group. The allocation (pk={allocation_obj.pk}) is '
             f'missing the allocation attribute "{allocation_attribute_type}"'
         )
         return
-    ldap_group_gid = int(ldap_group_gid[0].value)
+    ldap_group_gid = int(ldap_group_gid_obj[0].value)
 
     ldap_conn = LDAPModify()
     removed, output = ldap_conn.remove_group(ldap_group_gid)
@@ -643,17 +755,17 @@ def remove_user_from_slate_project_group(allocation_user_obj):
     """
     allocation_attribute_type = 'GID'
     allocation_obj = allocation_user_obj.allocation
-    ldap_group_gid = allocation_obj.allocationattribute_set.filter(
+    ldap_group_gid_obj = allocation_obj.allocationattribute_set.filter(
         allocation_attribute_type__name=allocation_attribute_type
     )
     username = allocation_user_obj.user.username
-    if not ldap_group_gid.exists():
+    if not ldap_group_gid_obj.exists():
         logger.error(
             f'Failed to remove user {username} from a slate project group. The allocation '
             f'{allocation_obj.pk} is missing the allocation attribute {allocation_attribute_type}'
         )
         return
-    ldap_group_gid = int(ldap_group_gid[0].value)
+    ldap_group_gid = int(ldap_group_gid_obj[0].value)
     
     user_role = allocation_user_obj.role.name
     if user_role == 'read only':
@@ -681,16 +793,16 @@ def change_users_slate_project_groups(allocation_user_obj):
     """
     allocation_attribute_type = 'GID'
     allocation_obj = allocation_user_obj.allocation
-    ldap_group_gid = allocation_obj.allocationattribute_set.filter(
+    ldap_group_gid_obj = allocation_obj.allocationattribute_set.filter(
         allocation_attribute_type__name=allocation_attribute_type
     )
-    if not ldap_group_gid.exists():
+    if not ldap_group_gid_obj.exists():
         logger.error(
             f'Failed to update user {username}\'s slate project groups from role change. Allocation '
             f'{allocation_obj.pk} is missing the allocation attribute {allocation_attribute_type}'
         )
         return
-    ldap_group_gid = int(ldap_group_gid[0].value)
+    ldap_group_gid = int(ldap_group_gid_obj[0].value)
     
     new_role = allocation_user_obj.role.name
     if new_role == 'read/write':
@@ -773,107 +885,119 @@ def get_estimated_storage_cost(allocation_obj):
     return storage_cost
 
 
-def send_inactive_users_report():
+def send_ineligible_users_report():
     """
-    Finds and adds inactive users to an email report.
+    Finds and adds ineligible users to an email report.
     """
-    allocation_users = AllocationUser.objects.filter(
-        status__name='Inactive',
+    allocation_user_objs = AllocationUser.objects.filter(
+        status__name__in=['Retired', 'Disabled'],
         allocation__resources__name='Slate Project',
         allocation__status__name='Active'
     ).prefetch_related(
         'allocation__allocationattribute_set',
         'allocation__project__projectuser_set',
         'allocation__project__pi',
+        'status',
         'user'
     )
-    inactive_users = {}
-    for allocation_user in allocation_users:
-        attribute_obj = allocation_user.allocation.allocationattribute_set.filter(
-            allocation_attribute_type__name='Slate Project Directory'
+    ineligible_users = {}
+    for allocation_user_obj in allocation_user_objs:
+        attribute_obj = allocation_user_obj.allocation.allocationattribute_set.filter(
+            allocation_attribute_type__name='LDAP Group'
         )
-        if not attribute_obj.exist():
-            directory = None
+        if not attribute_obj.exists():
+            ldap_group = None
         else:
-            directory = attribute_obj[0].value
-        project_user = allocation_user.allocation.project.projectuser_set.filter(user=allocation_user.user)
-        if project_user.exists():
-            username = allocation_user.user.username
-            pi_username = allocation_user.allocation.project.pi.username
-            if not inactive_users.get(username):
-                inactive_users[username] = {}
+            ldap_group = attribute_obj[0].value
+        project_user_obj = allocation_user_obj.allocation.project.projectuser_set.filter(user=allocation_user_obj.user)
+        if project_user_obj.exists():
+            username = allocation_user_obj.user.username
+            username_status = username + ' - ' + allocation_user_obj.status.name
+            pi_username = allocation_user_obj.allocation.project.pi.username
+            if not ineligible_users.get(username_status):
+                ineligible_users[username_status] = {}
 
             if pi_username == username:
-                if not inactive_users[username].get('PI'):
-                    inactive_users[username]['PI'] = [directory]
+                if not ineligible_users[username_status].get('PI'):
+                    ineligible_users[username_status]['PI'] = [ldap_group]
                 else:
-                    inactive_users[username]['PI'].append(directory)
+                    ineligible_users[username_status]['PI'].append(ldap_group)
                 continue
 
-            role = project_user[0].role.name
-            if not inactive_users[username].get(role):
-                inactive_users[username][role] = [directory]
+            role = project_user_obj[0].role.name
+            if not ineligible_users[username_status].get(role):
+                ineligible_users[username_status][role] = [ldap_group]
             else:
-                inactive_users[username][role].append(directory)
+                ineligible_users[username_status][role].append(ldap_group)
 
-    if EMAIL_ENABLED and inactive_users:
+    if EMAIL_ENABLED and ineligible_users:
         template_context = {
-            'inactive_users': inactive_users,
+            'ineligible_users': ineligible_users,
             'current_date': date.today().isoformat(),
         }
 
         send_email_template(
-            'Inactive Users',
-            'slate_project/email/inactive_users.txt',
+            'Ineligible Users',
+            'slate_project/email/ineligibility_report.txt',
             template_context,
-            EMAIL_TICKET_SYSTEM_ADDRESS,
+            EMAIL_SENDER,
             [SLATE_PROJECT_EMAIL]
         )
-        logger.info('Inactive users email report sent')
+        logger.info('Slate Project ineligible users email report sent')
 
 
-def send_ineligible_pi_report():
-    allocations = Allocation.objects.filter(
+def send_ineligible_pis_report():
+    """
+    Finds and adds ineligible PIs to an email report.
+    """
+    allocation_objs = Allocation.objects.filter(
         resources__name='Slate Project',
         status__name='Active'
     ).select_related(
         'project__pi',
     )
-    inactive_users = {}
-    for allocation in allocations:
-        attribute_obj = allocation.allocationattribute_set.filter(
-            allocation_attribute_type__name='Slate Project Directory'
+    project_pis = set([allocation.project.pi for allocation in allocation_objs])
+    print(project_pis)
+    allocation_user_objs = AllocationUser.objects.filter(
+        status__name__in=['Retired', 'Disabled'],
+        allocation__status__name='Active',
+        user__in=project_pis
+    ).select_related(
+        'allocation',
+        'user'
+    )
+    ineligible_pis = {}
+    for allocation_user_obj in allocation_user_objs:
+        attribute_obj = allocation_user_obj.allocation.allocationattribute_set.filter(
+            allocation_attribute_type__name='LDAP Group'
         )
-        if not attribute_obj.exist():
-            directory = None
+        if not attribute_obj.exists():
+            ldap_group = None
         else:
-            directory = attribute_obj[0].value
-        pi = allocation.project.pi
-        pi_status = allocation.project.projectuser_set.get(user=pi).status.name
-        if pi_status == 'Inactive':
-            username = pi.username
-            if not inactive_users.get(username):
-                inactive_users[username] = {}
+            ldap_group = attribute_obj[0].value
+        username_status = allocation_user_obj.user.username + ' - ' + allocation_user_obj.status.name
+        if not ineligible_pis.get(username_status):
+            ineligible_pis[username_status] = {}
 
-            if not inactive_users[username].get('PI'):
-                inactive_users[username]['PI'] = [directory]
-            else:
-                inactive_users[username]['PI'].append(directory)
+        if not ineligible_pis[username_status].get('PI'):
+            ineligible_pis[username_status]['PI'] = [ldap_group]
+        else:
+            ineligible_pis[username_status]['PI'].append(ldap_group)
 
-    if EMAIL_ENABLED and inactive_users:
+    if EMAIL_ENABLED and ineligible_pis:
         template_context = {
-            'inactive_users': inactive_users,
+            'ineligible_users': ineligible_pis,
             'current_date': date.today().isoformat(),
         }
 
         send_email_template(
-            'Inactive Users',
-            'slate_project/email/inactive_users.txt',
+            'Ineligible PIs',
+            'slate_project/email/ineligibility_report.txt',
             template_context,
-            EMAIL_TICKET_SYSTEM_ADDRESS,
+            EMAIL_SENDER,
             [SLATE_PROJECT_EMAIL]
         )
-        logger.info('Ineligible PIs email report sent')
+        logger.info('Slate Project ineligible PIs email report sent')
 
 
 def get_info(info, line, current_project):
@@ -951,7 +1075,7 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
             slate_projects.append(slate_project)
 
     # Non faculty, staff, and ACNP should be put in their own projects with a HPFS member as the PI.
-    hpfs_pi =  User.objects.get(username="thcrowe")
+    hpfs_pi_obj =  User.objects.get(username="thcrowe")
     project_end_date = get_new_end_date_from_list(
         [datetime.datetime(datetime.datetime.today().year, 6, 30), ],
         datetime.datetime.today(),
@@ -960,6 +1084,13 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
     if limit is not None:
         slate_projects = slate_projects[:limit]
 
+    status_objs = {
+        'Active': AllocationUserStatusChoice.objects.get(name='Active'),
+        'Eligible': AllocationUserStatusChoice.objects.get(name='Eligible'),
+        'Disabled': AllocationUserStatusChoice.objects.get(name='Disabled'),
+        'Retired': AllocationUserStatusChoice.objects.get(name='Retired'),
+        'Error': AllocationUserStatusChoice.objects.get(name='Error')
+    }
     ldap_conn = LDAPImportSearch()
     rejected_slate_projects = []
     for slate_project in slate_projects:
@@ -972,11 +1103,12 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
         if not created:
             update_user_profile(user_obj, ldap_conn)
 
-        if not user_obj.userprofile.title or user_obj.userprofile.title in ['Former Employee', 'Retired Staff']:
+        owner_status = get_new_user_status(user_obj.username, ldap_conn)
+        if owner_status in ['Retired', 'Disabled']:
             rejected_slate_projects.append(slate_project.get('namespace_entry'))
             continue
         
-        project_user_role = ProjectUserRoleChoice.objects.get(name='Manager')
+        project_user_role_obj = ProjectUserRoleChoice.objects.get(name='Manager')
         if user_obj.userprofile.title in ['Faculty', 'Staff', 'Academic (ACNP)', ]:
             project_obj, _ = Project.objects.get_or_create(
                 title=slate_project.get('project_title'),
@@ -995,7 +1127,7 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
             project_obj, _ = Project.objects.get_or_create(
                 title=slate_project.get('project_title'),
                 description=slate_project.get('abstract'),
-                pi=hpfs_pi,
+                pi=hpfs_pi_obj,
                 max_managers=3,
                 requestor=user_obj,
                 type=ProjectTypeChoice.objects.get(name='Research'),
@@ -1007,9 +1139,9 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
             project_obj.save()
 
             ProjectUser.objects.get_or_create(
-                user=hpfs_pi,
+                user=hpfs_pi_obj,
                 project=project_obj,
-                role=project_user_role,
+                role=project_user_role_obj,
                 status=ProjectUserStatusChoice.objects.get(name='Active')
             )
 
@@ -1024,24 +1156,21 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
             if not created:
                 update_user_profile(user_obj, ldap_conn)
             user_profile_obj = UserProfile.objects.get(user=user_obj)
-            project_user_role = ProjectUserRoleChoice.objects.get(name='User')
-            status = ProjectUserStatusChoice.objects.get(name='Active')
+            project_user_role_obj = ProjectUserRoleChoice.objects.get(name='User')
+            status_obj = ProjectUserStatusChoice.objects.get(name='Active')
             if user_profile_obj.title == 'group':
-                project_user_role = ProjectUserRoleChoice.objects.get(name='Group')
+                project_user_role_obj = ProjectUserRoleChoice.objects.get(name='Group')
                 enable_notifications = False
 
             if user_obj in [project_obj.pi, project_obj.requestor]:
-                project_user_role = ProjectUserRoleChoice.objects.get(name='Manager')
-
-            if not user_profile_obj.title or user_profile_obj.title in ['Former Employee', 'Retired Staff']:
-                status = ProjectUserStatusChoice.objects.get(name='Inactive')
+                project_user_role_obj = ProjectUserRoleChoice.objects.get(name='Manager')
 
             ProjectUser.objects.get_or_create(
                 user=user_obj,
                 project=project_obj,
-                role=project_user_role,
+                role=project_user_role_obj,
                 enable_notifications=enable_notifications,
-                status=status
+                status=status_obj
             )
 
         allocation_start_date = todays_date
@@ -1050,6 +1179,7 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
 
         allocation_obj, created = Allocation.objects.get_or_create(
             project=project_obj,
+            justification='No additional information needed at this time.',
             status=AllocationStatusChoice.objects.get(name='Active'),
             start_date=allocation_start_date,
             end_date=project_end_date,
@@ -1060,13 +1190,15 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
 
         if not all_users:
             user_obj, created = User.objects.get_or_create(username=slate_project.get('owner_netid'))
-            status = AllocationUserStatusChoice.objects.get(name='Active')
-            if not user_obj.userprofile.title or user_obj.userprofile.title in ['Former Employee', 'Retired Staff']:
-                status = AllocationUserStatusChoice.objects.get(name='Inactive')
+            new_status = get_new_user_status(user_obj.username, ldap_conn, False)
+            new_status_obj = status_objs.get(new_status)
+            if new_status_obj is None:
+                logger.error(f'Status {new_status} object is missing')
+                new_status_obj = status_objs.get('Error')
             allocation_user_obj, created = AllocationUser.objects.get_or_create(
                 user=user_obj,
                 allocation=allocation_obj,
-                status=status
+                status=new_status_obj
             )
             if created:
                 allocation_user_obj.role = AllocationUserRoleChoice.objects.get(name='read/write')
@@ -1076,13 +1208,15 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
                 if not user:
                     continue
                 user_obj, created = User.objects.get_or_create(username=user)
-                status = AllocationUserStatusChoice.objects.get(name='Active')
-                if not user_obj.userprofile.title or user_obj.userprofile.title in ['Former Employee', 'Retired Staff']:
-                    status = AllocationUserStatusChoice.objects.get(name='Inactive')
+                new_status = get_new_user_status(user_obj.username, ldap_conn, False)
+                new_status_obj = status_objs.get(new_status)
+                if new_status_obj is None:
+                    logger.error(f'Status {new_status} object is missing')
+                    new_status_obj = status_objs.get('Error')
                 allocation_user_obj, created = AllocationUser.objects.get_or_create(
                     user=user_obj,
                     allocation=allocation_obj,
-                    status=status
+                    status=new_status_obj
                 )
 
                 if created:
@@ -1093,13 +1227,15 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
                 if not user:
                     continue
                 user_obj, created = User.objects.get_or_create(username=user)
-                status = AllocationUserStatusChoice.objects.get(name='Active')
-                if not user_obj.userprofile.title or user_obj.userprofile.title in ['Former Employee', 'Retired Staff']:
-                    status = AllocationUserStatusChoice.objects.get(name='Inactive')
+                new_status = get_new_user_status(user_obj.username, ldap_conn, False)
+                new_status_obj = status_objs.get(new_status)
+                if new_status_obj is None:
+                    logger.error(f'Status {new_status} object is missing')
+                    new_status_obj = status_objs.get('Error')
                 allocation_user_obj, created = AllocationUser.objects.get_or_create(
                     user=user_obj,
                     allocation=allocation_obj,
-                    status=status
+                    status=new_status_obj
                 )
 
                 if created:
@@ -1118,7 +1254,8 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
                 allocation_obj, 'Allocated Quantity', slate_project.get('allocated_quantity')
             )
 
-    print(f'Slate projects not imported due to ineligible PI: {", ".join(rejected_slate_projects)}')
+    if rejected_slate_projects:
+        print(f'Slate projects not imported due to ineligible PI: {", ".join(rejected_slate_projects)}')
 
 
 class LDAPImportSearch():
@@ -1137,7 +1274,7 @@ class LDAPImportSearch():
         assert type(search_attributes_list) is list, 'search_attributes_list should be a list'
 
         searchParameters = {'search_base': self.LDAP_USER_SEARCH_BASE,
-                            'search_filter': ldap.filter.filter_format("(cn=%s)", [user_search_string]),
+                            'search_filter': ldap.filter.filter_format("(sAMAccountName=%s)", [user_search_string]),
                             'attributes': search_attributes_list,
                             'size_limit': 1}
         self.conn.search(**searchParameters)

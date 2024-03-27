@@ -7,8 +7,12 @@ from coldfront.core.utils.common import import_from_settings
 from coldfront.core.project.models import ProjectUserStatusChoice, ProjectUser
 from coldfront.core.allocation.models import AllocationUserStatusChoice, AllocationUser
 from coldfront.core.user.models import UserProfile
+from coldfront.core.utils.common import import_from_settings
 
 logger = logging.getLogger(__name__)
+
+
+UPDATE_USER_PROFILES_UPDATE_STATUSES = import_from_settings('UPDATE_USER_PROFILES_UPDATE_STATUSES', False)
 
 
 def update_all_user_profiles():
@@ -39,37 +43,38 @@ def update_all_user_profiles():
             user_profile.department = department
             user_profile.save()
 
-        if not title or title in ['Former Employee', 'Retired Staff']:
-            project_pks = []
-            project_users = ProjectUser.objects.filter(
-                user=user_profile.user, project__status__name='Active', status__name='Active'
-            )
-            for project_user in project_users:
-                project_user.status = project_user_inactive_status
-                project_user.save()
-                project_pks.append(project_user.project.pk)
-
-            allocation_pks = []
-            allocation_users = AllocationUser.objects.filter(
-                user=user_profile.user, allocation__status__name='Active', status__name='Active'
-            )
-            for allocation_user in allocation_users:
-                allocation_user.status = allocation_user_inactive_status
-                allocation_user.save()
-                allocation_pks.append(allocation_user.allocation.pk)
-
-            if project_pks:
-                project_pks = map(str, project_pks)
-                logger.info(
-                    f'User {user_profile.user.username}\'s status was set to Inactive in projects '
-                    f'{", ".join(project_pks)}'
+        if UPDATE_USER_PROFILES_UPDATE_STATUSES:
+            if not title or title in ['Former Employee', 'Retired Staff']:
+                project_pks = []
+                project_users = ProjectUser.objects.filter(
+                    user=user_profile.user, project__status__name='Active', status__name='Active'
                 )
+                for project_user in project_users:
+                    project_user.status = project_user_inactive_status
+                    project_user.save()
+                    project_pks.append(project_user.project.pk)
 
-            if allocation_pks:
-                allocation_pks = map(str, allocation_pks)
-                logger.info(
-                    f'User {user_profile.user.username}\'s status was set to Inactive in allocations '
-                    f'{", ".join(allocation_pks)}'
+                allocation_pks = []
+                allocation_users = AllocationUser.objects.filter(
+                    user=user_profile.user, allocation__status__name='Active', status__name='Active'
+                )
+                for allocation_user in allocation_users:
+                    allocation_user.status = allocation_user_inactive_status
+                    allocation_user.save()
+                    allocation_pks.append(allocation_user.allocation.pk)
+
+                if project_pks:
+                    project_pks = map(str, project_pks)
+                    logger.info(
+                        f'User {user_profile.user.username}\'s status was set to Inactive in projects '
+                        f'{", ".join(project_pks)}'
+                    )
+
+                if allocation_pks:
+                    allocation_pks = map(str, allocation_pks)
+                    logger.info(
+                        f'User {user_profile.user.username}\'s status was set to Inactive in allocations '
+                        f'{", ".join(allocation_pks)}'
                 )
 
 

@@ -18,20 +18,23 @@ class Command(BaseCommand):
                  schedule_type=Schedule.DAILY,
                  next_run=date)
 
-        schedule('coldfront.plugins.slate_project.tasks.send_ineligible_pi_email_report',
-                 schedule_type=Schedule.DAILY,
-                 next_run=date)
-        
         schedule('coldfront.plugins.slate_project.tasks.import_slate_projects',
                  schedule_type=Schedule.DAILY,
                  next_run=date)
 
-        current_month = date.month
-        next_month = current_month % 12 + 1
-        if next_month < current_month:
-            date = date.replace(year=date.year + 1, month=next_month, day=1)
-        else:
-            date = date.replace(month=next_month, day=1)
-        schedule('coldfront.plugins.slate_project.tasks.send_inactive_user_email_report',
-                 schedule_type=Schedule.MONTHLY,
+        date = timezone.localtime() + datetime.timedelta(hours=1)
+        date = date.replace(minute=0, second=0, microsecond=0)
+        schedule('coldfront.plugins.slate_project.tasks.update_all_user_statuses',
+                 schedule_type=Schedule.HOURLY,
+                 next_run=date)
+
+        date = timezone.localtime()
+        date += datetime.timedelta(days=7 - date.weekday)
+        date = date.replace(minute=0, second=0, microsecond=0)
+        schedule('coldfront.plugins.slate_project.tasks.send_ineligible_users_email_report',
+                 schedule_type=Schedule.WEEKLY,
+                 next_run=date)
+
+        schedule('coldfront.plugins.slate_project.tasks.send_ineligible_pis_email_report',
+                 schedule_type=Schedule.WEEKLY,
                  next_run=date)

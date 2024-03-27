@@ -20,16 +20,6 @@ EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
     'EMAIL_DIRECTOR_EMAIL_ADDRESS', '')
 
 
-class ProjectFormSetWithSelectDisabled(forms.BaseFormSet):
-    def get_form_kwargs(self, index):
-        """
-        Override so specific selections can be disabled.
-        """
-        kwargs = super().get_form_kwargs(index)
-        disable_selected = kwargs['disable_selected'][index]
-        return {'disable_selected': disable_selected}
-
-
 class ProjectPISearchForm(forms.Form):
     PI_USERNAME = 'PI Username'
     pi_username = forms.CharField(label=PI_USERNAME, max_length=100, required=False)
@@ -68,12 +58,6 @@ class ProjectAddUsersToAllocationForm(forms.Form):
     resource_type = forms.CharField(max_length=50, disabled=True)
     status = forms.CharField(max_length=50, disabled=True)
 
-    def __init__(self, *args, disable_selected, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        if disable_selected:
-            self.fields['selected'].disabled = True
-
 
 class ProjectRemoveUserForm(forms.Form):
     username = forms.CharField(max_length=150, disabled=True)
@@ -82,21 +66,6 @@ class ProjectRemoveUserForm(forms.Form):
     email = forms.EmailField(max_length=100, required=False, disabled=True)
     role = forms.CharField(max_length=30, disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
-
-    def __init__(self, *args, disable_selected, **kwargs):
-        super().__init__(*args, **kwargs)
-        if disable_selected:
-            self.fields['selected'].disabled = True
-
-
-class ProjectRemoveUserFormset(forms.BaseFormSet):
-    def get_form_kwargs(self, index):
-        """
-        Override so specific users can be prevented from being removed.
-        """
-        kwargs = super().get_form_kwargs(index)
-        disable_selected = kwargs['disable_selected'][index]
-        return {'disable_selected': disable_selected}
 
 
 class ProjectUserUpdateForm(forms.Form):

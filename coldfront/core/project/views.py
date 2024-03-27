@@ -33,9 +33,7 @@ from coldfront.core.grant.models import Grant
 from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectUpdateForm,
                                           ProjectAddUsersToAllocationForm,
-                                          ProjectFormSetWithSelectDisabled,
                                           ProjectRemoveUserForm,
-                                          ProjectRemoveUserFormset,
                                           ProjectReviewEmailForm,
                                           ProjectRequestEmailForm,
                                           ProjectReviewForm, ProjectSearchForm,
@@ -190,7 +188,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                     Q(project__projectuser__user=self.request.user) &
                     Q(project__projectuser__status__name__in=['Active', ]) &
                     Q(allocationuser__user=self.request.user) &
-                    Q(allocationuser__status__name__in=['Active', ])
+                    Q(allocationuser__status__name__in=['Active', 'Eligible', 'Disabled', 'Retired'])
                 ).distinct().order_by('-end_date')
             else:
                 allocations = Allocation.objects.prefetch_related(
@@ -1042,18 +1040,6 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
 
         return initial_data
 
-    def get_disable_select_list(self, request, allocations):
-        """
-        Gets a list that determines if an allocation can be selected.
-        """
-        disable_select_list = [False] * len(allocations)
-        # for i, allocation in enumerate(allocations):
-        #     if allocation.get_parent_resource.name == 'Slate-Project':
-        #         if allocation.data_manager != request.user.username:
-        #             disable_select_list[i] = True
-
-        return disable_select_list
-
     def post(self, request, *args, **kwargs):
         user_search_string = request.POST.get('q')
         search_by = request.POST.get('search_by')
@@ -1080,7 +1066,8 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
             users = [match.get('username') for match in matches]
             results = get_users_info(users, ['title'])
             for match in matches:
-                if results.get(match.get('username')).get('title')[0] == 'group':
+                title = results.get(match.get('username')).get('title')
+                if title and title[0] == 'group':
                     match.update({'role': ProjectUserRoleChoice.objects.get(name='Group')})
                 else:
                     match.update({'role': ProjectUserRoleChoice.objects.get(name='User')})
@@ -1105,6 +1092,7 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
         status_list = ['Active', 'New', 'Renewal Requested', 'Billing Information Submitted']
         allocations = project_obj.allocation_set.filter(
             status__name__in=status_list,
+            is_locked=False
         )
         initial_data = self.get_initial_data(request, allocations)
 
@@ -1116,15 +1104,11 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
 
         allocation_formset = formset_factory(
             ProjectAddUsersToAllocationForm,
-            max_num=len(initial_data),
-            formset=ProjectFormSetWithSelectDisabled
+            max_num=len(initial_data)
         )
         allocation_formset = allocation_formset(
             initial=initial_data,
-            prefix="allocationform",
-            form_kwargs={
-                'disable_selected': self.get_disable_select_list(request, allocations)
-            }
+            prefix="allocationform"
         )
 
         # The following block of code is used to hide/show the allocation div in the form.
@@ -1180,18 +1164,6 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             })
 
         return initial_data
-
-    def get_disable_select_list(self, request, allocations):
-        """
-        Gets a list that determines if an allocation can be selected.
-        """
-        disable_select_list = [False] * len(allocations)
-        # for i, allocation in enumerate(allocations):
-        #     if allocation.get_parent_resource.name == 'Slate-Project':
-        #         if allocation.data_manager != request.user.username:
-        #             disable_select_list[i] = True
-
-        return disable_select_list
     
     def get_users_accounts(self, formset):
         selected_users_accounts = {}
@@ -1247,22 +1219,18 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
         status_list = ['Active', 'New', 'Renewal Requested', 'Billing Information Submitted']
         allocations = project_obj.allocation_set.filter(
             status__name__in=status_list,
-            allocationuser__user=request.user
+            is_locked=False
         )
         initial_data = self.get_initial_data(request, allocations)
 
         allocation_formset = formset_factory(
             ProjectAddUsersToAllocationForm,
-            max_num=len(initial_data),
-            formset=ProjectFormSetWithSelectDisabled
+            max_num=len(initial_data)
         )
         allocation_formset = allocation_formset(
             request.POST,
             initial=initial_data,
-            prefix="allocationform",
-            form_kwargs={
-                'disable_selected': self.get_disable_select_list(request, allocations)
-            }
+            prefix="allocationform"
         )
 
         added_users_count = 0
@@ -1441,17 +1409,18 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                             if project_obj.pi.email not in allocations_added_users_emails:
                                 allocations_added_users_emails.append(project_obj.pi.email)
 
-                        send_added_user_email(
-                            request,
-                            allocation,
-                            allocations_added_users,
-                            allocations_added_users_emails
-                        )
+                            send_added_user_email(
+                                request,
+                                allocation,
+                                allocations_added_users,
+                                allocations_added_users_emails
+                            )
 
-            logger.info(
-                f'User {request.user.username} added {", ".join(added_users)} to a project '
-                f'(project pk={project_obj.pk})'
-            )
+            if added_users:
+                logger.info(
+                    f'User {request.user.username} added {", ".join(added_users)} to a project '
+                    f'(project pk={project_obj.pk})'
+                )
             if allocations_added_to:
                 for allocation, values in allocations_added_to.items():
                     allocations_added_users = values[0]
@@ -1528,28 +1497,6 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
         return users_to_remove
 
-    # def get_data_managers(self, project_obj):
-    #     data_manager_list = [
-    #         allocation.data_manager for allocation in project_obj.allocation_set.filter( # TODO - Gone
-    #             resources__name="Slate-Project"
-    #         )
-    #     ]
-
-    #     return set(data_manager_list)
-
-    def get_disable_select_list(self, project_obj, users_to_remove):
-        """
-        Gets a list that determines if a user can be removed by disabling the
-        ProjectRemoveUserForm's selected field.
-        """
-        # data_manager_list = self.get_data_managers(project_obj)
-        disable_select_list = [False] * len(users_to_remove)
-        # for i, user in enumerate(users_to_remove):
-        #     if user['username'] in data_manager_list:
-        #         disable_select_list[i] = True
-
-        return disable_select_list
-
     def get(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         project_obj = get_object_or_404(Project, pk=pk)
@@ -1560,21 +1507,16 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         if users_to_remove:
             formset = formset_factory(
                 ProjectRemoveUserForm,
-                max_num=len(users_to_remove),
-                formset=ProjectRemoveUserFormset
+                max_num=len(users_to_remove)
             )
 
             formset = formset(
                 initial=users_to_remove,
-                prefix='userform',
-                form_kwargs={
-                    'disable_selected': self.get_disable_select_list(project_obj, users_to_remove)
-                }
+                prefix='userform'
             )
 
             context['formset'] = formset
 
-        # context['data_managers'] = self.get_data_managers(project_obj)
         project_obj = get_object_or_404(Project, pk=pk)
         context['project'] = project_obj
         context['display_warning'] = project_obj.allocation_set.filter(resources__name='Slate Project')
@@ -1590,16 +1532,12 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         formset = formset_factory(
             ProjectRemoveUserForm,
             max_num=len(users_to_remove),
-            formset=ProjectRemoveUserFormset
         )
 
         formset = formset(
             request.POST,
             initial=users_to_remove,
-            prefix='userform',
-            form_kwargs={
-                'disable_selected': self.get_disable_select_list(project_obj, users_to_remove)
-            }
+            prefix='userform'
         )
 
         remove_users_count = 0
@@ -1627,7 +1565,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                     allocations_to_remove_user_from = project_obj.allocation_set.filter(
                         status__name__in=['Active', 'New', 'Renewal Requested'])
                     for allocation in allocations_to_remove_user_from:
-                        for allocation_user_obj in allocation.allocationuser_set.filter(user=user_obj, status__name__in=['Active', 'Inactive', 'Pending - Add', 'Pending - Remove']):
+                        for allocation_user_obj in allocation.allocationuser_set.filter(user=user_obj, status__name__in=['Active', 'Inactive', 'Pending - Add', 'Pending - Remove', 'Eligible', 'Disabled', 'Retired']):
                             resource = allocation.get_parent_resource
                             requires_user_requests = resource.get_attribute(
                                 'requires_user_request'
@@ -1939,7 +1877,7 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                             '{} {}'.format(
                                 ele.user.first_name, ele.user.last_name
                             ) for ele in allocation.allocationuser_set.filter(
-                                status__name__in=['Active', 'Inactive']
+                                status__name__in=['Active', 'Inactive', 'Eligible', 'Disabled', 'Retired']
                             ).order_by('user__last_name')
                         ]
                     ),

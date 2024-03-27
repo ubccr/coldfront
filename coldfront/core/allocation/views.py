@@ -154,7 +154,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             user=self.request.user, status__name__in=['Active', 'New', ]).exists()
 
         user_can_access_allocation = allocation_obj.allocationuser_set.filter(
-            user=self.request.user, status__name__in=['Active', 'Pending - Remove']).exists()
+            user=self.request.user, status__name__in=['Active', 'Pending - Remove', 'Eligible', 'Disabled', 'Retired']).exists()
         if not user_can_access_allocation:
             user_can_access_allocation = allocation_obj.project.projectuser_set.filter(
                 user=self.request.user, role__name='Manager').exists()
@@ -255,7 +255,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             context['user_has_permissions'] = True
 
         context['user_exists_in_allocation'] = allocation_obj.allocationuser_set.filter(
-            user=self.request.user, status__name__in=['Active', 'Pending - Remove']).exists()
+            user=self.request.user, status__name__in=['Active', 'Pending - Remove', 'Eligible', 'Disabled', 'Retired']).exists()
 
         context['project'] = allocation_obj.project
         context['notes'] = notes
@@ -558,7 +558,7 @@ class AllocationRemoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         allocation_obj = Allocation.objects.get(pk=self.kwargs.get('pk'))
-        allocation_users = allocation_obj.allocationuser_set.filter(status__name='Active')
+        allocation_users = allocation_obj.allocationuser_set.filter(status__name__in=['Active', 'Eligible', 'Disabled', 'Retired'])
 
         users = []
         for allocation_user in allocation_users:
@@ -609,7 +609,7 @@ class AllocationRemoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
         if new_status.name == 'Removed':
             allocation_remove.send(sender=self.__class__, allocation_pk=allocation_obj.pk)
-            allocation_users = allocation_obj.allocationuser_set.filter(status__name__in=['Active', 'Inactive'])
+            allocation_users = allocation_obj.allocationuser_set.filter(status__name__in=['Active', 'Inactive', 'Eligible', 'Disabled', 'Retired'])
             for allocation_user in allocation_users:
                 allocation_remove_user.send(
                     sender=self.__class__, allocation_user_pk=allocation_user.pk)
@@ -756,7 +756,7 @@ class AllocationApproveRemovalRequestView(LoginRequiredMixin, UserPassesTestMixi
         allocation_obj.save()
 
         allocation_remove.send(sender=self.__class__, allocation_pk=allocation_obj.pk)
-        allocation_users = allocation_obj.allocationuser_set.filter(status__name__in=['Active', 'Inactive'])
+        allocation_users = allocation_obj.allocationuser_set.filter(status__name__in=['Active', 'Inactive', 'Eligible', 'Disabled', 'Retired'])
         for allocation_user in allocation_users:
             allocation_remove_user.send(
                 sender=self.__class__, allocation_user_pk=allocation_user.pk)
@@ -911,7 +911,7 @@ class AllocationListView(LoginRequiredMixin, ListView):
                     Q(project__projectuser__user=self.request.user) &
                     Q(project__projectuser__status__name='Active') &
                     Q(allocationuser__user=self.request.user) &
-                    Q(allocationuser__status__name='Active')
+                    Q(allocationuser__status__name__in= ['Active', 'Pending - Remove', 'Eligible', 'Disabled', 'Retired'])
                 ).distinct().order_by(order_by)
 
             # Project Title
@@ -924,7 +924,7 @@ class AllocationListView(LoginRequiredMixin, ListView):
                 allocations = allocations.filter(
                     Q(project__pi__username__icontains=data.get('username')) |
                     Q(allocationuser__user__username__icontains=data.get('username')) &
-                    Q(allocationuser__status__name='Active')
+                    Q(allocationuser__status__name__in= ['Active', 'Pending - Remove', 'Eligible', 'Disabled', 'Retired'])
                 )
 
             # Resource Type
@@ -965,7 +965,7 @@ class AllocationListView(LoginRequiredMixin, ListView):
         else:
             allocations = Allocation.objects.prefetch_related('project', 'project__pi', 'status',).filter(
                 Q(allocationuser__user=self.request.user) &
-                Q(allocationuser__status__name='Active')
+                Q(allocationuser__status__name__in= ['Active', 'Pending - Remove', 'Eligible', 'Disabled', 'Retired'])
             ).order_by(order_by)
 
         return allocations.distinct()
@@ -1598,10 +1598,11 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         )
 
         added_users = [user.username for user in users if user != self.request.user]
-        logger.info (
-            f'User {self.request.user.username} added {", ".join(added_users)} to a new allocation '
-            f'(allocation pk={allocation_obj.pk})'
-        )
+        if added_users:
+            logger.info (
+                f'User {self.request.user.username} added {", ".join(added_users)} to a new allocation '
+                f'(allocation pk={allocation_obj.pk})'
+            )
         return super().form_valid(form)
 
     def reverse_with_params(self, path, **kwargs):
@@ -4160,7 +4161,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
             user=self.request.user, status__name__in=['Active', 'New', ]).exists()
 
         user_can_access_allocation = allocation_change_obj.allocation.allocationuser_set.filter(
-            user=self.request.user, status__name__in=['Active', ]).exists()
+            user=self.request.user, status__name__in=['Active', 'Eligible', 'Disabled', 'Retired']).exists()
 
         if user_can_access_project and user_can_access_allocation:
             return True
@@ -5317,7 +5318,7 @@ class AllocationExportView(LoginRequiredMixin, UserPassesTestMixin, View):
             ]
 
             for allocation in allocations:
-                allocation_users = allocation.allocationuser_set.filter(status__name__in=['Active', 'Inactive']).order_by('user__username')
+                allocation_users = allocation.allocationuser_set.filter(status__name__in=['Active', 'Inactive', 'Eligible', 'Disabled', 'Retired']).order_by('user__username')
 
                 for allocation_user in allocation_users:
                     row = [
