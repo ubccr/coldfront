@@ -48,7 +48,7 @@ def activate_user(sender, **kwargs):
         return
     if not allocation_user_obj.allocation.status.name in ['Active', 'Renewal Requested']:
         return
-    if not allocation_user_obj.status.name == 'Active':
+    if not allocation_user_obj.status.name in ['Active', 'Eligible', 'Disabled', 'Retired']:
         return
     add_user_to_slate_project_group(allocation_user_obj)
 
