@@ -12,3 +12,4 @@ class UserProfile(models.Model):
 
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     is_pi = models.BooleanField(default=False)
+    dark_mode = models.BooleanField(default=False)
