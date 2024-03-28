@@ -71,6 +71,9 @@ if EMAIL_ENABLED:
         'EMAIL_DIRECTOR_EMAIL_ADDRESS')
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
 
+EMAIL_RESOURCE_EXPIRING_NOTIFICATION_DAYS = import_from_settings(
+    'EMAIL_RESOURCE_EXPIRING_NOTIFICATION_DAYS', [7, ])
+
 logger = logging.getLogger(__name__)
 
 class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
@@ -163,6 +166,44 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             else:
                 allocations = Allocation.objects.prefetch_related(
                     'resources').filter(project=self.object)
+
+        # Resources 
+        
+        allocation_resource_expiry = list()
+        
+        for allocation in allocations:
+
+            resources = allocation.resources.all()
+            warranty_expired = False
+            service_expired = False 
+
+            for resource in resources:
+
+                attributes_warranty = resource.get_attribute('WarrantyExpirationDate')
+                attributes_service = resource.get_attribute('ServiceEnd')
+                
+                for days_remaining in sorted(set(EMAIL_RESOURCE_EXPIRING_NOTIFICATION_DAYS), reverse=True):
+
+                    expring_in_days = datetime.datetime.today().date()
+
+                    if attributes_warranty:
+                        warranty_day = (datetime.datetime.strptime(attributes_warranty, '%m/%d/%Y').date() - expring_in_days).days
+                        if warranty_day >= 0 and warranty_day <= days_remaining:
+                            context['warranty_days'] = days_remaining
+                            warranty_expired = True
+                            context['warranty'] = warranty_expired
+
+                    if attributes_service:
+                        service_day = (datetime.datetime.strptime(attributes_service, '%m/%d/%Y').date() - expring_in_days).days
+                        if service_day >= 0 and service_day <= days_remaining:
+                            context['service_days'] = days_remaining
+                            service_expired = True
+                            context['service'] = service_expired
+                    
+                    if warranty_expired or service_expired:
+                        allocation_resource_expiry.append(allocation)
+
+        context['expiry'] = allocation_resource_expiry
 
         context['publications'] = Publication.objects.filter(
             project=self.object, status='Active').order_by('-year')

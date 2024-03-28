@@ -181,7 +181,23 @@ Project Detail
           <tbody>
             {% for allocation in allocations %}
             <tr>
-              <td>{{ allocation.get_parent_resource.name }}</td>
+            <td>{{ allocation.get_parent_resource.name }} <br>
+                  {% if allocation in expiry %}
+                    {% if warranty and service %}
+                    <span class="badge badge-warning"><i class="far fa-clock" aria-hidden="true"></i>
+                      Resource(s) warranty expiring and service expiring
+                    </span>
+                    {% elif warranty and not service %}
+                        <span class="badge badge-warning"><i class="far fa-clock" aria-hidden="true"></i>
+                        Resource(s) warranty expiring
+                      </span>
+                    {% elif service and not warranty %}
+                      <span class="badge badge-warning"><i class="far fa-clock" aria-hidden="true"></i>
+                      Resource(s) service expiring
+                    </span>
+                    {% endif %}
+                  {% endif %}
+              </td>
               <td>{{ allocation.get_parent_resource.resource_type.name }}</td>
               {% if allocation.get_information != '' %}
               <td class="text-nowrap">{{allocation.get_information}}</td>
