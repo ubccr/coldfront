@@ -29,3 +29,5 @@
 - Alex Tucker
 - Claire Peters
 - Cecilia Lau
+- Ria Gupta
+- Shreyas Sridhar

@@ -1,6 +1,6 @@
 # ColdFront Changelog
 
-## [1.1.6] - 2024-03-26
+## [1.1.6] - 2024-03-27
 
 - Upgrade to Django 4.2 LTS [#601](https://github.com/ubccr/coldfront/pull/601)
 - Update python version in Dockerfile to 3.8 [#578](https://github.com/ubccr/coldfront/pull/578)
