@@ -267,20 +267,22 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
 class ProjectListView(ColdfrontListView):
     """ProjectListView"""
-
     model = Project
     template_name = 'project/project_list.html'
     prefetch_related = ['pi', 'status', 'field_of_science']
     context_object_name = 'item_list'
 
     def get_queryset(self):
-        order_by = self.return_order()
-
-        project_search_form = ProjectSearchForm(self.request.GET)
-
         projects = Project.objects.prefetch_related('pi', 'status').filter(
             status__name__in=['New', 'Active']
         )
+        projects_queried = self.search_filters(projects)
+        return projects_queried
+
+    def search_filters(self, projects):
+        order_by = self.return_order()
+
+        project_search_form = ProjectSearchForm(self.request.GET)
         if project_search_form.is_valid():
             data = project_search_form.cleaned_data
             if not data.get('show_all_projects') or not (
@@ -298,14 +300,9 @@ class ProjectListView(ColdfrontListView):
                     pi__last_name__icontains=data.get('last_name')
                 )
 
-            # Last Name
+            # Title
             if data.get('title'):
                 projects = projects.filter(title__icontains=data.get('title'))
-
-            # Last Name
-            if data.get('title'):
-                projects = projects.filter(
-                    title__icontains=data.get('title'))
 
             # Username
             if data.get('username'):
@@ -322,14 +319,14 @@ class ProjectListView(ColdfrontListView):
                         'field_of_science'
                     )
                 )
-#  'field_of_science',
+
         else:
             projects = projects.filter(
                 Q(projectuser__user=self.request.user)
                 & Q(projectuser__status__name='Active')
             )
-
         return projects.distinct().order_by(order_by)
+
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(SearchFormClass=ProjectSearchForm, **kwargs)
@@ -337,61 +334,16 @@ class ProjectListView(ColdfrontListView):
         return context
 
 
-class ProjectArchivedListView(ColdfrontListView):
-    model = Project
+class ProjectArchivedListView(ProjectListView):
     template_name = 'project/project_archived_list.html'
-    prefetch_related = ['pi', 'status', 'field_of_science']
-    context_object_name = 'item_list'
     paginate_by = 10
 
     def get_queryset(self):
-        order_by = self.return_order()
-
-        project_search_form = ProjectSearchForm(self.request.GET)
-
         projects = Project.objects.prefetch_related('pi', 'status').filter(
             status__name__in=['Archived']
         )
-        if project_search_form.is_valid():
-            data = project_search_form.cleaned_data
-            if data.get('show_all_projects') and (
-                self.request.user.is_superuser
-                or self.request.user.has_perm('project.can_view_all_projects')
-            ):
-                projects = projects.order_by(order_by)
-            else:
-                projects = projects.filter(
-                    Q(projectuser__user=self.request.user)
-                    & Q(projectuser__status__name='Active')
-                ).order_by(order_by)
-
-            # Last Name
-            if data.get('last_name'):
-                projects = projects.filter(
-                    pi__last_name__icontains=data.get('last_name')
-                )
-
-            # Username
-            if data.get('username'):
-                projects = projects.filter(pi__username__icontains=data.get('username'))
-
-            # Field of Science
-            if data.get('field_of_science'):
-                projects = projects.filter(
-                    field_of_science__description__icontains=data.get('field_of_science')
-                )
-        else:
-            projects = projects.filter(
-                Q(projectuser__user=self.request.user)
-                & Q(projectuser__status__name='Active')
-            ).order_by(order_by)
-
-        return projects.distinct()
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(SearchFormClass=ProjectSearchForm, **kwargs)
-        context['expand'] = False
-        return context
+        projects_queried = self.search_filters(projects)
+        return projects_queried
 
 
 class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
