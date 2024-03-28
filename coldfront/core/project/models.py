@@ -189,7 +189,7 @@ We do not have information about your research. Please provide a detailed descri
             return list(ProjectPermission)
 
         user_conditions = (models.Q(status__name__in=('Active', 'New')) & models.Q(user=user))
-        if not self.projectuser_set.filter(user_conditions).exists():
+        if not self.projectuser_set.filter(user_conditions).exists() and not self.pi.id == user.id:
             return []
 
         permissions = [ProjectPermission.USER]
