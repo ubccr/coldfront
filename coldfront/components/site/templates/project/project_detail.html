@@ -276,7 +276,7 @@ Project Detail
     <h3 class="d-inline"><i class="fas fa-server" aria-hidden="true"></i> Allocations</h3> <span class="badge badge-secondary">{{ allocations.count }}</span>
     <div class="float-right">
       {% if not project.status.name in 'Archived, Denied, Review Pending, Expired' and is_allowed_to_update_project %}
-        <a class="btn btn-success" href="{% url 'allocation-create' project.pk %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Request Resource Allocation</a>
+        <a class="btn btn-success" href="{% url 'custom-allocation-create' project.pk %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Request Resource Allocation</a>
       {% endif %}
       {% if project.status.name == 'Review Pending' %}
         <p class="alert alert-warning">You can not request a new allocation during a project review.</p>

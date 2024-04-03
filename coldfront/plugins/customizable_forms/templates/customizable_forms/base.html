@@ -1,0 +1,74 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load common_tags %}
+{% load static %}
+
+
+{% block title %}
+Request New Allocation
+{% endblock %}
+
+
+{% block content %}
+<h2>Request New Allocation <br><small>Project: {{ project.title }}</small></h2>
+<hr>
+
+<p class="text-justify">The following {% settings_value 'CENTER_NAME' %}
+  resources are available to request for this project. If you need access to
+  more than one of these, please submit a separate allocation request for each
+  resource. For each request you must fill out all required fields. Select a
+  resource in the dropdown field below to load its form.</p>
+
+<form method="post">
+  {% csrf_token %}
+  {{form |crispy}}
+  <hr>
+  <div id="sub_form"></div>
+  
+  <input class="btn btn-primary" type="submit" value="Submit" />
+  <a class="btn btn-secondary" href="{% url 'project-detail' project_pk %}" role="button">Back to Project</a><br>
+</form>
+
+<script>
+  var sub_forms = {{ sub_forms | safe }}
+  var current_form = null
+
+  $("#id_resource").change(function () {
+    var resource_id = $("#id_resource option:selected").val();
+    $('#sub_form').empty();
+    $('#sub_form').html(
+      `
+      <div class="text-center">
+        <button type="button" class="btn btn-primary">
+          <i class="fas fa-sync fa-spin fa-fw" aria-hidden="true"></i> Loading Form <span class="sr-only">...</span>
+        </button>
+      </div>
+      `
+    );
+    $.ajax({
+      headers: { 'X-CSRFToken': getCookie('csrftoken') },
+      type: "GET",
+      url: `/allocation/resource-form/${resource_id}`,
+      success: function (data) {
+        $('#sub_form').html(data);
+      }
+    });
+  })
+
+  function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie != '') {
+      var cookies = document.cookie.split(';');
+      for (var i = 0; i < cookies.length; i++) {
+        var cookie = jQuery.trim(cookies[i]);
+        // Does this cookie string begin with the name we want?
+        if (cookie.substring(0, name.length + 1) == (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+</script>
+{% endblock %}

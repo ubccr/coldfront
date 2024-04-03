@@ -891,7 +891,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     def get_success_url(self):
         return self.reverse_with_params(
             reverse(
-                'allocation-create', kwargs={'project_pk': self.object.pk}
+                'custom-allocation-create', kwargs={'project_pk': self.object.pk}
             ),
             after_project_creation='true'
         )
