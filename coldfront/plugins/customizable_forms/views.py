@@ -1,24 +1,28 @@
 import logging
 import urllib
-import requests
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import TemplateView, FormView, View
 from django.shortcuts import get_object_or_404
-from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
+from django.http import HttpResponseRedirect
 from django.urls import reverse
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
 from django.utils.html import format_html
 from django.contrib.auth.models import User
 
-from coldfront.core.allocation.models import Allocation, AllocationAttributeType, AllocationStatusChoice, AllocationAttribute, AllocationUserStatusChoice, AllocationUser
+from coldfront.core.allocation.models import (Allocation,
+                                              AllocationAttributeType,
+                                              AllocationStatusChoice,
+                                              AllocationAttribute,
+                                              AllocationUserStatusChoice,
+                                              AllocationUser)
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
-from coldfront.plugins.customizable_forms.forms import GenericForm, PositConnectForm, SlateProjectForm
-from coldfront.core.allocation.utils import get_user_resources, set_default_allocation_user_role, send_allocation_user_request_email, send_added_user_email
+from coldfront.plugins.customizable_forms.forms import GenericForm
+from coldfront.core.allocation.utils import (set_default_allocation_user_role,
+                                             send_allocation_user_request_email,
+                                             send_added_user_email)
 from coldfront.core.resource.models import ResourceAttribute
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.slack import send_message
@@ -45,10 +49,6 @@ if INVOICE_ENABLED:
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 if EMAIL_ENABLED:
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
-    EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
-    EMAIL_OPT_OUT_INSTRUCTION_URL = import_from_settings('EMAIL_OPT_OUT_INSTRUCTION_URL')
-    EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
-    EMAIL_CENTER_NAME = import_from_settings('CENTER_NAME')
 
 logger = logging.getLogger(__name__)
 
@@ -526,48 +526,3 @@ class GenericView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             )
 
         return url
-
-
-class PositConnectView(GenericView):
-    form_class = PositConnectForm        
-
-
-class ComputeView(GenericView):
-    template_name = 'customizable_forms/generic.html'
-
-    def dispatch(self, request, *args, **kwargs):
-        resource_obj = get_object_or_404(Resource, pk=self.kwargs.get('resource_pk'))
-        exists = resource_obj.check_user_account_exists(self.request.user.username)
-        if not exists:
-            messages.error(
-                request,
-                format_html(
-                    f'You do not have an account on {resource_obj.name}. You will need to create '
-                    f'one <a href="https://access.iu.edu/Accounts/Create">here</a> in order to '
-                    f'submit a resource request for this resource.'
-                )
-            )
-            return HttpResponseRedirect(
-                reverse(
-                    'custom-allocation-create', kwargs={'project_pk': self.kwargs.get('project_pk')}
-                )
-            )
-        return super().dispatch(request, *args, **kwargs)
-
-    def form_valid(self, form):
-        http_response = super().form_valid(form)
-
-        project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
-        resource_obj =  get_object_or_404(Resource, pk=self.kwargs.get('resource_pk'))
-        slurm_account_allocation_attribute_type_obj = AllocationAttributeType.objects.filter(
-            name='slurm_account_name',
-            linked_resources__id__exact=resource_obj.id
-        )
-        if slurm_account_allocation_attribute_type_obj.exists():
-            AllocationAttribute.objects.create(
-                allocation_attribute_type=slurm_account_allocation_attribute_type_obj[0],
-                allocation=self.allocation_obj,
-                value=project_obj.slurm_account_name
-            )
-
-        return http_response

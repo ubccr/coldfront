@@ -1,0 +1,53 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}
+Request New Allocation
+{% endblock %}
+
+{% block content %}
+<h2>Request New {{ resource_obj.name }} Allocation <br><small>Project: {{ project_obj.title }}</small></h2>
+<hr>
+
+<form method="post">
+	{% csrf_token %}
+
+	<fieldset>
+		<legend>Contact Information</legend>
+		<div class="row">
+			<div class="col">
+				{{ form.first_name|as_crispy_field }}
+			</div>
+			<div class="col">
+				{{ form.last_name|as_crispy_field }}
+			</div>
+		</div>
+		<div class="row">
+			<div class="col">
+				{{ form.campus_affiliation|as_crispy_field }}
+			</div>
+			<div class="col">
+				{{ form.email|as_crispy_field }}
+			</div>
+		</div>
+	</fieldset>
+	<fieldset>
+		<legend>Project Information</legend>
+		{{ form.url|as_crispy_field }}
+		{{ form.project_directory_name|as_crispy_field }}
+		{{ form.storage_space|as_crispy_field }}
+		{{ form.start_date|as_crispy_field }}
+		{{ form.account_number|as_crispy_field }}
+		{{ form.faculty_email|as_crispy_field }}
+	</fieldset>
+	<fieldset>
+		<legend>Sensitive Information</legend>
+		{{ form.store_ephi|as_crispy_field }}
+	</fieldset>
+
+	<!-- {{form |crispy}} -->
+	<input class="btn btn-primary" type="submit" value="Submit" />
+	<a class="btn btn-secondary" href="{% url 'custom-allocation-create' project_obj.pk %}" role="button">Back to Resource Selection</a><br>
+</form>
+{% endblock %}
