@@ -116,10 +116,6 @@ class AllocationResourceSelectionView(LoginRequiredMixin, UserPassesTestMixin, T
         resource_objs = Resource.objects.filter(
             is_allocatable=True
         ).prefetch_related('resource_type', 'resourceattribute_set').order_by('resource_type')
-        info_links = {
-            'Quartz': 'https://kb.iu.edu/d/qrtz',
-            'Big Red 200': 'https://kb.iu.edu/d/brcc',
-        }
 
         resource_categories = {}
         for resource_obj in resource_objs:
@@ -135,13 +131,19 @@ class AllocationResourceSelectionView(LoginRequiredMixin, UserPassesTestMixin, T
                 if limit_objs.exists() and count >= int(limit_objs[0].value):
                     limit_reached = True
 
+            help_url = resource_obj.resourceattribute_set.filter(resource_attribute_type__name='help_url')
+            if help_url.exists():
+                help_url = help_url[0].value
+            else:
+                help_url = None
+
             has_account = True
             if not resource_obj.check_user_account_exists(self.request.user.username):
                 has_account = False
             resource_categories[resource_type_name]['resources'].append(
                 {
                     'resource': resource_obj,
-                    'info_link': info_links.get(resource_obj.name),
+                    'info_link': help_url,
                     'limit_reached': limit_reached,
                     'has_account': has_account
                 }
@@ -276,7 +278,6 @@ class GenericView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                     approved_users.append(username)
 
         if denied_users:
-            # TODO - Generalize this so it makes sense with Slate Project
             messages.warning(self.request, format_html(
                 'The following users do not have an account on {} and were not added: {}. Please\
                 direct them to\
