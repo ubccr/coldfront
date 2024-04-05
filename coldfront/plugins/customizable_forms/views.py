@@ -505,7 +505,7 @@ class GenericView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
     def get_success_url(self):
         after_project_creation = self.request.GET.get('after_project_creation')
-        if after_project_creation is None:
+        if after_project_creation is None or after_project_creation == 'false':
             after_project_creation = False
 
         if not after_project_creation:
