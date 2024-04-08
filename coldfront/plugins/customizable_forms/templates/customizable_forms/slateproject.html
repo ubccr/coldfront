@@ -12,7 +12,7 @@ Request New Allocation
 
 <form method="post">
 	{% csrf_token %}
-
+	{{ form|as_crispy_errors }}
 	<fieldset>
 		<legend>Contact Information</legend>
 		<div class="row">
@@ -46,8 +46,33 @@ Request New Allocation
 		{{ form.store_ephi|as_crispy_field }}
 	</fieldset>
 
-	<!-- {{form |crispy}} -->
 	<input class="btn btn-primary" type="submit" value="Submit" />
 	<a class="btn btn-secondary" href="{% url 'custom-allocation-create' project_obj.pk %}" role="button">Back to Resource Selection</a><br>
 </form>
+
+<script>
+	$(document).ready(function () {
+		$("#div_id_account_number").hide()
+		if ($("#id_storage_space").val() > 15) {
+			$("#div_id_account_number").show()
+		}
+
+		$("#id_storage_space").change(function (e) {
+			if (e.target.value > 15) {
+				$("#div_id_account_number").show()
+			} else if (!$("#div_id_account_number").is("hidden")) {
+				$("#div_id_account_number").hide()
+			}
+		})
+
+		var date = new Date();
+		var currentYear = date.getFullYear();
+		$(".datepicker")
+		.datepicker({
+			changeMonth: true,
+			changeYear: true,
+			yearRange: currentYear + ':' + (currentYear + 1),
+		})
+	})
+</script>
 {% endblock %}

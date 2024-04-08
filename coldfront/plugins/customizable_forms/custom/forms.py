@@ -1,8 +1,13 @@
+from datetime import date
+
 from django import forms
 from django.forms.widgets import RadioSelect
 from django.conf import settings
+from django.core.exceptions import ValidationError
 
-from coldfront.plugins.customizable_forms.validators import ValidateNumberOfUsers
+from coldfront.plugins.customizable_forms.validators import (ValidateNumberOfUsers,
+                                                             ValidateAccountNumber,
+                                                             ValidateDirectoryName)
 from coldfront.plugins.customizable_forms.forms import BaseForm
 
 class PositConnectForm(BaseForm):
@@ -52,12 +57,17 @@ class SlateProjectForm(BaseForm):
     campus_affiliation = forms.ChoiceField(choices=CAMPUS_CHOICES)
     email = forms.EmailField(max_length=40)
     url = forms.CharField(max_length=50, required=False)
-    project_directory_name = forms.CharField(max_length=10)
-    storage_space = forms.IntegerField()
+    project_directory_name = forms.CharField(max_length=10, validators=[ValidateDirectoryName()])
+    storage_space = forms.IntegerField(min_value=0)
     start_date = forms.DateField(widget=forms.TextInput(attrs={'class': 'datepicker'}))
-    faculty_email = forms.EmailField(max_length=40)
+    faculty_email = forms.EmailField(max_length=40, help_text='If applicable', required=False)
     store_ephi = forms.ChoiceField(choices=YES_NO_CHOICES, widget=RadioSelect)
-    account_number = forms.CharField(max_length=9, validators=[])
+    account_number = forms.CharField(
+        max_length=9,
+        help_text='Required for requests of 15 TB or greater',
+        validators=[ValidateAccountNumber()],
+        required=False
+    )
 
     def __init__(self, request_user, resource_attributes, project_obj, resource_obj, *args, **kwargs):
         super().__init__(request_user, resource_attributes, project_obj, resource_obj, *args, **kwargs)
@@ -77,3 +87,15 @@ class SlateProjectForm(BaseForm):
             attributes = get_user_info(request_user.username, ['ou'])
             if attributes.get('ou'):
                 self.fields['campus_affiliation'].initial = attributes['ou'][0]
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get('storage_space') > 15:
+            account_number = cleaned_data.get('account_number')
+            if account_number is not None and not account_number:
+                self.add_error('account_number', 'This field is required')
+                raise ValidationError('Please correct the error below')
+
+        if cleaned_data.get('start_date') <= date.today():
+            self.add_error('start_date', 'Must be later than today')
+            raise ValidationError('Please correct the error below')

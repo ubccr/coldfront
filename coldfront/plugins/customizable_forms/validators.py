@@ -9,9 +9,24 @@ class ValidateNumberOfUsers():
     def __call__(self, value):
         count = self.count_start + len(value)
         if count > self.limit:
-            raise ValidationError(f'This resource has a limit of {self.limit} users.')
+            raise ValidationError(f'This resource has a limit of {self.limit} users.', code='invalid')
 
 
-class ValidateAccount():
+class ValidateAccountNumber():
     def __call__(self, value):
-        pass
+        if not value:
+            return
+
+        if len(value) != 9:
+            raise ValidationError(f'Format is not correct', code='invalid')
+
+        if value[2] != '-' or value[6] != '-':
+            raise ValidationError(f'Format is not correct', code='invalid')
+
+
+class ValidateDirectoryName():
+    invalid_characters = '''!"#$%&'()*+,./:;<=>?@[\]^`{|}~'''
+
+    def __call__(self, value):
+        if any(char in self.invalid_characters for char in value):
+            raise ValidationError(f'Contains invalid character(s)', code='invalid')
