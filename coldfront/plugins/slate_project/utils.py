@@ -846,7 +846,7 @@ def get_slate_project_info(username):
     """
     allocation_user_objs = AllocationUser.objects.filter(
         user__username=username,
-        status__name='Active',
+        status__name__in=['Active', 'Eligible', 'Disabled', 'Retired'],
         allocation__status__name__in=['Active', 'Renewal Requested'],
         allocation__resources__name='Slate Project'
     )
