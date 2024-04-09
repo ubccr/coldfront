@@ -1426,7 +1426,11 @@ class LDAPEligibilityGroup:
             logger.error(f'LDAPEligibilityGroup: Failed to bind to LDAP server: {self.conn.result}')
 
     def add_user(self, username):
-        added = self.conn.add(self.LDAP_BASE_DN, attributes={'member': self.LDAP_ADS_NETID_FORMAT.format(username)})
+        changes = {
+            'member': [(MODIFY_ADD, [self.LDAP_ADS_NETID_FORMAT.format(username)])]
+        }
+        added = self.conn.modify(self.LDAP_BASE_DN, changes)
+
         return added, self.conn.result.get("description")
 
     def check_user_exists(self, username):
