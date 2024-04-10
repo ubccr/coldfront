@@ -480,7 +480,8 @@ def check_slate_project_account(user_obj, notifications_enabled, ldap_search_con
     """
     Checks if the user is in the eligibility group in LDAP. If they aren't it adds them and sends
     an email to the user about creating a Slate Project account. If they are in it but do not have
-    a Slate Project account it will also send the email.
+    a Slate Project account it will also send the email. Returns True if the user is added to the
+    eligibility group, else False.
 
     :param user_obj: User to check
     :param notifications_enabled: Whether or not the user should receive an email
@@ -499,7 +500,7 @@ def check_slate_project_account(user_obj, notifications_enabled, ldap_search_con
     if not SLATE_PROJECT_ELIGIBILITY_ACCOUNT in accounts:
         # Do nothing if they have a slate project account but are not in the eligibility account
         if SLATE_PROJECT_ACCOUNT in accounts:
-            return
+            return False
         added, output = ldap_eligibility_conn.add_user(user_obj.username)
         if not added:
             logger.error(
@@ -512,9 +513,12 @@ def check_slate_project_account(user_obj, notifications_enabled, ldap_search_con
             )
             if notifications_enabled:
                 send_missing_account_email(user_obj.email)
+            return True
     elif not SLATE_PROJECT_ACCOUNT in accounts:
         if notifications_enabled:
             send_missing_account_email(user_obj.email)
+
+    return False
 
 
 def add_slate_project_groups(allocation_obj):
@@ -690,14 +694,23 @@ def add_user_to_slate_project_group(allocation_user_obj):
             f'LDAP: Added user {username} to the slate project group with '
             f'{allocation_attribute_type}={ldap_group_gid} in allocation {allocation_obj.pk}'
         )
+        added_to_eligibility_group = False
         if ENABLE_LDAP_ELIGIBILITY_SERVER:
             notifications_enabled = allocation_user_obj.allocation.project.projectuser_set.get(
                 user=allocation_user_obj.user
             ).enable_notifications
-            check_slate_project_account(allocation_user_obj.user, notifications_enabled)
+            added_to_eligibility_group = check_slate_project_account(
+                allocation_user_obj.user, notifications_enabled
+            )
 
-        allocation_user_obj.status = get_new_user_status(username)
-        allocation_user_obj.save()
+        # The user's new eligibility account is not propagated fast enough to be picked up in 
+        # get_new_user_status so we set the status to Eligible ourselves.
+        if added_to_eligibility_group:
+            allocation_user_obj.status = AllocationUserStatusChoice.objects.get(name='Eligible')
+            allocation_user_obj.save()
+        else:
+            allocation_user_obj.status = get_new_user_status(username)
+            allocation_user_obj.save()
 
 
 def remove_slate_project_groups(allocation_obj):
