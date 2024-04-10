@@ -321,7 +321,7 @@ class Allocation(TimeStampedModel):
         if ProjectPermission.PI in project_perms or ProjectPermission.MANAGER in project_perms:
             return [AllocationPermission.USER, AllocationPermission.MANAGER]
 
-        if self.allocationuser_set.filter(user=user, status__name__in=['Active', 'New', 'Pending']).exists():
+        if self.allocationuser_set.filter(user=user, status__name__in=['Active', 'New', 'PendingEULA']).exists():
             return [AllocationPermission.USER]
 
         return []

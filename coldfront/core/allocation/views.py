@@ -128,7 +128,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         allocation_user_active_status_choice = AllocationUserStatusChoice.objects.get(
                 name='Active')
         if EULA_AGREEMENT:
-            allocation_user_pending_status_choice = AllocationUserStatusChoice.objects.get(name='Pending')
+            allocation_user_pending_status_choice = AllocationUserStatusChoice.objects.get(name='PendingEULA')
         
         allocation_user_status = get_object_or_404(AllocationUser, allocation=allocation_obj, user=self.request.user).status
         context["allocation_user_status"] = allocation_user_status
@@ -203,8 +203,8 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         eula_choice = request.POST.get('eula_choice')
         allocation_user_active_status_choice = AllocationUserStatusChoice.objects.get(name='Active')
         if EULA_AGREEMENT:
-            allocation_user_pending_status_choice = AllocationUserStatusChoice.objects.get(name='Pending')
-            allocation_user_declined_status_choice = AllocationUserStatusChoice.objects.get(name='Declined')
+            allocation_user_pending_status_choice = AllocationUserStatusChoice.objects.get(name='PendingEULA')
+            allocation_user_declined_status_choice = AllocationUserStatusChoice.objects.get(name='DeclinedEULA')
         if not self.request.user.is_superuser:
             if allocation_user.status == allocation_user_pending_status_choice and EULA_AGREEMENT and eula_choice:
                 if eula_choice == "agree":
@@ -362,7 +362,7 @@ class AllocationListView(LoginRequiredMixin, ListView):
                 allocations = allocations.filter(
                     Q(project__pi__username__icontains=data.get('username')) |
                     Q(allocationuser__user__username__icontains=data.get('username')) &
-                    Q(allocationuser__status__name__in=['Pending', 'Active'])
+                    Q(allocationuser__status__name__in=['PendingEULA', 'Active'])
                 )
 
             # Resource Type
@@ -403,7 +403,7 @@ class AllocationListView(LoginRequiredMixin, ListView):
         else:
             allocations = Allocation.objects.prefetch_related('project', 'project__pi', 'status',).filter(
                 Q(allocationuser__user=self.request.user) &
-                Q(allocationuser__status__name__in=['Pending', 'Active'])
+                Q(allocationuser__status__name__in=['PendingEULA', 'Active'])
             ).order_by(order_by)
 
         return allocations.distinct()
@@ -702,7 +702,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                 name='Active')
             if EULA_AGREEMENT:
                 allocation_user_pending_status_choice = AllocationUserStatusChoice.objects.get(
-                name='Pending')
+                name='PendingEULA')
 
             for form in formset:
                 user_form_data = form.cleaned_data

@@ -51,7 +51,7 @@ def send_eula_reminders():
         if get_eula(allocation):
             email_receiver_list = []
             for allocation_user in allocation.allocationuser_set.all():
-                if allocation_user.status == AllocationUserStatusChoice.objects.get(name='Pending'):
+                if allocation_user.status == AllocationUserStatusChoice.objects.get(name='PendingEULA'):
                     if allocation_user.user.email not in email_receiver_list:
                         email_receiver_list.append(allocation_user.user.email)
 
