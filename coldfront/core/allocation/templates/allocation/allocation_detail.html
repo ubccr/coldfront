@@ -397,7 +397,7 @@ Allocation Detail
                 <td class="text-success">{{ user.status.name }}</td>
               {% elif user.status.name == 'Pending' %}
                 <td class="text-info">{{ user.status.name }}</td>
-              {% elif user.status.name == 'Denied' or user.status.name == 'Error' or user.status.name == 'Declined' %}
+              {% elif user.status.name == 'Denied' or user.status.name == 'Error' or user.status.name == 'DeclinedEULA' %}
                 <td class="text-danger">{{ user.status.name }}</td>
               {% else %}
                 <td class="text-info">{{ user.status.name }}</td>
