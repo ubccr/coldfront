@@ -130,13 +130,18 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         if EULA_AGREEMENT:
             allocation_user_pending_status_choice = AllocationUserStatusChoice.objects.get(name='PendingEULA')
         
-        allocation_user_status = get_object_or_404(AllocationUser, allocation=allocation_obj, user=self.request.user).status
-        context["allocation_user_status"] = allocation_user_status
-        context["user_is_active"] = allocation_user_status==allocation_user_active_status_choice
-        context["user_is_pending"] = False
-        if EULA_AGREEMENT:
-            context["user_is_pending"] = allocation_user_status==allocation_user_pending_status_choice
-        context["eula_form"] = AllocationEULAAgreeForm()
+        print("allocation_users", allocation_users.values)
+        print("allocation_obj", allocation_obj)
+        print("self.request.user", self.request.user)
+
+        if self.request.user in list(allocation_users):
+            allocation_user_status = get_object_or_404(AllocationUser, allocation=allocation_obj, user=self.request.user).status
+            context["allocation_user_status"] = allocation_user_status
+            context["user_is_active"] = allocation_user_status==allocation_user_active_status_choice
+            context["user_is_pending"] = False
+            if EULA_AGREEMENT:
+                context["user_is_pending"] = allocation_user_status==allocation_user_pending_status_choice
+            context["eula_form"] = AllocationEULAAgreeForm()
 
         allocation_changes = allocation_obj.allocationchangerequest_set.all().order_by('-pk')
 
@@ -199,26 +204,28 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
     def post(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
-        allocation_user = get_object_or_404(AllocationUser, allocation=allocation_obj, user=self.request.user)
-        eula_choice = request.POST.get('eula_choice')
-        allocation_user_active_status_choice = AllocationUserStatusChoice.objects.get(name='Active')
-        if EULA_AGREEMENT:
-            allocation_user_pending_status_choice = AllocationUserStatusChoice.objects.get(name='PendingEULA')
-            allocation_user_declined_status_choice = AllocationUserStatusChoice.objects.get(name='DeclinedEULA')
+        allocation_users = allocation_obj.allocationuser_set.exclude(
+            status__name__in=['Removed']).order_by('user__username')
+        if self.request.user in list(allocation_users):
+            allocation_user = get_object_or_404(AllocationUser, allocation=allocation_obj, user=self.request.user)
+            eula_choice = request.POST.get('eula_choice')
+            allocation_user_active_status_choice = AllocationUserStatusChoice.objects.get(name='Active')
+            if EULA_AGREEMENT:
+                allocation_user_pending_status_choice = AllocationUserStatusChoice.objects.get(name='PendingEULA')
+                allocation_user_declined_status_choice = AllocationUserStatusChoice.objects.get(name='DeclinedEULA')
+                if allocation_user.status == allocation_user_pending_status_choice and EULA_AGREEMENT and eula_choice:
+                    if eula_choice == "agree":
+                        allocation_user.status = allocation_user_active_status_choice
+                        messages.success(request, 'You now have access to the allocation.')
+                        project_pi = [lambda allocation_user_iter: allocation_user_iter in allocation_obj.allocationuser_set if allocation_obj.has_perm(allocation_user_iter, ProjectPermission.MANAGER) or allocation_obj.has_perm(allocation_user_iter, ProjectPermission.PI) else None]
+                        send_email(f'EULA agreement complete for user {allocation_user.user.get_full_name()} on allocation {allocation_obj.__str__()}', f'User {allocation_user.user.get_full_name()} has agreed to EULA for {allocation_obj.get_parent_resource.__str__()}. {allocation_user.user.get_full_name()} is now an active user on the allocation. Check out the allocation at {build_link(reverse("allocation-detail", kwargs={"pk": allocation_obj.pk}), domain_url=get_domain_url(self.request))}.', self.request.user.email, [allocation_user], cc=project_pi)
+                    elif eula_choice == "disagree":
+                        allocation_user.status = allocation_user_declined_status_choice
+                        messages.error(request, 'You have declined access to the allocation. To attempt to access it again, contact your manager.')
+                    allocation_obj.save()
+                    allocation_user.save()
         if not self.request.user.is_superuser:
-            if allocation_user.status == allocation_user_pending_status_choice and EULA_AGREEMENT and eula_choice:
-                if eula_choice == "agree":
-                    allocation_user.status = allocation_user_active_status_choice
-                    messages.success(request, 'You now have access to the allocation.')
-                    project_pi = [lambda allocation_user_iter: allocation_user_iter in allocation_obj.allocationuser_set if allocation_obj.has_perm(allocation_user_iter, ProjectPermission.MANAGER) or allocation_obj.has_perm(allocation_user_iter, ProjectPermission.PI) else None]
-                    send_email(f'EULA agreement complete for user {allocation_user.user.get_full_name()} on allocation {allocation_obj.__str__()}', f'User {allocation_user.user.get_full_name()} has agreed to EULA for {allocation_obj.get_parent_resource.__str__()}. {allocation_user.user.get_full_name()} is now an active user on the allocation. Check out the allocation at {build_link(reverse("allocation-detail", kwargs={"pk": allocation_obj.pk}), domain_url=get_domain_url(self.request))}.', self.request.user.email, [allocation_user], cc=project_pi)
-                elif eula_choice == "disagree":
-                    allocation_user.status = allocation_user_declined_status_choice
-                    messages.error(request, 'You have declined access to the allocation. To attempt to access it again, contact your manager.')
-                allocation_obj.save()
-                allocation_user.save()
-            else:
-                messages.success(
+            messages.success(
                     request, 'You do not have permission to update the allocation')
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
         
