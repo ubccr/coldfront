@@ -627,31 +627,25 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
                     users_already_in_project.append(ele)
             context['users_already_in_project'] = users_already_in_project
 
-        def get_eula(alloc):
-            if alloc.get_resources_as_list:
-                for res in alloc.get_resources_as_list:
-                    if res.get_attribute(name='eula'):
-                        return res.get_attribute(name='eula')
-            else:
-                return None
-
         allocations_with_eula = {}
         allocations_with_eula_names = {}
         allocation_query_set = project_obj.allocation_set.filter(
             resources__is_allocatable=True, is_locked=False, status__name__in=['Active', 'New', 'Renewal Requested', 'Payment Pending', 'Payment Requested', 'Paid'])
         allocation_choices_sorted = sorted(allocation_query_set, key=lambda x: x.__str__())
         for index in range(len(list(allocation_choices_sorted))):
-            if get_eula(list(allocation_choices_sorted)[index]):
-                allocations_with_eula[f"id_allocationform-allocation_{index}"] = get_eula(list(allocation_choices_sorted)[index])
+            if (list(allocation_choices_sorted)[index]).get_eula():
+                allocations_with_eula[f"id_allocationform-allocation_{index}"] = (list(allocation_choices_sorted)[index]).get_eula()
                 allocations_with_eula_names[f"id_allocationform-allocation_{index}"] = allocation_choices_sorted[index].__str__()
 
         allocations_with_eula_values = []
         for allocation in list(allocation_choices_sorted):
-            if get_eula(allocation):
-                allocations_with_eula_values.append(get_eula(allocation))
+            if allocation.get_eula():
+                allocations_with_eula_values.append(allocation.get_eula())
         context["allocations_with_eula_values"] = allocations_with_eula_values
         context['allocations_with_eula'] = allocations_with_eula
         context['allocations_with_eula_names'] = allocations_with_eula_names
+
+        print("allocations_with_eula_values:",allocations_with_eula_values)
 
         # The following block of code is used to hide/show the allocation div in the form.
         if project_obj.allocation_set.filter(status__name__in=['Active', 'New', 'Renewal Requested']).exists():
@@ -765,7 +759,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                             user=user_obj, project=project_obj, role=role_choice, status=project_user_active_status_choice)
 
                     for allocation in Allocation.objects.filter(pk__in=allocation_form_data):
-                        has_eula = get_eula(allocation)
+                        has_eula = allocation.get_eula()
                         user_status_choice = allocation_user_active_status_choice
                         if allocation.allocationuser_set.filter(user=user_obj).exists():
                             if EULA_AGREEMENT and has_eula and (allocation_user_obj.status != allocation_user_active_status_choice):

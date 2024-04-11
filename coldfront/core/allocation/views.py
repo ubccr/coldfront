@@ -108,16 +108,8 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         allocation_users = allocation_obj.allocationuser_set.exclude(
             status__name__in=['Removed']).order_by('user__username')
         user_in_allocation = allocation_users.filter(user=self.request.user).exists()
-        
-        def get_eula(alloc):
-            if alloc.get_resources_as_list:
-                for res in alloc.get_resources_as_list:
-                    if res.get_attribute(name='eula'):
-                        return res.get_attribute(name='eula')
-            else:
-                return None
             
-        context['eulas'] = get_eula(allocation_obj)
+        context['eulas'] = allocation_obj.get_eula()
         context['res'] = allocation_obj.get_parent_resource.pk
         context['res_obj'] = allocation_obj.get_parent_resource
 
@@ -726,19 +718,11 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
                     user_obj = get_user_model().objects.get(
                         username=user_form_data.get('username'))
-                    
-                    def get_eula(alloc):
-                        if alloc.get_resources_as_list:
-                            for res in alloc.get_resources_as_list:
-                                if res.get_attribute(name='eula'):
-                                    return res.get_attribute(name='eula')
-                        else:
-                            return None
 
                     if allocation_obj.allocationuser_set.filter(user=user_obj).exists():
                         allocation_user_obj = allocation_obj.allocationuser_set.get(
                             user=user_obj)
-                        if EULA_AGREEMENT and not user_obj.userprofile.is_pi and get_eula(allocation_obj):
+                        if EULA_AGREEMENT and not user_obj.userprofile.is_pi and allocation_obj.get_eula():
                             print("sending eula agreement form")
                             allocation_user_obj.status = allocation_user_pending_status_choice
                             send_email_template(f'Agree to EULA for {allocation_obj.get_parent_resource.__str__()}', 'email/allocation_agree_to_eula.txt', {"resource": allocation_obj.get_parent_resource, "url": build_link(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}), domain_url=get_domain_url(self.request))}, self.request.user.email, [user_obj])
@@ -747,7 +731,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                             allocation_user_obj.status = allocation_user_active_status_choice
                         allocation_user_obj.save()
                     else:
-                        if EULA_AGREEMENT and not user_obj.userprofile.is_pi and get_eula(allocation_obj):
+                        if EULA_AGREEMENT and not user_obj.userprofile.is_pi and allocation_obj.get_eula():
                             allocation_user_obj = AllocationUser.objects.create(
                             allocation=allocation_obj, user=user_obj, status=allocation_user_pending_status_choice)
                             send_email_template(f'Agree to EULA for {allocation_obj.get_parent_resource.__str__()}', 'email/allocation_agree_to_eula.txt', {"resource": allocation_obj.get_parent_resource, "url": build_link(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}), domain_url=get_domain_url(self.request))}, self.request.user.email, [user_obj])

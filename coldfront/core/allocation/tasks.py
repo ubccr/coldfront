@@ -39,16 +39,10 @@ def update_statuses():
 
     logger.info('Allocations set to expired: {}'.format(
         allocations_to_expire.count()))
-    
-def get_eula(alloc):
-    if alloc.get_resources_as_list:
-        for res in alloc.get_resources_as_list:
-            if res.get_attribute(name='eula'):
-                return True
 
 def send_eula_reminders():
     for allocation in Allocation.objects.all():
-        if get_eula(allocation):
+        if allocation.get_eula():
             email_receiver_list = []
             for allocation_user in allocation.allocationuser_set.all():
                 if allocation_user.status == AllocationUserStatusChoice.objects.get(name='PendingEULA'):

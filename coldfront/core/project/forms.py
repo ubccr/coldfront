@@ -45,13 +45,6 @@ class ProjectAddUserForm(forms.Form):
 
 
 class ProjectAddUsersToAllocationForm(forms.Form):
-    def get_eula(self, alloc):
-        if alloc.get_resources_as_list:
-            for res in alloc.get_resources_as_list:
-                if res.get_attribute(name='eula'):
-                    return res.get_attribute(name='eula')
-        else:
-            return None
                 
     allocation = forms.MultipleChoiceField(
         widget=forms.CheckboxSelectMultiple(), required=False)

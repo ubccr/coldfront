@@ -341,6 +341,14 @@ class Allocation(TimeStampedModel):
 
     def __str__(self):
         return "%s (%s)" % (self.get_parent_resource.name, self.project.pi)
+    
+    def get_eula(self):
+        if self.get_resources_as_list:
+            for res in self.get_resources_as_list:
+                if res.get_attribute(name='eula'):
+                    return res.get_attribute(name='eula')
+        else:
+            return None
 
 class AllocationAdminNote(TimeStampedModel):
     """ An allocation admin note is a note that an admin makes on an allocation.
