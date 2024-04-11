@@ -699,14 +699,6 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
         allocation_form = ProjectAddUsersToAllocationForm(
             request.user, project_obj.pk, request.POST, prefix='allocationform')
-        
-        def get_eula(alloc):
-            if alloc.get_resources_as_list:
-                for res in alloc.get_resources_as_list:
-                    if res.get_attribute(name='eula'):
-                        return res.get_attribute(name='eula')
-            else:
-                return None
 
         added_users_count = 0
         if formset.is_valid() and allocation_form.is_valid():
