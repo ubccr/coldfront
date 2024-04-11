@@ -161,12 +161,13 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                     Q(project__projectuser__user=self.request.user) &
                     Q(project__projectuser__status__name__in=['Active', ]) &
                     Q(allocationuser__user=self.request.user) &
-                    Q(allocationuser__status__name__in=['Active' ])
+                    Q(allocationuser__status__name__in=['Active', 'PendingEULA' ])
                 ).distinct().order_by('-end_date')
             else:
                 allocations = Allocation.objects.prefetch_related(
                     'resources').filter(project=self.object)
         
+        user_status = []
                 
         print("allocations:",allocations)
         for allocation in allocations:
@@ -174,6 +175,8 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             allocation_users = allocation.allocationuser_set.exclude(
                 status__name__in=['Removed']).order_by('user__username')
             print("allocation_users:",allocation_users)
+            print(allocation.allocationuser_set.get(user=self.request.user).status)
+            user_status.append(allocation.allocationuser_set.get(user=self.request.user).status.name)
 
         context['publications'] = Publication.objects.filter(
             project=self.object, status='Active').order_by('-year')
@@ -182,6 +185,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['grants'] = Grant.objects.filter(
             project=self.object, status__name__in=['Active', 'Pending', 'Archived'])
         context['allocations'] = allocations
+        context['user_allocation_status'] = user_status
         context['attributes'] = attributes
         context['guage_data'] = guage_data
         context['attributes_with_usage'] = attributes_with_usage
