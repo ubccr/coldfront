@@ -588,8 +588,15 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         allocation_user_active_status = AllocationUserStatusChoice.objects.get(
             name='Active')
+        if EULA_AGREEMENT:
+            allocation_user_pending_status = AllocationUserStatusChoice.objects.get(
+            name='PendingEULA')
         for user in users:
-            AllocationUser.objects.create(allocation=allocation_obj, user=user,
+            if EULA_AGREEMENT and not (user == self.request.user):
+                AllocationUser.objects.create(allocation=allocation_obj, user=user,
+                                            status=allocation_user_pending_status)
+            else:
+                AllocationUser.objects.create(allocation=allocation_obj, user=user,
                                             status=allocation_user_active_status)
 
         send_allocation_admin_email(
