@@ -661,10 +661,8 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
 
         allocation_form = ProjectAddUsersToAllocationForm(
             request.user, project_obj.pk, prefix='allocationform')
-        eula_form = ProjectEULAApprovalForm(request.user, project_obj.pk)
         context['pk'] = pk
         context['allocation_form'] = allocation_form
-        context['eula_form'] = eula_form
         return render(request, self.template_name, context)
 
 

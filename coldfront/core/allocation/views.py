@@ -739,9 +739,11 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                         allocation_user_obj = allocation_obj.allocationuser_set.get(
                             user=user_obj)
                         if EULA_AGREEMENT and not user_obj.userprofile.is_pi and get_eula(allocation_obj):
+                            print("sending eula agreement form")
                             allocation_user_obj.status = allocation_user_pending_status_choice
                             send_email_template(f'Agree to EULA for {allocation_obj.get_parent_resource.__str__()}', 'email/allocation_agree_to_eula.txt', {"resource": allocation_obj.get_parent_resource, "url": build_link(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}), domain_url=get_domain_url(self.request))}, self.request.user.email, [user_obj])
                         else:
+                            print("creating active user")
                             allocation_user_obj.status = allocation_user_active_status_choice
                         allocation_user_obj.save()
                     else:

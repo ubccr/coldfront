@@ -27,15 +27,6 @@
       <div class="card-header">Available Allocations</div>
       <div class="card-body">
         {{allocation_form|crispy}}
-        {% for allocid, val in allocations_with_eula_names.items %}
-          <div id="modalEula{{allocid}}" class="modal" style="position:relative;background-color:transparent">
-            <div class="modal-content">
-              <p style="font-weight:bolder">Allocation: {{val}}</p>
-              {{eula_form|crispy}}
-              <p id="eulaText{{allocid}}"></p>
-            </div>
-          </div>
-        {% endfor %}
       </div>
     </div>
 
