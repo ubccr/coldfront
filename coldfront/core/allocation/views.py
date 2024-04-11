@@ -136,6 +136,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
         if self.request.user in list(allocation_users):
             allocation_user_status = get_object_or_404(AllocationUser, allocation=allocation_obj, user=self.request.user).status
+            print("allocation_user_status",allocation_user_status)
             context["allocation_user_status"] = allocation_user_status
             context["user_is_active"] = allocation_user_status==allocation_user_active_status_choice
             context["user_is_pending"] = False
@@ -276,7 +277,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
             allocation_activate.send(
                 sender=self.__class__, allocation_pk=allocation_obj.pk)
-            allocation_users = allocation_obj.allocationuser_set.exclude(status__name__in=['Removed', 'Error'])
+            allocation_users = allocation_obj.allocationuser_set.exclude(status__name__in=['Removed', 'Error', 'PendingEULA'])
             for allocation_user in allocation_users:
                 allocation_activate_user.send(
                     sender=self.__class__, allocation_user_pk=allocation_user.pk)
@@ -290,11 +291,11 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             allocation_obj.end_date = None
             allocation_obj.save()
 
-            if allocation_obj.status.name == ['Denied', 'Revoked']:
+            if allocation_obj.status.name == ['Denied', 'Revoked', 'PendingEULA']:
                 allocation_disable.send(
                     sender=self.__class__, allocation_pk=allocation_obj.pk)
                 allocation_users = allocation_obj.allocationuser_set.exclude(
-                                        status__name__in=['Removed', 'Error'])
+                                        status__name__in=['Removed', 'Error', 'PendingEULA'])
                 for allocation_user in allocation_users:
                     allocation_remove_user.send(
                         sender=self.__class__, allocation_user_pk=allocation_user.pk)
@@ -304,6 +305,9 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             elif allocation_obj.status.name == 'Revoked':
                 send_allocation_customer_email(allocation_obj, 'Allocation Revoked', 'email/allocation_revoked.txt', domain_url=get_domain_url(self.request))
                 messages.success(request, 'Allocation Revoked!')
+            elif allocation_obj.status.name == 'PendingEULA':
+                send_allocation_customer_email(allocation_obj, 'Allocation Approved Pending EULA', 'email/allocation_agree_to_eula.txt', domain_url=get_domain_url(self.request))
+                messages.success(request, 'Allocation Approved Pending EULA Acceptance!')
             else:
                 messages.success(request, 'Allocation updated!')
         else:
