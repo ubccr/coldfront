@@ -167,15 +167,8 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 allocations = Allocation.objects.prefetch_related(
                     'resources').filter(project=self.object)
         
-        user_status = []
-                
-        print("allocations:",allocations)
+        user_status = []                
         for allocation in allocations:
-            print("allocation:",vars(allocation))
-            allocation_users = allocation.allocationuser_set.exclude(
-                status__name__in=['Removed']).order_by('user__username')
-            print("allocation_users:",allocation_users)
-            print(allocation.allocationuser_set.get(user=self.request.user).status)
             user_status.append(allocation.allocationuser_set.get(user=self.request.user).status.name)
 
         context['publications'] = Publication.objects.filter(
@@ -636,8 +629,6 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
         context["allocations_with_eula_values"] = allocations_with_eula_values
         context['allocations_with_eula'] = allocations_with_eula
         context['allocations_with_eula_names'] = allocations_with_eula_names
-
-        print("allocations_with_eula_values:",allocations_with_eula_values)
 
         # The following block of code is used to hide/show the allocation div in the form.
         if project_obj.allocation_set.filter(status__name__in=['Active', 'New', 'Renewal Requested']).exists():

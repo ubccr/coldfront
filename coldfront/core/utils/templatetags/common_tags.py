@@ -63,6 +63,4 @@ def get_value_from_dict(array, index):
     """
     usage example {{ your_list|get_value_by_index:your_index }}
     """
-    print(array)
-    print(index)
     return array[index]
