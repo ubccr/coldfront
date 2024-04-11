@@ -26,6 +26,8 @@ from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
+from coldfront.config.core import EULA_AGREEMENT
+
 
 from coldfront.core.allocation.models import (Allocation,
                                               AllocationStatusChoice,
@@ -715,6 +717,14 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
         allocation_form = ProjectAddUsersToAllocationForm(
             request.user, project_obj.pk, request.POST, prefix='allocationform')
+        
+        def get_eula(alloc):
+            if alloc.get_resources_as_list:
+                for res in alloc.get_resources_as_list:
+                    if res.get_attribute(name='eula'):
+                        return res.get_attribute(name='eula')
+            else:
+                return None
 
         added_users_count = 0
         if formset.is_valid() and allocation_form.is_valid():
@@ -722,6 +732,10 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                 name='Active')
             allocation_user_active_status_choice = AllocationUserStatusChoice.objects.get(
                 name='Active')
+            if EULA_AGREEMENT:
+                allocation_user_pending_status_choice = AllocationUserStatusChoice.objects.get(
+                    name='PendingEULA')
+            
             allocation_form_data = allocation_form.cleaned_data['allocation']
             if '__select_all__' in allocation_form_data:
                 allocation_form_data.remove('__select_all__')
@@ -751,16 +765,22 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                             user=user_obj, project=project_obj, role=role_choice, status=project_user_active_status_choice)
 
                     for allocation in Allocation.objects.filter(pk__in=allocation_form_data):
+                        has_eula = get_eula(allocation)
+                        user_status_choice = allocation_user_active_status_choice
                         if allocation.allocationuser_set.filter(user=user_obj).exists():
+                            if EULA_AGREEMENT and has_eula and (allocation_user_obj.status != allocation_user_active_status_choice):
+                                user_status_choice = allocation_user_pending_status_choice
                             allocation_user_obj = allocation.allocationuser_set.get(
                                 user=user_obj)
-                            allocation_user_obj.status = allocation_user_active_status_choice
+                            allocation_user_obj.status = user_status_choice
                             allocation_user_obj.save()
                         else:
+                            if EULA_AGREEMENT and has_eula:
+                                user_status_choice = allocation_user_pending_status_choice
                             allocation_user_obj = AllocationUser.objects.create(
                                 allocation=allocation,
                                 user=user_obj,
-                                status=allocation_user_active_status_choice)
+                                status=user_status_choice)
                         allocation_activate_user.send(sender=self.__class__,
                                                       allocation_user_pk=allocation_user_obj.pk)
 
