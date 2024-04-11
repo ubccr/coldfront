@@ -74,12 +74,5 @@ Add Users to Allocation
       $("#selectAll").prop('checked', false);
     }
   });
-  $(document).on('click', '.confirm-add', function(){
-    var eula = {{ resources_with_eula | length }};
-    var e = "Click OK below to agree to the EULA agreement(s) associated with the following resource(s):\n\n{{ compiled_eula | escapejs }}"
-    if (eula > 0 && ($("input[name^='userform-']").is(':checked')) == true) {
-      return confirm(e);
-    }
-  })
 </script>
 {% endblock %}
