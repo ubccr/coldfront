@@ -185,7 +185,7 @@ Project Detail
               <td>{{ allocation.get_parent_resource.name }}</td>
               <td>{{ allocation.get_parent_resource.resource_type.name }}</td>
               {% if user_allocation_status|get_value_by_index:forloop.counter0 == 'PendingEULA' %}
-              <td class="test-nowrap"><a href="{% url 'allocation-detail' allocation.pk %}">Review and Accept EULA to activate</a> </td>
+              <td class="test-nowrap"><a href="{% url 'allocation-review-eula' allocation.pk %}">Review and Accept EULA to activate</a> </td>
               {% else %}
               {% if allocation.get_information != '' %} 
               <td class="text-nowrap">{{allocation.get_information}}</td>

@@ -259,6 +259,3 @@ class AllocationAttributeCreateForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(AllocationAttributeCreateForm, self).__init__(*args, **kwargs) 
         self.fields['allocation_attribute_type'].queryset = self.fields['allocation_attribute_type'].queryset.order_by(Lower('name'))
-
-class AllocationEULAAgreeForm(forms.Form):
-    eula_choice = forms.ChoiceField(choices=[("agree", "I agree"), ("disagree", "I disagree")], label="", widget=forms.RadioSelect())

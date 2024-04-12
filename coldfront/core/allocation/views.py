@@ -29,7 +29,7 @@ from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationChangeForm,
                                              AllocationChangeNoteForm,
                                              AllocationAttributeChangeForm,
-                                             AllocationAttributeUpdateForm, AllocationEULAAgreeForm,
+                                             AllocationAttributeUpdateForm,
                                              AllocationForm,
                                              AllocationInvoiceNoteDeleteForm,
                                              AllocationInvoiceUpdateForm,
@@ -107,6 +107,12 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         allocation_users = allocation_obj.allocationuser_set.exclude(
             status__name__in=['Removed',]).order_by('user__username')
         user_in_allocation = allocation_users.filter(user=self.request.user).exists()
+        context['user_in_allocation'] = user_in_allocation
+
+        if user_in_allocation:
+            allocation_user_status = get_object_or_404(AllocationUser, allocation=allocation_obj, user=self.request.user).status
+            if allocation_obj.status.name == 'Active' and allocation_user_status.name == 'PendingEula':
+                messages.info(self.request, "This allocation is active, but you must agree to the EULA to use it!")
             
         context['eulas'] = allocation_obj.get_eula()
         context['res'] = allocation_obj.get_parent_resource.pk
@@ -118,19 +124,6 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         attributes = alloc_attr_set
 
 
-        allocation_user_active_status_choice = AllocationUserStatusChoice.objects.get(
-                name='Active')
-        if EULA_AGREEMENT:
-            allocation_user_pending_status_choice = AllocationUserStatusChoice.objects.get(name='PendingEULA')
-
-        if user_in_allocation:
-            allocation_user_status = get_object_or_404(AllocationUser, allocation=allocation_obj, user=self.request.user).status
-            context["allocation_user_status"] = allocation_user_status
-            context["user_is_active"] = allocation_user_status==allocation_user_active_status_choice
-            context["user_is_pending"] = False
-            if EULA_AGREEMENT:
-                context["user_is_pending"] = allocation_user_status==allocation_user_pending_status_choice
-            context["eula_form"] = AllocationEULAAgreeForm()
 
         allocation_changes = allocation_obj.allocationchangerequest_set.all().order_by('-pk')
 
@@ -194,25 +187,8 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
         allocation_users = allocation_obj.allocationuser_set.exclude(
-            status__name__in=['Removed','DeclinedEULA']).order_by('user__username')
-        user_in_allocation = allocation_users.filter(user=self.request.user).exists()
-        if user_in_allocation:
-            allocation_user = get_object_or_404(AllocationUser, allocation=allocation_obj, user=self.request.user)
-            eula_choice = request.POST.get('eula_choice')
-            allocation_user_active_status_choice = AllocationUserStatusChoice.objects.get(name='Active')
-            if EULA_AGREEMENT:
-                allocation_user_pending_status_choice = AllocationUserStatusChoice.objects.get(name='PendingEULA')
-                allocation_user_declined_status_choice = AllocationUserStatusChoice.objects.get(name='DeclinedEULA')
-                if allocation_user.status == allocation_user_pending_status_choice and EULA_AGREEMENT and eula_choice:
-                    if eula_choice == "agree":
-                        allocation_user.status = allocation_user_active_status_choice
-                        messages.success(request, 'You now have access to the allocation.')
-                        project_pi = [lambda allocation_user_iter: allocation_user_iter in allocation_obj.allocationuser_set if allocation_obj.has_perm(allocation_user_iter, ProjectPermission.MANAGER) or allocation_obj.has_perm(allocation_user_iter, ProjectPermission.PI) else None]
-                        send_email(f'EULA agreement complete for user {allocation_user.user.get_full_name()} on allocation {allocation_obj.__str__()}', f'User {allocation_user.user.get_full_name()} has agreed to EULA for {allocation_obj.get_parent_resource.__str__()}. {allocation_user.user.get_full_name()} is now an active user on the allocation. Check out the allocation at {build_link(reverse("allocation-detail", kwargs={"pk": allocation_obj.pk}), domain_url=get_domain_url(self.request))}.', self.request.user.email, [allocation_user], cc=project_pi)
-                    elif eula_choice == "disagree":
-                        allocation_user.status = allocation_user_declined_status_choice
-                        messages.error(request, 'You have declined the terms needed access to the allocation. To attempt to access it again, please opena help ticket.')
-                    allocation_user.save()
+            status__name__in=['Removed']).order_by('user__username')
+            
         if not self.request.user.is_superuser:
             messages.success(
                     request, 'You do not have permission to update the allocation')
@@ -349,11 +325,7 @@ class AllocationEULAView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     def get(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
-
-        form = AllocationEULAAgreeForm()
-
         context = self.get_context_data()
-        context['form'] = form
         return self.render_to_response(context)
 
     def post(self, request, *args, **kwargs):
@@ -367,14 +339,15 @@ class AllocationEULAView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             action = request.POST.get('action')
             if action not in ['accepted_eula', 'declined_eula']:
                 return HttpResponseBadRequest("Invalid request")
-            print('action')
             if 'accepted_eula' in action:
                 allocation_user_obj.status = AllocationUserStatusChoice.objects.get(name='Active')
+                messages.success(self.request, "EULA Accepted!")
             elif action == 'declined_eula':
                 allocation_user_obj.status = AllocationUserStatusChoice.objects.get(name='DeclinedEULA')
+                messages.warning(self.request, "You did not agree to the EULA and were removed from the allocation. To access this allocation, your PI will have to re-add you.")
             allocation_user_obj.save()
         
-        return HttpResponseRedirect(reverse('review-eula', kwargs={'pk': pk}))
+        return HttpResponseRedirect(reverse('allocation-review-eula', kwargs={'pk': pk}))
 
 
 class AllocationListView(LoginRequiredMixin, ListView):

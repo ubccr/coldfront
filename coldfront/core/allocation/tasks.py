@@ -52,7 +52,7 @@ def send_eula_reminders():
             template_context = {
                 'center_name': CENTER_NAME,
                 'resource': allocation.get_parent_resource,
-                'url': f'{CENTER_BASE_URL.strip("/")}/{"allocation"}/{allocation.pk}/',
+                'url': f'{CENTER_BASE_URL.strip("/")}/{"allocation"}/{allocation.pk}/review-eula',
                 'signature': EMAIL_SIGNATURE
             }
 

@@ -198,47 +198,10 @@ Allocation Detail
             </tr>
           </tbody>
         </table>
-      </div>
-    </div>
-  </div>
-  {% endif %}
-
-{% if eulas %}
-<div class="card mb-3">
-  <div class="card-header">
-    <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> EULA Agreements </h3>
-  </div>
-  <div class="card-body">
-      <div class="table-responsive">
-        <table class="table table-bordered table-sm">
-          <thead>
-            <tr>
-              <th scope="col">Resource</th>
-              <th scope="col">EULA</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>
-                <a href="{% url 'resource-detail' res %}">{{res_obj}}</a><br>
-              </td>
-              <td>
-                {{eulas}}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        {% if user_is_pending %}
-        <form action="{% url 'allocation-detail' allocation.pk %}" method="post">
-          {% csrf_token %}
+        {% if user_in_allocation %}
           <div class="d-inline-flex">
-              Agree to the above EULA to access this allocation:&#160&#160&#160{{ eula_form|crispy }}
-            </div>
-            &#160
-            <div class="float-right">
-              <button type="submit" class="btn btn-primary"><i class="fas fa-check-circle"></i>&#160Submit</button>
-            </div>
-          </form>
+              <a href="{% url 'allocation-review-eula' allocation.pk %}">Review EULA Agreement</a>
+          </div>
         {% endif %}
       </div>
     </div>
