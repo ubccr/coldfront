@@ -66,13 +66,6 @@ class ProjectAddUsersToAllocationForm(forms.Form):
         else:
             self.fields['allocation'].widget = forms.HiddenInput()
 
-class ProjectEULAApprovalForm(forms.Form):
-    eula = forms.BooleanField(initial=False,required=False,label="Agree to EULA: ")
-
-    def __init__(self, request_user, project_pk, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        project_obj = get_object_or_404(Project, pk=project_pk)
-
 class ProjectRemoveUserForm(forms.Form):
     username = forms.CharField(max_length=150, disabled=True)
     first_name = forms.CharField(max_length=150, required=False, disabled=True)
