@@ -45,8 +45,7 @@ from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectReviewForm,
                                           ProjectSearchForm,
                                           ProjectUserUpdateForm,
-                                          ProjectAttributeUpdateForm,
-                                          ProjectEULAApprovalForm)
+                                          ProjectAttributeUpdateForm)
 from coldfront.core.project.models import (Project,
                                            ProjectAttribute,
                                            ProjectReview,
