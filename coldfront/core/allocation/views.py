@@ -311,6 +311,71 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
         return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
+class AllocationEULAView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    model = Allocation
+    template_name = 'allocation/allocation_review_eula.html'
+    context_object_name = 'allocation-eula'
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        pk = self.kwargs.get('pk')
+        allocation_obj = get_object_or_404(Allocation, pk=pk)
+
+        if self.request.user.has_perm('allocation.can_view_all_allocations'):
+            return True
+
+        return allocation_obj.has_perm(self.request.user, AllocationPermission.USER)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        pk = self.kwargs.get('pk')
+        allocation_obj = get_object_or_404(Allocation, pk=pk)
+        allocation_users = allocation_obj.allocationuser_set.exclude(
+            status__name__in=['Removed',]).order_by('user__username')
+        user_in_allocation = allocation_users.filter(user=self.request.user).exists()
+            
+        context['allocation'] = allocation_obj.pk
+        context['eulas'] = allocation_obj.get_eula()
+        context['res'] = allocation_obj.get_parent_resource.pk
+        context['res_obj'] = allocation_obj.get_parent_resource
+
+        if user_in_allocation and EULA_AGREEMENT:
+            allocation_user_status = get_object_or_404(AllocationUser, allocation=allocation_obj, user=self.request.user).status
+            context["allocation_user_status"] = allocation_user_status.name
+            context['last_updated'] = get_object_or_404(AllocationUser, allocation=allocation_obj, user=self.request.user).modified
+
+        return context
+
+    def get(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        allocation_obj = get_object_or_404(Allocation, pk=pk)
+
+        form = AllocationEULAAgreeForm()
+
+        context = self.get_context_data()
+        context['form'] = form
+        return self.render_to_response(context)
+
+    def post(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        allocation_obj = get_object_or_404(Allocation, pk=pk)
+        allocation_users = allocation_obj.allocationuser_set.exclude(
+            status__name__in=['Removed','DeclinedEULA']).order_by('user__username')
+        user_in_allocation = allocation_users.filter(user=self.request.user).exists()
+        if user_in_allocation:
+            allocation_user_obj = get_object_or_404(AllocationUser, allocation=allocation_obj, user=self.request.user)
+            action = request.POST.get('action')
+            if action not in ['accepted_eula', 'declined_eula']:
+                return HttpResponseBadRequest("Invalid request")
+            print('action')
+            if 'accepted_eula' in action:
+                allocation_user_obj.status = AllocationUserStatusChoice.objects.get(name='Active')
+            elif action == 'declined_eula':
+                allocation_user_obj.status = AllocationUserStatusChoice.objects.get(name='DeclinedEULA')
+            allocation_user_obj.save()
+        
+        return HttpResponseRedirect(reverse('review-eula', kwargs={'pk': pk}))
+
 
 class AllocationListView(LoginRequiredMixin, ListView):
 
