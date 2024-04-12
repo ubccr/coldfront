@@ -101,12 +101,11 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         return allocation_obj.has_perm(self.request.user, AllocationPermission.USER)
 
     def get_context_data(self, **kwargs):
-        print("getting context")
         context = super().get_context_data(**kwargs)
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
         allocation_users = allocation_obj.allocationuser_set.exclude(
-            status__name__in=['Removed']).order_by('user__username')
+            status__name__in=['Removed',]).order_by('user__username')
         user_in_allocation = allocation_users.filter(user=self.request.user).exists()
             
         context['eulas'] = allocation_obj.get_eula()
@@ -123,15 +122,9 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                 name='Active')
         if EULA_AGREEMENT:
             allocation_user_pending_status_choice = AllocationUserStatusChoice.objects.get(name='PendingEULA')
-        
-        print("allocation_users:", allocation_users.values)
-        print("allocation_obj:", allocation_obj)
-        print("self.request.user:", self.request.user)
-        print("User in allocation",user_in_allocation)
 
         if user_in_allocation:
             allocation_user_status = get_object_or_404(AllocationUser, allocation=allocation_obj, user=self.request.user).status
-            print("allocation_user_status",allocation_user_status)
             context["allocation_user_status"] = allocation_user_status
             context["user_is_active"] = allocation_user_status==allocation_user_active_status_choice
             context["user_is_pending"] = False
@@ -201,7 +194,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
         allocation_users = allocation_obj.allocationuser_set.exclude(
-            status__name__in=['Removed']).order_by('user__username')
+            status__name__in=['Removed','DeclinedEULA']).order_by('user__username')
         user_in_allocation = allocation_users.filter(user=self.request.user).exists()
         if user_in_allocation:
             allocation_user = get_object_or_404(AllocationUser, allocation=allocation_obj, user=self.request.user)
@@ -218,8 +211,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                         send_email(f'EULA agreement complete for user {allocation_user.user.get_full_name()} on allocation {allocation_obj.__str__()}', f'User {allocation_user.user.get_full_name()} has agreed to EULA for {allocation_obj.get_parent_resource.__str__()}. {allocation_user.user.get_full_name()} is now an active user on the allocation. Check out the allocation at {build_link(reverse("allocation-detail", kwargs={"pk": allocation_obj.pk}), domain_url=get_domain_url(self.request))}.', self.request.user.email, [allocation_user], cc=project_pi)
                     elif eula_choice == "disagree":
                         allocation_user.status = allocation_user_declined_status_choice
-                        messages.error(request, 'You have declined access to the allocation. To attempt to access it again, contact your manager.')
-                    allocation_obj.save()
+                        messages.error(request, 'You have declined the terms needed access to the allocation. To attempt to access it again, please opena help ticket.')
                     allocation_user.save()
         if not self.request.user.is_superuser:
             messages.success(
@@ -273,7 +265,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
             allocation_activate.send(
                 sender=self.__class__, allocation_pk=allocation_obj.pk)
-            allocation_users = allocation_obj.allocationuser_set.exclude(status__name__in=['Removed', 'Error', 'PendingEULA'])
+            allocation_users = allocation_obj.allocationuser_set.exclude(status__name__in=['Removed', 'Error', 'DeclinedEULA', 'PendingEULA'])
             for allocation_user in allocation_users:
                 allocation_activate_user.send(
                     sender=self.__class__, allocation_user_pk=allocation_user.pk)
@@ -355,8 +347,6 @@ class AllocationListView(LoginRequiredMixin, ListView):
                     Q(allocationuser__user=self.request.user) &
                     Q(allocationuser__status__name__in=['Active', 'PendingEULA'] ))
                 ).distinct().order_by(order_by)
-
-            print("allocations",allocations)
 
             # Project Title
             if data.get('project'):
@@ -730,11 +720,9 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                         allocation_user_obj = allocation_obj.allocationuser_set.get(
                             user=user_obj)
                         if EULA_AGREEMENT and not user_obj.userprofile.is_pi and allocation_obj.get_eula():
-                            print("sending eula agreement form")
                             allocation_user_obj.status = allocation_user_pending_status_choice
                             send_email_template(f'Agree to EULA for {allocation_obj.get_parent_resource.__str__()}', 'email/allocation_agree_to_eula.txt', {"resource": allocation_obj.get_parent_resource, "url": build_link(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}), domain_url=get_domain_url(self.request))}, self.request.user.email, [user_obj])
                         else:
-                            print("creating active user")
                             allocation_user_obj.status = allocation_user_active_status_choice
                         allocation_user_obj.save()
                     else:
