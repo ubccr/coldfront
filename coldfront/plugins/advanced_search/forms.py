@@ -223,7 +223,6 @@ class UserSearchForm(forms.Form):
 
     user__usernames = forms.CharField(
         label="Usernames",
-        max_length=100,
         required=False,
         help_text='username1,username2,...'
     )
