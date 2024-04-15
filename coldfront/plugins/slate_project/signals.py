@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from django.dispatch import receiver
 
 from coldfront.core.allocation.signals import (allocation_activate_user,
