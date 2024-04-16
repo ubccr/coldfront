@@ -1,5 +1,20 @@
 # ColdFront Changelog
 
+## [1.1.6] - 2024-03-27
+
+- Upgrade to Django 4.2 LTS [#601](https://github.com/ubccr/coldfront/pull/601)
+- Update python version in Dockerfile to 3.8 [#578](https://github.com/ubccr/coldfront/pull/578)
+- Add factoryboy Project and Allocation unit tests [#546](https://github.com/ubccr/coldfront/pull/546)
+- Add docs for configuring LDAP auth against Active Directory [#556](https://github.com/ubccr/coldfront/pull/556)
+- Fix grants formatting error [#442](https://github.com/ubccr/coldfront/issues/442)
+- Add docs on creating a plugin [#472](https://github.com/ubccr/coldfront/issues/472)
+- Add justification to allocation invoices [#305](https://github.com/ubccr/coldfront/issues/305)
+- Add docs on configuring generic OIDC auth [#528](https://github.com/ubccr/coldfront/pull/528)
+- Fix bug where notifications were auto-enabled user role changed [#457](https://github.com/ubccr/coldfront/issues/457)
+- Add LDAP user search custom mapping and TLS support [#545](https://github.com/ubccr/coldfront/pull/545)
+- Add docs on `collect static` for `SITE_STATIC` usage [#358](https://github.com/ubccr/coldfront/issues/358)
+- Add signal for new allocation requests [#549](https://github.com/ubccr/coldfront/pull/549)
+
 ## [1.1.5] - 2023-07-12
 
 - SECURITY BUG FIX: Unprotected eval when adding publication. [#551](https://github.com/ubccr/coldfront/pull/551)
@@ -132,4 +147,5 @@
 [1.1.3]: https://github.com/ubccr/coldfront/releases/tag/v1.1.3
 [1.1.4]: https://github.com/ubccr/coldfront/releases/tag/v1.1.4
 [1.1.5]: https://github.com/ubccr/coldfront/releases/tag/v1.1.5
+[1.1.6]: https://github.com/ubccr/coldfront/releases/tag/v1.1.6
 [Unreleased]: https://github.com/ubccr/coldfront/compare/v1.1.6...HEAD
