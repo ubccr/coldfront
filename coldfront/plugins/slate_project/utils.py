@@ -1083,8 +1083,13 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
                 "abstract": abstract,
                 "project_title": project_title,
                 "allocated_quantity": allocated_quantity,
-                "start_date": '-'.join([line_split[3][:4], line_split[3][4:6], line_split[3][6:8]])
+                "start_date": '-'.join([line_split[3][:4], line_split[3][4:6], line_split[3][6:8]]),
+                "project_id": None
             }
+            try:
+                slate_project["project_id"] = line_split[7]
+            except IndexError:
+                pass
             slate_projects.append(slate_project)
 
     # Non faculty, staff, and ACNP should be put in their own projects with a HPFS member as the PI.
@@ -1122,41 +1127,48 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
             continue
         
         project_user_role_obj = ProjectUserRoleChoice.objects.get(name='Manager')
-        if user_obj.userprofile.title in ['Faculty', 'Staff', 'Academic (ACNP)', ]:
-            project_obj, _ = Project.objects.get_or_create(
-                title=slate_project.get('project_title'),
-                description=slate_project.get('abstract'),
-                pi=user_obj,
-                max_managers=PROJECT_DEFAULT_MAX_MANAGERS,
-                requestor=user_obj,
-                type=ProjectTypeChoice.objects.get(name='Research'),
-                status=ProjectStatusChoice.objects.get(name='Active'),
-                end_date=project_end_date
-            )
 
-            project_obj.slurm_account_name = generate_slurm_account_name(project_obj)
-            project_obj.save()
+        if slate_project.get('project_id'):
+            project_obj = Project.objects.get(pk=slate_project.get('project_id'))
+            if project_obj.status.name != 'Active':
+                print(f'Project {slate_project.get("project_id")} is not Active, skipping...')
+                continue
         else:
-            project_obj, _ = Project.objects.get_or_create(
-                title=slate_project.get('project_title'),
-                description=slate_project.get('abstract'),
-                pi=hpfs_pi_obj,
-                max_managers=3,
-                requestor=user_obj,
-                type=ProjectTypeChoice.objects.get(name='Research'),
-                status=ProjectStatusChoice.objects.get(name='Active'),
-                end_date=project_end_date
-            )
+            if user_obj.userprofile.title in ['Faculty', 'Staff', 'Academic (ACNP)', ]:
+                project_obj, _ = Project.objects.get_or_create(
+                    title=slate_project.get('project_title'),
+                    description=slate_project.get('abstract'),
+                    pi=user_obj,
+                    max_managers=PROJECT_DEFAULT_MAX_MANAGERS,
+                    requestor=user_obj,
+                    type=ProjectTypeChoice.objects.get(name='Research'),
+                    status=ProjectStatusChoice.objects.get(name='Active'),
+                    end_date=project_end_date
+                )
 
-            project_obj.slurm_account_name = generate_slurm_account_name(project_obj)
-            project_obj.save()
+                project_obj.slurm_account_name = generate_slurm_account_name(project_obj)
+                project_obj.save()
+            else:
+                project_obj, _ = Project.objects.get_or_create(
+                    title=slate_project.get('project_title'),
+                    description=slate_project.get('abstract'),
+                    pi=hpfs_pi_obj,
+                    max_managers=PROJECT_DEFAULT_MAX_MANAGERS,
+                    requestor=user_obj,
+                    type=ProjectTypeChoice.objects.get(name='Research'),
+                    status=ProjectStatusChoice.objects.get(name='Active'),
+                    end_date=project_end_date
+                )
 
-            ProjectUser.objects.get_or_create(
-                user=hpfs_pi_obj,
-                project=project_obj,
-                role=project_user_role_obj,
-                status=ProjectUserStatusChoice.objects.get(name='Active')
-            )
+                project_obj.slurm_account_name = generate_slurm_account_name(project_obj)
+                project_obj.save()
+
+                ProjectUser.objects.get_or_create(
+                    user=hpfs_pi_obj,
+                    project=project_obj,
+                    role=project_user_role_obj,
+                    status=ProjectUserStatusChoice.objects.get(name='Active')
+                )
 
         read_write_users = slate_project.get('read_write_users')
         read_only_users = slate_project.get('read_only_users')
@@ -1178,13 +1190,19 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
             if user_obj in [project_obj.pi, project_obj.requestor]:
                 project_user_role_obj = ProjectUserRoleChoice.objects.get(name='Manager')
 
-            ProjectUser.objects.get_or_create(
-                user=user_obj,
-                project=project_obj,
-                role=project_user_role_obj,
-                enable_notifications=enable_notifications,
-                status=status_obj
-            )
+            project_user_query = ProjectUser.objects.filter(user=user_obj, project=project_obj)
+            if project_user_query.exists():
+                project_user = project_user_query[0]
+                project_user.status = status_obj
+                project_user.save()
+            else:
+                ProjectUser.objects.get_or_create(
+                    user=user_obj,
+                    project=project_obj,
+                    role=project_user_role_obj,
+                    enable_notifications=enable_notifications,
+                    status=status_obj
+                )
 
         allocation_start_date = todays_date
         if slate_project.get('start_date'):
