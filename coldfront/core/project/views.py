@@ -168,7 +168,8 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         
         user_status = []                
         for allocation in allocations:
-            user_status.append(allocation.allocationuser_set.get(user=self.request.user).status.name)
+            if allocation.allocationuser_set.filter(user=self.request.user).exists():
+                user_status.append(allocation.allocationuser_set.get(user=self.request.user).status.name)
 
         context['publications'] = Publication.objects.filter(
             project=self.object, status='Active').order_by('-year')
