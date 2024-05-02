@@ -480,7 +480,8 @@ def check_slate_project_account(user_obj, notifications_enabled, ldap_search_con
     """
     Checks if the user is in the eligibility group in LDAP. If they aren't it adds them and sends
     an email to the user about creating a Slate Project account. If they are in it but do not have
-    a Slate Project account it will also send the email.
+    a Slate Project account it will also send the email. Returns True if the user is added to the
+    eligibility group, else False.
 
     :param user_obj: User to check
     :param notifications_enabled: Whether or not the user should receive an email
@@ -499,7 +500,7 @@ def check_slate_project_account(user_obj, notifications_enabled, ldap_search_con
     if not SLATE_PROJECT_ELIGIBILITY_ACCOUNT in accounts:
         # Do nothing if they have a slate project account but are not in the eligibility account
         if SLATE_PROJECT_ACCOUNT in accounts:
-            return
+            return False
         added, output = ldap_eligibility_conn.add_user(user_obj.username)
         if not added:
             logger.error(
@@ -512,9 +513,12 @@ def check_slate_project_account(user_obj, notifications_enabled, ldap_search_con
             )
             if notifications_enabled:
                 send_missing_account_email(user_obj.email)
+            return True
     elif not SLATE_PROJECT_ACCOUNT in accounts:
         if notifications_enabled:
             send_missing_account_email(user_obj.email)
+
+    return False
 
 
 def add_slate_project_groups(allocation_obj):
@@ -690,14 +694,23 @@ def add_user_to_slate_project_group(allocation_user_obj):
             f'LDAP: Added user {username} to the slate project group with '
             f'{allocation_attribute_type}={ldap_group_gid} in allocation {allocation_obj.pk}'
         )
+        added_to_eligibility_group = False
         if ENABLE_LDAP_ELIGIBILITY_SERVER:
             notifications_enabled = allocation_user_obj.allocation.project.projectuser_set.get(
                 user=allocation_user_obj.user
             ).enable_notifications
-            check_slate_project_account(allocation_user_obj.user, notifications_enabled)
+            added_to_eligibility_group = check_slate_project_account(
+                allocation_user_obj.user, notifications_enabled
+            )
 
-        allocation_user_obj.status = get_new_user_status(username)
-        allocation_user_obj.save()
+        # The user's new eligibility account is not propagated fast enough to be picked up in 
+        # get_new_user_status so we set the status to Eligible ourselves.
+        if added_to_eligibility_group:
+            allocation_user_obj.status = AllocationUserStatusChoice.objects.get(name='Eligible')
+            allocation_user_obj.save()
+        else:
+            allocation_user_obj.status = get_new_user_status(username)
+            allocation_user_obj.save()
 
 
 def remove_slate_project_groups(allocation_obj):
@@ -846,7 +859,7 @@ def get_slate_project_info(username):
     """
     allocation_user_objs = AllocationUser.objects.filter(
         user__username=username,
-        status__name='Active',
+        status__name__in=['Active', 'Eligible', 'Disabled', 'Retired'],
         allocation__status__name__in=['Active', 'Renewal Requested'],
         allocation__resources__name='Slate Project'
     )
@@ -1070,8 +1083,13 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
                 "abstract": abstract,
                 "project_title": project_title,
                 "allocated_quantity": allocated_quantity,
-                "start_date": '-'.join([line_split[3][:4], line_split[3][4:6], line_split[3][6:8]])
+                "start_date": '-'.join([line_split[3][:4], line_split[3][4:6], line_split[3][6:8]]),
+                "project_id": None
             }
+            try:
+                slate_project["project_id"] = line_split[7]
+            except IndexError:
+                pass
             slate_projects.append(slate_project)
 
     # Non faculty, staff, and ACNP should be put in their own projects with a HPFS member as the PI.
@@ -1109,41 +1127,48 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
             continue
         
         project_user_role_obj = ProjectUserRoleChoice.objects.get(name='Manager')
-        if user_obj.userprofile.title in ['Faculty', 'Staff', 'Academic (ACNP)', ]:
-            project_obj, _ = Project.objects.get_or_create(
-                title=slate_project.get('project_title'),
-                description=slate_project.get('abstract'),
-                pi=user_obj,
-                max_managers=PROJECT_DEFAULT_MAX_MANAGERS,
-                requestor=user_obj,
-                type=ProjectTypeChoice.objects.get(name='Research'),
-                status=ProjectStatusChoice.objects.get(name='Active'),
-                end_date=project_end_date
-            )
 
-            project_obj.slurm_account_name = generate_slurm_account_name(project_obj)
-            project_obj.save()
+        if slate_project.get('project_id'):
+            project_obj = Project.objects.get(pk=slate_project.get('project_id'))
+            if project_obj.status.name != 'Active':
+                print(f'Project {slate_project.get("project_id")} is not Active, skipping...')
+                continue
         else:
-            project_obj, _ = Project.objects.get_or_create(
-                title=slate_project.get('project_title'),
-                description=slate_project.get('abstract'),
-                pi=hpfs_pi_obj,
-                max_managers=3,
-                requestor=user_obj,
-                type=ProjectTypeChoice.objects.get(name='Research'),
-                status=ProjectStatusChoice.objects.get(name='Active'),
-                end_date=project_end_date
-            )
+            if user_obj.userprofile.title in ['Faculty', 'Staff', 'Academic (ACNP)', ]:
+                project_obj, _ = Project.objects.get_or_create(
+                    title=slate_project.get('project_title'),
+                    description=slate_project.get('abstract'),
+                    pi=user_obj,
+                    max_managers=PROJECT_DEFAULT_MAX_MANAGERS,
+                    requestor=user_obj,
+                    type=ProjectTypeChoice.objects.get(name='Research'),
+                    status=ProjectStatusChoice.objects.get(name='Active'),
+                    end_date=project_end_date
+                )
 
-            project_obj.slurm_account_name = generate_slurm_account_name(project_obj)
-            project_obj.save()
+                project_obj.slurm_account_name = generate_slurm_account_name(project_obj)
+                project_obj.save()
+            else:
+                project_obj, _ = Project.objects.get_or_create(
+                    title=slate_project.get('project_title'),
+                    description=slate_project.get('abstract'),
+                    pi=hpfs_pi_obj,
+                    max_managers=PROJECT_DEFAULT_MAX_MANAGERS,
+                    requestor=user_obj,
+                    type=ProjectTypeChoice.objects.get(name='Research'),
+                    status=ProjectStatusChoice.objects.get(name='Active'),
+                    end_date=project_end_date
+                )
 
-            ProjectUser.objects.get_or_create(
-                user=hpfs_pi_obj,
-                project=project_obj,
-                role=project_user_role_obj,
-                status=ProjectUserStatusChoice.objects.get(name='Active')
-            )
+                project_obj.slurm_account_name = generate_slurm_account_name(project_obj)
+                project_obj.save()
+
+                ProjectUser.objects.get_or_create(
+                    user=hpfs_pi_obj,
+                    project=project_obj,
+                    role=project_user_role_obj,
+                    status=ProjectUserStatusChoice.objects.get(name='Active')
+                )
 
         read_write_users = slate_project.get('read_write_users')
         read_only_users = slate_project.get('read_only_users')
@@ -1165,13 +1190,19 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
             if user_obj in [project_obj.pi, project_obj.requestor]:
                 project_user_role_obj = ProjectUserRoleChoice.objects.get(name='Manager')
 
-            ProjectUser.objects.get_or_create(
-                user=user_obj,
-                project=project_obj,
-                role=project_user_role_obj,
-                enable_notifications=enable_notifications,
-                status=status_obj
-            )
+            project_user_query = ProjectUser.objects.filter(user=user_obj, project=project_obj)
+            if project_user_query.exists():
+                project_user = project_user_query[0]
+                project_user.status = status_obj
+                project_user.save()
+            else:
+                ProjectUser.objects.get_or_create(
+                    user=user_obj,
+                    project=project_obj,
+                    role=project_user_role_obj,
+                    enable_notifications=enable_notifications,
+                    status=status_obj
+                )
 
         allocation_start_date = todays_date
         if slate_project.get('start_date'):
@@ -1426,7 +1457,11 @@ class LDAPEligibilityGroup:
             logger.error(f'LDAPEligibilityGroup: Failed to bind to LDAP server: {self.conn.result}')
 
     def add_user(self, username):
-        added = self.conn.add(self.LDAP_BASE_DN, attributes={'member': self.LDAP_ADS_NETID_FORMAT.format(username)})
+        changes = {
+            'member': [(MODIFY_ADD, [self.LDAP_ADS_NETID_FORMAT.format(username)])]
+        }
+        added = self.conn.modify(self.LDAP_BASE_DN, changes)
+
         return added, self.conn.result.get("description")
 
     def check_user_exists(self, username):
