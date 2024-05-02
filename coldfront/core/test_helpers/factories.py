@@ -6,6 +6,7 @@ from factory.django import DjangoModelFactory
 from faker import Faker
 from faker.providers import BaseProvider, DynamicProvider
 
+from coldfront.config import defaults
 from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.resource.models import ResourceType, Resource
 from coldfront.core.project.models import (
@@ -38,8 +39,6 @@ from coldfront.core.publication.models import PublicationSource
 
 ### Default values and Faker provider setup ###
 
-project_status_choice_names = ['New', 'Active', 'Archived']
-project_user_role_choice_names = ['User', 'Manager']
 field_of_science_names = ['Physics', 'Chemistry', 'Economics', 'Biology', 'Sociology']
 attr_types = ['Date', 'Int', 'Float', 'Text', 'Boolean']
 
@@ -114,7 +113,7 @@ class ProjectStatusChoiceFactory(DjangoModelFactory):
         # ensure that names are unique
         django_get_or_create = ('name',)
     # randomly generate names from list of default values
-    name = FuzzyChoice(project_status_choice_names)
+    name = FuzzyChoice(defaults.PROJECT_DEFAULTS['statuschoices'])
 
 
 class ProjectFactory(DjangoModelFactory):
