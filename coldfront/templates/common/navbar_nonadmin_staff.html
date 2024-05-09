@@ -21,8 +21,10 @@
       <a id="navbar-allocation-requests" class="dropdown-item" href="{% url 'allocation-request-list' %}">
         Allocation Requests</a>
     {% endif %}
+    {% if GRANT_ENABLE %}
     {% if perms.grant.can_view_all_grants %}
       <a id="navbar-grant-report" class="dropdown-item" href="{% url 'grant-report' %}">Grant Report</a>
+    {% endif %}
     {% endif %}
   </div>
 </li>

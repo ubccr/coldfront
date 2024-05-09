@@ -11,6 +11,8 @@
       Allocation Requests</a>
     <a id="navbar-allocation-change-requests" class="dropdown-item" href="{% url 'allocation-change-list' %}">
       Allocation Change Requests</a>
+    {% if GRANT_ENABLE %}
     <a id="navbar-grant-report" class="dropdown-item" href="{% url 'grant-report' %}">Grant Report</a>
-  </div>
+    {% endif %}
+    </div>
 </li>

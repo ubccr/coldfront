@@ -2,7 +2,7 @@
 {% load crispy_forms_tags %}
 {% load static %}
 
-
+{% if GRANT_ENABLE %}
 {% block title %}
 Delete Grants from Project
 {% endblock %}
@@ -70,3 +70,4 @@ Delete Grants from Project
   });
 </script>
 {% endblock %}
+{% endif %}

@@ -2,7 +2,7 @@
 {% load crispy_forms_tags %}
 {% load static %}
 
-
+{% if GRANT_ENABLE %}
 {% block title %}
 Create Grant
 {% endblock %}
@@ -23,4 +23,4 @@ Create Grant
 
 
 {% endblock %}
-
+{% endif %}

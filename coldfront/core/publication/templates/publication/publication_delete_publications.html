@@ -2,7 +2,7 @@
 {% load crispy_forms_tags %}
 {% load static %}
 
-
+{% if PUBLICATION_ENABLE %}
 {% block title %}
 Delete Publications from Project
 {% endblock %}
@@ -54,6 +54,7 @@ Delete Publications from Project
   <div class="alert alert-info">
     No publications to delete!
   </div>
+{% endif %}
 {% endif %}
 
 <script>
