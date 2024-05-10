@@ -20,6 +20,7 @@ from django.utils.html import format_html, mark_safe
 from django.views import View
 from django.views.generic import ListView, TemplateView
 from django.views.generic.edit import CreateView, FormView, UpdateView
+from coldfront.config.core import EULA_AGREEMENT
 
 from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationAddUserForm,
@@ -28,7 +29,7 @@ from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationChangeForm,
                                              AllocationChangeNoteForm,
                                              AllocationAttributeChangeForm,
-                                             AllocationAttributeUpdateForm,
+                                             AllocationAttributeUpdateForm, AllocationEULAAgreeForm,
                                              AllocationForm,
                                              AllocationInvoiceNoteDeleteForm,
                                              AllocationInvoiceUpdateForm,
@@ -56,11 +57,11 @@ from coldfront.core.allocation.signals import (allocation_new,
                                                allocation_change_approved,)
 from coldfront.core.allocation.utils import (generate_guauge_data_from_usage,
                                              get_user_resources)
-from coldfront.core.project.models import (Project, ProjectUser, ProjectPermission,
+from coldfront.core.project.models import (Project, ProjectUser, ProjectPermission, ProjectUserRoleChoice,
                                            ProjectUserStatusChoice)
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import get_domain_url, import_from_settings
-from coldfront.core.utils.mail import send_allocation_admin_email, send_allocation_customer_email
+from coldfront.core.utils.mail import build_link, send_allocation_admin_email, send_allocation_customer_email, send_email, send_email_template
 
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
     'ALLOCATION_ENABLE_ALLOCATION_RENEWAL', True)
@@ -105,11 +106,37 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         allocation_obj = get_object_or_404(Allocation, pk=pk)
         allocation_users = allocation_obj.allocationuser_set.exclude(
             status__name__in=['Removed']).order_by('user__username')
+        
+        def get_eula(alloc):
+            if alloc.get_resources_as_list:
+                for res in alloc.get_resources_as_list:
+                    if res.get_attribute(name='eula'):
+                        return res.get_attribute(name='eula')
+            else:
+                return None
+            
+        context['eulas'] = get_eula(allocation_obj)
+        context['res'] = allocation_obj.get_parent_resource.pk
+        context['res_obj'] = allocation_obj.get_parent_resource
 
         # set visible usage attributes
         alloc_attr_set = allocation_obj.get_attribute_set(self.request.user)
         attributes_with_usage = [a for a in alloc_attr_set if hasattr(a, 'allocationattributeusage')]
         attributes = alloc_attr_set
+
+
+        allocation_user_active_status_choice = AllocationUserStatusChoice.objects.get(
+                name='Active')
+        if EULA_AGREEMENT:
+            allocation_user_pending_status_choice = AllocationUserStatusChoice.objects.get(name='Pending')
+        
+        allocation_user_status = get_object_or_404(AllocationUser, allocation=allocation_obj, user=self.request.user).status
+        context["allocation_user_status"] = allocation_user_status
+        context["user_is_active"] = allocation_user_status==allocation_user_active_status_choice
+        context["user_is_pending"] = False
+        if EULA_AGREEMENT:
+            context["user_is_pending"] = allocation_user_status==allocation_user_pending_status_choice
+        context["eula_form"] = AllocationEULAAgreeForm()
 
         allocation_changes = allocation_obj.allocationchangerequest_set.all().order_by('-pk')
 
@@ -172,11 +199,29 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
     def post(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
+        allocation_user = get_object_or_404(AllocationUser, allocation=allocation_obj, user=self.request.user)
+        eula_choice = request.POST.get('eula_choice')
+        allocation_user_active_status_choice = AllocationUserStatusChoice.objects.get(name='Active')
+        if EULA_AGREEMENT:
+            allocation_user_pending_status_choice = AllocationUserStatusChoice.objects.get(name='Pending')
+            allocation_user_declined_status_choice = AllocationUserStatusChoice.objects.get(name='Declined')
         if not self.request.user.is_superuser:
-            messages.success(
-                request, 'You do not have permission to update the allocation')
+            if allocation_user.status == allocation_user_pending_status_choice and EULA_AGREEMENT and eula_choice:
+                if eula_choice == "agree":
+                    allocation_user.status = allocation_user_active_status_choice
+                    messages.success(request, 'You now have access to the allocation.')
+                    project_pi = [lambda allocation_user_iter: allocation_user_iter in allocation_obj.allocationuser_set if allocation_obj.has_perm(allocation_user_iter, ProjectPermission.MANAGER) or allocation_obj.has_perm(allocation_user_iter, ProjectPermission.PI) else None]
+                    send_email(f'EULA agreement complete for user {allocation_user.user.get_full_name()} on allocation {allocation_obj.__str__()}', f'User {allocation_user.user.get_full_name()} has agreed to EULA for {allocation_obj.get_parent_resource.__str__()}. {allocation_user.user.get_full_name()} is now an active user on the allocation. Check out the allocation at {build_link(reverse("allocation-detail", kwargs={"pk": allocation_obj.pk}), domain_url=get_domain_url(self.request))}.', self.request.user.email, [allocation_user], cc=project_pi)
+                elif eula_choice == "disagree":
+                    allocation_user.status = allocation_user_declined_status_choice
+                    messages.error(request, 'You have declined access to the allocation. To attempt to access it again, contact your manager.')
+                allocation_obj.save()
+                allocation_user.save()
+            else:
+                messages.success(
+                    request, 'You do not have permission to update the allocation')
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
-
+        
         initial_data = {
             'status': allocation_obj.status,
             'end_date': allocation_obj.end_date,
@@ -304,7 +349,7 @@ class AllocationListView(LoginRequiredMixin, ListView):
 
                     (Q(project__projectuser__role__name='Manager') |
                     Q(allocationuser__user=self.request.user) &
-                    Q(allocationuser__status__name='Active'))
+                    Q(allocationuser__status__name__in=['Active'] ))
                 ).distinct().order_by(order_by)
 
             # Project Title
@@ -317,7 +362,7 @@ class AllocationListView(LoginRequiredMixin, ListView):
                 allocations = allocations.filter(
                     Q(project__pi__username__icontains=data.get('username')) |
                     Q(allocationuser__user__username__icontains=data.get('username')) &
-                    Q(allocationuser__status__name='Active')
+                    Q(allocationuser__status__name__in=['Pending', 'Active'])
                 )
 
             # Resource Type
@@ -358,7 +403,7 @@ class AllocationListView(LoginRequiredMixin, ListView):
         else:
             allocations = Allocation.objects.prefetch_related('project', 'project__pi', 'status',).filter(
                 Q(allocationuser__user=self.request.user) &
-                Q(allocationuser__status__name='Active')
+                Q(allocationuser__status__name__in=['Pending', 'Active'])
             ).order_by(order_by)
 
         return allocations.distinct()
@@ -559,6 +604,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
 class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'allocation/allocation_add_users.html'
+    model = Allocation
+    context_object_name = 'allocation'
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -619,6 +666,21 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             context['formset'] = formset
 
         context['allocation'] = allocation_obj
+
+        user_resources = get_user_resources(self.request.user)
+        resources_with_eula = {}
+        for res in user_resources:
+            if res in allocation_obj.get_resources_as_list:
+                if res.get_attribute_list(name='eula'):
+                    for attr_value in res.get_attribute_list(name='eula'):
+                        resources_with_eula[res] = attr_value
+
+        context['resources_with_eula'] = resources_with_eula
+        string_accumulator = ""
+        for res, value in resources_with_eula.items():
+            string_accumulator += f"{res}: {value}\n"
+        context['compiled_eula'] = str(string_accumulator)
+
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
@@ -638,6 +700,9 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
             allocation_user_active_status_choice = AllocationUserStatusChoice.objects.get(
                 name='Active')
+            if EULA_AGREEMENT:
+                allocation_user_pending_status_choice = AllocationUserStatusChoice.objects.get(
+                name='Pending')
 
             for form in formset:
                 user_form_data = form.cleaned_data
@@ -647,14 +712,31 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
                     user_obj = get_user_model().objects.get(
                         username=user_form_data.get('username'))
+                    
+                    def get_eula(alloc):
+                        if alloc.get_resources_as_list:
+                            for res in alloc.get_resources_as_list:
+                                if res.get_attribute(name='eula'):
+                                    return res.get_attribute(name='eula')
+                        else:
+                            return None
 
                     if allocation_obj.allocationuser_set.filter(user=user_obj).exists():
                         allocation_user_obj = allocation_obj.allocationuser_set.get(
                             user=user_obj)
-                        allocation_user_obj.status = allocation_user_active_status_choice
+                        if EULA_AGREEMENT and not user_obj.userprofile.is_pi and get_eula(allocation_obj):
+                            allocation_user_obj.status = allocation_user_pending_status_choice
+                            send_email_template(f'Agree to EULA for {allocation_obj.get_parent_resource.__str__()}', 'email/allocation_agree_to_eula.txt', {"resource": allocation_obj.get_parent_resource, "url": build_link(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}), domain_url=get_domain_url(self.request))}, self.request.user.email, [user_obj])
+                        else:
+                            allocation_user_obj.status = allocation_user_active_status_choice
                         allocation_user_obj.save()
                     else:
-                        allocation_user_obj = AllocationUser.objects.create(
+                        if EULA_AGREEMENT and not user_obj.userprofile.is_pi and get_eula(allocation_obj):
+                            allocation_user_obj = AllocationUser.objects.create(
+                            allocation=allocation_obj, user=user_obj, status=allocation_user_pending_status_choice)
+                            send_email_template(f'Agree to EULA for {allocation_obj.get_parent_resource.__str__()}', 'email/allocation_agree_to_eula.txt', {"resource": allocation_obj.get_parent_resource, "url": build_link(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}), domain_url=get_domain_url(self.request))}, self.request.user.email, [user_obj])
+                        else:
+                            allocation_user_obj = AllocationUser.objects.create(
                             allocation=allocation_obj, user=user_obj, status=allocation_user_active_status_choice)
 
                     allocation_activate_user.send(sender=self.__class__,
