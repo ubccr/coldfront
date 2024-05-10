@@ -123,8 +123,6 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         attributes_with_usage = [a for a in alloc_attr_set if hasattr(a, 'allocationattributeusage')]
         attributes = alloc_attr_set
 
-
-
         allocation_changes = allocation_obj.allocationchangerequest_set.all().order_by('-pk')
 
         guage_data = []
