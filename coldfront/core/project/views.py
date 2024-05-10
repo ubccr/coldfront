@@ -21,11 +21,13 @@ from django.http import (HttpResponse, HttpResponseForbidden,
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
-from coldfront.core.allocation.utils import generate_guauge_data_from_usage
+from coldfront.core.allocation.utils import generate_guauge_data_from_usage, get_user_resources
 from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from django.views.generic.base import TemplateView
 from django.views.generic.edit import FormView
+from coldfront.config.core import EULA_AGREEMENT
+
 
 from coldfront.core.allocation.models import (Allocation,
                                               AllocationStatusChoice,
@@ -158,11 +160,16 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                     Q(project__projectuser__user=self.request.user) &
                     Q(project__projectuser__status__name__in=['Active', ]) &
                     Q(allocationuser__user=self.request.user) &
-                    Q(allocationuser__status__name__in=['Active', ])
+                    Q(allocationuser__status__name__in=['Active', 'PendingEULA' ])
                 ).distinct().order_by('-end_date')
             else:
                 allocations = Allocation.objects.prefetch_related(
                     'resources').filter(project=self.object)
+        
+        user_status = []                
+        for allocation in allocations:
+            if allocation.allocationuser_set.filter(user=self.request.user).exists():
+                user_status.append(allocation.allocationuser_set.get(user=self.request.user).status.name)
 
         context['publications'] = Publication.objects.filter(
             project=self.object, status='Active').order_by('-year')
@@ -171,6 +178,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['grants'] = Grant.objects.filter(
             project=self.object, status__name__in=['Active', 'Pending', 'Archived'])
         context['allocations'] = allocations
+        context['user_allocation_status'] = user_status
         context['attributes'] = attributes
         context['guage_data'] = guage_data
         context['attributes_with_usage'] = attributes_with_usage
@@ -604,6 +612,24 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
                     users_already_in_project.append(ele)
             context['users_already_in_project'] = users_already_in_project
 
+        allocations_with_eula = {}
+        allocations_with_eula_names = {}
+        allocation_query_set = project_obj.allocation_set.filter(
+            resources__is_allocatable=True, is_locked=False, status__name__in=['Active', 'New', 'Renewal Requested', 'Payment Pending', 'Payment Requested', 'Paid'])
+        allocation_choices_sorted = sorted(allocation_query_set, key=lambda x: x.__str__())
+        for index in range(len(list(allocation_choices_sorted))):
+            if (list(allocation_choices_sorted)[index]).get_eula():
+                allocations_with_eula[f"id_allocationform-allocation_{index}"] = (list(allocation_choices_sorted)[index]).get_eula()
+                allocations_with_eula_names[f"id_allocationform-allocation_{index}"] = allocation_choices_sorted[index].__str__()
+
+        allocations_with_eula_values = []
+        for allocation in list(allocation_choices_sorted):
+            if allocation.get_eula():
+                allocations_with_eula_values.append(allocation.get_eula())
+        context["allocations_with_eula_values"] = allocations_with_eula_values
+        context['allocations_with_eula'] = allocations_with_eula
+        context['allocations_with_eula_names'] = allocations_with_eula_names
+
         # The following block of code is used to hide/show the allocation div in the form.
         if project_obj.allocation_set.filter(status__name__in=['Active', 'New', 'Renewal Requested']).exists():
             div_allocation_class = 'placeholder_div_class'
@@ -675,6 +701,10 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                 name='Active')
             allocation_user_active_status_choice = AllocationUserStatusChoice.objects.get(
                 name='Active')
+            if EULA_AGREEMENT:
+                allocation_user_pending_status_choice = AllocationUserStatusChoice.objects.get(
+                    name='PendingEULA')
+            
             allocation_form_data = allocation_form.cleaned_data['allocation']
             if '__select_all__' in allocation_form_data:
                 allocation_form_data.remove('__select_all__')
@@ -704,16 +734,22 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                             user=user_obj, project=project_obj, role=role_choice, status=project_user_active_status_choice)
 
                     for allocation in Allocation.objects.filter(pk__in=allocation_form_data):
+                        has_eula = allocation.get_eula()
+                        user_status_choice = allocation_user_active_status_choice
                         if allocation.allocationuser_set.filter(user=user_obj).exists():
+                            if EULA_AGREEMENT and has_eula and (allocation_user_obj.status != allocation_user_active_status_choice):
+                                user_status_choice = allocation_user_pending_status_choice
                             allocation_user_obj = allocation.allocationuser_set.get(
                                 user=user_obj)
-                            allocation_user_obj.status = allocation_user_active_status_choice
+                            allocation_user_obj.status = user_status_choice
                             allocation_user_obj.save()
                         else:
+                            if EULA_AGREEMENT and has_eula:
+                                user_status_choice = allocation_user_pending_status_choice
                             allocation_user_obj = AllocationUser.objects.create(
                                 allocation=allocation,
                                 user=user_obj,
-                                status=allocation_user_active_status_choice)
+                                status=user_status_choice)
                         allocation_activate_user.send(sender=self.__class__,
                                                       allocation_user_pk=allocation_user_obj.pk)
 

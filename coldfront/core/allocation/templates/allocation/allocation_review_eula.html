@@ -1,0 +1,70 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Review Allocation EULA
+{% endblock %}
+
+
+{% block content %}
+{% if allocation.project.status.name == 'Archived' %}
+  <div class="alert alert-warning" role="alert">
+    This is a allocation from an archived project! You cannot make any changes.
+  </div>
+{% endif %}
+
+
+{% if form.non_field_errors %}
+  <div class="alert alert-danger" role="alert">
+    {{ form.non_field_errors }}
+  </div>
+{% endif %}
+
+{% if eulas %}
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> EULA Agreements </h3>
+  </div>
+  <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-bordered table-sm">
+          <thead>
+            <tr>
+              <th scope="col">Resource</th>
+              <th scope="col">EULA</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <a href="{% url 'resource-detail' res %}">{{res_obj}}</a><br>
+              </td>
+              <td>
+                {{eulas}}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        {% if allocation_user_status %}
+        {% if allocation_user_status == 'PendingEULA' %}
+        <form method="post">
+          {% csrf_token %}
+          <h4 class="d-inline">In order to access <a href="{% url 'allocation-detail' allocation %}">this allocation</a> you must agree to the EULA</h4>
+          <div style="padding-top:1em">
+            <button type="submit" name="action" value="accepted_eula" class="btn btn-success mr-1 confirm-eula">I Agree</button>
+            <button type="submit" name="action" value="declined_eula" class="btn btn-danger mr-1 confirm-deny-eula">I Disagree</button>
+          </div>
+        </form>
+        {% elif allocation_user_status == 'DeclinedEULA' %}
+        <h4 class="d-inline">You declined the EULA for <a href="{% url 'allocation-detail' allocation %}">this allocation</a> on {{last_updated}}</h4>
+        {% elif allocation_user_status == 'Active' %}
+        <h4 class="d-inline">You accepted the EULA for <a href="{% url 'allocation-detail' allocation %}">this allocation</a> on {{last_updated}}</h4>
+        {% endif %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+{% endblock %}
