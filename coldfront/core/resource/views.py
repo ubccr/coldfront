@@ -172,12 +172,9 @@ class ResourceAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Templ
         return HttpResponseRedirect(reverse('resource-detail', kwargs={'pk': pk}))
 
 class ResourceListView(ColdfrontListView):
-
     model = Resource
     template_name = 'resource_list.html'
     context_object_name = 'item_list'
-    paginate_by = 25
-
 
     def return_order(self):
         order_by = self.request.GET.get('order_by', 'id')
@@ -193,7 +190,6 @@ class ResourceListView(ColdfrontListView):
     def get_queryset(self):
 
         order_by = self.return_order()
-
         resource_search_form = ResourceSearchForm(self.request.GET)
 
         if order_by == 'name':

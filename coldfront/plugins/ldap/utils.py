@@ -347,7 +347,7 @@ def cleaned_membership_query(proj_membs_mans):
     if search_errors:
         logger.error('could not return members and manager for some groups: %s',
                         search_errors)
-    return proj_membs_mans, search_errors
+    return proj_membs_mans, [search_errors]
 
 def remove_inactive_disabled_managers(groupusercollections):
     """Remove groupusercollections with inactive managers"""

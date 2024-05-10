@@ -174,7 +174,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         if 'django_q' in settings.INSTALLED_APPS:
             # get last successful runs of djangoq task responsible for allocationuser data pull
             if allocation_obj.get_parent_resource.resource_type.name == "Storage":
-                sync_task_name = "pullsf_pushcf_redash"
+                sync_task_name = "pull_sf_push_cf"
                 user_sync_task = Task.objects.filter(
                     func__contains=sync_task_name, success=True
                 ).order_by('started').last()
