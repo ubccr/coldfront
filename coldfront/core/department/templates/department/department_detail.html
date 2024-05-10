@@ -4,7 +4,6 @@
   <link href = "https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel = "stylesheet">
   <link href = "jquery.datetimepicker.min.css" rel = "stylesheet"/>
   <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0/css/bootstrap.css">
-  <script src="pdf.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.js"></script>
 </head>
 
@@ -313,9 +312,9 @@
               console.log(window);
               var opt = {
                   margin: 1,
-                  filename: 'invoice.pdf',
+                  filename: 'department.pdf',
                   image: { type: 'jpeg', quality: 0.98 },
-                  html2canvas: { scale: 2 },
+                  html2canvas: { scale: 3 },
                   jsPDF: { unit: 'in', format: 'legal', orientation: 'landscape' }
               };
               html2pdf().from(invoice).set(opt).save();
