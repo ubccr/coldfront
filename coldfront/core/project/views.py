@@ -218,6 +218,19 @@ class ProjectListView(LoginRequiredMixin, ListView):
                     Q(projectuser__status__name='Active')
                 ).order_by(order_by)
 
+            # Generic Search
+            if data.get('generic'):
+                projects = projects.filter(
+                    Q(pi__last_name__icontains=data.get('generic')) |
+                    Q(title__icontains=data.get('generic')) |
+                    Q(pi__username__icontains=data.get('generic')) |
+                    (
+                        Q(projectuser__user__username__icontains=data.get('generic')) &
+                        Q(projectuser__status__name='Active')
+                    ) |
+                    Q(description__icontains=data.get('generic'))
+                )  
+
             # Last Name
             if data.get('last_name'):
                 projects = projects.filter(
