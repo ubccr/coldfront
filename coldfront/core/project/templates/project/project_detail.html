@@ -89,23 +89,25 @@ Project Detail
   </div>
   <div class="card-body">
     <div class="table-responsive">
-      <table class="table table-hover">
+      <table id="projectuser_table" class="table table-hover">
         <thead>
           <tr>
-            <th scope="col">Username</th>
-            <th scope="col">Name</th>
-            <th scope="col">Email</th>
-            <th scope="col">Role <a href="#" data-toggle="popover" title="Role" data-trigger="hover" data-content="Manager role grants user access to add/remove users, allocations, grants, and publications to the project."><i class="fas fa-info-circle" aria-hidden="true"></i><span class="sr-only">Manager role grants user access to add/remove users, allocations, grants, and publications to the project.</span></a></th>
-            <th scope="col">Status</th>
-            <th scope="col"><input type="checkbox" class="check" id="selectAll" style="margin-right: 5px;">Enable Notifications <a href="#" title="Enable Notifications" data-toggle="popover" data-trigger="hover" data-content="When disabled, user will not receive notifications for allocation requests and expirations or cloud usage (if applicable)."><i class="fas fa-info-circle" aria-hidden="true"></i><span class="sr-only">When disabled, user will not receive notifications for allocation requests and expirations or cloud usage (if applicable).</span></a></th>
-            <th scope="col">Actions</th>
+            <th scope="col" class="text-nowrap">Username</th>
+            <th scope="col" class="text-nowrap">First Name</th>
+            <th scope="col" class="text-nowrap">Last Name</th>
+            <th scope="col" class="text-nowrap">Email</th>
+            <th scope="col" class="text-nowrap">Role <a href="#" data-toggle="popover" title="Role" data-trigger="hover" data-content="Manager role grants user access to add/remove users, allocations, grants, and publications to the project."><i class="fas fa-info-circle" aria-hidden="true"></i><span class="sr-only">Manager role grants user access to add/remove users, allocations, grants, and publications to the project.</span></a></th>
+            <th scope="col" class="text-nowrap">Status</th>
+            <th scope="col" class="nosort"><input type="checkbox" class="check" id="selectAll" style="margin-right: 5px;">Enable Notifications <a href="#" title="Enable Notifications" data-toggle="popover" data-trigger="hover" data-content="When disabled, user will not receive notifications for allocation requests and expirations or cloud usage (if applicable)."><i class="fas fa-info-circle" aria-hidden="true"></i><span class="sr-only">When disabled, user will not receive notifications for allocation requests and expirations or cloud usage (if applicable).</span></a></th>
+            <th scope="col" class="nosort">Actions</th>
           </tr>
         </thead>
         <tbody>
           {% for user in project_users %}
             <tr>
               <td>{{ user.user.username }}</td>
-              <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
+              <td>{{ user.user.first_name }} </td>
+              <td>{{ user.user.last_name }}</td>
               <td>{{ user.user.email }}</td>
               <td>{{ user.role.name }}</td>
               {% if user.status.name == 'Active' %}
@@ -184,7 +186,7 @@ Project Detail
               {% if allocation.get_information != '' %}
               <td class="text-nowrap">{{allocation.get_information}}</td>
               {% else %}
-              <td class="text-nowrap">{{allocation.description}}</td>
+              <td class="text-nowrap">{{allocation.description|default_if_none:""}}</td>
               {% endif %}
               {% if allocation.status.name == 'Active' %}
                 <td class="text-success">{{ allocation.status.name }}</td>
@@ -223,6 +225,73 @@ Project Detail
 </div>
 <!-- End Project Allocations -->
 
+<!-- Start Project Attributes -->
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Attributes</h3> <span class="badge badge-secondary">{{attributes.count}}</span>
+    <div class="float-right">
+      {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
+        <a class="btn btn-success" href="{% url 'project-attribute-create' project.pk %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add Attribute</a>
+        {% if attributes %}
+          <a class="btn btn-danger" href="{% url 'project-attribute-delete' project.pk %}" role="button"><i class="fas fa-minus" aria-hidden="true"></i> Delete Attributes</a>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+  <div class="card-body">
+    {% if attributes %}
+      <div class="table-responsive">
+        <table id="attribute_table" class="table table-hover">
+          <thead>
+            <tr>
+              <th scope="col">Attribute Type</th>
+              <th scope="col">Attribute Value</th>
+              {% if is_allowed_to_update_project %}
+              <th scope="col" class="nosort">Actions</th>
+              {% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for attribute in attributes %}
+                {% if attribute.proj_attr_type.is_private and is_allowed_to_update_project %}
+                  <tr style="background-color:#eee">
+                    <td><i class="fas fa-lock" aria-hidden="true"></i> {{attribute}}</td>
+                    <td>{{attribute.value}}</td>
+                    <td><a href="{% url 'project-attribute-update' project.pk attribute.pk %}"><i class="far fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
+                  </tr>
+                {% else %}
+                  <tr>
+                    <td>{{attribute}}</td>
+                    <td>
+                      {{attribute.value}}
+                    </td>
+                    {% if is_allowed_to_update_project %}
+                    <td><a href="{% url 'project-attribute-update' project.pk attribute.pk %}"><i class="far fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
+                    {% endif %}
+                  </tr>                
+                {% endif %}
+              {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if attributes_with_usage %}
+      <hr>
+      {% for attribute in attributes_with_usage %}
+        <div class="card mb-3 mr-1">
+          <div class="card-body">
+            <h4 class="card-title">{{attribute}}</h4>
+            <div id="gauge-{{forloop.counter0}}"></div>
+          </div>
+        </div>
+      {% endfor %}
+      {% endif %}
+    {% else %}
+      <div class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i> There are no attributes to display.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- End Project Attributes -->
 
 <!-- Start Project Grants -->
 <div class="card mb-3">
@@ -262,12 +331,12 @@ Project Detail
               <td>{{ grant.title }}</td>
               <td class="text-nowrap">{{ grant.grant_pi }}</td>
               <td>{{ grant.role}}</td>
-              <td>{{ grant.total_amount_awarded|intcomma}}</td>
+              <td>{{ grant.total_amount_awarded|floatformat:2|intcomma }}</td>
               <td>{{ grant.grant_start|date:"Y-m-d" }}</td>
               <td>{{ grant.grant_end|date:"Y-m-d" }}</td>
               {% if grant.status.name == 'Active' %}
                 <td class="text-success">{{ grant.status.name }}</td>
-              {% elif  grant.status.name == 'Archived' %}
+              {% elif grant.status.name == 'Archived' %}
                 <td class="text-danger">{{ grant.status.name }}</td>
               {% else %}
                 <td class="text-info">{{ grant.status.name }}</td>
@@ -442,6 +511,9 @@ Project Detail
   $(document).ready(function(){
     $('[data-toggle="popover"]').popover();
 
+    var guage_data = {{ guage_data | safe }};
+    drawGauges(guage_data);
+
     $('#publication-table').DataTable({
       "aLengthMenu": [
         [10, 25, 50, 100, -1],
@@ -459,6 +531,13 @@ Project Detail
     });
 
     $('#grant_table').DataTable({
+      'aoColumnDefs': [{
+        'bSortable': false,
+        'aTargets': ['nosort']
+      }]
+    });
+
+    $('#projectuser_table').DataTable({
       'aoColumnDefs': [{
         'bSortable': false,
         'aTargets': ['nosort']
@@ -490,5 +569,20 @@ Project Detail
       });
     });
   });
+
+  function drawGauges(guage_data) {
+    var arrayLength = guage_data.length;
+    for (var i = 0; i < arrayLength; i++) {
+      c3.generate({
+        bindto: '#gauge-' + i,
+        data: guage_data[i],
+        legend: {
+          item: {
+            onclick: function (id) { }
+          }
+        }
+      });
+    }
+  }
 </script>
 {% endblock %}

@@ -1,5 +1,9 @@
 import datetime
+from pipes import Template
 import pprint
+import django
+import logging 
+from django import forms
 
 from django.conf import settings
 from django.contrib import messages
@@ -11,12 +15,13 @@ from coldfront.core.utils.common import import_from_settings
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
-from django.forms import formset_factory
+from django.forms import formset_factory, modelformset_factory
 from django.http import (HttpResponse, HttpResponseForbidden,
                          HttpResponseRedirect)
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse
+from coldfront.core.allocation.utils import generate_guauge_data_from_usage
 from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from django.views.generic.base import TemplateView
@@ -31,13 +36,20 @@ from coldfront.core.allocation.signals import (allocation_activate_user,
 from coldfront.core.grant.models import Grant
 from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectAddUsersToAllocationForm,
+                                          ProjectAttributeAddForm,
+                                          ProjectAttributeDeleteForm,
                                           ProjectRemoveUserForm,
                                           ProjectReviewEmailForm,
-                                          ProjectReviewForm, ProjectSearchForm,
-                                          ProjectUserUpdateForm)
-from coldfront.core.project.models import (Project, ProjectReview,
+                                          ProjectReviewForm,
+                                          ProjectSearchForm,
+                                          ProjectUserUpdateForm,
+                                          ProjectAttributeUpdateForm)
+from coldfront.core.project.models import (Project,
+                                           ProjectAttribute,
+                                           ProjectReview,
                                            ProjectReviewStatusChoice,
-                                           ProjectStatusChoice, ProjectUser,
+                                           ProjectStatusChoice,
+                                           ProjectUser,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice,
                                            ProjectUserMessage)
@@ -59,6 +71,7 @@ if EMAIL_ENABLED:
         'EMAIL_DIRECTOR_EMAIL_ADDRESS')
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
 
+logger = logging.getLogger(__name__)
 
 class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     model = Project
@@ -97,6 +110,37 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         else:
             context['is_allowed_to_update_project'] = False
 
+        pk = self.kwargs.get('pk')
+        project_obj = get_object_or_404(Project, pk=pk)
+
+        if self.request.user.is_superuser:
+            attributes_with_usage = [attribute for attribute in project_obj.projectattribute_set.all(
+            ).order_by('proj_attr_type__name') if hasattr(attribute, 'projectattributeusage')]
+
+            attributes = [attribute for attribute in project_obj.projectattribute_set.all(
+            ).order_by('proj_attr_type__name')]
+
+        else:
+            attributes_with_usage = [attribute for attribute in project_obj.projectattribute_set.filter(
+                proj_attr_type__is_private=False) if hasattr(attribute, 'projectattributeusage')]
+
+            attributes = [attribute for attribute in project_obj.projectattribute_set.filter(
+                proj_attr_type__is_private=False)]
+
+        guage_data = []
+        invalid_attributes = []
+        for attribute in attributes_with_usage:
+            try:
+                guage_data.append(generate_guauge_data_from_usage(attribute.proj_attr_type.name,
+                                                                  float(attribute.value), float(attribute.projectattributeusage.value)))
+            except ValueError:
+                logger.error("Allocation attribute '%s' is not an int but has a usage",
+                             attribute.allocation_attribute_type.name)
+                invalid_attributes.append(attribute)
+
+        for a in invalid_attributes:
+            attributes_with_usage.remove(a)
+
         # Only show 'Active Users'
         project_users = self.object.projectuser_set.filter(
             status__name='Active').order_by('user__username')
@@ -127,6 +171,9 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['grants'] = Grant.objects.filter(
             project=self.object, status__name__in=['Active', 'Pending', 'Archived'])
         context['allocations'] = allocations
+        context['attributes'] = attributes
+        context['guage_data'] = guage_data
+        context['attributes_with_usage'] = attributes_with_usage
         context['project_users'] = project_users
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
 
@@ -148,16 +195,14 @@ class ProjectListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
 
-        order_by = self.request.GET.get('order_by')
-        if order_by:
-            direction = self.request.GET.get('direction')
+        order_by = self.request.GET.get('order_by', 'id')
+        direction = self.request.GET.get('direction', 'asc')
+        if order_by != "name":
             if direction == 'asc':
                 direction = ''
-            else:
+            if direction == 'des':
                 direction = '-'
             order_by = direction + order_by
-        else:
-            order_by = 'id'
 
         project_search_form = ProjectSearchForm(self.request.GET)
 
@@ -262,16 +307,12 @@ class ProjectArchivedListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
 
-        order_by = self.request.GET.get('order_by')
-        if order_by:
-            direction = self.request.GET.get('direction')
-            if direction == 'asc':
-                direction = ''
-            else:
+        order_by = self.request.GET.get('order_by', 'id')
+        direction = self.request.GET.get('direction', '')
+        if order_by != "name":
+            if direction == 'des':
                 direction = '-'
             order_by = direction + order_by
-        else:
-            order_by = 'id'
 
         project_search_form = ProjectSearchForm(self.request.GET)
 
@@ -863,10 +904,14 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
             if project_user_update_form.is_valid():
                 form_data = project_user_update_form.cleaned_data
-                project_user_obj.enable_notifications = form_data.get(
-                    'enable_notifications')
                 project_user_obj.role = ProjectUserRoleChoice.objects.get(
                     name=form_data.get('role'))
+                
+                if(project_user_obj.role.name=="Manager"):
+                    project_user_obj.enable_notifications = True
+                else:
+                    project_user_obj.enable_notifications = form_data.get(
+                        'enable_notifications')
                 project_user_obj.save()
 
                 messages.success(request, 'User details updated.')
@@ -1160,3 +1205,202 @@ class ProjectNoteCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView)
 
     def get_success_url(self):
         return reverse('project-detail', kwargs={'pk': self.kwargs.get('pk')})
+
+class ProjectAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    model = ProjectAttribute
+    form_class = ProjectAttributeAddForm
+    template_name = 'project/project_attribute_create.html'
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+
+        if self.request.user.is_superuser:
+            return True
+
+        if project_obj.pi == self.request.user:
+            return True
+
+        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+            return True
+
+        messages.error(
+            self.request, 'You do not have permission to add project attributes.')
+
+    def get_initial(self):
+        initial = super().get_initial()
+        pk = self.kwargs.get('pk')
+        initial['project'] = get_object_or_404(Project, pk=pk)
+        initial['user'] = self.request.user
+        return initial
+
+    def get_form(self, form_class=None):
+        """Return an instance of the form to be used in this view."""
+        form = super().get_form(form_class)
+        form.fields['project'].widget = forms.HiddenInput()
+        return form
+
+    def get_context_data(self, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        context = super().get_context_data(*args, **kwargs)
+        context['project'] = get_object_or_404(Project, pk=pk)
+        return context
+
+    def get_success_url(self):
+        return reverse('project-detail', kwargs={'pk': self.object.project_id})
+
+
+class ProjectAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    model = ProjectAttribute
+    form_class = ProjectAttributeDeleteForm
+    template_name = 'project/project_attribute_delete.html'
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+
+        if self.request.user.is_superuser:
+            return True
+
+        if project_obj.pi == self.request.user:
+            return True
+
+        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+            return True
+
+        messages.error(
+            self.request, 'You do not have permission to add project attributes.')
+
+    def get_avail_attrs(self, project_obj):
+        if not self.request.user.is_superuser:
+            avail_attrs = ProjectAttribute.objects.filter(project=project_obj, proj_attr_type__is_private=False)
+        else:
+            avail_attrs = ProjectAttribute.objects.filter(project=project_obj)
+        avail_attrs_dicts = [
+            {
+                'pk' : attr.pk,
+                'selected' : False,
+                'name' : str(attr.proj_attr_type),
+                'value' : attr.value
+            }
+
+            for attr in avail_attrs
+        ]
+
+        return avail_attrs_dicts
+
+    def get(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        project_obj = get_object_or_404(Project, pk=pk)
+
+        project_attributes_to_delete = self.get_avail_attrs(
+            project_obj)
+        context = {}
+
+        if project_attributes_to_delete:
+            formset = formset_factory(ProjectAttributeDeleteForm, max_num=len(
+                project_attributes_to_delete))
+            formset = formset(
+                initial=project_attributes_to_delete, prefix='attributeform')
+            context['formset'] = formset
+        context['project'] = project_obj
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        pk = self.kwargs.get('pk')
+        attr_to_delete = self.get_avail_attrs(pk)
+
+        formset = formset_factory(
+            ProjectAttributeDeleteForm,
+            max_num=len(attr_to_delete)
+            )
+        formset = formset(
+            request.POST,
+            initial=attr_to_delete,
+            prefix='attributeform'
+            )
+
+        attributes_deleted_count = 0
+
+        if formset.is_valid():
+            for form in formset:
+                form_data = form.cleaned_data
+                if form_data['selected']:
+                    attributes_deleted_count += 1
+
+                    proj_attr = ProjectAttribute.objects.get(
+                        pk=form_data['pk'])
+
+                    proj_attr.delete()
+
+            messages.success(request, 'Deleted {} attributes from project.'.format(
+                attributes_deleted_count))
+        else:
+            for error in formset.errors:
+                messages.error(request, error)
+
+        return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': pk}))
+
+class ProjectAttributeUpdateView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name = 'project/project_attribute_update.html'
+
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+
+        if self.request.user.is_superuser:
+            return True
+
+        if project_obj.pi == self.request.user:
+            return True
+
+        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+            return True
+
+    def get(self, request, *args, **kwargs):
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+        project_attribute_pk = self.kwargs.get('project_attribute_pk')
+       
+
+        if project_obj.projectattribute_set.filter(pk=project_attribute_pk).exists():
+            project_attribute_obj = project_obj.projectattribute_set.get(
+                pk=project_attribute_pk)
+
+            project_attribute_update_form = ProjectAttributeUpdateForm(
+                initial={'pk': self.kwargs.get('project_attribute_pk'),'name': project_attribute_obj, 'value': project_attribute_obj.value, 'type' : project_attribute_obj.proj_attr_type})
+
+            context = {}
+            context['project_obj'] = project_obj
+            context['project_attribute_update_form'] = project_attribute_update_form
+            context['project_attribute_obj'] = project_attribute_obj
+
+            return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+        project_attribute_pk = self.kwargs.get('project_attribute_pk')
+
+        if project_obj.projectattribute_set.filter(pk=project_attribute_pk).exists():
+            project_attribute_obj = project_obj.projectattribute_set.get(
+                pk=project_attribute_pk)
+
+            if project_obj.status.name not in ['Active', 'New', ]:
+                messages.error(
+                    request, 'You cannot update an attribute in an archived project.')
+                return HttpResponseRedirect(reverse('project-attribute-update', kwargs={'pk': project_obj.pk, 'project_attribute_pk': project_attribute_obj.pk}))
+
+            project_attribute_update_form = ProjectAttributeUpdateForm(request.POST, initial={'pk': self.kwargs.get('project_attribute_pk'),})
+
+            if project_attribute_update_form.is_valid():
+                form_data = project_attribute_update_form.cleaned_data
+                project_attribute_obj.value = form_data.get(
+                     'new_value')
+                project_attribute_obj.save()
+
+                messages.success(request, 'Attribute Updated.')
+                return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
+            else:
+                for error in project_attribute_update_form.errors.values():
+                    messages.error(request, error)
+                return HttpResponseRedirect(reverse('project-attribute-update', kwargs={'pk': project_obj.pk, 'project_attribute_pk': project_attribute_obj.pk}))

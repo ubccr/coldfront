@@ -1,4 +1,5 @@
 from django import forms
+from django.db.models.functions import Lower
 from django.shortcuts import get_object_or_404
 
 from coldfront.core.allocation.models import (Allocation, AllocationAccount,
@@ -27,7 +28,7 @@ class AllocationForm(forms.Form):
     def __init__(self, request_user, project_pk,  *args, **kwargs):
         super().__init__(*args, **kwargs)
         project_obj = get_object_or_404(Project, pk=project_pk)
-        self.fields['resource'].queryset = get_user_resources(request_user)
+        self.fields['resource'].queryset = get_user_resources(request_user).order_by(Lower("name"))
         self.fields['quantity'].initial = 1
         user_query_set = project_obj.projectuser_set.select_related('user').filter(
             status__name__in=['Active', ]).order_by("user__username")
@@ -55,7 +56,7 @@ class AllocationForm(forms.Form):
 
 class AllocationUpdateForm(forms.Form):
     status = forms.ModelChoiceField(
-        queryset=AllocationStatusChoice.objects.all().order_by('name'), empty_label=None)
+        queryset=AllocationStatusChoice.objects.all().order_by(Lower("name")), empty_label=None)
     start_date = forms.DateField(
         label='Start Date',
         widget=forms.DateInput(attrs={'class': 'datepicker'}),
@@ -75,7 +76,7 @@ class AllocationUpdateForm(forms.Form):
         start_date = cleaned_data.get("start_date")
         end_date = cleaned_data.get("end_date")
 
-        if start_date and end_date < start_date:
+        if start_date and end_date and end_date < start_date:
             raise forms.ValidationError(
                 'End date cannot be less than start date'
             )
@@ -83,12 +84,12 @@ class AllocationUpdateForm(forms.Form):
 
 class AllocationInvoiceUpdateForm(forms.Form):
     status = forms.ModelChoiceField(queryset=AllocationStatusChoice.objects.filter(name__in=[
-        'Payment Pending', 'Payment Requested', 'Payment Declined', 'Paid']).order_by('name'), empty_label=None)
+        'Payment Pending', 'Payment Requested', 'Payment Declined', 'Paid']).order_by(Lower("name")), empty_label=None)
 
 
 class AllocationAddUserForm(forms.Form):
     username = forms.CharField(max_length=150, disabled=True)
-    first_name = forms.CharField(max_length=30, required=False, disabled=True)
+    first_name = forms.CharField(max_length=150, required=False, disabled=True)
     last_name = forms.CharField(max_length=150, required=False, disabled=True)
     email = forms.EmailField(max_length=100, required=False, disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
@@ -96,7 +97,7 @@ class AllocationAddUserForm(forms.Form):
 
 class AllocationRemoveUserForm(forms.Form):
     username = forms.CharField(max_length=150, disabled=True)
-    first_name = forms.CharField(max_length=30, required=False, disabled=True)
+    first_name = forms.CharField(max_length=150, required=False, disabled=True)
     last_name = forms.CharField(max_length=150, required=False, disabled=True)
     email = forms.EmailField(max_length=100, required=False, disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
@@ -120,16 +121,16 @@ class AllocationSearchForm(forms.Form):
         label='Username', max_length=100, required=False)
     resource_type = forms.ModelChoiceField(
         label='Resource Type',
-        queryset=ResourceType.objects.all().order_by('name'),
+        queryset=ResourceType.objects.all().order_by(Lower("name")),
         required=False)
     resource_name = forms.ModelMultipleChoiceField(
         label='Resource Name',
         queryset=Resource.objects.filter(
-            is_allocatable=True).order_by('name'),
+            is_allocatable=True).order_by(Lower("name")),
         required=False)
     allocation_attribute_name = forms.ModelChoiceField(
         label='Allocation Attribute Name',
-        queryset=AllocationAttributeType.objects.all().order_by('name'),
+        queryset=AllocationAttributeType.objects.all().order_by(Lower("name")),
         required=False)
     allocation_attribute_value = forms.CharField(
         label='Allocation Attribute Value', max_length=100, required=False)
@@ -143,7 +144,7 @@ class AllocationSearchForm(forms.Form):
         required=False)
     status = forms.ModelMultipleChoiceField(
         widget=forms.CheckboxSelectMultiple,
-        queryset=AllocationStatusChoice.objects.all().order_by('name'),
+        queryset=AllocationStatusChoice.objects.all().order_by(Lower("name")),
         required=False)
     show_all_allocations = forms.BooleanField(initial=False, required=False)
 
@@ -156,7 +157,7 @@ class AllocationReviewUserForm(forms.Form):
     )
 
     username = forms.CharField(max_length=150, disabled=True)
-    first_name = forms.CharField(max_length=30, required=False, disabled=True)
+    first_name = forms.CharField(max_length=150, required=False, disabled=True)
     last_name = forms.CharField(max_length=150, required=False, disabled=True)
     email = forms.EmailField(max_length=100, required=False, disabled=True)
     user_status = forms.ChoiceField(choices=ALLOCATION_REVIEW_USER_CHOICES)
@@ -251,3 +252,10 @@ class AllocationChangeNoteForm(forms.Form):
             widget=forms.Textarea,
             help_text="Leave any feedback about the allocation change request.")
 
+class AllocationAttributeCreateForm(forms.ModelForm):
+    class Meta:
+        model = AllocationAttribute
+        fields = '__all__'
+    def __init__(self, *args, **kwargs):
+        super(AllocationAttributeCreateForm, self).__init__(*args, **kwargs) 
+        self.fields['allocation_attribute_type'].queryset = self.fields['allocation_attribute_type'].queryset.order_by(Lower('name'))
