@@ -130,6 +130,9 @@ ALLOCATION_ACCOUNT_MAPPING = import_from_settings(
 SLACK_MESSAGING_ENABLED = import_from_settings(
     'SLACK_MESSAGING_ENABLED', False
 )
+SLATE_PROJECT_SHOW_ESTIMATED_COST = import_from_settings(
+    'SLATE_PROJECT_SHOW_ESTIMATED_COST', False
+)
 
 logger = logging.getLogger(__name__)
 
@@ -208,7 +211,9 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context['attributes'] = attributes
         context['allocation_changes'] = allocation_changes
         context['allocation_changes_enabled'] = allocation_changes_enabled
-        context['display_estimated_cost'] = 'coldfront.plugins.slate_project' in settings.INSTALLED_APPS
+        context['display_estimated_cost'] = False
+        if 'coldfront.plugins.slate_project' in settings.INSTALLED_APPS: 
+            context['display_estimated_cost'] = SLATE_PROJECT_SHOW_ESTIMATED_COST
 
         # Can the user update the project?
         context['is_allowed_to_update_project'] = False
