@@ -1213,8 +1213,8 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
             justification='No additional information needed at this time.',
             status=AllocationStatusChoice.objects.get(name='Active'),
             start_date=allocation_start_date,
-            end_date=project_end_date,
-            is_changeable=True
+            end_date=project_obj.end_date,
+            is_changeable=False
         )
         if created:
             allocation_obj.resources.add(Resource.objects.get(name='Slate Project'))
