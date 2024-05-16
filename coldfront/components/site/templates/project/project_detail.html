@@ -153,9 +153,6 @@ Project Detail
       </p>
     {% endif %}
     <p class="card-text text-justify"><strong>Description: </strong>{{ project.description }}</p>
-    {% if project.slurm_account_name %}
-      <p class="card-text text-justify"><strong>Slurm Account Name: </strong>{{ project.slurm_account_name }}</p>
-    {% endif %}
     <!-- <p class="card-text text-justify"><strong>Field of Science: </strong>{{ project.field_of_science}}</p> -->
     <p class="card-text text-justify"><strong>Project Type: </strong>{{ project.type.name }}</p>
     {% if project.class_number %}
