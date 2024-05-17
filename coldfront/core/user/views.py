@@ -8,14 +8,14 @@ from django.db.models import BooleanField, Prefetch
 from django.db.models.expressions import ExpressionWrapper, F, Q
 from django.db.models.functions import Lower
 from django.http import HttpResponseRedirect
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.generic import ListView, TemplateView
 
 from coldfront.core.project.models import Project, ProjectUser
-from coldfront.core.user.forms import UserSearchForm
+from coldfront.core.user.forms import UserSearchForm, UserDarkModeForm
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.mail import send_email_template
@@ -61,8 +61,22 @@ class UserProfile(TemplateView):
             [group.name for group in viewed_user.groups.all()])
         context['group_list'] = group_list
         context['viewed_user'] = viewed_user
+        context['dark_mode_form'] = UserDarkModeForm(initial={"dark_mode": viewed_user.userprofile.dark_mode})
         return context
 
+    def post(self, request, *args, **kwargs):
+        dark_mode_form = UserDarkModeForm(request.POST, initial={"dark_mode": self.request.user.userprofile.dark_mode})
+        
+        if dark_mode_form.is_valid():
+            form_data = dark_mode_form.cleaned_data
+            logger.warn(form_data.get("dark_mode"))
+            self.request.user.userprofile.dark_mode = form_data.get("dark_mode")
+            
+            self.request.user.save()
+        else:
+            logger.warn("Form invalid")
+
+        return HttpResponseRedirect(reverse('user-profile'))
 
 @method_decorator(login_required, name='dispatch')
 class UserProjectsManagersView(ListView):
@@ -214,7 +228,6 @@ class UserUpgradeAccount(LoginRequiredMixin, UserPassesTestMixin, View):
 
         messages.success(request, 'Your request has been sent')
         return HttpResponseRedirect(reverse('user-profile'))
-
 
 class UserSearchHome(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'user/user_search_home.html'
