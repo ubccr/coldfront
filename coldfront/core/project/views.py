@@ -30,6 +30,8 @@ from coldfront.core.allocation.signals import (
     allocation_activate_user,
 )
 from coldfront.core.project.signals import (
+    project_filter_users_to_remove,
+    project_preremove_projectuser,
     project_make_projectuser,
     project_create,
     project_post_create
@@ -71,9 +73,6 @@ from coldfront.core.utils.mail import send_email, send_email_template
 
 if 'django_q' in settings.INSTALLED_APPS:
     from django_q.tasks import Task
-
-if 'coldfront.plugins.ldap' in settings.INSTALLED_APPS:
-    from coldfront.plugins.ldap.utils import LDAPConn
 
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
     'ALLOCATION_ENABLE_ALLOCATION_RENEWAL', True)
@@ -754,14 +753,9 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         users_no_removal = None
 
         # if ldap is activated, prevent selection of users with project corresponding to primary group
-        if 'coldfront.plugins.ldap' in settings.INSTALLED_APPS:
-
-            usernames = [u['username'] for u in users_to_remove]
-            ldap_conn = LDAPConn()
-            users_main_group = ldap_conn.users_in_primary_group(
-                usernames, project_obj.title)
-            ingroup = lambda u: u['username'] in users_main_group
-            users_no_removal, users_to_remove = sort_by(users_to_remove, ingroup, how="condition")
+        users_no_removal, users_to_remove = project_filter_users_to_remove.send(
+            sender=self.__class__, users=users_to_remove, project=project_obj
+        )
 
         context = {}
 
@@ -782,14 +776,9 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
         users_to_remove = self.get_users_to_remove(project_obj)
         # if ldap is activated, prevent selection of users with project corresponding to primary group
-        if 'coldfront.plugins.ldap' in settings.INSTALLED_APPS:
-
-            usernames = [u['username'] for u in users_to_remove]
-            ldap_conn = LDAPConn()
-            users_main_group = ldap_conn.users_in_primary_group(
-                usernames, project_obj.title)
-            ingroup = lambda u: u['username'] in users_main_group
-            users_no_removal, users_to_remove = sort_by(users_to_remove, ingroup, how="condition")
+        users_no_removal, users_to_remove = project_filter_users_to_remove.send(
+            sender=self.__class__, users=users_to_remove, project=project_obj
+        )
 
         formset = formset_factory(ProjectRemoveUserForm, max_num=len(users_to_remove))
         formset = formset(request.POST, initial=users_to_remove, prefix='userform')

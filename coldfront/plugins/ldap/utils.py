@@ -5,7 +5,6 @@ import logging
 import operator
 from functools import reduce
 
-from coldfront.core import field_of_science
 from django.db.models import Q
 from django.dispatch import receiver
 from django.utils import timezone
@@ -15,6 +14,7 @@ from ldap3.extend.microsoft.addMembersToGroups import ad_add_members_to_groups
 from ldap3.extend.microsoft.removeMembersFromGroups import ad_remove_members_from_groups
 
 from coldfront.core.project.signals import (
+    project_filter_users_to_remove,
     project_preremove_projectuser,
     project_make_projectuser,
     project_create,
@@ -714,6 +714,16 @@ def update_new_project(sender, **kwargs):
             role=ProjectUserRoleChoice.objects.get(name=role_name),
             status=ProjectUserStatusChoice.objects.get(name='Active'),
         )
+
+@receiver(project_filter_users_to_remove)
+def filter_project_users_to_remove(sender, **kwargs):
+    users_to_remove = kwargs['users_to_remove']
+    usernames = [u['username'] for u in users_to_remove]
+    ldap_conn = LDAPConn()
+    users_main_group = ldap_conn.users_in_primary_group(usernames, kwargs['project'].title)
+    ingroup = lambda u: u['username'] in users_main_group
+    users_no_removal, users_to_remove = sort_by(users_to_remove, ingroup, how="condition")
+    return (users_no_removal, users_to_remove)
 
 @receiver(project_make_projectuser)
 def add_user_to_group(sender, **kwargs):
