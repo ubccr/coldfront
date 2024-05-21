@@ -29,6 +29,7 @@ from coldfront.core.allocation.signals import (
     allocation_remove_user,
     allocation_activate_user,
 )
+from coldfront.core.project.signals import project_create, project_post_create
 from coldfront.core.grant.models import Grant
 from coldfront.core.project.forms import (
     ProjectReviewForm,
@@ -327,7 +328,6 @@ class ProjectListView(ColdfrontListView):
             )
         return projects.distinct().order_by(order_by)
 
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(SearchFormClass=ProjectSearchForm, **kwargs)
         context['expand'] = False
@@ -380,7 +380,7 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
 class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Project
     template_name_suffix = '_create_form'
-    fields = ['title', 'description', 'field_of_science']
+    fields = ['title', 'description',]# 'field_of_science']
 
     def test_func(self):
         """UserPassesTestMixin Tests"""
@@ -390,16 +390,38 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
     def form_valid(self, form):
         project_obj = form.save(commit=False)
-        form.instance.pi = self.request.user
+        try:
+            project_create.send(
+                sender=self.__class__, project_title=project_obj.title,
+            )
+        except Exception as exception:
+            logger.exception(exception)
+            messages.error(self.request, str(exception))
+            return HttpResponseRedirect(reverse('project-create'))
         form.instance.status = ProjectStatusChoice.objects.get(name='New')
-        project_obj.save()
-        ProjectUser.objects.create(
-            user=self.request.user,
-            project=project_obj,
-            role=ProjectUserRoleChoice.objects.get(name='Manager'),
-            status=ProjectUserStatusChoice.objects.get(name='Active'),
-        )
-        return super().form_valid(form)
+        form.instance.pi = self.request.user
+        try:
+            project_obj.save()
+        except Exception as exception:
+            logger.exception(exception)
+            messages.error(
+                self.request,
+                f"the project could not be created, an error was encountered: {exception}"
+            )
+            return HttpResponseRedirect(reverse('project-create'))
+        form_valid_status = super().form_valid(form)
+        try:
+            project_post_create.send(
+                    sender=self.__class__, project_obj=project_obj
+            )
+        except Exception as exception:
+            logger.exception(exception)
+            messages.error(
+                self.request,
+                f"the project was created but an error was encountered in post-creation processes - please contact a system administrator: {exception}"
+            )
+            return HttpResponseRedirect(reverse('project-create'))
+        return form_valid_status
 
     def get_success_url(self):
         return reverse('project-detail', kwargs={'pk': self.object.pk})

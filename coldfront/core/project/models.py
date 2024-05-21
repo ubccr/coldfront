@@ -70,11 +70,10 @@ class Project(TimeStampedModel):
             return self.get(title=title, pi__username=pi_username)
 
 
-    DEFAULT_DESCRIPTION = """
-We do not have information about your research. Please provide a detailed description of your work and update your field of science. Thank you!
-        """
+    DEFAULT_DESCRIPTION = ("We do not have information about your research. "
+    "Please provide a detailed description of your work.")
 
-    title = models.CharField(max_length=255,)
+    title = models.CharField(max_length=255, unique=True)
     pi = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,)
     description = models.TextField(
         default=DEFAULT_DESCRIPTION,
@@ -99,7 +98,7 @@ We do not have information about your research. Please provide a detailed descri
         if 'Auto-Import Project'.lower() in self.title.lower():
             raise ValidationError('You must update the project title. You cannot have "Auto-Import Project" in the title.')
 
-        if 'We do not have information about your research. Please provide a detailed description of your work and update your field of science. Thank you!' in self.description:
+        if self.DEFAULT_DESCRIPTION in self.description:
             raise ValidationError('You must update the project description.')
 
     @property

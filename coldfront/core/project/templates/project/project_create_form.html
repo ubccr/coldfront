@@ -11,6 +11,12 @@ Create Project
 {% block content %}
 <h2>Creating a new Project</h2>
 
+<p>Enter the name of an AD group you would like to manually add to Coldfront
+  and a short description.
+  Upon submission, Coldfront will check AD for the group and add it to the database
+  if it exists.
+</p>
+
  <form method="post">
   {% csrf_token %}
   {{ form|crispy }}
