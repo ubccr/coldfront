@@ -29,7 +29,11 @@ from coldfront.core.allocation.signals import (
     allocation_remove_user,
     allocation_activate_user,
 )
-from coldfront.core.project.signals import project_create, project_post_create
+from coldfront.core.project.signals import (
+    project_make_projectuser,
+    project_create,
+    project_post_create
+)
 from coldfront.core.grant.models import Grant
 from coldfront.core.project.forms import (
     ProjectReviewForm,
@@ -611,8 +615,6 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
         )
 
         added_users_count = 0
-        if 'coldfront.plugins.ldap' in settings.INSTALLED_APPS:
-            ldap_conn = LDAPConn()
 
         if formset.is_valid() and allocation_form.is_valid():
             projuserstatus_active = ProjectUserStatusChoice.objects.get(name='Active')
@@ -649,28 +651,19 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
                     role_choice = user_form_data.get('role')
 
-                    if 'coldfront.plugins.ldap' in settings.INSTALLED_APPS:
-                        try:
-                            ldap_conn.add_user_to_group(
-                                user_obj.username, project_obj.title,
-                            )
-                            logger.info(
-                                "P678: Coldfront user %s added AD User for %s to AD Group %s",
-                                self.request.user,
-                                user_obj.username,
-                                project_obj.title,
-                            )
-                        except Exception as e:
-                            error = f"Could not add user {user_obj} to AD Group for {project_obj.title}: {e}\nPlease contact Coldfront administration for further assistance."
-                            logger.error(
-                                "P685: user %s could not add AD user of %s to AD Group of %s: %s",
-                                self.request.user, user_obj, project_obj.title, e
-                            )
-                            errors.append(error)
-                            continue
-                        success_msg = f"User {user_obj} added by {request.user} to AD Group for {project_obj.title}"
-                        logger.info(success_msg)
-                        successes.append(success_msg)
+                    try:
+                        project_make_projectuser.send(
+                            sender=self.__class__,
+                            user_name=user_obj.username, group_name=project_obj.title
+                        )
+                    except Exception as e:
+                        error = f"Could not add user {user_obj} to AD Group for {project_obj.title}: {e}\nPlease contact Coldfront administration for further assistance."
+                        logger.exception('P646: %s', e)
+                        errors.append(error)
+                        continue
+                    success_msg = f"User {user_obj} added by {request.user} to AD Group for {project_obj.title}"
+                    logger.info(success_msg)
+                    successes.append(success_msg)
 
                     # Is the user already in the project?
                     project_obj.projectuser_set.update_or_create(
@@ -798,7 +791,6 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             ingroup = lambda u: u['username'] in users_main_group
             users_no_removal, users_to_remove = sort_by(users_to_remove, ingroup, how="condition")
 
-
         formset = formset_factory(ProjectRemoveUserForm, max_num=len(users_to_remove))
         formset = formset(request.POST, initial=users_to_remove, prefix='userform')
 
@@ -822,30 +814,30 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
                     project_user_obj = project_obj.projectuser_set.get(user=user_obj)
 
-                    if 'coldfront.plugins.ldap' in settings.INSTALLED_APPS:
-                        try:
-                            ldap_conn.remove_member_from_group(
-                                user_obj.username, project_obj.title,
-                            )
-                            logger.info(
-                                "P835: Coldfront user %s removed AD User for %s from AD Group for %s",
-                                self.request.user,
-                                user_obj.username,
-                                project_obj.title,
-                            )
-                        except Exception as e:
-                            messages.error(
-                                request,
-                                f"could not remove user {user_obj}: {e}"
-                            )
-                            logger.error(
-                                "P846: Coldfront user %s could NOT remove AD User for %s from AD Group for %s: %s",
-                                self.request.user,
-                                user_obj.username,
-                                project_obj.title,
-                                e
-                            )
-                            continue
+                    try:
+                        project_preremove_projectuser.send(
+                            sender=self.__class__,
+                            user_name=user_obj.username, group_name=project_obj.title
+                        )
+                        logger.info(
+                            "P802: Coldfront user %s removed AD User for %s from AD Group for %s",
+                            self.request.user,
+                            user_obj.username,
+                            project_obj.title,
+                        )
+                    except Exception as e:
+                        messages.error(
+                            request,
+                            f"could not remove user {user_obj}: {e}"
+                        )
+                        logger.error(
+                            "P802: Coldfront user %s could NOT remove AD User for %s from AD Group for %s: %s",
+                            self.request.user,
+                            user_obj.username,
+                            project_obj.title,
+                            e
+                        )
+                        continue
 
                     project_user_obj.status = projectuser_status_removed
                     project_user_obj.save()

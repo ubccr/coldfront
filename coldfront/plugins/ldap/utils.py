@@ -14,7 +14,12 @@ from ldap3 import Connection, Server, ALL_ATTRIBUTES
 from ldap3.extend.microsoft.addMembersToGroups import ad_add_members_to_groups
 from ldap3.extend.microsoft.removeMembersFromGroups import ad_remove_members_from_groups
 
-from coldfront.core.project.signals import project_create, project_post_create
+from coldfront.core.project.signals import (
+    project_preremove_projectuser,
+    project_make_projectuser,
+    project_create,
+    project_post_create,
+)
 from coldfront.core.utils.common import (
     import_from_settings, uniques_and_intersection
 )
@@ -178,11 +183,6 @@ class LDAPConn:
         if not group:
             raise ValueError("no groups returned")
         return group[0]
-
-    def add_user_to_group(self, user_name, group_name):
-        group = self.return_group_by_name(group_name)
-        user = self.return_user_by_name(user_name)
-        self.add_member_to_group(user, group)
 
     def add_group_to_group(self, group_name, parent_group_name):
         group = self.return_group_by_name(group_name)
@@ -714,3 +714,15 @@ def update_new_project(sender, **kwargs):
             role=ProjectUserRoleChoice.objects.get(name=role_name),
             status=ProjectUserStatusChoice.objects.get(name='Active'),
         )
+
+@receiver(project_make_projectuser)
+def add_user_to_group(sender, **kwargs):
+    ldap_conn = LDAPConn()
+    group = ldap_conn.return_group_by_name(kwargs['group_name'])
+    user = ldap_conn.return_user_by_name(kwargs['user_name'])
+    ldap_conn.add_member_to_group(user, group)
+
+@receiver(project_preremove_projectuser)
+def remove_member_from_group(sender, **kwargs):
+    ldap_conn = LDAPConn()
+    ldap_conn.remove_member_from_group(kwargs['user_name'], kwargs['group_name'])
