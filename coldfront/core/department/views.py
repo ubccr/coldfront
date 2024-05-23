@@ -17,6 +17,7 @@ from coldfront.core.department.models import (
     DepartmentUserNote,
 )
 
+
 def return_department_roles(user, department):
     """Return list of a user's permissions for the specified department.
     possible roles are: manager, pi, or member.
@@ -179,7 +180,7 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
         attribute_filter = (
             Q(allocation__allocationattribute__allocation_attribute_type_id__in=quota_attr_ids)
-            & Q(allocation__status_id__in=[1, 2])
+            & Q(allocation__status__name='Active')
         )
         attribute_string = 'allocation__allocationattribute__value'
         project_objs = list(
@@ -221,7 +222,7 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
         allocation_objs = Allocation.objects.filter(
             project_id__in=[o.id for o in project_objs],
-            status__name__in=['Active', 'New'],
+            status__name='Active',
         )
 
         allocation_users = AllocationUser.objects.filter(

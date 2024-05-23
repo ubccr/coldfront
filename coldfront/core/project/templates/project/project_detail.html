@@ -240,7 +240,7 @@ Project Detail
             <td>{{ allocation.allocationuser_set.count }}</td>
             <td>{{ allocation.size|floatformat:1 }}</td>
 
-            {% if allocation.status.name == 'New' %}
+            {% if allocation.status.name in 'New,In Progress,On Hold' %}
               <td class="text-info">{{ Requested }}</td>
             {% elif allocation.status.name == 'Active' %}
               <td class="text-success">{{ allocation.status.name }}</td>

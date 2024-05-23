@@ -19,14 +19,22 @@ class Command(BaseCommand):
         ):
             AttributeType.objects.get_or_create(name=attribute_type)
 
-        for choice in (
-            'Active', 'Denied', 'Expired', 'Inactive', 'New',
-            'Pending Deactivation',
+        for choice, description in (
+            ('Active', 'Allocation is active and in use'),
+            ('Denied', 'Allocation request was denied'),
+            ('Expired', 'Allocation has expired'),
+            ('Inactive', 'Allocation is defunct and no longer exists'),
+            ('New', 'Allocation has been requested'),
+            ('Pending Deactivation', 'Allocation is slated for deactivation'),
+            ('In Progress', 'Allocation request is being processed'),
+            ('On Hold', 'Allocation request is on hold'),
             # UBCCR Defaults
             # 'Paid', 'Payment Pending', 'Payment Requested',
             # 'Payment Declined', 'Revoked', 'Renewal Requested', 'Unpaid',
         ):
-            AllocationStatusChoice.objects.get_or_create(name=choice)
+            choice_obj = AllocationStatusChoice.objects.get_or_create(name=choice)
+            choice_obj.description = description
+            choice_obj.save()
 
         for choice in ('Pending', 'Approved', 'Denied',):
             AllocationChangeStatusChoice.objects.get_or_create(name=choice)

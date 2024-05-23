@@ -13,7 +13,8 @@ EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL = import_from_settings(
 EMAIL_ADMIN_LIST = import_from_settings('EMAIL_ADMIN_LIST', [])
 EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
     'EMAIL_DIRECTOR_EMAIL_ADDRESS', '')
-
+PENDING_ACTIVE_ALLOCATION_STATUSES = import_from_settings(
+    'PENDING_ACTIVE_ALLOCATION_STATUSES', ['Active', 'New', 'Renewal Requested', 'Payment Pending', 'Payment Requested', 'Paid'])
 
 class ProjectSearchForm(forms.Form):
     """ Search form for the Project list page.
@@ -54,7 +55,7 @@ class ProjectAddUsersToAllocationForm(forms.Form):
         project_obj = get_object_or_404(Project, pk=project_pk)
 
         allocation_query_set = project_obj.allocation_set.filter(
-            resources__is_allocatable=True, is_locked=False, status__name__in=['Active', 'New', 'Renewal Requested', 'Payment Pending', 'Payment Requested', 'Paid'])
+            resources__is_allocatable=True, is_locked=False, status__name__in=PENDING_ACTIVE_ALLOCATION_STATUSES)
         allocation_choices = [(allocation.id, "%s (%s) %s" % (allocation.get_parent_resource.name, allocation.get_parent_resource.resource_type.name,
                                                               allocation.description if allocation.description else '')) for allocation in allocation_query_set]
         allocation_choices_sorted = []

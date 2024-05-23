@@ -54,6 +54,7 @@ class AllocationStatusChoice(TimeStampedModel):
             return self.get(name=name)
 
     name = models.CharField(max_length=64)
+    description = models.CharField(max_length=128, blank=True, null=True)
     objects = AllocationStatusChoiceManager()
 
     def __str__(self):

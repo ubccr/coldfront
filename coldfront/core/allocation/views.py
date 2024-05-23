@@ -98,6 +98,13 @@ if INVOICE_ENABLED:
 ALLOCATION_ACCOUNT_ENABLED = import_from_settings('ALLOCATION_ACCOUNT_ENABLED', False)
 ALLOCATION_ACCOUNT_MAPPING = import_from_settings('ALLOCATION_ACCOUNT_MAPPING', {})
 
+PENDING_ALLOCATION_STATUSES = import_from_settings(
+    'PENDING_ALLOCATION_STATUSES', ['New'])
+ACTIVE_ALLOCATION_STATUSES = import_from_settings(
+    'ACTIVE_ALLOCATION_STATUSES', ['Active'])
+PENDING_ACTIVE_ALLOCATION_STATUSES = import_from_settings(
+    'PENDING_ACTIVE_ALLOCATION_STATUSES', ['Active', 'New', 'Renewal Requested'])
+
 logger = logging.getLogger(__name__)
 
 
@@ -316,8 +323,8 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                 return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
             if action == 'approve':
                 approval_form = AllocationApprovalForm(request.POST)
-                # approval_form_data = approval_form.cleaned_data
                 autoapproval_choice = approval_form.data.get('auto_create_opts')
+
                 if autoapproval_choice == '2':
                     resources_plugins = {
                         'isilon': 'coldfront.plugins.isilon',
@@ -798,8 +805,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         err = None
         if allocation_obj.is_locked and not self.request.user.is_superuser:
             err = 'You cannot modify this allocation because it is locked! Contact support for details.'
-        elif allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested',
-                                    'Payment Pending', 'Payment Requested', 'Paid']:
+        elif allocation_obj.status.name not in PENDING_ACTIVE_ALLOCATION_STATUSES:
             err = f'You cannot add users to an allocation with status {allocation_obj.status.name}.'
         if err:
             messages.error(request, err)
@@ -908,7 +914,7 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
         err = None
         if allocation_obj.is_locked and not self.request.user.is_superuser:
             err = 'You cannot modify this allocation because it is locked! Contact support for details.'
-        elif allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested']:
+        elif allocation_obj.status.name not in PENDING_ACTIVE_ALLOCATION_STATUSES:
             err = f'You cannot remove users from an allocation with status {allocation_obj.status.name}.'
         if err:
             messages.error(request, err)
@@ -1254,7 +1260,7 @@ class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templat
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         allocation_list = Allocation.objects.filter(
-            status__name__in=['New', 'Renewal Requested', 'Paid', 'Approved']
+            status__name__in=PENDING_ALLOCATION_STATUSES
         )
         AllocationFormSet = formset_factory(
             AllocationUpdateForm, max_num=len(allocation_list),
@@ -1427,7 +1433,7 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
 
                     elif user_status == 'remove_from_project':
                         for active_alloc in allocation_obj.project.allocation_set.filter(
-                            status__name__in=['Active', 'New']
+                            status__name__in=PENDING_ACTIVE_ALLOCATION_STATUSES
                         ):
                             alloc_user_obj = active_alloc.allocationuser_set.get(
                                 user=user_obj
@@ -2141,7 +2147,7 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         if allocation_obj.project.needs_review:
             err = 'You cannot request a change to this allocation because you have to review your project first.'
             errs.append(err)
-        if allocation_obj.project.status.name not in ['Active', 'New']:
+        if allocation_obj.project.status.name not in PENDING_ACTIVE_ALLOCATION_STATUSES:
             err = 'You cannot request a change to an allocation in an archived project.'
             errs.append(err)
         if allocation_obj.is_locked:
