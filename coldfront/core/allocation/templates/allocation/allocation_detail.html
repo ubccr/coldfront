@@ -659,7 +659,7 @@ window.onload = function () {
     var allocation_status = '{{ allocation.status }}';
     var user_is_admin = {{ request.user.is_superuser | lower }};
     var code = [];
-    if (allocation_status == 'New' && user_is_admin && resource_id !== '') {
+    if (allocation_status in ['New' 'In Progress', 'On Hold'], && user_is_admin && resource_id !== '') {
       $.ajax({
         url: "{% url 'resource-detail' 0 %}".replace('0', resource_id),
         type: 'GET',

@@ -29,6 +29,12 @@ ALLOCATION_FUNCS_ON_EXPIRE = ['coldfront.core.allocation.utils.test_allocation_f
 # This is in days
 ALLOCATION_DEFAULT_ALLOCATION_LENGTH = ENV.int('ALLOCATION_DEFAULT_ALLOCATION_LENGTH', default=365)
 
+# Categorization of allocation statuses
+PENDING_ALLOCATION_STATUSES = ['New', 'In Progress', 'On Hold']
+ACTIVE_ALLOCATION_STATUSES = ['Active']
+PENDING_ACTIVE_ALLOCATION_STATUSES = PENDING_ALLOCATION_STATUSES + ACTIVE_ALLOCATION_STATUSES
+INACTIVE_ALLOCATION_STATUSES = ['Denied', 'Expired', 'Inactive', 'Pending Deactivation']
+
 #------------------------------------------------------------------------------
 # DjangoQ settings
 #------------------------------------------------------------------------------

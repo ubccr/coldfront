@@ -32,12 +32,16 @@ EMAIL_ALLOCATION_EXPIRING_NOTIFICATION_DAYS = import_from_settings(
 EMAIL_ADMINS_ON_ALLOCATION_EXPIRE = import_from_settings('EMAIL_ADMINS_ON_ALLOCATION_EXPIRE')
 EMAIL_ADMIN_LIST = import_from_settings('EMAIL_ADMIN_LIST')
 ADMIN_REMINDER_EMAIL = import_from_settings('ADMIN_REMINDER_EMAIL')
+PENDING_ALLOCATION_STATUSES = import_from_settings(
+    'PENDING_ALLOCATION_STATUSES', ['New'])
+ACTIVE_ALLOCATION_STATUSES = import_from_settings(
+    'ACTIVE_ALLOCATION_STATUSES', ['Active', 'Payment Pending', 'Payment Requested', 'Unpaid'])
 
 def update_statuses():
 
     expired_status_choice = AllocationStatusChoice.objects.get(name='Expired')
     allocations_to_expire = Allocation.objects.filter(
-        status__name__in=['Active', 'Payment Pending', 'Payment Requested', 'Unpaid'],
+        status__name__in=ACTIVE_ALLOCATION_STATUSES,
         end_date__lt=timezone.now().date()
     )
     for sub_obj in allocations_to_expire:
@@ -80,7 +84,7 @@ def send_request_reminder_emails():
         )
     # Allocation Requests are allocations marked as "new"
     pending_allocations = Allocation.objects.filter(
-        status__name = 'New', created__lte=req_alert_date
+        status__name__in=PENDING_ALLOCATION_STATUSES, created__lte=req_alert_date
     )
     if pending_allocations:
 
@@ -190,7 +194,7 @@ def send_expiry_emails():
             for allocationuser in user.allocationuser_set.all():
                 allocation = allocationuser.allocation
 
-                if (allocation.status.name in ['Active', 'Payment Pending', 'Payment Requested', 'Unpaid'] and allocation.end_date == expring_in_days):
+                if allocation.status.name in ACTIVE_ALLOCATION_STATUSES and allocation.end_date == expring_in_days:
 
                     project_url = f'{CENTER_BASE_URL.strip("/")}/{"project"}/{allocation.project.pk}/'
 
