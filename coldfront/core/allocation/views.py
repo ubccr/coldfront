@@ -323,7 +323,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                         'isilon': 'coldfront.plugins.isilon',
                         # 'lfs': 'coldfront.plugins.lustre',
                     }
-                    rtype = next((k for k in resources_plugins), None)
+                    rtype = next((k for k in resources_plugins if k in alloc_change_obj.allocation.get_parent_resource.name), None)
                     if not rtype:
                         err = ('non-isilon resource interactions are not automated '
                             'at this time. Please manually create the resource '
@@ -2033,7 +2033,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                         'isilon': 'coldfront.plugins.isilon',
                         # 'lfs': 'coldfront.plugins.lustre',
                     }
-                    rtype = next((k for k in resources_plugins), None)
+                    rtype = next((k for k in resources_plugins if k in alloc_change_obj.allocation.get_parent_resource.name), None)
                     if not rtype:
                         err = ('You cannot auto-update non-isilon resources at this '
                             'time. Please manually update the resource before '

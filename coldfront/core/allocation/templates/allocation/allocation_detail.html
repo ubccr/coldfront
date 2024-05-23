@@ -111,7 +111,13 @@ Allocation Detail
           </tr>
           <tr>
               <th scope="row" class="text-nowrap">Service Period:</th>
-              <td>1 Month</td>
+	      <td>
+                {% if "Storage" in allocation.get_parent_resource.resource_type.name %}
+		1 Month
+                {% else %}
+		Current Quarter
+                {% endif %}
+	      </td>
           </tr>
           {% if expense_code %}
             <tr>
