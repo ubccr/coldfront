@@ -735,10 +735,13 @@ class RedashDataPipeline(UsageDataPipelineBase):
             d['volume'] = d.pop('vol_name')
         return allocation_usage
 
-    def collect_sf_usage_data_for_lab(self, lab_name, volume_name):
+    def collect_sf_data_for_lab(self, lab_name, volume_name):
         """Collect user-level and allocation-level usage data for a specific lab."""
-        lab_user_data = [d for d in self.sf_user_data if d['lab'] == lab_name]
-        lab_allocation_data = [d for d in self.sf_usage_data if d['lab'] == lab_name]
+        lab_allocation_data = [d for d in self.sf_usage_data if d['group_name'] == lab_name and d['volume'] == volume_name]
+        if len(lab_allocation_data) > 1:
+            raise ValueError("more than one allocation for this lab/volume combination")
+        lab_allocation_data = lab_allocation_data
+        lab_user_data = [d for d in self.sf_user_data if d['volume'] == volume_name and d['path'] == lab_allocation_data[0]['path']]
         return lab_user_data, lab_allocation_data
 
 
@@ -941,15 +944,24 @@ def update_allocation(sender, **kwargs):
     allocation = Allocation.objects.get(pk=kwargs['allocation_pk'])
     volume_name = allocation.resources.first().name.split('/')[0]
     sf_redash_data = RedashDataPipeline(volume=volume_name)
-    user_data, allocation_data = sf_redash_data.collect_sf_usage_data_for_lab(
+    user_data, allocation_data = sf_redash_data.collect_sf_data_for_lab(
         allocation.project.title, volume_name
     )
+    if not allocation_data:
+        raise ValueError('No matching allocation found for the given data.')
+    subdir_type = AllocationAttributeType.objects.get(name='Subdirectory')
+    allocation.allocationattribute_set.create(
+        allocation_attribute_type_id=subdir_type.pk,
+        value=allocation_data[0]['path']
+    )
+
     allocation_query_match = AllocationQueryMatch(allocation, allocation_data, user_data)
+
     quota_b_attrtype = AllocationAttributeType.objects.get(name='Quota_In_Bytes')
     quota_tb_attrtype = AllocationAttributeType.objects.get(name='Storage Quota (TB)')
 
-    allocation_query_match.update_usage_attr(quota_b_attrtype,  allocation_query_match.total_usage_entry['total_size'])
-    allocation_query_match.update_usage_attr(quota_tb_attrtype, allocation_query_match.total_usage_entry['total_usage_tb'])
+    allocation_query_match.update_usage_attr(quota_b_attrtype, allocation_query_match.total_usage_entry['total_size'])
+    allocation_query_match.update_usage_attr(quota_tb_attrtype, allocation_query_match.total_usage_tb)
     missing_users = []
     for userdict in allocation_query_match.user_usage_entries:
         try:
