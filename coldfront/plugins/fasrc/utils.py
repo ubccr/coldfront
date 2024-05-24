@@ -73,7 +73,7 @@ class ATTAllocationQuery:
                 'fs_path': 'LogicalVolume',
                 'path_replace': '/dev/data/',
                 'usedgb': 'UsedGB',
-                'sizebytes': 'SizeGB * 1073741824',
+                'sizebytes': 'SizeGB * 1073741824 * .931',
                 'usedbytes': 'UsedGB * 1073741824',
                 'server_replace': '.rc.fas.harvard.edu',
                 'unique': 'datetime(e.DotsLVSUpdateDate) as update_date, \
