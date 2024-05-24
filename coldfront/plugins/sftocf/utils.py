@@ -1,17 +1,20 @@
-import operator
-from operator import itemgetter
-from itertools import groupby
-from functools import reduce
 import time
 import logging
+import operator
+from functools import reduce
+from itertools import groupby
+from operator import itemgetter
 from pathlib import Path
 from datetime import datetime, timedelta
 
 import requests
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.db.models import Q
+from django.dispatch import receiver
 from django.utils import timezone
 
+from coldfront.core.allocation.signals import allocation_activate
 from coldfront.core.utils.common import (
     import_from_settings, uniques_and_intersection)
 from coldfront.core.utils.fasrc import (
@@ -35,6 +38,8 @@ if 'coldfront.plugins.ldap' in settings.INSTALLED_APPS:
 DATESTR = datetime.today().strftime('%Y%m%d')
 DATAPATH = './coldfront/plugins/sftocf/data/'
 STARFISH_SERVER = import_from_settings('STARFISH_SERVER', 'starfish')
+PENDING_ACTIVE_ALLOCATION_STATUSES = import_from_settings(
+    'PENDING_ACTIVE_ALLOCATION_STATUSES', ['Active', 'New', 'In Progress', 'On Hold'])
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +82,7 @@ def zone_report():
 
     # get all projects with at least one storage allocation
     projects = Project.objects.filter(
-        allocation__status__name__in=['Active', 'Updated', 'Ready for Review'],
+        allocation__status__name__in=['Active'],
         allocation__resources__in=server.get_corresponding_coldfront_resources(),
     ).distinct()
     # check which of these projects have zones
@@ -519,6 +524,23 @@ class AllocationQueryMatch:
     def query_usernames(self):
         return [u['username'] for u in self.user_usage_entries]
 
+    def update_user_usage(self, user, usage_bytes, usage, unit):
+        """Get or create an allocationuser object with updated usage values."""
+        allocationuser, created = self.allocation.allocationuser_set.get_or_create(
+            user=user,
+            defaults={
+                'created': timezone.now(),
+                'status': AllocationUserStatusChoice.objects.get(name='Active')
+            }
+        )
+        if created:
+            logger.info('allocation user %s created', allocationuser)
+        allocationuser.usage_bytes = usage_bytes
+        allocationuser.usage = usage
+        allocationuser.unit = unit
+        allocationuser.save()
+        return allocationuser
+
     def update_usage_attr(self, usage_attribute_type, usage_value):
         usage_attribute, _ = self.allocation.allocationattribute_set.get_or_create(
             allocation_attribute_type=usage_attribute_type
@@ -555,10 +577,7 @@ class UsageDataPipelineBase:
             resources = self.connection_obj.get_corresponding_coldfront_resources()
             self.volumes = [r.name.split('/')[0] for r in resources]
 
-        self.allocations = Allocation.objects.filter(
-            status__name__in=['Active', 'New', 'Updated', 'Ready for Review'],
-            resources__in=resources
-        )
+        self._allocations = None
         # self.collection_filter = self.set_collection_parameters()
         self.sf_user_data = self.collect_sf_user_data()
         self.sf_usage_data = self.collect_sf_usage_data()
@@ -572,6 +591,15 @@ class UsageDataPipelineBase:
 
     def collect_sf_usage_data(self):
         raise NotImplementedError
+
+    @property
+    def allocations(self):
+        if self._allocations:
+            return self._allocations
+        self._allocations = Allocation.objects.filter(
+            status__name__in=PENDING_ACTIVE_ALLOCATION_STATUSES,
+            resources__in=self.connection_obj.get_corresponding_coldfront_resources()
+        )
 
     @property
     def allocationquerymatches(self):
@@ -663,7 +691,7 @@ class UsageDataPipelineBase:
                 usage_bytes = int(userdict['size_sum'])
                 usage, unit = determine_size_fmt(userdict['size_sum'])
 
-                self.update_user_usage(user, usage_bytes, usage, unit, obj.allocation)
+                obj.update_user_usage(user, usage_bytes, usage, unit)
                 logger.debug('saving %s', userdict)
 
     def zero_out_absent_allocationusers(self, redash_usernames, allocation):
@@ -678,24 +706,6 @@ class UsageDataPipelineBase:
                 allocation.pk, [user.user.username for user in allocationusers_not_in_redash]
             )
             allocationusers_not_in_redash.update(usage=0, usage_bytes=0)
-
-    def update_user_usage(self, user, usage_bytes, usage, unit, allocation):
-        """Get or create an allocationuser object with updated usage values.
-        """
-        allocationuser, created = allocation.allocationuser_set.get_or_create(
-            user=user,
-            defaults={
-                'created': timezone.now(),
-                'status': AllocationUserStatusChoice.objects.get(name='Active')
-            }
-        )
-        if created:
-            logger.info('allocation user %s created', allocationuser)
-        allocationuser.usage_bytes = usage_bytes
-        allocationuser.usage = usage
-        allocationuser.unit = unit
-        allocationuser.save()
-        return allocationuser
 
 
 class RedashDataPipeline(UsageDataPipelineBase):
@@ -724,6 +734,12 @@ class RedashDataPipeline(UsageDataPipelineBase):
             d['username'] = d.pop('user_name')
             d['volume'] = d.pop('vol_name')
         return allocation_usage
+
+    def collect_sf_usage_data_for_lab(self, lab_name, volume_name):
+        """Collect user-level and allocation-level usage data for a specific lab."""
+        lab_user_data = [d for d in self.sf_user_data if d['lab'] == lab_name]
+        lab_allocation_data = [d for d in self.sf_usage_data if d['lab'] == lab_name]
+        return lab_user_data, lab_allocation_data
 
 
 class RESTDataPipeline(UsageDataPipelineBase):
@@ -917,3 +933,36 @@ class RESTDataPipeline(UsageDataPipelineBase):
                         entry.pop(item)
                     entries.append(entry)
         return entries
+
+@receiver(allocation_activate)
+def update_allocation(sender, **kwargs):
+    '''update the allocation data when the allocation is activated.'''
+    logger.debug('allocation_activate signal received')
+    allocation = Allocation.objects.get(pk=kwargs['allocation_pk'])
+    volume_name = allocation.resources.first().name.split('/')[0]
+    sf_redash_data = RedashDataPipeline(volume=volume_name)
+    user_data, allocation_data = sf_redash_data.collect_sf_usage_data_for_lab(
+        allocation.project.title, volume_name
+    )
+    allocation_query_match = AllocationQueryMatch(allocation, allocation_data, user_data)
+    quota_b_attrtype = AllocationAttributeType.objects.get(name='Quota_In_Bytes')
+    quota_tb_attrtype = AllocationAttributeType.objects.get(name='Storage Quota (TB)')
+
+    allocation_query_match.update_usage_attr(quota_b_attrtype,  allocation_query_match.total_usage_entry['total_size'])
+    allocation_query_match.update_usage_attr(quota_tb_attrtype, allocation_query_match.total_usage_entry['total_usage_tb'])
+    missing_users = []
+    for userdict in allocation_query_match.user_usage_entries:
+        try:
+            user = get_user_model().objects.get(username=userdict['username'])
+        except get_user_model().DoesNotExist:
+            missing_users.append({
+                'username': userdict['username'],
+                'volume': userdict.get('volume', None),
+                'path': userdict.get('path', None)
+            })
+            continue
+        usage_bytes = int(userdict['size_sum'])
+        usage, unit = determine_size_fmt(userdict['size_sum'])
+        allocation_query_match.update_user_usage(user, usage_bytes, usage, unit)
+    if missing_users:
+        log_missing('user', missing_users)
