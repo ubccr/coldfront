@@ -89,7 +89,7 @@ def send_expiry_emails():
             }
 
             email_receiver_list = get_allocation_user_emails(allocation_obj)
-            send_email_template(f'Allocation to {resource_name} expiring in {days_remaining} days',
+            send_email_template(f'Your {resource_name} allocation is expiring in {days_remaining} days',
                                 'email/allocation_expiring.txt',
                                 template_context,
                                 EMAIL_TICKET_SYSTEM_ADDRESS,
@@ -97,7 +97,7 @@ def send_expiry_emails():
                                 )
 
             logger.info(
-                f'Allocation to {resource_name} expiring in {days_remaining} days, email '
+                f'A {resource_name} allocation is expiring in {days_remaining} days, email '
                 f'sent to allocation users (allocation pk={allocation_obj.pk}).'
             )
 
@@ -128,7 +128,7 @@ def send_expiry_emails():
         }
 
         email_receiver_list = get_allocation_user_emails(allocation_obj)
-        send_email_template(f'Allocation to {resource_name} expiring in {days_remaining} days',
+        send_email_template(f'Your {resource_name} allocation is expiring in {days_remaining} days',
                             'email/allocation_expiring.txt',
                             template_context,
                             EMAIL_TICKET_SYSTEM_ADDRESS,
@@ -136,7 +136,7 @@ def send_expiry_emails():
                             )
 
         logger.info(
-            f'Allocation to {resource_name} expiring in {days_remaining} days, email sent '
+            f'A {resource_name} allocation is expiring in {days_remaining} days, email sent '
             f'to allocation users (allocation pk={allocation_obj.pk}).'
         )
 
@@ -174,7 +174,7 @@ def send_expiry_emails():
         }
 
         email_receiver_list = get_allocation_user_emails(allocation_obj)
-        send_email_template(f'Allocation to {resource_name} has expired',
+        send_email_template(f'Your {resource_name} allocation has expired',
                             'email/allocation_expired.txt',
                             template_context,
                             EMAIL_TICKET_SYSTEM_ADDRESS,
@@ -182,6 +182,6 @@ def send_expiry_emails():
                             )
 
         logger.info(
-            f'Allocation to {resource_name} expired, email sent to allocation users '
+            f'A {resource_name} allocation has expired, email sent to allocation users '
             f'(allocation pk={allocation_obj.pk}).'
         )
