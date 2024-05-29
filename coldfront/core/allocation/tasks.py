@@ -84,8 +84,8 @@ def send_expiry_emails():
                 'allocation_renew_url': allocation_renew_url,
                 'project_renewal_help_url': CENTER_PROJECT_RENEWAL_HELP_URL,
                 'help_email': EMAIL_TICKET_SYSTEM_ADDRESS,
-                'signature': EMAIL_SIGNATURE
-
+                'signature': EMAIL_SIGNATURE,
+                'project_title': allocation_obj.project.title
             }
 
             email_receiver_list = get_allocation_user_emails(allocation_obj)
@@ -123,8 +123,8 @@ def send_expiry_emails():
             'allocation_renew_url': allocation_renew_url,
             'project_renewal_help_url': CENTER_PROJECT_RENEWAL_HELP_URL,
             'help_email': EMAIL_TICKET_SYSTEM_ADDRESS,
-            'signature': EMAIL_SIGNATURE
-
+            'signature': EMAIL_SIGNATURE,
+            'project_title': allocation_obj.project.title
         }
 
         email_receiver_list = get_allocation_user_emails(allocation_obj)
@@ -169,7 +169,8 @@ def send_expiry_emails():
             'project_renewal_help_url': CENTER_PROJECT_RENEWAL_HELP_URL,
             'project_url': project_url,
             'help_email': EMAIL_TICKET_SYSTEM_ADDRESS,
-            'signature': EMAIL_SIGNATURE
+            'signature': EMAIL_SIGNATURE,
+            'project_title': allocation_obj.project.title
         }
 
         email_receiver_list = get_allocation_user_emails(allocation_obj)
