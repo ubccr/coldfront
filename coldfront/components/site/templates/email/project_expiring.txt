@@ -1,10 +1,11 @@
 Dear {{ center_name }} user,
 
-Your project "{{ project_title }}" on RT Projects will expire in {{ expiring_in_days }} day{{ expiring_in_days|pluralize }}. Once
-it expires you will no longer be able to edit your project until you submit a project renewal at this link: {{ project_review_url }} 
+Your project "{{ project_title }}" on RT Projects will expire in {{ expiring_in_days }} day{{ expiring_in_days|pluralize }} along with its allocations.
+Once it expires you will no longer be able to edit your project until you submit a project renewal at this link: {{ project_review_url }}
 
-You can request allocation renewals during your project renewal. If you do not renew them your allocations will remain
-active until they expire. Upon expiring everyone within that allocation will lose access to its resource.
+You can request allocation renewals during your project renewal. If you do not renew them during this time you will need to renew them separately.
+This can be done from each allocation's detail page. If you do not renew them before they expire everyone within those 
+allocations will lose access to their resources.
 
 Only project PIs and managers are able to submit a project renewal. For more information about project renewals,
 visit our knowledge base: {{ project_renewal_help_url }}
