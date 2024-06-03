@@ -8,6 +8,15 @@
 }
 
 @font-face {
+  font-family: 'BentonSansBold';
+  src: url("https://fonts.iu.edu/fonts/benton-sans-bold.eot");
+  src: url("https://fonts.iu.edu/fonts/benton-sans-bold.eot?#iefix") format("embedded-opentype"), url("https://fonts.iu.edu/fonts/benton-sans-bold.woff") format("woff"), url("https://fonts.iu.edu/fonts/benton-sans-bold.ttf") format("truetype"), url("https://fonts.iu.edu/fonts/benton-sans-bold.svg#BentonSansBold") format("svg");
+  font-display: swap;
+  font-style: normal;
+  font-weight: normal;
+}
+
+@font-face {
   font-family: 'BentonSansCondRegular';
   src: url("https://fonts.iu.edu/fonts/benton-sans-cond-regular.eot");
   src: url("https://fonts.iu.edu/fonts/benton-sans-cond-regular.eot?#iefix") format("embedded-opentype"), url("https://fonts.iu.edu/fonts/benton-sans-cond-regular.woff") format("woff"), url("https://fonts.iu.edu/fonts/benton-sans-cond-regular.ttf") format("truetype"), url("https://fonts.iu.edu/fonts/benton-sans-cond-regular.svg#BentonSansCondRegular") format("svg");
@@ -90,12 +99,15 @@
 }
 
 #branding-bar {
-  background-color: #7A1705;
-  border-top: 5px solid #990000;
   position: fixed;
+  line-height: 1.5;
   top: 0;
   width: 100%;
   z-index: 10;
+  background-color: #ffffff;
+  margin-bottom: 0;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #E2E7E9;
 }
 
 #branding-bar .show-on-mobile {
@@ -113,15 +125,15 @@
   position: absolute;
   width: 100%;
   height: 3px;
-  background: rgba(74, 61, 48, 0.3);
+  background: none;
   z-index: 8;
 }
 
 #branding-bar img {
+  top: 10px;
+  width: 36px;
   position: absolute;
-  top: -5px;
   left: 0.9375rem;
-  width: 43px;
   -webkit-transition: all 0.5s;
   -moz-transition: all 0.5s;
   transition: all 0.5s;
@@ -130,14 +142,16 @@
 
 #branding-bar h1,
 #branding-bar #iu-campus {
-  font-family: BentonSansCondRegular, Arial, serif;
+  font-family: "BentonSansBold" ,Arial,serif;
+  position: relative;
+  top: .55rem;
+  padding-left: 48px;
   font-weight: normal;
-  color: #fff;
+  color: #243142;
   font-size: 18px;
   float: left;
   line-height: 45px;
   margin: 0;
-  padding-left: 58px;
   text-transform: uppercase;
   -webkit-transition: all 0.25s;
   -moz-transition: all 0.25s;
@@ -146,13 +160,14 @@
 
 #branding-bar h1 a,
 #branding-bar #iu-campus a {
-  color: #fff;
+  color: #243142;
   text-decoration: none;
 }
 
 #branding-bar h1 span,
 #branding-bar #iu-campus span {
-  font-family: inherit;
+  font-family: "BentonSansBold", sans-serif;
+  text-transform: none;
 }
 
 #branding-bar h1 .show-on-tablet,
@@ -167,21 +182,21 @@
 }
 
 #branding-bar a:focus span {
-  outline: .125rem solid #fff;
+  outline: .125rem solid #990000;
   outline-offset: .125rem;
   padding: 2px;
 }
 
 #branding-bar.iupui #iu-campus,
 #branding-bar.iupuc #iu-campus {
-  font-size: 27px;
+  font-size: 1.5rem;
 }
 
 #branding-bar.iupui #iu-campus .show-on-tablet,
 #branding-bar.iupui #iu-campus .show-on-mobile,
 #branding-bar.iupuc #iu-campus .show-on-tablet,
 #branding-bar.iupuc #iu-campus .show-on-mobile {
-  font-size: 27px;
+  font-size: 1.5rem;
 }
 
 #footer {
@@ -194,6 +209,11 @@
 
 #footer a {
   color: #990000;
+  text-decoration: underline;
+}
+
+#footer a:hover {
+  text-decoration: none;
 }
 
 #footer a:focus {
@@ -300,7 +320,7 @@
   }
   #footer {
     text-align: left;
-    border-top: 6px solid #7A1705;
+    border-top: 6px solid #800000;
     padding: 32px 0 24px;
   }
   #footer p {
@@ -336,28 +356,36 @@
 
 @media only screen and (min-width: 1025px) {
   #branding-bar {
-    margin-bottom: 15px;
+    padding-bottom: 1.6rem;
     /* account for trident */
     position: relative;
   }
+
   #branding-bar:after {
     height: 0;
   }
+
   #branding-bar img {
     position: absolute;
-    top: -5px;
-    width: 65px;
+    width: 2.5rem;
+    top: 1rem;
   }
+
   #branding-bar h1,
   #branding-bar #iu-campus {
-    line-height: 52px;
-    padding-left: 80px;
+    line-height: inherit;
+    top: 0;
+    padding-top: 1.45rem;
+    padding-left: 3.4rem;
+    font-size: 1.25rem;
   }
+
   #branding-bar .search {
     margin-top: 6px;
     float: right;
     width: 250px;
   }
+
   #branding-bar input[type='text'] {
     width: 80%;
     float: left;
