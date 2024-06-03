@@ -5,8 +5,6 @@ import logging
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.publication.models import Publication, PublicationSource
 
-logger = logging.getLogger(__name__)
-
 ACADEMIC_ANALYTICS_API_KEY = import_from_settings('ACADEMIC_ANALYTICS_API_KEY')
 ACADEMIC_ANALYTICS_API_BASE_ADDRESS = import_from_settings('ACADEMIC_ANALYTICS_API_BASE_ADDRESS')
 ACADEMIC_ANALYTICS_FORMULA = import_from_settings('ACADEMIC_ANALYTICS_FORMULA')
@@ -139,16 +137,14 @@ def add_publication(project_obj, publication):
     source_obj, _ = PublicationSource.objects.get_or_create(
         name='aa'
     )
-
+    author = publication.get('author')
+    if len(author) > 1024: author = author[:1024]
     publication_obj = Publication.objects.create(
         project=project_obj,
         title=publication.get('title'),
-        author=publication.get('author'),
+        author=author,
         year=publication.get('year'),
         journal=publication.get('journal'),
         unique_id=publication.get('unique_id'),
         source=source_obj 
-    )
-    logger.info(
-        f'A new publication was added during a project review (publication pk={publication_obj.pk})'
     )
