@@ -35,12 +35,15 @@ def format_author(author):
     """
     if not author:
         return ''
-
     formatted_authors = []
     authors_split = author.split('|')
     for author in authors_split:
         author_split = author.split(',')
-        formatted_author = f'{author_split[1].strip()} {author_split[0].strip()}'
+        if not len(author_split):
+            author_split = author.split(' ')
+            formatted_author = f'{author_split[0].strip()} {author_split[1].strip()}'
+        else:
+            formatted_author = f'{author_split[1].strip()} {author_split[0].strip()}'
         formatted_authors.append(formatted_author)
 
     return ' and '.join(formatted_authors)
