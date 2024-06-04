@@ -1,5 +1,8 @@
 import django.dispatch
 
+allocation_autocreate = django.dispatch.Signal()
+    #providing_args=["approval_form_data", "allocation_obj"]
+
 allocation_activate = django.dispatch.Signal()
     #providing_args=["allocation_pk"]
 allocation_disable = django.dispatch.Signal()

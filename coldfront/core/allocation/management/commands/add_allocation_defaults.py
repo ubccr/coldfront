@@ -32,7 +32,7 @@ class Command(BaseCommand):
             # 'Paid', 'Payment Pending', 'Payment Requested',
             # 'Payment Declined', 'Revoked', 'Renewal Requested', 'Unpaid',
         ):
-            choice_obj = AllocationStatusChoice.objects.get_or_create(name=choice)
+            choice_obj, created = AllocationStatusChoice.objects.get_or_create(name=choice)
             choice_obj.description = description
             choice_obj.save()
 

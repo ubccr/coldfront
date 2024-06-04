@@ -58,6 +58,7 @@ from coldfront.core.allocation.models import (Allocation,
                                               AllocationUserNote,
                                               AllocationUserStatusChoice)
 from coldfront.core.allocation.signals import (allocation_activate,
+                                               allocation_autocreate,
                                                allocation_activate_user,
                                                allocation_disable,
                                                allocation_remove_user,
@@ -77,9 +78,7 @@ if 'ifxbilling' in settings.INSTALLED_APPS:
 if 'django_q' in settings.INSTALLED_APPS:
     from django_q.tasks import Task
 if 'coldfront.plugins.isilon' in settings.INSTALLED_APPS:
-    from coldfront.plugins.isilon.utils import (
-        update_isilon_allocation_quota, create_isilon_allocation_quota
-    )
+    from coldfront.plugins.isilon.utils import update_isilon_allocation_quota
 
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
     'ALLOCATION_ENABLE_ALLOCATION_RENEWAL', True)
@@ -257,7 +256,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         if not self.request.user.is_superuser:
             form.fields['is_locked'].disabled = True
             form.fields['is_changeable'].disabled = True
-        elif allocation_obj.status.name == 'New':
+        elif allocation_obj.status.name in PENDING_ALLOCATION_STATUSES:
             approval_form = AllocationApprovalForm()
             context['approval_form'] = approval_form
 
@@ -296,18 +295,24 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
         form_data = form.cleaned_data
         old_status = allocation_obj.status.name
-        approval_form = AllocationApprovalForm(request.POST)
 
-        if action in ['update', 'approve', 'deny']:
-
-            allocation_obj.end_date = form_data.get('end_date')
-            allocation_obj.start_date = form_data.get('start_date')
-            allocation_obj.description = form_data.get('description')
-            allocation_obj.is_locked = form_data.get('is_locked')
-            allocation_obj.is_changeable = form_data.get('is_changeable')
-            allocation_obj.status = form_data.get('status')
+        allocation_obj.end_date = form_data.get('end_date')
+        allocation_obj.start_date = form_data.get('start_date')
+        allocation_obj.description = form_data.get('description')
+        allocation_obj.is_locked = form_data.get('is_locked')
+        allocation_obj.is_changeable = form_data.get('is_changeable')
+        allocation_obj.status = form_data.get('status')
 
         if 'approve' in action:
+
+            approval_form = AllocationApprovalForm(request.POST)
+            if not approval_form.is_valid():
+                context = self.get_context_data()
+                context['form'] = form
+                context['allocation'] = allocation_obj
+                context['approval_form'] = approval_form
+                return render(request, self.template_name, context)
+
             err = None
             # ensure that Tier gets swapped out for storage volume
             resource = form_data.get('resource')
@@ -322,68 +327,30 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                 messages.error(request, err)
                 return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
             if action == 'approve':
-                approval_form = AllocationApprovalForm(request.POST)
+                # ensure that sheetcheck and auto_create_opts are selected
                 autoapproval_choice = approval_form.data.get('auto_create_opts')
 
                 if autoapproval_choice == '2':
-                    resources_plugins = {
-                        'isilon': 'coldfront.plugins.isilon',
-                        # 'lfs': 'coldfront.plugins.lustre',
-                    }
-                    rtype = next((k for k in resources_plugins if k in alloc_change_obj.allocation.get_parent_resource.name), None)
-                    if not rtype:
-                        err = ('non-isilon resource interactions are not automated '
-                            'at this time. Please manually create the resource '
-                            'before approving this request.')
-                        messages.error(request, err)
-                        return HttpResponseRedirect(
-                            reverse('allocation-detail', kwargs={'pk': pk})
+                    error = None
+                    try:
+                        preactivation_responses = allocation_autocreate.send(
+                            sender=self.__class__,
+                            allocation_obj=allocation_obj,
+                            resource=resource,
+                            approval_form_data=approval_form.cleaned_data
                         )
+                        preactivation_replies = [p[1] for p in preactivation_responses if p[1]]
+                        if not preactivation_replies:
+                            error = ('this allocation\'s resource has no autocreate options '
+                                'at this time. Please manually create the resource '
+                                'before approving this request.')
+                    except Exception as e:
+                        error = f"An error was encountered during autocreation: {e} Please contact your administrator."
+                        logger.exception('A350: %s', e)
+                    if error:
+                        messages.error(request, error)
+                        return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
-                    if not approval_form.is_valid():
-                        messages.error(request, 'form is not valid.')
-                        context = self.get_context_data()
-                        context['form'] = form
-                        context['allocation'] = allocation_obj
-                        return render(request, self.template_name, context)
-
-                    approval_form_data = approval_form.cleaned_data
-                    automation_specifications = approval_form_data.get('automation_specifications')
-                    automation_kwargs = {k:True for k in automation_specifications}
-
-                    plugin = resources_plugins[rtype]
-                    if plugin in settings.INSTALLED_APPS:
-                        try:
-                            option_exceptions = create_isilon_allocation_quota(
-                                allocation_obj, resource, **automation_kwargs
-                            )
-                            if option_exceptions:
-                                err = f'some options failed to be created for new allocation {allocation_obj} ({allocation_obj.pk}): {option_exceptions}'
-                                logger.error(err)
-                                messages.error(request, f"{err}. Please contact Coldfront administration for further assistance.")
-                        except Exception as e:
-                            err = ("An error was encountered while auto-creating"
-                                " the allocation. Please contact Coldfront "
-                                f"administration and/or manually create the allocation: {e}")
-                            logger.error(err)
-                            ex_type, ex_value, ex_traceback = sys.exc_info()
-                            stack_trace = list()
-                            trace_back = traceback.extract_tb(ex_traceback)
-                            for trace in trace_back:
-                                stack_trace.append("File : %s , Line : %d, Func.Name : %s, Message : %s" % (trace[0], trace[1], trace[2], trace[3]))
-                            logger.error(stack_trace)
-                            messages.error(request, err)
-                            return HttpResponseRedirect(
-                                reverse('allocation-detail', kwargs={'pk': pk})
-                            )
-                    else:
-                        err = ("There is an issue with the configuration of "
-                            "Coldfront's auto-creation capabilities. Please contact Coldfront "
-                            "administration and/or manually create the allocation.")
-                        messages.error(request, err)
-                        return HttpResponseRedirect(
-                            reverse('allocation-detail', kwargs={'pk': pk})
-                        )
             if 'Tier ' in allocation_obj.get_resources_as_string:
                 # remove current resource from resources
                 allocation_obj.resources.clear()
@@ -394,6 +361,11 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
         elif action == 'deny':
             allocation_obj.status = AllocationStatusChoice.objects.get(name='Denied')
+        elif action == 'update':
+            if old_status in PENDING_ALLOCATION_STATUSES and allocation_obj.status.name not in PENDING_ALLOCATION_STATUSES:
+                err = "You can only use the 'update' option on new allocations to change their statuses to New, On Hold, or In Progress."
+                messages.error(request, err)
+                return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
         allocation_users = allocation_obj.allocationuser_set.exclude(
             status__name__in=['Removed', 'Error']
@@ -438,7 +410,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                 )
                 return HttpResponseRedirect(reverse('allocation-request-list'))
 
-        elif old_status != allocation_obj.status.name in ['Denied', 'New', 'Revoked']:
+        elif old_status != allocation_obj.status.name in ['Denied', 'Revoked']+PENDING_ALLOCATION_STATUSES:
             allocation_obj.start_date = None
             allocation_obj.end_date = None
             allocation_obj.save()

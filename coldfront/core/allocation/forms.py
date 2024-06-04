@@ -164,11 +164,11 @@ class AllocationApprovalForm(forms.Form):
 
     sheetcheck = forms.BooleanField(
         label='I have ensured that enough space is available on this resource.',
-        required=True
+        required=False,
     )
     auto_create_opts = forms.ChoiceField(
         label='How will this allocation be created?',
-        required=True,
+        required=False,
         widget=forms.RadioSelect,
         choices=ALLOCATION_AUTOCREATE_OPTIONS,
     )
@@ -183,6 +183,29 @@ class AllocationApprovalForm(forms.Form):
             ('cifs_share', 'Create a CIFS share for this allocation'),
         ),
     )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        auto_create_opts = cleaned_data.get('auto_create_opts')
+        automation_specifications = cleaned_data.get('automation_specifications')
+        # if the action is 'approve', make auto_create_opts and sheetcheck mandatory
+        if not auto_create_opts:
+            self.add_error(
+                'auto_create_opts',
+                'You must select an option for how the allocation will be created.'
+            )
+        if auto_create_opts == '2':
+            if not automation_specifications:
+                self.add_error(
+                    'automation_specifications',
+                    'You must select at least one automation option if you choose to automatically create the allocation.'
+                )
+            if not cleaned_data.get('sheetcheck'):
+                self.add_error(
+                    'sheetcheck',
+                    'You must confirm that you have checked the space availability on this resource.'
+                )
+        return cleaned_data
 
 
 class AllocationResourceChoiceField(forms.ModelChoiceField):
