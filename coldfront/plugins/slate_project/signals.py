@@ -39,6 +39,7 @@ def add_group(sender, **kwargs):
     if not allocation_obj.status.name == 'Active':
         return
     
+    return
     add_slate_project_groups(allocation_obj)
 
 @receiver(allocation_activate_user, sender=ProjectAddUsersView)
