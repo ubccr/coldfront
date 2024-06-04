@@ -18,6 +18,8 @@ class ResearchOutput(TimeStampedModel):
     """
 
     # core fields
+    class Meta:
+        permissions = (("can_view_research_output_report","Can view research output report"),)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     title = models.CharField(max_length=128, blank=True)
     description = models.TextField(
