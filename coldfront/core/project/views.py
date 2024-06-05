@@ -2579,7 +2579,7 @@ class ProjectRequestEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView)
                 cc = []
 
             send_email(
-                'Request for more information',
+                f'Follow-up on Project {project_obj.title}',
                 form_data.get('email_body'),
                 EMAIL_TICKET_SYSTEM_ADDRESS,
                 receiver_list,
