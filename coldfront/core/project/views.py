@@ -1883,7 +1883,7 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                     ),
                     'status': allocation.status,
                     'expires_on': allocation.end_date,
-                    'renew': False
+                    'renew': True
                 }
                 initial_data.append(data)
 
