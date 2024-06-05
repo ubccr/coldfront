@@ -55,6 +55,7 @@ def send_expiry_emails():
             status__name='Active',
             end_date=expring_in_days,
             project__requires_review=True,
+            project__status__name__in=['Active', 'Review Pending'],
             is_locked=False
         )
         for allocation_obj in allocations_expiring_soon:
