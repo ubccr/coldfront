@@ -57,6 +57,7 @@ class AcademicAnalyticsPublications(LoginRequiredMixin, UserPassesTestMixin, Tem
         usernames = project_obj.projectuser_set.filter(status__name='Active').values_list('user__username', flat=True)
         publication_data = get_publications(usernames)
         publication_data = remove_existing_publications(project_obj, publication_data)
+        num_added_pubs = 0
         if publication_data:
             publication_formset = formset_factory(PublicationForm, max_num=len(publication_data))
             publication_formset = publication_formset(request.POST, initial=publication_data, prefix='publicationform')
@@ -65,12 +66,12 @@ class AcademicAnalyticsPublications(LoginRequiredMixin, UserPassesTestMixin, Tem
                     data = form.cleaned_data
                     if data.get("add"):
                         add_publication(project_obj, data)
+                        num_added_pubs += 1
             else:
-                logger.error(
-                    f'An error occurred while adding publications to a project during review for '
-                    f'user {request.user.username}'
-                )
                 raise Exception('Error adding publications')
+
+        if num_added_pubs:
+            logger.info(f'{num_added_pubs} aa publications were added to a project with id {project_obj.pk}')
 
         publication_data = remove_existing_publications(project_obj, publication_data)
         if publication_data:

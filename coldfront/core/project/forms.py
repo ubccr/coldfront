@@ -149,7 +149,7 @@ class ProjectReviewAllocationForm(forms.Form):
         widget=forms.DateInput(attrs={'class': 'datepicker'}),
         disabled=True
     )
-    renew = forms.BooleanField(initial=False, required=False)
+    renew = forms.BooleanField(initial=True, required=False)
 
 
 class ProjectUpdateForm(forms.Form):

@@ -127,6 +127,7 @@ class UserProjectsManagersView(ListView):
         ongoing_project_statuses = (
             'New',
             'Active',
+            'Review Pending',
         )
 
         qs = ProjectUser.objects.filter(
