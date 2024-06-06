@@ -54,7 +54,7 @@ Resource Detail
             <td>
             {% if resource.linked_resources.all %}
               {% for resource in resource.linked_resources.all %}
-                <a href="{% url 'resource-detail' resource.pk %}">{{ resource }}</a> <br>
+                <a title="View resource detail" data-bs-toggle="tooltip" href="{% url 'resource-detail' resource.pk %}">{{ resource }}</a> <br>
               {% endfor %}
             {% else %}
               None
@@ -81,7 +81,7 @@ Resource Detail
   <div class="card mb-3">
     <div class="card-header">
       <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Resource Attributes</h3>
-      <div class="float-right">
+      <div class="float-end">
         {% if request.user.is_superuser %}
           <a class="btn btn-success" href="{% url 'resource-attribute-add' resource.pk %}" role="button">
             <i class="fas fa-plus" aria-hidden="true"></i> Add Resource Attribute
@@ -140,7 +140,7 @@ Resource Detail
           <tbody>
             {% for child in child_resources %}
                 <tr>
-                  <td><a href="{% url 'resource-detail' child.object.pk %}">{{child.object}}</a></td>
+                  <td><a title="View resource detail" data-bs-toggle="tooltip" href="{% url 'resource-detail' child.object.pk %}">{{child.object}}</a></td>
                   <td>{{child.WarrantyExpirationDate}}</td>
                   <td>{{child.ServiceEnd}}</td>
                   <td>{{child.Vendor}}</td>
