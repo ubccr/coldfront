@@ -2994,8 +2994,11 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
                             'Active', 'Denied', 'New', 'Billing Information Submitted', 'Paid', 'Payment Pending',
                                 'Payment Requested', 'Payment Declined', 'Renewal Requested', 'Unpaid',)):
 
-                            allocation_user_obj = active_allocation.allocationuser_set.get(
+                            allocation_user_obj = active_allocation.allocationuser_set.filter(
                                 user=user_obj)
+                            if not allocation_user_obj.exists():
+                                continue
+                            allocation_user_obj = allocation_user_obj[0]
                             allocation_user_obj.status = allocation_user_removed_status_choice
                             allocation_user_obj.save()
                             allocation_remove_user.send(
