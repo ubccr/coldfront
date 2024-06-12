@@ -5,8 +5,11 @@ import datetime
 import dbus
 
 from django.core.management.base import BaseCommand
+from ipalib import api
+from ipalib.errors import NotFound
 
 from coldfront.core.allocation.models import Allocation, AllocationUser
+from coldfront.plugins.freeipa.utils import (CLIENT_KTNAME, FREEIPA_NOOP)
 
 logger = logging.getLogger(__name__)
 
@@ -14,8 +17,9 @@ class Command(BaseCommand):
     help = 'Report users to expire in FreeIPA'
 
     def add_arguments(self, parser):
-        parser.add_argument(
-            "-x", "--header", help="Include header in output", action="store_true")
+        parser.add_argument("-s", "--sync", help="Sync changes to/from FreeIPA", action="store_true")
+        parser.add_argument("-x", "--header", help="Include header in output", action="store_true")
+        parser.add_argument("-n", "--noop", help="Print commands only. Do not run any commands.", action="store_true")
 
     def write(self, data):
         try:
@@ -26,6 +30,8 @@ class Command(BaseCommand):
             sys.exit(1)
 
     def handle(self, *args, **options):
+        os.environ["KRB5_CLIENT_KTNAME"] = CLIENT_KTNAME
+
         verbosity = int(options['verbosity'])
         root_logger = logging.getLogger('')
         if verbosity == 0:
@@ -36,6 +42,16 @@ class Command(BaseCommand):
             root_logger.setLevel(logging.DEBUG)
         else:
             root_logger.setLevel(logging.WARN)
+
+        self.sync = False
+        if options['sync']:
+            self.sync = True
+            logger.warn("Syncing FreeIPA with ColdFront")
+
+        self.noop = FREEIPA_NOOP
+        if options['noop']:
+            self.noop = True
+            logger.warn("NOOP enabled")
 
         header = [
             'username',
@@ -92,8 +108,16 @@ class Command(BaseCommand):
                             str(expired_allocation_users[key]['allocation_id']),
                             expired_allocation_users[key]['expire_date'].strftime("%Y-%m-%d")
                         ]))
+                        if self.sync and not self.noop:
+                            res = api.Command.user_disable(key)
+                            if not res:
+                                raise ValueError('Missing FreeIPA response')
+                            if 'result' not in res or not res['result']:
+                                raise ValueError(f'Failed to disable user: {res}')
                 except dbus.exceptions.DBusException as e:
-                    if 'No such user' in str(e):
+                    if 'No such user' in str(e) or 'NotFound' in str(e):
                         logger.info("User %s not found in FreeIPA", key)
                     else:
                         logger.error("dbus error failed to find user %s in FreeIPA: %s", key, e)
+                except Exception as e:
+                    logger.error("Failed to disable user in freeipa %s: %s", key, e)
