@@ -77,24 +77,32 @@ class Command(BaseCommand):
                             ).exclude(allocation__status__name__in=['Expired']).values_list('user__username', flat=True)
                         )))
 
-        # Find all user in expired allocations
+        # Filter out users to expire, either their not active or have been removed
         expired_allocation_users = {}
-        for allocationuser in AllocationUser.objects.filter(allocation__status__name='Expired'):
+        for allocationuser in AllocationUser.objects.all():
             if allocationuser.user.username in active_users:
                 continue
 
             allocation = allocationuser.allocation
+            expire_date = allocation.end_date
+            if allocation.status.name != 'Expired' and allocationuser.status.name == 'Removed':
+                expire_date = allocationuser.modified.date()
+
+            if not expire_date:
+                logger.info("Unable to find expire date for user=%s allocation_id=%s", allocationuser.user.username, allocation.id)
+                continue
+
             if allocationuser.user.username not in expired_allocation_users:
                 expired_allocation_users[allocationuser.user.username] = {
                     'user': allocationuser.user,
-                    'expire_date': allocation.end_date,
+                    'expire_date': expire_date,
                     'allocation_id': allocation.id
                 }
             else:
-                if allocation.end_date > expired_allocation_users[allocationuser.user.username]['expire_date']:
+                if expire_date > expired_allocation_users[allocationuser.user.username]['expire_date']:
                     expired_allocation_users[allocationuser.user.username] = {
                         'user': allocationuser.user,
-                        'expire_date': allocation.end_date,
+                        'expire_date': expire_date,
                         'allocation_id': allocation.id
                     }
 
