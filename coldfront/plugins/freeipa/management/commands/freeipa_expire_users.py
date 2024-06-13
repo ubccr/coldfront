@@ -5,9 +5,11 @@ import datetime
 import dbus
 
 from django.core.management.base import BaseCommand
+from django.urls import reverse
 from ipalib import api
 from ipalib.errors import NotFound
 
+from coldfront.core.utils.mail import build_link
 from coldfront.core.allocation.models import Allocation, AllocationUser
 from coldfront.plugins.freeipa.utils import (CLIENT_KTNAME, FREEIPA_NOOP)
 
@@ -56,7 +58,7 @@ class Command(BaseCommand):
         header = [
             'username',
             'expire_date',
-            'allocation_id',
+            'allocation',
         ]
 
         if options['header']:
@@ -122,7 +124,7 @@ class Command(BaseCommand):
                     self.writerow([
                         key,
                         expired_allocation_users[key]['expire_date'].strftime("%Y-%m-%d"),
-                        str(expired_allocation_users[key]['allocation_id'])
+                        build_link(reverse('allocation-detail', kwargs={'pk': expired_allocation_users[key]['allocation_id']}))
                     ])
 
                     if self.sync and not self.noop:
