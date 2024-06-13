@@ -21,9 +21,9 @@ class Command(BaseCommand):
         parser.add_argument("-x", "--header", help="Include header in output", action="store_true")
         parser.add_argument("-n", "--noop", help="Print commands only. Do not run any commands.", action="store_true")
 
-    def write(self, data):
+    def writerow(self, row):
         try:
-            self.stdout.write(data)
+            self.stdout.write('{0: <20}{1: <15}{2}'.format(*row))
         except BrokenPipeError:
             devnull = os.open(os.devnull, os.O_WRONLY)
             os.dup2(devnull, sys.stdout.fileno())
@@ -55,12 +55,12 @@ class Command(BaseCommand):
 
         header = [
             'username',
-            'allocation_id',
             'expire_date',
+            'allocation_id',
         ]
 
         if options['header']:
-            self.write('\t'.join(header))
+            self.writerow(header)
 
         bus = dbus.SystemBus()
         infopipe_obj = bus.get_object("org.freedesktop.sssd.infopipe", "/org/freedesktop/sssd/infopipe")
@@ -68,56 +68,70 @@ class Command(BaseCommand):
 
 
         expired_365_days_ago = datetime.datetime.today() - datetime.timedelta(days=365)
-
         expired_365_days_ago = expired_365_days_ago.date()
+
         # Find all active users on active allocations
-        active_users = sorted(list(set(AllocationUser.objects.filter(allocation__project__status__name__in=[
-            'Active', 'New'], allocation__status__name='Active', status__name='Active').values_list('user__username', flat=True))))
+        active_users = sorted(list(set(
+                            AllocationUser.objects.filter(
+                                status__name='Active'
+                            ).exclude(allocation__status__name__in=['Expired']).values_list('user__username', flat=True)
+                        )))
 
         # Find all user in expired allocations
         expired_allocation_users = {}
-        for allocation in Allocation.objects.filter(status__name='Expired'):
-            for allocationuser in allocation.allocationuser_set.all():
-                if allocationuser.user.username in active_users:
-                    continue
+        for allocationuser in AllocationUser.objects.filter(allocation__status__name='Expired'):
+            if allocationuser.user.username in active_users:
+                continue
 
-                if allocationuser.user.username not in expired_allocation_users:
+            allocation = allocationuser.allocation
+            if allocationuser.user.username not in expired_allocation_users:
+                expired_allocation_users[allocationuser.user.username] = {
+                    'user': allocationuser.user,
+                    'expire_date': allocation.end_date,
+                    'allocation_id': allocation.id
+                }
+            else:
+                if allocation.end_date > expired_allocation_users[allocationuser.user.username]['expire_date']:
                     expired_allocation_users[allocationuser.user.username] = {
+                        'user': allocationuser.user,
                         'expire_date': allocation.end_date,
                         'allocation_id': allocation.id
                     }
-                else:
-                    if allocation.end_date > expired_allocation_users[allocationuser.user.username]['expire_date']:
-                        expired_allocation_users[allocationuser.user.username] = {
-                            'expire_date': allocation.end_date,
-                            'allocation_id': allocation.id
-                        }
 
         # Print users whose latest allocation expiration date GTE 365 days and active in FreeIPA
         for key in expired_allocation_users.keys():
-            if expired_allocation_users[key]['expire_date'] < expired_365_days_ago:
-                try:
-                    result = ifp.GetUserAttr(key, ["nsaccountlock"])
-                    if 'nsAccountLock' in result and str(result['nsAccountLock'][0]) == 'TRUE':
-                        # User is already disabled in FreeIPA so do nothing
-                        pass
-                    else:
-                        # User is active in FreeIPA but not on any active allocations
-                        self.write('\t'.join([
-                            key,
-                            str(expired_allocation_users[key]['allocation_id']),
-                            expired_allocation_users[key]['expire_date'].strftime("%Y-%m-%d")
-                        ]))
-                        if self.sync and not self.noop:
-                            res = api.Command.user_disable(key)
-                            if not res:
-                                raise ValueError('Missing FreeIPA response')
-                            if 'result' not in res or not res['result']:
-                                raise ValueError(f'Failed to disable user: {res}')
-                except dbus.exceptions.DBusException as e:
-                    if 'No such user' in str(e) or 'NotFound' in str(e):
-                        logger.info("User %s not found in FreeIPA", key)
-                    else:
-                        logger.error("dbus error failed to find user %s in FreeIPA: %s", key, e)
-                except Exception as e:
-                    logger.error("Failed to disable user in freeipa %s: %s", key, e)
+            if expired_allocation_users[key]['expire_date'] > expired_365_days_ago:
+                continue
+
+            try:
+                result = ifp.GetUserAttr(key, ["nsaccountlock"])
+                if 'nsAccountLock' in result and str(result['nsAccountLock'][0]).lower() == 'true':
+                    # User is already disabled in FreeIPA so do nothing
+                    logger.info("User already disabled in FreeIPA: %s", key)
+                    pass
+                else:
+                    # User is active in FreeIPA but not on any active allocations
+                    self.writerow([
+                        key,
+                        expired_allocation_users[key]['expire_date'].strftime("%Y-%m-%d"),
+                        str(expired_allocation_users[key]['allocation_id'])
+                    ])
+
+                    if self.sync and not self.noop:
+                        # Disable in ColdFront
+                        expired_allocation_users[key]['user'].is_active = False
+                        expired_allocation_users[key]['user'].save()
+
+                        # Disable in FreeIPA
+                        res = api.Command.user_disable(key)
+                        if not res:
+                            raise ValueError('Missing FreeIPA response')
+                        if 'result' not in res or not res['result']:
+                            raise ValueError(f'Failed to disable user: {res}')
+            except dbus.exceptions.DBusException as e:
+                if 'No such user' in str(e) or 'NotFound' in str(e):
+                    logger.info("User %s not found in FreeIPA", key)
+                else:
+                    logger.error("dbus error failed to find user %s in FreeIPA: %s", key, e)
+            except Exception as e:
+                logger.error("Failed to disable user %s: %s", key, e)
