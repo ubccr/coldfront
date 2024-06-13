@@ -179,7 +179,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
         context['mailto'] = 'mailto:' + ','.join([u.user.email for u in project_users])
 
-        allocations = self.object.allocation_set.prefetch_related('resources')
+        allocations = self.object.allocation_set.prefetch_related('resources').order_by('-pk')
         allocation_history_records = self.return_status_change_records(allocations)
 
         if not self.request.user.is_superuser and not self.request.user.has_perm(
@@ -196,7 +196,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         allocations = allocations.filter(
             status__name__in=['Active', 'Paid', 'Ready for Review','Payment Requested']
         ).distinct().order_by('-end_date')
-        storage_allocations = allocations.filter(resources__resource_type__name='Storage')
+        storage_allocations = allocations.filter(resources__resource_type__name='Storage').order_by('resources__name')
         compute_allocations = allocations.filter(resources__resource_type__name='Cluster')
         allocation_total = {'allocation_user_count': 0, 'size': 0, 'cost': 0, 'usage':0}
         for allocation in storage_allocations:
