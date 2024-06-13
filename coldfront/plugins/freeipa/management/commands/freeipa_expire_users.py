@@ -77,7 +77,7 @@ class Command(BaseCommand):
                             ).exclude(allocation__status__name__in=['Expired']).values_list('user__username', flat=True)
                         )))
 
-        # Filter out users to expire, either their not active or have been removed
+        # Filter out users to expire, either not active or have been removed
         expired_allocation_users = {}
         for allocationuser in AllocationUser.objects.all():
             if allocationuser.user.username in active_users:
