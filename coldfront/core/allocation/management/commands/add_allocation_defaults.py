@@ -28,6 +28,7 @@ class Command(BaseCommand):
             ('Pending Deactivation', 'Allocation is slated for deactivation'),
             ('In Progress', 'Allocation request is being processed'),
             ('On Hold', 'Allocation request is on hold'),
+            ('Pending Activation', 'Allocation is in the process of being set up and not yet ready for use/billing'),
             # UBCCR Defaults
             # 'Paid', 'Payment Pending', 'Payment Requested',
             # 'Payment Declined', 'Revoked', 'Renewal Requested', 'Unpaid',

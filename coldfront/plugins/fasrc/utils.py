@@ -73,7 +73,7 @@ class ATTAllocationQuery:
                 'fs_path': 'LogicalVolume',
                 'path_replace': '/dev/data/',
                 'usedgb': 'UsedGB',
-                'sizebytes': 'SizeGB * 1073741824 * .931',
+                'sizebytes': 'SizeGB * 1073741824',
                 'usedbytes': 'UsedGB * 1073741824',
                 'server_replace': '.rc.fas.harvard.edu',
                 'unique': 'datetime(e.DotsLVSUpdateDate) as update_date, \
@@ -132,7 +132,7 @@ class QuotaDataPuller:
     def _standardize_nesefile(self):
         datafile = 'nese_data/pools'
         header_file = 'nese_data/pools.header'
-        with open('nese_data/groupkey') as groupkey_file:
+        with open('nese_data/local_groupkey') as groupkey_file:
             translator = dict((
                 kv.split('=') for kv in (l.strip('\n') for l in groupkey_file)
             ))
@@ -140,9 +140,7 @@ class QuotaDataPuller:
         headers = headers_df.columns.values.tolist()
         data = pd.read_csv(datafile, names=headers, delim_whitespace=True)
         data = data.loc[data['pool'].str.contains('1')]
-        for k, v in translator.items():
-            data['pool'] = data['pool'].str.replace(k, v)
-        data['lab'] = data['pool'].str.replace('1', '')
+        data['lab'] = data['pool'].str.replace('1', '').str.replace('hugl', '').str.replace('hus3', '')
         data['server'] = 'nesetape'
         data['storage_type'] = 'tape'
         data['byte_allocation'] = data['mib_capacity'] * 1048576
@@ -155,6 +153,11 @@ class QuotaDataPuller:
             'byte_usage', 'tb_allocation', 'tb_usage', 'fs_path',
         ]]
         nesedict = data.to_dict(orient='records')
+        for d in nesedict:
+            if translator.get(d['lab']):
+                d['lab'] = translator[d['lab']]
+            else:
+                d['lab'] = d['lab']+'_lab'
         return nesedict
 
 
@@ -244,7 +247,7 @@ def pair_allocations_data(project, quota_dicts):
     """pair allocations with usage dicts"""
     logger = logging.getLogger('coldfront.import_quotas')
     unpaired_allocs = project.allocation_set.filter(
-        status__name='Active',
+        status__name__in=['Active','Pending Deactivation'],
         resources__resource_type__name='Storage'
     )
     paired_allocs = {}
@@ -270,7 +273,7 @@ def pair_allocations_data(project, quota_dicts):
             log_message = f'Resource-based match: {allocation}, {dicts[0]}'
             paired_allocs = matched_dict_processing(allocation, dicts, paired_allocs, log_message)
     unpaired_allocs = [
-        a for a in unpaired_allocs if a not in paired_allocs
+        a for a in unpaired_allocs if a not in paired_allocs and a.status.name == 'Active'
     ]
     unpaired_dicts = [d for d in unpaired_dicts if d not in paired_allocs.values()]
     if unpaired_dicts or unpaired_allocs:
