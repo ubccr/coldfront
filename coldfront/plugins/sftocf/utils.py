@@ -221,13 +221,18 @@ class StarFishServer:
         zone_data = self.get_zone_by_name(zone_name)
         zone_id = zone_data['id']
         url = self.api_url + f'zone/{zone_id}/'
-        data = {'name': zone_name}
+        data = {'name': zone_name, 'id': zone_id}
         data['paths'] = paths if paths else zone_data['paths']
         data['managers'] = managers if managers else zone_data['managers']
         data['managing_groups'] = managing_groups if managing_groups else zone_data['managing_groups']
         for group in managing_groups:
             add_zone_group_to_ad(group['groupname'])
-        response = return_put_json(url, data=data, headers=self.headers)
+        try:
+            response = return_put_json(url, data=data, headers=self.headers)
+        except requests.exceptions.HTTPError as exc:
+            logger.exception("Exception trying to update zone: %s", exc)
+            print(exc)
+            return None
         return response
 
     def zone_from_project(self, project_obj):
@@ -596,10 +601,12 @@ class UsageDataPipelineBase:
     def allocations(self):
         if self._allocations:
             return self._allocations
+        allocation_statuses = PENDING_ACTIVE_ALLOCATION_STATUSES+['Pending Deactivation']
         self._allocations = Allocation.objects.filter(
-            status__name__in=PENDING_ACTIVE_ALLOCATION_STATUSES,
+            status__name__in=allocation_statuses,
             resources__in=self.connection_obj.get_corresponding_coldfront_resources()
         )
+        return self._allocations
 
     @property
     def allocationquerymatches(self):
@@ -615,8 +622,9 @@ class UsageDataPipelineBase:
         total_sort_key = itemgetter('path','volume')
         allocation_usage_grouped = return_dict_of_groupings(self.sf_usage_data, total_sort_key)
         missing_allocations = [
-            (k,a) for k, a in allocation_usage_grouped if k not in allocation_list
+            (vol, path) for path, vol in allocation_usage_grouped if (vol, path) not in allocation_list
         ]
+        print("missing_allocations:", missing_allocations)
         logger.warning('starfish allocations missing in coldfront: %s', missing_allocations)
 
         user_usage = [user for user in self.sf_user_data if user['path'] is not None]
