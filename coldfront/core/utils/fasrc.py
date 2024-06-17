@@ -69,11 +69,13 @@ def select_one_project_allocation(project_obj, resource_obj, dirpath=None):
     allocation_query = project_obj.allocation_set.filter(**filter_vals)
     if allocation_query.count() == 1:
         allocation_obj = allocation_query.first()
+        if allocation_obj.path and dirpath and allocation_obj.path not in dirpath and dirpath not in allocation_obj.path:
+            return None
     elif allocation_query.count() < 1:
         allocation_obj = None
     elif allocation_query.count() > 1:
         allocation_obj = next((a for a in allocation_query if a.path.lower() in dirpath.lower()),
-                                'MultiAllocationError')
+                                None)
     return allocation_obj
 
 
@@ -118,7 +120,6 @@ def get_resource_rate(resource):
         return rate_obj.price/100
     price = convert_size_fmt(rate_obj.price, 'TB', source_unit=rate_obj.units)
     return round(price/100, 2)
-
 
 def id_present_missing_resources(resourceserver_list):
     """
