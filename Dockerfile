@@ -3,7 +3,7 @@
 # to build for a development environment, run the following command:
 # docker build --build-arg build_env=dev -t coldfront --ssh default . --network=host
 
-FROM python:3.8
+FROM python:3.10
 
 ARG build_env=production
 ENV BUILD_ENV=$build_env
@@ -43,9 +43,9 @@ RUN --mount=type=ssh pip install --upgrade pip && \
 
 COPY . .
 
-RUN if [ "${BUILD_ENV}" = "dev" ]; then pip install django-redis reportlab==3.6.6 django-debug-toolbar; fi
+RUN if [ "${BUILD_ENV}" = "dev" ]; then pip install django-redis django-debug-toolbar; fi
 
-RUN pip install ldap3 django_auth_ldap django-author==1.0.2 django-prometheus gunicorn
+RUN pip install django-prometheus gunicorn
 
 ENV PYTHONPATH /usr/src/app:/usr/src/app/ifxreport
 
