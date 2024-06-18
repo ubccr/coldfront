@@ -31,6 +31,9 @@
             {% endif %}
           </div>
         </li>
+        <li id="navbar-create-allocation" class="nav-item">
+          <a class="nav-link" href="{% url 'coldfront_plugin_qumulo:allocation' %}">Create Allocation</a>
+        </li>
         {% if request.user.is_superuser %}
           {% include 'common/navbar_admin.html' %}
         {% elif request.user.is_staff %}
