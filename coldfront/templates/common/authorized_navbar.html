@@ -31,8 +31,12 @@
             {% endif %}
           </div>
         </li>
-        <li id="navbar-create-allocation" class="nav-item">
-          <a class="nav-link" href="{% url 'coldfront_plugin_qumulo:allocation' %}">Create Allocation</a>
+        <li id="navbar-view-allocation" class="nav-item">
+          <a class="nav-link" href="{% url 'coldfront_plugin_qumulo:allocation' %}">View Allocation</a>
+          <a id="navbar-allocation" class="dropdown-item" href="{% url 'allocation-list' %}">Allocations</a>
+          {% if request.user.userprofile.is_pi  %}
+              <a id="navbar-user-allocation" class="dropdown-item" href="{% url 'user-list-allocations' %}">User Allocations</a>
+            {% endif %}
         </li>
         {% if request.user.is_superuser %}
           {% include 'common/navbar_admin.html' %}
