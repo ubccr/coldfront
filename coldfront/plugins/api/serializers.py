@@ -8,6 +8,7 @@ from coldfront.core.allocation.models import Allocation, AllocationUser
 
 
 class UserSerializer(serializers.ModelSerializer):
+    primary_affiliation = serializers.SlugRelatedField(slug_field='name', read_only=True)
 
     class Meta:
         model = get_user_model()

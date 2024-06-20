@@ -36,7 +36,6 @@ class ProjectViewTestBase(TestCase):
         attributetype = PAttributeTypeFactory(name='string')
         cls.projectattributetype = ProjectAttributeTypeFactory(attribute_type=attributetype)# ProjectAttributeType.objects.get(pk=1)
 
-
     def project_access_tstbase(self, url):
         """Test basic access control for project views. For all project views:
         - if not logged in, redirect to login page
@@ -73,6 +72,7 @@ class ArchivedProjectViewsTest(ProjectViewTestBase):
         """Test that archived projects are visible on archived project list page"""
         url = '/project/archived/'#?show_all_projects=True&'
         utils.page_contains_for_user(self, self.pi_user, url, self.project.title)
+
 
 class ProjectDetailViewTest(ProjectViewTestBase):
     """tests for ProjectDetailView"""
@@ -125,7 +125,6 @@ class ProjectDetailViewTest(ProjectViewTestBase):
         utils.page_contains_for_user(self, self.pi_user, self.url, 'fa-user-edit') # pi can see edit button
 
         utils.page_does_not_contain_for_user(self, self.project_user, self.url, 'fa-user-edit') # non-manager user cannot see edit button
-
 
     # def test_projectdetail_addattribute_button_visibility(self):
     #     """Test visibility of project detail add attribute button to different projectuser levels"""
@@ -288,7 +287,6 @@ class ProjectListViewTest(ProjectViewTestBase):
         utils.test_user_can_access(self, self.pi_user, self.url)
         utils.test_user_can_access(self, self.project_user, self.url)
         utils.test_user_can_access(self, self.nonproject_user, self.url)
-
 
     ### ProjectListView display tests ###
 

@@ -24,9 +24,9 @@ class AllocationViewSet(viewsets.ReadOnlyModelViewSet):
             'project', 'project__pi', 'status'
         )
 
-        if not self.request.user.is_superuser or self.request.user.has_perm(
+        if not (self.request.user.is_superuser or self.request.user.has_perm(
             'allocation.can_view_all_allocations'
-        ):
+        )):
             allocations = allocations.filter(
                 Q(project__status__name__in=['New', 'Active']) &
                 (
@@ -54,9 +54,9 @@ class ProjectViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         projects = Project.objects.prefetch_related('status')
 
-        if not self.request.user.is_superuser or self.request.user.has_perm(
+        if not (self.request.user.is_superuser or self.request.user.has_perm(
             'project.can_view_all_projects'
-        ):
+        )):
             projects = projects.filter(
                 Q(status__name__in=['New', 'Active']) &
                 (
@@ -88,7 +88,7 @@ class UserFilter(filters.FilterSet):
         fields = ['is_staff', 'is_active', 'is_superuser', 'username']
 
 
-class UserViewSet():
+class UserViewSet(viewsets.ReadOnlyModelViewSet):
     '''
     Filter parameters:
     - username (exact)
