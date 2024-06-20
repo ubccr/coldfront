@@ -1,3 +1,9 @@
 [submodule "ifxreport"]
 	path = ifxreport
 	url = git@github.com:harvardinformatics/ifxreport.git
+[submodule "ifxbilling"]
+	path = ifxbilling
+	url = git@github.com:harvardinformatics/ifxbilling.git
+[submodule "fiine.client"]
+	path = fiine.client
+	url = git@github.com:harvardinformatics/fiine.client.git
