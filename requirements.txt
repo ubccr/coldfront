@@ -50,3 +50,4 @@ xhtml2pdf==0.2.08
 XlsxWriter
 python-dateutil
 django-extensions
+natural-keys
