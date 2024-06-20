@@ -82,7 +82,7 @@ Allocation Detail
             <td>
               {% if allocation.get_resources_as_list %}
                 {% for resource in allocation.get_resources_as_list %}
-                  {% if request.user.is_superuser and allocation.status.name == "New" and "Tier" in allocation.get_resources_as_string %}
+                  {% if request.user.is_superuser and allocation.status.name in "New,In Progress,On Hold" and "Tier" in allocation.get_resources_as_string %}
                     {{ form.resource }} <a color="red">Please choose a resource.</a>
                   {% else %}
                     <a href="{% url 'resource-detail' resource.pk %}">{{ resource }}</a>
@@ -296,7 +296,7 @@ Allocation Detail
       </div>
 
       <!-- New Allocation Action Form -->
-      {% if request.user.is_superuser or request.user.is_staff and allocation.status.name == 'New' %}
+      {% if request.user.is_superuser or request.user.is_staff and allocation.status.name in 'New,In Progress,On Hold' %}
         <div class="container mb-3 mt-3">
           <p class="text-justify"><i>
             To approve the request, select a resource volume in the field above and fill out the form below before clicking "Approve". To deny the request, simply click "Deny".

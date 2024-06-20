@@ -460,7 +460,8 @@ class ProjectAddUsersSearchView(LoginRequiredMixin, UserPassesTestMixin, Templat
     def test_func(self):
         """UserPassesTestMixin Tests"""
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
+        # if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
+        if self.request.user.is_superuser or self.request.user == project.pi:
             return True
         return False
 
@@ -488,7 +489,8 @@ class ProjectAddUsersSearchResultsView(
     def test_func(self):
         """UserPassesTestMixin Tests"""
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
+        # if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
+        if self.request.user.is_superuser or self.request.user == project.pi:
             return True
         return False
 
@@ -560,7 +562,8 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
         """UserPassesTestMixin Tests"""
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
+        # if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
+        if self.request.user.is_superuser or self.request.user == project.pi:
             return True
         err = 'You do not have permission to add users to the project.'
         messages.error(self.request, err)
@@ -616,6 +619,8 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             allocation_form_data = allocation_form.cleaned_data['allocation']
             if '__select_all__' in allocation_form_data:
                 allocation_form_data.remove('__select_all__')
+            errors = []
+            successes = []
             for form in formset:
                 user_form_data = form.cleaned_data
                 if user_form_data['selected']:
@@ -636,7 +641,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                     except Exception as e:
                         error = f"Could not locate user for {user_username}: {e}"
                         logger.error('P665: %s', error)
-                        messages.error(request, error)
+                        errors.append(error)
                         continue
 
                     role_choice = user_form_data.get('role')
@@ -653,13 +658,14 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                                 project_obj.title,
                             )
                         except Exception as e:
-                            error = f"Could not add user {user_obj} to AD Group for {project_obj.title}: {e}"
+                            error = f"Could not add user {user_obj} to AD Group for {project_obj.title}: {e}\nPlease contact Coldfront administration for further assistance."
                             logger.error(
                                 "P685: user %s could not add AD user of %s to AD Group of %s: %s",
                                 self.request.user, user_obj, project_obj.title, e
                             )
-                            messages.error(request, error)
+                            errors.append(error)
                             continue
+                        successes.append(f"User {user_obj} added to AD Group for {project_obj.title}")
 
                     # Is the user already in the project?
                     project_obj.projectuser_set.update_or_create(
@@ -690,6 +696,9 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                             sender=self.__class__,
                             allocation_user_pk=allocation_user_obj.pk,
                         )
+            if errors:
+                for error in errors:
+                    messages.error(request, error)
 
             messages.success(request, f'Added {added_users_count} users to project.')
         else:
@@ -710,7 +719,8 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
     def test_func(self):
         """UserPassesTestMixin Tests"""
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
+        # if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
+        if self.request.user.is_superuser or self.request.user == project.pi:
             return True
         return False
 

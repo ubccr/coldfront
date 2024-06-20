@@ -83,6 +83,7 @@ class Command(BaseCommand):
                     and lab_path in i['path'] and i['group_name'] == lab_name
                 ]
                 if not lab_usage_entries:
+                    logger.info("No starfish usage data found for", lab_name, lab_server, lab_path)
                     continue
 
                 allocation, created = project.allocation_set.get_or_create(

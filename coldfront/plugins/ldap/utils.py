@@ -36,6 +36,15 @@ logger = logging.getLogger(__name__)
 
 username_ignore_list = import_from_settings('username_ignore_list', [])
 
+class LDAPException(Exception):
+    """The base exception class for all LDAPExceptions"""
+
+class LDAPUserAdditionError(LDAPException):
+    """An exception raised when a user cannot be added to an LDAP Group"""
+
+class LDAPUserRemovalError(LDAPException):
+    """An exception raised when a user cannot be removed from an LDAP Group"""
+
 class LDAPConn:
     """LDAP connection object
     """
@@ -70,6 +79,11 @@ class LDAPConn:
         self.conn = Connection(
             self.server, self.LDAP_BIND_DN, self.LDAP_BIND_PASSWORD, auto_bind=True
         )
+
+    def member_in_group(self, member_dn, group_dn):
+        """Check if a member is in a group"""
+        group = self.search_groups({'distinguishedName': group_dn, 'member': member_dn})
+        return bool(group)
 
     def search(self, attr_search_dict, search_base, attributes=ALL_ATTRIBUTES):
         """Run an LDAP search.
@@ -176,13 +190,16 @@ class LDAPConn:
         self.add_member_to_group(group, parent_group)
 
     def add_member_to_group(self, member, group):
-        group_dn = group['distinguishedName']
         member_dn = member['distinguishedName']
+        group_dn = group['distinguishedName']
         try:
             result = ad_add_members_to_groups(
-                self.conn, [member_dn], group_dn, fix=True)
+                self.conn, [member_dn], group_dn, fix=True, raise_error=True)
         except Exception as e:
-            raise e
+            logger.exception("Error encountered while adding user to group: %s", e)
+            raise LDAPUserAdditionError("Error adding user to group.")
+        if not self.member_in_group(member_dn, group_dn):
+            raise LDAPUserAdditionError("Member not successfully added to group.")
         return result
 
     def remove_member_from_group(self, user_name, group_name):
@@ -192,13 +209,18 @@ class LDAPConn:
         user = self.return_user_by_name(user_name)
         if user['gidNumber'] == group['gidNumber']:
             raise ValueError(
-                "Group is user's primary group. Please contact FASRC support to remove this user from your group.")
+                "Group is member's primary group. Please contact FASRC support to remove this member from your group.")
         group_dn = group['distinguishedName']
         user_dn = user['distinguishedName']
         try:
-            result = ad_remove_members_from_groups(self.conn, [user_dn], group_dn, fix=True)
+            result = ad_remove_members_from_groups(
+                self.conn, [user_dn], group_dn, fix=True, raise_error=True
+            )
         except Exception as e:
-            raise e
+            logger.exception("Error encountered while removing user from group: %s", e)
+            raise LDAPUserRemovalError("Error removing user from group.")
+        if self.member_in_group(user_dn, group_dn):
+            raise LDAPUserRemovalError("Member not successfully removed from group.")
         return result
 
     def users_in_primary_group(self, usernames, groupname):
