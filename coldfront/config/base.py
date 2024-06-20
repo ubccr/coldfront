@@ -127,7 +127,7 @@ TEMPLATES = [
             '/usr/share/coldfront/site/templates',
             PROJECT_ROOT('coldfront/templates'),
             '/usr/local/lib/python3.10/site-packages/rest_framework/templates',
-            '/usr/local/lib/python3.10/site-packages/crispy_bootstrap4/templates','
+            '/usr/local/lib/python3.10/site-packages/crispy_bootstrap4/templates',
         ],
         'APP_DIRS': True,
         'OPTIONS': {
