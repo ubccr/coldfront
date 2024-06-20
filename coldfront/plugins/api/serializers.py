@@ -1,14 +1,42 @@
 from rest_framework import serializers
 
 from django.contrib.auth import get_user_model
+from ifxuser.models import Organization, UserAffiliation
 
 from coldfront.core.resource.models import Resource
 from coldfront.core.project.models import Project, ProjectUser
-from coldfront.core.allocation.models import Allocation, AllocationUser
+from coldfront.core.allocation.models import Allocation, AllocationChangeRequest
+
+
+class OrganizationSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Organization
+        fields = (
+            'ifxorg',
+            'name',
+            'rank',
+            'org_tree',
+        )
+
+
+class UserAffiliationSerializer(serializers.ModelSerializer):
+    organization = OrganizationSerializer(read_only=True)
+    user = serializers.SlugRelatedField(slug_field='full_name', read_only=True)
+
+    class Meta:
+        model = UserAffiliation
+        fields = (
+            'organization',
+            'user',
+            'role',
+            'active',
+        )
 
 
 class UserSerializer(serializers.ModelSerializer):
     primary_affiliation = serializers.SlugRelatedField(slug_field='name', read_only=True)
+    affiliations = UserAffiliationSerializer(source='useraffiliation_set', many=True, read_only=True)
 
     class Meta:
         model = get_user_model()
@@ -22,6 +50,7 @@ class UserSerializer(serializers.ModelSerializer):
             'date_joined',
             'last_update',
             'primary_affiliation',
+            'affiliations',
         )
 
 
@@ -62,6 +91,42 @@ class AllocationSerializer(serializers.ModelSerializer):
             'pct_full',
             'cost',
         )
+
+
+class AllocationChangeRequestSerializer(serializers.ModelSerializer):
+    allocation = AllocationSerializer(read_only=True)
+    status = serializers.SlugRelatedField(slug_field='name', read_only=True)
+    created_by = serializers.SerializerMethodField()
+    fulfilled_by = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AllocationChangeRequest
+        fields = (
+            'id',
+            'allocation',
+            'justification',
+            'status',
+            'created',
+            'modified',
+            'created_by',
+            'fulfilled_by',
+        )
+
+    def get_created_by(self, obj):
+        historical_record = obj.history.earliest()
+        creator = historical_record.history_user if historical_record else None
+        if not creator:
+            return None
+        return historical_record.history_user.full_name
+
+    def get_fulfilled_by(self, obj):
+        if not obj.status.name == 'Approved':
+            return None
+        historical_record = obj.history.latest()
+        fulfiller = historical_record.history_user if historical_record else None
+        if not fulfiller:
+            return None
+        return historical_record.history_user.full_name
 
 
 class ProjAllocationSerializer(serializers.ModelSerializer):
