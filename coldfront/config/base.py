@@ -14,6 +14,7 @@ from coldfront.config.env import ENV, PROJECT_ROOT
 VERSION = coldfront.VERSION
 BASE_DIR = PROJECT_ROOT()
 ALLOWED_HOSTS = ENV.list('ALLOWED_HOSTS', default=['*'])
+CSRF_TRUSTED_ORIGINS = ['http://localhost', 'https://*.rc.fas.harvard.edu']
 DEBUG = ENV.bool('DEBUG', default=False)
 WSGI_APPLICATION = 'coldfront.config.wsgi.application'
 ROOT_URLCONF = 'coldfront.config.urls'
