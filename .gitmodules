@@ -7,3 +7,18 @@
 [submodule "fiine.client"]
 	path = fiine.client
 	url = git@github.com:harvardinformatics/fiine.client.git
+[submodule "ifxurls"]
+	path = ifxurls
+	url = git@github.com:harvardinformatics/ifxurls.git
+[submodule "ifxec"]
+	path = ifxec
+	url = git@github.com:harvardinformatics/ifxec.git
+[submodule "ifxuser"]
+	path = ifxuser
+	url = git@github.com:harvardinformatics/ifxuser.git
+[submodule "nanites.client"]
+	path = nanites.client
+	url = git@github.com:harvardinformatics/nanites.client.git
+[submodule "ifxmail.client"]
+	path = ifxmail.client
+	url = git@github.com:harvardinformatics/ifxmail.client.git
