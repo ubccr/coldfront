@@ -57,3 +57,6 @@ pandas==2.2.1
 reportlab==4.0.5
 xhtml2pdf==0.2.15
 XlsxWriter
+python-dateutil
+django-extensions
+natural-keys
