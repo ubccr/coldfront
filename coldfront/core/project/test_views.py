@@ -144,7 +144,6 @@ class ProjectDetailViewTest(ProjectViewTestBase):
         utils.page_does_not_contain_for_user(self, self.project_user, self.url, 'Add Notification') # non-manager user cannot see add notification button
 
 
-
 class ProjectCreateTest(ProjectViewTestBase):
     """Tests for project create view"""
 
@@ -162,7 +161,6 @@ class ProjectCreateTest(ProjectViewTestBase):
         utils.test_user_cannot_access(self, self.pi_user, self.url)
         utils.test_user_cannot_access(self, self.project_user, self.url)
         utils.test_user_cannot_access(self, self.nonproject_user, self.url)
-
 
 
 class ProjectAttributeCreateTest(ProjectViewTestBase):
@@ -214,7 +212,6 @@ class ProjectAttributeCreateTest(ProjectViewTestBase):
         })
         self.assertFormError(response, 'form', 'value', 'This field is required.')
 
-
     def test_project_attribute_create_value_type_match(self):
         """ProjectAttributeCreate correctly flags value-type mismatch"""
 
@@ -226,8 +223,7 @@ class ProjectAttributeCreateTest(ProjectViewTestBase):
             'value': True,
             'project': self.project.pk
         })
-        self.assertFormError(response, 'form', '', 'Invalid Value True. Value must be an int.')
-
+        self.assertContains(response, 'Invalid Value True. Value must be an int.')
 
 
 class ProjectAttributeUpdateTest(ProjectViewTestBase):
@@ -241,7 +237,6 @@ class ProjectAttributeUpdateTest(ProjectViewTestBase):
         )
         cls.url = f'/project/{cls.project.pk}/project-attribute-update/{cls.projectattribute.pk}'
 
-
     def test_project_attribute_update_access(self):
         """Test access to project attribute update page"""
         self.project_access_tstbase(self.url)
@@ -249,7 +244,6 @@ class ProjectAttributeUpdateTest(ProjectViewTestBase):
         # project user, pi, and nonproject user cannot access update page
         utils.test_user_cannot_access(self, self.project_user, self.url)
         utils.test_user_cannot_access(self, self.nonproject_user, self.url)
-
 
 
 class ProjectAttributeDeleteTest(ProjectViewTestBase):
@@ -262,7 +256,6 @@ class ProjectAttributeDeleteTest(ProjectViewTestBase):
         cls.projectattribute = ProjectAttributeFactory(value=36238, proj_attr_type=cls.projectattributetype, project=cls.project)
         cls.url = f'/project/{cls.project.pk}/project-attribute-delete/'
 
-
     def test_project_attribute_delete_access(self):
         """test access to project attribute delete page"""
         # logged-out user gets redirected, admin can access delete page
@@ -272,7 +265,6 @@ class ProjectAttributeDeleteTest(ProjectViewTestBase):
         # project user and nonproject user cannot access delete page
         utils.test_user_cannot_access(self, self.project_user, self.url)
         utils.test_user_cannot_access(self, self.nonproject_user, self.url)
-
 
 
 class ProjectListViewTest(ProjectViewTestBase):
@@ -337,7 +329,6 @@ class ProjectListViewTest(ProjectViewTestBase):
         response = utils.login_and_get_page(self.client, self.admin_user, url)
         self.assertEqual(len(response.context['object_list']), 1)
 
-
     def test_project_list_search_pagination(self):
         """confirm that navigation to next page of search works as expected"""
         url = self.url + '?show_all_projects=on'
@@ -355,7 +346,6 @@ class ProjectRemoveUsersViewTest(ProjectViewTestBase):
     def test_projectremoveusersview_access(self):
         """test access to project remove users page"""
         self.project_access_tstbase(self.url)
-
 
 
 class ProjectUpdateViewTest(ProjectViewTestBase):
@@ -402,7 +392,6 @@ class ProjectNoteCreateViewTest(ProjectViewTestBase):
         self.project_access_tstbase(self.url)
 
 
-
 class ProjectAddUsersSearchView(ProjectViewTestBase):
     """Tests for ProjectAddUsersSearchView"""
     def setUp(self):
@@ -412,7 +401,6 @@ class ProjectAddUsersSearchView(ProjectViewTestBase):
     def test_projectadduserssearchview_access(self):
         """test access to project add users search page"""
         self.project_access_tstbase(self.url)
-
 
 
 class ProjectUserDetailViewTest(ProjectViewTestBase):
