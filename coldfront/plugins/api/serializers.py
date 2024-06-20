@@ -93,10 +93,58 @@ class AllocationSerializer(serializers.ModelSerializer):
         )
 
 
+class AllocationRequestSerializer(serializers.ModelSerializer):
+    project = serializers.SlugRelatedField(slug_field='title', read_only=True)
+    resource = serializers.SlugRelatedField(slug_field='name', read_only=True)
+    status = serializers.SlugRelatedField(slug_field='name', read_only=True)
+    fulfilled_date = serializers.SerializerMethodField()
+    created_by = serializers.SerializerMethodField()
+    fulfilled_by = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Allocation
+        fields = (
+            'id',
+            'project',
+            'resource',
+            'path',
+            'status',
+            'size',
+            'created',
+            'created_by',
+            'fulfilled_date',
+            'fulfilled_by',
+        )
+
+    def get_fulfilled_date(self, obj):
+        '''Return the first time the "fulfilled" status appears in the object's history.
+        '''
+        historical_records = obj.history.filter(status__name='Active')
+        if historical_records:
+            return historical_records.earliest().history_date
+        return None
+
+    def get_created_by(self, obj):
+        historical_record = obj.history.earliest()
+        creator = historical_record.history_user if historical_record else None
+        if not creator:
+            return None
+        return historical_record.history_user.username
+
+    def get_fulfilled_by(self, obj):
+        historical_records = obj.history.filter(status__name='Active')
+        if historical_records:
+            user = historical_records.earliest().history_user
+            if user:
+                return user.username
+        return None
+
+
 class AllocationChangeRequestSerializer(serializers.ModelSerializer):
     allocation = AllocationSerializer(read_only=True)
     status = serializers.SlugRelatedField(slug_field='name', read_only=True)
     created_by = serializers.SerializerMethodField()
+    fulfilled_date = serializers.SerializerMethodField()
     fulfilled_by = serializers.SerializerMethodField()
 
     class Meta:
@@ -107,8 +155,8 @@ class AllocationChangeRequestSerializer(serializers.ModelSerializer):
             'justification',
             'status',
             'created',
-            'modified',
             'created_by',
+            'fulfilled_date',
             'fulfilled_by',
         )
 
@@ -117,7 +165,15 @@ class AllocationChangeRequestSerializer(serializers.ModelSerializer):
         creator = historical_record.history_user if historical_record else None
         if not creator:
             return None
-        return historical_record.history_user.full_name
+        return historical_record.history_user.username
+
+    def get_fulfilled_date(self, obj):
+        '''Return the first time the "Approved" status appears in the object's history.
+        '''
+        historical_records = obj.history.filter(status__name='Approved')
+        if historical_records:
+            return historical_records.earliest().history_date
+        return None
 
     def get_fulfilled_by(self, obj):
         if not obj.status.name == 'Approved':
@@ -126,7 +182,7 @@ class AllocationChangeRequestSerializer(serializers.ModelSerializer):
         fulfiller = historical_record.history_user if historical_record else None
         if not fulfiller:
             return None
-        return historical_record.history_user.full_name
+        return historical_record.history_user.username
 
 
 class ProjAllocationSerializer(serializers.ModelSerializer):

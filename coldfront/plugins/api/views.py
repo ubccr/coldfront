@@ -1,6 +1,7 @@
 from rest_framework import viewsets
 
-from django.db.models import Q
+from django.db.models import OuterRef, Subquery, Q
+from simple_history.utils import get_history_model_for_model
 from django.contrib.auth import get_user_model
 from django_filters import rest_framework as filters
 
@@ -43,6 +44,84 @@ class AllocationViewSet(viewsets.ReadOnlyModelViewSet):
         return allocations
 
 
+class AllocationRequestFilter(filters.FilterSet):
+    '''Filters for AllocationChangeRequestViewSet.
+    created_before is the date the request was created before.
+    created_after is the date the request was created after.
+    '''
+    created_before = filters.DateTimeFilter(field_name='created', lookup_expr='lte')
+    created_after = filters.DateTimeFilter(field_name='created', lookup_expr='gte')
+    fulfilled = filters.BooleanFilter(method='filter_fulfilled')
+
+    fulfilled_before = filters.DateTimeFilter(method='filter_fulfilled_before')
+    fulfilled_after = filters.DateTimeFilter(method='filter_fulfilled_after')
+
+    class Meta:
+        model = Allocation
+        fields = [
+            'created_before',
+            'created_after',
+            'fulfilled',
+            'fulfilled_before',
+            'fulfilled_after',
+        ]
+
+    def filter_fulfilled_before(self, queryset, name, value):
+        return queryset.filter(fulfilled_date__lte=value)
+
+    def filter_fulfilled_after(self, queryset, name, value):
+        return queryset.filter(fulfilled_date__gte=value)
+
+
+class AllocationRequestViewSet(viewsets.ReadOnlyModelViewSet):
+    '''Report view on allocations requested through Coldfront.
+    Data:
+    - id: allocation id
+    - project: project name
+    - resource: resource name
+    - path: path to the allocation on the resource
+    - status: current status of the allocation
+    - size: current size of the allocation
+    - created: date created
+    - created_by: user who submitted the allocation request
+    - fulfilled_date: date the allocation's status was first set to "Active"
+    - fulfilled_by: user who first set the allocation status to "Active"
+
+    Filters:
+    - created_before (structure date as 'YYYY-MM-DD')
+    - created_after (structure date as 'YYYY-MM-DD')
+    - fulfilled (boolean)
+        Set to true to return all approved requests, false to return all pending and denied requests.
+    - fulfilled_before (structure date as 'YYYY-MM-DD')
+    - fulfilled_after (structure date as 'YYYY-MM-DD')
+
+    '''
+    serializer_class = serializers.AllocationRequestSerializer
+    filter_backends = (filters.DjangoFilterBackend,)
+    filterset_class = AllocationRequestFilter
+
+    def get_queryset(self):
+        HistoricalAllocation = get_history_model_for_model(Allocation)
+
+        # Subquery to get the earliest historical record for each allocation
+        earliest_history = HistoricalAllocation.objects.filter(
+            id=OuterRef('pk')
+        ).order_by('history_date').values('status__name')[:1]
+
+        fulfilled_date = HistoricalAllocation.objects.filter(
+            id=OuterRef('pk'), status__name='Active'
+        ).order_by('history_date').values('modified')[:1]
+
+        # Annotate allocations with the status_id of their earliest historical record
+        allocations = Allocation.objects.annotate(
+            earliest_status_name=Subquery(earliest_history)
+        ).filter(earliest_status_name='New').order_by('created')
+        allocations = allocations.annotate(
+            fulfilled_date=Subquery(fulfilled_date)
+        )
+        return allocations
+
+
 class AllocationChangeRequestFilter(filters.FilterSet):
     '''Filters for AllocationChangeRequestViewSet.
     created_before is the date the request was created before.
@@ -72,10 +151,10 @@ class AllocationChangeRequestFilter(filters.FilterSet):
             return queryset.filter(status__name__in=['Pending', 'Denied'])
 
     def filter_fulfilled_before(self, queryset, name, value):
-        return queryset.filter(status__name='Approved', created__lte=value)
+        return queryset.filter(fulfilled_date__lte=value)
 
     def filter_fulfilled_after(self, queryset, name, value):
-        return queryset.filter(status__name='Approved', created__gte=value)
+        return queryset.filter(fulfilled_date__gte=value)
 
 
 class AllocationChangeRequestViewSet(viewsets.ReadOnlyModelViewSet):
@@ -85,18 +164,17 @@ class AllocationChangeRequestViewSet(viewsets.ReadOnlyModelViewSet):
     - justification: justification provided at time of filing
     - status: request status
     - created: date created
-    - modified: date modified
     - created_by: user who created the object.
+    - fulfilled_date: date the allocationchangerequests's status was first set to "Approved"
     - fulfilled_by: user who last modified an approved object.
 
     Query parameters:
     - created_before (structure date as 'YYYY-MM-DD')
     - created_after (structure date as 'YYYY-MM-DD')
     - fulfilled (boolean)
+        Set to true to return all approved requests, false to return all pending and denied requests.
     - fulfilled_before (structure date as 'YYYY-MM-DD')
-        Technically returns all approved requests last modified before the given date.
     - fulfilled_after (structure date as 'YYYY-MM-DD')
-        Technically returns all approved requests last modified after the given date.
     '''
     serializer_class = serializers.AllocationChangeRequestSerializer
     filter_backends = (filters.DjangoFilterBackend,)
@@ -119,18 +197,17 @@ class AllocationChangeRequestViewSet(viewsets.ReadOnlyModelViewSet):
                 )
             ).distinct()
 
-        if any(
-            self.request.query_params.get(param) for param in ['fulfilled_before', 'fulfilled_after']
-        ):
-            requests = requests.filter(status__name='Approved')
-            if self.request.query_params.get('fulfilled_before'):
-                requests = requests.filter(
-                    created__lte=self.request.query_params.get('modified')
-                )
-            if self.request.query_params.get('fulfilled_after'):
-                requests = requests.filter(
-                    created__gte=self.request.query_params.get('modified')
-                )
+        HistoricalAllocationChangeRequest = get_history_model_for_model(
+                AllocationChangeRequest
+        )
+
+        fulfilled_date = HistoricalAllocationChangeRequest.objects.filter(
+            id=OuterRef('pk'), status__name='Approved'
+        ).order_by('history_date').values('modified')[:1]
+
+        requests = requests.annotate(
+            fulfilled_date=Subquery(fulfilled_date)
+        )
 
         requests = requests.order_by('created')
 
