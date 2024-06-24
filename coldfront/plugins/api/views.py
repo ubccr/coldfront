@@ -99,6 +99,7 @@ class AllocationRequestViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = serializers.AllocationRequestSerializer
     filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = AllocationRequestFilter
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def get_queryset(self):
         HistoricalAllocation = get_history_model_for_model(Allocation)
@@ -272,7 +273,7 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = serializers.UserSerializer
     filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = UserFilter
-    permission_classes = [IsAuthenticated & IsAdminUser]
+    permission_classes = [IsAuthenticated, IsAdminUser]
 
     def get_queryset(self):
         queryset = get_user_model().objects.all().prefetch_related('useraffiliation_set')
