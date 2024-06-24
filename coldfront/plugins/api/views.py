@@ -1,5 +1,8 @@
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
-from django.db.models import OuterRef, Subquery, Q
+from django.db.models import OuterRef, Subquery, Q, F, ExpressionWrapper, fields
+from django.db.models.functions import Cast
 from django_filters import rest_framework as filters
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -49,28 +52,36 @@ class AllocationRequestFilter(filters.FilterSet):
     created_before is the date the request was created before.
     created_after is the date the request was created after.
     '''
-    created_before = filters.DateTimeFilter(field_name='created', lookup_expr='lte')
-    created_after = filters.DateTimeFilter(field_name='created', lookup_expr='gte')
+    created = filters.DateFromToRangeFilter()
     fulfilled = filters.BooleanFilter(method='filter_fulfilled')
-
-    fulfilled_before = filters.DateTimeFilter(method='filter_fulfilled_before')
-    fulfilled_after = filters.DateTimeFilter(method='filter_fulfilled_after')
+    fulfilled_date = filters.DateFromToRangeFilter()
+    time_to_fulfillment = filters.NumericRangeFilter(method='filter_time_to_fulfillment')
 
     class Meta:
         model = Allocation
         fields = [
-            'created_before',
-            'created_after',
+            'created',
             'fulfilled',
-            'fulfilled_before',
-            'fulfilled_after',
+            'fulfilled_date',
+            'time_to_fulfillment',
         ]
 
-    def filter_fulfilled_before(self, queryset, name, value):
-        return queryset.filter(fulfilled_date__lte=value)
+    def filter_fulfilled(self, queryset, name, value):
+        if value:
+            return queryset.filter(status__name='Approved')
+        else:
+            return queryset.filter(status__name__in=['Pending', 'Denied'])
 
-    def filter_fulfilled_after(self, queryset, name, value):
-        return queryset.filter(fulfilled_date__gte=value)
+    def filter_time_to_fulfillment(self, queryset, name, value):
+        if value.start is not None:
+            queryset = queryset.filter(
+                time_to_fulfillment__gte=timedelta(days=int(value.start))
+            )
+        if value.stop is not None:
+            queryset = queryset.filter(
+                time_to_fulfillment__lte=timedelta(days=int(value.stop))
+            )
+        return queryset
 
 
 class AllocationRequestViewSet(viewsets.ReadOnlyModelViewSet):
@@ -86,15 +97,16 @@ class AllocationRequestViewSet(viewsets.ReadOnlyModelViewSet):
     - created_by: user who submitted the allocation request
     - fulfilled_date: date the allocation's status was first set to "Active"
     - fulfilled_by: user who first set the allocation status to "Active"
+    - time_to_fulfillment: time between request creation and time_to_fulfillment
+        displayed as "DAY_INTEGER HH:MM:SS"
 
     Filters:
-    - created_before (structure date as 'YYYY-MM-DD')
-    - created_after (structure date as 'YYYY-MM-DD')
+    - created_before/created_after (structure date as 'YYYY-MM-DD')
     - fulfilled (boolean)
         Set to true to return all approved requests, false to return all pending and denied requests.
-    - fulfilled_before (structure date as 'YYYY-MM-DD')
-    - fulfilled_after (structure date as 'YYYY-MM-DD')
-
+    - fulfilled_date_before/fulfilled_date_after (structure date as 'YYYY-MM-DD')
+    - time_to_fulfillment_max/time_to_fulfillment_min (integer)
+        Set to the maximum/minimum number of days between request creation and time_to_fulfillment.
     '''
     serializer_class = serializers.AllocationRequestSerializer
     filter_backends = (filters.DjangoFilterBackend,)
@@ -117,8 +129,16 @@ class AllocationRequestViewSet(viewsets.ReadOnlyModelViewSet):
         allocations = Allocation.objects.annotate(
             earliest_status_name=Subquery(earliest_history)
         ).filter(earliest_status_name='New').order_by('created')
+
         allocations = allocations.annotate(
             fulfilled_date=Subquery(fulfilled_date)
+        )
+
+        allocations = allocations.annotate(
+            time_to_fulfillment=ExpressionWrapper(
+                (Cast(Subquery(fulfilled_date), fields.DateTimeField()) - F('created')),
+                output_field=fields.DurationField()
+            )
         )
         return allocations
 
@@ -128,21 +148,18 @@ class AllocationChangeRequestFilter(filters.FilterSet):
     created_before is the date the request was created before.
     created_after is the date the request was created after.
     '''
-    created_before = filters.DateTimeFilter(field_name='created', lookup_expr='lte')
-    created_after = filters.DateTimeFilter(field_name='created', lookup_expr='gte')
+    created = filters.DateFromToRangeFilter()
     fulfilled = filters.BooleanFilter(method='filter_fulfilled')
-
-    fulfilled_before = filters.DateTimeFilter(method='filter_fulfilled_before')
-    fulfilled_after = filters.DateTimeFilter(method='filter_fulfilled_after')
+    fulfilled_date = filters.DateFromToRangeFilter()
+    time_to_fulfillment = filters.NumericRangeFilter(method='filter_time_to_fulfillment')
 
     class Meta:
         model = AllocationChangeRequest
         fields = [
-            'created_before',
-            'created_after',
+            'created',
             'fulfilled',
-            'fulfilled_before',
-            'fulfilled_after',
+            'fulfilled_date',
+            'time_to_fulfillment',
         ]
 
     def filter_fulfilled(self, queryset, name, value):
@@ -151,11 +168,16 @@ class AllocationChangeRequestFilter(filters.FilterSet):
         else:
             return queryset.filter(status__name__in=['Pending', 'Denied'])
 
-    def filter_fulfilled_before(self, queryset, name, value):
-        return queryset.filter(fulfilled_date__lte=value)
-
-    def filter_fulfilled_after(self, queryset, name, value):
-        return queryset.filter(fulfilled_date__gte=value)
+    def filter_time_to_fulfillment(self, queryset, name, value):
+        if value.start is not None:
+            queryset = queryset.filter(
+                time_to_fulfillment__gte=timedelta(days=int(value.start))
+            )
+        if value.stop is not None:
+            queryset = queryset.filter(
+                time_to_fulfillment__lte=timedelta(days=int(value.stop))
+            )
+        return queryset
 
 
 class AllocationChangeRequestViewSet(viewsets.ReadOnlyModelViewSet):
@@ -170,12 +192,12 @@ class AllocationChangeRequestViewSet(viewsets.ReadOnlyModelViewSet):
     - fulfilled_by: user who last modified an approved object.
 
     Query parameters:
-    - created_before (structure date as 'YYYY-MM-DD')
-    - created_after (structure date as 'YYYY-MM-DD')
+    - created_before/created_after (structure date as 'YYYY-MM-DD')
     - fulfilled (boolean)
         Set to true to return all approved requests, false to return all pending and denied requests.
-    - fulfilled_before (structure date as 'YYYY-MM-DD')
-    - fulfilled_after (structure date as 'YYYY-MM-DD')
+    - fulfilled_date_before/fulfilled_date_after (structure date as 'YYYY-MM-DD')
+    - time_to_fulfillment_max/time_to_fulfillment_min (integer)
+        Set to the maximum/minimum number of days between request creation and time_to_fulfillment.
     '''
     serializer_class = serializers.AllocationChangeRequestSerializer
     filter_backends = (filters.DjangoFilterBackend,)
@@ -208,6 +230,12 @@ class AllocationChangeRequestViewSet(viewsets.ReadOnlyModelViewSet):
 
         requests = requests.annotate(fulfilled_date=Subquery(fulfilled_date))
 
+        requests = requests.annotate(
+            time_to_fulfillment=ExpressionWrapper(
+                (Cast(Subquery(fulfilled_date), fields.DateTimeField()) - F('created')),
+                output_field=fields.DurationField()
+            )
+        )
         requests = requests.order_by('created')
 
         return requests
