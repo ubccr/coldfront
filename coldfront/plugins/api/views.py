@@ -302,6 +302,7 @@ class OrganizationViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         queryset = Organization.objects.all()
+        queryset = queryset.annotate(project=F('projectorganization__project__title'))
         return queryset
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):

@@ -22,20 +22,9 @@ class UserAffiliationSerializer(serializers.ModelSerializer):
             'active',
         )
 
-class ProjectOrganizationSerializer(serializers.ModelSerializer):
-    project = serializers.SlugRelatedField(slug_field='title', read_only=True)
-    organization = serializers.SlugRelatedField(slug_field='name', read_only=True)
-
-    class Meta:
-        model = ProjectOrganization
-        fields = (
-            'project',
-            'organization',
-        )
-
 
 class OrganizationSerializer(serializers.ModelSerializer):
-    projectorganization = ProjectOrganizationSerializer(source='projectorganization_set', read_only=True)
+    project = serializers.CharField(read_only=True)
 
     class Meta:
         model = Organization
@@ -44,7 +33,7 @@ class OrganizationSerializer(serializers.ModelSerializer):
             'name',
             'rank',
             'org_tree',
-            'projectorganization'
+            'project'
         )
 
 
