@@ -1,9 +1,9 @@
-from rest_framework import viewsets
-
-from django.db.models import OuterRef, Subquery, Q
-from simple_history.utils import get_history_model_for_model
 from django.contrib.auth import get_user_model
+from django.db.models import OuterRef, Subquery, Q
 from django_filters import rest_framework as filters
+from rest_framework import viewsets
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from simple_history.utils import get_history_model_for_model
 
 from coldfront.core.allocation.models import Allocation, AllocationChangeRequest
 from coldfront.core.project.models import Project
@@ -185,7 +185,7 @@ class AllocationChangeRequestViewSet(viewsets.ReadOnlyModelViewSet):
             'allocation', 'allocation__project', 'allocation__project__pi'
         )
 
-        if not (self.request.user.is_superuser):
+        if not (self.request.user.is_superuser or self.request.user.is_staff):
             requests = requests.filter(
                 Q(allocation__project__status__name__in=['New', 'Active']) &
                 (
@@ -205,9 +205,7 @@ class AllocationChangeRequestViewSet(viewsets.ReadOnlyModelViewSet):
             id=OuterRef('pk'), status__name='Approved'
         ).order_by('history_date').values('modified')[:1]
 
-        requests = requests.annotate(
-            fulfilled_date=Subquery(fulfilled_date)
-        )
+        requests = requests.annotate(fulfilled_date=Subquery(fulfilled_date))
 
         requests = requests.order_by('created')
 
@@ -227,9 +225,11 @@ class ProjectViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         projects = Project.objects.prefetch_related('status')
 
-        if not (self.request.user.is_superuser or self.request.user.has_perm(
-            'project.can_view_all_projects'
-        )):
+        if not (
+            self.request.user.is_superuser
+            or self.request.user.is_staff
+            or self.request.user.has_perm('project.can_view_all_projects')
+        ):
             projects = projects.filter(
                 Q(status__name__in=['New', 'Active']) &
                 (
@@ -262,7 +262,7 @@ class UserFilter(filters.FilterSet):
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
-    '''
+    '''Staff and superuser-only view for user data.
     Filter parameters:
     - username (exact)
     - is_active
@@ -270,6 +270,10 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     - is_staff
     '''
     serializer_class = serializers.UserSerializer
-    queryset = get_user_model().objects.all().prefetch_related('useraffiliation_set')
     filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = UserFilter
+    permission_classes = [IsAuthenticated & IsAdminUser]
+
+    def get_queryset(self):
+        queryset = get_user_model().objects.all().prefetch_related('useraffiliation_set')
+        return queryset
