@@ -8,11 +8,15 @@ from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from simple_history.utils import get_history_model_for_model
 
+from coldfront.core.utils.common import import_from_settings
 from coldfront.core.allocation.models import Allocation, AllocationChangeRequest
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
 from coldfront.plugins.api import serializers
 
+UNFULFILLED_ALLOCATION_STATUSES = ['Denied'] + import_from_settings(
+    'PENDING_ALLOCATION_STATUSES', ['New', 'In Progress', 'On Hold', 'Pending Activation']
+)
 
 class ResourceViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = serializers.ResourceSerializer
@@ -70,7 +74,7 @@ class AllocationRequestFilter(filters.FilterSet):
         if value:
             return queryset.filter(status__name='Approved')
         else:
-            return queryset.filter(status__name__in=['Pending', 'Denied'])
+            return queryset.filter(status__name__in=UNFULFILLED_ALLOCATION_STATUSES)
 
     def filter_time_to_fulfillment(self, queryset, name, value):
         if value.start is not None:
