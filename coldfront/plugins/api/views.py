@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import OuterRef, Subquery, Q, F, ExpressionWrapper, fields
 from django.db.models.functions import Cast
 from django_filters import rest_framework as filters
+from ifxuser.models import Organization
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from simple_history.utils import get_history_model_for_model
@@ -293,6 +294,15 @@ class UserFilter(filters.FilterSet):
         model = get_user_model()
         fields = ['is_staff', 'is_active', 'is_superuser', 'username']
 
+
+class OrganizationViewSet(viewsets.ReadOnlyModelViewSet):
+    '''Staff and superuser-only view for organization data.'''
+    serializer_class = serializers.OrganizationSerializer
+    permission_classes = [IsAuthenticated, IsAdminUser]
+
+    def get_queryset(self):
+        queryset = Organization.objects.all()
+        return queryset
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     '''Staff and superuser-only view for user data.

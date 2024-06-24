@@ -7,22 +7,10 @@ from rest_framework import serializers
 from coldfront.core.resource.models import Resource
 from coldfront.core.project.models import Project, ProjectUser
 from coldfront.core.allocation.models import Allocation, AllocationChangeRequest
-
-
-class OrganizationSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Organization
-        fields = (
-            'ifxorg',
-            'name',
-            'rank',
-            'org_tree',
-        )
+from coldfront.plugins.ifx.models import ProjectOrganization
 
 
 class UserAffiliationSerializer(serializers.ModelSerializer):
-    organization = OrganizationSerializer(read_only=True)
     user = serializers.SlugRelatedField(slug_field='full_name', read_only=True)
 
     class Meta:
@@ -32,6 +20,31 @@ class UserAffiliationSerializer(serializers.ModelSerializer):
             'user',
             'role',
             'active',
+        )
+
+class ProjectOrganizationSerializer(serializers.ModelSerializer):
+    project = serializers.SlugRelatedField(slug_field='title', read_only=True)
+    organization = serializers.SlugRelatedField(slug_field='name', read_only=True)
+
+    class Meta:
+        model = ProjectOrganization
+        fields = (
+            'project',
+            'organization',
+        )
+
+
+class OrganizationSerializer(serializers.ModelSerializer):
+    projectorganization = ProjectOrganizationSerializer(source='projectorganization_set', read_only=True)
+
+    class Meta:
+        model = Organization
+        fields = (
+            'ifxorg',
+            'name',
+            'rank',
+            'org_tree',
+            'projectorganization'
         )
 
 
