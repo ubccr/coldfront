@@ -12,6 +12,7 @@ from coldfront.plugins.ifx.models import ProjectOrganization
 
 class UserAffiliationSerializer(serializers.ModelSerializer):
     user = serializers.SlugRelatedField(slug_field='full_name', read_only=True)
+    organization = serializers.SlugRelatedField(slug_field='ifxorg', read_only=True)
 
     class Meta:
         model = UserAffiliation
@@ -100,10 +101,10 @@ class AllocationRequestSerializer(serializers.ModelSerializer):
     project = serializers.SlugRelatedField(slug_field='title', read_only=True)
     resource = serializers.SlugRelatedField(slug_field='name', read_only=True)
     status = serializers.SlugRelatedField(slug_field='name', read_only=True)
-    fulfilled_date = serializers.DateTimeField()
-    created_by = serializers.SerializerMethodField()
-    fulfilled_by = serializers.SerializerMethodField()
-    time_to_fulfillment = serializers.DurationField()
+    fulfilled_date = serializers.DateTimeField(read_only=True)
+    created_by = serializers.SerializerMethodField(read_only=True)
+    fulfilled_by = serializers.SerializerMethodField(read_only=True)
+    time_to_fulfillment = serializers.DurationField(read_only=True)
 
     class Meta:
         model = Allocation
@@ -140,10 +141,10 @@ class AllocationRequestSerializer(serializers.ModelSerializer):
 class AllocationChangeRequestSerializer(serializers.ModelSerializer):
     allocation = AllocationSerializer(read_only=True)
     status = serializers.SlugRelatedField(slug_field='name', read_only=True)
-    created_by = serializers.SerializerMethodField()
-    fulfilled_date = serializers.DateTimeField()
-    fulfilled_by = serializers.SerializerMethodField()
-    time_to_fulfillment = serializers.DurationField()
+    created_by = serializers.SerializerMethodField(read_only=True)
+    fulfilled_date = serializers.DateTimeField(read_only=True)
+    fulfilled_by = serializers.SerializerMethodField(read_only=True)
+    time_to_fulfillment = serializers.DurationField(read_only=True)
 
     class Meta:
         model = AllocationChangeRequest
