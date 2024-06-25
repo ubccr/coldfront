@@ -5,6 +5,7 @@ on:
     branches: [ "ci_cd", "development", "master" ]
   pull_request:
     branches: [ "ci_cd", "development", "master" ]
+  workflow_dispatch:
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -60,7 +61,15 @@ jobs:
         export COMPOSE_DOCKER_CLI_BUILD=1
         export DOCKER_BUILDKIT=1
         make build
-        docker run -d --rm --name coldfront -v `pwd`:/usr/src/app -e PLUGIN_SFTOCF=True -e PLUGIN_IFX=True -e NEO4JP=${{ secrets.NEO4JP }} -e PLUGIN_FASRC=True -e PLUGIN_LDAP=True -e AUTH_LDAP_SERVER_URI=${{ secrets.AUTH_LDAP_SERVER_URI }} -e AUTH_LDAP_BIND_DN=${{ secrets.AUTH_LDAP_BIND_DN }} -e AUTH_LDAP_BIND_PASSWORD=${{ secrets.AUTH_LDAP_BIND_PASSWORD }} -e AUTH_LDAP_GROUP_SEARCH_BASE=${{ secrets.AUTH_LDAP_GROUP_SEARCH_BASE }} -e AUTH_LDAP_USER_SEARCH_BASE=${{ secrets.AUTH_LDAP_USER_SEARCH_BASE }} -p 9000:80 coldfront
+        docker run -d --rm --name coldfront -v `pwd`:/usr/src/app \
+        -e PLUGIN_SFTOCF=True -e PLUGIN_IFX=True -e NEO4JP=${{ secrets.NEO4JP }} \
+        -e PLUGIN_FASRC=True -e PLUGIN_LDAP=True -e PLUGIN_API=True \
+        -e AUTH_LDAP_SERVER_URI=${{ secrets.AUTH_LDAP_SERVER_URI }} \
+        -e AUTH_LDAP_BIND_DN=${{ secrets.AUTH_LDAP_BIND_DN }} \
+        -e AUTH_LDAP_BIND_PASSWORD=${{ secrets.AUTH_LDAP_BIND_PASSWORD }} \
+        -e AUTH_LDAP_GROUP_SEARCH_BASE=${{ secrets.AUTH_LDAP_GROUP_SEARCH_BASE }} \
+        -e AUTH_LDAP_USER_SEARCH_BASE=${{ secrets.AUTH_LDAP_USER_SEARCH_BASE }} \
+        -p 9000:80 coldfront
       env:
         SSH_AUTH_SOCK: /tmp/ssh_agent.sock
     - name: Run Tests
