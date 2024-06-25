@@ -45,7 +45,7 @@ LOGGING = {
             'when': 'midnight',
             'backupCount': 10,
             'formatter': 'key-events',
-            'level': 'WARNING',
+            'level': 'INFO',
         },
         # 'file': {
         #     'class': 'logging.FileHandler',
