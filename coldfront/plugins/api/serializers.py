@@ -1,28 +1,18 @@
-from rest_framework import serializers
+from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from ifxuser.models import Organization, UserAffiliation
+from rest_framework import serializers
 
 from coldfront.core.resource.models import Resource
 from coldfront.core.project.models import Project, ProjectUser
 from coldfront.core.allocation.models import Allocation, AllocationChangeRequest
-
-
-class OrganizationSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Organization
-        fields = (
-            'ifxorg',
-            'name',
-            'rank',
-            'org_tree',
-        )
+from coldfront.plugins.ifx.models import ProjectOrganization
 
 
 class UserAffiliationSerializer(serializers.ModelSerializer):
-    organization = OrganizationSerializer(read_only=True)
     user = serializers.SlugRelatedField(slug_field='full_name', read_only=True)
+    organization = serializers.SlugRelatedField(slug_field='ifxorg', read_only=True)
 
     class Meta:
         model = UserAffiliation
@@ -31,6 +21,20 @@ class UserAffiliationSerializer(serializers.ModelSerializer):
             'user',
             'role',
             'active',
+        )
+
+
+class OrganizationSerializer(serializers.ModelSerializer):
+    project = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = Organization
+        fields = (
+            'ifxorg',
+            'name',
+            'rank',
+            'org_tree',
+            'project'
         )
 
 
@@ -97,9 +101,10 @@ class AllocationRequestSerializer(serializers.ModelSerializer):
     project = serializers.SlugRelatedField(slug_field='title', read_only=True)
     resource = serializers.SlugRelatedField(slug_field='name', read_only=True)
     status = serializers.SlugRelatedField(slug_field='name', read_only=True)
-    fulfilled_date = serializers.SerializerMethodField()
-    created_by = serializers.SerializerMethodField()
-    fulfilled_by = serializers.SerializerMethodField()
+    fulfilled_date = serializers.DateTimeField(read_only=True)
+    created_by = serializers.SerializerMethodField(read_only=True)
+    fulfilled_by = serializers.SerializerMethodField(read_only=True)
+    time_to_fulfillment = serializers.DurationField(read_only=True)
 
     class Meta:
         model = Allocation
@@ -114,15 +119,8 @@ class AllocationRequestSerializer(serializers.ModelSerializer):
             'created_by',
             'fulfilled_date',
             'fulfilled_by',
+            'time_to_fulfillment',
         )
-
-    def get_fulfilled_date(self, obj):
-        '''Return the first time the "fulfilled" status appears in the object's history.
-        '''
-        historical_records = obj.history.filter(status__name='Active')
-        if historical_records:
-            return historical_records.earliest().history_date
-        return None
 
     def get_created_by(self, obj):
         historical_record = obj.history.earliest()
@@ -143,9 +141,10 @@ class AllocationRequestSerializer(serializers.ModelSerializer):
 class AllocationChangeRequestSerializer(serializers.ModelSerializer):
     allocation = AllocationSerializer(read_only=True)
     status = serializers.SlugRelatedField(slug_field='name', read_only=True)
-    created_by = serializers.SerializerMethodField()
-    fulfilled_date = serializers.SerializerMethodField()
-    fulfilled_by = serializers.SerializerMethodField()
+    created_by = serializers.SerializerMethodField(read_only=True)
+    fulfilled_date = serializers.DateTimeField(read_only=True)
+    fulfilled_by = serializers.SerializerMethodField(read_only=True)
+    time_to_fulfillment = serializers.DurationField(read_only=True)
 
     class Meta:
         model = AllocationChangeRequest
@@ -158,6 +157,7 @@ class AllocationChangeRequestSerializer(serializers.ModelSerializer):
             'created_by',
             'fulfilled_date',
             'fulfilled_by',
+            'time_to_fulfillment',
         )
 
     def get_created_by(self, obj):
@@ -166,14 +166,6 @@ class AllocationChangeRequestSerializer(serializers.ModelSerializer):
         if not creator:
             return None
         return historical_record.history_user.username
-
-    def get_fulfilled_date(self, obj):
-        '''Return the first time the "Approved" status appears in the object's history.
-        '''
-        historical_records = obj.history.filter(status__name='Approved')
-        if historical_records:
-            return historical_records.earliest().history_date
-        return None
 
     def get_fulfilled_by(self, obj):
         if not obj.status.name == 'Approved':
