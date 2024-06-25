@@ -23,6 +23,18 @@ class ColdfrontAPI(APITestCase):
     def test_requires_login(self):
         """Test that the API requires authentication"""
         response = self.client.get('/api/')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_allocation_request_api_permissions(self):
+        """Test that accessing the allocation-request API view as an admin returns all
+        allocations, and that accessing it as a user is forbidden"""
+        # login as admin
+        self.client.force_login(self.admin_user)
+        response = self.client.get('/api/allocation-requests/', format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.client.force_login(self.pi_user)
+        response = self.client.get('/api/allocation-requests/', format='json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_allocation_api_permissions(self):
@@ -49,9 +61,21 @@ class ColdfrontAPI(APITestCase):
         self.client.force_login(self.admin_user)
         response = self.client.get('/api/projects/', format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), Allocation.objects.all().count())
+        self.assertEqual(len(response.data), Project.objects.all().count())
 
         self.client.force_login(self.pi_user)
         response = self.client.get('/api/projects/', format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
+
+    def test_user_api_permissions(self):
+        """Test that accessing the user API view as an admin returns all
+        allocations, and that accessing it as a user is forbidden"""
+        # login as admin
+        self.client.force_login(self.admin_user)
+        response = self.client.get('/api/users/', format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.client.force_login(self.pi_user)
+        response = self.client.get('/api/users/', format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

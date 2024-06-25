@@ -665,7 +665,9 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                             )
                             errors.append(error)
                             continue
-                        successes.append(f"User {user_obj} added to AD Group for {project_obj.title}")
+                        success_msg = f"User {user_obj} added by {request.user} to AD Group for {project_obj.title}"
+                        logger.info(success_msg)
+                        successes.append(success_msg)
 
                     # Is the user already in the project?
                     project_obj.projectuser_set.update_or_create(
