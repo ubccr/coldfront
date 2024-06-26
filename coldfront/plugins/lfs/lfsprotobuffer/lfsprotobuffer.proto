@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+import "google/protobuf/wrappers.proto";
+
+option go_package = ".";
+option java_multiple_files = true;
+option java_outer_classname = "AppProto";
+
+package myprotobuffer;
+
+message voidNoParam {}
+
+// The Groups service definition.
+service Groups {
+  rpc GetGroups (GroupRequest) returns (GroupResp) {}
+  rpc ListGroups (voidNoParam) returns (stream GroupResp) {}
+}
+
+message GroupRequest {
+  int32 id = 1;
+}
+
+message GroupResp {
+    int32  id       = 1;
+    string name     = 2;
+}
+
+service Filesystems {
+  rpc GetFilesystems (FilesystemRequest) returns (FilesystemResp) {}
+  rpc ListFilesystems (voidNoParam) returns (stream FilesystemResp) {}
+}
+
+message FilesystemRequest {
+  int32 id = 1;
+}
+
+message FilesystemResp {
+    int32  id       = 1;
+    string name     = 2;
+}
+
+service Quotas {
+  rpc GetQuotas (QuotaRequest) returns (QuotaResp) {}
+  rpc ListQuotas (voidNoParam) returns (stream QuotaResp) {}
+}
+
+message QuotaRequest {
+  int32 id = 1;
+}
+
+message QuotaResp {
+  int32                      id              = 1;
+  int32                      group_uid       = 2;
+  int32                      filesystem_uid  = 3;
+  int64                      block_used      = 4;
+  int64                      block_quota     = 5;
+  int64                      block_limit     = 6;
+  google.protobuf.Int64Value block_grace     = 7;
+  bool                       block_isdefault = 8;
+  int64                      files_used      = 9;
+  int64                      files_quota     = 10;
+  int64                      files_limit     = 11;
+  google.protobuf.Int64Value files_grace     = 12;
+  bool                       files_isdefault = 13;
+  string                     created         = 14;
+  string                     updated         = 15;
+}
+
