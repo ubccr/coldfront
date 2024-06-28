@@ -24,8 +24,23 @@ class ResourceViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Resource.objects.all()
 
 
+class AllocationFilter(filters.FilterSet):
+    '''Filters for AllocationViewSet.
+    created_before is the date the request was created before.
+    created_after is the date the request was created after.
+    '''
+    created = filters.DateFromToRangeFilter()
+
+    class Meta:
+        model = Allocation
+        fields = [
+            'created',
+        ]
+
+
 class AllocationViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = serializers.AllocationSerializer
+    filterset_class = AllocationFilter
     # permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
     def get_queryset(self):
@@ -246,6 +261,17 @@ class AllocationChangeRequestViewSet(viewsets.ReadOnlyModelViewSet):
         return requests
 
 
+class ProjectFilter(filters.FilterSet):
+    '''Filters for ProjectViewSet.
+    '''
+    created = filters.DateFromToRangeFilter()
+
+    class Meta:
+        model = Project
+        fields = [
+            'created',
+        ]
+
 class ProjectViewSet(viewsets.ReadOnlyModelViewSet):
     '''
     Query parameters:
@@ -253,8 +279,10 @@ class ProjectViewSet(viewsets.ReadOnlyModelViewSet):
         Show related allocation data.
     - project_users (default false)
         Show related user data.
+    - created_before/created_after (structure date as 'YYYY-MM-DD')
     '''
     serializer_class = serializers.ProjectSerializer
+    filterset_class = ProjectFilter
 
     def get_queryset(self):
         projects = Project.objects.prefetch_related('status')

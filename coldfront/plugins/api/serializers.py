@@ -94,7 +94,14 @@ class AllocationSerializer(serializers.ModelSerializer):
             'usage',
             'pct_full',
             'cost',
+            'created',
         )
+
+    def get_type(self, obj):
+        resource = obj.get_parent_resource
+        if resource:
+            return resource.resource_type.name
+        return None
 
 
 class AllocationRequestSerializer(serializers.ModelSerializer):
@@ -206,7 +213,15 @@ class ProjectSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Project
-        fields = ('id', 'title', 'pi', 'status', 'project_users', 'allocations')
+        fields = (
+            'id',
+            'title',
+            'pi',
+            'status',
+            'project_users',
+            'allocations',
+            'created',
+        )
 
     def get_project_users(self, obj):
         request = self.context.get('request', None)
