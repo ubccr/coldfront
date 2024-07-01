@@ -35,7 +35,7 @@
           <a class="nav-link" href="{% url 'coldfront_plugin_qumulo:allocation' %}">Create Allocation</a>
         </li>
         <li id="navbar-view-allocation" class="nav-item">
-          <a class="nav-link" href="{% url 'coldfront_plugin_qumulo:allocationTable' %}">View Allocation</a>
+          <a class="nav-link" href="{% url 'allocation-table-list' %}">View All Allocation</a>
         </li>
         {% if request.user.is_superuser %}
           {% include 'common/navbar_admin.html' %}
