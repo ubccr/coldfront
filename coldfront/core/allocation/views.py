@@ -504,7 +504,7 @@ class AllocationTableView(LoginRequiredMixin, ListView):
                 Q(allocationuser__status__name='Active')
             ).order_by(order_by)
 
-        return allocations.distinct()
+        return Allocation.objects.all()
 
     def get_context_data(self, **kwargs):
 
