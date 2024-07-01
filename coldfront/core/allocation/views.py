@@ -417,7 +417,7 @@ class AllocationListView(LoginRequiredMixin, ListView):
 class AllocationTableView(LoginRequiredMixin, ListView):
 
     model = Allocation
-    template_name = 'qumulo/allocation_table_view.html'
+    template_name = 'allocation/allocation_table_view.html'
     context_object_name = 'allocation_list'
     paginate_by = 25
 
