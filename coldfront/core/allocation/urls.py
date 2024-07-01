@@ -4,6 +4,7 @@ import coldfront.core.allocation.views as allocation_views
 
 urlpatterns = [
     path('', allocation_views.AllocationListView.as_view(), name='allocation-list'),
+    path('table-view', allocation_views.AllocationTableView.as_view(), name='allocation-table-list'),
     path('project/<int:project_pk>/create',
          allocation_views.AllocationCreateView.as_view(), name='allocation-create'),
     path('<int:pk>/', allocation_views.AllocationDetailView.as_view(),
