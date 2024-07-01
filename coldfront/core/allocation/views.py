@@ -418,7 +418,7 @@ class AllocationTableView(LoginRequiredMixin, ListView):
 
     model = Allocation
     template_name = 'allocation/allocation_table_view.html'
-    context_object_name = 'allocation_table'
+    context_object_name = 'allocation_list'
     paginate_by = 25
 
     def get_queryset(self):

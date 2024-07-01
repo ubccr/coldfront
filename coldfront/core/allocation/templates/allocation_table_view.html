@@ -13,7 +13,7 @@ Allocation View
 <h2>Allocations</h2>
 <hr>
 
-{% if expand_accordion == "show" or allocation_table %}
+{% if expand_accordion == "show" or allocation_list %}
   <div class="mb-3" id="accordion">
     <div class="card">
       <div class="card-header">
@@ -36,7 +36,7 @@ Allocation View
   <hr>
 {% endif %}
 
-{% if allocation_table %}
+{% if allocation_list %}
   <strong>Allocation{{allocations_count|pluralize}}: {{allocations_count}}</strong>
   <div class="table-responsive">
     <table class="table table-sm">
@@ -75,7 +75,7 @@ Allocation View
         </tr>
       </thead>
       <tbody>
-        {% for allocation in allocation_table %}
+        {% for allocation in allocation_list %}
           <tr>
             <td><a href="/allocation/{{allocation.id}}/">{{ allocation.id }}</a></td>
             <td class="text-nowrap"><a 
