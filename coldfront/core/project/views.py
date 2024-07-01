@@ -2331,10 +2331,14 @@ class ProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin, View):
         project_obj.status = project_status_obj
 
         if project_review_obj.allocation_renewals:
-            allocation_status_choice = AllocationStatusChoice.objects.get(name="Active")
+            allocation_active_status_choice = AllocationStatusChoice.objects.get(name="Active")
+            allocation_expired_status_choice = AllocationStatusChoice.objects.get(name="Expired")
             for allocation_pk in project_review_obj.allocation_renewals.split(','):
                 allocation = Allocation.objects.get(pk=int(allocation_pk))
-                allocation.status = allocation_status_choice
+                if allocation.end_date <= datetime.datetime.now().date():
+                    allocation.status = allocation_expired_status_choice
+                else:
+                    allocation.status = allocation_active_status_choice
                 allocation.save()
 
         project_review_obj.save()
