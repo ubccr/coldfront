@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import coldfront.plugins.lfs.lfsprotobuffer.gen.pb_python.lfsprotobuffer_pb2 as lfsprotobuffer__pb2
+import lfsprotobuffer_pb2 as lfsprotobuffer__pb2
 
 
 class GroupsStub(object):
@@ -15,9 +15,14 @@ class GroupsStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.GetGroups = channel.unary_unary(
-                '/myprotobuffer.Groups/GetGroups',
-                request_serializer=lfsprotobuffer__pb2.GroupRequest.SerializeToString,
+        self.GetGroupById = channel.unary_unary(
+                '/myprotobuffer.Groups/GetGroupById',
+                request_serializer=lfsprotobuffer__pb2.GroupRequestById.SerializeToString,
+                response_deserializer=lfsprotobuffer__pb2.GroupResp.FromString,
+                )
+        self.GetGroupByName = channel.unary_unary(
+                '/myprotobuffer.Groups/GetGroupByName',
+                request_serializer=lfsprotobuffer__pb2.GroupRequestByName.SerializeToString,
                 response_deserializer=lfsprotobuffer__pb2.GroupResp.FromString,
                 )
         self.ListGroups = channel.unary_stream(
@@ -31,7 +36,13 @@ class GroupsServicer(object):
     """The Groups service definition.
     """
 
-    def GetGroups(self, request, context):
+    def GetGroupById(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetGroupByName(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -46,9 +57,14 @@ class GroupsServicer(object):
 
 def add_GroupsServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'GetGroups': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetGroups,
-                    request_deserializer=lfsprotobuffer__pb2.GroupRequest.FromString,
+            'GetGroupById': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetGroupById,
+                    request_deserializer=lfsprotobuffer__pb2.GroupRequestById.FromString,
+                    response_serializer=lfsprotobuffer__pb2.GroupResp.SerializeToString,
+            ),
+            'GetGroupByName': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetGroupByName,
+                    request_deserializer=lfsprotobuffer__pb2.GroupRequestByName.FromString,
                     response_serializer=lfsprotobuffer__pb2.GroupResp.SerializeToString,
             ),
             'ListGroups': grpc.unary_stream_rpc_method_handler(
@@ -68,7 +84,7 @@ class Groups(object):
     """
 
     @staticmethod
-    def GetGroups(request,
+    def GetGroupById(request,
             target,
             options=(),
             channel_credentials=None,
@@ -78,8 +94,25 @@ class Groups(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/myprotobuffer.Groups/GetGroups',
-            lfsprotobuffer__pb2.GroupRequest.SerializeToString,
+        return grpc.experimental.unary_unary(request, target, '/myprotobuffer.Groups/GetGroupById',
+            lfsprotobuffer__pb2.GroupRequestById.SerializeToString,
+            lfsprotobuffer__pb2.GroupResp.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def GetGroupByName(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/myprotobuffer.Groups/GetGroupByName',
+            lfsprotobuffer__pb2.GroupRequestByName.SerializeToString,
             lfsprotobuffer__pb2.GroupResp.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
@@ -111,9 +144,14 @@ class FilesystemsStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.GetFilesystems = channel.unary_unary(
-                '/myprotobuffer.Filesystems/GetFilesystems',
-                request_serializer=lfsprotobuffer__pb2.FilesystemRequest.SerializeToString,
+        self.GetFilesystemById = channel.unary_unary(
+                '/myprotobuffer.Filesystems/GetFilesystemById',
+                request_serializer=lfsprotobuffer__pb2.FilesystemRequestById.SerializeToString,
+                response_deserializer=lfsprotobuffer__pb2.FilesystemResp.FromString,
+                )
+        self.GetFilesystemByName = channel.unary_unary(
+                '/myprotobuffer.Filesystems/GetFilesystemByName',
+                request_serializer=lfsprotobuffer__pb2.FilesystemRequestByName.SerializeToString,
                 response_deserializer=lfsprotobuffer__pb2.FilesystemResp.FromString,
                 )
         self.ListFilesystems = channel.unary_stream(
@@ -126,7 +164,13 @@ class FilesystemsStub(object):
 class FilesystemsServicer(object):
     """Missing associated documentation comment in .proto file."""
 
-    def GetFilesystems(self, request, context):
+    def GetFilesystemById(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetFilesystemByName(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -141,9 +185,14 @@ class FilesystemsServicer(object):
 
 def add_FilesystemsServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'GetFilesystems': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetFilesystems,
-                    request_deserializer=lfsprotobuffer__pb2.FilesystemRequest.FromString,
+            'GetFilesystemById': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetFilesystemById,
+                    request_deserializer=lfsprotobuffer__pb2.FilesystemRequestById.FromString,
+                    response_serializer=lfsprotobuffer__pb2.FilesystemResp.SerializeToString,
+            ),
+            'GetFilesystemByName': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetFilesystemByName,
+                    request_deserializer=lfsprotobuffer__pb2.FilesystemRequestByName.FromString,
                     response_serializer=lfsprotobuffer__pb2.FilesystemResp.SerializeToString,
             ),
             'ListFilesystems': grpc.unary_stream_rpc_method_handler(
@@ -162,7 +211,7 @@ class Filesystems(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def GetFilesystems(request,
+    def GetFilesystemById(request,
             target,
             options=(),
             channel_credentials=None,
@@ -172,8 +221,25 @@ class Filesystems(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/myprotobuffer.Filesystems/GetFilesystems',
-            lfsprotobuffer__pb2.FilesystemRequest.SerializeToString,
+        return grpc.experimental.unary_unary(request, target, '/myprotobuffer.Filesystems/GetFilesystemById',
+            lfsprotobuffer__pb2.FilesystemRequestById.SerializeToString,
+            lfsprotobuffer__pb2.FilesystemResp.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def GetFilesystemByName(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/myprotobuffer.Filesystems/GetFilesystemByName',
+            lfsprotobuffer__pb2.FilesystemRequestByName.SerializeToString,
             lfsprotobuffer__pb2.FilesystemResp.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
@@ -205,9 +271,19 @@ class QuotasStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.GetQuotas = channel.unary_unary(
+        self.GetQuotas = channel.unary_stream(
                 '/myprotobuffer.Quotas/GetQuotas',
                 request_serializer=lfsprotobuffer__pb2.QuotaRequest.SerializeToString,
+                response_deserializer=lfsprotobuffer__pb2.QuotaResp.FromString,
+                )
+        self.GetQuotaById = channel.unary_unary(
+                '/myprotobuffer.Quotas/GetQuotaById',
+                request_serializer=lfsprotobuffer__pb2.QuotaRequestById.SerializeToString,
+                response_deserializer=lfsprotobuffer__pb2.QuotaResp.FromString,
+                )
+        self.GetQuotasByDate = channel.unary_stream(
+                '/myprotobuffer.Quotas/GetQuotasByDate',
+                request_serializer=lfsprotobuffer__pb2.QuotaRequestByDate.SerializeToString,
                 response_deserializer=lfsprotobuffer__pb2.QuotaResp.FromString,
                 )
         self.ListQuotas = channel.unary_stream(
@@ -226,6 +302,18 @@ class QuotasServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GetQuotaById(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetQuotasByDate(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def ListQuotas(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -235,9 +323,19 @@ class QuotasServicer(object):
 
 def add_QuotasServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'GetQuotas': grpc.unary_unary_rpc_method_handler(
+            'GetQuotas': grpc.unary_stream_rpc_method_handler(
                     servicer.GetQuotas,
                     request_deserializer=lfsprotobuffer__pb2.QuotaRequest.FromString,
+                    response_serializer=lfsprotobuffer__pb2.QuotaResp.SerializeToString,
+            ),
+            'GetQuotaById': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetQuotaById,
+                    request_deserializer=lfsprotobuffer__pb2.QuotaRequestById.FromString,
+                    response_serializer=lfsprotobuffer__pb2.QuotaResp.SerializeToString,
+            ),
+            'GetQuotasByDate': grpc.unary_stream_rpc_method_handler(
+                    servicer.GetQuotasByDate,
+                    request_deserializer=lfsprotobuffer__pb2.QuotaRequestByDate.FromString,
                     response_serializer=lfsprotobuffer__pb2.QuotaResp.SerializeToString,
             ),
             'ListQuotas': grpc.unary_stream_rpc_method_handler(
@@ -266,8 +364,42 @@ class Quotas(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/myprotobuffer.Quotas/GetQuotas',
+        return grpc.experimental.unary_stream(request, target, '/myprotobuffer.Quotas/GetQuotas',
             lfsprotobuffer__pb2.QuotaRequest.SerializeToString,
+            lfsprotobuffer__pb2.QuotaResp.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def GetQuotaById(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/myprotobuffer.Quotas/GetQuotaById',
+            lfsprotobuffer__pb2.QuotaRequestById.SerializeToString,
+            lfsprotobuffer__pb2.QuotaResp.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def GetQuotasByDate(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_stream(request, target, '/myprotobuffer.Quotas/GetQuotasByDate',
+            lfsprotobuffer__pb2.QuotaRequestByDate.SerializeToString,
             lfsprotobuffer__pb2.QuotaResp.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

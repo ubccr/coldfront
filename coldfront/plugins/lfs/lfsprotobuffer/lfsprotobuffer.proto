@@ -1,57 +1,88 @@
 syntax = "proto3";
 
-import "google/protobuf/wrappers.proto";
-
 option go_package = ".";
 option java_multiple_files = true;
 option java_outer_classname = "AppProto";
 
 package myprotobuffer;
 
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/timestamp.proto";
+
 message voidNoParam {}
 
 // The Groups service definition.
 service Groups {
-  rpc GetGroups (GroupRequest) returns (GroupResp) {}
+  rpc GetGroupById (GroupRequestById) returns (GroupResp) {}
+  rpc GetGroupByName (GroupRequestByName) returns (GroupResp) {}
   rpc ListGroups (voidNoParam) returns (stream GroupResp) {}
 }
 
-message GroupRequest {
+message GroupRequestById {
   int32 id = 1;
+}
+
+message GroupRequestByName {
+  string name = 1;
 }
 
 message GroupResp {
-    int32  id       = 1;
-    string name     = 2;
+  int32  id   = 1;
+  string name = 2;
 }
 
 service Filesystems {
-  rpc GetFilesystems (FilesystemRequest) returns (FilesystemResp) {}
+  rpc GetFilesystemById (FilesystemRequestById) returns (FilesystemResp) {}
+  rpc GetFilesystemByName (FilesystemRequestByName) returns (FilesystemResp) {}
   rpc ListFilesystems (voidNoParam) returns (stream FilesystemResp) {}
 }
 
-message FilesystemRequest {
+message FilesystemRequestById {
   int32 id = 1;
+}
+
+message FilesystemRequestByName {
+  string name = 1;
 }
 
 message FilesystemResp {
-    int32  id       = 1;
-    string name     = 2;
+  int32                      id        = 1;
+  string                     name      = 2;
+  int64                      size      = 3;
+  int64                      allocated = 4;
+  int64                      used      = 5;
+  google.protobuf.Timestamp  created   = 6;
+  google.protobuf.Timestamp  updated   = 7;
+  
 }
 
 service Quotas {
-  rpc GetQuotas (QuotaRequest) returns (QuotaResp) {}
+  rpc GetQuotas (QuotaRequest) returns (stream QuotaResp) {}
+  rpc GetQuotaById (QuotaRequestById) returns (QuotaResp) {}
+  rpc GetQuotasByDate (QuotaRequestByDate) returns (stream QuotaResp) {}
   rpc ListQuotas (voidNoParam) returns (stream QuotaResp) {}
 }
 
-message QuotaRequest {
+message QuotaRequestById {
   int32 id = 1;
+}
+
+message QuotaRequestByDate {
+  google.protobuf.Timestamp date   = 1;
+  bool                      before = 2;
+}
+
+message QuotaRequest {
+  google.protobuf.Int32Value group_uid       = 1;
+  google.protobuf.Int32Value filesystem_uid  = 2;
+  string                     group_name      = 3;
+  string                     filesystem_name = 4;
 }
 
 message QuotaResp {
   int32                      id              = 1;
-  int32                      group_uid       = 2;
-  int32                      filesystem_uid  = 3;
+  string                     group_name      = 2;
+  string                     filesystem_name = 3;
   int64                      block_used      = 4;
   int64                      block_quota     = 5;
   int64                      block_limit     = 6;
@@ -62,7 +93,6 @@ message QuotaResp {
   int64                      files_limit     = 11;
   google.protobuf.Int64Value files_grace     = 12;
   bool                       files_isdefault = 13;
-  string                     created         = 14;
-  string                     updated         = 15;
+  google.protobuf.Timestamp  created         = 14;
+  google.protobuf.Timestamp  updated         = 15;
 }
-
