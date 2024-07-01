@@ -414,6 +414,149 @@ class AllocationListView(LoginRequiredMixin, ListView):
 
         return context
 
+class AllocationTableView(LoginRequiredMixin, ListView):
+
+    model = Allocation
+    template_name = 'allocation/allocation_table_view.html'
+    context_object_name = 'allocation_table'
+    paginate_by = 25
+
+    def get_queryset(self):
+
+        order_by = self.request.GET.get('order_by')
+        if order_by:
+            direction = self.request.GET.get('direction')
+            dir_dict = {'asc':'', 'des':'-'}
+            order_by = dir_dict[direction] + order_by
+        else:
+            order_by = 'id'
+
+        allocation_search_form = AllocationSearchForm(self.request.GET)
+
+        if allocation_search_form.is_valid():
+            data = allocation_search_form.cleaned_data
+
+            if data.get('show_all_allocations') and (self.request.user.is_superuser or self.request.user.has_perm('allocation.can_view_all_allocations')):
+                allocations = Allocation.objects.prefetch_related(
+                    'project', 'project__pi', 'status',).all().order_by(order_by)
+            else:
+                allocations = Allocation.objects.prefetch_related('project', 'project__pi', 'status',).filter(
+                    Q(project__status__name__in=['New', 'Active', ]) &
+                    Q(project__projectuser__status__name='Active') &
+                    Q(project__projectuser__user=self.request.user) &
+
+                    (Q(project__projectuser__role__name='Manager') |
+                    Q(allocationuser__user=self.request.user) &
+                    Q(allocationuser__status__name='Active'))
+                ).distinct().order_by(order_by)
+
+            # Project Title
+            if data.get('project'):
+                allocations = allocations.filter(
+                    project__title__icontains=data.get('project'))
+
+            # username
+            if data.get('username'):
+                allocations = allocations.filter(
+                    Q(project__pi__username__icontains=data.get('username')) |
+                    Q(allocationuser__user__username__icontains=data.get('username')) &
+                    Q(allocationuser__status__name='Active')
+                )
+
+            # Resource Type
+            if data.get('resource_type'):
+                allocations = allocations.filter(
+                    resources__resource_type=data.get('resource_type'))
+
+            # Resource Name
+            if data.get('resource_name'):
+                allocations = allocations.filter(
+                    resources__in=data.get('resource_name'))
+
+            # Allocation Attribute Name
+            if data.get('allocation_attribute_name') and data.get('allocation_attribute_value'):
+                allocations = allocations.filter(
+                    Q(allocationattribute__allocation_attribute_type=data.get('allocation_attribute_name')) &
+                    Q(allocationattribute__value=data.get(
+                        'allocation_attribute_value'))
+                )
+
+            # End Date
+            if data.get('end_date'):
+                allocations = allocations.filter(end_date__lt=data.get(
+                    'end_date'), status__name='Active').order_by('end_date')
+
+            # Active from now until date
+            if data.get('active_from_now_until_date'):
+                allocations = allocations.filter(
+                    end_date__gte=date.today())
+                allocations = allocations.filter(end_date__lt=data.get(
+                    'active_from_now_until_date'), status__name='Active').order_by('end_date')
+
+            # Status
+            if data.get('status'):
+                allocations = allocations.filter(
+                    status__in=data.get('status'))
+
+        else:
+            allocations = Allocation.objects.prefetch_related('project', 'project__pi', 'status',).filter(
+                Q(allocationuser__user=self.request.user) &
+                Q(allocationuser__status__name='Active')
+            ).order_by(order_by)
+
+        return allocations.distinct()
+
+    def get_context_data(self, **kwargs):
+
+        context = super().get_context_data(**kwargs)
+        allocations_count = self.get_queryset().count()
+        context['allocations_count'] = allocations_count
+
+        allocation_search_form = AllocationSearchForm(self.request.GET)
+
+        if allocation_search_form.is_valid():
+            data = allocation_search_form.cleaned_data
+            filter_parameters = ''
+            for key, value in data.items():
+                if value:
+                    if isinstance(value, QuerySet):
+                        filter_parameters += ''.join([f'{key}={ele.pk}&' for ele in value])
+                    elif hasattr(value, 'pk'):
+                        filter_parameters += f'{key}={value.pk}&'
+                    else:
+                        filter_parameters += f'{key}={value}&'
+            context['allocation_search_form'] = allocation_search_form
+        else:
+            filter_parameters = None
+            context['allocation_search_form'] = AllocationSearchForm()
+
+        order_by = self.request.GET.get('order_by')
+        if order_by:
+            direction = self.request.GET.get('direction')
+            filter_parameters_with_order_by = filter_parameters + \
+                'order_by=%s&direction=%s&' % (order_by, direction)
+        else:
+            filter_parameters_with_order_by = filter_parameters
+
+        if filter_parameters:
+            context['expand_accordion'] = 'show'
+        context['filter_parameters'] = filter_parameters
+        context['filter_parameters_with_order_by'] = filter_parameters_with_order_by
+
+        allocation_list = context.get('allocation_list')
+        paginator = Paginator(allocation_list, self.paginate_by)
+
+        page = self.request.GET.get('page')
+
+        try:
+            allocation_list = paginator.page(page)
+        except PageNotAnInteger:
+            allocation_list = paginator.page(1)
+        except EmptyPage:
+            allocation_list = paginator.page(paginator.num_pages)
+
+        return context
+
 
 class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     form_class = AllocationForm
