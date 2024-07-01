@@ -57,7 +57,7 @@ class AllocationForm(forms.Form):
 class AllocationUpdateForm(forms.Form):
     #status = forms.ModelChoiceField(
     #    queryset=AllocationStatusChoice.objects.all().order_by(Lower("name")), empty_label=None)
-    status = forms.ModelChoiceField(queryset=AllocationStatusChoice.objects.filter(name__not__in=[
+    status = forms.ModelChoiceField(queryset=AllocationStatusChoice.objects.filter(name__nin=[
         'Payment Pending', 'Payment Requested', 'Payment Declined', 'Paid']).order_by(Lower("name")), empty_label=None)
 
     start_date = forms.DateField(
