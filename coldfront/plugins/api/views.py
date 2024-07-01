@@ -7,6 +7,7 @@ from django_filters import rest_framework as filters
 from ifxuser.models import Organization
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.renderers import AdminRenderer, JSONRenderer
 from simple_history.utils import get_history_model_for_model
 
 from coldfront.core.utils.common import import_from_settings
@@ -18,6 +19,27 @@ from coldfront.plugins.api import serializers
 UNFULFILLED_ALLOCATION_STATUSES = ['Denied'] + import_from_settings(
     'PENDING_ALLOCATION_STATUSES', ['New', 'In Progress', 'On Hold', 'Pending Activation']
 )
+
+class CustomAdminRenderer(AdminRenderer):
+    def render(self, data, accepted_media_type=None, renderer_context=None):
+        # Get the count of objects
+        count = len(data['results']) if 'results' in data else len(data)
+        
+        # Create the count HTML
+        count_html = f'<div><strong>Total Objects: {count}</strong></div>'
+        
+        # Render the original content
+        original_content = super().render(data, accepted_media_type, renderer_context)
+        
+        # Ensure original_content is a string
+        if isinstance(original_content, bytes):
+            original_content = original_content.decode('utf-8')
+        
+        # Insert the count HTML after the docstring and before the results table
+        parts = original_content.split('<table', 1)
+        content_with_count = parts[0] + count_html + '<table' + parts[1]
+        
+        return content_with_count.encode('utf-8')
 
 class ResourceViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = serializers.ResourceSerializer
@@ -132,6 +154,7 @@ class AllocationRequestViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = AllocationRequestFilter
     permission_classes = [IsAuthenticated, IsAdminUser]
+    renderer_classes = [CustomAdminRenderer, JSONRenderer]
 
     def get_queryset(self):
         HistoricalAllocation = get_history_model_for_model(Allocation)
@@ -222,6 +245,7 @@ class AllocationChangeRequestViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = serializers.AllocationChangeRequestSerializer
     filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = AllocationChangeRequestFilter
+    renderer_classes = [CustomAdminRenderer, JSONRenderer]
 
     def get_queryset(self):
         requests = AllocationChangeRequest.objects.prefetch_related(
