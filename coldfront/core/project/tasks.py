@@ -81,7 +81,7 @@ def send_expiry_emails():
 
         # Projects expiring today
         today = datetime.datetime.today()
-        for project_obj in Project.objects.filter(end_date=today, requires_review=True):
+        for project_obj in Project.objects.filter(status__name='Active', end_date=today, requires_review=True):
             project_review_url = '{}/{}/{}/{}'.format(
                 CENTER_BASE_URL.strip('/'), 'project', project_obj.pk, 'review'
             )
