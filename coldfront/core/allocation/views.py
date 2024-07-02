@@ -432,6 +432,7 @@ class AllocationTableView(LoginRequiredMixin, ListView):
             order_by = 'id'
 
         allocation_search_form = AllocationSearchForm(self.request.GET)
+        allocation_form = AllocationForm(self.request.GET)
 
         if allocation_search_form.is_valid():
             data = allocation_search_form.cleaned_data
@@ -497,6 +498,12 @@ class AllocationTableView(LoginRequiredMixin, ListView):
             if data.get('status'):
                 allocations = allocations.filter(
                     status__in=data.get('status'))
+            
+            #Department ID
+            if data.get('department_number'):
+                allocations = allocations.filter(
+                    department_id=data.get('department_number')
+                )
 
         else:
             allocations = Allocation.objects.prefetch_related('project', 'project__pi', 'status',).filter(

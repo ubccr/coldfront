@@ -72,6 +72,11 @@ Allocation View
             <a href="?order_by=end_date&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort End Date asc</span></a>
             <a href="?order_by=end_date&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort End Date desc</span></a>
           </th>
+          <th scope="col" class="text-nowrap">
+            Department Number
+            <a href="?order_by=department_number&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Department Number asc</span></a>
+            <a href="?order_by=department_number&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort End Department Number desc</span></a>
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -85,6 +90,7 @@ Allocation View
             <td class="text-nowrap">{{ allocation.get_parent_resource }}</td>
             <td class="text-nowrap">{{ allocation.status.name }}</td>
             <td class="text-nowrap">{{ allocation.end_date }}</td>
+            <td class="text-nowrap">{{ allocation.department_number }}</td>
           </tr>
         {% endfor %}
       </tbody>
