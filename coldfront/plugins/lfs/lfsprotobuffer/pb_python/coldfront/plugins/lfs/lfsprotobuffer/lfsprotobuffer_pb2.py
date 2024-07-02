@@ -15,7 +15,7 @@ from google.protobuf import wrappers_pb2 as google_dot_protobuf_dot_wrappers__pb
 from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n9coldfront/plugins/lfs/lfsprotobuffer/lfsprotobuffer.proto\x12\rmyprotobuffer\x1a\x1egoogle/protobuf/wrappers.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\r\n\x0bvoidNoParam\"\x1e\n\x10GroupRequestById\x12\n\n\x02id\x18\x01 \x01(\x05\"\"\n\x12GroupRequestByName\x12\x0c\n\x04name\x18\x01 \x01(\t\"%\n\tGroupResp\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x0c\n\x04name\x18\x02 \x01(\t\"#\n\x15\x46ilesystemRequestById\x12\n\n\x02id\x18\x01 \x01(\x05\"\'\n\x17\x46ilesystemRequestByName\x12\x0c\n\x04name\x18\x01 \x01(\t\"\xb3\x01\n\x0e\x46ilesystemResp\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x0c\n\x04size\x18\x03 \x01(\x03\x12\x11\n\tallocated\x18\x04 \x01(\x03\x12\x0c\n\x04used\x18\x05 \x01(\x03\x12+\n\x07\x63reated\x18\x06 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12+\n\x07updated\x18\x07 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\"\x1e\n\x10QuotaRequestById\x12\n\n\x02id\x18\x01 \x01(\x05\"N\n\x12QuotaRequestByDate\x12(\n\x04\x64\x61te\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x0e\n\x06\x62\x65\x66ore\x18\x02 \x01(\x08\"\xa0\x01\n\x0cQuotaRequest\x12.\n\tgroup_uid\x18\x01 \x01(\x0b\x32\x1b.google.protobuf.Int32Value\x12\x33\n\x0e\x66ilesystem_uid\x18\x02 \x01(\x0b\x32\x1b.google.protobuf.Int32Value\x12\x12\n\ngroup_name\x18\x03 \x01(\t\x12\x17\n\x0f\x66ilesystem_name\x18\x04 \x01(\t\"\xb0\x03\n\tQuotaResp\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x12\n\ngroup_name\x18\x02 \x01(\t\x12\x17\n\x0f\x66ilesystem_name\x18\x03 \x01(\t\x12\x12\n\nblock_used\x18\x04 \x01(\x03\x12\x13\n\x0b\x62lock_quota\x18\x05 \x01(\x03\x12\x13\n\x0b\x62lock_limit\x18\x06 \x01(\x03\x12\x30\n\x0b\x62lock_grace\x18\x07 \x01(\x0b\x32\x1b.google.protobuf.Int64Value\x12\x17\n\x0f\x62lock_isdefault\x18\x08 \x01(\x08\x12\x12\n\nfiles_used\x18\t \x01(\x03\x12\x13\n\x0b\x66iles_quota\x18\n \x01(\x03\x12\x13\n\x0b\x66iles_limit\x18\x0b \x01(\x03\x12\x30\n\x0b\x66iles_grace\x18\x0c \x01(\x0b\x32\x1b.google.protobuf.Int64Value\x12\x17\n\x0f\x66iles_isdefault\x18\r \x01(\x08\x12+\n\x07\x63reated\x18\x0e \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12+\n\x07updated\x18\x0f \x01(\x0b\x32\x1a.google.protobuf.Timestamp2\xee\x01\n\x06Groups\x12K\n\x0cGetGroupById\x12\x1f.myprotobuffer.GroupRequestById\x1a\x18.myprotobuffer.GroupResp\"\x00\x12O\n\x0eGetGroupByName\x12!.myprotobuffer.GroupRequestByName\x1a\x18.myprotobuffer.GroupResp\"\x00\x12\x46\n\nListGroups\x12\x1a.myprotobuffer.voidNoParam\x1a\x18.myprotobuffer.GroupResp\"\x00\x30\x01\x32\x9b\x02\n\x0b\x46ilesystems\x12Z\n\x11GetFilesystemById\x12$.myprotobuffer.FilesystemRequestById\x1a\x1d.myprotobuffer.FilesystemResp\"\x00\x12^\n\x13GetFilesystemByName\x12&.myprotobuffer.FilesystemRequestByName\x1a\x1d.myprotobuffer.FilesystemResp\"\x00\x12P\n\x0fListFilesystems\x12\x1a.myprotobuffer.voidNoParam\x1a\x1d.myprotobuffer.FilesystemResp\"\x00\x30\x01\x32\xb9\x02\n\x06Quotas\x12\x46\n\tGetQuotas\x12\x1b.myprotobuffer.QuotaRequest\x1a\x18.myprotobuffer.QuotaResp\"\x00\x30\x01\x12K\n\x0cGetQuotaById\x12\x1f.myprotobuffer.QuotaRequestById\x1a\x18.myprotobuffer.QuotaResp\"\x00\x12R\n\x0fGetQuotasByDate\x12!.myprotobuffer.QuotaRequestByDate\x1a\x18.myprotobuffer.QuotaResp\"\x00\x30\x01\x12\x46\n\nListQuotas\x12\x1a.myprotobuffer.voidNoParam\x1a\x18.myprotobuffer.QuotaResp\"\x00\x30\x01\x42\x0f\x42\x08\x41ppProtoP\x01Z\x01.b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n9coldfront/plugins/lfs/lfsprotobuffer/lfsprotobuffer.proto\x12\rmyprotobuffer\x1a\x1egoogle/protobuf/wrappers.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\r\n\x0bvoidNoParam\"\x1e\n\x10GroupRequestById\x12\n\n\x02id\x18\x01 \x01(\x05\"\"\n\x12GroupRequestByName\x12\x0c\n\x04name\x18\x01 \x01(\t\"%\n\tGroupResp\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x0c\n\x04name\x18\x02 \x01(\t\"#\n\x15\x46ilesystemRequestById\x12\n\n\x02id\x18\x01 \x01(\x05\"\'\n\x17\x46ilesystemRequestByName\x12\x0c\n\x04name\x18\x01 \x01(\t\"\xcb\x01\n\x0e\x46ilesystemResp\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x0c\n\x04size\x18\x03 \x01(\x03\x12\x11\n\tallocated\x18\x04 \x01(\x03\x12\x16\n\x0e\x61llocated_real\x18\x05 \x01(\x03\x12\x0c\n\x04used\x18\x06 \x01(\x03\x12+\n\x07\x63reated\x18\x07 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12+\n\x07updated\x18\x08 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\"\x1e\n\x10QuotaRequestById\x12\n\n\x02id\x18\x01 \x01(\x05\"N\n\x12QuotaRequestByDate\x12(\n\x04\x64\x61te\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x0e\n\x06\x62\x65\x66ore\x18\x02 \x01(\x08\"\xa0\x01\n\x0cQuotaRequest\x12.\n\tgroup_uid\x18\x01 \x01(\x0b\x32\x1b.google.protobuf.Int32Value\x12\x33\n\x0e\x66ilesystem_uid\x18\x02 \x01(\x0b\x32\x1b.google.protobuf.Int32Value\x12\x12\n\ngroup_name\x18\x03 \x01(\t\x12\x17\n\x0f\x66ilesystem_name\x18\x04 \x01(\t\"\xb0\x03\n\tQuotaResp\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x12\n\ngroup_name\x18\x02 \x01(\t\x12\x17\n\x0f\x66ilesystem_name\x18\x03 \x01(\t\x12\x12\n\nblock_used\x18\x04 \x01(\x03\x12\x13\n\x0b\x62lock_quota\x18\x05 \x01(\x03\x12\x13\n\x0b\x62lock_limit\x18\x06 \x01(\x03\x12\x30\n\x0b\x62lock_grace\x18\x07 \x01(\x0b\x32\x1b.google.protobuf.Int64Value\x12\x17\n\x0f\x62lock_isdefault\x18\x08 \x01(\x08\x12\x12\n\nfiles_used\x18\t \x01(\x03\x12\x13\n\x0b\x66iles_quota\x18\n \x01(\x03\x12\x13\n\x0b\x66iles_limit\x18\x0b \x01(\x03\x12\x30\n\x0b\x66iles_grace\x18\x0c \x01(\x0b\x32\x1b.google.protobuf.Int64Value\x12\x17\n\x0f\x66iles_isdefault\x18\r \x01(\x08\x12+\n\x07\x63reated\x18\x0e \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12+\n\x07updated\x18\x0f \x01(\x0b\x32\x1a.google.protobuf.Timestamp2\xee\x01\n\x06Groups\x12K\n\x0cGetGroupById\x12\x1f.myprotobuffer.GroupRequestById\x1a\x18.myprotobuffer.GroupResp\"\x00\x12O\n\x0eGetGroupByName\x12!.myprotobuffer.GroupRequestByName\x1a\x18.myprotobuffer.GroupResp\"\x00\x12\x46\n\nListGroups\x12\x1a.myprotobuffer.voidNoParam\x1a\x18.myprotobuffer.GroupResp\"\x00\x30\x01\x32\x9b\x02\n\x0b\x46ilesystems\x12Z\n\x11GetFilesystemById\x12$.myprotobuffer.FilesystemRequestById\x1a\x1d.myprotobuffer.FilesystemResp\"\x00\x12^\n\x13GetFilesystemByName\x12&.myprotobuffer.FilesystemRequestByName\x1a\x1d.myprotobuffer.FilesystemResp\"\x00\x12P\n\x0fListFilesystems\x12\x1a.myprotobuffer.voidNoParam\x1a\x1d.myprotobuffer.FilesystemResp\"\x00\x30\x01\x32\xb9\x02\n\x06Quotas\x12\x46\n\tGetQuotas\x12\x1b.myprotobuffer.QuotaRequest\x1a\x18.myprotobuffer.QuotaResp\"\x00\x30\x01\x12K\n\x0cGetQuotaById\x12\x1f.myprotobuffer.QuotaRequestById\x1a\x18.myprotobuffer.QuotaResp\"\x00\x12R\n\x0fGetQuotasByDate\x12!.myprotobuffer.QuotaRequestByDate\x1a\x18.myprotobuffer.QuotaResp\"\x00\x30\x01\x12\x46\n\nListQuotas\x12\x1a.myprotobuffer.voidNoParam\x1a\x18.myprotobuffer.QuotaResp\"\x00\x30\x01\x42\x0f\x42\x08\x41ppProtoP\x01Z\x01.b\x06proto3')
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'coldfront.plugins.lfs.lfsprotobuffer.lfsprotobuffer_pb2', globals())
@@ -36,19 +36,19 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _FILESYSTEMREQUESTBYNAME._serialized_start=300
   _FILESYSTEMREQUESTBYNAME._serialized_end=339
   _FILESYSTEMRESP._serialized_start=342
-  _FILESYSTEMRESP._serialized_end=521
-  _QUOTAREQUESTBYID._serialized_start=523
-  _QUOTAREQUESTBYID._serialized_end=553
-  _QUOTAREQUESTBYDATE._serialized_start=555
-  _QUOTAREQUESTBYDATE._serialized_end=633
-  _QUOTAREQUEST._serialized_start=636
-  _QUOTAREQUEST._serialized_end=796
-  _QUOTARESP._serialized_start=799
-  _QUOTARESP._serialized_end=1231
-  _GROUPS._serialized_start=1234
-  _GROUPS._serialized_end=1472
-  _FILESYSTEMS._serialized_start=1475
-  _FILESYSTEMS._serialized_end=1758
-  _QUOTAS._serialized_start=1761
-  _QUOTAS._serialized_end=2074
+  _FILESYSTEMRESP._serialized_end=545
+  _QUOTAREQUESTBYID._serialized_start=547
+  _QUOTAREQUESTBYID._serialized_end=577
+  _QUOTAREQUESTBYDATE._serialized_start=579
+  _QUOTAREQUESTBYDATE._serialized_end=657
+  _QUOTAREQUEST._serialized_start=660
+  _QUOTAREQUEST._serialized_end=820
+  _QUOTARESP._serialized_start=823
+  _QUOTARESP._serialized_end=1255
+  _GROUPS._serialized_start=1258
+  _GROUPS._serialized_end=1496
+  _FILESYSTEMS._serialized_start=1499
+  _FILESYSTEMS._serialized_end=1782
+  _QUOTAS._serialized_start=1785
+  _QUOTAS._serialized_end=2098
 # @@protoc_insertion_point(module_scope)
