@@ -146,7 +146,8 @@ class AllocationRequestSerializer(serializers.ModelSerializer):
 
 
 class AllocationChangeRequestSerializer(serializers.ModelSerializer):
-    allocation = AllocationSerializer(read_only=True)
+    project = serializers.ReadOnlyField(source='allocation.project.title')
+    resource = serializers.ReadOnlyField(source='allocation.get_resources_as_string')
     status = serializers.SlugRelatedField(slug_field='name', read_only=True)
     created_by = serializers.SerializerMethodField(read_only=True)
     fulfilled_date = serializers.DateTimeField(read_only=True)
@@ -158,6 +159,7 @@ class AllocationChangeRequestSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'allocation',
+            'project',
             'resource',
             'justification',
             'status',
