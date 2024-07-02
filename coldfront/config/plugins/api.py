@@ -1,9 +1,11 @@
 from coldfront.config.base import INSTALLED_APPS
 
 INSTALLED_APPS += [
-        'django_filters',
-        'coldfront.plugins.api'
-        ]
+    'django_filters',
+    'knox',
+    'rest_framework',
+    'coldfront.plugins.api',
+]
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (

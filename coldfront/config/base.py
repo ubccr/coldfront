@@ -51,7 +51,6 @@ INSTALLED_APPS = [
     'django_tables2',
     'table',
     'rest_framework_datatables',
-    'rest_framework',
     'easy_pdf',
 ]
 
@@ -147,19 +146,6 @@ TEMPLATES = [
         },
     },
 ]
-
-REST_FRAMEWORK = {
-    'DEFAULT_RENDERER_CLASSES': (
-        'rest_framework.renderers.JSONRenderer',
-        'rest_framework.renderers.BrowsableAPIRenderer',
-        'rest_framework_datatables.renderers.DatatablesRenderer',
-    ),
-    'DEFAULT_FILTER_BACKENDS': (
-        'rest_framework_datatables.filters.DatatablesFilterBackend',
-    ),
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework_datatables.pagination.DatatablesPageNumberPagination',
-    'PAGE_SIZE': 500,
-}
 
 # Add local site templates files if set
 SITE_TEMPLATES = ENV.str('SITE_TEMPLATES', default='')
