@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import lfsprotobuffer_pb2 as lfsprotobuffer__pb2
+import coldfront.plugins.lfs.lfsprotobuffer.pb_python.lfsprotobuffer_pb2 as lfsprotobuffer__pb2
 
 
 class GroupsStub(object):
