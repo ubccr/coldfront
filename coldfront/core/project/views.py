@@ -1474,7 +1474,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
+        if project_obj.status.name in ['Archived', 'Denied', ]:
             messages.error(
                 request,
                 'You cannot remove users from a project with status "{}".'.format(project_obj.status.name)
@@ -1563,7 +1563,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
                     # get allocation to remove users from
                     allocations_to_remove_user_from = project_obj.allocation_set.filter(
-                        status__name__in=['Active', 'New', 'Renewal Requested'])
+                        status__name__in=['Active', 'New', 'Renewal Requested', 'Expired'])
                     for allocation in allocations_to_remove_user_from:
                         for allocation_user_obj in allocation.allocationuser_set.filter(user=user_obj, status__name__in=['Active', 'Inactive', 'Pending - Add', 'Pending - Remove', 'Eligible', 'Disabled', 'Retired']):
                             resource = allocation.get_parent_resource
@@ -2331,10 +2331,14 @@ class ProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin, View):
         project_obj.status = project_status_obj
 
         if project_review_obj.allocation_renewals:
-            allocation_status_choice = AllocationStatusChoice.objects.get(name="Active")
+            allocation_active_status_choice = AllocationStatusChoice.objects.get(name="Active")
+            allocation_expired_status_choice = AllocationStatusChoice.objects.get(name="Expired")
             for allocation_pk in project_review_obj.allocation_renewals.split(','):
                 allocation = Allocation.objects.get(pk=int(allocation_pk))
-                allocation.status = allocation_status_choice
+                if allocation.end_date <= datetime.datetime.now().date():
+                    allocation.status = allocation_expired_status_choice
+                else:
+                    allocation.status = allocation_active_status_choice
                 allocation.save()
 
         project_review_obj.save()

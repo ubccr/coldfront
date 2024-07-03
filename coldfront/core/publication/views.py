@@ -348,7 +348,8 @@ class PublicationDeletePublicationsView(LoginRequiredMixin, UserPassesTestMixin,
 
         publications_do_delete = [
             {'title': publication.title,
-             'year': publication.year}
+             'year': publication.year,
+             'unique_id': publication.unique_id}
             for publication in project_obj.publication_set.all().order_by('-year')
         ]
 
@@ -393,7 +394,8 @@ class PublicationDeletePublicationsView(LoginRequiredMixin, UserPassesTestMixin,
                     publication_obj = Publication.objects.get(
                         project=project_obj,
                         title=publication_form_data.get('title'),
-                        year=publication_form_data.get('year')
+                        year=publication_form_data.get('year'),
+                        unique_id=publication_form_data.get('unique_id')
                     )
                     publication_obj.delete()
                     publications_deleted_count += 1
