@@ -1474,7 +1474,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
+        if project_obj.status.name in ['Archived', 'Denied', ]:
             messages.error(
                 request,
                 'You cannot remove users from a project with status "{}".'.format(project_obj.status.name)
