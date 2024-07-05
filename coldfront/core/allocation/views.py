@@ -3,6 +3,8 @@ import logging
 from datetime import date
 import json
 
+from typing import List
+
 from dateutil.relativedelta import relativedelta
 from django import forms
 from django.contrib import messages
@@ -414,6 +416,12 @@ class AllocationListView(LoginRequiredMixin, ListView):
 
         return context
 
+class AllocationListItem:
+    project_name: str
+    allocation_name: str
+    department_number: str
+
+
 class AllocationTableView(LoginRequiredMixin, ListView):
 
     model = Allocation
@@ -423,29 +431,31 @@ class AllocationTableView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
 
-        order_by = self.request.GET.get('order_by')
-        if order_by:
-            direction = self.request.GET.get('direction')
-            dir_dict = {'asc':'', 'des':'-'}
-            order_by = dir_dict[direction] + order_by
-        else:
-            order_by = 'id'
+        view_list: List[AllocationListItem] = []
 
         allocation_search_form = AllocationSearchForm(self.request.GET)
-        allocation_form = AllocationForm(self.request.GET)
+        # allocation_form = AllocationForm(self.request.GET)
         
 
         if allocation_search_form.is_valid():
             data = allocation_search_form.cleaned_data
-            allocation_list = allocations.objects.all()
+            allocation_list = Allocation.objects.all()
 
             for allocation in allocation_list:
                 allocation_attribute_type = AllocationAttributeType.objects.get(name="department_number")
                 department_attribute = AllocationAttribute.objects.get(allocation=allocation, allocation_attribute_type=allocation_attribute_type)
-                department_number = department_attribute.value
+                # department_number = department_attribute.value
+
+                view_list.append(
+                    AllocationListItem(
+                        project_name="Foo",
+                        allocation_name="Bar",
+                        department_number=department_attribute.value
+                    )
+                )
 
 
-        return Allocation.objects.all()
+        return view_list
 
     def get_context_data(self, **kwargs):
 
