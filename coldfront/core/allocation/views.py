@@ -421,6 +421,10 @@ class AllocationListItem:
     allocation_name: str
     department_number: str
 
+    def __init__(self, **kwargs):
+        for key, value in kwargs:
+            setattr(self, key, value)
+
 
 class AllocationTableView(LoginRequiredMixin, ListView):
 
