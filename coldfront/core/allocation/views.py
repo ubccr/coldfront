@@ -466,7 +466,8 @@ class AllocationTableView(LoginRequiredMixin, ListView):
 
         context = super().get_context_data(**kwargs)
         context['allocation_list'] = self.get_queryset()
-        allocations_count = self.get_queryset().count()
+        # jprew - HERE
+        allocations_count = len(self.get_queryset())
         context['allocations_count'] = allocations_count
 
         allocation_search_form = AllocationSearchForm(self.request.GET)
