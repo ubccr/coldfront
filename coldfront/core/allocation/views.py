@@ -417,9 +417,11 @@ class AllocationListView(LoginRequiredMixin, ListView):
         return context
 
 class AllocationListItem:
+    id: int
     project_name: str
     allocation_name: str
     department_number: str
+    allocation_status: str
 
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
@@ -440,6 +442,20 @@ class AllocationTableView(LoginRequiredMixin, ListView):
         allocation_search_form = AllocationSearchForm(self.request.GET)
         # allocation_form = AllocationForm(self.request.GET)
         
+        #         {% for allocation in allocation_list %}
+        #   <tr>
+        #     <td><a href="/allocation/{{allocation.id}}/">{{ allocation.id }}</a></td>
+        #     <td class="text-nowrap"><a 
+        #         href="/project/{{allocation.project.id}}/">{{ allocation.project.title|truncatechars:50 }}</a></td>
+        #     <td class="text-nowrap">{{allocation.project.pi.first_name}} {{allocation.project.pi.last_name}}
+        #       ({{allocation.project.pi.username}})</td>
+        #       <!-- Replace with new columns -->
+        #     <td class="text-nowrap">{{ allocation.get_parent_resource }}</td>
+        #     <td class="text-nowrap">{{ allocation.status.name }}</td>
+        #     <td class="text-nowrap">{{ allocation.end_date }}</td>
+        #     <td class="text-nowrap">{{ allocation.department_number }}</td>
+        #   </tr>
+        # {% endfor %}
 
         if allocation_search_form.is_valid():
             data = allocation_search_form.cleaned_data
@@ -447,14 +463,19 @@ class AllocationTableView(LoginRequiredMixin, ListView):
             allocation_list = Allocation.objects.filter(resources=resource)
 
             for allocation in allocation_list:
-                allocation_attribute_type = AllocationAttributeType.objects.get(name="department_number")
-                department_attribute = AllocationAttribute.objects.get(allocation=allocation, allocation_attribute_type=allocation_attribute_type)
-                # department_number = department_attribute.value
+                department_type = AllocationAttributeType.objects.get(name="department_number")
+                department_attribute = AllocationAttribute.objects.get(allocation=allocation, allocation_attribute_type=department_type)
+                
+                storage_name_type = AllocationAttributeType.objects.get(name="storage_name")
+                storage_name_attribute = AllocationAttribute.objects.get(allocation=allocation, allocation_attribute_type=storage_name_type)
 
                 view_list.append(
                     AllocationListItem(
-                        project_name="Foo",
-                        allocation_name="Bar",
+                        id=allocation.pk,
+                        principal_investigator=allocation.project.pi.last_name,
+                        project_name=allocation.project.title,
+                        allocation_name=storage_name_attribute.value,
+                        allocation_status=allocation.status.name,
                         department_number=department_attribute.value
                     )
                 )
