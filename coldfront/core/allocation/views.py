@@ -418,10 +418,14 @@ class AllocationListView(LoginRequiredMixin, ListView):
 
 class AllocationListItem:
     id: int
+    project_id: int
     project_name: str
     allocation_name: str
     department_number: str
     allocation_status: str
+    pi_last_name: str
+    pi_first_name: str
+    pi_user_name: str
 
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
@@ -472,7 +476,11 @@ class AllocationTableView(LoginRequiredMixin, ListView):
                 view_list.append(
                     AllocationListItem(
                         id=allocation.pk,
-                        principal_investigator=allocation.project.pi.last_name,
+                        # principal_investigator=allocation.project.pi.last_name,
+                        pi_last_name=allocation.project.pi.last_name,
+                        pi_first_name=allocation.project.pi.first_name,
+                        pi_user_name=allocation.project.pi.username,
+                        project_id=allocation.project.pk,
                         project_name=allocation.project.title,
                         allocation_name=storage_name_attribute.value,
                         allocation_status=allocation.status.name,
