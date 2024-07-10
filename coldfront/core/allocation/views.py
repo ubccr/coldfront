@@ -426,6 +426,8 @@ class AllocationListItem:
     pi_last_name: str
     pi_first_name: str
     pi_user_name: str
+    itsd_ticket: str
+
 
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
@@ -478,6 +480,9 @@ class AllocationTableView(LoginRequiredMixin, ListView):
                 storage_name_type = AllocationAttributeType.objects.get(name="storage_name")
                 storage_name_attribute = AllocationAttribute.objects.get(allocation=allocation, allocation_attribute_type=storage_name_type)
 
+                itsd_ticket_type = AllocationAttributeType.objects.get(name="storage_ticket")
+                itsd_ticket_attribute = AllocationAttributeType.objects.get(allocation=allocation, allocation_attribute_type=itsd_ticket_type)
+
                 view_list.append(
                     AllocationListItem(
                         id=allocation.pk,
@@ -489,7 +494,8 @@ class AllocationTableView(LoginRequiredMixin, ListView):
                         project_name=allocation.project.title,
                         allocation_name=storage_name_attribute.value,
                         allocation_status=allocation.status.name,
-                        department_number=department_attribute.value
+                        department_number=department_attribute.value,
+                        itsd_ticket=itsd_ticket_attribute.value
                     )
                 )
 
