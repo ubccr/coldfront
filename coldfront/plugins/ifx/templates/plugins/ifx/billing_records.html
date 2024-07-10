@@ -61,12 +61,12 @@ Billing Records
                 dom: '<fl>tp',
                 columns: [
                     {data: function(item){ return item.current_state.replace(/_/g, ' ')}, width: '200px'},
-                    {data: 'product_usage.product_user.full_name', width: '200px'},
+                    {data: 'product_usage.product_user.full_name', width: '100px'},
                     {data: function(item){ return item.account.organization.replace(/ \(a Harvard.*/, '')}, width: '300px'},
                     {data: function(item){ return `<span style="white-space: nowrap;">${item.account.code}</span><br/>(${item.account.name})`}, width: '400px'},
                     {data: function(item){ return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD',}).format(item.decimal_charge)}, width: '100px'},
                     {data: 'percent', width: '50px'},
-                    {data: 'description', width: '400px'},
+                    {data: 'description', width: '500px'},
                 ],
                 order: [[ 2, "asc" ], [ 1, "asc" ]],
                 ajax: {
