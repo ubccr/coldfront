@@ -3,7 +3,7 @@ from rest_framework import routers
 from ifxbilling.views import unauthorized as unauthorized_api
 from ifxbilling.views import get_billing_record_list
 from coldfront.plugins.ifx.viewsets import ColdfrontBillingRecordViewSet, ColdfrontReportRunViewSet, ColdfrontProductUsageViewSet
-from coldfront.plugins.ifx.views import unauthorized, report_runs, run_report, calculate_billing_month, billing_month, get_product_usages
+from coldfront.plugins.ifx.views import unauthorized, report_runs, run_report, calculate_billing_month, billing_month, get_product_usages, billing_records
 
 router = routers.DefaultRouter()
 router.register(r'billing-records', ColdfrontBillingRecordViewSet, 'billing-record')
@@ -20,4 +20,5 @@ urlpatterns = [
     path('unauthorized/', unauthorized, name='unauthorized'),
     path('report-runs/', report_runs, name='report-runs'),
     path('billing-month/', billing_month, name='billing-month'),
+    path('billing-records/', billing_records, name='billing-records'),
 ]

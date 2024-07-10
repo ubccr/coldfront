@@ -54,6 +54,13 @@ def billing_month(request):
     return render(request, 'plugins/ifx/calculate_billing_month.html')
 
 @login_required
+def billing_records(request):
+    '''
+    Show billing record list
+    '''
+    return render(request, 'plugins/ifx/billing_records.html')
+
+@login_required
 @api_view(['POST',])
 def calculate_billing_month(request, year, month):
     '''

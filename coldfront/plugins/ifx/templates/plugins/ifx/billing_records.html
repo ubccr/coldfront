@@ -1,0 +1,126 @@
+{% extends "common/base.html" %}
+{% load common_tags %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}
+Billing Records
+{% endblock %}
+
+
+{% block content %}
+<style>
+    .dataTables_filter {
+        display: inline-flex;
+        margin: 0 0.5em 0 0;
+    }
+    .dataTables_length {
+        display: inline-flex;
+        margin: 0 0.5em 0 0;
+        float: right;
+    }
+    label {
+        margin: 0 0 0 1em;
+    }
+</style>
+<script>
+    (function($){
+        $(document).ready(function(){
+
+            $( "#progressbar" ).progressbar({
+                value: false
+            });
+            var dialog = $('#loading').dialog(
+                {
+                    autoOpen: false,
+                    height: 200,
+                    width: 300,
+                    modal: true,
+                    title: 'Working...'
+                }
+            )
+            $(document)
+                .ajaxStart(function () {
+                    dialog.dialog("open");
+                })
+                .ajaxStop(function () {
+                    dialog.dialog("close");
+                });
+
+            $("#billingRecordReload").click((ev) => {
+                ev.preventDefault()
+                if (!$("#year").val() || !$("#month").val()) {
+                    alert("Year and Month are required")
+                    return
+                } else {
+                    billingRecordsTable.ajax.reload()
+                }
+            })
+
+            var billingRecordsTable = $("#billing-records").DataTable({
+                dom: '<fl>tp',
+                columns: [
+                    {data: function(item){ return item.current_state.replace(/_/g, ' ')}, width: '200px'},
+                    {data: 'product_usage.product_user.full_name', width: '200px'},
+                    {data: function(item){ return item.account.organization.replace(/ \(a Harvard.*/, '')}, width: '300px'},
+                    {data: function(item){ return `<span style="white-space: nowrap;">${item.account.code}</span><br/>(${item.account.name})`}, width: '400px'},
+                    {data: function(item){ return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD',}).format(item.decimal_charge)}, width: '100px'},
+                    {data: 'percent', width: '50px'},
+                    {data: 'description', width: '400px'},
+                ],
+                order: [[ 2, "asc" ], [ 1, "asc" ]],
+                ajax: {
+                    url: '/ifx/api/billing/get-billing-record-list/',
+                    type: 'GET',
+                    data: function (d)  {
+                        d.year = $("#year").val()
+                        d.month = $("#month").val()
+                        d.invoice_prefix = 'RC'
+                    },
+                    dataSrc: '',
+                }
+            })
+
+        })
+    })(jQuery)
+
+</script>
+<div style="font-size: 10pt;">
+    <div id="loading">
+        <p>
+            <div id="progressbar"></div>
+        </p>
+    </div>
+    <div style="margin: 1em; width: 100%;">
+        <div style="position: relative; float: left;">
+            <label for="year">Year</label>
+            <input type="text" id="year" name="year" value="2024"/>
+            <label for="month">Month</label>
+            <input type="text" id="month" name="month" value="5"/>
+        </div>
+        <div style="position: relative; float: left; margin-left: 1em;">
+            <input id="billingRecordReload" type="submit" value="Reload Data"></input>
+        </div>
+        <div style="clear: both;"></div>
+    </div>
+    <hr/>
+    <div style="margin: 1em;">
+        <table id="billing-records" class="display" style="width: 100%" cellpadding="5px">
+            <thead>
+                <tr>
+                    <th>State</th>
+                    <th>User</th>
+                    <th>Lab</th>
+                    <th>Expense Code / PO</th>
+                    <th>Charge</th>
+                    <th>Percent</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
