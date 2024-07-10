@@ -3,7 +3,6 @@
 {% load crispy_forms_tags %}
 {% load static %}
 
-
 {% block title %}
 Calculate Billing Month
 {% endblock %}
@@ -35,19 +34,19 @@ Calculate Billing Month
 
             var productUsagesTable = $("#product-usages").DataTable({
                 dom: 't',
-                columns: [
+                {% comment %} columns: [
                     {data: 'report', width: '100px'},
                     {data: 'date_range', width: '100px'},
                     {data:  function(item){ return `<a href="${item.url_root}/${item.xls_file_path}">${item.xls_file_path}</a>`}},
                     {data:  function(item){ return `<a href="${item.url_root}/${item.text_file_path}">${item.text_file_path}</a>`}},
                     {data:  function(item){ return new Date(item.updated).toLocaleTimeString('en-us', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}}
-                ],
+                ], {% endcomment %}
                 ajax: {
                     url: '/ifx/api/product-usages/',
                     type: 'GET',
                     data: {
                         year: 2024,
-                        month: 6
+                        month: 5
                     },
                     dataSrc: '',
                 }
@@ -58,7 +57,7 @@ Calculate Billing Month
 
                 // Get the year and month from the picker
                 const year = 2024
-                const month = 6
+                const month = 5
                 const recalculate = true
 
                 $.ajax({
@@ -91,7 +90,7 @@ Calculate Billing Month
         </form>
     </div>
     <div style="margin: 2em;">
-        <table id="report-runs" class="display" style="width: 100%" cellpadding="5px">
+        <table id="product-usages" class="display" style="width: 100%" cellpadding="5px">
             <thead>
                 <tr>
                     <th>ID</th>

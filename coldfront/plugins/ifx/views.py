@@ -58,12 +58,14 @@ def calculate_billing_month(request, year, month):
     '''
     Calculate billing month view
     '''
+    logger.error('Calculating billing records for month %d of year %d', month, year)
     recalculate = False
     try:
-        data = json.loads(request.body.decode('utf-8'))
+        data = request.data
+        logger.error('Request data: %s', data)
         if data and 'recalculate' in data:
             recalculate = data['recalculate']
-    except json.JSONDecodeError as e:
+    except Exception as e:
         logger.exception(e)
         return Response(data={'error': 'Cannot parse request body'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -73,16 +75,8 @@ def calculate_billing_month(request, year, month):
         if recalculate:
             ifxbilling_models.BillingRecord.objects.filter(year=year, month=month).delete()
         calculator = NewColdfrontBillingCalculator()
-        resultinator = calculator.calculate_billing_month(year, month, recalculate=recalculate)
-        successes = 0
-        errors = []
-        # pylint: disable=unused-variable
-        for org, result in resultinator.results.items():
-            if result.get('successes'):
-                successes += len(result['successes'])
-            if result.get('errors'):
-                errors.extend(result['errors'])
-        return Response(data={ 'successes': successes, 'errors': errors }, status=status.HTTP_200_OK)
+        calculator.calculate_billing_month(year, month, recalculate=recalculate)
+        return Response('OK', status=status.HTTP_200_OK)
     # pylint: disable=broad-exception-caught
     except Exception as e:
         logger.exception(e)
