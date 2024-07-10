@@ -139,7 +139,7 @@ def get_product_usages(request):
         sql += ' where '
         sql += ' and '.join(where_clauses)
 
-    sql += ' order by pu.id'
+    sql += ' order by organization, full_name, product_name'
 
     try:
         cursor = connection.cursor()

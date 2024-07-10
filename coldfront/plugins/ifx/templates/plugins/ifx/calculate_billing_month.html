@@ -61,14 +61,13 @@ Calculate Billing Month
                 dom: '<fl>tp',
                 columns: [
                     {data: 'id', width: '100px'},
-                    {data: 'full_name', width: '100px'},
-                    {data: 'year', width: '50px'},
-                    {data: 'month', width: '50px'},
-                    {data: 'organization', width: '100px'},
+                    {data: 'full_name', width: '200px'},
+                    {data: 'organization', width: '200px'},
                     {data: 'product_name', width: '100px'},
                     {data: 'description', width: '500px'},
                     {data: 'error_message', width: '400px'},
                 ],
+                order: [[ 2, "asc" ], [ 1, "asc" ]],
                 ajax: {
                     url: '/ifx/api/get-product-usages/',
                     type: 'GET',
@@ -146,8 +145,6 @@ Calculate Billing Month
                 <tr>
                     <th>ID</th>
                     <th>User</th>
-                    <th>Year</th>
-                    <th>Month</th>
                     <th>Organization</th>
                     <th>Product</th>
                     <th>Description</th>
