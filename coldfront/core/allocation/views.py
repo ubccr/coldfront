@@ -464,9 +464,14 @@ class AllocationTableView(LoginRequiredMixin, ListView):
         if allocation_search_form.is_valid():
             data = allocation_search_form.cleaned_data
             resource = Resource.objects.get(name="Storage2")
-            allocation_list = Allocation.objects.filter(resources=resource)
+            allocations = Allocation.objects.filter(resources=resource)
 
-            for allocation in allocation_list:
+            # Project Title
+            if data.get('project'):
+                allocations = allocations.filter(
+                    project__title__icontains=data.get('project'))
+
+            for allocation in allocations:
                 department_type = AllocationAttributeType.objects.get(name="department_number")
                 department_attribute = AllocationAttribute.objects.get(allocation=allocation, allocation_attribute_type=department_type)
                 
