@@ -64,8 +64,7 @@ def calculate_billing_month(request, year, month):
     try:
         data = request.data
         logger.error('Request data: %s', data)
-        if data and 'recalculate' in data:
-            recalculate = data['recalculate']
+        recalculate = data.get('recalculate') and data['recalculate'].lower() == 'true'
     except Exception as e:
         logger.exception(e)
         return Response(data={'error': 'Cannot parse request body'}, status=status.HTTP_400_BAD_REQUEST)
@@ -93,6 +92,7 @@ def get_product_usages(request):
 
     year = request.GET.get('year', None)
     month = request.GET.get('month', None)
+    errors_only = request.GET.get('errors_only', False)
     results = []
     sql = f'''
         select
@@ -131,6 +131,9 @@ def get_product_usages(request):
             return Response('month must be an integer', status=status.HTTP_400_BAD_REQUEST)
         where_clauses.append('pu.month = %s')
         query_args.append(month)
+
+    if errors_only and errors_only.lower() == 'true':
+        where_clauses.append('pup.resolved = 0' )
 
     if where_clauses:
         sql += ' where '
