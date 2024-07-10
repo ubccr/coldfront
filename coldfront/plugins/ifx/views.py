@@ -3,10 +3,19 @@
 '''
 Views
 '''
+import logging
+import json
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
 from ifxreport.views import run_report as ifxreport_run_report
+from ifxbilling import models as ifxbilling_models
+from coldfront.plugins.ifx.calculator import NewColdfrontBillingCalculator
+
+logger = logging.getLogger(__name__)
 
 @login_required
 def unauthorized(request):
@@ -33,4 +42,41 @@ def run_report(request):
     '''
     if request.method == 'POST':
         return ifxreport_run_report(request)
+    # pylint: disable=broad-exception-raised
     raise Exception('Only POST allowed')
+
+@login_required
+@api_view(['POST',])
+def calculate_billing_month(request, year, month):
+    '''
+    Calculate billing month view
+    '''
+    recalculate = False
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+        if data and 'recalculate' in data:
+            recalculate = data['recalculate']
+    except json.JSONDecodeError as e:
+        logger.exception(e)
+        return Response(data={'error': 'Cannot parse request body'}, status=status.HTTP_400_BAD_REQUEST)
+
+    logger.debug('Calculating billing records for month %d of year %d, with recalculate flag %s', month, year, str(recalculate))
+
+    try:
+        if recalculate:
+            ifxbilling_models.BillingRecord.objects.filter(year=year, month=month).delete()
+        calculator = NewColdfrontBillingCalculator()
+        resultinator = calculator.calculate_billing_month(year, month, recalculate=recalculate)
+        successes = 0
+        errors = []
+        # pylint: disable=unused-variable
+        for org, result in resultinator.results.items():
+            if result.get('successes'):
+                successes += len(result['successes'])
+            if result.get('errors'):
+                errors.extend(result['errors'])
+        return Response(data={ 'successes': successes, 'errors': errors }, status=status.HTTP_200_OK)
+    # pylint: disable=broad-exception-caught
+    except Exception as e:
+        logger.exception(e)
+        return Response(data={ 'error': f'Billing calculation failed {e}' }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
