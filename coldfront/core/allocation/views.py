@@ -481,7 +481,7 @@ class AllocationTableView(LoginRequiredMixin, ListView):
                 storage_name_attribute = AllocationAttribute.objects.get(allocation=allocation, allocation_attribute_type=storage_name_type)
 
                 itsd_ticket_type = AllocationAttributeType.objects.get(name="storage_ticket")
-                itsd_ticket_attribute = AllocationAttributeType.objects.get(allocation=allocation, allocation_attribute_type=itsd_ticket_type)
+                itsd_ticket_attribute = AllocationAttribute.objects.get(allocation=allocation, allocation_attribute_type=itsd_ticket_type)
 
                 view_list.append(
                     AllocationListItem(
