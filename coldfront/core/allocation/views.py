@@ -3,6 +3,8 @@ import logging
 from datetime import date
 import json
 
+from typing import List
+
 from dateutil.relativedelta import relativedelta
 from django import forms
 from django.contrib import messages
@@ -414,6 +416,22 @@ class AllocationListView(LoginRequiredMixin, ListView):
 
         return context
 
+class AllocationListItem:
+    id: int
+    project_id: int
+    project_name: str
+    allocation_name: str
+    department_number: str
+    allocation_status: str
+    pi_last_name: str
+    pi_first_name: str
+    pi_user_name: str
+
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+
 class AllocationTableView(LoginRequiredMixin, ListView):
 
     model = Allocation
@@ -423,35 +441,67 @@ class AllocationTableView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
 
-        order_by = self.request.GET.get('order_by')
-        if order_by:
-            direction = self.request.GET.get('direction')
-            dir_dict = {'asc':'', 'des':'-'}
-            order_by = dir_dict[direction] + order_by
-        else:
-            order_by = 'id'
+        view_list: List[AllocationListItem] = []
 
         allocation_search_form = AllocationSearchForm(self.request.GET)
-        allocation_form = AllocationForm(self.request.GET)
+        # allocation_form = AllocationForm(self.request.GET)
         
+        #         {% for allocation in allocation_list %}
+        #   <tr>
+        #     <td><a href="/allocation/{{allocation.id}}/">{{ allocation.id }}</a></td>
+        #     <td class="text-nowrap"><a 
+        #         href="/project/{{allocation.project.id}}/">{{ allocation.project.title|truncatechars:50 }}</a></td>
+        #     <td class="text-nowrap">{{allocation.project.pi.first_name}} {{allocation.project.pi.last_name}}
+        #       ({{allocation.project.pi.username}})</td>
+        #       <!-- Replace with new columns -->
+        #     <td class="text-nowrap">{{ allocation.get_parent_resource }}</td>
+        #     <td class="text-nowrap">{{ allocation.status.name }}</td>
+        #     <td class="text-nowrap">{{ allocation.end_date }}</td>
+        #     <td class="text-nowrap">{{ allocation.department_number }}</td>
+        #   </tr>
+        # {% endfor %}
 
         if allocation_search_form.is_valid():
             data = allocation_search_form.cleaned_data
-            allocation_list = allocations.objects.all()
+            resource = Resource.objects.get(name="Storage2")
+            allocations = Allocation.objects.filter(resources=resource)
 
-            for allocation in allocation_list:
-                allocation_attribute_type = AllocationAttributeType.objects.get(name="department_number")
-                department_attribute = AllocationAttribute.objects.get(allocation=allocation, allocation_attribute_type=allocation_attribute_type)
-                department_number = department_attribute.value
+            # Project Title
+            if data.get('project'):
+                allocations = allocations.filter(
+                    project__title__icontains=data.get('project'))
+
+            for allocation in allocations:
+                department_type = AllocationAttributeType.objects.get(name="department_number")
+                department_attribute = AllocationAttribute.objects.get(allocation=allocation, allocation_attribute_type=department_type)
+                
+                storage_name_type = AllocationAttributeType.objects.get(name="storage_name")
+                storage_name_attribute = AllocationAttribute.objects.get(allocation=allocation, allocation_attribute_type=storage_name_type)
+
+                view_list.append(
+                    AllocationListItem(
+                        id=allocation.pk,
+                        # principal_investigator=allocation.project.pi.last_name,
+                        pi_last_name=allocation.project.pi.last_name,
+                        pi_first_name=allocation.project.pi.first_name,
+                        pi_user_name=allocation.project.pi.username,
+                        project_id=allocation.project.pk,
+                        project_name=allocation.project.title,
+                        allocation_name=storage_name_attribute.value,
+                        allocation_status=allocation.status.name,
+                        department_number=department_attribute.value
+                    )
+                )
 
 
-        return Allocation.objects.all()
+        return view_list
 
     def get_context_data(self, **kwargs):
 
         context = super().get_context_data(**kwargs)
         context['allocation_list'] = self.get_queryset()
-        allocations_count = self.get_queryset().count()
+        # jprew - HERE
+        allocations_count = len(self.get_queryset())
         context['allocations_count'] = allocations_count
 
         allocation_search_form = AllocationSearchForm(self.request.GET)
