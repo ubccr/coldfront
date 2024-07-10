@@ -82,6 +82,11 @@ Allocation View
             <a href="?order_by=itsd_ticket&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort ITSD Ticket asc</span></a>
             <a href="?order_by=itsd_ticket&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort ITSD Ticket desc</span></a>
           </th>
+          <th scope="col" class="text-nowrap">
+            File Path
+            <a href="?order_by=file_path&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort File Path asc</span></a>
+            <a href="?order_by=file_path&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort File Path desc</span></a>
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -98,6 +103,7 @@ Allocation View
             <td class="text-nowrap">{{ allocation.end_date }}</td>
             <td class="text-nowrap">{{ allocation.department_number }}</td>
             <td class="text-nowrap">{{ allocation.itsd_ticket }}</td>
+            td class="text-nowrap">{{ allocation.file_path }}</td>
           </tr>
         {% endfor %}
       </tbody>

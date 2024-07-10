@@ -427,6 +427,7 @@ class AllocationListItem:
     pi_first_name: str
     pi_user_name: str
     itsd_ticket: str
+    file_path: str
 
 
     def __init__(self, **kwargs):
@@ -483,6 +484,9 @@ class AllocationTableView(LoginRequiredMixin, ListView):
                 itsd_ticket_type = AllocationAttributeType.objects.get(name="storage_ticket")
                 itsd_ticket_attribute = AllocationAttribute.objects.get(allocation=allocation, allocation_attribute_type=itsd_ticket_type)
 
+                file_path_type = AllocationAttributeType.objects.get(name="storage_filesystem_path")
+                file_path_attribute = AllocationAttribute.objects.get(allocation=allocation, allocation_attribute_type=file_path_type)
+
                 view_list.append(
                     AllocationListItem(
                         id=allocation.pk,
@@ -495,7 +499,8 @@ class AllocationTableView(LoginRequiredMixin, ListView):
                         allocation_name=storage_name_attribute.value,
                         allocation_status=allocation.status.name,
                         department_number=department_attribute.value,
-                        itsd_ticket=itsd_ticket_attribute.value
+                        itsd_ticket=itsd_ticket_attribute.value,
+                        file_path=file_path_attribute.value
                     )
                 )
 
