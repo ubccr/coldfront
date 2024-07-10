@@ -8,6 +8,7 @@ import json
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
+from django.db import connection
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
@@ -81,3 +82,80 @@ def calculate_billing_month(request, year, month):
     except Exception as e:
         logger.exception(e)
         return Response(data={ 'error': f'Billing calculation failed {e}' }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@login_required
+@api_view(['GET',])
+def get_product_usages(request):
+    '''
+    Get product usages
+    '''
+    local_tz = timezone.get_current_timezone()
+
+    year = request.GET.get('year', None)
+    month = request.GET.get('month', None)
+    results = []
+    sql = f'''
+        select
+            pu.id,
+            pu.year,
+            pu.month,
+            pu.description,
+            p.product_name,
+            u.full_name,
+            o.name as organization,
+            CONVERT_TZ(pu.start_date, 'UTC', '{local_tz}') as start_date,
+            CONVERT_TZ(pu.end_date, 'UTC', '{local_tz}') as end_date,
+            pup.error_message,
+            pup.resolved
+        from
+            product_usage pu
+            inner join product p on p.id = pu.product_id
+            inner join ifxuser u on u.id = pu.product_user_id
+            inner join nanites_organization o on o.id = pu.organization_id
+            left join product_usage_processing pup on pup.product_usage_id = pu.id
+    '''
+    where_clauses = []
+    query_args = []
+    if year:
+        try:
+            year = int(year)
+        except ValueError:
+            return Response('year must be an integer', status=status.HTTP_400_BAD_REQUEST)
+        where_clauses.append('pu.year = %s')
+        query_args.append(year)
+
+    if month:
+        try:
+            month = int(month)
+        except ValueError:
+            return Response('month must be an integer', status=status.HTTP_400_BAD_REQUEST)
+        where_clauses.append('pu.month = %s')
+        query_args.append(month)
+
+    if where_clauses:
+        sql += ' where '
+        sql += ' and '.join(where_clauses)
+
+    sql += ' order by pu.id'
+
+    try:
+        cursor = connection.cursor()
+        cursor.execute(sql, query_args)
+
+        desc = cursor.description
+
+        for row in cursor.fetchall():
+            # Make a dictionary labeled by column name
+            results.append(dict(zip([col[0] for col in desc], row)))
+
+    # pylint: disable=broad-except
+    except Exception as e:
+        logger.exception(e)
+        return Response(
+            f'Error getting product usages {e}',
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+    return Response(
+        data=results
+    )

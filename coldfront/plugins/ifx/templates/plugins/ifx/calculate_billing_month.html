@@ -34,15 +34,18 @@ Calculate Billing Month
 
             var productUsagesTable = $("#product-usages").DataTable({
                 dom: 't',
-                {% comment %} columns: [
-                    {data: 'report', width: '100px'},
-                    {data: 'date_range', width: '100px'},
-                    {data:  function(item){ return `<a href="${item.url_root}/${item.xls_file_path}">${item.xls_file_path}</a>`}},
-                    {data:  function(item){ return `<a href="${item.url_root}/${item.text_file_path}">${item.text_file_path}</a>`}},
-                    {data:  function(item){ return new Date(item.updated).toLocaleTimeString('en-us', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}}
-                ], {% endcomment %}
+                columns: [
+                    {data: 'id', width: '100px'},
+                    {data: 'full_name', width: '100px'},
+                    {data: 'year', width: '100px'},
+                    {data: 'month', width: '100px'},
+                    {data: 'organization', width: '100px'},
+                    {data: 'product_name', width: '100px'},
+                    {data: 'description', width: '500px'},
+                    {data: 'error_message', width: '100px'},
+                ],
                 ajax: {
-                    url: '/ifx/api/product-usages/',
+                    url: '/ifx/api/get-product-usages/',
                     type: 'GET',
                     data: {
                         year: 2024,
@@ -83,13 +86,13 @@ Calculate Billing Month
             <div id="progressbar"></div>
         </p>
     </div>
-    <div style="margin: 2em;">
+    <div style="margin: 1em;">
         <form method="post">
             {% csrf_token %}
             <input type="submit" value="Calculate Billing Month"></input>
         </form>
     </div>
-    <div style="margin: 2em;">
+    <div style="margin: 1em;">
         <table id="product-usages" class="display" style="width: 100%" cellpadding="5px">
             <thead>
                 <tr>
