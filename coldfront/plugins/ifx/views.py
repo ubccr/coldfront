@@ -46,6 +46,13 @@ def run_report(request):
     raise Exception('Only POST allowed')
 
 @login_required
+def billing_month(request):
+    '''
+    Show billing month page
+    '''
+    return render(request, 'plugins/ifx/calculate_billing_month.html')
+
+@login_required
 @api_view(['POST',])
 def calculate_billing_month(request, year, month):
     '''

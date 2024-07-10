@@ -11,70 +11,75 @@ Calculate Billing Month
 
 {% block content %}
 <script>
-    $(document).ready(function(){
+    (function($){
+        $(document).ready(function(){
 
-        $( "#progressbar" ).progressbar({
-            value: false
-        });
-        var dialog = $('#loading').dialog(
-            {
-                autoOpen: false,
-                height: 200,
-                width: 300,
-                modal: true,
-            }
-        )
-        $(document)
-          .ajaxStart(function () {
-            dialog.dialog("open");
-          })
-          .ajaxStop(function () {
-            dialog.dialog("close");
-          });
-        var productUsagesTable = $("#product-usages").DataTable({
-            dom: 't',
-            columns: [
-                {data: 'report', width: '100px'},
-                {data: 'date_range', width: '100px'},
-                {data:  function(item){ return `<a href="${item.url_root}/${item.xls_file_path}">${item.xls_file_path}</a>`}},
-                {data:  function(item){ return `<a href="${item.url_root}/${item.text_file_path}">${item.text_file_path}</a>`}},
-                {data:  function(item){ return new Date(item.updated).toLocaleTimeString('en-us', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}}
-            ],
-            ajax: {
-                url: '/ifx/api/calculate-billing-month/',
-                type: 'GET',
-                dataSrc: '',
-            }
-        })
-
-        $("input[type='submit']").click((ev) => {
-            ev.preventDefault()
-
-            // Get the year and month from the picker
-            const year = 2024
-            const month = 6
-            const recalculate = true
-
-            $.ajax({
-                contentType: 'application/json',
-                url: `/ifx/api/calculate-billing-month/${year}/${month}/`,
-                method: 'POST',
-                headers: {'X-CSRFToken': '{{ csrf_token }}'},
-                data: JSON.stringify({
-                    'recalculate': recalculate
-                }),
-                dataType: "json"
-            }).done(
-                function () { productUsagesTable.ajax.reload() }
+            $( "#progressbar" ).progressbar({
+                value: false
+            });
+            var dialog = $('#loading').dialog(
+                {
+                    autoOpen: false,
+                    height: 200,
+                    width: 300,
+                    modal: true,
+                }
             )
+            $(document)
+            .ajaxStart(function () {
+                dialog.dialog("open");
+            })
+            .ajaxStop(function () {
+                dialog.dialog("close");
+            });
+
+            var productUsagesTable = $("#product-usages").DataTable({
+                dom: 't',
+                columns: [
+                    {data: 'report', width: '100px'},
+                    {data: 'date_range', width: '100px'},
+                    {data:  function(item){ return `<a href="${item.url_root}/${item.xls_file_path}">${item.xls_file_path}</a>`}},
+                    {data:  function(item){ return `<a href="${item.url_root}/${item.text_file_path}">${item.text_file_path}</a>`}},
+                    {data:  function(item){ return new Date(item.updated).toLocaleTimeString('en-us', { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}}
+                ],
+                ajax: {
+                    url: '/ifx/api/product-usages/',
+                    type: 'GET',
+                    data: {
+                        year: 2024,
+                        month: 6
+                    },
+                    dataSrc: '',
+                }
+            })
+
+            $("input[type='submit']").click((ev) => {
+                ev.preventDefault()
+
+                // Get the year and month from the picker
+                const year = 2024
+                const month = 6
+                const recalculate = true
+
+                $.ajax({
+                    contentType: 'application/json',
+                    url: `/ifx/api/calculate-billing-month/${year}/${month}/`,
+                    method: 'POST',
+                    headers: {'X-CSRFToken': '{{ csrf_token }}'},
+                    data: JSON.stringify({
+                        'recalculate': recalculate
+                    }),
+                    dataType: "json"
+                }).done(
+                    function () { productUsagesTable.ajax.reload() }
+                )
+            })
         })
-    })
+    })(jQuery)
+
 </script>
 <div>
     <div id="loading">
-        <div style="text-align: center">
-            Enjoy this progress bar while you wait for the report to run.
-        </div>
         <p>
             <div id="progressbar"></div>
         </p>
@@ -82,18 +87,21 @@ Calculate Billing Month
     <div style="margin: 2em;">
         <form method="post">
             {% csrf_token %}
-            <input type="submit" value="Run FY report"></input>
+            <input type="submit" value="Calculate Billing Month"></input>
         </form>
     </div>
     <div style="margin: 2em;">
         <table id="report-runs" class="display" style="width: 100%" cellpadding="5px">
             <thead>
                 <tr>
-                    <th>Report</th>
-                    <th>Date Range</th>
-                    <th>XLS</th>
-                    <th>CSV</th>
-                    <th>Last updated</th>
+                    <th>ID</th>
+                    <th>User</th>
+                    <th>Year</th>
+                    <th>Month</th>
+                    <th>Organization</th>
+                    <th>Product</th>
+                    <th>Description</th>
+                    <th>Processing</th>
                 </tr>
             </thead>
             <tbody>
