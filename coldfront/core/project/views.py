@@ -461,7 +461,7 @@ class ProjectAddUsersSearchView(LoginRequiredMixin, UserPassesTestMixin, Templat
         """UserPassesTestMixin Tests"""
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         # if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
-        if self.request.user.is_superuser or self.request.user == project.pi:
+        if self.request.user.is_superuser or self.request.user == project_obj.pi:
             return True
         return False
 
@@ -490,7 +490,7 @@ class ProjectAddUsersSearchResultsView(
         """UserPassesTestMixin Tests"""
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         # if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
-        if self.request.user.is_superuser or self.request.user == project.pi:
+        if self.request.user.is_superuser or self.request.user == project_obj.pi:
             return True
         return False
 
@@ -563,7 +563,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
         """UserPassesTestMixin Tests"""
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         # if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
-        if self.request.user.is_superuser or self.request.user == project.pi:
+        if self.request.user.is_superuser or self.request.user == project_obj.pi:
             return True
         err = 'You do not have permission to add users to the project.'
         messages.error(self.request, err)
@@ -722,7 +722,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         """UserPassesTestMixin Tests"""
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         # if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
-        if self.request.user.is_superuser or self.request.user == project.pi:
+        if self.request.user.is_superuser or self.request.user == project_obj.pi:
             return True
         return False
 
