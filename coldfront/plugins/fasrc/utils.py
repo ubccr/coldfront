@@ -17,6 +17,7 @@ from coldfront.core.allocation.models import AllocationAttributeType
 
 logger = logging.getLogger(__name__)
 
+ATT_VERIFY = import_from_settings('ATT_VERIFY')
 
 class ATTAllocationQuery:
 
@@ -73,8 +74,8 @@ class ATTAllocationQuery:
                 'fs_path': 'LogicalVolume',
                 'path_replace': '/dev/data/',
                 'usedgb': 'UsedGB',
-                'sizebytes': 'SizeGB * 1073741824',
-                'usedbytes': 'UsedGB * 1073741824',
+                'sizebytes': 'SizeGB * 1000000000',
+                'usedbytes': 'UsedGB * 1000000000',
                 'server_replace': '.rc.fas.harvard.edu',
                 'unique': 'datetime(e.DotsLVSUpdateDate) as update_date, \
                         datetime(e.DotsLVDisplayUpdateDate) as display_date'
@@ -170,7 +171,7 @@ class AllTheThingsConn:
         self.volumes = volumes
 
     def post_query(self, query):
-        resp = requests.post(self.url, headers=self.headers, data=json.dumps(query))
+        resp = requests.post(self.url, headers=self.headers, data=json.dumps(query), verify=ATT_VERIFY)
         return json.loads(resp.text)
 
     def format_query_results(self, resp_json):
