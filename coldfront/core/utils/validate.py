@@ -3,11 +3,13 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 import formencode
 from formencode import validators, Invalid
+import magic
 
 class AttributeValidator:
 
-    def __init__(self, value):
+    def __init__(self, value, doc):
         self.value = value
+        self.doc = doc
 
     def validate_int(self):
         try:
@@ -39,3 +41,14 @@ class AttributeValidator:
         except:
             raise ValidationError(
                 f'Invalid Value {self.value}. Date must be in format YYYY-MM-DD and date must be today or later.')
+        
+    def validate_doc(self):
+        # try:
+        if self.doc:
+            if self.doc.size > 10485760 :
+                raise ValidationError("This document exceeds size limits")
+            content_mime_type = magic.Magic(mime=True)
+            # file_type = content_mime_type.from_buffer(self.doc.read())
+            if content_mime_type.from_buffer(self.doc.read()) != "application/pdf":
+                raise ValidationError("Invalid file type")
+            self.doc.seek(0)

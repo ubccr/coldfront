@@ -400,6 +400,9 @@ class ProjectAttributeType(TimeStampedModel):
 
     def __repr__(self) -> str:
         return str(self)
+    
+
+
 
     class Meta:
         ordering = ['name', ]
@@ -418,6 +421,7 @@ class ProjectAttribute(TimeStampedModel):
 
     value = models.CharField(max_length=128)
     history = HistoricalRecords()
+    doc = models.FileField(default=False, upload_to='documents/')
 
     def save(self, *args, **kwargs):
         """ Saves the project attribute. """
@@ -433,8 +437,9 @@ class ProjectAttribute(TimeStampedModel):
                 self.proj_attr_type))
 
         expected_value_type = self.proj_attr_type.attribute_type.name.strip()
-
-        validator = AttributeValidator(self.value)
+        # if not self.doc:
+        validator = AttributeValidator(self.value, self.doc)
+       
 
         if expected_value_type == "Int":
             validator.validate_int()
@@ -444,6 +449,8 @@ class ProjectAttribute(TimeStampedModel):
             validator.validate_yes_no()
         elif expected_value_type == "Date":
             validator.validate_date()
+        elif expected_value_type == "Upload":
+            validator.validate_doc()
 
     def __str__(self):
         return '%s' % (self.proj_attr_type.name)
