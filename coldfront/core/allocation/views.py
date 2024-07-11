@@ -474,16 +474,13 @@ class AllocationTableView(LoginRequiredMixin, ListView):
             if data.get('project'):
                 allocations = allocations.filter(
                     project__title__icontains=data.get('project'))
-            if data.get('status'):
-                allocations = allocations.filter(
-                    status__in=data.get('status'))
+            # if data.get('status'):
+            #     allocations = allocations.filter(
+            #         status__in=data.get('status'))
 
             for allocation in allocations:
                 department_type = AllocationAttributeType.objects.get(name="department_number")
                 department_attribute = AllocationAttribute.objects.get(allocation=allocation, allocation_attribute_type=department_type)
-                
-                # storage_name_type = AllocationAttributeType.objects.get(name="storage_name")
-                # storage_name_attribute = AllocationAttribute.objects.get(allocation=allocation, allocation_attribute_type=storage_name_type)
 
                 itsd_ticket_type = AllocationAttributeType.objects.get(name="storage_ticket")
                 itsd_ticket_attribute = AllocationAttribute.objects.get(allocation=allocation, allocation_attribute_type=itsd_ticket_type)
@@ -497,7 +494,6 @@ class AllocationTableView(LoginRequiredMixin, ListView):
                 view_list.append(
                     AllocationListItem(
                         id=allocation.pk,
-                        # principal_investigator=allocation.project.pi.last_name,
                         pi_last_name=allocation.project.pi.last_name,
                         pi_first_name=allocation.project.pi.first_name,
                         pi_user_name=allocation.project.pi.username,
