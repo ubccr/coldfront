@@ -59,8 +59,8 @@ Allocation View
           </th>
           <th scope="col" class="text-nowrap">
             Resource Name
-            <a href="?order_by=resources&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Resource Name asc</span></a>
-            <a href="?order_by=resources&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Resource Name desc</span></a>
+            <a href="?order_by=allocation_name&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Resource Name asc</span></a>
+            <a href="?order_by=allocation_name&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Resource Name desc</span></a>
           </th>
           <th scope="col" class="text-nowrap">
             Status
@@ -104,6 +104,7 @@ Allocation View
               ({{allocation.pi_user_name}})</td>
               <!-- Replace with new columns -->
             <td class="text-nowrap">{{ allocation.get_parent_resource }}</td>
+            <td class="text-nowrap">{{ allocation.allocation_name }}</td>
             <td class="text-nowrap">{{ allocation.status.name }}</td>
             <td class="text-nowrap">{{ allocation.end_date }}</td>
             <td class="text-nowrap">{{ allocation.department_number }}</td>
