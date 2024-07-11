@@ -6,6 +6,7 @@ from coldfront.config.base import INSTALLED_APPS
 INSTALLED_APPS += [ 'coldfront.plugins.fasrc' ]
 
 NEO4JP = ENV.str('NEO4JP')
+ATT_VERIFY = ENV.str('ATT_VERIFY', default=True)
 
 LOGGING['handlers']['fasrc'] = {
             'class': 'logging.handlers.TimedRotatingFileHandler',

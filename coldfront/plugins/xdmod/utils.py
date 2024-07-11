@@ -30,6 +30,8 @@ XDMOD_STORAGE_GROUP_ATTRIBUTE_NAME = import_from_settings(
 
 XDMOD_API_URL = import_from_settings('XDMOD_API_URL')
 
+XDMOD_VERIFY = import_from_settings('XDMOD_VERIFY')
+
 _ENDPOINT_CORE_HOURS = '/controllers/user_interface.php'
 
 _DEFAULT_PARAMS = {
@@ -71,7 +73,7 @@ class XDModFetcher:
         self.group_by = {'total':'pi', 'per-user':'person'}
 
     def fetch_data(self, payload, search_item=None):
-        r = requests.get(self.url, params=payload)
+        r = requests.get(self.url, params=payload, verify=XDMOD_VERIFY)
         logger.info(r.url)
         logger.info(r.text)
 
