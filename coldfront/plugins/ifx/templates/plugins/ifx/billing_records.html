@@ -20,16 +20,40 @@ Billing Records
         float: right;
     }
     #notification-errors {
+        margin: 1em 0 0.5em 1em;
         font-size: 10pt;
         color: red;
+    }
+    #notification-successes {
+        margin: 1em 0 0.5em 1em;
+        font-size: 10pt;
+    }
+    #notification-nobrs {
+        font-size: 10pt;
+        margin: 1em 0 0.5em 1em;
+    }
+    #organizations {
+        width: 400px;
     }
     .result-header {
         font-size: 12pt;
         font-weight: bold;
         margin: 1em 0 0.5em 0;
     }
+    .ui-autocomplete-input {
+        z-index: 100000;
+    }
     label {
         margin: 0 0 0 1em;
+    }
+    .lefty {
+        position: relative;
+        float: left;
+        margin-left: 1em;
+    }
+    .righty {
+        position: relative;
+        float: right;
     }
 </style>
 <script>
@@ -51,20 +75,62 @@ Billing Records
             var notificationDialog = $('#notification').dialog(
                 {
                     autoOpen: false,
-                    height: 300,
-                    width: 500,
+                    height: 400,
+                    width: 800,
                     modal: true,
                     title: 'Notify Lab Managers',
                 }
             )
             $(document)
                 .ajaxStart(function () {
-                    dialog.dialog("open");
+                    dialog.dialog("open")
                 })
                 .ajaxStop(function () {
-                    dialog.dialog("close");
+                    dialog.dialog("close")
                 });
 
+            var organizationSource = []
+            $.ajax({
+                url: '/ifx/api/get-org-names/',
+                type: 'GET',
+                success: function(data) {
+                    $.each(data, (i, item) => {
+                        organizationSource.push({
+                            label: item.name,
+                            value: item.slug
+                        })
+                    })
+                    $("#organizations").autocomplete({
+                        appendTo: "#notification",
+                        source: organizationSource,
+                        minLength: 2,
+                        select: function(event, ui) {
+                            var terms = this.value.split( /,\s*/ )
+                            // remove the current input
+                            terms.pop()
+                            // add the selected item
+                            terms.push( ui.item.value )
+                            this.value = terms.join( ", " )
+                            if ($(this).val().trim() !== '') {
+                                $("#send-notification").val("Notify Some")
+                            } else {
+                                $("#send-notification").val("Notify All")
+                            }
+                            return false
+                        }
+                    })
+                },
+                error: function (msg) {
+                    alert(msg.status + ' ' + msg.statusText)
+                }
+            })
+            $("#organizations").on('change keyup copy paste cut', function() {
+                if ($(this).val().trim() !== '') {
+                    $("#send-notification").val("Notify Some")
+                } else {
+                    $("#send-notification").val("Notify All")
+                }
+            })
             $("#billing-record-reload").click((ev) => {
                 ev.preventDefault()
                 if (!$("#year").val() || !$("#month").val()) {
@@ -76,26 +142,35 @@ Billing Records
             })
             $("#start-notification").click((ev) => {
                 ev.preventDefault()
+                $("#notification-errors").html("")
+                $("#notification-successes").html("")
+                $("#notification-nobrs").html("")
                 notificationDialog.dialog("open")
             })
             $("#send-notification").click((ev) => {
                 ev.preventDefault()
                 $("#notification-errors").html("")
                 $("#notification-successes").html("")
+                $("#notification-nobrs").html("")
                 const year = $("#year").val()
                 const month = $("#month").val()
+                const organizations = $("#organizations").val()
                 if (!year || !month) {
                     alert("Year and Month are required")
                 } else {
+                    const data = {}
+                    if (organizations) {
+                        data.ifxorg_slugs = organizations.split(',').map((item) => item.trim())
+                    }
                     $.ajax({
                         contentType: 'application/json',
                         url: `/ifx/api/send-billing-record-review-notification/${year}/${month}/`,
                         method: 'POST',
                         headers: {'X-CSRFToken': '{{ csrf_token }}'},
-                        data: "{}",
+                        data: JSON.stringify(data),
                         success: (data) => {
                             // Use jquery to compose a table of errors and successes
-                            if (data.errors) {
+                            if (data.errors && Object.keys(data.errors).length) {
                                 var errorBlock = $("<div></div>")
                                 errorBlock.append('<div class="result-header">Errors</div>')
                                 var table = $("<table></table>")
@@ -107,7 +182,7 @@ Billing Records
                                 errorBlock.append(table)
                                 $("#notification-errors").html(errorBlock)
                             }
-                            if (data.successes) {
+                            if (data.successes && data.successes.length) {
                                 var successBlock = $("<div></div>")
                                 successBlock.append('<div class="result-header">Successes</div>')
                                 var table = $("<table></table>")
@@ -115,6 +190,16 @@ Billing Records
                                 table.append(`<tr><td>${count} organizations successfully notified.</td></tr>`)
                                 successBlock.append(table)
                                 $("#notification-successes").html(successBlock)
+                            }
+                            if (data.nobrs && data.nobrs.length) {
+                                var nobrsBlock = $("<div></div>")
+                                nobrsBlock.append('<div class="result-header">No billing records</div>')
+                                var table = $("<table></table>")
+                                $.each(data.nobrs, (i, item) => {
+                                    table.append(`<tr><td>${item}</td></tr>`)
+                                })
+                                nobrsBlock.append(table)
+                                $("#notification-nobrs").html(nobrsBlock)
                             }
                         }
                     })
@@ -190,27 +275,32 @@ Billing Records
         </p>
     </div>
     <div id="notification" style="display: none;">
-        <div style="position: relative; float: left;">
-            Send notification to lab managers
+        <div class="lefty">
+            <div><label>Send notification to all lab managers</label></div>
+            <div>
+                <label for="organizations">Or select a lab</label>
+                <input id="organizations"></input>
+            </div>
         </div>
-        <div style="position: relative; float: right;">
-            <input type="submit" id="send-notification" value="Go"/>
+        <div class="righty">
+            <input type="submit" id="send-notification" value="Notify All"/>
         </div>
         <div style="clear: both;"></div>
         <div id="notification-errors"></div>
         <div id="notification-successes"></div>
+        <div id="notification-nobrs"></div>
     </div>
     <div style="margin: 1em; width: 100%;">
-        <div style="position: relative; float: left;">
+        <div class="lefty">
             <label for="year">Year</label>
             <input type="text" id="year" name="year" value="2024"/>
             <label for="month">Month</label>
             <input type="text" id="month" name="month" value="5"/>
         </div>
-        <div style="position: relative; float: left; margin-left: 1em;">
+        <div class="lefty">
             <input id="billing-record-reload" type="submit" value="Reload Data"></input>
         </div>
-        <div style="position: relative; float: right; margin-left: 1em;">
+        <div class="righty">
             <input id="start-notification" type="submit" value="Notify Lab Managers"></input>
         </div>
         <div style="clear: both;"></div>

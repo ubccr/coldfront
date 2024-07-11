@@ -180,33 +180,28 @@ def send_billing_record_review_notification(request, year, month):
     '''
     Send billing record notification emails to organization contacts
     '''
-    ifxorg_ids = []
+    ifxorg_slugs = []
     test = []
     try:
         data = request.data
-        if 'ifxorg_ids' in data:
-            # get ifxorg_ids are valid
-            r = re.compile('^IFXORG[0-9A-Z]{10}')
-            ifxorg_ids = [id for id in data['ifxorg_ids'] if r.match(id)]
-            if len(ifxorg_ids) is not len(data['ifxorg_ids']):
-                return Response(data={'error': f'Some of the ifxorg_ids you passed in are invalid. valid ifxorg_ids included: {ifxorg_ids}'}, status=status.HTTP_400_BAD_REQUEST)
-            logger.info(ifxorg_ids)
+        if 'ifxorg_slugs' in data:
+            ifxorg_slugs = data['ifxorg_slugs']
         if 'test' in data:
             test = data['test']
     except json.JSONDecodeError as e:
         logger.exception(e)
         return Response(data={'error': 'Cannot parse request body'}, status=status.HTTP_400_BAD_REQUEST)
-    logger.info('Summarizing billing records for month %d of year %d, with ifxorg_ids %s', month, year, ifxorg_ids)
+    logger.info('Summarizing billing records for month %d of year %d, with ifxorg_slugs %s', month, year, ifxorg_slugs)
 
     facility = ifxbilling_models.Facility.objects.first()
     organizations = []
-    if ifxorg_ids:
-        for ifxorg_id in ifxorg_ids:
+    if ifxorg_slugs:
+        for ifxorg_slug in ifxorg_slugs:
             try:
-                organizations.append(ifxuser_models.Organization.objects.get(ifxorg=ifxorg_id))
+                organizations.append(ifxuser_models.Organization.objects.get(slug=ifxorg_slug))
             except ifxuser_models.Organization.DoesNotExist:
                 return Response(data={
-                    'error': f'Organization with ifxorg number {ifxorg_id} cannot be found'
+                    'error': f'Organization with ifxorg number {ifxorg_slug} cannot be found'
                 }, status=status.HTTP_400_BAD_REQUEST)
     logger.debug(f'Processing organizations {organizations}')
     try:
@@ -223,9 +218,9 @@ def send_billing_record_review_notification(request, year, month):
             logger.error(f'Email errors for {org_name}: {", ".join(error_messages)} ')
         return Response(
             data={
-                'successes': [s.name for s in successes],
+                'successes': sorted([s.name for s in successes]),
                 'errors': errors,
-                'nobrs': [n.name for n in nobrs]
+                'nobrs': sorted([n.name for n in nobrs if n.org_tree == 'Harvard'])
             },
             status=status.HTTP_200_OK
         )
