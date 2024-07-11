@@ -120,8 +120,8 @@ Billing Records
                         }
                     })
                 },
-                error: function (msg) {
-                    alert(msg.status + ' ' + msg.statusText)
+                error: function (jqXHR, status, error) {
+                    alert(status + ' ' + error)
                 }
             })
             $("#organizations").on('change keyup copy paste cut', function() {
@@ -201,11 +201,13 @@ Billing Records
                                 nobrsBlock.append(table)
                                 $("#notification-nobrs").html(nobrsBlock)
                             }
+                        },
+                        error: function (msg) {
+                            alert(msg.status + ' ' + msg.statusText)
                         }
                     })
                 }
             })
-
             var billingRecordsTable = $("#billing-records").DataTable({
                 dom: '<fl>tp',
                 columns: [
@@ -226,7 +228,11 @@ Billing Records
                         d.month = $("#month").val()
                         d.invoice_prefix = 'RC'
                     },
+                    async: true,
                     dataSrc: '',
+                    error: function (jqXHR, status, error) {
+                        alert(status + ' ' + error)
+                    },
                 },
                 {% comment %}
                 footerCallback: function (row, data, start, end, display) {

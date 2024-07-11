@@ -5,20 +5,22 @@ Views
 '''
 import logging
 import json
-import re
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.db import connection
 from django.conf import settings
-from rest_framework.decorators import api_view
+from django.core.exceptions import PermissionDenied
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from ifxreport.views import run_report as ifxreport_run_report
 from ifxbilling import models as ifxbilling_models
 from ifxbilling.calculator import getClassFromName
+from ifxbilling.views import get_billing_record_list as ifxbilling_get_billing_record_list
 from ifxuser import models as ifxuser_models
 from coldfront.plugins.ifx.calculator import NewColdfrontBillingCalculator
+from coldfront.plugins.ifx.permissions import AdminPermissions
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +29,8 @@ def unauthorized(request):
     '''
     Show product usages for which there is no authorized expense code
     '''
+    if not request.user.is_superuser:
+        raise PermissionDenied
     year = timezone.now().year
     month = timezone.now().month
     years = list(range(2021, 2030))
@@ -38,6 +42,8 @@ def report_runs(request):
     '''
     Show report runs page
     '''
+    if not request.user.is_superuser:
+        raise PermissionDenied
     return render(request, 'plugins/ifx/reports.html')
 
 @login_required
@@ -45,6 +51,8 @@ def run_report(request):
     '''
     Run the report
     '''
+    if not request.user.is_superuser:
+        raise PermissionDenied
     if request.method == 'POST':
         return ifxreport_run_report(request)
     # pylint: disable=broad-exception-raised
@@ -55,6 +63,8 @@ def billing_month(request):
     '''
     Show billing month page
     '''
+    if not request.user.is_superuser:
+        raise PermissionDenied
     return render(request, 'plugins/ifx/calculate_billing_month.html')
 
 @login_required
@@ -62,10 +72,22 @@ def billing_records(request):
     '''
     Show billing record list
     '''
+    if not request.user.is_superuser:
+        raise PermissionDenied
     return render(request, 'plugins/ifx/billing_records.html')
 
 @login_required
+def get_billing_record_list(request):
+    '''
+    Get billing record list
+    '''
+    if not request.user.is_superuser:
+        raise PermissionDenied
+    return ifxbilling_get_billing_record_list(request)
+
+@login_required
 @api_view(['POST',])
+@permission_classes([AdminPermissions,])
 def calculate_billing_month(request, year, month):
     '''
     Calculate billing month view
@@ -95,6 +117,7 @@ def calculate_billing_month(request, year, month):
 
 @login_required
 @api_view(['GET',])
+@permission_classes([AdminPermissions,])
 def get_product_usages(request):
     '''
     Get product usages
@@ -176,6 +199,7 @@ def get_product_usages(request):
 
 @login_required
 @api_view(('POST',))
+@permission_classes([AdminPermissions,])
 def send_billing_record_review_notification(request, year, month):
     '''
     Send billing record notification emails to organization contacts

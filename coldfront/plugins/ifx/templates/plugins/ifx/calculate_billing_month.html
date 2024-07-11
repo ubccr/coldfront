@@ -77,6 +77,9 @@ Calculate Billing Month
                         d.errors_only = $("#errors_only").is(":checked") ? 'true' : 'false'
                     },
                     dataSrc: '',
+                    error: function (jqXHR, status, error) {
+                        alert(status + ' ' + error)
+                    },
                 }
             })
 
@@ -96,7 +99,10 @@ Calculate Billing Month
                     method: 'POST',
                     headers: {'X-CSRFToken': '{{ csrf_token }}'},
                     data: data,
-                    dataType: "json"
+                    dataType: "json",
+                    error: function (jqXHR, status, error) {
+                        alert(status + ' ' + error)
+                    },
                 }).done(
                     function () { productUsagesTable.ajax.reload() }
                 )
