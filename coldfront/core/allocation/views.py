@@ -500,7 +500,7 @@ class AllocationTableView(LoginRequiredMixin, ListView):
                         pi_user_name=allocation.project.pi.username,
                         project_id=allocation.project.pk,
                         project_name=allocation.project.title,
-                        resource_name=allocation.resources.name,
+                        resource_name=resource.name,
                         allocation_status=allocation.status.name,
                         department_number=department_attribute.value,
                         itsd_ticket=itsd_ticket_attribute.value,
