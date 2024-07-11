@@ -474,6 +474,9 @@ class AllocationTableView(LoginRequiredMixin, ListView):
             if data.get('project'):
                 allocations = allocations.filter(
                     project__title__icontains=data.get('project'))
+            if data.get('status'):
+                allocations = allocations.filter(
+                    status__in=data.get('status'))
 
             for allocation in allocations:
                 department_type = AllocationAttributeType.objects.get(name="department_number")
