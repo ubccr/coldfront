@@ -171,7 +171,7 @@ Project Detail
           <tr>
             <th scope="col">Resource Name</th>
             <th scope="col">User Count</th>
-            <th scope="col">Used</th>
+            <th scope="col">Quarterly Usage (CPU Hours)</th>
             <th scope="col" class="nosort">Actions</th>
           </tr>
         </thead>
@@ -224,7 +224,7 @@ Project Detail
             <th scope="col">Resource Type</th>
             <th scope="col">Path</th>
             <th scope="col">User Count</th>
-            <th scope="col">Total Space (TB)</th>
+            <th scope="col">Total</th>
             <th scope="col">Status</th>
             <th scope="col">Created</th>
             <th scope="col">Deactivated</th>
@@ -242,7 +242,13 @@ Project Detail
             <td>{{ allocation.get_parent_resource.resource_type.name }}</td>
             <td>{{ allocation.path }}</td>
             <td>{{ allocation.allocationuser_set.count }}</td>
-            <td>{{ allocation.size|floatformat:1 }}</td>
+            <td>{{ allocation.size|floatformat:1 }}
+            {% if allocation.get_parent_resource.resource_type.name == 'Cluster' %}
+	    CPU Hours
+            {% else %}
+	    TB
+            {% endif %}
+	    </td>
 
             {% if allocation.status.name in 'New,In Progress,On Hold' %}
               <td class="text-success">Requested</td>
