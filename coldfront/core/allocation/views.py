@@ -420,7 +420,7 @@ class AllocationListItem:
     id: int
     project_id: int
     project_name: str
-    allocation_name: str
+    resource_name: str
     department_number: str
     allocation_status: str
     pi_last_name: str
@@ -479,8 +479,8 @@ class AllocationTableView(LoginRequiredMixin, ListView):
                 department_type = AllocationAttributeType.objects.get(name="department_number")
                 department_attribute = AllocationAttribute.objects.get(allocation=allocation, allocation_attribute_type=department_type)
                 
-                storage_name_type = AllocationAttributeType.objects.get(name="storage_name")
-                storage_name_attribute = AllocationAttribute.objects.get(allocation=allocation, allocation_attribute_type=storage_name_type)
+                # storage_name_type = AllocationAttributeType.objects.get(name="storage_name")
+                # storage_name_attribute = AllocationAttribute.objects.get(allocation=allocation, allocation_attribute_type=storage_name_type)
 
                 itsd_ticket_type = AllocationAttributeType.objects.get(name="storage_ticket")
                 itsd_ticket_attribute = AllocationAttribute.objects.get(allocation=allocation, allocation_attribute_type=itsd_ticket_type)
