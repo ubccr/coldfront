@@ -448,22 +448,7 @@ class AllocationTableView(LoginRequiredMixin, ListView):
         view_list: List[AllocationListItem] = []
 
         allocation_search_form = AllocationSearchForm(self.request.GET)
-        # allocation_form = AllocationForm(self.request.GET)
         
-        #         {% for allocation in allocation_list %}
-        #   <tr>
-        #     <td><a href="/allocation/{{allocation.id}}/">{{ allocation.id }}</a></td>
-        #     <td class="text-nowrap"><a 
-        #         href="/project/{{allocation.project.id}}/">{{ allocation.project.title|truncatechars:50 }}</a></td>
-        #     <td class="text-nowrap">{{allocation.project.pi.first_name}} {{allocation.project.pi.last_name}}
-        #       ({{allocation.project.pi.username}})</td>
-        #       <!-- Replace with new columns -->
-        #     <td class="text-nowrap">{{ allocation.get_parent_resource }}</td>
-        #     <td class="text-nowrap">{{ allocation.status.name }}</td>
-        #     <td class="text-nowrap">{{ allocation.end_date }}</td>
-        #     <td class="text-nowrap">{{ allocation.department_number }}</td>
-        #   </tr>
-        # {% endfor %}
 
         if allocation_search_form.is_valid():
             data = allocation_search_form.cleaned_data
@@ -474,9 +459,6 @@ class AllocationTableView(LoginRequiredMixin, ListView):
             if data.get('project'):
                 allocations = allocations.filter(
                     project__title__icontains=data.get('project'))
-            # if data.get('status'):
-            #     allocations = allocations.filter(
-            #         status__in=data.get('status'))
 
             for allocation in allocations:
                 department_type = AllocationAttributeType.objects.get(name="department_number")
