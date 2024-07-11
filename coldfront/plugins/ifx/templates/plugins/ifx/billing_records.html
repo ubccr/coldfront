@@ -19,6 +19,15 @@ Billing Records
         margin: 0 0.5em 0 0;
         float: right;
     }
+    #notification-errors {
+        font-size: 10pt;
+        color: red;
+    }
+    .result-header {
+        font-size: 12pt;
+        font-weight: bold;
+        margin: 1em 0 0.5em 0;
+    }
     label {
         margin: 0 0 0 1em;
     }
@@ -39,6 +48,15 @@ Billing Records
                     title: 'Working...'
                 }
             )
+            var notificationDialog = $('#notification').dialog(
+                {
+                    autoOpen: false,
+                    height: 300,
+                    width: 500,
+                    modal: true,
+                    title: 'Notify Lab Managers',
+                }
+            )
             $(document)
                 .ajaxStart(function () {
                     dialog.dialog("open");
@@ -47,13 +65,59 @@ Billing Records
                     dialog.dialog("close");
                 });
 
-            $("#billingRecordReload").click((ev) => {
+            $("#billing-record-reload").click((ev) => {
                 ev.preventDefault()
                 if (!$("#year").val() || !$("#month").val()) {
                     alert("Year and Month are required")
                     return
                 } else {
                     billingRecordsTable.ajax.reload()
+                }
+            })
+            $("#start-notification").click((ev) => {
+                ev.preventDefault()
+                notificationDialog.dialog("open")
+            })
+            $("#send-notification").click((ev) => {
+                ev.preventDefault()
+                $("#notification-errors").html("")
+                $("#notification-successes").html("")
+                const year = $("#year").val()
+                const month = $("#month").val()
+                if (!year || !month) {
+                    alert("Year and Month are required")
+                } else {
+                    $.ajax({
+                        contentType: 'application/json',
+                        url: `/ifx/api/send-billing-record-review-notification/${year}/${month}/`,
+                        method: 'POST',
+                        headers: {'X-CSRFToken': '{{ csrf_token }}'},
+                        data: "{}",
+                        success: (data) => {
+                            // Use jquery to compose a table of errors and successes
+                            if (data.errors) {
+                                var errorBlock = $("<div></div>")
+                                errorBlock.append('<div class="result-header">Errors</div>')
+                                var table = $("<table></table>")
+                                $.each(data.errors, (i, item) => {
+                                    Object.keys(item).forEach((key) => {
+                                        table.append(`<tr><td>${item[key]}</td></tr>`)
+                                    })
+                                })
+                                errorBlock.append(table)
+                                $("#notification-errors").html(errorBlock)
+                            }
+                            if (data.successes) {
+                                var successBlock = $("<div></div>")
+                                successBlock.append('<div class="result-header">Successes</div>')
+                                var table = $("<table></table>")
+                                const count = data.successes.length
+                                table.append(`<tr><td>${count} organizations successfully notified.</td></tr>`)
+                                successBlock.append(table)
+                                $("#notification-successes").html(successBlock)
+                            }
+                        }
+                    })
                 }
             })
 
@@ -81,6 +145,8 @@ Billing Records
                 },
                 {% comment %}
                 footerCallback: function (row, data, start, end, display) {
+                    // THIS DOES NOT WORK because the ajax call is not done yet
+                    // Leaving it here, because I'd like to find a fix
                     let api = this.api();
 
                     // Remove the formatting to get integer data for summation
@@ -105,7 +171,7 @@ Billing Records
                         .reduce((a, b) => intVal(a) + intVal(b), 0);
 
                     // Update footer
-                    console.log(total, pageTotal)
+
                     if (api.column(4).footer()) {
                         api.column(4).footer().innerHTML =
                             '$' + pageTotal + ' ( $' + total + ' total)';
@@ -123,6 +189,17 @@ Billing Records
             <div id="progressbar"></div>
         </p>
     </div>
+    <div id="notification" style="display: none;">
+        <div style="position: relative; float: left;">
+            Send notification to lab managers
+        </div>
+        <div style="position: relative; float: right;">
+            <input type="submit" id="send-notification" value="Go"/>
+        </div>
+        <div style="clear: both;"></div>
+        <div id="notification-errors"></div>
+        <div id="notification-successes"></div>
+    </div>
     <div style="margin: 1em; width: 100%;">
         <div style="position: relative; float: left;">
             <label for="year">Year</label>
@@ -131,7 +208,10 @@ Billing Records
             <input type="text" id="month" name="month" value="5"/>
         </div>
         <div style="position: relative; float: left; margin-left: 1em;">
-            <input id="billingRecordReload" type="submit" value="Reload Data"></input>
+            <input id="billing-record-reload" type="submit" value="Reload Data"></input>
+        </div>
+        <div style="position: relative; float: right; margin-left: 1em;">
+            <input id="start-notification" type="submit" value="Notify Lab Managers"></input>
         </div>
         <div style="clear: both;"></div>
     </div>

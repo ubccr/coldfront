@@ -5,15 +5,19 @@ Views
 '''
 import logging
 import json
+import re
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.db import connection
+from django.conf import settings
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from ifxreport.views import run_report as ifxreport_run_report
 from ifxbilling import models as ifxbilling_models
+from ifxbilling.calculator import getClassFromName
+from ifxuser import models as ifxuser_models
 from coldfront.plugins.ifx.calculator import NewColdfrontBillingCalculator
 
 logger = logging.getLogger(__name__)
@@ -169,3 +173,63 @@ def get_product_usages(request):
     return Response(
         data=results
     )
+
+@login_required
+@api_view(('POST',))
+def send_billing_record_review_notification(request, year, month):
+    '''
+    Send billing record notification emails to organization contacts
+    '''
+    ifxorg_ids = []
+    test = []
+    try:
+        data = request.data
+        if 'ifxorg_ids' in data:
+            # get ifxorg_ids are valid
+            r = re.compile('^IFXORG[0-9A-Z]{10}')
+            ifxorg_ids = [id for id in data['ifxorg_ids'] if r.match(id)]
+            if len(ifxorg_ids) is not len(data['ifxorg_ids']):
+                return Response(data={'error': f'Some of the ifxorg_ids you passed in are invalid. valid ifxorg_ids included: {ifxorg_ids}'}, status=status.HTTP_400_BAD_REQUEST)
+            logger.info(ifxorg_ids)
+        if 'test' in data:
+            test = data['test']
+    except json.JSONDecodeError as e:
+        logger.exception(e)
+        return Response(data={'error': 'Cannot parse request body'}, status=status.HTTP_400_BAD_REQUEST)
+    logger.info('Summarizing billing records for month %d of year %d, with ifxorg_ids %s', month, year, ifxorg_ids)
+
+    facility = ifxbilling_models.Facility.objects.first()
+    organizations = []
+    if ifxorg_ids:
+        for ifxorg_id in ifxorg_ids:
+            try:
+                organizations.append(ifxuser_models.Organization.objects.get(ifxorg=ifxorg_id))
+            except ifxuser_models.Organization.DoesNotExist:
+                return Response(data={
+                    'error': f'Organization with ifxorg number {ifxorg_id} cannot be found'
+                }, status=status.HTTP_400_BAD_REQUEST)
+    logger.debug(f'Processing organizations {organizations}')
+    try:
+        breg_class_name = 'ifxbilling.notification.BillingRecordEmailGenerator'
+        if hasattr(settings, 'BILLING_RECORD_EMAIL_GENERATOR_CLASS') and settings.BILLING_RECORD_EMAIL_GENERATOR_CLASS:
+            app_name = settings.IFX_APP['name']
+            breg_class_name = f'{app_name}.{settings.BILLING_RECORD_EMAIL_GENERATOR_CLASS}'
+        breg_class = getClassFromName(breg_class_name)
+        gen = breg_class(year, month, facility, test)
+        successes, errors, nobrs = gen.send_billing_record_emails(organizations)
+        logger.info(f'Billing record email successes: {", ".join(sorted([s.name for s in successes]))}')
+        logger.info(f'Orgs with no billing records for {month}/{year}: {", ".join(sorted([n.name for n in nobrs]))}')
+        for org_name, error_messages in errors.items():
+            logger.error(f'Email errors for {org_name}: {", ".join(error_messages)} ')
+        return Response(
+            data={
+                'successes': [s.name for s in successes],
+                'errors': errors,
+                'nobrs': [n.name for n in nobrs]
+            },
+            status=status.HTTP_200_OK
+        )
+    # pylint: disable=broad-except
+    except Exception as e:
+        logger.exception(e)
+        return Response(data={ 'error': f'Billing record summary failed {str(e)}' }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
