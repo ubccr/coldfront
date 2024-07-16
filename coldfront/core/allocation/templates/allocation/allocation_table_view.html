@@ -92,7 +92,7 @@ Allocation View
       <tbody>
         {% for allocation in allocation_list %}
           <tr>
-            <td><a href="/qumulo/allocation/{{pk}}">{{ allocation.id }}</a></td>
+            <td><a href="/qumulo/allocation/{{allocation.pk}}">{{ allocation.id }}</a></td>
             <td class="text-nowrap"><a 
                 href="/project/{{allocation.project_id}}/">{{ allocation.project_name|truncatechars:50 }}</a></td>
             <td class="text-nowrap">{{allocation.pi_first_name}} {{allocation.pi_last_name}}
