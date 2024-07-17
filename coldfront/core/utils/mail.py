@@ -2,7 +2,7 @@ import logging
 from smtplib import SMTPException
 
 from django.conf import settings
-from django.core.mail import EmailMessage, send_mail
+from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 from django.urls import reverse
 
@@ -22,6 +22,7 @@ EMAIL_OPT_OUT_INSTRUCTION_URL = import_from_settings('EMAIL_OPT_OUT_INSTRUCTION_
 EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
 EMAIL_CENTER_NAME = import_from_settings('CENTER_NAME')
 CENTER_BASE_URL = import_from_settings('CENTER_BASE_URL')
+
 
 def send_email(subject, body, sender, receiver_list, cc=[]):
     """Helper function for sending emails
@@ -43,57 +44,42 @@ def send_email(subject, body, sender, receiver_list, cc=[]):
 
     if settings.DEBUG:
         receiver_list = EMAIL_DEVELOPMENT_EMAIL_LIST
-
-    if cc and settings.DEBUG:
-        cc = EMAIL_DEVELOPMENT_EMAIL_LIST
+        if cc:
+            cc = EMAIL_DEVELOPMENT_EMAIL_LIST
 
     try:
-        if cc:
-            email = EmailMessage(
-                subject,
-                body,
-                sender,
-                receiver_list,
-                cc=cc)
-            email.send(fail_silently=False)
-        else:
-            send_mail(subject, body, sender,
-                      receiver_list, fail_silently=False)
+        email = EmailMessage(subject, body, sender, receiver_list, cc=cc)
+        email.send(fail_silently=False)
     except SMTPException:
         logger.error('Failed to send email to %s from %s with subject %s',
-                     sender, ','.join(receiver_list), subject)
+                     ','.join(receiver_list), sender, subject)
 
 
-def send_email_template(subject, template_name, template_context, sender, receiver_list):
+def send_email_template(
+    subject, template_name, template_context, sender, receiver_list, cc=[]
+):
     """Helper function for sending emails from a template
     """
-    if not EMAIL_ENABLED:
-        return
-
     body = render_to_string(template_name, template_context)
+    return send_email(subject, body, sender, receiver_list, cc=cc)
 
-    return send_email(subject, body, sender, receiver_list)
 
-def email_template_context():
+def email_template_context(extra_context=None):
     """Basic email template context used as base for all templates
     """
-    return {
+    context = {
         'center_name': EMAIL_CENTER_NAME,
         'signature': EMAIL_SIGNATURE,
         'opt_out_instruction_url': EMAIL_OPT_OUT_INSTRUCTION_URL
     }
+    if extra_context:
+        context.update(extra_context)
+    return context
+
 
 def build_link(url_path, domain_url=''):
-    if not domain_url:
-        domain_url = CENTER_BASE_URL
+    domain_url = domain_url or CENTER_BASE_URL
     return f'{domain_url}{url_path}'
-
-def send_admin_email_template(subject, template_name, template_context):
-    """Helper function for sending admin emails using a template
-    """
-    send_email_template(
-        subject, template_name, template_context, EMAIL_SENDER, [EMAIL_TICKET_SYSTEM_ADDRESS,]
-    )
 
 
 def send_allocation_admin_email(
@@ -102,26 +88,29 @@ def send_allocation_admin_email(
 ):
     """Send allocation admin emails
     """
-    if not url_path:
-        url_path = reverse('allocation-request-list')
+    url_path = url_path or reverse('allocation-request-list')
 
     url = build_link(url_path, domain_url=domain_url)
-    pi_name = f'{allocation_obj.project.pi.first_name} {allocation_obj.project.pi.last_name}'
+    pi = allocation_obj.project.pi
+    pi_name = f'{pi.first_name} {pi.last_name}'
     resource_name = allocation_obj.get_parent_resource
 
-    ctx = email_template_context()
+    ctx = email_template_context(other_vars)
     ctx['pi_name'] = pi_name
-    ctx['pi_username'] = f'{allocation_obj.project.pi.username}'
+    ctx['pi_username'] = f'{pi.username}'
     ctx['resource'] = resource_name
     ctx['url'] = url
-    if other_vars:
-        for k, v in other_vars.items():
-            ctx[k] = v
 
-    send_admin_email_template(
+    cc = []
+    if ctx.get('user'):
+        cc.append(ctx.get('user').email)
+    send_email_template(
         f'{subject}: {pi_name} - {resource_name}',
         template_name,
         ctx,
+        EMAIL_SENDER,
+        [EMAIL_TICKET_SYSTEM_ADDRESS,],
+        cc=cc
     )
 
 def send_allocation_customer_email(
@@ -130,8 +119,7 @@ def send_allocation_customer_email(
 ):
     """Send allocation customer emails
     """
-    if not url_path:
-        url_path = reverse('allocation-detail', kwargs={'pk': allocation_obj.pk})
+    url_path = url_path or reverse('allocation-detail', kwargs={'pk': allocation_obj.pk})
 
     url = build_link(url_path, domain_url=domain_url)
     ctx = email_template_context()
@@ -143,13 +131,10 @@ def send_allocation_customer_email(
     for allocation_user in allocation_users:
         try:
             if allocation_user.allocation.project.projectuser_set.get(
-                                    user=allocation_user.user).enable_notifications:
+            user=allocation_user.user).enable_notifications:
                 email_receiver_list.append(allocation_user.user.email)
         except:
             pass
-        # if allocation_user.allocation.project.projectuser_set.get(
-        #                         user=allocation_user.user).enable_notifications:
-        #     email_receiver_list.append(allocation_user.user.email)
 
     send_email_template(
         subject,

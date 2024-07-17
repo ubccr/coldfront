@@ -12,7 +12,7 @@ from coldfront.core.allocation.models import (
     AllocationAttributeChangeRequest,
 )
 from coldfront.core.utils.common import import_from_settings
-from coldfront.core.utils.mail import send_email_template, send_admin_email_template
+from coldfront.core.utils.mail import send_email_template
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
