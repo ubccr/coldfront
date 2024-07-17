@@ -958,7 +958,7 @@ def update_allocation(sender, **kwargs):
     if not allocation_data:
         raise ValueError('No matching allocation found for the given data.')
     subdir_type = AllocationAttributeType.objects.get(name='Subdirectory')
-    allocation.allocationattribute_set.create(
+    allocation.allocationattribute_set.get_or_create(
         allocation_attribute_type_id=subdir_type.pk,
         value=allocation_data[0]['path']
     )

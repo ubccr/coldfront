@@ -176,23 +176,21 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         for a in invalid_attributes:
             attributes_with_usage.remove(a)
 
-        user_sync_task = None
+        sync_task_name = None
+        user_sync_dt = None
         if 'django_q' in settings.INSTALLED_APPS:
             # get last successful runs of djangoq task responsible for allocationuser data pull
             if allocation_obj.get_parent_resource.resource_type.name == "Storage":
                 sync_task_name = "pull_sf_push_cf"
-                user_sync_task = Task.objects.filter(
-                    func__contains=sync_task_name, success=True
-                ).order_by('started').last()
             elif allocation_obj.get_parent_resource.resource_type.name == "Cluster":
                 sync_task_name = "xdmod_usage"
+            if sync_task_name:
                 user_sync_task = Task.objects.filter(
                     func__contains=sync_task_name, success=True
                 ).order_by('started').last()
+                if user_sync_task:
+                    user_sync_dt = user_sync_task.started
 
-            user_sync_dt = None if not user_sync_task else user_sync_task.started
-        else:
-            user_sync_dt = None
         context['user_sync_dt'] = user_sync_dt
 
         if 'ifxbilling' in settings.INSTALLED_APPS:
@@ -387,7 +385,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             try:
                 allocation_activate.send(sender=self.__class__, allocation_pk=allocation_obj.pk)
             except:
-                messages.error("Allocation activated, but certain parts of the post-creation process were unsuccessful. Please contact the administrator or check the logs for more information.")
+                messages.error(request, "Allocation activated, but certain parts of the post-creation process were unsuccessful. Please contact the administrator or check the logs for more information.")
 
             for allocation_user in allocation_users:
                 allocation_activate_user.send(
@@ -2277,12 +2275,11 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             a for a in attribute_changes_to_make
             if a[0].allocation_attribute_type.name == 'Storage Quota (TB)'
         ]
-        # if requested resource is on NESE, add to vars
-        nese = bool(allocation_obj.resources.filter(name__contains="nesetape"))
 
         email_vars = {
             'justification': justification,
             'user': self.request.user,
+            'nese': nese,
         }
         if quantity:
             quantity_num = int(float(quantity[0][1]))
@@ -2293,7 +2290,6 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 current_size = round(current_size, -1)
                 difference = round(difference, -1)
             email_vars['quantity'] = quantity_num
-            email_vars['nese'] = nese
             email_vars['current_size'] = current_size
             email_vars['difference'] = difference
             email_vars['used_percentage'] = used_percentage
