@@ -76,6 +76,6 @@ LOGGING = {
         'coldfront': {
             'handlers': ['key-events'],
             'level': 'INFO',
-        }
+        },
     },
 }
