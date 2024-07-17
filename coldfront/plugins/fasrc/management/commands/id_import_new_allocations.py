@@ -83,7 +83,7 @@ class Command(BaseCommand):
                     and lab_path in i['path'] and i['group_name'] == lab_name
                 ]
                 if not lab_usage_entries:
-                    logger.info("No starfish usage data found for", lab_name, lab_server, lab_path)
+                    logger.info("No starfish usage data found for %s %s %s", lab_name, lab_server, lab_path)
                     continue
 
                 allocation, created = project.allocation_set.get_or_create(
@@ -106,16 +106,16 @@ class Command(BaseCommand):
                         value=lab_path
                     )
                     print(f'allocation created: {allocation_str}')
+                    logger.info('allocation created: %s', allocation_str)
                     allocation.save()
                     command_report['allocations_added'].append(allocation_str)
-                    row = {
+                    row = pd.DataFrame({
                         'project_title': lab_name,
                         'server': lab_server,
                         'path': lab_path,
                         'date': datetime.now()
-                    }
-
-                    added_allocations_df = added_allocations_df.append(row, ignore_index=True)
+                    }, index=[0])
+                    added_allocations_df = pd.concat([added_allocations_df, pd.DataFrame(row)], ignore_index=True)
                 else:
                     command_report['allocations_existing'].append(allocation_str)
                     continue
