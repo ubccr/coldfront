@@ -149,7 +149,7 @@ Allocation View
     $form.find('input:radio, input:checkbox').removeAttr('checked').removeAttr('selected');
   };
 
-  $("#expand_button").click(function () {
+  $("#expand_button").click(() => {
     $('#collapseOne').collapse();
     icon = $("#plus_minus");
     icon.toggleClass("fa-plus fa-minus");
