@@ -1,0 +1,166 @@
+{% extends "common/base.html" %}
+{% load common_tags %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}
+Calculate Billing Month
+{% endblock %}
+
+
+{% block content %}
+<style>
+    .dataTables_filter {
+        display: inline-flex;
+        margin: 0 0.5em 0 0;
+    }
+    .dataTables_length {
+        display: inline-flex;
+        margin: 0 0.5em 0 0;
+        float: right;
+    }
+    label {
+        margin: 0 0 0 1em;
+    }
+</style>
+<script>
+    (function($){
+        $(document).ready(function(){
+
+            $( "#progressbar" ).progressbar({
+                value: false
+            });
+            var dialog = $('#loading').dialog(
+                {
+                    autoOpen: false,
+                    height: 200,
+                    width: 300,
+                    modal: true,
+                    title: 'Working...'
+                }
+            )
+            $(document)
+                .ajaxStart(function () {
+                    dialog.dialog("open");
+                })
+                .ajaxStop(function () {
+                    dialog.dialog("close");
+                });
+
+            $("#productUsageReload").click((ev) => {
+                ev.preventDefault()
+                if (!$("#year").val() || !$("#month").val()) {
+                    alert("Year and Month are required")
+                    return
+                } else {
+                    productUsagesTable.ajax.reload()
+                }
+            })
+
+            var productUsagesTable = $("#product-usages").DataTable({
+                dom: '<fl>tp',
+                columns: [
+                    {data: 'id', width: '100px'},
+                    {data: 'full_name', width: '200px'},
+                    {data: 'organization', width: '200px'},
+                    {data: 'product_name', width: '100px'},
+                    {data: 'description', width: '500px'},
+                    {data: 'error_message', width: '400px'},
+                ],
+                order: [[ 2, "asc" ], [ 1, "asc" ]],
+                ajax: {
+                    url: '/ifx/api/get-product-usages/',
+                    type: 'GET',
+                    data: function (d)  {
+                        d.year = $("#year").val()
+                        d.month = $("#month").val()
+                        d.errors_only = $("#errors_only").is(":checked") ? 'true' : 'false'
+                    },
+                    dataSrc: '',
+                    error: function (jqXHR, status, error) {
+                        alert(status + ' ' + error)
+                    },
+                }
+            })
+
+            $("#calculate").click((ev) => {
+                ev.preventDefault()
+
+                // Get the year and month from the picker
+                const year = $("#year").val()
+                const month = $("#month").val()
+                const data = JSON.stringify({
+                    'recalculate': $("#recalculate").is(":checked") ? 'true' : 'false'
+                })
+
+                $.ajax({
+                    contentType: 'application/json',
+                    url: `/ifx/api/calculate-billing-month/${year}/${month}/`,
+                    method: 'POST',
+                    headers: {'X-CSRFToken': '{{ csrf_token }}'},
+                    data: data,
+                    dataType: "json",
+                    error: function (jqXHR, status, error) {
+                        alert(status + ' ' + error)
+                    },
+                }).done(
+                    function () { productUsagesTable.ajax.reload() }
+                )
+            })
+        })
+    })(jQuery)
+
+</script>
+<div style="font-size: 10pt;">
+    <div id="loading">
+        <p>
+            <div id="progressbar"></div>
+        </p>
+    </div>
+    <div style="margin: 1em; width: 100%;">
+        <div style="position: relative; float: left;">
+            <label for="year">Year</label>
+            <input type="text" id="year" name="year" value="2024"/>
+            <label for="month">Month</label>
+            <input type="text" id="month" name="month" value="5"/>
+            <label for="errors_only">Errors Only</label>
+            <input type="checkbox" id="errors_only" name="errors_only"/>
+        </div>
+        <div style="position: relative; float: left; margin-left: 1em;">
+            <input id="productUsageReload" type="submit" value="Reload Data"></input>
+        </div>
+        <div style="position: relative; float: right;">
+            <div style="position: relative; float: left">
+                <label for="recalculate">Recalculate</label>
+                <input type="checkbox" id="recalculate" name="recalculate" value="false"/>
+            </div>
+            <div style="position: relative; float: left; margin-left: 1em;">
+                <form method="post">
+                    {% csrf_token %}
+                    <input id="calculate" style="color: white; background-color: red;" type="submit" value="Calculate Billing Month"></input>
+                </form>
+            </div>
+            <div style="clear: both;"></div>
+        </div>
+        <div style="clear: both;"></div>
+    </div>
+    <hr/>
+    <div style="margin: 1em;">
+        <table id="product-usages" class="display" style="width: 100%" cellpadding="5px">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>User</th>
+                    <th>Organization</th>
+                    <th>Product</th>
+                    <th>Description</th>
+                    <th>Processing</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

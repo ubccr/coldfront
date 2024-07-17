@@ -10,7 +10,7 @@ def user_is_admin(user):
     '''
     Determine if user is an administrator
     '''
-    return user.is_staff
+    return user.is_superuser or user.is_staff
 
 
 class AdminPermissions(permissions.IsAuthenticated):
