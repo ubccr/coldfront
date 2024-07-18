@@ -450,7 +450,8 @@ class AllocationTableView(LoginRequiredMixin, ListView):
         allocation_search_form = AllocationSearchForm(self.request.GET)
         
 
-        if allocation_search_form.is_valid():
+        if !allocation_search_form.is_valid():
+            return view_list
             data = allocation_search_form.cleaned_data
             resource = Resource.objects.get(name="Storage2")
             allocations = Allocation.objects.filter(resources=resource)
