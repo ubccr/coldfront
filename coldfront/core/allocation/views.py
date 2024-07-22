@@ -57,7 +57,8 @@ from coldfront.core.allocation.signals import (allocation_new,
 from coldfront.core.allocation.utils import (generate_guauge_data_from_usage,
                                              get_user_resources)
 from coldfront.core.project.models import (Project, ProjectUser, ProjectPermission,
-                                           ProjectUserStatusChoice)
+                                           ProjectUserStatusChoice, ProjectAttribute, ProjectAttributeUsage)
+from coldfront.core.project.views import (ProjectDetailView)
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_allocation_admin_email, send_allocation_customer_email
@@ -208,6 +209,29 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             allocation_obj.is_locked = form_data.get('is_locked')
             allocation_obj.is_changeable = form_data.get('is_changeable')
             allocation_obj.status = form_data.get('status')
+
+        # Simula la creazione della vista per ottenere i dati sugli attributi
+        project_view = ProjectDetailView()
+        project_view.kwargs = {'pk': allocation_obj.project.pk}
+        allocations_data = ProjectDetailView.get_allocation_attributes_usage(request, allocation_obj.project.pk)
+
+        # Use allocations_data as needed
+        total_values = allocations_data['total_values']
+        print(f"Total values of allocation attributes: {total_values}")
+
+        # Update the project's attributes usage
+        project_obj = allocation_obj.project
+        for attribute_name, total_value in total_values.items():
+            try:
+                project_attribute = project_obj.projectattribute_set.get(proj_attr_type__name=attribute_name)
+                project_attribute_usage = project_attribute.projectattributeusage
+                project_attribute_usage.value = total_value
+                project_attribute_usage.save()
+            except ProjectAttribute.DoesNotExist:
+                logger.error(f"Project attribute '{attribute_name}' does not exist.")
+            except ProjectAttributeUsage.DoesNotExist:
+                logger.error(f"Project attribute usage for '{attribute_name}' does not exist.")
+
 
         if 'approve' in action:
             allocation_obj.status = AllocationStatusChoice.objects.get(name='Active')

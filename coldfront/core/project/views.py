@@ -95,6 +95,81 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             self.request, 'You do not have permission to view the previous page.')
         return False
 
+    def get_project_attributes_usage(request, pk):
+        project_obj = get_object_or_404(Project, pk=pk)
+
+        if request.user.is_superuser:
+            attributes_with_usage = [
+                attribute for attribute in project_obj.projectattribute_set.all()
+                if hasattr(attribute, 'projectattributeusage')
+            ]
+        else:
+            attributes_with_usage = [
+                attribute for attribute in project_obj.projectattribute_set.filter(proj_attr_type__is_private=False)
+                if hasattr(attribute, 'projectattributeusage')
+            ]
+
+        allocations_data = []
+        invalid_attributes = []
+
+        for attribute in attributes_with_usage:
+            try:
+                allocations_data.append({
+                    'name': attribute.proj_attr_type.name,
+                    'value': float(attribute.value),
+                    'usage': float(attribute.projectattributeusage.value)
+                })
+            except ValueError:
+                logger.error("Attribute '%s' is not an int but has a usage", attribute.proj_attr_type.name)
+                invalid_attributes.append(attribute)
+
+        for a in invalid_attributes:
+            attributes_with_usage.remove(a)
+
+        return {'allocations_data': allocations_data}
+
+    def get_allocation_attributes_usage(request, pk):
+        project_obj = get_object_or_404(Project, pk=pk)
+
+        allocations = Allocation.objects.filter(project=project_obj)
+        allocations_data = []
+        total_values = {}  # Dictionario per accumulare i valori totali per ciascun tipo di attributo
+
+        for allocation in allocations:
+            attributes_with_usage = [
+                attribute for attribute in allocation.allocationattribute_set.all()
+                if hasattr(attribute, 'allocationattributeusage')
+            ]
+            
+            invalid_attributes = []
+
+            for attribute in attributes_with_usage:
+                try:
+                    value = float(attribute.value)
+                    usage = float(attribute.allocationattributeusage.value)
+                    attribute_name = attribute.allocation_attribute_type.name
+
+                    allocations_data.append({
+                        'allocation': allocation.pk,
+                        'name': attribute_name,
+                        'value': value,
+                        'usage': usage
+                    })
+
+                    if attribute_name not in total_values:
+                        total_values[attribute_name] = 0.0
+                    total_values[attribute_name] += value
+
+                except ValueError:
+                    logger.error("Attribute '%s' is not an int but has a usage", attribute.allocation_attribute_type.name)
+                    invalid_attributes.append(attribute)
+
+            for a in invalid_attributes:
+                attributes_with_usage.remove(a)
+
+        return {'allocations_data': allocations_data, 'total_values': total_values}
+
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         # Can the user update the project?
