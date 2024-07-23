@@ -117,6 +117,26 @@ class AttributeTypeAdmin(admin.ModelAdmin):
 @admin.register(AllocationAttributeType)
 class AllocationAttributeTypeAdmin(admin.ModelAdmin):
     list_display = ('pk', 'name', 'attribute_type', 'has_usage', 'is_private')
+    fields = ('name', 'attribute_type', 'has_usage', 'get_usage_command', 'is_required', 'is_unique', 'is_private', 'is_changeable')
+    
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        if obj and obj.has_usage:
+            form.base_fields['get_usage_command'].required = True
+        else:
+            form.base_fields['get_usage_command'].required = False
+        return form
+
+    def get_fields(self, request, obj=None):
+        fields = super().get_fields(request, obj)
+        if obj and obj.has_usage:
+            return fields
+        return [field for field in fields if field != 'get_usage_command']
+
+    def save_model(self, request, obj, form, change):
+        if obj.has_usage and not obj.get_usage_command:
+            obj.get_usage_command = ''  # Assicurati che questo sia l'effetto desiderato
+        super().save_model(request, obj, form, change)
 
 
 class AllocationAttributeUsageInline(admin.TabularInline):

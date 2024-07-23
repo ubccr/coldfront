@@ -53,6 +53,7 @@ INSTALLED_APPS = [
 # Hack to fix fontawesome. Will be fixed in version 6
 sys.modules['fontawesome_free'] = __import__('fontawesome-free')
 INSTALLED_APPS += [
+    'django_celery_beat',
     'crispy_forms',
     'crispy_bootstrap4',
     'sslserver',
