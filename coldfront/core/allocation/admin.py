@@ -1,4 +1,5 @@
 import textwrap
+from django import forms
 
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
@@ -121,10 +122,15 @@ class AllocationAttributeTypeAdmin(admin.ModelAdmin):
     
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
-        if obj and obj.has_usage:
-            form.base_fields['get_usage_command'].required = True
+
+        # Usa dict.get per accedere in modo sicuro a 'get_usage_command'
+        get_usage_command_field = form.base_fields.get('get_usage_command')
+        if get_usage_command_field:
+            get_usage_command_field.widget = forms.TextInput(attrs={'size': 40})
         else:
-            form.base_fields['get_usage_command'].required = False
+            # Gestisci il caso in cui 'get_usage_command' non esiste
+            print("Il campo 'get_usage_command' non esiste per questo tipo di attributo di allocazione")
+
         return form
 
     def get_fields(self, request, obj=None):
