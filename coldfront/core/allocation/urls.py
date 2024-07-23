@@ -1,7 +1,6 @@
 from django.urls import path
 
 import coldfront.core.allocation.views as allocation_views
-#import coldfront_plugin_qumulo.views.AllocationTableView as plugin_views
 
 urlpatterns = [
     path('', allocation_views.AllocationListView.as_view(), name='allocation-list'),
