@@ -123,13 +123,10 @@ class AllocationAttributeTypeAdmin(admin.ModelAdmin):
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
 
-        # Usa dict.get per accedere in modo sicuro a 'get_usage_command'
+        # Using dict.get to access securely 'get_usage_command'
         get_usage_command_field = form.base_fields.get('get_usage_command')
         if get_usage_command_field:
             get_usage_command_field.widget = forms.TextInput(attrs={'size': 40})
-        else:
-            # Gestisci il caso in cui 'get_usage_command' non esiste
-            print("Il campo 'get_usage_command' non esiste per questo tipo di attributo di allocazione")
 
         return form
 
@@ -141,7 +138,7 @@ class AllocationAttributeTypeAdmin(admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         if obj.has_usage and not obj.get_usage_command:
-            obj.get_usage_command = ''  # Assicurati che questo sia l'effetto desiderato
+            obj.get_usage_command = ''  
         super().save_model(request, obj, form, change)
 
 
