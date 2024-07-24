@@ -3,7 +3,6 @@ import logging
 from datetime import date
 import json
 
-
 from dateutil.relativedelta import relativedelta
 from django import forms
 from django.contrib import messages
