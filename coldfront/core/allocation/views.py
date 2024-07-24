@@ -3,7 +3,6 @@ import logging
 from datetime import date
 import json
 
-from typing import List
 
 from dateutil.relativedelta import relativedelta
 from django import forms
@@ -416,7 +415,6 @@ class AllocationListView(LoginRequiredMixin, ListView):
 
         return context
     
-
 class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     form_class = AllocationForm
     template_name = 'allocation/allocation_create.html'
