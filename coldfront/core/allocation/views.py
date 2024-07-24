@@ -412,7 +412,7 @@ class AllocationListView(LoginRequiredMixin, ListView):
         except EmptyPage:
             allocation_list = paginator.page(paginator.num_pages)
 
-        return context
+        return context    
     
 class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     form_class = AllocationForm
