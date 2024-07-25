@@ -5,6 +5,7 @@ services:
   nginx:
     image: nginx:latest
     container_name: nginx
+    privileged: true
     ports:
       - "80:80"
       - "443:443"
@@ -31,6 +32,7 @@ services:
       DJANGO_SUPERUSER_USERNAME: "superuser"
       DJANGO_SUPERUSER_EMAIL: "mail@mail.example"
       DJANGO_SUPERUSER_PASSWORD: "password"
+      PLUGIN_SLURM: "True"
       SECRET_KEY: "klajsfkljasdfkljasdfkljadsfjklads"
       DATABASE_HOST: 'coldfront_database'
       DATABASE_PORT: 3306
@@ -39,24 +41,26 @@ services:
       DATABASE_PASSWORD: 'nomoresecret'
       DB_URL: "mysql://${DATABASE_USER}:${DATABASE_PASSWORD}@${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}"      
       REDIS_HOST: "coldfront_redis"
-      CENTER_NAME: "Sapienza Cloud"
-      CENTER_HELP_URL: "https://uniroma1.it/"
+      CENTER_NAME: "Blabla Cloud"
+      CENTER_HELP_URL: "https://blabla.it/"
       PROJECT_ROOT: "/opt"
     volumes:
       - static_volume:/opt/static_root
+      - /opt/coldfront/coldfront_dump:/opt/coldfront/coldfront_dump #this folder is used by script-export-coldfront
      #- ./coldfront.db:/opt/coldfront.db
     ports:
       - "8000:8000"
 
   coldfront_redis:
+    privileged: true
     image: redis:latest
     container_name: coldfront_redis
-    privileged: true
     command: redis-server
     ports:
       - "6379:6379"
 
   coldfront_worker:
+    privileged: true
     build:
       context: .
       dockerfile: Dockerfile
@@ -78,9 +82,6 @@ services:
 #    volumes:
 #      - ./coldfront.db:/opt/coldfront.db
    
-
-
-
 
   coldfront_database:
     privileged: true
