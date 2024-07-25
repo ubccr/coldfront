@@ -18,7 +18,6 @@ coldfront.db
 *.code-workspace
 .vscode
 db.json
-.env
 .devcontainer/*
 .bin/*
 docker-clean.bat
