@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  coldfront:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: coldfront
+    privileged: true
+#    entrypoint: /usr/src/app/entrypoint.sh
+    environment:
+      DEBUG: "True"
+      INITIAL_SETUP: "False"
+      LOAD_TEST_DATA: "False"
+      SECRET_KEY: "klajsfkljasdfkljasdfkljadsfjklads"
+      DATABASE_ENGINE: 'django.db.backends.mysql'
+      DATABASE_HOST: 'coldfront_database'
+      DATABASE_PORT: 3306
+      DATABASE_NAME: 'coldfront'
+      DATABASE_USER: 'coldfront'
+      DATABASE_PASSWORD: 'nomoresecret'
+      REDIS_HOST: "redis"
+      CENTER_NAME: "Sapienza Cloud"
+      CENTER_HELP_URL: "https://uniroma1.it/"
+#    volumes:
+#      - ./coldfront.db:/usr/src/app/coldfront.db
+    ports:
+      - "8000:8000"
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    privileged: true
+    command: redis-server
+    ports:
+      - "6379:6379"
+
+  coldfront_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: coldfront_worker
+    command: python /opt/manage.py qcluster
+    depends_on:
+      - redis
+    environment:
+      DEBUG: "True"
+      INITIAL_SETUP: "False"
+      LOAD_TEST_DATA: "False"
+      SECRET_KEY: "klajsfkljasdfkljasdfkljadsfjklads"
+      DATABASE_ENGINE: 'django.db.backends.mysql'
+      DATABASE_HOST: 'coldfront_database'
+      DATABASE_PORT: 3306
+      DATABASE_NAME: 'coldfront'
+      DATABASE_USER: 'coldfront'
+      DATABASE_PASSWORD: 'nomoresecret'
+      REDIS_HOST: "redis" 
+      Q_CLUSTER_NAME: "coldfront-worker"
+      Q_CLUSTER_TIMEOUT: "60"
+#    volumes:
+#      - ./coldfront.db:/usr/src/app/coldfront.db
+   
+
+
+
+
+  coldfront_database:
+    privileged: true
+    image: mariadb:latest
+    container_name: coldfront_database
+    environment:
+      MYSQL_ROOT_PASSWORD: nomoresecret
+      MYSQL_DATABASE: coldfront
+      MYSQL_USER: coldfront
+      MYSQL_PASSWORD: nomoresecret
+    volumes:
+      - mariadb_data:/var/lib/mysql
+   
+
+volumes:
+  mariadb_data:      

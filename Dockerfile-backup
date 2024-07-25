@@ -1,0 +1,18 @@
+FROM python:3.9-bullseye
+
+#RUN apt-get update \
+#    && apt-get install -y --no-install-recommends \
+#    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /usr/src/app
+RUN pip config --user set global.progress_bar off
+COPY requirements.txt ./
+RUN pip install --upgrade pip 
+RUN pip3 install -r requirements.txt
+
+COPY . .
+RUN pip3 install ./ 
+
+
+EXPOSE 8000
+CMD ["coldfront", "runserver", "0.0.0.0:8000"]

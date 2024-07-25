@@ -53,7 +53,6 @@ INSTALLED_APPS = [
 # Hack to fix fontawesome. Will be fixed in version 6
 sys.modules['fontawesome_free'] = __import__('fontawesome-free')
 INSTALLED_APPS += [
-    'django_celery_beat',
     'crispy_forms',
     'crispy_bootstrap4',
     'sslserver',
@@ -99,8 +98,14 @@ AUTHENTICATION_BACKENDS = []
 # Django Q
 #------------------------------------------------------------------------------
 Q_CLUSTER = {
+    'name': ENV.str('Q_CLUSTER_NAME', default='coldfront'),
     'timeout': ENV.int('Q_CLUSTER_TIMEOUT', default=120),
     'retry': ENV.int('Q_CLUSTER_RETRY', default=120),
+    'redis': {
+        'host': ENV.str('REDIS_HOST', default='127.0.0.1'),
+        'port': ENV.int('REDIS_PORT', default=6379),
+        'db': ENV.int('REDIS_DB', default=0),
+    },    
 }
 
 

@@ -1,5 +1,5 @@
 # Builder Image
-FROM python:3.9-slim-bullseye
+FROM python:3.9-slim-bullseye as builder
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -10,6 +10,8 @@ RUN apt-get update && \
         pkg-config && \
     apt-get clean -y
 
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
 WORKDIR /opt
 COPY . .
@@ -20,12 +22,24 @@ RUN pip3 install ./
 
 
 
+# Final Image
+FROM python:3.9-slim-bullseye
 
-COPY entrypoint2.sh /opt
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        netcat libmariadb3 mycli libpq5 && \
+    apt-get clean -y
 
+COPY --from=builder --chown=1001:0 /opt /opt
+
+
+COPY entrypoint.sh /opt/venv/bin
+
+ENV PATH="/opt/venv/bin:$PATH"
 ENV DJANGO_SETTINGS_MODULE="coldfront.config.database"
 
 EXPOSE 8000
 
+USER 1001
 
-CMD [ "/opt/entrypoint2.sh" ]
+CMD [ "entrypoint.sh" ]
