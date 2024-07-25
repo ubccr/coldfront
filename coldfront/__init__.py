@@ -3,7 +3,7 @@ import os
 import sys
 
 
-__version__ = '1.1.6'
+__version__ = '1.1.7'
 VERSION = __version__
 
 

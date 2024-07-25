@@ -1,35 +1,56 @@
 version: '3.8'
 
 services:
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SERVER_NAME: "coldfront.hpc"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/server.crt:/etc/nginx/ssl/server.crt
+      - ./nginx/server.key:/etc/nginx/ssl/server.key
+      - static_volume:/opt/static_root
+    depends_on:
+      - coldfront
+
   coldfront:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: coldfront
     privileged: true
-#    entrypoint: /usr/src/app/entrypoint.sh
     environment:
-      DEBUG: "True"
+      DEBUG: "False"
       INITIAL_SETUP: "False"
       LOAD_TEST_DATA: "False"
+      DJANGO_SUPERUSER_USERNAME: "superuser"
+      DJANGO_SUPERUSER_EMAIL: "mail@mail.example"
+      DJANGO_SUPERUSER_PASSWORD: "password"
       SECRET_KEY: "klajsfkljasdfkljasdfkljadsfjklads"
-      DATABASE_ENGINE: 'django.db.backends.mysql'
       DATABASE_HOST: 'coldfront_database'
       DATABASE_PORT: 3306
       DATABASE_NAME: 'coldfront'
       DATABASE_USER: 'coldfront'
       DATABASE_PASSWORD: 'nomoresecret'
-      REDIS_HOST: "redis"
+      DB_URL: "mysql://${DATABASE_USER}:${DATABASE_PASSWORD}@${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}"      
+      REDIS_HOST: "coldfront_redis"
       CENTER_NAME: "Sapienza Cloud"
       CENTER_HELP_URL: "https://uniroma1.it/"
-#    volumes:
-#      - ./coldfront.db:/usr/src/app/coldfront.db
+      PROJECT_ROOT: "/opt"
+    volumes:
+      - static_volume:/opt/static_root
+     #- ./coldfront.db:/opt/coldfront.db
     ports:
       - "8000:8000"
 
-  redis:
+  coldfront_redis:
     image: redis:latest
-    container_name: redis
+    container_name: coldfront_redis
     privileged: true
     command: redis-server
     ports:
@@ -40,25 +61,22 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: coldfront_worker
-    command: python /opt/manage.py qcluster
+    command: coldfront qcluster
     depends_on:
       - redis
     environment:
-      DEBUG: "True"
-      INITIAL_SETUP: "False"
-      LOAD_TEST_DATA: "False"
       SECRET_KEY: "klajsfkljasdfkljasdfkljadsfjklads"
-      DATABASE_ENGINE: 'django.db.backends.mysql'
       DATABASE_HOST: 'coldfront_database'
       DATABASE_PORT: 3306
       DATABASE_NAME: 'coldfront'
       DATABASE_USER: 'coldfront'
       DATABASE_PASSWORD: 'nomoresecret'
-      REDIS_HOST: "redis" 
-      Q_CLUSTER_NAME: "coldfront-worker"
+      DB_URL: "mysql://${DATABASE_USER}:${DATABASE_PASSWORD}@${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}"   
+      REDIS_HOST: "coldfront_redis" 
+      Q_CLUSTER_NAME: "coldfront"
       Q_CLUSTER_TIMEOUT: "60"
 #    volumes:
-#      - ./coldfront.db:/usr/src/app/coldfront.db
+#      - ./coldfront.db:/opt/coldfront.db
    
 
 
@@ -79,3 +97,4 @@ services:
 
 volumes:
   mariadb_data:      
+  static_volume:

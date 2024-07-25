@@ -51,6 +51,7 @@ setup(
         'future==1.0.0',
         'humanize==4.9.0',
         'idna==3.6',
+        'mysqlclient==2.1.1',
         'pyparsing==3.1.2',
         'python-dateutil==2.9.0.post0',
         'python-memcached==1.62',

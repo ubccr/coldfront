@@ -21,3 +21,4 @@ db.json
 .env
 .devcontainer/*
 .bin/*
+docker-clean.bat

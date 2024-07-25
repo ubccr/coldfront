@@ -1,31 +1,25 @@
-# Builder Image
 FROM python:3.9-slim-bullseye
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        build-essential \
-        default-libmysqlclient-dev \
-        libpq-dev \
-        git \
-        pkg-config && \
-    apt-get clean -y
 
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+    && apt-get install -y netcat \
+    && apt-get install -y default-libmysqlclient-dev build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip3 config --user set global.progress_bar off
 
 WORKDIR /opt
+COPY requirements.txt ./
+RUN pip3 install --upgrade pip
+RUN pip3 install -r /opt/requirements.txt
 COPY . .
-RUN pip3 install -r ./requirements.txt
-RUN python setup.py build
-RUN python setup.py install
-RUN pip3 install ./
-
-
-
-
-COPY entrypoint2.sh /opt
-
-ENV DJANGO_SETTINGS_MODULE="coldfront.config.database"
+RUN python3 setup.py build
+RUN python3 setup.py install
+RUN pip3 install /opt
+ENV DEBUG="True"
 
 EXPOSE 8000
 
 
-CMD [ "/opt/entrypoint2.sh" ]
+CMD [ "/opt/entrypoint.sh" ]
