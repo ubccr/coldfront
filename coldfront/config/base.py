@@ -21,7 +21,8 @@ ROOT_URLCONF = 'coldfront.config.urls'
 SECRET_KEY = ENV.str('SECRET_KEY', default='')
 if len(SECRET_KEY) == 0:
     SECRET_KEY = get_random_secret_key()
-
+    
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 #------------------------------------------------------------------------------
 # Locale settings
 #------------------------------------------------------------------------------

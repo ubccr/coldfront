@@ -27,7 +27,7 @@ services:
     privileged: true
     environment:
       DEBUG: "False"
-      INITIAL_SETUP: "False"
+      INITIAL_SETUP: "True"
       LOAD_TEST_DATA: "False"
       DJANGO_SUPERUSER_USERNAME: "superuser"
       DJANGO_SUPERUSER_EMAIL: "mail@mail.example"
