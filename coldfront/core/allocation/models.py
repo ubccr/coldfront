@@ -12,7 +12,7 @@ from django.utils.html import mark_safe
 from django.utils.module_loading import import_string
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
-
+import magic
 from coldfront.core.project.models import Project, ProjectPermission
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import import_from_settings
@@ -412,6 +412,8 @@ class AllocationAttributeType(TimeStampedModel):
     is_private = models.BooleanField(default=True)
     is_changeable = models.BooleanField(default=False)
     history = HistoricalRecords()
+    
+
 
     def __str__(self):
         return '%s' % (self.name)
@@ -433,7 +435,7 @@ class AllocationAttribute(TimeStampedModel):
     allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE)
     value = models.CharField(max_length=128)
     history = HistoricalRecords()
-
+    doc = models.FileField(default=False, upload_to='documents/')
     def save(self, *args, **kwargs):
         """ Saves the allocation attribute. """
 
@@ -466,7 +468,15 @@ class AllocationAttribute(TimeStampedModel):
             except ValueError:
                 raise ValidationError(
                     'Invalid Value "%s" for "%s". Date must be in format YYYY-MM-DD' % (self.value, self.allocation_attribute_type.name))
-
+        elif expected_value_type == "Upload":
+            if self.doc:
+                if self.doc.size > 10485760 :
+                    raise ValidationError("This document exceeds size limits")
+                content_mime_type = magic.Magic(mime=True)
+                # file_type = content_mime_type.from_buffer(self.doc.read())
+                if content_mime_type.from_buffer(self.doc.read()) != "application/pdf":
+                    raise ValidationError("Invalid file type")
+                self.doc.seek(0)
     def __str__(self):
         return '%s' % (self.allocation_attribute_type.name)
 

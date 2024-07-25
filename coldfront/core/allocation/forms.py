@@ -259,3 +259,5 @@ class AllocationAttributeCreateForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(AllocationAttributeCreateForm, self).__init__(*args, **kwargs) 
         self.fields['allocation_attribute_type'].queryset = self.fields['allocation_attribute_type'].queryset.order_by(Lower('name'))
+        self.fields['doc'].required = False 
+        self.fields['value'].required = False 

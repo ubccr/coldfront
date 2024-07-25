@@ -775,7 +775,7 @@ class AllocationAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Cre
     model = AllocationAttribute
     form_class = AllocationAttributeCreateForm
     template_name = 'allocation/allocation_allocationattribute_create.html'
-
+    enctype="multipart/form-data"
     def test_func(self):
         """ UserPassesTestMixin Tests"""
 
@@ -789,6 +789,11 @@ class AllocationAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Cre
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
         context['allocation'] = allocation_obj
+        text_based_input_attributes = []
+        for m in AllocationAttribute.objects.all():
+            if(m.proj_attr_type.attribute_type.name != "Upload"):
+                text_based_input_attributes.append(m.proj_attr_type.attribute_type.name)
+        context["text_based_input_attributes"] = text_based_input_attributes
         return context
 
     def get_initial(self):

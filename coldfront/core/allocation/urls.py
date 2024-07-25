@@ -1,7 +1,8 @@
 from django.urls import path
 
 import coldfront.core.allocation.views as allocation_views
-
+from django.conf import settings
+from django.conf.urls.static import static
 urlpatterns = [
     path('', allocation_views.AllocationListView.as_view(), name='allocation-list'),
     path('project/<int:project_pk>/create',
@@ -45,3 +46,4 @@ urlpatterns = [
     path('allocation-account-list/', allocation_views.AllocationAccountListView.as_view(),
          name='allocation-account-list'),
 ]
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
