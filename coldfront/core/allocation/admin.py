@@ -114,33 +114,34 @@ class AllocationAdmin(SimpleHistoryAdmin):
 class AttributeTypeAdmin(admin.ModelAdmin):
     list_display = ('name', )
 
+class AllocationAttributeTypeForm(forms.ModelForm):
+    class Meta:
+        model = AllocationAttributeType
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['get_usage_command'].widget = forms.TextInput(attrs={'size': 40})
+        self.fields['get_usage_command'].required = False
+
 
 @admin.register(AllocationAttributeType)
 class AllocationAttributeTypeAdmin(admin.ModelAdmin):
+    form = AllocationAttributeTypeForm
     list_display = ('pk', 'name', 'attribute_type', 'has_usage', 'is_private')
     fields = ('name', 'attribute_type', 'has_usage', 'get_usage_command', 'is_required', 'is_unique', 'is_private', 'is_changeable')
-    
-    def get_form(self, request, obj=None, **kwargs):
-        form = super().get_form(request, obj, **kwargs)
 
-        # Using dict.get to access securely 'get_usage_command'
-        get_usage_command_field = form.base_fields.get('get_usage_command')
-        if get_usage_command_field:
-            get_usage_command_field.widget = forms.TextInput(attrs={'size': 40})
-
-        return form
+    class Media:
+        js = ('custom/allocation_attribute_type.js',)
 
     def get_fields(self, request, obj=None):
         fields = super().get_fields(request, obj)
-        if obj and obj.has_usage:
-            return fields
-        return [field for field in fields if field != 'get_usage_command']
+        return fields
 
     def save_model(self, request, obj, form, change):
         if obj.has_usage and not obj.get_usage_command:
-            obj.get_usage_command = ''  
+            obj.get_usage_command = ''  # Assicurati che questo sia l'effetto desiderato
         super().save_model(request, obj, form, change)
-
 
 class AllocationAttributeUsageInline(admin.TabularInline):
     model = AllocationAttributeUsage
@@ -384,4 +385,3 @@ class AllocationChangeRequestAdmin(admin.ModelAdmin):
 @admin.register(AllocationAttributeChangeRequest)
 class AllocationChangeStatusChoiceAdmin(admin.ModelAdmin):
     list_display = ('pk', 'allocation_change_request', 'allocation_attribute', 'new_value', )
-
