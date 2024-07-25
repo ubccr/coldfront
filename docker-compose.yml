@@ -67,7 +67,7 @@ services:
     container_name: coldfront_worker
     command: coldfront qcluster
     depends_on:
-      - redis
+      - coldfront_redis
     environment:
       SECRET_KEY: "klajsfkljasdfkljasdfkljadsfjklads"
       DATABASE_HOST: 'coldfront_database'
