@@ -5,6 +5,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
     && apt-get install -y netcat \
     && apt-get install -y default-libmysqlclient-dev build-essential \
+    && apt-get install -y libldap2-dev libsasl2-dev \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip3 config --user set global.progress_bar off
