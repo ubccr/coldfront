@@ -104,7 +104,7 @@ class AttributeTypeAdmin(admin.ModelAdmin):
 
 @admin.register(ProjectAttributeType)
 class ProjectAttributeTypeAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'name', 'attribute_type', 'has_usage', 'is_private')
+    list_display = ('pk', 'name', 'attribute_type', 'has_usage', 'is_private', 'is_changeable')
 
 
 class ProjectAttributeUsageInline(admin.TabularInline):
