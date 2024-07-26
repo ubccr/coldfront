@@ -89,7 +89,7 @@ class Allocation(TimeStampedModel):
     start_date = models.DateField(blank=True, null=True)
     end_date = models.DateField(blank=True, null=True)
     justification = models.TextField()
-    description = models.CharField(max_length=512, blank=True, null=True)
+    description = models.CharField(max_length=512, blank=True, null=True, required=False)
     is_locked = models.BooleanField(default=False)
     is_changeable = models.BooleanField(default=False)
     history = HistoricalRecords()
