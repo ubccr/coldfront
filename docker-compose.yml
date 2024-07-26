@@ -27,12 +27,13 @@ services:
     privileged: true
     environment:
       DEBUG: "False"
-      INITIAL_SETUP: "True"
+      INITIAL_SETUP: "False" #<----- CHANGE TO FALSE AFTER THE FIRTS RUN
       LOAD_TEST_DATA: "False"
       DJANGO_SUPERUSER_USERNAME: "superuser"
       DJANGO_SUPERUSER_EMAIL: "mail@mail.example"
       DJANGO_SUPERUSER_PASSWORD: "password"
       PLUGIN_SLURM: "True"
+      PLUGIN_STORAGE: "True"
       PLUGIN_AUTH_LDAP: "True"
       AUTH_LDAP_SERVER_URI: "ldaps://ldapserver"
       AUTH_LDAP_START_TLS: "False"
