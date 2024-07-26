@@ -253,20 +253,20 @@ Project Detail
           </thead>
           <tbody>
             {% for attribute in attributes %}
-                {% if attribute.proj_attr_type.is_private and is_allowed_to_update_project %}
-                  <tr style="background-color:#eee">
-                    <td><i class="fas fa-lock" aria-hidden="true"></i> {{attribute}}</td>
+                {% if attribute.proj_attr_type.is_changeable and is_allowed_to_update_project %}
+                  <tr>
+                    <td>{{attribute}}</td>
                     <td>{{attribute.value}}</td>
                     <td><a href="{% url 'project-attribute-update' project.pk attribute.pk %}"><i class="far fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
                   </tr>
-                {% else %}
-                  <tr>
-                    <td>{{attribute}}</td>
+                {% else %}                
+                  <tr style="background-color:#eee">
+                    <td><i class="fas fa-lock" aria-hidden="true"></i> {{attribute}}</td>
                     <td>
                       {{attribute.value}}
                     </td>
-                    {% if is_allowed_to_update_project %}
-                    <td><a href="{% url 'project-attribute-update' project.pk attribute.pk %}"><i class="far fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
+                    {% if is_superuser and is_allowed_to_update_project %}
+                      <td><a href="{% url 'project-attribute-update' project.pk attribute.pk %}"><i class="far fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
                     {% endif %}
                   </tr>                
                 {% endif %}

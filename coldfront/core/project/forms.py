@@ -143,7 +143,7 @@ class ProjectAttributeAddForm(forms.ModelForm):
         user =(kwargs.get('initial')).get('user')
         self.fields['proj_attr_type'].queryset = self.fields['proj_attr_type'].queryset.order_by(Lower('name'))
         if not user.is_superuser:
-            self.fields['proj_attr_type'].queryset = self.fields['proj_attr_type'].queryset.filter(is_private=False)
+                    self.fields['proj_attr_type'].queryset = self.fields['proj_attr_type'].queryset.filter(is_private=False)
 
 class ProjectAttributeDeleteForm(forms.Form):
     pk = forms.IntegerField(required=False, disabled=True)
