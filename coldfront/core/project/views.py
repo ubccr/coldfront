@@ -1350,7 +1350,7 @@ class ProjectAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Templa
 
     def get_avail_attrs(self, project_obj):
         if not self.request.user.is_superuser:
-            avail_attrs = ProjectAttribute.objects.filter(project=project_obj, proj_attr_type__is_private=False)
+            avail_attrs = ProjectAttribute.objects.filter(project=project_obj, proj_attr_type__is_private=False, proj_attr_type__is_changeable=True)
         else:
             avail_attrs = ProjectAttribute.objects.filter(project=project_obj)
         avail_attrs_dicts = [
