@@ -1,6 +1,7 @@
 import logging
 
 from django.test import TestCase, tag
+from django.urls import reverse
 
 from coldfront.core.test_helpers import utils
 from coldfront.core.test_helpers.factories import (
@@ -336,14 +337,31 @@ class ProjectListViewTest(ProjectViewTestBase):
 
 class ProjectRemoveUsersViewTest(ProjectViewTestBase):
     """Tests for ProjectRemoveUsersView"""
+
     def setUp(self):
-        """set up users and project for testing"""
-        self.url = f'/project/{self.project.pk}/remove-users/'
+        """Set up users and project for testing"""
+        super().setUp()
+        self.url = reverse('project-remove-users', kwargs={'pk': self.project.pk})
+        self.project_user = self.proj_allocation_user
+        self.nonproject_user = self.nonproj_allocation_user
+        self.pi_user = self.pi_user
 
     @tag('net')
     def test_projectremoveusersview_access(self):
         """test access to project remove users page"""
         self.project_access_tstbase(self.url)
+
+    @tag('net')
+    def test_pi_user_cannot_be_removed(self):
+        """Test that the project PI cannot be removed"""
+        self.client.force_login(self.pi_user)
+
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        context = response.context
+
+        users_to_remove = context['formset'].initial
+        self.assertNotIn(self.pi_user.username, [u['username'] for u in users_to_remove])
 
 
 class ProjectUpdateViewTest(ProjectViewTestBase):
