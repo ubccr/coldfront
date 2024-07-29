@@ -72,14 +72,9 @@ class Project(TimeStampedModel):
             return self.get(title=title, pi__username=pi_username)
 
 
-    DEFAULT_DESCRIPTION = '''
-We do not have information about your research. Please provide a detailed description of your work and update your field of science. Thank you!
-        '''
-
     title = models.CharField(max_length=255,)
     pi = models.ForeignKey(User, on_delete=models.CASCADE,)
     description = models.TextField(
-        default=DEFAULT_DESCRIPTION,
         blank=True,
     )
 
