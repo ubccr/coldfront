@@ -54,7 +54,7 @@ User Projects and Managers{% if not user == viewed_user %}: {{ viewed_user.usern
                 <h4 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Additional Managers</a></h4> <span class="badge badge-secondary">{{ project.project_managers | length }}</span>
                 {% if association.is_project_manager and not association.is_project_pi %}
                   <div class="float-right">
-                    <p class="card-text text-success"><strong>{{ user_pronounish }} {{user_verbform_be}} a manager of this project.</strong></p>
+                    <p class="card-text text-success"><strong>{{ user_pronounish }} {{user_verbform_be}} a {{association.role.name}} of this project.</strong></p>
                   </div>
                 {% endif %}
               </div>
@@ -66,6 +66,7 @@ User Projects and Managers{% if not user == viewed_user %}: {{ viewed_user.usern
                         <tr>
                           <th scope="col">Username</th>
                           <th scope="col">Name</th>
+                          <th scope="col">Role</th>
                           <th scope="col">Email</th>
                           <th scope="col">Status</th>
                         </tr>
@@ -75,6 +76,7 @@ User Projects and Managers{% if not user == viewed_user %}: {{ viewed_user.usern
                           <tr>
                             <td>{{ user.user.username }}</td>
                             <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
+                            <td>{{ user.role }}</td>
                             <td>
                               {{ user.user.email }}
                               <a href="mailto:{{ user.user.email }} "><i class="far fa-envelope"></i></a>
