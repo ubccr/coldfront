@@ -18,7 +18,7 @@ class Command(BaseCommand):
         for choice in ['Completed', 'Pending', ]:
             ProjectReviewStatusChoice.objects.get_or_create(name=choice)
 
-        for choice in ['User', 'Manager', ]:
+        for choice in ['User', 'General Manager', 'Data Manager', 'Access Manager']:
             ProjectUserRoleChoice.objects.get_or_create(name=choice)
 
         for choice in ['Active', 'Pending - Add', 'Pending - Remove', 'Denied', 'Removed', ]:
