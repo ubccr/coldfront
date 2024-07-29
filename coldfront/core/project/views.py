@@ -992,11 +992,6 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 request, 'You must update the project title before reviewing your project. You cannot have "Auto-Import Project" in the title.')
             return HttpResponseRedirect(reverse('project-update', kwargs={'pk': project_obj.pk}))
 
-        if 'We do not have information about your research. Please provide a detailed description of your work and update your field of science. Thank you!' in project_obj.description:
-            messages.error(
-                request, 'You must update the project description before reviewing your project.')
-            return HttpResponseRedirect(reverse('project-update', kwargs={'pk': project_obj.pk}))
-
         return super().dispatch(request, *args, **kwargs)
 
     def get(self, request, *args, **kwargs):
