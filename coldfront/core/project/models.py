@@ -80,6 +80,7 @@ We do not have information about your research. Please provide a detailed descri
     pi = models.ForeignKey(User, on_delete=models.CASCADE,)
     description = models.TextField(
         default=DEFAULT_DESCRIPTION,
+        blank=True,
     )
 
     field_of_science = models.ForeignKey(FieldOfScience, on_delete=models.CASCADE, default=FieldOfScience.DEFAULT_PK)
