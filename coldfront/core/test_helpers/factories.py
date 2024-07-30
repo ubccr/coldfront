@@ -40,7 +40,7 @@ from coldfront.core.publication.models import PublicationSource
 ### Default values and Faker provider setup ###
 
 project_status_choice_names = ['New', 'Active', 'Archived']
-project_user_role_choice_names = ['User', 'Manager']
+project_user_role_choice_names = ['User', 'Access Manager', 'General Manager', 'Data Manager']
 field_of_science_names = ['Physics', 'Chemistry', 'Economics', 'Biology', 'Sociology']
 attr_types = ['Date', 'Int', 'Float', 'Text', 'Boolean']
 
@@ -394,7 +394,7 @@ def setup_models(test_case):
     for user in [test_case.proj_allocation_user, test_case.nonproj_allocation_user]:
         AllocationUserFactory(user=user, allocation=test_case.proj_allocation)
 
-    manager_role = ProjectUserRoleChoiceFactory(name='Manager')
+    manager_role = ProjectUserRoleChoiceFactory(name='General Manager')
 
     ProjectUserFactory(
         user=test_case.pi_user, project=test_case.project, role=manager_role

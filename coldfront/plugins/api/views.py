@@ -40,7 +40,7 @@ class AllocationViewSet(viewsets.ReadOnlyModelViewSet):
                 Q(project__status__name__in=['New', 'Active']) &
                 (
                     (
-                        Q(project__projectuser__role__name='Manager')
+                        Q(project__projectuser__role__name__contains='Manager')
                         & Q(project__projectuser__user=self.request.user)
                     )
                     | Q(project__pi=self.request.user)
@@ -218,7 +218,7 @@ class AllocationChangeRequestViewSet(viewsets.ReadOnlyModelViewSet):
                 Q(allocation__project__status__name__in=['New', 'Active']) &
                 (
                     (
-                        Q(allocation__project__projectuser__role__name='Manager')
+                        Q(allocation__project__projectuser__role__name__contains='Manager')
                         & Q(allocation__project__projectuser__user=self.request.user)
                     )
                     | Q(allocation__project__pi=self.request.user)
@@ -268,7 +268,7 @@ class ProjectViewSet(viewsets.ReadOnlyModelViewSet):
                 Q(status__name__in=['New', 'Active']) &
                 (
                     (
-                        Q(projectuser__role__name='Manager')
+                        Q(projectuser__role__name__contains='Manager')
                         & Q(projectuser__user=self.request.user)
                     )
                     | Q(pi=self.request.user)

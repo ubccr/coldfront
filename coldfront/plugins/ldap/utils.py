@@ -431,7 +431,7 @@ def collect_update_project_status_membership():
             [(pi.project.title, pi.user.username) for pi in pis_to_deactivate])
 
     ### identify PIs with incorrect roles and change their status ###
-    projectuser_role_manager = ProjectUserRoleChoice.objects.get(name='Manager')
+    projectuser_role_manager = ProjectUserRoleChoice.objects.get(name='General Manager')
 
     pis_mislabeled = ProjectUser.objects.filter(
         reduce(operator.or_,
@@ -652,7 +652,7 @@ def add_new_projects(groupusercollections, errortracker):
                         group.pi['sAMAccountName'][0], group.name)
             errortracker['pi_not_projectuser'].append(group.name)
             continue
-        manager.role = ProjectUserRoleChoice.objects.get(name='Manager')
+        manager.role = ProjectUserRoleChoice.objects.get(name='General Manager')
         manager.save()
         added_projects.append([group.name, group.project])
 
@@ -701,7 +701,7 @@ def update_new_project(sender, **kwargs):
     project.pi = get_user_model().objects.get(username=manager['sAMAccountName'][0])
     project.save()
     for member in members:
-        role_name = "User" if member['sAMAccountName'][0] != manager['sAMAccountName'][0] else "Manager"
+        role_name = "User" if member['sAMAccountName'][0] != manager['sAMAccountName'][0] else "General Manager"
         try:
             user_obj = get_user_model().objects.get(username=member['sAMAccountName'][0])
         except get_user_model().DoesNotExist:
