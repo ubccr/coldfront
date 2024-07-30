@@ -267,6 +267,8 @@ Project Detail
                     </td>
                     {% if is_superuser and is_allowed_to_update_project %}
                       <td><a href="{% url 'project-attribute-update' project.pk attribute.pk %}"><i class="far fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
+                    {% else %}
+                      <td></td>
                     {% endif %}
                   </tr>                
                 {% endif %}

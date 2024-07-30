@@ -46,6 +46,7 @@ from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectAttributeUpdateForm)
 from coldfront.core.project.models import (Project,
                                            ProjectAttribute,
+                                           ProjectAttributeType,
                                            ProjectReview,
                                            ProjectReviewStatusChoice,
                                            ProjectStatusChoice,
@@ -544,12 +545,22 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         project_obj.save()
         self.object = project_obj
 
-        project_user_obj = ProjectUser.objects.create(
+        # Creazione del ProjectUser
+        ProjectUser.objects.create(
             user=self.request.user,
             project=project_obj,
             role=ProjectUserRoleChoice.objects.get(name='Manager'),
             status=ProjectUserStatusChoice.objects.get(name='Active')
         )
+
+        # Aggiunta degli attributi predefiniti
+        default_attributes = ProjectAttributeType.objects.filter(is_default=True)
+        for attr_type in default_attributes:
+            ProjectAttribute.objects.create(
+                proj_attr_type=attr_type,
+                project=project_obj,
+                value=attr_type.is_default_value
+            )
 
         return super().form_valid(form)
 
