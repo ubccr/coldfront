@@ -134,7 +134,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context = super().get_context_data(**kwargs)
         # Can the user update the project?
         context['is_allowed_to_update_project'] = self.object.has_perm(
-            self.request.user, ProjectPermission.MANAGER
+            self.request.user, ProjectPermission.DATA_MANAGER
         )
 
         if self.request.user.is_superuser:
@@ -189,7 +189,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 allocations = allocations.filter(
                     Q(project__projectuser__user=self.request.user)
                 )
-                if not self.object.has_perm(self.request.user, ProjectPermission.MANAGER):
+                if not self.object.has_perm(self.request.user, ProjectPermission.DATA_MANAGER):
                     allocations = allocations.filter(
                         Q(allocationuser__user=self.request.user)
                     )
@@ -438,7 +438,7 @@ class ProjectUpdateView(
     def test_func(self):
         """UserPassesTestMixin Tests"""
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
+        if project_obj.has_perm(self.request.user, ProjectPermission.DATA_MANAGER):
             return True
         return False
 
@@ -878,7 +878,7 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     def test_func(self):
         """UserPassesTestMixin Tests"""
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
+        if project_obj.has_perm(self.request.user, ProjectPermission.ACCESS_MANAGER):
             return True
         return False
 
@@ -962,7 +962,7 @@ def project_update_email_notification(request):
 
     allowed = False
 
-    if project_obj.has_perm(request.user, ProjectPermission.UPDATE):
+    if project_obj.has_perm(request.user, ProjectPermission.ACCESS_MANAGER):
         allowed = True
     if project_user_obj.user == request.user:
         allowed = True
@@ -989,7 +989,7 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     def test_func(self):
         """UserPassesTestMixin Tests"""
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
+        if project_obj.has_perm(self.request.user, ProjectPermission.DATA_MANAGER):
             return True
         messages.error(
             self.request, 'You do not have permissions to review this project.'

@@ -121,10 +121,10 @@ class AllocationListViewTest(AllocationViewBaseTest):
         response = self.client.get("/allocation/?show_all_allocations=on")
         self.assertEqual(len(response.context['item_list']), 0)
 
-        # nonallocation user belonging to project can't see allocation
+        # nonallocation user belonging to project can see allocation
         self.client.force_login(self.proj_nonallocation_user, backend=BACKEND)
         response = self.client.get("/allocation/?show_all_allocations=on")
-        self.assertEqual(len(response.context['item_list']), 0)
+        self.assertEqual(len(response.context['item_list']), 1)
 
     def test_allocation_list_search_admin(self):
         """Confirm that AllocationList search works for admin"""

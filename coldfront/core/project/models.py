@@ -13,14 +13,17 @@ from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.utils.common import import_from_settings
 
 PROJECT_ENABLE_PROJECT_REVIEW = import_from_settings('PROJECT_ENABLE_PROJECT_REVIEW', False)
+DATA_MANAGERS = import_from_settings('DATA_MANAGERS', ['Manager'])
+ACCESS_MANAGERS = import_from_settings('ACCESS_MANAGERS', ['Manager'])
+MANAGERS = import_from_settings('MANAGERS', ['Manager'])
 
 class ProjectPermission(Enum):
     """ A project permission stores the user, manager, pi, and update fields of a project. """
 
     USER = 'user'
-    MANAGER = 'manager'
+    DATA_MANAGER = 'data_manager'
+    ACCESS_MANAGER = 'access_manager'
     PI = 'pi'
-    UPDATE = 'update'
 
 class ProjectStatusChoice(TimeStampedModel):
     """ A project status choice indicates the status of the project. Examples include Active, Archived, and New.
@@ -193,16 +196,16 @@ class Project(TimeStampedModel):
 
         permissions = [ProjectPermission.USER]
 
-        if self.projectuser_set.filter(user_conditions & models.Q(role__name='Manager')).exists():
-            permissions.append(ProjectPermission.MANAGER)
+        if self.projectuser_set.filter(user_conditions & models.Q(role__name__in=DATA_MANAGERS)).exists():
+            permissions.append(ProjectPermission.DATA_MANAGER)
 
+        if self.projectuser_set.filter(user_conditions & models.Q(role__name__in=ACCESS_MANAGERS)).exists():
+            permissions.append(ProjectPermission.ACCESS_MANAGER)
 
         if self.pi.id == user.id:
             permissions.append(ProjectPermission.PI)
-
-        if ProjectPermission.MANAGER in permissions or ProjectPermission.PI in permissions:
-            permissions.append(ProjectPermission.UPDATE)
-
+            permissions.append(ProjectPermission.DATA_MANAGER)
+            permissions.append(ProjectPermission.ACCESS_MANAGER)
         return permissions
 
     def has_perm(self, user, perm):

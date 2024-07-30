@@ -217,7 +217,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
         # Can the user update the project?
         project_update_perm = allocation_obj.project.has_perm(
-            self.request.user, ProjectPermission.UPDATE
+            self.request.user, ProjectPermission.DATA_MANAGER
         )
         context['is_allowed_to_update_project'] = project_update_perm
         context['allocation_users'] = allocation_users
@@ -464,8 +464,7 @@ class AllocationListView(ColdfrontListView):
                     # Q(project__projectuser__status__name='Active') &
                     # Q(project__projectuser__user=self.request.user) &
                     (
-                        (Q(project__projectuser__role__name='Manager') &
-                        Q(project__projectuser__user=self.request.user) )|
+                        Q(project__projectuser__user=self.request.user) |
                         Q(project__pi=self.request.user) |
                         (
                             Q(allocationuser__user=self.request.user)
@@ -544,7 +543,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     def test_func(self):
         """UserPassesTestMixin Tests"""
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
-        if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
+        if project_obj.has_perm(self.request.user, ProjectPermission.DATA_MANAGER):
             return True
         err = 'You do not have permission to create a new allocation.'
         messages.error(self.request, err)
@@ -1284,7 +1283,6 @@ class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templat
         return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
 
-
 class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'allocation/allocation_renew.html'
 
@@ -1536,7 +1534,7 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
 
         # Can the user update the project?
         project_update_perm = allocation_obj.project.has_perm(
-            self.request.user, ProjectPermission.UPDATE
+            self.request.user, ProjectPermission.DATA_MANAGER
         )
         context['is_allowed_to_update_project'] = project_update_perm
         context['allocation_users'] = allocation_users
