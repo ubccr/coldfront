@@ -136,6 +136,9 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['is_allowed_to_update_project'] = self.object.has_perm(
             self.request.user, ProjectPermission.DATA_MANAGER
         )
+        context['is_allowed_to_update_users'] = self.object.has_perm(
+            self.request.user, ProjectPermission.ACCESS_MANAGER
+        )
 
         if self.request.user.is_superuser:
             attributes = list(
@@ -351,10 +354,10 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
     def test_func(self):
         """UserPassesTestMixin Tests"""
-        # project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        # if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
         if self.request.user.is_superuser:
             return True
+        error_message = 'You do not have permission to archive a project.'
+        messages.error(self.request, error_message)
         return False
 
     def get_context_data(self, **kwargs):
@@ -460,8 +463,7 @@ class ProjectAddUsersSearchView(LoginRequiredMixin, UserPassesTestMixin, Templat
     def test_func(self):
         """UserPassesTestMixin Tests"""
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        # if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
-        if self.request.user.is_superuser or self.request.user == project_obj.pi:
+        if project_obj.has_perm(self.request.user, ProjectPermission.ACCESS_MANAGER):
             return True
         return False
 
@@ -489,8 +491,7 @@ class ProjectAddUsersSearchResultsView(
     def test_func(self):
         """UserPassesTestMixin Tests"""
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        # if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
-        if self.request.user.is_superuser or self.request.user == project_obj.pi:
+        if project_obj.has_perm(self.request.user, ProjectPermission.ACCESS_MANAGER):
             return True
         return False
 
@@ -562,8 +563,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
         """UserPassesTestMixin Tests"""
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        # if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
-        if self.request.user.is_superuser or self.request.user == project_obj.pi:
+        if project_obj.has_perm(self.request.user, ProjectPermission.ACCESS_MANAGER):
             return True
         err = 'You do not have permission to add users to the project.'
         messages.error(self.request, err)
@@ -721,9 +721,10 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
     def test_func(self):
         """UserPassesTestMixin Tests"""
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        # if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
-        if self.request.user.is_superuser or self.request.user == project_obj.pi:
+        if project_obj.has_perm(self.request.user, ProjectPermission.ACCESS_MANAGER):
             return True
+        err = 'You do not have permission to remove users from the project.'
+        messages.error(self.request, err)
         return False
 
     def dispatch(self, request, *args, **kwargs):
@@ -880,6 +881,8 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         if project_obj.has_perm(self.request.user, ProjectPermission.ACCESS_MANAGER):
             return True
+        err = 'You do not have permission to edit project users.'
+        messages.error(self.request, err)
         return False
 
     def get(self, request, *args, **kwargs):
@@ -1226,20 +1229,10 @@ class ProjectAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Create
 
     def test_func(self):
         """UserPassesTestMixin Tests"""
-        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-
         if self.request.user.is_superuser:
             return True
-        if project_obj.pi == self.request.user:
-            return True
-        if project_obj.projectuser_set.filter(
-            user=self.request.user, role__name='Manager', status__name='Active'
-        ).exists():
-            return True
-
-        messages.error(
-            self.request, 'You do not have permission to add project attributes.'
-        )
+        err = 'You do not have permission to add project attributes.'
+        messages.error(self.request, err)
         return False
 
     def get_initial(self):
@@ -1272,21 +1265,9 @@ class ProjectAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Templa
 
     def test_func(self):
         """UserPassesTestMixin Tests"""
-
-        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-
         if self.request.user.is_superuser:
             return True
-
-        if project_obj.pi == self.request.user:
-            return True
-
-        if project_obj.projectuser_set.filter(
-            user=self.request.user, role__name='Manager', status__name='Active'
-        ).exists():
-            return True
-
-        err = 'You do not have permission to add project attributes.'
+        err = 'You do not have permission to remove project attributes.'
         messages.error(self.request, err)
 
     def get_avail_attrs(self, project_obj):
@@ -1358,18 +1339,11 @@ class ProjectAttributeUpdateView(LoginRequiredMixin, UserPassesTestMixin, Templa
 
     def test_func(self):
         """UserPassesTestMixin Tests"""
-        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-
         if self.request.user.is_superuser:
             return True
-
-        if project_obj.pi == self.request.user:
-            return True
-
-        if project_obj.projectuser_set.filter(
-            user=self.request.user, role__name='Manager', status__name='Active'
-        ).exists():
-            return True
+        err = 'You do not have permission to update project attributes.'
+        messages.error(self.request, err)
+        return False
 
     def get(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
@@ -1392,7 +1366,6 @@ class ProjectAttributeUpdateView(LoginRequiredMixin, UserPassesTestMixin, Templa
             context['project_obj'] = project_obj
             context['project_attribute_update_form'] = project_attribute_update_form
             context['project_attribute_obj'] = project_attribute_obj
-
             return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):

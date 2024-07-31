@@ -372,7 +372,7 @@ Project Detail
                 {% endif %}
               </td>
               <td>
-                {% if is_allowed_to_update_project %}
+                {% if is_allowed_to_update_users %}
                   <a href="{% url 'project-user-detail' project.pk user.id %}"><i class="fas fa-user-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a>
                 {% endif %}
               </td>
@@ -385,8 +385,8 @@ Project Detail
 </div>
 <!-- End Project Users -->
 
-{% comment %}
 <!-- Start Project Attributes -->
+{% if request.user.is_superuser %}
 <div class="card mb-3">
   <div class="card-header">
     <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Attributes</h3> <span class="badge badge-secondary">{{attributes.count}}</span>
@@ -451,9 +451,11 @@ Project Detail
     {% endif %}
   </div>
 </div>
+{% endif %}
 
 <!-- End Project Attributes -->
 
+{% comment %}
 <!-- Start Project Grants -->
 <div style="display:none" class="card mb-3">
   <div class="card-header">

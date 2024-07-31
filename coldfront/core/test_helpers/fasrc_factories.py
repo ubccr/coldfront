@@ -89,6 +89,12 @@ def setup_departments(test_case):
         last_name='Ostrom',
         full_name='Elinor Ostrom',
     )
+    test_case.dept_member_user = UserFactory(
+        username='jdewey',
+        first_name='John',
+        last_name='Dewey',
+        full_name='John Dewey',
+    )
 
     test_case.school = OrganizationFactory(
         name='School of Maths and Sciences',
@@ -101,13 +107,6 @@ def setup_departments(test_case):
         org_tree='Research Computing Storage Billing',
     )
 
-
-    test_case.dept_member_user = UserFactory(
-        username='jdoe',
-        first_name='John',
-        last_name='Doe',
-        full_name='John Doe',
-    )
     ProjectFactory()
     for project in Project.objects.all():
         project_title = project.title

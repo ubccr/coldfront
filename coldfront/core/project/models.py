@@ -196,16 +196,20 @@ class Project(TimeStampedModel):
 
         permissions = [ProjectPermission.USER]
 
-        if self.projectuser_set.filter(user_conditions & models.Q(role__name__in=DATA_MANAGERS)).exists():
+        if (
+            self.projectuser_set.filter(user_conditions & models.Q(role__name__in=DATA_MANAGERS)).exists()
+            or self.pi.id == user.id
+        ):
             permissions.append(ProjectPermission.DATA_MANAGER)
 
-        if self.projectuser_set.filter(user_conditions & models.Q(role__name__in=ACCESS_MANAGERS)).exists():
+        if (
+            self.projectuser_set.filter(user_conditions & models.Q(role__name__in=ACCESS_MANAGERS)).exists()
+            or self.pi.id == user.id
+        ):
             permissions.append(ProjectPermission.ACCESS_MANAGER)
 
         if self.pi.id == user.id:
             permissions.append(ProjectPermission.PI)
-            permissions.append(ProjectPermission.DATA_MANAGER)
-            permissions.append(ProjectPermission.ACCESS_MANAGER)
         return permissions
 
     def has_perm(self, user, perm):

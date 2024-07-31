@@ -83,6 +83,7 @@ class UserFactory(DjangoModelFactory):
     is_superuser = False
 
 
+
 ### Field of Science factories ###
 
 class FieldOfScienceFactory(DjangoModelFactory):
@@ -367,6 +368,8 @@ def setup_models(test_case):
     # pi is a project admin but not an AllocationUser.
     test_case.pi_user = UserFactory(username='sdpoisson')
     test_case.proj_allocation_user = UserFactory(username='ljbortkiewicz')
+    test_case.proj_datamanager = UserFactory(username='ajayer')
+    test_case.proj_accessmanager = UserFactory(username='mdavis')
     test_case.proj_nonallocation_user = UserFactory(username='wkohn')
     test_case.nonproj_allocation_user = UserFactory(username='jsaul')
     test_case.project = ProjectFactory(pi=test_case.pi_user, title="poisson_lab")
@@ -394,13 +397,15 @@ def setup_models(test_case):
     for user in [test_case.proj_allocation_user, test_case.nonproj_allocation_user]:
         AllocationUserFactory(user=user, allocation=test_case.proj_allocation)
 
-    manager_role = ProjectUserRoleChoiceFactory(name='General Manager')
+    for user, role in {
+        test_case.pi_user:'General Manager',
+        test_case.proj_datamanager: 'Data Manager',
+        test_case.proj_accessmanager: 'Access Manager',
+        test_case.proj_nonallocation_user: 'User',
+    }.items():
+        ProjectUserFactory(
+            user=user, project=test_case.project, role=ProjectUserRoleChoiceFactory(name=role)
+        )
 
-    ProjectUserFactory(
-        user=test_case.pi_user, project=test_case.project, role=manager_role
-    )
     test_case.npu = ProjectUserFactory(user=test_case.proj_allocation_user, project=test_case.project)
     test_case.normal_projuser = test_case.npu.user
-    ProjectUserFactory(
-        user=test_case.proj_nonallocation_user, project=test_case.project
-    )
