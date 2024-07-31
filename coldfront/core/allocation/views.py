@@ -765,8 +765,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
     def test_func(self):
         """UserPassesTestMixin Tests"""
-        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
-        if allocation_obj.has_perm(self.request.user, AllocationPermission.MANAGER):
+        if self.request.user.is_superuser:
             return True
         err = 'You do not have permission to add users to the allocation.'
         messages.error(self.request, err)
@@ -873,10 +872,8 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
     def test_func(self):
         """UserPassesTestMixin Tests"""
-        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
-        if allocation_obj.has_perm(self.request.user, AllocationPermission.MANAGER):
+        if self.request.user.is_superuser:
             return True
-
         err = 'You do not have permission to remove users from allocation.'
         messages.error(self.request, err)
         return False
@@ -1044,13 +1041,13 @@ class AllocationAttributeEditView(LoginRequiredMixin, UserPassesTestMixin, Creat
         return attributes_to_change
 
     def get(self, request, *args, **kwargs):
-        context = {}
         allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
+        attrs_to_change = self.get_allocation_attrs_to_change(allocation_obj)
+        context = {}
 
         form = AllocationChangeForm(**self.get_form_kwargs())
         context['form'] = form
 
-        attrs_to_change = self.get_allocation_attrs_to_change(allocation_obj)
         if attrs_to_change:
             formset = formset_factory(self.formset_class, max_num=len(attrs_to_change))
             formset = formset(initial=attrs_to_change, prefix='attributeform')
@@ -1066,7 +1063,6 @@ class AllocationAttributeEditView(LoginRequiredMixin, UserPassesTestMixin, Creat
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
-        attribute_changes_to_make = set({})
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
 
@@ -1095,9 +1091,6 @@ class AllocationAttributeEditView(LoginRequiredMixin, UserPassesTestMixin, Creat
             for error in validation_errors:
                 messages.error(request, error)
             return HttpResponseRedirect(reverse('allocation-attribute-edit', kwargs={'pk': pk}))
-
-        # ID changes
-        change_requested = False
 
         if attrs_to_change:
             for entry in formset:
