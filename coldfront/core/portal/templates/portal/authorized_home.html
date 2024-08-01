@@ -108,7 +108,7 @@
               <a href = "{{ondemand_url}}"> {% load static %}  <img src="/static/core/portal/imgs/ondemand.png" alt="ondemand cta" width="25" height="25"></a>
             {% endif %} 
             </td>
-            {% if allocation.status.name == "Ready for Deletion" %}
+            {% if allocation.status.name != "Ready for Deletion" %}
             <td><a href="{% url 'allocation-detail' allocation.id %}"
                 class="btn btn-info btn-block">Ready for Deletion</a></td>
             {% endif %}
