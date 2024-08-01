@@ -111,6 +111,10 @@
             </td>
             <td><a href="{% url 'allocation-detail' allocation.id %}"
                 class="btn btn-info btn-block">Ready for Deletion</a></td>
+            {% else %}
+              <div class="alert alert-info" role="alert">
+                  <i class="fa fa-info-circle" aria-hidden="true"></i> There are no allocations marked for deletion.
+              </div>
             {% endif %}
           </tr>
           {% endfor %}
