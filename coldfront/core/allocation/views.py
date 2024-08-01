@@ -217,7 +217,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
         # Can the user update the project?
         project_update_perm = allocation_obj.project.has_perm(
-            self.request.user, ProjectPermission.UPDATE
+            self.request.user, ProjectPermission.DATA_MANAGER
         )
         context['is_allowed_to_update_project'] = project_update_perm
         context['allocation_users'] = allocation_users
@@ -464,8 +464,7 @@ class AllocationListView(ColdfrontListView):
                     # Q(project__projectuser__status__name='Active') &
                     # Q(project__projectuser__user=self.request.user) &
                     (
-                        (Q(project__projectuser__role__name='Manager') &
-                        Q(project__projectuser__user=self.request.user) )|
+                        Q(project__projectuser__user=self.request.user) |
                         Q(project__pi=self.request.user) |
                         (
                             Q(allocationuser__user=self.request.user)
@@ -544,7 +543,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     def test_func(self):
         """UserPassesTestMixin Tests"""
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
-        if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
+        if project_obj.has_perm(self.request.user, ProjectPermission.DATA_MANAGER):
             return True
         err = 'You do not have permission to create a new allocation.'
         messages.error(self.request, err)
@@ -766,8 +765,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
     def test_func(self):
         """UserPassesTestMixin Tests"""
-        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
-        if allocation_obj.has_perm(self.request.user, AllocationPermission.MANAGER):
+        if self.request.user.is_superuser:
             return True
         err = 'You do not have permission to add users to the allocation.'
         messages.error(self.request, err)
@@ -874,10 +872,8 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
     def test_func(self):
         """UserPassesTestMixin Tests"""
-        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
-        if allocation_obj.has_perm(self.request.user, AllocationPermission.MANAGER):
+        if self.request.user.is_superuser:
             return True
-
         err = 'You do not have permission to remove users from allocation.'
         messages.error(self.request, err)
         return False
@@ -1045,13 +1041,13 @@ class AllocationAttributeEditView(LoginRequiredMixin, UserPassesTestMixin, Creat
         return attributes_to_change
 
     def get(self, request, *args, **kwargs):
-        context = {}
         allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
+        attrs_to_change = self.get_allocation_attrs_to_change(allocation_obj)
+        context = {}
 
         form = AllocationChangeForm(**self.get_form_kwargs())
         context['form'] = form
 
-        attrs_to_change = self.get_allocation_attrs_to_change(allocation_obj)
         if attrs_to_change:
             formset = formset_factory(self.formset_class, max_num=len(attrs_to_change))
             formset = formset(initial=attrs_to_change, prefix='attributeform')
@@ -1067,7 +1063,6 @@ class AllocationAttributeEditView(LoginRequiredMixin, UserPassesTestMixin, Creat
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
-        attribute_changes_to_make = set({})
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
 
@@ -1096,9 +1091,6 @@ class AllocationAttributeEditView(LoginRequiredMixin, UserPassesTestMixin, Creat
             for error in validation_errors:
                 messages.error(request, error)
             return HttpResponseRedirect(reverse('allocation-attribute-edit', kwargs={'pk': pk}))
-
-        # ID changes
-        change_requested = False
 
         if attrs_to_change:
             for entry in formset:
@@ -1282,7 +1274,6 @@ class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templat
         messages.success(request, 'Allocation Activated.')
 
         return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
-
 
 
 class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -1536,7 +1527,7 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
 
         # Can the user update the project?
         project_update_perm = allocation_obj.project.has_perm(
-            self.request.user, ProjectPermission.UPDATE
+            self.request.user, ProjectPermission.DATA_MANAGER
         )
         context['is_allowed_to_update_project'] = project_update_perm
         context['allocation_users'] = allocation_users

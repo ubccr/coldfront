@@ -133,7 +133,7 @@ class UserProjectsManagersView(ListView):
                 output_field=BooleanField(),
             ),
             is_project_manager=ExpressionWrapper(
-                Q(role__name='Manager'),
+                Q(role__name__contains='Manager'),
                 output_field=BooleanField(),
             ),
         ).order_by(
@@ -147,7 +147,7 @@ class UserProjectsManagersView(ListView):
             Prefetch(
                 lookup='project__projectuser_set',
                 queryset=ProjectUser.objects.filter(
-                    role__name='Manager',
+                    role__name__contains='Manager',
                     status__name__in=ongoing_projectuser_statuses,
                 ).exclude(
                     user__pk__in=[

@@ -80,10 +80,8 @@ class AllocationListViewTest(AllocationViewBaseTest):
     def test_allocation_list_access_admin(self):
         """Confirm that AllocationList access control works for admin"""
         self.allocation_access_tstbase('/allocation/')
-
         # confirm that show_all_allocations=on enables admin to view all allocations
         response = self.client.get("/allocation/?show_all_allocations=on")
-
         self.assertEqual(len(response.context['item_list']), Allocation.objects.all().count())
 
     def test_allocation_list_access_pi(self):
@@ -93,6 +91,20 @@ class AllocationListViewTest(AllocationViewBaseTest):
         """
         # confirm that show_all_allocations=on enables admin to view all allocations
         self.client.force_login(self.pi_user, backend=BACKEND)
+        response = self.client.get("/allocation/?show_all_allocations=on")
+        self.assertEqual(len(response.context['item_list']), 1)
+
+    def test_allocation_list_access_manager(self):
+        """Confirm that AllocationList access control works for managers
+        When show_all_allocations=on, manager still sees only allocations belonging
+        to the projects they are manager for.
+        """
+        # confirm that show_all_allocations=on enables admin to view all allocations
+        self.client.force_login(self.proj_datamanager, backend=BACKEND)
+        response = self.client.get("/allocation/?show_all_allocations=on")
+        self.assertEqual(len(response.context['item_list']), 1)
+        # confirm that show_all_allocations=on enables admin to view all allocations
+        self.client.force_login(self.proj_accessmanager, backend=BACKEND)
         response = self.client.get("/allocation/?show_all_allocations=on")
         self.assertEqual(len(response.context['item_list']), 1)
 
@@ -116,13 +128,13 @@ class AllocationListViewTest(AllocationViewBaseTest):
         response = self.client.get("/allocation/?show_all_allocations=on")
         self.assertEqual(len(response.context['item_list']), 1)
 
-        # nonallocation user belonging to project can't see allocation
-        self.client.force_login(self.nonproj_nonallocation_user, backend=BACKEND)
-        response = self.client.get("/allocation/?show_all_allocations=on")
-        self.assertEqual(len(response.context['item_list']), 0)
-
-        # nonallocation user belonging to project can't see allocation
+        # nonallocation user belonging to project can see allocation
         self.client.force_login(self.proj_nonallocation_user, backend=BACKEND)
+        response = self.client.get("/allocation/?show_all_allocations=on")
+        self.assertEqual(len(response.context['item_list']), 1)
+
+        # nonallocation user not belonging to project can't see allocation
+        self.client.force_login(self.nonproj_nonallocation_user, backend=BACKEND)
         response = self.client.get("/allocation/?show_all_allocations=on")
         self.assertEqual(len(response.context['item_list']), 0)
 
@@ -143,20 +155,17 @@ class AllocationChangeDetailViewTest(AllocationViewBaseTest):
         """create an AllocationChangeRequest to test"""
         self.client.force_login(self.admin_user, backend=BACKEND)
         AllocationChangeRequestFactory(id=2, allocation=self.proj_allocation)
+        self.url = reverse('allocation-change-detail', kwargs={'pk': 2})
 
     def test_allocationchangedetailview_access(self):
-        response = self.client.get(
-            reverse('allocation-change-detail', kwargs={'pk': 2})
-        )
+        response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
 
     def test_allocationchangedetailview_post_permissions_admin(self):
         """Test post request"""
         param = {'action': 'deny'}
         self.client.force_login(self.admin_user, backend=BACKEND)
-        response = self.client.post(
-            reverse('allocation-change-detail', kwargs={'pk': 2}), param, follow=True
-        )
+        response = self.client.post(self.url, param, follow=True)
         alloc_change_req = AllocationChangeRequest.objects.get(pk=2)
         self.assertEqual(alloc_change_req.status_id, 3)
 
@@ -164,9 +173,7 @@ class AllocationChangeDetailViewTest(AllocationViewBaseTest):
         """pi can't post changes"""
         param = {'action': 'deny'}
         self.client.force_login(self.pi_user, backend=BACKEND)
-        self.client.post(
-            reverse('allocation-change-detail', kwargs={'pk': 2}), param, follow=True
-        )
+        self.client.post(self.url, param, follow=True)
         alloc_change_req = AllocationChangeRequest.objects.get(pk=2)
         self.assertNotEqual(alloc_change_req.status_id, 3)
 
@@ -174,18 +181,13 @@ class AllocationChangeDetailViewTest(AllocationViewBaseTest):
         """normal user can't post changes"""
         param = {'action': 'deny'}
         self.client.force_login(self.proj_allocation_user, backend=BACKEND)
-        self.client.post(
-            reverse('allocation-change-detail', kwargs={'pk': 2}), param, follow=True
-        )
+        self.client.post(self.url, param, follow=True)
         alloc_change_req = AllocationChangeRequest.objects.get(pk=2)
         self.assertNotEqual(alloc_change_req.status_id, 3)
 
-
     def test_allocationchangedetailview_post_deny(self):
         param = {'action': 'deny'}
-        response = self.client.post(
-            reverse('allocation-change-detail', kwargs={'pk': 2}), param, follow=True
-        )
+        response = self.client.post(self.url, param, follow=True)
         self.assertEqual(response.status_code, 200)
         alloc_change_req = AllocationChangeRequest.objects.get(pk=2)
         self.assertEqual(alloc_change_req.status_id, 3)
@@ -193,14 +195,10 @@ class AllocationChangeDetailViewTest(AllocationViewBaseTest):
     def test_allocationchangedetailview_post_approve(self):
         # with nothing changed, should get error message of "You must make a change to the allocation."
         param = {'action': 'approve'}
-        response = self.client.post(
-            reverse('allocation-change-detail', kwargs={'pk': 2}), param, follow=True
-        )
+        response = self.client.post(self.url, param, follow=True)
         self.assertEqual(response.status_code, 200)
         messages = list(response.context['messages'])
         self.assertEqual(str(messages[0]), "You must make a change to the allocation.")
-        # alloc_change_req = AllocationChangeRequest.objects.get(pk=2)
-        # self.assertEqual(alloc_change_req.status_id, 2)
 
 
 class AllocationChangeViewTest(AllocationViewBaseTest):
@@ -218,6 +216,7 @@ class AllocationChangeViewTest(AllocationViewBaseTest):
             'end_date_extension': 0,
         }
         self.url = '/allocation/1/change-request'
+        self.success_msg = "Allocation change request successfully submitted."
 
     def test_allocationchangeview_access(self):
         """Test get request"""
@@ -230,14 +229,11 @@ class AllocationChangeViewTest(AllocationViewBaseTest):
         self.post_data['attributeform-0-new_value'] = '1000'
         self.client.force_login(self.admin_user, backend=BACKEND)
         response = self.client.post(self.url, data=self.post_data, follow=True)
-        self.assertContains(
-            response, "Allocation change request successfully submitted."
-        )
+
+        self.assertContains(response, self.success_msg)
         self.client.force_login(self.pi_user, backend=BACKEND)
         response = self.client.post(self.url, data=self.post_data, follow=True)
-        self.assertContains(
-            response, "Allocation change request successfully submitted."
-        )
+        self.assertContains(response, self.success_msg)
 
         self.client.force_login(self.proj_allocation_user, backend=BACKEND)
         response = self.client.post(self.url, data=self.post_data, follow=True)
@@ -245,50 +241,33 @@ class AllocationChangeViewTest(AllocationViewBaseTest):
 
     def test_allocationchangeview_post_extension(self):
         """Test post request to extend end date"""
-
         self.post_data['end_date_extension'] = 90
         self.assertEqual(len(AllocationChangeRequest.objects.all()), 0)
-        response = self.client.post(
-            '/allocation/1/change-request', data=self.post_data, follow=True
-        )
+        response = self.client.post(self.url, data=self.post_data, follow=True)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(
-            response, "Allocation change request successfully submitted."
-        )
+        self.assertContains(response, self.success_msg)
         self.assertEqual(len(AllocationChangeRequest.objects.all()), 1)
 
     def test_allocationchangeview_post_no_change(self):
         """Post request with no change should not go through"""
-
         self.assertEqual(len(AllocationChangeRequest.objects.all()), 0)
-
-        response = self.client.post(
-            '/allocation/1/change-request', data=self.post_data, follow=True
-        )
+        response = self.client.post(self.url, data=self.post_data, follow=True)
         self.assertContains(response, "You must request a change")
         self.assertEqual(len(AllocationChangeRequest.objects.all()), 0)
 
     def test_allocationchangeview_post_more_tb(self):
         """Post request with more TB should go through"""
-
         self.post_data['attributeform-0-new_value'] = '1000'
         self.assertEqual(len(AllocationChangeRequest.objects.all()), 0)
-        response = self.client.post(
-            '/allocation/1/change-request', data=self.post_data, follow=True
-        )
-        self.assertContains(
-            response, "Allocation change request successfully submitted."
-        )
+        response = self.client.post(self.url, data=self.post_data, follow=True)
+        self.assertContains(response, self.success_msg)
         self.assertEqual(len(AllocationChangeRequest.objects.all()), 1)
 
     def test_allocationchangeview_post_more_tb_decimal(self):
         """Post request for more TB with decimal should not go through"""
-
         self.post_data['attributeform-0-new_value'] = '1000.1'
         self.assertEqual(len(AllocationChangeRequest.objects.all()), 0)
-        response = self.client.post(
-            '/allocation/1/change-request', data=self.post_data, follow=True
-        )
+        response = self.client.post(self.url, data=self.post_data, follow=True)
         self.assertContains(response, "Value must be an integer.")
         self.assertEqual(len(AllocationChangeRequest.objects.all()), 0)
 
@@ -302,7 +281,7 @@ class AllocationDetailViewTest(AllocationViewBaseTest):
     def test_allocation_detail_access(self):
         self.allocation_access_tstbase(self.url)
         utils.test_user_can_access(self, self.pi_user, self.url)  # PI can access
-        utils.test_user_cannot_access(self, self.proj_nonallocation_user, self.url)
+        utils.test_user_can_access(self, self.proj_nonallocation_user, self.url)
         # check access for allocation user with "Removed" status
 
     def test_allocation_detail_template_value_render(self):
@@ -319,41 +298,35 @@ class AllocationDetailViewTest(AllocationViewBaseTest):
 
     def test_allocationdetail_requestchange_button(self):
         """Test visibility of "Request Change" button for different user types"""
-        utils.page_contains_for_user(self, self.admin_user, self.url, 'Request Change')
-        utils.page_contains_for_user(self, self.pi_user, self.url, 'Request Change')
+        search_text = 'Request Change'
+        utils.page_contains_for_user(self, self.admin_user, self.url, search_text)
+        utils.page_contains_for_user(self, self.pi_user, self.url, search_text)
+        utils.page_contains_for_user(self, self.proj_datamanager, self.url, search_text)
         utils.page_does_not_contain_for_user(
-            self, self.proj_allocation_user, self.url, 'Request Change'
-        )
+            self, self.proj_accessmanager, self.url, search_text)
+        utils.page_does_not_contain_for_user(
+            self, self.proj_allocation_user, self.url, search_text)
 
     def test_allocationattribute_button_visibility(self):
         """Test visibility of "Add Attribute" button for different user types"""
         # admin
-        utils.page_contains_for_user(
-            self, self.admin_user, self.url, 'Add Allocation Attribute'
-        )
-        utils.page_contains_for_user(
-            self, self.admin_user, self.url, 'Delete Allocation Attribute'
-        )
+        add_text = 'Add Allocation Attribute'
+        delete_text = 'Delete Allocation Attribute'
+        utils.page_contains_for_user(self, self.admin_user, self.url, add_text)
+        utils.page_contains_for_user(self, self.admin_user, self.url, delete_text)
         # pi
-        utils.page_does_not_contain_for_user(
-            self, self.pi_user, self.url, 'Add Allocation Attribute'
-        )
-        utils.page_does_not_contain_for_user(
-            self, self.pi_user, self.url, 'Delete Allocation Attribute'
-        )
+        utils.page_does_not_contain_for_user(self, self.pi_user, self.url, add_text)
+        utils.page_does_not_contain_for_user(self, self.pi_user, self.url, delete_text)
         # allocation user
         utils.page_does_not_contain_for_user(
-            self, self.proj_allocation_user, self.url, 'Add Allocation Attribute'
+            self, self.proj_allocation_user, self.url, add_text
         )
         utils.page_does_not_contain_for_user(
-            self, self.proj_allocation_user, self.url, 'Delete Allocation Attribute'
+            self, self.proj_allocation_user, self.url, delete_text
         )
 
     def test_allocationuser_button_visibility(self):
         """Test visibility of "Add/Remove Users" buttons for different user types"""
-        # admin
-        # utils.page_contains_for_user(self, self.admin_user, self.url, 'Add Users')
-        # utils.page_contains_for_user(self, self.admin_user, self.url, 'Remove Users')
         # we're removing these buttons for everybody, to avoid confusion re: procedure for user addition/removal
         utils.page_does_not_contain_for_user(
             self, self.admin_user, self.url, 'Add Users'
@@ -379,7 +352,7 @@ class AllocationCreateViewTest(AllocationViewBaseTest):
     """Tests for the AllocationCreateView"""
 
     def setUp(self):
-        self.url = f'/allocation/project/{self.project.pk}/create'  # url for AllocationCreateView
+        self.url = f'/allocation/project/{self.project.pk}/create' # url for AllocationCreateView
         self.client.force_login(self.pi_user)
         tier_restype = ResourceTypeFactory(name='Storage Tier')
         storage_tier = ResourceFactory(resource_type=tier_restype)
@@ -394,13 +367,14 @@ class AllocationCreateViewTest(AllocationViewBaseTest):
         """Test access to the AllocationCreateView"""
         self.allocation_access_tstbase(self.url)
         utils.test_user_can_access(self, self.pi_user, self.url)
+        utils.test_user_can_access(self, self.proj_datamanager, self.url)
+        utils.test_user_cannot_access(self, self.proj_accessmanager, self.url)
         utils.test_user_cannot_access(self, self.proj_nonallocation_user, self.url)
 
     def test_allocationcreateview_post(self):
         """Test POST to the AllocationCreateView"""
         self.assertEqual(len(self.project.allocation_set.all()), 1)
         response = self.client.post(self.url, data=self.post_data, follow=True)
-
         self.assertContains(response, "Allocation requested.")
         self.assertEqual(len(self.project.allocation_set.all()), 2)
 
@@ -428,10 +402,9 @@ class AllocationCreateViewTest(AllocationViewBaseTest):
 
     def test_allocationcreateview_post_bools(self):
         """ensure booleans are properly saved"""
-        self.post_data['additional_specifications'] = [
-            'Heavy IO', 'Mounted', 'External Sharing', 'High Security', 'DUA']
-        response = self.client.post(self.url, data=self.post_data, follow=True)
         aa_names = ['Heavy IO', 'Mounted', 'High Security', 'DUA', 'External Sharing']
+        self.post_data['additional_specifications'] = aa_names
+        response = self.client.post(self.url, data=self.post_data, follow=True)
         aa_objs = AllocationAttribute.objects.filter(
             allocation_attribute_type__name__in=aa_names
         )
@@ -442,7 +415,6 @@ class AllocationCreateViewTest(AllocationViewBaseTest):
         self.post_data['existing_expense_codes'] = '000-000-000-000-000-000-000-000-000-000-000'
         response = self.client.post(self.url, data=self.post_data, follow=True)
         self.assertContains(response, "must either select an existing expense code or")
-
 
     def test_allocationcreateview_post_hsph_offerlettercode(self):
         """Ensure that form goes through if existing_expense_codes is checked"""
@@ -466,19 +438,7 @@ class AllocationAddUsersViewTest(AllocationViewBaseTest):
 
     def test_allocationaddusersview_access(self):
         self.allocation_access_tstbase(self.url)
-        no_permission = 'You do not have permission to add users to the allocation.'
-
-        self.client.force_login(self.admin_user, backend=BACKEND)
-        admin_response = self.client.get(self.url)
-        self.assertTrue(no_permission not in str(admin_response.content))
-
-        self.client.force_login(self.pi_user, backend=BACKEND)
-        pi_response = self.client.get(self.url)
-        self.assertTrue(no_permission not in str(pi_response.content))
-
-        self.client.force_login(self.proj_allocation_user, backend=BACKEND)
-        user_response = self.client.get(self.url)
-        self.assertTrue(no_permission in str(user_response.content))
+        utils.test_user_cannot_access(self, self.pi_user, self.url)
 
 
 class AllocationRemoveUsersViewTest(AllocationViewBaseTest):
@@ -489,6 +449,7 @@ class AllocationRemoveUsersViewTest(AllocationViewBaseTest):
 
     def test_allocationremoveusersview_access(self):
         self.allocation_access_tstbase(self.url)
+        utils.test_user_cannot_access(self, self.pi_user, self.url)
 
 
 class AllocationRequestListViewTest(AllocationViewBaseTest):
@@ -499,6 +460,7 @@ class AllocationRequestListViewTest(AllocationViewBaseTest):
 
     def test_allocationrequestlistview_access(self):
         self.allocation_access_tstbase(self.url)
+        utils.test_user_cannot_access(self, self.pi_user, self.url)
 
 
 class AllocationChangeListViewTest(AllocationViewBaseTest):

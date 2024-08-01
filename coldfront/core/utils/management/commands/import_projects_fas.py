@@ -54,10 +54,10 @@ class Command(BaseCommand):
             project_status_choices['New'] = ProjectStatusChoice.objects.get(name='New')
 
             project_user_role_choices = {}
-            project_user_role_choices['PI'] = ProjectUserRoleChoice.objects.get(name='Manager')
+            project_user_role_choices['PI'] = ProjectUserRoleChoice.objects.get(name='General Manager')
             project_user_role_choices['U'] = ProjectUserRoleChoice.objects.get(name='User')
-            project_user_role_choices['M'] = ProjectUserRoleChoice.objects.get(name='Manager')
-            project_user_role_choices['Manager'] = ProjectUserRoleChoice.objects.get(name='Manager')
+            project_user_role_choices['M'] = ProjectUserRoleChoice.objects.get(name='General Manager')
+            project_user_role_choices['Manager'] = ProjectUserRoleChoice.objects.get(name='General Manager')
 
             project_user_status_choices = {}
             project_user_status_choices['ACT'] = ProjectUserStatusChoice.objects.get(name='Active')

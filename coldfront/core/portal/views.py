@@ -18,10 +18,12 @@ from coldfront.core.publication.models import Publication
 from coldfront.core.resource.models import Resource
 from coldfront.config.env import ENV
 from coldfront.core.department.models import Department, DepartmentMember
+from coldfront.core.utils.common import import_from_settings
 
 if ENV.bool('PLUGIN_SFTOCF', default=False):
     from coldfront.plugins.sftocf.utils import StarFishRedash, STARFISH_SERVER
 
+MANAGERS = import_from_settings('MANAGERS', ['Manager'])
 
 def home(request):
     context = {}
@@ -41,7 +43,7 @@ def home(request):
             Q(project__status__name__in=['Active', 'New']) &
             Q(project__projectuser__user=request.user) &
             Q(project__projectuser__status__name__in=['Active', ]) &
-                (Q(project__projectuser__role__name='Manager') |
+                (Q(project__projectuser__role__name__in=MANAGERS) |
                 Q(allocationuser__user=request.user) &
                 Q(allocationuser__status__name='Active'))
         ).distinct().order_by('-created')
@@ -51,7 +53,7 @@ def home(request):
             & Q(project__status__name__in=['Active', 'New']) & (
                 Q(project__pi=request.user) | (
                     Q(project__projectuser__user=request.user)
-                    & Q(project__projectuser__role__name='Manager')
+                    & Q(project__projectuser__role__name__in=MANAGERS)
                 )
             )
         )

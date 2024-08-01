@@ -64,5 +64,7 @@ class UserActiveManagerOrHigherMixin(LoginRequiredMixin, UserPassesTestMixin):
         if project_obj.pi == self.request.user:
             return True
 
-        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        if project_obj.projectuser_set.filter(
+            user=self.request.user, role__name__contains='Manager', status__name='Active'
+        ).exists():
             return True
