@@ -15,9 +15,9 @@ def produce_filter_parameter(key, value):
         return f'{key}={value.pk}&'
     return f'{key}={value}&'
 
-# Create your views here.
+
 class ColdfrontListView(LoginRequiredMixin, ListView):
-    """A ListView with definitions standard to complex ListView implementations in Coldfront
+    """A ListView with definitions standard to complex ListView implementations in ColdFront
     """
 
     def return_order(self):
@@ -47,18 +47,14 @@ class ColdfrontListView(LoginRequiredMixin, ListView):
                 f'order_by={order_by}&direction={direction}&'
         else:
             filter_parameters_with_order_by = filter_parameters
-
         return search_form, filter_parameters, filter_parameters_with_order_by
 
-
     def get_context_data(self, SearchFormClass=None, **kwargs):
-
         context = super().get_context_data(**kwargs)
         count = self.get_queryset().count()
         context['count'] = count
 
         search_form, filter_parameters, filter_parameters_with_order_by = self.filter_parameters(SearchFormClass)
-
         if filter_parameters:
             context['expand_accordion'] = 'show'
 
@@ -67,6 +63,7 @@ class ColdfrontListView(LoginRequiredMixin, ListView):
         context['filter_parameters_with_order_by'] = filter_parameters_with_order_by
 
         return context
+
 
 class NoteUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     template_name = 'note_update.html'
@@ -80,6 +77,7 @@ class NoteUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
             return True
         messages.error(self.request, 'You do not have permission to change this note.')
         return False
+
 
 class NoteCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     template_name = 'note_create.html'

@@ -239,7 +239,7 @@ class Command(BaseCommand):
         ProjectUser.objects.get_or_create(
             user=pi1,
             project=project_obj,
-            role=ProjectUserRoleChoice.objects.get(name='Manager'),
+            role=ProjectUserRoleChoice.objects.get(name='General Manager'),
             status=ProjectUserStatusChoice.objects.get(name='Active')
         )
 
@@ -399,7 +399,7 @@ class Command(BaseCommand):
         project_user_obj, _ = ProjectUser.objects.get_or_create(
             user=pi2,
             project=project_obj,
-            role=ProjectUserRoleChoice.objects.get(name='Manager'),
+            role=ProjectUserRoleChoice.objects.get(name='General Manager'),
             status=ProjectUserStatusChoice.objects.get(name='Active')
         )
 

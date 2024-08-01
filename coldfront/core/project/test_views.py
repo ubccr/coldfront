@@ -1,6 +1,7 @@
 import logging
 
 from django.test import TestCase, tag
+from django.urls import reverse
 
 from coldfront.core.test_helpers import utils
 from coldfront.core.test_helpers.factories import (
@@ -11,11 +12,13 @@ from coldfront.core.test_helpers.factories import (
     ProjectStatusChoiceFactory,
     ProjectAttributeTypeFactory,
 )
-from coldfront.core.project.models import ProjectUserStatusChoice, Project
+from coldfront.core.project.models import (
+    Project,
+    ProjectStatusChoice,
+    ProjectUserStatusChoice,
+)
 
 logging.disable(logging.CRITICAL)
-
-
 
 UTIL_FIXTURES = [
         "coldfront/core/test_helpers/test_data/test_fixtures/ifx.json",
@@ -96,7 +99,7 @@ class ProjectDetailViewTest(ProjectViewTestBase):
         utils.test_user_cannot_access(self, self.nonproject_user, self.url)
 
     def test_projectdetail_permissions(self):
-        """Test project detail page access permissions"""
+        """Test ProjectDetail page access permissions"""
         # admin has is_allowed_to_update_project set to True
         response = utils.login_and_get_page(self.client, self.admin_user, self.url)
         self.assertEqual(response.context['is_allowed_to_update_project'], True)
@@ -110,37 +113,65 @@ class ProjectDetailViewTest(ProjectViewTestBase):
         self.assertEqual(response.context['is_allowed_to_update_project'], False)
 
     def test_projectdetail_request_allocation_button_visibility(self):
-        """Test visibility of project detail request allocation button to different projectuser levels"""
-        utils.page_contains_for_user(self, self.admin_user, self.url, 'Request New Storage Allocation') # admin can see request allocation button
+        """Test ProjectDetail request allocation button visibility to different projectuser roles"""
+        button_text = 'Request New Storage Allocation'
+        utils.page_contains_for_user(self, self.admin_user, self.url, button_text) # admin can see request allocation button
 
-        utils.page_contains_for_user(self, self.pi_user, self.url, 'Request New Storage Allocation') # pi can see request allocation button
+        utils.page_contains_for_user(self, self.pi_user, self.url, button_text) # pi can see request allocation button
 
-        response = utils.login_and_get_page(self.client, self.project_user, self.url)
-        self.assertNotContains(response, 'Request New Storage Allocation') # non-manager user cannot see request allocation button
+        # data manager can see request allocation button
+        utils.page_contains_for_user(self, self.proj_datamanager, self.url, button_text)
+        # access manager cannot see request allocation button
+        utils.page_does_not_contain_for_user(self, self.proj_accessmanager, self.url, button_text)
+
+        utils.page_does_not_contain_for_user(self, self.project_user, self.url, button_text) # non-manager user cannot see request allocation button
 
     def test_projectdetail_edituser_button_visibility(self):
-        """Test visibility of project detail edit button to different projectuser levels"""
+        """Test ProjectDetail edit button visibility to different projectuser roles"""
         utils.page_contains_for_user(self, self.admin_user, self.url, 'fa-user-edit') # admin can see edit button
-
         utils.page_contains_for_user(self, self.pi_user, self.url, 'fa-user-edit') # pi can see edit button
-
         utils.page_does_not_contain_for_user(self, self.project_user, self.url, 'fa-user-edit') # non-manager user cannot see edit button
+        # access manager can see edit button
+        utils.page_contains_for_user(self, self.proj_accessmanager, self.url, 'fa-user-edit')
+        # data manager cannot see edit button
+        utils.page_does_not_contain_for_user(self, self.proj_datamanager, self.url, 'fa-user-edit')
 
-    # def test_projectdetail_addattribute_button_visibility(self):
-    #     """Test visibility of project detail add attribute button to different projectuser levels"""
-    #     utils.page_contains_for_user(self, self.admin_user, self.url, 'Add Attribute') # admin can see add attribute button
-    #
-    #     utils.page_does_not_contain_for_user(self, self.pi_user, self.url, 'Add Attribute') # pi cannot see add attribute button
-    #
-    #     utils.page_does_not_contain_for_user(self, self.project_user, self.url, 'Add Attribute') # non-manager user cannot see add attribute button
+    def test_projectdetail_addattribute_button_visibility(self):
+        """Test ProjectDetail add attribute button visibility to different projectuser roles"""
+        search_text = 'Add Attribute'
+        utils.page_contains_for_user(self, self.admin_user, self.url, search_text) # admin can see add attribute button
+        utils.page_does_not_contain_for_user(self, self.pi_user, self.url, search_text) # pi cannot see add attribute button
+        utils.page_does_not_contain_for_user(self, self.project_user, self.url, search_text) # non-manager user cannot see add attribute button
 
     def test_projectdetail_addnotification_button_visibility(self):
-        """Test visibility of project detail add notification button to different projectuser levels"""
-        utils.page_contains_for_user(self, self.admin_user, self.url, 'Add Notification') # admin can see add notification button
+        """Test ProjectDetail add notification button visibility to different projectuser roles"""
+        search_text = 'Add Notification'
+        utils.page_contains_for_user(self, self.admin_user, self.url, search_text) # admin can see add notification button
+        utils.page_does_not_contain_for_user(self, self.pi_user, self.url, search_text) # pi cannot see add notification button
+        utils.page_does_not_contain_for_user(self, self.project_user, self.url, search_text) # non-manager user cannot see add notification button
+        # access manager cannot see add notification button
+        utils.page_does_not_contain_for_user(self, self.proj_accessmanager, self.url, search_text)
+        # data manager cannot see add notification button
+        utils.page_does_not_contain_for_user(self, self.proj_datamanager, self.url, search_text)
 
-        utils.page_does_not_contain_for_user(self, self.pi_user, self.url, 'Add Notification') # pi cannot see add notification button
 
-        utils.page_does_not_contain_for_user(self, self.project_user, self.url, 'Add Notification') # non-manager user cannot see add notification button
+class ProjectArchiveProjectViewTest(ProjectViewTestBase):
+    """Tests for project archive project view"""
+
+    @classmethod
+    def setUpTestData(cls):
+        """Set up users and project for testing"""
+        super(ProjectArchiveProjectViewTest, cls).setUpTestData()
+        cls.url = f'/project/{cls.project.pk}/archive'
+
+    def test_project_archive_project_access(self):
+        """Test access to project archive project page"""
+        # logged-out user gets redirected, admin can access archive project page
+        self.project_access_tstbase(self.url)
+        # pi, projectuser and nonproject user cannot access archive project page
+        utils.test_user_cannot_access(self, self.pi_user, self.url)
+        utils.test_user_cannot_access(self, self.project_user, self.url)
+        utils.test_user_cannot_access(self, self.nonproject_user, self.url)
 
 
 class ProjectCreateTest(ProjectViewTestBase):
@@ -177,8 +208,8 @@ class ProjectAttributeCreateTest(ProjectViewTestBase):
         """Test access to project attribute create page"""
         # logged-out user gets redirected, admin can access create page
         self.project_access_tstbase(self.url)
-        # pi can access create page
-        utils.test_user_can_access(self, self.pi_user, self.url)
+        # pi cannot access create page
+        utils.test_user_cannot_access(self, self.pi_user, self.url)
         # project user and nonproject user cannot access create page
         utils.test_user_cannot_access(self, self.project_user, self.url)
         utils.test_user_cannot_access(self, self.nonproject_user, self.url)
@@ -239,8 +270,8 @@ class ProjectAttributeUpdateTest(ProjectViewTestBase):
     def test_project_attribute_update_access(self):
         """Test access to project attribute update page"""
         self.project_access_tstbase(self.url)
-        utils.test_user_can_access(self, self.pi_user, self.url)
         # project user, pi, and nonproject user cannot access update page
+        utils.test_user_cannot_access(self, self.pi_user, self.url)
         utils.test_user_cannot_access(self, self.project_user, self.url)
         utils.test_user_cannot_access(self, self.nonproject_user, self.url)
 
@@ -259,9 +290,8 @@ class ProjectAttributeDeleteTest(ProjectViewTestBase):
         """test access to project attribute delete page"""
         # logged-out user gets redirected, admin can access delete page
         self.project_access_tstbase(self.url)
-        # pi can access delete page
-        utils.test_user_can_access(self, self.pi_user, self.url)
-        # project user and nonproject user cannot access delete page
+        # pi, project user and nonproject user cannot access delete page
+        utils.test_user_cannot_access(self, self.pi_user, self.url)
         utils.test_user_cannot_access(self, self.project_user, self.url)
         utils.test_user_cannot_access(self, self.nonproject_user, self.url)
 
@@ -316,7 +346,6 @@ class ProjectListViewTest(ProjectViewTestBase):
         response = utils.login_and_get_page(self.client, self.project_user, url)
         self.assertEqual(len(response.context['object_list']), 1)
 
-
     ### ProjectListView search tests ###
 
     def test_project_list_search(self):
@@ -333,17 +362,32 @@ class ProjectListViewTest(ProjectViewTestBase):
         response = utils.login_and_get_page(self.client, self.admin_user, url)
 
 
-
 class ProjectRemoveUsersViewTest(ProjectViewTestBase):
     """Tests for ProjectRemoveUsersView"""
+
     def setUp(self):
-        """set up users and project for testing"""
-        self.url = f'/project/{self.project.pk}/remove-users/'
+        """Set up users and project for testing"""
+        super().setUp()
+        self.url = reverse('project-remove-users', kwargs={'pk': self.project.pk})
+        self.project_user = self.proj_allocation_user
+        self.nonproject_user = self.nonproj_allocation_user
 
     @tag('net')
     def test_projectremoveusersview_access(self):
         """test access to project remove users page"""
         self.project_access_tstbase(self.url)
+
+    @tag('net')
+    def test_pi_user_cannot_be_removed(self):
+        """Test that the project PI cannot be removed"""
+        self.client.force_login(self.pi_user)
+
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        context = response.context
+
+        users_to_remove = context['formset'].initial
+        self.assertNotIn(self.pi_user.username, [u['username'] for u in users_to_remove])
 
 
 class ProjectUpdateViewTest(ProjectViewTestBase):
@@ -399,6 +443,10 @@ class ProjectAddUsersSearchView(ProjectViewTestBase):
     def test_projectadduserssearchview_access(self):
         """test access to project add users search page"""
         self.project_access_tstbase(self.url)
+        utils.test_user_can_access(self, self.pi_user, self.url)# pi can access
+        utils.test_user_can_access(self, self.proj_accessmanager, self.url)# access manager can access
+        utils.test_user_cannot_access(self, self.proj_datamanager, self.url)# data manager cannot access
+        utils.test_user_cannot_access(self, self.proj_allocation_user, self.url)# user cannot access
 
 
 class ProjectUserDetailViewTest(ProjectViewTestBase):

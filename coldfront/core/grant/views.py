@@ -30,7 +30,7 @@ class GrantCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         if project_obj.pi == self.request.user:
             return True
 
-        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        if project_obj.projectuser_set.filter(user=self.request.user, role__name__contains='Manager', status__name='Active').exists():
             return True
 
         messages.error(self.request, 'You do not have permission to add a new grant to this project.')
@@ -85,7 +85,9 @@ class GrantUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         if grant_obj.project.pi == self.request.user:
             return True
 
-        if grant_obj.project.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        if grant_obj.project.projectuser_set.filter(
+            user=self.request.user, role__name__contains='Manager', status__name='Active'
+        ).exists():
             return True
 
         messages.error(self.request, 'You do not have permission to update grant from this project.')
@@ -113,7 +115,9 @@ class GrantDeleteGrantsView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
         if project_obj.pi == self.request.user:
             return True
 
-        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        if project_obj.projectuser_set.filter(
+            user=self.request.user, role__name__contains='Manager', status__name='Active'
+        ).exists():
             return True
 
         messages.error(self.request, 'You do not have permission to delete grants from this project.')

@@ -16,7 +16,7 @@ def add_project_status_choices(apps, schema_editor):
 def add_project_user_role_choices(apps, schema_editor):
     ProjectUserRoleChoice = apps.get_model('project', 'ProjectUserRoleChoice')
 
-    for choice in ['User', 'Manager', ]:
+    for choice in ['User', 'Data Manager', 'General Manager', 'Access Manager']:
         ProjectUserRoleChoice.objects.get_or_create(name=choice)
 
 
