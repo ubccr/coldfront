@@ -110,7 +110,7 @@
             </td>
             {% if allocation.status.name == "Ready for Deletion" %}
             <td><a href="{% url 'allocation-detail' allocation.id %}"
-                class="btn btn-info btn-block">{{allocation.status}}</a></td>
+                class="btn btn-info btn-block">Ready for Deletion</a></td>
             {% endif %}
           </tr>
           {% endfor %}
