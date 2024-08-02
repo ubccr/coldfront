@@ -251,7 +251,7 @@ class ProjectViewSet(viewsets.ReadOnlyModelViewSet):
     Query parameters:
     - allocations (default false)
         Show related allocation data.
-    - users (default false)
+    - project_users (default false)
         Show related user data.
     '''
     serializer_class = serializers.ProjectSerializer
@@ -275,7 +275,7 @@ class ProjectViewSet(viewsets.ReadOnlyModelViewSet):
                 )
             ).distinct().order_by('pi')
 
-        if self.request.query_params.get('users') in ['True', 'true']:
+        if self.request.query_params.get('project_users') in ['True', 'true']:
             projects = projects.prefetch_related('projectuser_set')
 
         if self.request.query_params.get('allocations') in ['True', 'true']:
