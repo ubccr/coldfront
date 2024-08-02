@@ -188,7 +188,7 @@ class ProjAllocationSerializer(serializers.ModelSerializer):
 
 
 class ProjectUserSerializer(serializers.ModelSerializer):
-    user = serializers.SlugRelatedField(slug_field='full_name', read_only=True)
+    user = serializers.SlugRelatedField(slug_field='username', read_only=True)
     status = serializers.SlugRelatedField(slug_field='name', read_only=True)
     role = serializers.SlugRelatedField(slug_field='name', read_only=True)
 
@@ -209,12 +209,12 @@ class ProjectSerializer(serializers.ModelSerializer):
 
     def get_project_users(self, obj):
         request = self.context.get('request', None)
-        if request and request.query_params.get('project_users') == 'true':
+        if request and request.query_params.get('project_users') in ['true','True']:
             return ProjectUserSerializer(obj.projectuser_set, many=True, read_only=True).data
         return None
 
     def get_allocations(self, obj):
         request = self.context.get('request', None)
-        if request and request.query_params.get('allocations') == 'true':
+        if request and request.query_params.get('allocations') in ['true','True']:
             return ProjAllocationSerializer(obj.allocation_set, many=True, read_only=True).data
         return None
