@@ -100,7 +100,6 @@
           </tr>
         </thead>
         <tbody>
-          {% allocation_delete = 0 %}
           {% for allocation in allocation_list %}
           <tr>
             {% if allocation.status.name == "Ready for Deletion" %}
