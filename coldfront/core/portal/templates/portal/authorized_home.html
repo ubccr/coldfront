@@ -46,6 +46,7 @@
         <tbody>
           {% for allocation in allocation_list %}
           <tr>
+            {% if allocation.status.name != "Ready for Deletion" %}
             <td>{{allocation.project.title}}</td>
             <td>{{allocation.get_parent_resource}}
               {% if allocation.get_parent_resource.get_ondemand_status == 'Yes' and ondemand_url %}
