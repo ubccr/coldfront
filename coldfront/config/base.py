@@ -67,10 +67,10 @@ INSTALLED_APPS += [
     'fontawesome_free',
     'mathfilters',
     # 'debug_toolbar',
-    'ifxuser',
-    'author',
-    'ifxbilling',
-    'ifxreport',
+    # 'ifxuser',
+    # 'author',
+    # 'ifxbilling',
+    # 'ifxreport',
 ]
 
 # ColdFront Apps
