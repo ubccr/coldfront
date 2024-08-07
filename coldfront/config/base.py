@@ -70,6 +70,7 @@ INSTALLED_APPS += [
     # 'ifxuser',
     # 'author',
     # 'ifxbilling',
+    # 'ifxreport',
 ]
 
 # ColdFront Apps
