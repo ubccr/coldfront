@@ -755,7 +755,20 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         else:
             user = User.objects.filter(username=form.instance.pi_username).first()
             if user is None:
-                messages.error(self.request, 'This username does not exist in RT Projects')
+                if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
+                    from coldfront.plugins.ldap_user_info.utils import get_user_info
+                    result = get_user_info(form.instance.pi_username, ['sAMAccountName'])
+                    if not result.get('sAMAccountName')[0]:
+                        messages.error(self.request, 'This PI\'s username does not exist.')
+                        return super().form_invalid(form)
+
+                messages.error(
+                    self.request,
+                    f'This PI\'s username could not be found on RT Projects. If they haven\'t yet, '
+                    f'they will need to log onto the RT Projects site for their account to be '
+                    f'automatically created. Once they do that they can be added as a PI to this '
+                    f'project.'
+                )
                 return super().form_invalid(form)
             user_profile = UserProfile.objects.get(user=user)
             if user_profile.title not in ['Faculty', 'Staff', 'Academic (ACNP)',]:
