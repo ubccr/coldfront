@@ -11,9 +11,10 @@ from django.utils import timezone
 from django.db import connection
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication, TokenAuthentication
 from ifxreport.views import run_report as ifxreport_run_report
 from ifxbilling import models as ifxbilling_models
 from ifxbilling.calculator import getClassFromName
@@ -76,14 +77,15 @@ def billing_records(request):
         raise PermissionDenied
     return render(request, 'plugins/ifx/billing_records.html')
 
-@login_required
+@api_view(['GET',])
+@authentication_classes([TokenAuthentication, SessionAuthentication, BasicAuthentication])
 def get_billing_record_list(request):
     '''
     Get billing record list
     '''
     if not request.user.is_superuser:
         raise PermissionDenied
-    return ifxbilling_get_billing_record_list(request)
+    return ifxbilling_get_billing_record_list(request._request)
 
 @login_required
 @api_view(['POST',])
