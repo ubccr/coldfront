@@ -109,7 +109,7 @@ class LDAPSearch:
             return dict.fromkeys(search_attributes_list, None)
 
         searchParameters = {'search_base': self.LDAP_USER_SEARCH_BASE,
-                            'search_filter': ldap.filter.filter_format("(cn=%s)", [user_search_string]),
+                            'search_filter': ldap.filter.filter_format("(sAMAccountName=%s)", [user_search_string]),
                             'attributes': search_attributes_list,
                             'size_limit': 1}
         self.conn.search(**searchParameters)
