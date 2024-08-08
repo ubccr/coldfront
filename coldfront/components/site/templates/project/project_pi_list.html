@@ -4,22 +4,24 @@
   {% if not pi_projects and pi_username != '' %}
     <p class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i> {{ pi_username }} is not a PI in any available projects.</p>
   {% elif pi_projects %}
-  <ul class="list-group list-group-flush">
-    {% for project in pi_projects %}
-      <li class="list-group-item">
-        <p><strong>Title:</strong> {{ project.title }}</p>
-        <p>
-          <strong>Principal Investigator:</strong> {{ project.pi.first_name }} {{ project.pi.last_name }} ({{ project.pi.username }})
-        </p>
-        {% if EMAIL_ENABLED %}
-          <button id="{{project.pk}}" class="btn btn-primary" name="request_access">
-            <i class="far fa-envelope" aria-hidden="true"></i> Request Access
-          </button>
-          <p id="warning_{{project.pk}}" class="invalid invalid-feedback" style="display: none;">Failed to send email.</p>
-        {% endif %}
-      </li>
-    {% endfor %}
-  </ul>
+    <div id="pi_project_results">
+      <ul class="list-group list-group-flush">
+        {% for project in pi_projects %}
+          <li class="list-group-item">
+            <p><strong>Title:</strong> {{ project.title }}</p>
+            <p>
+              <strong>Principal Investigator:</strong> {{ project.pi.first_name }} {{ project.pi.last_name }} ({{ project.pi.username }})
+            </p>
+            {% if EMAIL_ENABLED %}
+              <button id="{{project.pk}}" class="btn btn-primary" name="request_access">
+                <i class="far fa-envelope" aria-hidden="true"></i> Request Access
+              </button>
+              <p id="warning_{{project.pk}}" class="invalid invalid-feedback" style="display: none;">Failed to send email.</p>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
   {% endif %}
 </div>
 
