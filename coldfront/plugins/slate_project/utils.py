@@ -946,20 +946,32 @@ def send_ineligible_users_report():
             else:
                 ineligible_users[username_status][role].append(ldap_group)
 
-    if EMAIL_ENABLED and ineligible_users:
-        template_context = {
-            'ineligible_users': ineligible_users,
-            'current_date': date.today().isoformat(),
-        }
+    if ineligible_users:
+        current_date = date.today().isoformat()
+        with open(os.path.join(SLATE_PROJECT_DIR, 'ineligible_users', f'ineligible_users_{current_date}'), 'w') as ineligible_file:
+            ineligible_file.write(f'The ineligible users within Slate Project allocations found on {current_date}.\n\n')
+            for user, roles in ineligible_users.items():
+                ineligible_file.write(user + '\n')
+                ineligible_file.write('---------------\n')
+                for role, projects in roles.items():
+                    ineligible_file.write(f'{role} - {", ".join(projects)}\n')
+                ineligible_file.write('\n')
+        logger.info('Slate Project ineligible users file created')
 
-        send_email_template(
-            'Ineligible Users',
-            'slate_project/email/ineligibility_report.txt',
-            template_context,
-            EMAIL_SENDER,
-            [SLATE_PROJECT_EMAIL]
-        )
-        logger.info('Slate Project ineligible users email report sent')
+        if EMAIL_ENABLED:
+            template_context = {
+                'ineligible_users': ineligible_users,
+                'current_date': current_date,
+            }
+
+            send_email_template(
+                'Ineligible Users',
+                'slate_project/email/ineligibility_report.txt',
+                template_context,
+                EMAIL_SENDER,
+                [SLATE_PROJECT_EMAIL]
+            )
+            logger.info('Slate Project ineligible users email report sent')
 
 
 def send_ineligible_pis_report():
