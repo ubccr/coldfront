@@ -36,9 +36,9 @@ PENDING_ACTIVE_ALLOCATION_STATUSES = PENDING_ALLOCATION_STATUSES + ACTIVE_ALLOCA
 INACTIVE_ALLOCATION_STATUSES = ['Denied', 'Expired', 'Inactive', 'Pending Deactivation']
 
 # Categorization of project manager permissions
-MANAGERS = ['General Manager', 'Access Manager', 'Data Manager']
+MANAGERS = ['General Manager', 'Access Manager', 'Storage Manager']
 ACCESS_MANAGERS = ['General Manager', 'Access Manager']
-DATA_MANAGERS = ['General Manager', 'Data Manager']
+DATA_MANAGERS = ['General Manager', 'Storage Manager']
 
 #------------------------------------------------------------------------------
 # DjangoQ settings
