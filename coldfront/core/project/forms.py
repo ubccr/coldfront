@@ -20,7 +20,7 @@ EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
 class ProjectCreateForm(forms.ModelForm):
     class Meta:
         model = Project
-        fields = ['title', 'description', 'field_of_science', ]
+        fields = ['title', 'pi', 'description', 'field_of_science']
         
     pi = forms.CharField(
         help_text="Select the Principal Investigator for this project.",
