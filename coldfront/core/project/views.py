@@ -453,7 +453,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Project
     form_class = ProjectCreateForm
     template_name_suffix = '_create_form'
-    fields = ['title', 'pi', 'description', 'field_of_science', ]
+    # fields = ['title', 'pi', 'description', 'field_of_science', ]
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
