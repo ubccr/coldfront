@@ -43,7 +43,8 @@ from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectReviewForm,
                                           ProjectSearchForm,
                                           ProjectUserUpdateForm,
-                                          ProjectAttributeUpdateForm)
+                                          ProjectAttributeUpdateForm,
+                                          ProjectCreateForm)
 from coldfront.core.project.models import (Project,
                                            ProjectAttribute,
                                            ProjectReview,
@@ -450,6 +451,7 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
 class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Project
+    form_class = ProjectCreateForm
     template_name_suffix = '_create_form'
     fields = ['title', 'pi', 'description', 'field_of_science', ]
 

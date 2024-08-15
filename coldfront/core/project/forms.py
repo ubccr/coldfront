@@ -17,6 +17,10 @@ EMAIL_ADMIN_LIST = import_from_settings('EMAIL_ADMIN_LIST', [])
 EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
     'EMAIL_DIRECTOR_EMAIL_ADDRESS', '')
 
+class ProjectCreateForm(forms.ModelForm):
+    class Meta:
+        model = Project
+        fields = ['title', 'pi', 'description', 'field_of_science', ]
 
 class ProjectSearchForm(forms.Form):
     """ Search form for the Project list page.
