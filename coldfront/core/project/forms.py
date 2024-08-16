@@ -27,7 +27,8 @@ class PrincipalInvestigatorField(forms.CharField):
     # widget = MultiSelectLookupInput
     # default_validators = [validate_single_ad_user]
     
-    
+    def to_python(self, value):
+        return User.objects.get_or_create(username=value)[0]
 
     def clean(self, value):
         try:
@@ -38,8 +39,8 @@ class PrincipalInvestigatorField(forms.CharField):
             except User.DoesNotExist:
                 raise error
             
-        user = User.objects.get_or_create(username=value)[0]
-        return super().clean(user)
+        # value = User.objects.get_or_create(username=value)[0]
+        return super().clean(value)
 
 class ProjectCreateForm(forms.ModelForm):
     class Meta:
