@@ -24,7 +24,7 @@ class PrincipalInvestigatorField(forms.CharField):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
     # widget = MultiSelectLookupInput
-    default_validators = [validate_ad_users]
+    default_validators = [validate_single_ad_user]
 
     def clean(self, value):
         user = User.objects.get_or_create(username=value)
