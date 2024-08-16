@@ -453,7 +453,6 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Project
     form_class = ProjectCreateForm
     template_name_suffix = '_create_form'
-    # fields = ['title', 'pi', 'description', 'field_of_science', ]
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -464,8 +463,6 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
             return True
 
     def form_valid(self, form):
-        # form.instance.pi = self.request.user
-        # form.instance.pi = User.objects.get_or_create(username=form.instance.pi_username)
         project_obj = form.save(commit=False)
         form.instance.status = ProjectStatusChoice.objects.get(name='New')
         project_obj.save()

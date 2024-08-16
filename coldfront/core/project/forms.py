@@ -3,17 +3,13 @@ import datetime
 from django import forms
 from django.db.models.functions import Lower
 from django.shortcuts import get_object_or_404
-from django.core.exceptions import ValidationError
 from ast import Constant
 from django.db.models.functions import Lower
 from cProfile import label
 
 from coldfront.core.project.models import (Project, ProjectAttribute, ProjectAttributeType, ProjectReview,
                                            ProjectUserRoleChoice)
-from coldfront.core.user.models import User
 from coldfront.core.utils.common import import_from_settings
-
-from coldfront_plugin_qumulo.validators import validate_single_ad_user
 
 EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL = import_from_settings(
     'EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL')
@@ -21,32 +17,12 @@ EMAIL_ADMIN_LIST = import_from_settings('EMAIL_ADMIN_LIST', [])
 EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
     'EMAIL_DIRECTOR_EMAIL_ADDRESS', '')
 
-class PrincipalInvestigatorField(forms.CharField):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-    # widget = MultiSelectLookupInput
-    # default_validators = [validate_single_ad_user]
-    
-    def to_python(self, value):
-        return User.objects.get_or_create(username=value)[0]
 
-    def clean(self, value):
-        try:
-            validate_single_ad_user(value)
-        except ValidationError as error:
-            try:
-                User.objects.get(username=value)
-            except User.DoesNotExist:
-                raise error
-            
-        # value = User.objects.get_or_create(username=value)[0]
-        return super().clean(value)
 
 class ProjectCreateForm(forms.ModelForm):
     class Meta:
         model = Project
         fields = ['title', 'pi', 'description', 'field_of_science']
-        # formfield_callback = create_formfield_callback
         
     pi = PrincipalInvestigatorField(
         help_text="Select the Principal Investigator for this project.",
