@@ -38,7 +38,7 @@ class PrincipalInvestigatorField(forms.CharField):
             except User.DoesNotExist:
                 raise error
             
-        user = User.objects.get_or_create(username=value)
+        user = User.objects.get_or_create(username=value)[0]
         return super().clean(user)
 
 class ProjectCreateForm(forms.ModelForm):
