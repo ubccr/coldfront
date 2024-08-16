@@ -9,6 +9,7 @@ from cProfile import label
 
 from coldfront.core.project.models import (Project, ProjectAttribute, ProjectAttributeType, ProjectReview,
                                            ProjectUserRoleChoice)
+from coldfront.core.user.models import User
 from coldfront.core.utils.common import import_from_settings
 
 from coldfront_plugin_qumulo.validators import validate_single_ad_user
@@ -19,15 +20,25 @@ EMAIL_ADMIN_LIST = import_from_settings('EMAIL_ADMIN_LIST', [])
 EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
     'EMAIL_DIRECTOR_EMAIL_ADDRESS', '')
 
+class PrincipalInvestigatorField(forms.CharField):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+    # widget = MultiSelectLookupInput
+    default_validators = [validate_ad_users]
+
+    def clean(self, value):
+        user = User.objects.get_or_create(username=value)
+        return super().clean(user)
+
 class ProjectCreateForm(forms.ModelForm):
     class Meta:
         model = Project
-        fields = ['title', 'pi_username', 'description', 'field_of_science']
+        fields = ['title', 'pi', 'description', 'field_of_science']
+        # formfield_callback = create_formfield_callback
         
-    pi_username = forms.CharField(
+    pi = PrincipalInvestigatorField(
         help_text="Select the Principal Investigator for this project.",
         label="PI",
-        validators=[validate_single_ad_user],
     )
 
 class ProjectSearchForm(forms.Form):
