@@ -3,6 +3,7 @@ import datetime
 from django import forms
 from django.db.models.functions import Lower
 from django.shortcuts import get_object_or_404
+from django.core.exceptions import ValidationError
 from ast import Constant
 from django.db.models.functions import Lower
 from cProfile import label
@@ -24,9 +25,19 @@ class PrincipalInvestigatorField(forms.CharField):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
     # widget = MultiSelectLookupInput
-    default_validators = [validate_single_ad_user]
+    # default_validators = [validate_single_ad_user]
+    
+    
 
     def clean(self, value):
+        try:
+            validate_single_ad_user(value)
+        except ValidationError as error:
+            try:
+                User.objects.get(username=value)
+            except User.DoesNotExist:
+                raise error
+            
         user = User.objects.get_or_create(username=value)
         return super().clean(user)
 
