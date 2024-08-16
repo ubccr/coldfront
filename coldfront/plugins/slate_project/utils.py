@@ -1263,7 +1263,7 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
         if slate_project.get('start_date'):
             allocation_start_date = slate_project.get('start_date')
 
-        allocation_obj, created = Allocation.objects.get_or_create(
+        allocation_obj = Allocation.objects.create(
             project=project_obj,
             justification='No additional information needed at this time.',
             status=AllocationStatusChoice.objects.get(name='Active'),
@@ -1271,8 +1271,7 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
             end_date=project_obj.end_date,
             is_changeable=False
         )
-        if created:
-            allocation_obj.resources.add(Resource.objects.get(name='Slate Project'))
+        allocation_obj.resources.add(Resource.objects.get(name='Slate Project'))
 
         if not all_users:
             user_obj, created = User.objects.get_or_create(username=slate_project.get('owner_netid'))
