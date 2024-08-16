@@ -465,7 +465,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
     def form_valid(self, form):
         # form.instance.pi = self.request.user
-        form.instance.pi = User.objects.get_or_create(username=form.instance.pi_username)
+        # form.instance.pi = User.objects.get_or_create(username=form.instance.pi_username)
         project_obj = form.save(commit=False)
         form.instance.status = ProjectStatusChoice.objects.get(name='New')
         project_obj.save()
