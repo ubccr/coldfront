@@ -43,7 +43,8 @@ from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectReviewForm,
                                           ProjectSearchForm,
                                           ProjectUserUpdateForm,
-                                          ProjectAttributeUpdateForm)
+                                          ProjectAttributeUpdateForm,
+                                          ProjectCreateForm)
 from coldfront.core.project.models import (Project,
                                            ProjectAttribute,
                                            ProjectReview,
@@ -450,8 +451,8 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
 class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Project
+    form_class = ProjectCreateForm
     template_name_suffix = '_create_form'
-    fields = ['title', 'description', 'field_of_science', ]
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -463,7 +464,6 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
     def form_valid(self, form):
         project_obj = form.save(commit=False)
-        form.instance.pi = self.request.user
         form.instance.status = ProjectStatusChoice.objects.get(name='New')
         project_obj.save()
         self.object = project_obj

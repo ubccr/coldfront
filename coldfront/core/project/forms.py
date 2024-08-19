@@ -9,6 +9,7 @@ from cProfile import label
 
 from coldfront.core.project.models import (Project, ProjectAttribute, ProjectAttributeType, ProjectReview,
                                            ProjectUserRoleChoice)
+from coldfront.core.project.fields import PrincipalInvestigatorField
 from coldfront.core.utils.common import import_from_settings
 
 EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL = import_from_settings(
@@ -17,6 +18,17 @@ EMAIL_ADMIN_LIST = import_from_settings('EMAIL_ADMIN_LIST', [])
 EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
     'EMAIL_DIRECTOR_EMAIL_ADDRESS', '')
 
+
+
+class ProjectCreateForm(forms.ModelForm):
+    class Meta:
+        model = Project
+        fields = ['title', 'pi', 'description', 'field_of_science']
+        
+    pi = PrincipalInvestigatorField(
+        help_text="Select the Principal Investigator for this project.",
+        label="PI",
+    )
 
 class ProjectSearchForm(forms.Form):
     """ Search form for the Project list page.
