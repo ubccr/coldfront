@@ -604,6 +604,7 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
                 result.append(br)
             else:
                 br.delete()
+                self.update_product_usage_processing(product_usage, resolved=True, message='Zero charge billing record discarded')
                 if self.verbosity > 0:
                     logger.info(f'Charge for {product_usage} was essentially zero and therefore discarded.')
         return result
