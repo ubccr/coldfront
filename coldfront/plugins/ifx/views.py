@@ -7,10 +7,12 @@ import logging
 import json
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.db import connection
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
+from django_q.tasks import async_task
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.response import Response
 from rest_framework import status
@@ -19,6 +21,8 @@ from ifxreport.views import run_report as ifxreport_run_report
 from ifxbilling import models as ifxbilling_models
 from ifxbilling.calculator import getClassFromName
 from ifxbilling.views import get_billing_record_list as ifxbilling_get_billing_record_list
+from ifxbilling.fiine import update_user_accounts
+from ifxmail.client import send
 from ifxuser import models as ifxuser_models
 from coldfront.plugins.ifx.calculator import NewColdfrontBillingCalculator
 from coldfront.plugins.ifx.permissions import AdminPermissions
@@ -254,3 +258,68 @@ def send_billing_record_review_notification(request, year, month):
     except Exception as e:
         logger.exception(e)
         return Response(data={ 'error': f'Billing record summary failed {str(e)}' }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+def update_user_accounts_and_notify(user_queryset, email):
+    '''
+    Update user accounts and notify the user by sending an email with ifxmail.client send()
+    '''
+    successes = 0
+    errors = []
+
+    for user in user_queryset:
+        try:
+            update_user_accounts(user)
+            successes += 1
+        except Exception as e:
+            logger.exception(e)
+            errors.append(f'Error updating {user}: {e}')
+
+
+    fromstr = 'rchelp@rc.fas.harvard.edu'
+    tostr = email
+    message = f'{successes} user accounts updated successfully.'
+    if errors:
+        errorstr = '\n'.join(errors)
+        message += f'Errors: {errorstr}'
+    subject = "Update of user accounts"
+
+    try:
+        send(
+            to=tostr,
+            fromaddr=fromstr,
+            message=message,
+            subject=subject
+        )
+    except Exception as e:
+        logger.exception(e)
+        raise Exception(f'Error sending email to {tostr} from {fromstr} with message {message} and subject {subject}: {e}.') from e
+    print('User accounts updated and email sent to %s', tostr)
+
+
+@api_view(('POST',))
+def update_user_accounts_view(request):
+    '''
+    Take a list of ifxids and update data from fiine.  Body should be of the form:
+    {
+        'ifxids': [
+            'IFXID0001',
+            'IFXID0002',
+        ]
+    }
+    If no data is specified, all accounts will be updated
+    '''
+    logger.error('Updating user accounts in view')
+    data = request.data
+
+    if not data.keys():
+        queryset = get_user_model().objects.filter(ifxid__isnull=False)
+    else:
+        queryset = get_user_model().objects.filter(ifxid__in=data['ifxids'])
+
+    async_task(
+        'coldfront.plugins.ifx.views.update_user_accounts_and_notify',
+        queryset,
+        request.user.email
+    )
+
+    return Response('OK')

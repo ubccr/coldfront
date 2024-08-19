@@ -107,6 +107,21 @@ Calculate Billing Month
                     function () { productUsagesTable.ajax.reload() }
                 )
             })
+            $("#updateUserAccounts").click((ev) => {
+                ev.preventDefault()
+                $.ajax({
+                    url: '/ifx/api/update-user-accounts/',
+                    method: 'POST',
+                    headers: {'X-CSRFToken': '{{ csrf_token }}'},
+                    data: '',
+                    dataType: "json",
+                    error: function (jqXHR, status, error) {
+                        alert(status + ' ' + error)
+                    },
+                }).success(
+                    alert('Update started.  You will receive an email when the update is complete.')
+                )
+            })
         })
     })(jQuery)
 
@@ -130,6 +145,12 @@ Calculate Billing Month
             <input id="productUsageReload" type="submit" value="Reload Data"></input>
         </div>
         <div style="position: relative; float: right;">
+            <div style="position: relative; float: left">
+                <form method="post">
+                    {% csrf_token %}
+                    <input id="updateUserAccounts" style="color: white; background-color: red;" type="submit" value="Update User Accounts"></input>
+                </form>
+            </div>
             <div style="position: relative; float: left">
                 <label for="recalculate">Recalculate</label>
                 <input type="checkbox" id="recalculate" name="recalculate" value="false"/>
