@@ -9,6 +9,7 @@ from cProfile import label
 
 from coldfront.core.project.models import (Project, ProjectAttribute, ProjectAttributeType, ProjectReview,
                                            ProjectUserRoleChoice)
+from coldfront.core.project.fields import PrincipalInvestigatorField
 from coldfront.core.utils.common import import_from_settings
 
 EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL = import_from_settings(
