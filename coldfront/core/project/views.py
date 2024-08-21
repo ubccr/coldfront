@@ -882,8 +882,14 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     def test_func(self):
         """UserPassesTestMixin Tests"""
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+        project_user = project_obj.projectuser_set.get(pk=self.kwargs.get('project_user_pk'))
         if project_obj.has_perm(self.request.user, ProjectPermission.GENERAL_MANAGER):
-            return True
+            if project_user.user == project_obj.pi:
+                err = 'You cannot edit the PI of the project.'
+                messages.error(self.request, err)
+                return False
+            else:
+                return True
         err = 'You do not have permission to edit project users.'
         messages.error(self.request, err)
         return False
@@ -896,6 +902,7 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             project_user_obj = project_obj.projectuser_set.get(pk=project_user_pk)
 
             project_user_update_form = ProjectUserUpdateForm(
+                self.request.user, self.kwargs.get('pk'),
                 initial={
                     'role': project_user_obj.role,
                     'enable_notifications': project_user_obj.enable_notifications,
@@ -931,6 +938,7 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 )
 
             project_user_update_form = ProjectUserUpdateForm(
+                self.request.user, self.kwargs.get('pk'),
                 request.POST,
                 initial={
                     'role': project_user_obj.role.name,
