@@ -126,13 +126,27 @@ class ProjectDetailViewTest(ProjectViewTestBase):
 
         utils.page_does_not_contain_for_user(self, self.project_user, self.url, button_text) # non-manager user cannot see request allocation button
 
+    def test_projectdetail_adduser_button_visibility(self):
+        """Test ProjectDetail add user button visibility to different projectuser roles"""
+        button_text = 'Add User'
+        # admin can see add user button
+        utils.page_contains_for_user(self, self.admin_user, self.url, button_text)
+        # pi can see add user button
+        utils.page_contains_for_user(self, self.pi_user, self.url, button_text)
+        # access manager can see add user button
+        utils.page_contains_for_user(self, self.proj_accessmanager, self.url, button_text)
+        # storage manager cannot see add user button
+        utils.page_does_not_contain_for_user(self, self.proj_datamanager, self.url, button_text)
+        # non-manager user cannot see add user button
+        utils.page_does_not_contain_for_user(self, self.project_user, self.url, button_text)
+
     def test_projectdetail_edituser_button_visibility(self):
         """Test ProjectDetail edit button visibility to different projectuser roles"""
         utils.page_contains_for_user(self, self.admin_user, self.url, 'fa-user-edit') # admin can see edit button
         utils.page_contains_for_user(self, self.pi_user, self.url, 'fa-user-edit') # pi can see edit button
         utils.page_does_not_contain_for_user(self, self.project_user, self.url, 'fa-user-edit') # non-manager user cannot see edit button
-        # access manager can see edit button
-        utils.page_contains_for_user(self, self.proj_accessmanager, self.url, 'fa-user-edit')
+        # access manager cannot see edit button
+        utils.page_does_not_contain_for_user(self, self.proj_accessmanager, self.url, 'fa-user-edit')
         # data manager cannot see edit button
         utils.page_does_not_contain_for_user(self, self.proj_datamanager, self.url, 'fa-user-edit')
 

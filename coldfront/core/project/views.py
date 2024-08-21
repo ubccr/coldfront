@@ -139,6 +139,9 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['is_allowed_to_update_users'] = self.object.has_perm(
             self.request.user, ProjectPermission.ACCESS_MANAGER
         )
+        context['is_allowed_to_update_permissions'] = self.object.has_perm(
+            self.request.user, ProjectPermission.GENERAL_MANAGER
+        )
 
         if self.request.user.is_superuser:
             attributes = list(
@@ -879,7 +882,7 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     def test_func(self):
         """UserPassesTestMixin Tests"""
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.has_perm(self.request.user, ProjectPermission.ACCESS_MANAGER):
+        if project_obj.has_perm(self.request.user, ProjectPermission.GENERAL_MANAGER):
             return True
         err = 'You do not have permission to edit project users.'
         messages.error(self.request, err)
