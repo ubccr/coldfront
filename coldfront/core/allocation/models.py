@@ -273,9 +273,10 @@ class Allocation(TimeStampedModel):
         size_attr_name = self._return_size_attr_name()
         if not size_attr_name:
             return None
-        size = self.allocationattribute_set.get(
-                    allocation_attribute_type__name=size_attr_name).value
-        return 0 if not size else price * float(size)
+        size = self.allocationattribute_set.filter(
+                    allocation_attribute_type__name=size_attr_name)
+        size_value = None if not size else size.first().value
+        return 0 if not size_value else price * float(size_value)
 
     @property
     def expires_in(self):
