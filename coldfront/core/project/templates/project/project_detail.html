@@ -349,8 +349,8 @@ Project Detail
               <td>{{ user.user.first_name }} {{ user.user.last_name }}</td>
               <td>{{ user.user.email }}</td>
               <td>{{ user.role.name }}</td>
-              {% if is_allowed_to_update_permissions %}
-                <td>
+              <td>
+                {% if is_allowed_to_update_permissions %}
                   <input type="checkbox"
                   id="email_notifications_for_user_id_{{user.id}}"
                   name="email_notifications_checkbox"
@@ -370,13 +370,13 @@ Project Detail
                   value="{{ user.enable_notifications }}"
                   {% if user.enable_notifications %} checked {% endif %}
                   disabled>
-                </td>
-              {% endif %}
-              <td>
-                {% if is_allowed_to_update_permissions and user != project.pi %}
-                  <a href="{% url 'project-user-detail' project.pk user.id %}"><i class="fas fa-user-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a>
                 {% endif %}
               </td>
+              {% if is_allowed_to_update_permissions and user != project.pi %}
+                <td>
+                  <a href="{% url 'project-user-detail' project.pk user.id %}"><i class="fas fa-user-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a>
+                </td>
+              {% endif %}
             </tr>
           {% endfor %}
         </tbody>
