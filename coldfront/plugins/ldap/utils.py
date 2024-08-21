@@ -668,6 +668,7 @@ def identify_ad_group(sender, **kwargs):
         ad_conn = LDAPConn()
         members, manager = ad_conn.return_group_members_manager(project_title)
     except Exception as e:
+        logger.exception(e)
         raise ValueError(f"ldap connection error: {e}")
     try:
         ifx_pi = get_user_model().objects.get(username=manager['sAMAccountName'][0])
