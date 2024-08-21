@@ -23,6 +23,7 @@ class ProjectPermission(Enum):
     USER = 'user'
     DATA_MANAGER = 'data_manager'
     ACCESS_MANAGER = 'access_manager'
+    GENERAL_MANAGER = 'general_manager'
     PI = 'pi'
 
 class ProjectStatusChoice(TimeStampedModel):
@@ -190,23 +191,26 @@ class Project(TimeStampedModel):
         if user.is_superuser:
             return list(ProjectPermission)
 
-        user_conditions = (models.Q(status__name__in=('Active', 'New')) & models.Q(user=user))
+        user_conditions = (models.Q(status__name='Active') & models.Q(user=user))
         if not self.projectuser_set.filter(user_conditions).exists() and not self.pi.id == user.id:
             return []
 
+
         permissions = [ProjectPermission.USER]
+        project_permission_dict = {
+            ProjectPermission.GENERAL_MANAGER: ["General Manager"],
+            ProjectPermission.DATA_MANAGER: DATA_MANAGERS,
+            ProjectPermission.ACCESS_MANAGER: ACCESS_MANAGERS,
+        }
 
-        if (
-            self.projectuser_set.filter(user_conditions & models.Q(role__name__in=DATA_MANAGERS)).exists()
-            or self.pi.id == user.id
-        ):
-            permissions.append(ProjectPermission.DATA_MANAGER)
-
-        if (
-            self.projectuser_set.filter(user_conditions & models.Q(role__name__in=ACCESS_MANAGERS)).exists()
-            or self.pi.id == user.id
-        ):
-            permissions.append(ProjectPermission.ACCESS_MANAGER)
+        for permission, role_list in project_permission_dict.items():
+            if (
+                self.projectuser_set.filter(
+                    user_conditions & models.Q(role__name__in=role_list)
+                ).exists()
+                or self.pi.id == user.id
+            ):
+                permissions.append(permission)
 
         if self.pi.id == user.id:
             permissions.append(ProjectPermission.PI)

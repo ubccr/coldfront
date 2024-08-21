@@ -139,6 +139,9 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['is_allowed_to_update_users'] = self.object.has_perm(
             self.request.user, ProjectPermission.ACCESS_MANAGER
         )
+        context['is_allowed_to_update_permissions'] = self.object.has_perm(
+            self.request.user, ProjectPermission.GENERAL_MANAGER
+        )
 
         if self.request.user.is_superuser:
             attributes = list(
@@ -879,8 +882,14 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     def test_func(self):
         """UserPassesTestMixin Tests"""
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.has_perm(self.request.user, ProjectPermission.ACCESS_MANAGER):
-            return True
+        project_user = project_obj.projectuser_set.get(pk=self.kwargs.get('project_user_pk'))
+        if project_obj.has_perm(self.request.user, ProjectPermission.GENERAL_MANAGER):
+            if project_user.user == project_obj.pi:
+                err = 'You cannot edit the PI of the project.'
+                messages.error(self.request, err)
+                return False
+            else:
+                return True
         err = 'You do not have permission to edit project users.'
         messages.error(self.request, err)
         return False
@@ -893,6 +902,7 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             project_user_obj = project_obj.projectuser_set.get(pk=project_user_pk)
 
             project_user_update_form = ProjectUserUpdateForm(
+                self.request.user, self.kwargs.get('pk'),
                 initial={
                     'role': project_user_obj.role,
                     'enable_notifications': project_user_obj.enable_notifications,
@@ -928,6 +938,7 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 )
 
             project_user_update_form = ProjectUserUpdateForm(
+                self.request.user, self.kwargs.get('pk'),
                 request.POST,
                 initial={
                     'role': project_user_obj.role.name,

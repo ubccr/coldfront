@@ -79,8 +79,16 @@ class ProjectRemoveUserForm(forms.Form):
 
 class ProjectUserUpdateForm(forms.Form):
     role = forms.ModelChoiceField(
-        queryset=ProjectUserRoleChoice.objects.all(), empty_label=None)
+        queryset=ProjectUserRoleChoice.objects.exclude(name='PI'), empty_label=None)
     enable_notifications = forms.BooleanField(initial=False, required=False)
+
+    def __init__(self, request_user, project_pk, *args, **kwargs):
+        """If user is not PI or Admin, only show Access Manager, Storage Manager, and User roles"""
+        super().__init__(*args, **kwargs)
+        project_obj = get_object_or_404(Project, pk=project_pk)
+        roles = ProjectUserRoleChoice.objects.exclude(name='PI')
+        if not project_obj.pi == request_user and not request_user.is_superuser:
+            self.fields['role'].queryset = roles.exclude(name='General Manager')
 
 
 class ProjectReviewForm(forms.Form):

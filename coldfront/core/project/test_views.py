@@ -12,11 +12,7 @@ from coldfront.core.test_helpers.factories import (
     ProjectStatusChoiceFactory,
     ProjectAttributeTypeFactory,
 )
-from coldfront.core.project.models import (
-    Project,
-    ProjectStatusChoice,
-    ProjectUserStatusChoice,
-)
+from coldfront.core.project.models import Project, ProjectUserStatusChoice
 
 logging.disable(logging.CRITICAL)
 
@@ -116,23 +112,34 @@ class ProjectDetailViewTest(ProjectViewTestBase):
         """Test ProjectDetail request allocation button visibility to different projectuser roles"""
         button_text = 'Request New Storage Allocation'
         utils.page_contains_for_user(self, self.admin_user, self.url, button_text) # admin can see request allocation button
-
         utils.page_contains_for_user(self, self.pi_user, self.url, button_text) # pi can see request allocation button
-
         # data manager can see request allocation button
         utils.page_contains_for_user(self, self.proj_datamanager, self.url, button_text)
         # access manager cannot see request allocation button
         utils.page_does_not_contain_for_user(self, self.proj_accessmanager, self.url, button_text)
-
         utils.page_does_not_contain_for_user(self, self.project_user, self.url, button_text) # non-manager user cannot see request allocation button
+
+    def test_projectdetail_adduser_button_visibility(self):
+        """Test ProjectDetail add user button visibility to different projectuser roles"""
+        button_text = 'Add User'
+        # admin can see add user button
+        utils.page_contains_for_user(self, self.admin_user, self.url, button_text)
+        # pi can see add user button
+        utils.page_contains_for_user(self, self.pi_user, self.url, button_text)
+        # access manager can see add user button
+        utils.page_contains_for_user(self, self.proj_accessmanager, self.url, button_text)
+        # storage manager cannot see add user button
+        utils.page_does_not_contain_for_user(self, self.proj_datamanager, self.url, button_text)
+        # non-manager user cannot see add user button
+        utils.page_does_not_contain_for_user(self, self.project_user, self.url, button_text)
 
     def test_projectdetail_edituser_button_visibility(self):
         """Test ProjectDetail edit button visibility to different projectuser roles"""
         utils.page_contains_for_user(self, self.admin_user, self.url, 'fa-user-edit') # admin can see edit button
         utils.page_contains_for_user(self, self.pi_user, self.url, 'fa-user-edit') # pi can see edit button
         utils.page_does_not_contain_for_user(self, self.project_user, self.url, 'fa-user-edit') # non-manager user cannot see edit button
-        # access manager can see edit button
-        utils.page_contains_for_user(self, self.proj_accessmanager, self.url, 'fa-user-edit')
+        # access manager cannot see edit button
+        utils.page_does_not_contain_for_user(self, self.proj_accessmanager, self.url, 'fa-user-edit')
         # data manager cannot see edit button
         utils.page_does_not_contain_for_user(self, self.proj_datamanager, self.url, 'fa-user-edit')
 
@@ -458,3 +465,49 @@ class ProjectUserDetailViewTest(ProjectViewTestBase):
     def test_projectuserdetailview_access(self):
         """test access to project user detail page"""
         self.project_access_tstbase(self.url)
+        utils.test_user_can_access(self, self.pi_user, self.url)# pi can access
+        utils.test_user_can_access(self, self.proj_generalmanager, self.url) # general manager can access
+        utils.test_user_cannot_access(self, self.proj_accessmanager, self.url)# access manager cannot access
+        utils.test_user_cannot_access(self, self.proj_datamanager, self.url)# storage manager cannot access
+
+    def test_projectuserdetailview_role_options(self):
+        """Only Admin and PI should see option to set role to General Manager;
+        option to set role to PI should not be available"""
+        self.client.force_login(self.admin_user)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('project_user_update_form', response.context)
+        form = response.context['project_user_update_form']
+        self.assertIn('role', form.fields)
+        role_field = form.fields['role']
+        role_names = [role.name for role in role_field.choices.queryset]
+        self.assertNotIn('PI', role_names)
+        self.assertIn('General Manager', role_names)
+        self.assertIn('Access Manager', role_names)
+        self.assertIn('Storage Manager', role_names)
+
+        self.client.force_login(self.pi_user)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('project_user_update_form', response.context)
+        form = response.context['project_user_update_form']
+        self.assertIn('role', form.fields)
+        role_field = form.fields['role']
+        role_names = [role.name for role in role_field.choices.queryset]
+        self.assertNotIn('PI', role_names)
+        self.assertIn('General Manager', role_names)
+        self.assertIn('Access Manager', role_names)
+        self.assertIn('Storage Manager', role_names)
+
+        self.client.force_login(self.proj_generalmanager)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('project_user_update_form', response.context)
+        form = response.context['project_user_update_form']
+        self.assertIn('role', form.fields)
+        role_field = form.fields['role']
+        role_names = [role.name for role in role_field.choices.queryset]
+        self.assertNotIn('PI', role_names)
+        self.assertNotIn('General Manager', role_names)
+        self.assertIn('Access Manager', role_names)
+        self.assertIn('Storage Manager', role_names)

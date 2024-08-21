@@ -41,11 +41,13 @@ def home(request):
         allocation_list = Allocation.objects.filter(
             Q(status__name__in=['Active', 'New', 'Renewal Requested', ]) &
             Q(project__status__name__in=['Active', 'New']) &
-            Q(project__projectuser__user=request.user) &
-            Q(project__projectuser__status__name__in=['Active', ]) &
-                (Q(project__projectuser__role__name__in=MANAGERS) |
-                Q(allocationuser__user=request.user) &
-                Q(allocationuser__status__name='Active'))
+            (
+                Q(project__projectuser__user=request.user) &
+                Q(project__projectuser__status__name__in=['Active', ]) &
+                    (Q(project__projectuser__role__name__in=MANAGERS) |
+                    Q(allocationuser__user=request.user) &
+                    Q(allocationuser__status__name='Active'))
+            ) | Q(project__pi=request.user)
         ).distinct().order_by('-created')
 
         managed_allocations = Allocation.objects.filter(

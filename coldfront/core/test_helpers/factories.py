@@ -368,6 +368,7 @@ def setup_models(test_case):
     # pi is a project admin but not an AllocationUser.
     test_case.pi_user = UserFactory(username='sdpoisson')
     test_case.proj_allocation_user = UserFactory(username='ljbortkiewicz')
+    test_case.proj_generalmanager = UserFactory(username='tedison')
     test_case.proj_datamanager = UserFactory(username='ajayer')
     test_case.proj_accessmanager = UserFactory(username='mdavis')
     test_case.proj_nonallocation_user = UserFactory(username='wkohn')
@@ -398,7 +399,8 @@ def setup_models(test_case):
         AllocationUserFactory(user=user, allocation=test_case.proj_allocation)
 
     for user, role in {
-        test_case.pi_user:'General Manager',
+        test_case.pi_user:'PI',
+        test_case.proj_generalmanager: 'General Manager',
         test_case.proj_datamanager: 'Storage Manager',
         test_case.proj_accessmanager: 'Access Manager',
         test_case.proj_nonallocation_user: 'User',
