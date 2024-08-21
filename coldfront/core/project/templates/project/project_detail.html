@@ -143,7 +143,7 @@ Project Detail
                 </span>
                 </a>
               {% endif %}
-            </td
+            </td>
             {% endif %}
           </tr>
           {% endfor %}
@@ -307,11 +307,11 @@ Project Detail
     <div class="float-right">
       {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
         <a class="btn btn-primary" href="{{mailto}}" role="button"><i class="far fa-envelope" aria-hidden="true"></i> Email Project Users</a>
-        {% if request.user.is_superuser or request.user == project.pi %}
-          <a class="btn btn-success" href="{% url 'project-add-users-search' project.id %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
-          <a class="btn btn-danger" href="{% url 'project-remove-users' project.id %}" role="button"><i class="fas fa-user-times" aria-hidden="true"></i> Remove Users</a>
-	{% endif %}
       {% endif %}
+      {% if is_allowed_to_update_users %}
+        <a class="btn btn-success" href="{% url 'project-add-users-search' project.id %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
+        <a class="btn btn-danger" href="{% url 'project-remove-users' project.id %}" role="button"><i class="fas fa-user-times" aria-hidden="true"></i> Remove Users</a>
+	    {% endif %}
     </div>
   </div>
   <div class="card-body">
@@ -328,12 +328,12 @@ Project Detail
               </a>
             </th>
             <!-- This is what I want to add - a usage column; -->
-           <th scope="col" class="nosort">
+            <th scope="col" class="nosort">
              <input type="checkbox" class="check" id="selectAll" style="margin-right: 5px;">Notifications On
                <a class="info-button" title="Enable Notifications" data-toggle="popover" data-trigger="click" data-content="When disabled, user will not receive notifications regarding allocation requests and expirations or cloud usage (if applicable).">
                  <i class="fas fa-info-circle" aria-hidden="true"></i>
                </a>
-             </th>
+            </th>
             <th scope="col">Actions</th>
           </tr>
         </thead>
@@ -348,14 +348,13 @@ Project Detail
               <td>{{ user.user.email }}</td>
               <td>{{ user.role.name }}</td>
               <td>
-                {% if is_allowed_to_update_project %}
+                {% if is_allowed_to_update_permissions %}
                   <input type="checkbox"
                   id="email_notifications_for_user_id_{{user.id}}"
                   name="email_notifications_checkbox"
                   value="{{ user.enable_notifications }}"
                   {% if user.enable_notifications %} checked {% endif %}
-                  {% if user.role.name == "Access Manager" %} disabled {% endif %}
-                  {% if not request.user.is_superuser and user.role.name == "User" and request.user == user.user %} disabled {% endif %}>
+                  {% if user.role.name != "User" %} disabled {% endif %}>
                 {% elif request.user == user.user %}
                   <input type="checkbox"
                   id="email_notifications_for_user_id_{{user.id}}"
@@ -372,7 +371,7 @@ Project Detail
                 {% endif %}
               </td>
               <td>
-                {% if is_allowed_to_update_users %}
+                {% if is_allowed_to_update_permissions and user != project.pi %}
                   <a href="{% url 'project-user-detail' project.pk user.id %}"><i class="fas fa-user-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a>
                 {% endif %}
               </td>
