@@ -37,7 +37,6 @@ from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationInvoiceUpdateForm,
                                              AllocationInvoiceExportForm,
                                              AllocationRemoveUserForm,
-                                             AllocationRemoveUserFormset,
                                              AllocationReviewUserForm,
                                              AllocationSearchForm,
                                              AllocationUpdateForm,
@@ -231,11 +230,6 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                 user=self.request.user)
             if project_user.role.name == 'Manager':
                 context['is_allowed_to_update_project'] = True
-                # if allocation_obj.get_parent_resource.name == "Slate-Project":
-                #     if allocation_obj.data_manager == self.request.user.username:
-                #         context['is_allowed_to_update_project'] = True
-                # else:
-                #     context['is_allowed_to_update_project'] = True
 
         context['allocation_user_roles_enabled'] = check_if_roles_are_enabled(allocation_obj)
         context['allocation_users'] = allocation_users
@@ -1606,14 +1600,6 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         allocation_obj = get_object_or_404(
             Allocation, pk=self.kwargs.get('pk'))
 
-        # if allocation_obj.get_parent_resource.name == 'Slate-Project':
-        #     if allocation_obj.data_manager != self.request.user.username:
-        #         messages.error(
-        #             self.request,
-        #             'Only the Data Manager can add users to this resource.'
-        #         )
-        #         return False
-
         if allocation_obj.project.pi == self.request.user:
             return True
 
@@ -1954,28 +1940,6 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
         return users_to_remove
 
-    def check_data_manager_exists(self, allocation_obj):
-        # if allocation_obj.data_manager:
-        #     if allocation_obj.get_parent_resource.name == 'Slate-Project':
-        #         return True
-
-        return False
-
-    def get_disable_select_list(self, allocation_obj, users_to_remove):
-        """
-        Gets a list that determines if a user can be removed by disabling the
-        ProjectRemoveUserForm's selected field.
-        """
-        disable_select_list = [False] * len(users_to_remove)
-        if not self.check_data_manager_exists:
-            return disable_select_list
-
-        # for i, user in enumerate(users_to_remove):
-        #     if user['username'] == allocation_obj.data_manager:
-        #         disable_select_list[i] = True
-
-        return disable_select_list
-
     def get(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
@@ -1985,20 +1949,8 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
         if users_to_remove:
             formset = formset_factory(
-                AllocationRemoveUserForm,
-                max_num=len(users_to_remove),
-                formset=AllocationRemoveUserFormset
-            )
-            formset = formset(
-                initial=users_to_remove,
-                prefix='userform',
-                form_kwargs={
-                    'disable_selected': self.get_disable_select_list(
-                        allocation_obj,
-                        users_to_remove
-                    )
-                }
-            )
+                AllocationRemoveUserForm, max_num=len(users_to_remove))
+            formset = formset(initial=users_to_remove, prefix='userform')
             context['formset'] = formset
 
         context['allocation'] = allocation_obj
@@ -2011,22 +1963,9 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
         users_to_remove = self.get_users_to_remove(allocation_obj)
 
         formset = formset_factory(
-            AllocationRemoveUserForm,
-            max_num=len(users_to_remove),
-            formset=AllocationRemoveUserFormset
-        )
-
+            AllocationRemoveUserForm, max_num=len(users_to_remove))
         formset = formset(
-            request.POST,
-            initial=users_to_remove,
-            prefix='userform',
-            form_kwargs={
-                'disable_selected': self.get_disable_select_list(
-                    allocation_obj,
-                    users_to_remove
-                )
-            }
-        )
+            request.POST, initial=users_to_remove, prefix='userform')
 
         remove_users_count = 0
 

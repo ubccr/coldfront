@@ -127,7 +127,6 @@ class AllocationForm(forms.Form):
     total_cost = forms.IntegerField(disabled=True, required=False)
     confirm_understanding = forms.BooleanField(required=False)
     confirm_best_practices = forms.BooleanField(required=False)
-    data_manager = forms.CharField(max_length=50, required=False)
     phone_number = forms.CharField(max_length=13, required=False)
     group_account_name = forms.CharField(max_length=20, required=False)
     group_account_name_exists = forms.BooleanField(required=False)
@@ -178,7 +177,6 @@ class AllocationForm(forms.Form):
         self.fields['justification'].help_text = '<br/>Justification for requesting this allocation.'
         self.fields['justification'].initial = 'No additional information needed at this time.'
         self.fields['project_directory_name'].help_text = 'Must be alphanumeric and not exceed 10 characters in length'
-        self.fields['data_manager'].help_text = 'Must be a project Manager. Only this user can add and remove users from this resource. They will automatically be added to the resource.'
         self.fields['group_account_name_exists'].help_text = 'Does this IU group username already exist?'
         self.fields['group_account_name'].help_text = 'e.g. Enter IU group account username'
         self.fields['admin_ads_group'].help_text = 'This ADS group will be used to identify user(s) who will have the \
@@ -255,7 +253,6 @@ class AllocationForm(forms.Form):
             PrependedText('prorated_cost', '$'),
             PrependedText('cost', '$'),
             PrependedText('total_cost', '$'),
-            'data_manager',
             InlineRadios('leverage_multiple_gpus'),
             InlineRadios('gpu_workflow'),
             InlineRadios('dl_workflow'),
@@ -433,20 +430,6 @@ class AllocationRemoveUserForm(forms.Form):
     email = forms.EmailField(max_length=100, required=False, disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
 
-    def __init__(self, *args, disable_selected, **kwargs):
-        super().__init__(*args, **kwargs)
-        if disable_selected:
-            self.fields['selected'].disabled = True
-
-
-class AllocationRemoveUserFormset(forms.BaseFormSet):
-    def get_form_kwargs(self, index):
-        """
-        Override so specific users can be prevented from being removed.
-        """
-        kwargs = super().get_form_kwargs(index)
-        disable_selected = kwargs['disable_selected'][index]
-        return {'disable_selected': disable_selected}
 
 class AllocationAttributeDeleteForm(forms.Form):
     pk = forms.IntegerField(required=False, disabled=True)
