@@ -99,7 +99,7 @@ class AllocationSerializer(serializers.ModelSerializer):
 
 class AllocationRequestSerializer(serializers.ModelSerializer):
     project = serializers.SlugRelatedField(slug_field='title', read_only=True)
-    resource = serializers.SlugRelatedField(slug_field='name', read_only=True)
+    resource = serializers.ReadOnlyField(source='get_resources_as_string', read_only=True)
     status = serializers.SlugRelatedField(slug_field='name', read_only=True)
     fulfilled_date = serializers.DateTimeField(read_only=True)
     created_by = serializers.SerializerMethodField(read_only=True)
