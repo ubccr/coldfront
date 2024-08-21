@@ -137,9 +137,9 @@ class QuotaDataPuller:
             translator = dict((
                 kv.split('=') for kv in (l.strip('\n') for l in groupkey_file)
             ))
-        headers_df = pd.read_csv(header_file, header=0, delim_whitespace=True)
+        headers_df = pd.read_csv(header_file, header=0, sep='\s+')
         headers = headers_df.columns.values.tolist()
-        data = pd.read_csv(datafile, names=headers, delim_whitespace=True)
+        data = pd.read_csv(datafile, names=headers, sep='\s+')
         data = data.loc[data['pool'].str.contains('1')]
         data['lab'] = data['pool'].str.replace('1', '').str.replace('hugl', '').str.replace('hus3', '')
         data['server'] = 'nesetape'
