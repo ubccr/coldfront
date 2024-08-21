@@ -86,6 +86,6 @@ class Command(BaseCommand):
                 try:
                     volume = [v for v in volumes if v['name'] == resource_name][0]
                 except:
-                    logger.error('resource not found in starfish: %s', resource)
+                    logger.debug('resource not found in starfish: %s', resource)
                     continue
                 update_resource_attr_types_from_dict(resource, volume['attrs'])
