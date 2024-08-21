@@ -5,6 +5,7 @@ from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
 from django.views.generic import TemplateView
+from django.conf.urls.static import static
 
 import coldfront.core.portal.views as portal_views
 
@@ -26,8 +27,8 @@ urlpatterns = [
     path('resource/', include('coldfront.core.resource.urls')),
     path('grant/', include('coldfront.core.grant.urls')),
     path('publication/', include('coldfront.core.publication.urls')),
-    path('research-output/', include('coldfront.core.research_output.urls')),
-]
+    path('research-output/', include('coldfront.core.research_output.urls')), 
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 if 'coldfront.plugins.academic_analytics' in settings.INSTALLED_APPS:
     urlpatterns.append(path('academic-analytics/', include('coldfront.plugins.academic_analytics.urls')))

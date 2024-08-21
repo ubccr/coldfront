@@ -5,6 +5,9 @@ INSTALLED_APPS += [
     'django_cas_ng',
 ]
 
+INSTALLED_APPS += [
+    'django_extensions'
+]
 
 MIDDLEWARE += [
     'django_cas_ng.middleware.CASMiddleware',
