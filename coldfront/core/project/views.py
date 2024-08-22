@@ -2626,6 +2626,7 @@ class ProjectRequestAccessEmailView(LoginRequiredMixin, View):
                 'Add User to Project Request',
                 'email/project_add_user_request.txt',
                 {
+                    'center_name': EMAIL_CENTER_NAME,
                     'user': request.user,
                     'project_title': project_obj.title,
                     'project_url': project_url,
