@@ -247,13 +247,13 @@ def matched_dict_processing(allocation, data_dicts, paired_allocs, log_message):
 def pair_allocations_data(project, quota_dicts):
     """pair allocations with usage dicts"""
     logger = logging.getLogger('coldfront.import_quotas')
-    unpaired_allocs = project.allocation_set.filter(
+    allocs = project.allocation_set.filter(
         status__name__in=['Active','Pending Deactivation'],
         resources__resource_type__name='Storage'
     )
     paired_allocs = {}
     # first, pair allocations with those that have same
-    for allocation in unpaired_allocs:
+    for allocation in allocs:
         dicts = [
             d for d in quota_dicts
             if d['fs_path'] and allocation.path.lower() == d['fs_path'].lower()
@@ -262,21 +262,8 @@ def pair_allocations_data(project, quota_dicts):
         if dicts:
             log_message = f'Path-based match: {allocation}, {allocation.path}, {dicts[0]}'
             paired_allocs = matched_dict_processing(allocation, dicts, paired_allocs, log_message)
-    unpaired_allocs = [
-        a for a in unpaired_allocs if a not in paired_allocs
-    ]
+    unpaired_allocs = [a for a in allocs if a not in paired_allocs]
     unpaired_dicts = [d for d in quota_dicts if d not in paired_allocs.values()]
-    for allocation in unpaired_allocs:
-        dicts = [
-            d for d in unpaired_dicts if d['server'] in allocation.resources.first().name
-        ]
-        if dicts:
-            log_message = f'Resource-based match: {allocation}, {dicts[0]}'
-            paired_allocs = matched_dict_processing(allocation, dicts, paired_allocs, log_message)
-    unpaired_allocs = [
-        a for a in unpaired_allocs if a not in paired_allocs and a.status.name == 'Active'
-    ]
-    unpaired_dicts = [d for d in unpaired_dicts if d not in paired_allocs.values()]
     if unpaired_dicts or unpaired_allocs:
         logger.warning(
             "unpaired allocation data. Allocation: %s | Dict: %s", unpaired_allocs, unpaired_dicts
