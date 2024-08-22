@@ -75,7 +75,7 @@ class Command(BaseCommand):
                 lab_path = entry['fs_path'].replace(f'/n/{entry["server"]}/', '')
 
                 resource = Resource.objects.get(name__contains=entry['server'])
-                alloc_obj = select_one_project_allocation(project, resource, dirpath=lab_path)
+                alloc_obj = select_one_project_allocation(project, resource, lab_path)
                 if alloc_obj is not None:
                     continue
                 lab_usage_entries = [
