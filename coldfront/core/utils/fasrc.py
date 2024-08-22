@@ -61,7 +61,7 @@ def select_one_project_allocation(project_obj, resource_obj, dirpath):
     resource_obj
     dirpath
     """
-    filter_vals = {'resources__id': resource_obj.id}
+    filter_vals = {'resources__id': resource_obj.id, "status__name__in": ['Active', 'Pending Deactivation']}
     allocation_query = project_obj.allocation_set.filter(**filter_vals)
     if allocation_query.count() < 1:
         return None
@@ -73,6 +73,8 @@ def select_one_project_allocation(project_obj, resource_obj, dirpath):
         if len(allocations) == 1:
             return allocations[0]
         elif len(allocations) > 1:
+            print(allocations)
+            logger.exception('multiple allocations found for project/resource/path pairing: %s', allocations)
             raise Exception('multiple allocations found for project/resource/path pairing')
 
 def determine_size_fmt(byte_num):
