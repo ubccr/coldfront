@@ -1053,7 +1053,7 @@ def create_slate_project_data_file():
         )
 
     current_date = date.today().isoformat()
-    with open(os.path.join(SLATE_PROJECT_DIR, 'slate_project_data', f'slate_project_data_{current_date}'), 'w') as slate_project_csv:
+    with open(os.path.join(SLATE_PROJECT_DIR, f'slate_project_data_{current_date}.csv'), 'w') as slate_project_csv:
         csv_writer = csv.writer(slate_project_csv)
         csv_writer.writerow(['Allocation Created', *allocation_attribute_types])
         for _, allocation_attributes in allocations.items():
