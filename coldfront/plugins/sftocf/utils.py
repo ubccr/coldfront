@@ -192,7 +192,6 @@ class StarFishServer:
         zones = self.get_zones()
         return next((z for z in zones if z['name'] == zone_name), None)
 
-
     def create_zone(self, zone_name, paths, managers, managing_groups):
         """Create a zone via the API"""
         url = self.api_url + 'zone/'
