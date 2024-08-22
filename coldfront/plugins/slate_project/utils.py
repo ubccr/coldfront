@@ -948,7 +948,7 @@ def send_ineligible_users_report():
 
     if ineligible_users:
         current_date = date.today().isoformat()
-        with open(os.path.join(SLATE_PROJECT_DIR, 'ineligible_users', f'ineligible_users_{current_date}'), 'w') as ineligible_file:
+        with open(os.path.join(SLATE_PROJECT_DIR, f'ineligible_users_{current_date}.txt'), 'w') as ineligible_file:
             ineligible_file.write(f'The ineligible users within Slate Project allocations found on {current_date}.\n\n')
             for user, roles in ineligible_users.items():
                 ineligible_file.write(user + '\n')
