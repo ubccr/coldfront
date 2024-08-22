@@ -37,7 +37,6 @@ from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationInvoiceUpdateForm,
                                              AllocationInvoiceExportForm,
                                              AllocationRemoveUserForm,
-                                             AllocationRemoveUserFormset,
                                              AllocationReviewUserForm,
                                              AllocationSearchForm,
                                              AllocationUpdateForm,
@@ -231,11 +230,6 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                 user=self.request.user)
             if project_user.role.name == 'Manager':
                 context['is_allowed_to_update_project'] = True
-                # if allocation_obj.get_parent_resource.name == "Slate-Project":
-                #     if allocation_obj.data_manager == self.request.user.username:
-                #         context['is_allowed_to_update_project'] = True
-                # else:
-                #     context['is_allowed_to_update_project'] = True
 
         context['allocation_user_roles_enabled'] = check_if_roles_are_enabled(allocation_obj)
         context['allocation_users'] = allocation_users
@@ -1286,13 +1280,9 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         project_obj = get_object_or_404(
             Project, pk=self.kwargs.get('project_pk'))
         resource_obj = Resource.objects.get(pk=form_data.get('resource'))
-        storage_space_unit = form.data.get('storage_space_unit')
+        justification = form_data.get('justification')
         end_date = form_data.get('end_date')
-        account_number = form_data.get('account_number')
-        url = form_data.get('url')
-        data_manager = form_data.get('data_manager')
         allocation_account = form_data.get('allocation_account', None)
-        license_term = form_data.get('license_term', None)
 
         allocation_limit = resource_obj.get_attribute('allocation_limit')
         if allocation_limit is not None:
@@ -1337,19 +1327,6 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 )
                 return self.form_invalid(form)
 
-        total_cost = None
-        cost = resource_obj.get_attribute('cost')
-        prorated_cost_label = resource_obj.get_attribute('prorated_cost_label')
-        if cost is not None:
-            cost = int(cost)
-            total_cost = cost
-            if prorated_cost_label is not None:
-                prorated_cost = compute_prorated_amount(cost)
-                if license_term == 'current':
-                    total_cost = prorated_cost
-                elif license_term == 'current_and_next_year':
-                    total_cost += prorated_cost
-
         if end_date is None:
             end_date = project_obj.end_date
             expiry_date = resource_obj.get_attribute('expiry_date')
@@ -1359,11 +1336,6 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         elif end_date > project_obj.end_date:
             end_date = project_obj.end_date
 
-        if resource_obj.name == 'Slate-Project':
-            storage_space_unit = 'TB'
-        elif resource_obj.name == 'Geode-Projects':
-            storage_space_unit = 'GB'
-
         # A resource is selected that requires an account name selection but user has no account names
         if ALLOCATION_ACCOUNT_ENABLED and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING and AllocationAttributeType.objects.filter(
                 name=ALLOCATION_ACCOUNT_MAPPING[resource_obj.name]).exists() and not allocation_account:
@@ -1372,9 +1344,6 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             return self.form_invalid(form)
 
         usernames = form_data.get('users')
-        if resource_obj.name == 'Slate-Project':
-            usernames.append(data_manager)
-
         usernames.append(project_obj.pi.username)
         usernames.append(self.request.user.username)
         # Remove potential duplicate usernames
@@ -1403,33 +1372,15 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         if INVOICE_ENABLED and resource_obj.requires_payment:
             allocation_status_obj = AllocationStatusChoice.objects.get(
                 name=INVOICE_DEFAULT_STATUS)
-            if resource_obj.name == "Slate-Project" and account_number == '':
-                # If a Slate-Project request doesnt have an account number then it shouldn't be
-                # placed in the invoice list.
-                # TODO: Might not be true anymore
-                allocation_status_obj = AllocationStatusChoice.objects.get(
-                    name='New')
         else:
             allocation_status_obj = AllocationStatusChoice.objects.get(
                 name='New')
 
-        official_end_date = form_data['end_date']
-
-        form_data.pop('cost')
-        form_data.pop('users')
-        form_data.pop('resource')
-        form_data.pop('license_term')
-        form_data.pop('prorated_cost')
-        form_data.pop('allocation_account')
-        use_type = form_data.pop('use_type')
-        form_data['status'] = allocation_status_obj
-        form_data['project'] = project_obj
-        form_data['end_date'] = end_date
-        form_data['total_cost'] = total_cost
-        form_data['storage_space_unit'] = storage_space_unit
-        allocation_obj = Allocation.objects.create(**form_data)
-        form_data['use_type'] = use_type
-        form_data['end_date'] = official_end_date
+        allocation_obj = Allocation.objects.create(
+            project=project_obj,
+            justification=justification,
+            status=allocation_status_obj
+        )
 
         if ALLOCATION_ENABLE_CHANGE_REQUESTS_BY_DEFAULT:
             allocation_obj.is_changeable = True
@@ -1502,7 +1453,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 name='Pending - Add'
             )
             for user in users:
-                if user.username == self.request.user.username or user.username == data_manager or user.username == allocation_obj.project.pi.username:
+                if user.username == self.request.user.username or user.username == allocation_obj.project.pi.username:
                     allocation_user_obj = AllocationUser.objects.create(
                         allocation=allocation_obj,
                         user=user,
@@ -1648,14 +1599,6 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
         allocation_obj = get_object_or_404(
             Allocation, pk=self.kwargs.get('pk'))
-
-        # if allocation_obj.get_parent_resource.name == 'Slate-Project':
-        #     if allocation_obj.data_manager != self.request.user.username:
-        #         messages.error(
-        #             self.request,
-        #             'Only the Data Manager can add users to this resource.'
-        #         )
-        #         return False
 
         if allocation_obj.project.pi == self.request.user:
             return True
@@ -1997,28 +1940,6 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
         return users_to_remove
 
-    def check_data_manager_exists(self, allocation_obj):
-        # if allocation_obj.data_manager:
-        #     if allocation_obj.get_parent_resource.name == 'Slate-Project':
-        #         return True
-
-        return False
-
-    def get_disable_select_list(self, allocation_obj, users_to_remove):
-        """
-        Gets a list that determines if a user can be removed by disabling the
-        ProjectRemoveUserForm's selected field.
-        """
-        disable_select_list = [False] * len(users_to_remove)
-        if not self.check_data_manager_exists:
-            return disable_select_list
-
-        # for i, user in enumerate(users_to_remove):
-        #     if user['username'] == allocation_obj.data_manager:
-        #         disable_select_list[i] = True
-
-        return disable_select_list
-
     def get(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
@@ -2028,20 +1949,8 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
         if users_to_remove:
             formset = formset_factory(
-                AllocationRemoveUserForm,
-                max_num=len(users_to_remove),
-                formset=AllocationRemoveUserFormset
-            )
-            formset = formset(
-                initial=users_to_remove,
-                prefix='userform',
-                form_kwargs={
-                    'disable_selected': self.get_disable_select_list(
-                        allocation_obj,
-                        users_to_remove
-                    )
-                }
-            )
+                AllocationRemoveUserForm, max_num=len(users_to_remove))
+            formset = formset(initial=users_to_remove, prefix='userform')
             context['formset'] = formset
 
         context['allocation'] = allocation_obj
@@ -2054,22 +1963,9 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
         users_to_remove = self.get_users_to_remove(allocation_obj)
 
         formset = formset_factory(
-            AllocationRemoveUserForm,
-            max_num=len(users_to_remove),
-            formset=AllocationRemoveUserFormset
-        )
-
+            AllocationRemoveUserForm, max_num=len(users_to_remove))
         formset = formset(
-            request.POST,
-            initial=users_to_remove,
-            prefix='userform',
-            form_kwargs={
-                'disable_selected': self.get_disable_select_list(
-                    allocation_obj,
-                    users_to_remove
-                )
-            }
-        )
+            request.POST, initial=users_to_remove, prefix='userform')
 
         remove_users_count = 0
 

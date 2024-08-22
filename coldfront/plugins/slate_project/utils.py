@@ -1,3 +1,5 @@
+import os
+import csv
 import logging
 import json
 import datetime
@@ -34,7 +36,8 @@ logger = logging.getLogger(__name__)
 ENABLE_LDAP_ELIGIBILITY_SERVER = import_from_settings('ENABLE_LDAP_ELIGIBILITY_SERVER', False)
 ENABLE_LDAP_SLATE_PROJECT_SYNCING = import_from_settings('ENABLE_LDAP_SLATE_PROJECT_SYNCING', False)
 SLATE_PROJECT_ELIGIBILITY_ACCOUNT = import_from_settings('SLATE_PROJECT_ELIGIBILITY_ACCOUNT', '')
-SLATE_PROJECT_ACCOUNT = import_from_settings('SLATE_PROJECT_ACCOUNT', '') 
+SLATE_PROJECT_ACCOUNT = import_from_settings('SLATE_PROJECT_ACCOUNT', '')
+SLATE_PROJECT_DIR = import_from_settings('SLATE_PROJECT_DIR', '')
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 CENTER_BASE_URL = import_from_settings('CENTER_BASE_URL')
 PROJECT_DEFAULT_MAX_MANAGERS = import_from_settings('PROJECT_DEFAULT_MAX_MANAGERS', 3)
@@ -943,20 +946,32 @@ def send_ineligible_users_report():
             else:
                 ineligible_users[username_status][role].append(ldap_group)
 
-    if EMAIL_ENABLED and ineligible_users:
-        template_context = {
-            'ineligible_users': ineligible_users,
-            'current_date': date.today().isoformat(),
-        }
+    if ineligible_users:
+        current_date = date.today().isoformat()
+        with open(os.path.join(SLATE_PROJECT_DIR, f'ineligible_users_{current_date}.txt'), 'w') as ineligible_file:
+            ineligible_file.write(f'The ineligible users within Slate Project allocations found on {current_date}.\n\n')
+            for user, roles in ineligible_users.items():
+                ineligible_file.write(user + '\n')
+                ineligible_file.write('---------------\n')
+                for role, projects in roles.items():
+                    ineligible_file.write(f'{role} - {", ".join(projects)}\n')
+                ineligible_file.write('\n')
+        logger.info('Slate Project ineligible users file created')
 
-        send_email_template(
-            'Ineligible Users',
-            'slate_project/email/ineligibility_report.txt',
-            template_context,
-            EMAIL_SENDER,
-            [SLATE_PROJECT_EMAIL]
-        )
-        logger.info('Slate Project ineligible users email report sent')
+        if EMAIL_ENABLED:
+            template_context = {
+                'ineligible_users': ineligible_users,
+                'current_date': current_date,
+            }
+
+            send_email_template(
+                'Ineligible Users',
+                'slate_project/email/ineligibility_report.txt',
+                template_context,
+                EMAIL_SENDER,
+                [SLATE_PROJECT_EMAIL]
+            )
+            logger.info('Slate Project ineligible users email report sent')
 
 
 def send_ineligible_pis_report():
@@ -1011,6 +1026,46 @@ def send_ineligible_pis_report():
             [SLATE_PROJECT_EMAIL]
         )
         logger.info('Slate Project ineligible PIs email report sent')
+
+
+def create_slate_project_data_file():
+    allocation_attribute_types = [
+        'Allocated Quantity',
+        'GID',
+        'LDAP Group',
+        'Slate Project Directory'
+    ]
+    allocation_attribute_objs = AllocationAttribute.objects.filter(
+        allocation_attribute_type__name__in=allocation_attribute_types,
+        allocation__resources__name='Slate Project'
+    ).prefetch_related('allocation', 'allocation_attribute_type')
+
+    allocations = {}
+    for allocation_attribute_obj in allocation_attribute_objs:
+        id = allocation_attribute_obj.allocation.id
+        if allocations.get(id) is None:
+            allocations[id] = {
+                'Allocation Created': allocation_attribute_obj.allocation.created
+            }
+
+        allocations[id].update(
+            {allocation_attribute_obj.allocation_attribute_type.name: allocation_attribute_obj.value}
+        )
+
+    current_date = date.today().isoformat()
+    with open(os.path.join(SLATE_PROJECT_DIR, f'slate_project_data_{current_date}.csv'), 'w') as slate_project_csv:
+        csv_writer = csv.writer(slate_project_csv)
+        csv_writer.writerow(['Allocation Created', *allocation_attribute_types])
+        for _, allocation_attributes in allocations.items():
+            csv_writer.writerow([
+                allocation_attributes.get('Allocation Created'),
+                allocation_attributes.get('Allocation Quantity'),
+                allocation_attributes.get('GID'),
+                allocation_attributes.get('LDAP Group'),
+                allocation_attributes.get('Slate Project Directory')
+            ])
+
+    logger.info('Created a csv with Slate Project data')
 
 
 def get_info(info, line, current_project):
@@ -1208,7 +1263,7 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
         if slate_project.get('start_date'):
             allocation_start_date = slate_project.get('start_date')
 
-        allocation_obj, created = Allocation.objects.get_or_create(
+        allocation_obj = Allocation.objects.create(
             project=project_obj,
             justification='No additional information needed at this time.',
             status=AllocationStatusChoice.objects.get(name='Active'),
@@ -1216,8 +1271,7 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
             end_date=project_obj.end_date,
             is_changeable=False
         )
-        if created:
-            allocation_obj.resources.add(Resource.objects.get(name='Slate Project'))
+        allocation_obj.resources.add(Resource.objects.get(name='Slate Project'))
 
         if not all_users:
             user_obj, created = User.objects.get_or_create(username=slate_project.get('owner_netid'))
