@@ -28,12 +28,13 @@ class ATTAllocationQuery:
 
         query_dict = {
             'quota': {
+                'volumes': '|'.join(r.name.split('/')[0] for r in Resource.objects.filter(name__contains='tier0')),
                 'relation': 'HasQuota',
                 'match': "(e:Quota) MATCH (d:ConfigValue {Name: 'Quota.Invocation'})",
                 'server': 'filesystem',
                 'validation_query':
-                    "NOT ((e.SizeGB IS null) OR (e.usedBytes = 0 AND e.SizeGB = 1024)) \
-                    AND (datetime() - duration('P31D') <= datetime(r.DotsLFSUpdateDate)) \
+                    "NOT ((e.SizeGB IS null) OR (e.usedBytes = 0 AND e.SizeGB = 1024))\
+                    AND (datetime() - duration('P31D') <= datetime(r.DotsLFSUpdateDate))\
                     AND NOT (e.Path IS null)",
                 'r_updated': 'DotsLFSUpdateDate',
                 'storage_type': 'Quota',
@@ -42,17 +43,18 @@ class ATTAllocationQuery:
                 'usedbytes': 'usedBytes',
                 'fs_path': 'Path',
                 'server_replace': '/n/',
-                'path_replace': '/n//',
+                'path_def': "substring(e.Path, size('/n/') + size(split(e.Path, '/')[2]) + 1)",
                 'unique':'datetime(e.DotsLFSUpdateDate) as begin_date'
             },
             'isilon': {
+                'volumes': '|'.join(r.name.split('/')[0] for r in Resource.objects.filter(name__contains='tier1')),
                 'relation': 'Owns',
                 'match': "(e:IsilonPath) MATCH (d:ConfigValue {Name: 'IsilonPath.Invocation'})",
                 'server': 'Isilon',
-                'validation_query': "r.DotsUpdateDate = d.DotsUpdateDate \
+                'validation_query': "r.DotsUpdateDate = d.DotsUpdateDate\
                     AND NOT (e.Path =~ '.*/rc_admin/.*')\
                     AND (e.Path =~ '.*labs.*')\
-                    AND (datetime() - duration('P31D') <= datetime(r.DotsUpdateDate)) \
+                    AND (datetime() - duration('P31D') <= datetime(r.DotsUpdateDate))\
                     AND NOT (e.SizeGB = 0)",
                 'fs_path':'Path',
                 'r_updated': 'DotsUpdateDate',
@@ -61,10 +63,11 @@ class ATTAllocationQuery:
                 'sizebytes': 'SizeBytes',
                 'usedbytes': 'UsedBytes',
                 'server_replace': '01.rc.fas.harvard.edu',
-                'path_replace': '/ifs/',
+                'path_def': "replace(e.Path, '/ifs/', '')",
                 'unique': 'datetime(e.DotsUpdateDate) as begin_date'
             },
             'volume': {
+                'volumes': '|'.join(r.name.split('/')[0] for r in Resource.objects.filter(name__contains='tier2')),
                 'relation': 'Owns',
                 'match': '(e:Volume)',
                 'server': 'Hostname',
@@ -72,37 +75,31 @@ class ATTAllocationQuery:
                 'r_updated': 'DotsLVSUpdateDate',
                 'storage_type': 'Volume',
                 'fs_path': 'LogicalVolume',
-                'path_replace': '/dev/data/',
+                'path_def': "replace(e.LogicalVolume, '/dev/data/', '')",
                 'usedgb': 'UsedGB',
                 'sizebytes': 'SizeGB * 1000000000',
                 'usedbytes': 'UsedGB * 1000000000',
                 'server_replace': '.rc.fas.harvard.edu',
-                'unique': 'datetime(e.DotsLVSUpdateDate) as update_date, \
+                'unique': 'datetime(e.DotsLVSUpdateDate) as update_date,\
                         datetime(e.DotsLVDisplayUpdateDate) as display_date'
             },
         }
         d = query_dict[vol_type]
 
-        if not volumes:
-            volumes = [
-                r.name.split('/')[0] for r in Resource.objects.filter(resource_type__name='Storage')
-            ]
-        volumes = '|'.join(volumes)
-        where = f"(e.{d['server']} =~ '.*({volumes}).*')"
         statement = {
-            'statement': f"MATCH p=(g:Group)-[r:{d['relation']}]-{d['match']} \
-            WHERE {where} AND {d['validation_query']}\
+            'statement': f"MATCH p=(g:Group)-[r:{d['relation']}]-{d['match']}\
+            WHERE (e.{d['server']} =~ '.*({d['volumes']}).*') AND {d['validation_query']}\
             AND NOT (g.ADSamAccountName =~ '.*(disabled|rc_admin).*')\
-            RETURN \
-            {d['unique']}, \
+            RETURN\
+            {d['unique']},\
             g.ADSamAccountName as lab,\
-            (e.SizeGB / 1024.0) as tb_allocation, \
+            (e.SizeGB / 1024.0) as tb_allocation,\
             e.{d['sizebytes']} as byte_allocation,\
             e.{d['usedbytes']} as byte_usage,\
             (e.{d['usedgb']} / 1024.0) as tb_usage,\
-            replace(e.{d['fs_path']}, '{d['path_replace']}', '') as fs_path, \
-            '{d['storage_type']}' as storage_type, \
-            datetime(r.{d['r_updated']}) as rel_updated, \
+            {d['path_def']} as fs_path,\
+            '{d['storage_type']}' as storage_type,\
+            datetime(r.{d['r_updated']}) as rel_updated,\
             replace(e.{d['server']}, '{d['server_replace']}', '') as server"
         }
         self.queries['statements'].append(statement)
@@ -141,6 +138,7 @@ class QuotaDataPuller:
         headers = headers_df.columns.values.tolist()
         data = pd.read_csv(datafile, names=headers, sep='\s+')
         data = data.loc[data['pool'].str.contains('1')]
+        data['fs_path'] = data['pool']
         data['lab'] = data['pool'].str.replace('1', '').str.replace('hugl', '').str.replace('hus3', '')
         data['server'] = 'nesetape'
         data['storage_type'] = 'tape'
@@ -148,7 +146,6 @@ class QuotaDataPuller:
         data['byte_usage'] = data['mib_used'] * 1048576
         data['tb_allocation'] = round(((data['mib_capacity']+ data['mib_capacity']*0.025) / 953674.3164), -1)
         data['tb_usage'] = data['mib_used'] / 953674.3164
-        data['fs_path'] = None
         data = data[[
             'lab', 'server', 'storage_type', 'byte_allocation',
             'byte_usage', 'tb_allocation', 'tb_usage', 'fs_path',
@@ -187,17 +184,17 @@ class AllTheThingsConn:
             return_vars = 'u.ADParentCanonicalName AS path, u.ADDepartment AS department'
         query = {'statements': [{
             'statement': f"MATCH {match_vars} (g.ADSamAccountName =~ '({groupsearch})')\
-                RETURN \
-                u.ADgivenName AS first_name, \
-                u.ADsurname AS last_name, \
-                u.ADSamAccountName AS user_name, \
-                u.ADenabled AS user_enabled, \
+                RETURN\
+                u.ADgivenName AS first_name,\
+                u.ADsurname AS last_name,\
+                u.ADSamAccountName AS user_name,\
+                u.ADenabled AS user_enabled,\
                 g.ADSamAccountName AS group_name,\
                 {return_vars},\
-                g.ADManaged_By AS group_manager, \
-                u.ADgidNumber AS user_gid_number, \
-                u.ADTitle AS title, \
-                u.ADCompany AS company, \
+                g.ADManaged_By AS group_manager,\
+                u.ADgidNumber AS user_gid_number,\
+                u.ADTitle AS title,\
+                u.ADCompany AS company,\
                 g.ADgidNumber AS group_gid_number"
         }]}
         resp_json = self.post_query(query)
@@ -256,7 +253,7 @@ def pair_allocations_data(project, quota_dicts):
     for allocation in allocs:
         dicts = [
             d for d in quota_dicts
-            if d['fs_path'] and allocation.path.lower() == d['fs_path'].lower()
+            if d['fs_path'] and d['fs_path'].lower() == allocation.path.replace('HDD/', '').replace('SSD-HGST/', '').replace('SSD/', '').lower()
             and d['server'] in allocation.resources.first().name
         ]
         if dicts:
@@ -265,6 +262,9 @@ def pair_allocations_data(project, quota_dicts):
     unpaired_allocs = [a for a in allocs if a not in paired_allocs]
     unpaired_dicts = [d for d in quota_dicts if d not in paired_allocs.values()]
     if unpaired_dicts or unpaired_allocs:
+        print(
+            f"unpaired allocation data. Allocation: {unpaired_allocs} | Dict: {unpaired_dicts}"
+        )
         logger.warning(
             "unpaired allocation data. Allocation: %s | Dict: %s", unpaired_allocs, unpaired_dicts
         )
