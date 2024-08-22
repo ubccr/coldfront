@@ -50,34 +50,32 @@ def sort_by(list1, sorter, how='attr'):
             raise Exception('unclear sorting method')
     return is_true, is_false
 
-def select_one_project_allocation(project_obj, resource_obj, dirpath=None):
+def select_one_project_allocation(project_obj, resource_obj, dirpath):
     """
-    Get one allocation for a given project/resource pairing; handle return of
+    Get one allocation for a given project/resource/path pairing; handle return of
     zero or multiple allocations.
-
-    If multiple allocations are in allocation_query, choose the one with the
-    similar dirpath.
 
     Parameters
     ----------
     project_obj
     resource_obj
+    dirpath
     """
-    filter_vals = {'resources__id': resource_obj.id}
-    # if dirpath:
-    #     filter_vals['allocationattribute__value'] = dirpath
+    filter_vals = {'resources__id': resource_obj.id, "status__name__in": ['Active', 'Pending Deactivation']}
     allocation_query = project_obj.allocation_set.filter(**filter_vals)
-    if allocation_query.count() == 1:
-        allocation_obj = allocation_query.first()
-        if allocation_obj.path and dirpath and allocation_obj.path not in dirpath and dirpath not in allocation_obj.path:
-            return None
-    elif allocation_query.count() < 1:
-        allocation_obj = None
-    elif allocation_query.count() > 1:
-        allocation_obj = next((a for a in allocation_query if a.path.lower() in dirpath.lower()),
-                                None)
-    return allocation_obj
-
+    if allocation_query.count() < 1:
+        return None
+    else:
+        allocations = [
+            a for a in allocation_query
+            if a.path and dirpath and (a.path in dirpath or dirpath in a.path)
+        ]
+        if len(allocations) == 1:
+            return allocations[0]
+        elif len(allocations) > 1:
+            print(allocations)
+            logger.exception('multiple allocations found for project/resource/path pairing: %s', allocations)
+            raise Exception('multiple allocations found for project/resource/path pairing')
 
 def determine_size_fmt(byte_num):
     """Return the correct human-readable byte measurement.
@@ -86,9 +84,9 @@ def determine_size_fmt(byte_num):
     for u in units:
         unit = u
         if abs(byte_num) < 1024.0:
-            return round(byte_num, 3), unit
+            return (round(byte_num, 3), unit)
         byte_num /= 1024.0
-    return(round(byte_num, 3), unit)
+    return (round(byte_num, 3), unit)
 
 def convert_size_fmt(num, target_unit, source_unit='B'):
     units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB']

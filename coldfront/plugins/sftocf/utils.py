@@ -192,7 +192,6 @@ class StarFishServer:
         zones = self.get_zones()
         return next((z for z in zones if z['name'] == zone_name), None)
 
-
     def create_zone(self, zone_name, paths, managers, managing_groups):
         """Create a zone via the API"""
         url = self.api_url + 'zone/'
@@ -616,7 +615,7 @@ class UsageDataPipelineBase:
         total_sort_key = itemgetter('path','volume')
         allocation_usage_grouped = return_dict_of_groupings(self.sf_usage_data, total_sort_key)
         missing_allocations = [
-            (k,a) for k, a in allocation_usage_grouped if k not in allocation_list
+            (k,a) for k, a in allocation_usage_grouped if (a, k) not in allocation_list
         ]
         print("missing_allocations:", missing_allocations)
         logger.warning('starfish allocations missing in coldfront: %s', missing_allocations)
