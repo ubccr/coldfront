@@ -40,7 +40,7 @@ from coldfront.core.publication.models import PublicationSource
 ### Default values and Faker provider setup ###
 
 project_status_choice_names = ['New', 'Active', 'Archived']
-project_user_role_choice_names = ['User', 'Access Manager', 'General Manager', 'Storage Manager']
+project_user_role_choice_names = ['User', 'Access Manager', 'Storage Manager', 'General Manager', 'PI']
 field_of_science_names = ['Physics', 'Chemistry', 'Economics', 'Biology', 'Sociology']
 attr_types = ['Date', 'Int', 'Float', 'Text', 'Boolean']
 
