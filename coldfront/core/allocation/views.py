@@ -371,13 +371,6 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                     }
 
                     resource_email_template_lookup_table = {
-                        'Carbonate': {
-                            'template': 'email/allocation_carbonate_activated.txt',
-                            'template_context': {
-                                'help_url': EMAIL_TICKET_SYSTEM_ADDRESS,
-                                'slurm_account_name': allocation_obj.get_attribute('slurm_account_name')
-                            },
-                        },
                         'Quartz': {
                             'template': 'email/allocation_quartz_activated.txt',
                             'template_context': {
