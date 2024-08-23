@@ -1,3 +1,5 @@
+from bs4 import BeautifulSoup
+
 from coldfront.core.project.tests.test_views import ProjectViewTestBase
 from coldfront.core.test_helpers import utils
 from coldfront.core.test_helpers.factories import ProjectAttributeFactory
@@ -90,5 +92,20 @@ class ProjectDetailViewTest(ProjectViewTestBase):
     ### Data display tests ###
     def test_projectdetail_allocation_table(self):
         """Test ProjectDetail page storage allocation table"""
-        # pi can see all allocations
+        # pi can see allocation in Allocations table
         response = utils.login_and_get_page(self.client, self.pi_user, self.url)
+        soup = BeautifulSoup(response.content, 'html.parser')
+        allocations_table = soup.find('table', {'id': 'invoice_table'})
+        self.assertIn("holylfs10/tier1", allocations_table.get_text())
+        # project user belonging to allocation can see allocation
+        # project user not belonging to allocation can see allocation
+
+    def test_projectdetail_allocation_history_table(self):
+        """Test ProjectDetail page storage allocation history table"""
+        # pi can see allocation in Allocations table
+        response = utils.login_and_get_page(self.client, self.pi_user, self.url)
+        soup = BeautifulSoup(response.content, 'html.parser')
+        allocations_table = soup.find('table', {'id': 'allocation_history'})
+        self.assertIn("holylfs10/tier1", allocations_table.get_text())
+        # project user belonging to allocation can see allocation
+        # project user not belonging to allocation can see allocation
