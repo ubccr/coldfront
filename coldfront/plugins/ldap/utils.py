@@ -431,13 +431,13 @@ def collect_update_project_status_membership():
             [(pi.project.title, pi.user.username) for pi in pis_to_deactivate])
 
     ### identify PIs with incorrect roles and change their status ###
-    projectuser_role_manager = ProjectUserRoleChoice.objects.get(name='General Manager')
+    projectuser_role_pi = ProjectUserRoleChoice.objects.get(name='PI')
 
     pis_mislabeled = ProjectUser.objects.filter(
         reduce(operator.or_,
             ((  Q(project=group.project) &
                 Q(user__username=group.pi['sAMAccountName']) &
-                ~Q(role=projectuser_role_manager))
+                ~Q(role=projectuser_role_pi))
             for group in active_pi_groups)
         )
     )
@@ -446,7 +446,7 @@ def collect_update_project_status_membership():
         logger.info('Project PIs with incorrect labeling: %s',
             [(pi.project.title, pi.user.username) for pi in pis_mislabeled])
         ProjectUser.objects.bulk_update([
-            ProjectUser(id=pi.id, role=projectuser_role_manager)
+            ProjectUser(id=pi.id, role=projectuser_role_pi)
             for pi in pis_mislabeled
         ], ['role'])
 
@@ -478,7 +478,7 @@ def collect_update_project_status_membership():
             )
             if present_projectusers:
                 logger.warning('found reactivated ADUsers for project %s: %s',
-                    group.project.title, [user.user.username for user in present_projectusers])
+                    group.project.title, [u.user.username for u in present_projectusers])
 
                 present_projectusers.update(
                     role=projectuser_role_user, status=projectuserstatus_active
@@ -644,16 +644,16 @@ def add_new_projects(groupusercollections, errortracker):
         logger.debug('adding manager status to ProjectUser %s for Project %s',
                     group.pi['sAMAccountName'][0], group.name)
         try:
-            manager = group.project.projectuser_set.get(
+            pi_projuser = group.project.projectuser_set.get(
                 user__username=group.pi['sAMAccountName'][0]
             )
         except ProjectUser.DoesNotExist:
-            logger.warning('PI %s not found in ProjectUser for Project %s',
+            logger.warning('PI %s not found in %s AD Group Members',
                         group.pi['sAMAccountName'][0], group.name)
             errortracker['pi_not_projectuser'].append(group.name)
             continue
-        manager.role = ProjectUserRoleChoice.objects.get(name='General Manager')
-        manager.save()
+        pi_projuser.role = ProjectUserRoleChoice.objects.get(name='PI')
+        pi_projuser.save()
         added_projects.append([group.name, group.project])
 
     for errortype in errortracker:
@@ -674,7 +674,6 @@ def identify_ad_group(sender, **kwargs):
         ifx_pi = get_user_model().objects.get(username=manager['sAMAccountName'][0])
     except Exception as e:
         raise ValueError(f"issue retrieving pi's ifxuser entry: {e}")
-
     return ifx_pi
 
 @receiver(project_post_create)
@@ -702,10 +701,12 @@ def update_new_project(sender, **kwargs):
     project.pi = get_user_model().objects.get(username=manager['sAMAccountName'][0])
     project.save()
     for member in members:
-        role_name = "User" if member['sAMAccountName'][0] != manager['sAMAccountName'][0] else "General Manager"
+        role_name = "User" if member['sAMAccountName'][0] != manager['sAMAccountName'][0] else "PI"
         try:
             user_obj = get_user_model().objects.get(username=member['sAMAccountName'][0])
         except get_user_model().DoesNotExist:
+            logger.warning('User %s not found when trying to add to Project %s',
+                           member['sAMAccountName'][0], project.title)
             continue
         ProjectUser.objects.create(
             project=project,
