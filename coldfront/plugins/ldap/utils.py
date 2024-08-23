@@ -436,7 +436,7 @@ def collect_update_project_status_membership():
     pis_mislabeled = ProjectUser.objects.filter(
         reduce(operator.or_,
             ((  Q(project=group.project) &
-                Q(user__username=group.pi['sAMAccountName']) &
+                Q(user__username=group.pi['sAMAccountName'][0]) &
                 ~Q(role=projectuser_role_pi))
             for group in active_pi_groups)
         )
