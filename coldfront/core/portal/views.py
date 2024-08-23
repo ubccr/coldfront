@@ -42,12 +42,14 @@ def home(request):
             Q(status__name__in=['Active', 'New', 'Renewal Requested', ]) &
             Q(project__status__name__in=['Active', 'New']) &
             (
-                Q(project__projectuser__user=request.user) &
-                Q(project__projectuser__status__name__in=['Active', ]) &
-                    (Q(project__projectuser__role__name__in=MANAGERS) |
-                    Q(allocationuser__user=request.user) &
-                    Q(allocationuser__status__name='Active'))
-            ) | Q(project__pi=request.user)
+                (
+                    Q(project__projectuser__user=request.user) &
+                    Q(project__projectuser__status__name__in=['Active', ]) &
+                        (Q(project__projectuser__role__name__in=MANAGERS) |
+                        Q(allocationuser__user=request.user) &
+                        Q(allocationuser__status__name='Active'))
+                ) | Q(project__pi=request.user)
+            )
         ).distinct().order_by('-created')
 
         managed_allocations = Allocation.objects.filter(
@@ -61,14 +63,14 @@ def home(request):
         )
 
         if managed_allocations:
-            allocation_request_list = AllocationChangeRequest.objects.filter(
+            allocation_change_request_list = AllocationChangeRequest.objects.filter(
                 Q(allocation__in=managed_allocations) & (
                     Q(status__name='Pending') |
                     Q(modified__gt=timezone.now()-timezone.timedelta(days=30))
                 )
             ).distinct().order_by('-created')
         else:
-            allocation_request_list = None
+            allocation_change_request_list = None
 
         user_depts = DepartmentMember.objects.filter(user=request.user)
         department_list = Department.objects.filter(
@@ -78,7 +80,7 @@ def home(request):
         context['department_list'] = department_list
         context['project_list'] = project_list
         context['allocation_list'] = allocation_list
-        context['allocation_request_list'] = allocation_request_list
+        context['allocation_request_list'] = allocation_change_request_list
 
         try:
             context['ondemand_url'] = settings.ONDEMAND_URL
