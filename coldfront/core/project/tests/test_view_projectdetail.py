@@ -1,5 +1,3 @@
-from bs4 import BeautifulSoup
-
 from coldfront.core.project.tests.test_views import ProjectViewTestBase
 from coldfront.core.test_helpers import utils
 from coldfront.core.test_helpers.factories import ProjectAttributeFactory
@@ -76,36 +74,47 @@ class ProjectDetailViewTest(ProjectViewTestBase):
         """Test ProjectDetail add attribute button visibility to different projectuser roles"""
         search_text = 'Add Attribute'
         utils.page_contains_for_user(self, self.admin_user, self.url, search_text) # admin can see add attribute button
-        utils.page_does_not_contain_for_user(self, self.pi_user, self.url, search_text) # pi cannot see add attribute button
-        utils.page_does_not_contain_for_user(self, self.project_user, self.url, search_text) # non-manager user cannot see add attribute button
+        # pi and non-manager cannot see add attribute button
+        utils.page_does_not_contain_for_user(self, self.pi_user, self.url, search_text)
+        utils.page_does_not_contain_for_user(self, self.project_user, self.url, search_text)
 
     def test_projectdetail_addnotification_button_visibility(self):
         """Test ProjectDetail add notification button visibility to different projectuser roles"""
         search_text = 'Add Notification'
         utils.page_contains_for_user(self, self.admin_user, self.url, search_text) # admin can see add notification button
-        utils.page_does_not_contain_for_user(self, self.pi_user, self.url, search_text) # pi cannot see add notification button
-        utils.page_does_not_contain_for_user(self, self.project_user, self.url, search_text) # non-manager user cannot see add notification button
-        # access manager, data manager cannot see add notification button
+        # pi, access manager, data manager, project user cannot see add notification button
+        utils.page_does_not_contain_for_user(self, self.pi_user, self.url, search_text)
         utils.page_does_not_contain_for_user(self, self.proj_accessmanager, self.url, search_text)
         utils.page_does_not_contain_for_user(self, self.proj_datamanager, self.url, search_text)
+        utils.page_does_not_contain_for_user(self, self.project_user, self.url, search_text)
 
     ### Data display tests ###
     def test_projectdetail_allocation_table(self):
         """Test ProjectDetail page storage allocation table"""
         # pi can see allocation in Allocations table
-        response = utils.login_and_get_page(self.client, self.pi_user, self.url)
-        soup = BeautifulSoup(response.content, 'html.parser')
+        soup = utils.login_and_get_soup(self.client, self.pi_user, self.url)
         allocations_table = soup.find('table', {'id': 'invoice_table'})
         self.assertIn("holylfs10/tier1", allocations_table.get_text())
         # project user belonging to allocation can see allocation
+        soup = utils.login_and_get_soup(self.client, self.project_user, self.url)
+        allocations_table = soup.find('table', {'id': 'invoice_table'})
+        self.assertIn("holylfs10/tier1", allocations_table.get_text())
         # project user not belonging to allocation can see allocation
+        soup = utils.login_and_get_soup(self.client, self.proj_nonallocation_user, self.url)
+        allocations_table = soup.find('table', {'id': 'invoice_table'})
+        self.assertIn("holylfs10/tier1", allocations_table.get_text())
 
     def test_projectdetail_allocation_history_table(self):
         """Test ProjectDetail page storage allocation history table"""
         # pi can see allocation in Allocations table
-        response = utils.login_and_get_page(self.client, self.pi_user, self.url)
-        soup = BeautifulSoup(response.content, 'html.parser')
+        soup = utils.login_and_get_soup(self.client, self.pi_user, self.url)
         allocations_table = soup.find('table', {'id': 'allocation_history'})
         self.assertIn("holylfs10/tier1", allocations_table.get_text())
         # project user belonging to allocation can see allocation
+        soup = utils.login_and_get_soup(self.client, self.project_user, self.url)
+        allocations_table = soup.find('table', {'id': 'allocation_history'})
+        self.assertIn("holylfs10/tier1", allocations_table.get_text())
         # project user not belonging to allocation can see allocation
+        soup = utils.login_and_get_soup(self.client, self.proj_nonallocation_user, self.url)
+        allocations_table = soup.find('table', {'id': 'allocation_history'})
+        self.assertIn("holylfs10/tier1", allocations_table.get_text())

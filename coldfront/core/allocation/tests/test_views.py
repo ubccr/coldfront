@@ -280,8 +280,10 @@ class AllocationDetailViewTest(AllocationViewBaseTest):
 
     def test_allocation_detail_access(self):
         self.allocation_access_tstbase(self.url)
-        utils.test_user_can_access(self, self.pi_user, self.url)  # PI can access
+        # pi, project nonallocation user, nonproj_allocation_user can access
+        utils.test_user_can_access(self, self.pi_user, self.url)
         utils.test_user_can_access(self, self.proj_nonallocation_user, self.url)
+        utils.test_user_can_access(self, self.nonproj_allocation_user, self.url)
         # check access for allocation user with "Removed" status
 
     def test_allocation_detail_template_value_render(self):
@@ -328,18 +330,19 @@ class AllocationDetailViewTest(AllocationViewBaseTest):
     def test_allocationuser_button_visibility(self):
         """Test visibility of "Add/Remove Users" buttons for different user types"""
         # we're removing these buttons for everybody, to avoid confusion re: procedure for user addition/removal
+        # admin can't see add/remove users buttons
         utils.page_does_not_contain_for_user(
             self, self.admin_user, self.url, 'Add Users'
         )
         utils.page_does_not_contain_for_user(
             self, self.admin_user, self.url, 'Remove Users'
         )
-        # pi
+        # pi can't see add/remove users buttons
         utils.page_does_not_contain_for_user(self, self.pi_user, self.url, 'Add Users')
         utils.page_does_not_contain_for_user(
             self, self.pi_user, self.url, 'Remove Users'
         )
-        # allocation user
+        # allocation user can't see add/remove users buttons
         utils.page_does_not_contain_for_user(
             self, self.proj_allocation_user, self.url, 'Add Users'
         )
