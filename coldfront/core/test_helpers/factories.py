@@ -226,7 +226,7 @@ class AllocationStatusChoiceFactory(DjangoModelFactory):
 class AllocationFactory(DjangoModelFactory):
     class Meta:
         model = Allocation
-        django_get_or_create = ('project',)
+        django_get_or_create = ('project', 'justification')
     justification = factory.Faker('sentence')
     status = SubFactory(AllocationStatusChoiceFactory)
     project = SubFactory(ProjectFactory)
@@ -344,6 +344,13 @@ def setup_models(test_case):
         AAttributeTypeFactory(name=attribute_type)
     for status in ['Pending', 'Approved', 'Denied']:
         AllocationChangeStatusChoiceFactory(name=status)
+    for resource_type in ['Storage', 'Compute']:
+        ResourceTypeFactory(name=resource_type)
+    for resource, r_id, rtype in [
+        ('holylfs10/tier1', 1, 'Storage'), 
+        ('Test Cluster', 3, 'Cluster')
+    ]:
+        ResourceFactory(name=resource, id=r_id, resource_type__name=rtype)
 
     quota_tb_type = AllocationAttributeTypeFactory(name='Storage Quota (TB)')
     for name, attribute_type, has_usage, is_private in (
@@ -376,9 +383,13 @@ def setup_models(test_case):
     test_case.project = ProjectFactory(pi=test_case.pi_user, title="poisson_lab")
 
     # allocations
-    test_case.proj_allocation = AllocationFactory(project=test_case.project)
-    resource = ResourceFactory(name='holylfs10/tier1', id=1)
-    test_case.proj_allocation.resources.add(resource)
+    for alloc in ['storage test', 'compute test']:
+        AllocationFactory(project=test_case.project, justification=alloc)
+    test_case.proj_allocation = Allocation.objects.get(justification='storage test')
+    test_case.proj_allocation.resources.add(Resource.objects.get(name='holylfs10/tier1'))
+
+    test_case.cluster_allocation = Allocation.objects.get(justification='compute test')
+    test_case.cluster_allocation.resources.add(Resource.objects.get(name='Test Cluster'))
 
     # make a quota_bytes allocation attribute
     allocation_quota = AllocationQuotaFactory(
@@ -397,6 +408,7 @@ def setup_models(test_case):
     # relationships
     for user in [test_case.proj_allocation_user, test_case.nonproj_allocation_user]:
         AllocationUserFactory(user=user, allocation=test_case.proj_allocation)
+        AllocationUserFactory(user=user, allocation=test_case.cluster_allocation)
 
     for user, role in {
         test_case.pi_user:'PI',

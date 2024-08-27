@@ -1,61 +1,92 @@
 [
-{
-  "model": "resource.resource",
-  "pk": 1,
-  "fields": {
-    "created": "2022-02-22T16:26:49.635Z",
-    "modified": "2021-10-13T13:57:49.047Z",
-    "parent_resource": null,
-    "resource_type": 1,
-    "name": "holylfs10/tier1",
-    "description": "Holiest of leaves",
-    "is_available": true,
-    "is_public": true,
-    "is_allocatable": true,
-    "requires_payment": true,
-    "allowed_groups": [],
-    "allowed_users": [],
-    "linked_resources": []
-  }
-},
-{
-  "model": "resource.resource",
-  "pk": 2,
-  "fields": {
-    "created": "2022-02-22T16:26:49.635Z",
-    "modified": "2021-10-13T13:57:49.047Z",
-    "parent_resource": null,
-    "resource_type": 1,
-    "name": "holylfs09/tier1",
-    "description": "Holiest of leaves",
-    "is_available": true,
-    "is_public": true,
-    "is_allocatable": true,
-    "requires_payment": true,
-    "allowed_groups": [],
-    "allowed_users": [],
-    "linked_resources": []
-  }
-},
-{
-  "model": "resource.resourcetype",
-  "pk": 1,
-  "fields": {
-    "created": "2022-02-22T16:14:05.808Z",
-    "modified": "2022-02-22T16:14:05.809Z",
-    "name": "Storage",
-    "description": "Network Storage"
-  }
-},
   {
-    "model": "ifxbilling.facility",
+    "model": "resource.resource",
     "pk": 1,
     "fields": {
-      "name":"Research Computing Storage",
-      "application_username":"coldfront",
-      "credit_code": "CODE",
-      "invoice_prefix": "RC",
-      "object_code": 8250
+      "created": "2022-02-22T16:26:49.635Z",
+      "modified": "2021-10-13T13:57:49.047Z",
+      "parent_resource": null,
+      "resource_type": 1,
+      "name": "holylfs10/tier1",
+      "description": "Holiest of leaves",
+      "is_available": true,
+      "is_public": true,
+      "is_allocatable": true,
+      "requires_payment": true,
+      "allowed_groups": [],
+      "allowed_users": [],
+      "linked_resources": []
+    }
+  },
+  {
+    "model": "resource.resource",
+    "pk": 2,
+    "fields": {
+      "created": "2022-02-22T16:26:49.635Z",
+      "modified": "2023-10-13T13:57:49.047Z",
+      "parent_resource": null,
+      "resource_type": 1,
+      "name": "holylfs09/tier1",
+      "description": "Holiest of leaves",
+      "is_available": true,
+      "is_public": true,
+      "is_allocatable": true,
+      "requires_payment": true,
+      "allowed_groups": [],
+      "allowed_users": [],
+      "linked_resources": []
+    }
+  },
+  {
+    "model": "resource.resource",
+    "pk": 3,
+    "fields": {
+      "created": "2022-02-22T16:26:49.635Z",
+      "modified": "2023-10-13T13:57:49.047Z",
+      "parent_resource": null,
+      "resource_type": 2,
+      "name": "Test Cluster",
+      "description": "Cluster Test",
+      "is_available": true,
+      "is_public": true,
+      "is_allocatable": true,
+      "requires_payment": true,
+      "allowed_groups": [],
+      "allowed_users": [],
+      "linked_resources": []
+    }
+  },
+  {
+    "model": "resource.resourcetype",
+    "pk": 1,
+    "fields": {
+      "created": "2022-02-22T16:14:05.808Z",
+      "modified": "2022-02-22T16:14:05.809Z",
+      "name": "Storage",
+      "description": "Network Storage"
+    }
+  },
+  {
+    "model": "resource.resourcetype",
+    "pk": 2,
+    "fields": {
+      "created": "2022-02-22T16:14:05.808Z",
+      "modified": "2022-02-22T16:14:05.809Z",
+      "name": "Cluster",
+      "description": "Cluster"
+    }
+  },
+  {
+    "model": "ifxbilling.product",
+    "pk": 1,
+    "fields": {
+      "product_name": "holylfs10/tier1",
+      "product_number": "IFXNANANANANANANANA2",
+      "product_description": "testresource/tier1",
+      "billing_calculator": "coldfront.plugins.ifx.calculator.ColdfrontBillingCalculator",
+      "reporting_group": "null",
+      "facility_id": 1,
+      "billable": 1
     }
   },
   {
@@ -69,6 +100,30 @@
       "reporting_group": "null",
       "facility_id": 1,
       "billable": 1
+    }
+  },
+  {
+    "model": "ifxbilling.product",
+    "pk": 3,
+    "fields": {
+      "product_name": "Test Cluster",
+      "product_number": "IFXNANANANANANANANA3",
+      "product_description": "cluster",
+      "billing_calculator": "coldfront.plugins.ifx.calculator.ColdfrontBillingCalculator",
+      "reporting_group": "null",
+      "facility_id": 1,
+      "billable": 1
+    }
+  },
+  {
+    "model": "ifxbilling.facility",
+    "pk": 1,
+    "fields": {
+      "name":"Research Computing Storage",
+      "application_username":"coldfront",
+      "credit_code": "CODE",
+      "invoice_prefix": "RC",
+      "object_code": 8250
     }
   },
   {
@@ -86,16 +141,17 @@
     }
   },
   {
-    "model": "ifxbilling.product",
-    "pk": 1,
+    "model": "ifxbilling.rate",
+    "pk": 2,
     "fields": {
-      "product_name": "holylfs10/tier1",
-      "product_number": "IFXNANANANANANANANA2",
-      "product_description": "testresource/tier1",
-      "billing_calculator": "coldfront.plugins.ifx.calculator.ColdfrontBillingCalculator",
-      "reporting_group": "null",
-      "facility_id": 1,
-      "billable": 1
+      "name": "Uni Rate",
+      "price": 100,
+      "units": "CPU Hours",
+      "is_active": true,
+      "product_id": 3,
+      "created": "2022-02-22T16:26:49.635Z",
+      "updated": "2022-02-22T16:26:49.635Z",
+      "max_qty": null
     }
   }
 ]

@@ -36,7 +36,7 @@ class HomePageTest(PortalViewTest):
         self.assertEqual(response.status_code, 200) # page renders
         self.assertContains(response, 'Projects') # page contains the title
         self.assertEqual(response.context['project_list'].count(), 1) # page contains the correct number of Projects
-        self.assertEqual(response.context['allocation_list'].count(), 1) # page contains the correct number of Allocations
+        self.assertEqual(response.context['allocation_list'].count(), 2) # page contains the correct number of Allocations
 
     def test_home_page_requests_view(self):
         # when PI has no requests, the requests table is not visible
@@ -58,10 +58,10 @@ class HomePageTest(PortalViewTest):
         """
         # PI sees allocation
         response = utils.login_and_get_page(self.client, self.pi_user, '')
-        self.assertEqual(response.context['allocation_list'].count(), 1)
+        self.assertEqual(response.context['allocation_list'].count(), 2)
         # Storage Manager sees allocation
         response = utils.login_and_get_page(self.client, self.proj_datamanager, '')
-        self.assertEqual(response.context['allocation_list'].count(), 1)
+        self.assertEqual(response.context['allocation_list'].count(), 2)
         # project user not belonging to allocation cannot see allocation
         response = utils.login_and_get_page(self.client, self.proj_nonallocation_user, '')
         self.assertEqual(response.context['allocation_list'].count(), 0)
