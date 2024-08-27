@@ -1,4 +1,5 @@
 """utility functions for unit and integration testing"""
+from bs4 import BeautifulSoup
 
 def page_contains_for_user(test_case, user, url, text):
     """Check that page contains text for user"""
@@ -27,6 +28,11 @@ def login_and_get_page(client, user, page):
     """force login and return get response for page"""
     client.force_login(user, backend="django.contrib.auth.backends.ModelBackend")
     return client.get(page)
+
+def login_and_get_soup(client, user, page):
+    """force login and return get response for page"""
+    response = login_and_get_page(client, user, page)
+    return BeautifulSoup(response.content, 'html.parser')
 
 def test_logged_out_redirect_to_login(test_case, page):
     """

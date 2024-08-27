@@ -92,7 +92,7 @@ class AllocationListViewTest(AllocationViewBaseTest):
         # confirm that show_all_allocations=on enables admin to view all allocations
         self.client.force_login(self.pi_user, backend=BACKEND)
         response = self.client.get("/allocation/?show_all_allocations=on")
-        self.assertEqual(len(response.context['item_list']), 1)
+        self.assertEqual(len(response.context['item_list']), 2)
 
     def test_allocation_list_access_manager(self):
         """Confirm that AllocationList access control works for managers
@@ -102,11 +102,11 @@ class AllocationListViewTest(AllocationViewBaseTest):
         # confirm that show_all_allocations=on enables admin to view all allocations
         self.client.force_login(self.proj_datamanager, backend=BACKEND)
         response = self.client.get("/allocation/?show_all_allocations=on")
-        self.assertEqual(len(response.context['item_list']), 1)
+        self.assertEqual(len(response.context['item_list']), 2)
         # confirm that show_all_allocations=on enables admin to view all allocations
         self.client.force_login(self.proj_accessmanager, backend=BACKEND)
         response = self.client.get("/allocation/?show_all_allocations=on")
-        self.assertEqual(len(response.context['item_list']), 1)
+        self.assertEqual(len(response.context['item_list']), 2)
 
     def test_allocation_list_access_user(self):
         """Confirm that AllocationList access control works for non-pi users
@@ -117,21 +117,21 @@ class AllocationListViewTest(AllocationViewBaseTest):
         # contains only the user's allocations
         self.client.force_login(self.proj_allocation_user, backend=BACKEND)
         response = self.client.get("/allocation/")
-        self.assertEqual(len(response.context['item_list']), 1)
+        self.assertEqual(len(response.context['item_list']), 2)
         response = self.client.get("/allocation/?show_all_allocations=on")
-        self.assertEqual(len(response.context['item_list']), 1)
+        self.assertEqual(len(response.context['item_list']), 2)
 
         # allocation user not belonging to project can see allocation
         self.client.force_login(self.nonproj_allocation_user, backend=BACKEND)
         response = self.client.get("/allocation/")
-        self.assertEqual(len(response.context['item_list']), 1)
+        self.assertEqual(len(response.context['item_list']), 2)
         response = self.client.get("/allocation/?show_all_allocations=on")
-        self.assertEqual(len(response.context['item_list']), 1)
+        self.assertEqual(len(response.context['item_list']), 2)
 
         # nonallocation user belonging to project can see allocation
         self.client.force_login(self.proj_nonallocation_user, backend=BACKEND)
         response = self.client.get("/allocation/?show_all_allocations=on")
-        self.assertEqual(len(response.context['item_list']), 1)
+        self.assertEqual(len(response.context['item_list']), 2)
 
         # nonallocation user not belonging to project can't see allocation
         self.client.force_login(self.nonproj_nonallocation_user, backend=BACKEND)
@@ -280,8 +280,10 @@ class AllocationDetailViewTest(AllocationViewBaseTest):
 
     def test_allocation_detail_access(self):
         self.allocation_access_tstbase(self.url)
-        utils.test_user_can_access(self, self.pi_user, self.url)  # PI can access
+        # pi, project nonallocation user, nonproj_allocation_user can access
+        utils.test_user_can_access(self, self.pi_user, self.url)
         utils.test_user_can_access(self, self.proj_nonallocation_user, self.url)
+        utils.test_user_can_access(self, self.nonproj_allocation_user, self.url)
         # check access for allocation user with "Removed" status
 
     def test_allocation_detail_template_value_render(self):
@@ -328,18 +330,19 @@ class AllocationDetailViewTest(AllocationViewBaseTest):
     def test_allocationuser_button_visibility(self):
         """Test visibility of "Add/Remove Users" buttons for different user types"""
         # we're removing these buttons for everybody, to avoid confusion re: procedure for user addition/removal
+        # admin can't see add/remove users buttons
         utils.page_does_not_contain_for_user(
             self, self.admin_user, self.url, 'Add Users'
         )
         utils.page_does_not_contain_for_user(
             self, self.admin_user, self.url, 'Remove Users'
         )
-        # pi
+        # pi can't see add/remove users buttons
         utils.page_does_not_contain_for_user(self, self.pi_user, self.url, 'Add Users')
         utils.page_does_not_contain_for_user(
             self, self.pi_user, self.url, 'Remove Users'
         )
-        # allocation user
+        # allocation user can't see add/remove users buttons
         utils.page_does_not_contain_for_user(
             self, self.proj_allocation_user, self.url, 'Add Users'
         )
@@ -373,20 +376,20 @@ class AllocationCreateViewTest(AllocationViewBaseTest):
 
     def test_allocationcreateview_post(self):
         """Test POST to the AllocationCreateView"""
-        self.assertEqual(len(self.project.allocation_set.all()), 1)
+        self.assertEqual(len(self.project.allocation_set.all()), 2)
         response = self.client.post(self.url, data=self.post_data, follow=True)
         self.assertContains(response, "Allocation requested.")
-        self.assertEqual(len(self.project.allocation_set.all()), 2)
+        self.assertEqual(len(self.project.allocation_set.all()), 3)
 
     def test_allocationcreateview_post_zeroquantity(self):
         """Test POST to the AllocationCreateView with default post_data:
         No expense_code, dua, heavy_io, mounted, external_sharing, high_security
         """
         self.post_data['quantity'] = '0'
-        self.assertEqual(len(self.project.allocation_set.all()), 1)
+        self.assertEqual(len(self.project.allocation_set.all()), 2)
         response = self.client.post(self.url, data=self.post_data, follow=True)
         self.assertContains(response, "Allocation requested.")
-        self.assertEqual(len(self.project.allocation_set.all()), 2)
+        self.assertEqual(len(self.project.allocation_set.all()), 3)
 
     def test_allocationcreateview_post_offerlettercode_valid(self):
         """ensure 33-digit codes go through and get formatted"""

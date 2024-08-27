@@ -195,10 +195,10 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 allocations = allocations.filter(
                     Q(project__projectuser__user=self.request.user)
                 )
-                if not self.object.has_perm(self.request.user, ProjectPermission.DATA_MANAGER):
-                    allocations = allocations.filter(
-                        Q(allocationuser__user=self.request.user)
-                    )
+                # if not self.object.has_perm(self.request.user, ProjectPermission.DATA_MANAGER):
+                #     allocations = allocations.filter(
+                #         Q(allocationuser__user=self.request.user)
+                #     )
         allocations = allocations.filter(
             status__name__in=['Active', 'Paid', 'Ready for Review','Payment Requested']
         ).distinct().order_by('-end_date')
