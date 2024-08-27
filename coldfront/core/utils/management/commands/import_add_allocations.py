@@ -72,7 +72,7 @@ class Command(BaseCommand):
                     defaults={
                         'status': AllocationStatusChoice.objects.get(name='Active'),
                         'start_date': datetime.datetime.now(),
-                        'is_changeable': True,
+                        'is_changeable': resource.is_allocatable,
                         'justification': f'Allocation Information for {lab_name}',
                         }
                     )

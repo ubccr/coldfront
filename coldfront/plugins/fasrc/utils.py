@@ -286,7 +286,6 @@ def push_quota_data(result_file):
     # collect commonly used database objects here
     proj_models = proj_models.prefetch_related('allocation_set')
     allocation_attribute_types = AllocationAttributeType.objects.all()
-    allocation_attribute_type_payment = allocation_attribute_types.get(name='RequiresPayment')
 
     for lab, quota_dicts in result_json_cleaned.items():
         logger.info('PROJECT: %s ====================================', lab)
@@ -319,11 +318,6 @@ def push_quota_data(result_file):
                     alloc_attr_obj.allocationattributeusage.value = v[1]
                     alloc_attr_obj.allocationattributeusage.save()
 
-                # 5. AllocationAttribute
-                allocation.allocationattribute_set.update_or_create(
-                    allocation_attribute_type=allocation_attribute_type_payment,
-                    defaults={'value': True}
-                )
                 counts['complete'] += 1
             except Exception as exc:
                 allocation_name = f"{data_dict['lab']}/{data_dict['server']}"

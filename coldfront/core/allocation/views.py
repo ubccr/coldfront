@@ -269,6 +269,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             err = 'You do not have permission to update the allocation'
             messages.error(request, err)
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
+
         initial_data = {
             'status': allocation_obj.status,
             'end_date': allocation_obj.end_date,
@@ -356,6 +357,11 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                 allocation_obj.resources.add(resource)
 
             allocation_obj.status = AllocationStatusChoice.objects.get(name='Active')
+            AllocationAttribute.objects.get_or_create(
+                allocation=allocation_obj,
+                allocation_attribute_type=AllocationAttributeType.objects.get(name='RequiresPayment'),
+                defaults={'value': resource.requires_payment}
+            )
 
         elif action == 'deny':
             allocation_obj.status = AllocationStatusChoice.objects.get(name='Denied')

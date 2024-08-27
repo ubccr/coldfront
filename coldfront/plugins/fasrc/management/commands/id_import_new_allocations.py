@@ -21,11 +21,7 @@ from coldfront.core.allocation.models import (
 )
 from coldfront.core.utils.fasrc import update_csv, select_one_project_allocation, save_json
 from coldfront.core.resource.models import Resource
-if ENV.bool('PLUGIN_SFTOCF', default=False):
-    from coldfront.plugins.sftocf.utils import (
-        StarFishRedash,
-        RedashDataPipeline,
-    )
+from coldfront.plugins.sftocf.utils import StarFishRedash, RedashDataPipeline
 from coldfront.plugins.fasrc.utils import (
     AllTheThingsConn,
     match_entries_with_projects,
@@ -60,11 +56,18 @@ class Command(BaseCommand):
 
         redash_api = StarFishRedash()
         allocation_usages = redash_api.return_query_results(query='subdirectory')
+
+        # make item calls
         subdir_type = AllocationAttributeType.objects.get(name='Subdirectory')
+        projectstatuschoice_active = ProjectStatusChoice.objects.get(name='Active')
+        allocationstatuschoice_active = AllocationStatusChoice.objects.get(name='Active')
+        allocationuserstatuschoice_active = AllocationUserStatusChoice.objects.get(name='Active')
+        allocationattrtype_payment = AllocationAttributeType.objects.get(
+                    name='RequiresPayment')
 
         for project in proj_models:
             if project.status.name == 'New':
-                project.status = ProjectStatusChoice.objects.get(name='Active')
+                project.status = projectstatuschoice_active
                 project.save()
 
         for lab, allocations in result_cleaned.items():
@@ -90,9 +93,9 @@ class Command(BaseCommand):
                     resources__name=resource,
                     allocationattribute__value=lab_path,
                     defaults={
-                        'status': AllocationStatusChoice.objects.get(name='Active'),
+                        'status': allocationstatuschoice_active,
                         'start_date': datetime.now(),
-                        'is_changeable': True,
+                        'is_changeable': resource.is_allocatable,
                         'justification': f'Allocation Information for {lab_name}',
                     }
                 )
@@ -104,6 +107,11 @@ class Command(BaseCommand):
                         allocation=allocation,
                         allocation_attribute_type_id=subdir_type.pk,
                         value=lab_path
+                    )
+                    AllocationAttribute.objects.create(
+                        allocation=allocation,
+                        allocation_attribute_type_id=allocationattrtype_payment.pk,
+                        value=resource.requires_payment
                     )
                     print(f'allocation created: {allocation_str}')
                     logger.info('allocation created: %s', allocation_str)
@@ -124,8 +132,7 @@ class Command(BaseCommand):
                     _, created = AllocationUser.objects.get_or_create(
                         allocation=allocation,
                         user=pi_obj,
-                        defaults={
-                        'status': AllocationUserStatusChoice.objects.get(name='Active')}
+                        defaults={'status': allocationuserstatuschoice_active}
                     )
                 except ValidationError:
                     logger.warning('adding PI %s to allocation %s failed',
