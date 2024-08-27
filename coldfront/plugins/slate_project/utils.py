@@ -1059,7 +1059,7 @@ def create_slate_project_data_file():
         for _, allocation_attributes in allocations.items():
             csv_writer.writerow([
                 allocation_attributes.get('Allocation Created'),
-                allocation_attributes.get('Allocation Quantity'),
+                allocation_attributes.get('Allocated Quantity'),
                 allocation_attributes.get('GID'),
                 allocation_attributes.get('LDAP Group'),
                 allocation_attributes.get('Slate Project Directory')
