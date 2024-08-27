@@ -57,8 +57,7 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationUserStatusChoice,
                                               AllocationInvoice,
                                               AllocationRemovalRequest,
-                                              AllocationRemovalStatusChoice,
-                                              AllocationUserRoleChoice)
+                                              AllocationRemovalStatusChoice)
 from coldfront.core.allocation.utils import (compute_prorated_amount,
                                              generate_guauge_data_from_usage,
                                              get_user_resources,
@@ -82,8 +81,7 @@ from coldfront.core.allocation.signals import (allocation_activate,
                                                allocation_remove,
                                                visit_allocation_detail)
 from coldfront.core.project.models import (Project, ProjectUser,
-                                           ProjectUserStatusChoice,
-                                           ProjectUserRoleChoice)
+                                           ProjectUserStatusChoice)
 from coldfront.core.resource.models import Resource, ResourceAttributeType
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.mail import send_email_template, get_email_recipient_from_groups
@@ -195,8 +193,11 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         invalid_attributes = []
         for attribute in attributes_with_usage:
             try:
-                guage_data.append(generate_guauge_data_from_usage(attribute.allocation_attribute_type.name,
-                                                                  float(attribute.value), float(attribute.allocationattributeusage.value)))
+                guage_data.append(generate_guauge_data_from_usage(
+                                attribute.allocation_attribute_type.name,
+                                float(attribute.value),
+                                float(attribute.allocationattributeusage.value)
+                                ))
             except ValueError:
                 logger.error("Allocation attribute '%s' is not an int but has a usage",
                              attribute.allocation_attribute_type.name)
