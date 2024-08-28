@@ -28,7 +28,7 @@ class ATTAllocationQuery:
 
         query_dict = {
             'quota': {
-                'volumes': '|'.join(r.name.split('/')[0] for r in Resource.objects.filter(name__contains='tier0')),
+                'volumes': '|'.join(r.name.split('/')[0] for r in Resource.objects.filter(parent_resource__name='Tier 0')),
                 'relation': 'HasQuota',
                 'match': "(e:Quota) MATCH (d:ConfigValue {Name: 'Quota.Invocation'})",
                 'server': 'filesystem',
@@ -47,7 +47,7 @@ class ATTAllocationQuery:
                 'unique':'datetime(e.DotsLFSUpdateDate) as begin_date'
             },
             'isilon': {
-                'volumes': '|'.join(r.name.split('/')[0] for r in Resource.objects.filter(name__contains='tier1')),
+                'volumes': '|'.join(r.name.split('/')[0] for r in Resource.objects.filter(parent_resource__name='Tier 1')),
                 'relation': 'Owns',
                 'match': "(e:IsilonPath) MATCH (d:ConfigValue {Name: 'IsilonPath.Invocation'})",
                 'server': 'Isilon',
@@ -67,7 +67,7 @@ class ATTAllocationQuery:
                 'unique': 'datetime(e.DotsUpdateDate) as begin_date'
             },
             'volume': {
-                'volumes': '|'.join(r.name.split('/')[0] for r in Resource.objects.filter(name__contains='tier2')),
+                'volumes': '|'.join(r.name.split('/')[0] for r in Resource.objects.filter(parent_resource__name='Tier 2')),
                 'relation': 'Owns',
                 'match': '(e:Volume)',
                 'server': 'Hostname',
