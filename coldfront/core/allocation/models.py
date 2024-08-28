@@ -276,6 +276,8 @@ class Allocation(TimeStampedModel):
             return None
         except TypeError:
             return None
+        except ObjectDoesNotExist:
+            return None
         size_attr_name = self._return_size_attr_name()
         if not size_attr_name:
             return None

@@ -78,7 +78,7 @@ Allocation Detail
               </td>
           </tr>
           <tr>
-            <th scope="row" class="text-nowrap">Resource{{ allocation.resources.all|pluralize }} in allocation:</th>
+            <th scope="row" class="text-nowrap">Allocated Resource{{ allocation.resources.all|pluralize }}:</th>
             <td>
               {% if allocation.get_resources_as_list %}
                 {% for resource in allocation.get_resources_as_list %}
@@ -140,7 +140,7 @@ Allocation Detail
           </tr>
           {% endif %}
           <tr>
-              <th scope="row" class="text-nowrap">Total Users in Your Bill:</th>
+              <th scope="row" class="text-nowrap">Total Users with Usage:</th>
               <td>{{ allocation_users.count }}</td>
           </tr>
           <tr>
@@ -555,10 +555,11 @@ Allocation Detail
                 {% if cost %}
                   <td>{{ cost }}</td>
                 {% endif %}
-              {% else %}
-              <td>{{ user.effectvusage }}</td>
-              <td>{{ user.normshares }}</td>
-              <td>{{ user.fairshare }}</td>
+              {% endif %}
+              {% if 'Cluster' in allocation.get_parent_resource.resource_type.name %}
+                <td>{{ user.effectvusage }}</td>
+                <td>{{ user.normshares }}</td>
+                <td>{{ user.fairshare }}</td>
               {% endif %}
             </tr>
           {% endfor %}
