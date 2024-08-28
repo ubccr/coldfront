@@ -129,7 +129,7 @@ Allocation Detail
                 </td>
             </tr>
           {% endif %}
-          {% if "Storage" in allocation.get_parent_resource.resource_type.name %}
+          {% if invoice %}
           <tr>
               <th scope="row" class="text-nowrap">FIINE Expense Codes:</th>
               <td>
@@ -164,13 +164,15 @@ Allocation Detail
                 <th scope="row" class="text-nowrap">Quota (TB):</th>
                 <td id="group_quota">{{ allocation.size|floatformat:2 }}</td>
             </tr>
-            <tr>
-                <th style="background-color:#D3D3D3" bordercolor="red" scope="row" class="text-nowrap">Total Amount Due:	</th>
-                  {% cost_tb allocation.size as cost %}
-                  {% if cost %}
-                    <td style="background-color:#D3D3D3">{{ cost }}</td>
-                  {% endif %}
-            </tr>
+            {% if invoice %}
+              <tr>
+                  <th style="background-color:#D3D3D3" bordercolor="red" scope="row" class="text-nowrap">Total Amount Due:	</th>
+                    {% cost_tb allocation.size as cost %}
+                    {% if cost %}
+                      <td style="background-color:#D3D3D3">{{ cost }}</td>
+                    {% endif %}
+              </tr>
+            {% endif %}
           {% endif %}
           <tr>
             <th scope="row" class="text-nowrap">Start Date:</th>
@@ -489,7 +491,9 @@ Allocation Detail
             {% if "Storage" in allocation.get_parent_resource.resource_type.name %}
               <th scope="col">Logical Usage</th>
               <th scope="col">Percent Usage</th>
-              <th scope="col">Cost Per User (TB/month)</th>
+              {% if invoice %}
+                <th scope="col">Cost Per User (TB/month)</th>
+              {% endif %}
             {% else %}
               <th scope="col">CPU Hours</th>
               <th scope="col">Percent Usage</th>
@@ -546,7 +550,7 @@ Allocation Detail
                   <td>{{userusage|div:allocationusage|mul:100|floatformat:2 }}%</td>
               {% endif %}
 
-              {% if "Storage" in allocation.get_parent_resource.resource_type.name %}
+              {% if invoice %}
                 {% cost_bytes userusage as cost %}
                 {% if cost %}
                   <td>{{ cost }}</td>

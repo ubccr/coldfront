@@ -139,6 +139,12 @@ class Allocation(TimeStampedModel):
         return self.get_attribute('Offer Letter Code')
 
     @property
+    def requires_payment(self):
+        requires_payment = self.get_attribute('Requires Payment')
+        if requires_payment == None:
+            return self.get_parent_resource.requires_payment
+
+    @property
     def fairshare(self):
         return self.get_attribute('FairShare')
 

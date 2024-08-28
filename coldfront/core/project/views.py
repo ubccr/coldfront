@@ -206,7 +206,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         compute_allocations = allocations.filter(resources__resource_type__name='Cluster')
         allocation_total = {'allocation_user_count': 0, 'size': 0, 'cost': 0, 'usage':0}
         for allocation in storage_allocations:
-            if allocation.cost:
+            if allocation.cost and allocation.requires_payment:
                 allocation_total['cost'] += allocation.cost
             if allocation.size:
                 allocation_total['size'] += allocation.size

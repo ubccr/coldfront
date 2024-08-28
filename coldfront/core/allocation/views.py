@@ -206,6 +206,11 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             context['expense_codes'] = expense_codes
 
         offer_letter_code_type = AllocationAttributeType.objects.get(name="Expense Code")
+        context['invoice'] = (
+            allocation_obj.requires_payment
+            and allocation_obj.status.name in ACTIVE_ALLOCATION_STATUSES
+            and "Storage" in allocation_obj.get_parent_resource.resource_type.name
+        )
         context['expense_code'] = allocation_obj.allocationattribute_set.filter(
             allocation_attribute_type=offer_letter_code_type
         )
