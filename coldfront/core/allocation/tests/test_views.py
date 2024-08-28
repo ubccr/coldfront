@@ -9,8 +9,11 @@ from coldfront.core.allocation.models import (
     Allocation,
     AllocationUserNote,
     AllocationAttribute,
+    AllocationAttributeType,
+    AllocationStatusChoice,
     AllocationChangeRequest,
 )
+from coldfront.core.resource.models import Resource
 from coldfront.core.test_helpers.factories import (
     setup_models,
     UserFactory,
@@ -74,7 +77,7 @@ class AllocationListViewTest(AllocationViewBaseTest):
             AllocationFactory() for i in list(range(50))
         ]
         for allocation in cls.additional_allocations:
-            allocation.resources.add(ResourceFactory(name='holylfs09/tier1', id=2))
+            allocation.resources.add(Resource.objects.get(name='holylfs09/tier1'))
         cls.nonproj_nonallocation_user = UserFactory(username='rdrake')
 
     def test_allocation_list_access_admin(self):
@@ -349,6 +352,40 @@ class AllocationDetailViewTest(AllocationViewBaseTest):
         utils.page_does_not_contain_for_user(
             self, self.proj_allocation_user, self.url, 'Remove Users'
         )
+
+
+class AllocationDetailViewPostTest(AllocationViewBaseTest):
+    def setUp(self):
+        self.new_allocation = AllocationFactory(
+            project=self.project, quantity=20, justification='test new allocation',
+            status=AllocationStatusChoice.objects.get(name='New')
+        )
+        self.new_allocation.resources.add(Resource.objects.get(name='holylfs09/tier1'))
+        quotatb = AllocationAttributeType.objects.get(name='Storage Quota (TB)')
+        self.new_allocation.allocationattribute_set.create(
+            value=20, allocation_attribute_type=quotatb
+        )
+        self.url = f'/allocation/{self.new_allocation.pk}/'
+
+    def test_allocationdetail_approval_post(self):
+        """test approval of new allocation"""
+        self.client.force_login(self.admin_user)
+        form_data = {
+            'status': AllocationStatusChoice.objects.get(name='Active').pk,
+            #'start_date': self.new_allocation.start_date,
+            #'end_date': self.new_allocation.end_date,
+            'description': "description test",
+            'is_locked': False,
+            'is_changeable': True,
+            'resource': self.new_allocation.resources.first().pk,
+            'action': 'approve',
+            'auto_create_opts': '1',
+        }
+        response = self.client.post(self.url, data=form_data, follow=True)
+        # confirm that messages in response contains "Allocation Activated"
+        self.assertContains(response, 'Allocation Activated')
+        self.new_allocation.refresh_from_db()
+        self.assertEqual(self.new_allocation.status.name, 'Active')
 
 
 class AllocationCreateViewTest(AllocationViewBaseTest):
