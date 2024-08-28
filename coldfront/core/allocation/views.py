@@ -3502,13 +3502,22 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
 
     def post(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
-        if not request.user.has_perm('allocation.can_view_all_allocations'):
-            messages.error(
-                request, 'You do not have permission to update an allocation change request')
-            return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
+        if not request.user.is_superuser:
+            group_exists = check_if_groups_in_review_groups(
+                allocation_obj.get_parent_resource.review_groups.all(),
+                self.request.user.groups.all(),
+                'change_allocationchangerequest'
+            )
+            if not group_exists:
+                messages.error(
+                    request,
+                    'You do not have permission to manage this allocation change request with this resource.'
+                )
+                return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': allocation_change_obj.pk}))
 
         allocation_change_obj = get_object_or_404(
             AllocationChangeRequest, pk=pk)
+        allocation_obj = allocation_change_obj.allocation
         allocation_change_form = AllocationChangeForm(request.POST,
             initial={'justification': allocation_change_obj.justification,
                      'end_date_extension': allocation_change_obj.end_date_extension})
@@ -3526,433 +3535,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
         note_form = AllocationChangeNoteForm(
             request.POST, initial={'notes': allocation_change_obj.notes})
 
-        if note_form.is_valid():
-            notes = note_form.cleaned_data.get('notes')
-
-            if request.POST.get('choice') == 'approve':
-                allocation_obj = allocation_change_obj.allocation
-                if not request.user.is_superuser:
-                    group_exists = check_if_groups_in_review_groups(
-                        allocation_obj.get_parent_resource.review_groups.all(),
-                        self.request.user.groups.all(),
-                        'change_allocationchangerequest'
-                    )
-                    if not group_exists:
-                        messages.error(
-                            request,
-                            'You do not have permission to approve this allocation change request with this resource.'
-                        )
-                        return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': allocation_change_obj.pk}))
-
-                if allocation_attributes_to_change:
-                    if allocation_change_form.is_valid() and formset.is_valid():
-                        create_admin_action(
-                            request.user,
-                            {'notes': notes},
-                            allocation_obj,
-                            allocation_change_obj
-                        )
-                        allocation_change_obj.notes = notes
-
-                        allocation_change_status_active_obj = AllocationChangeStatusChoice.objects.get(
-                            name='Approved')
-
-                        create_admin_action(
-                            request.user,
-                            {'status': allocation_change_status_active_obj},
-                            allocation_obj,
-                            allocation_change_obj
-                        )
-
-                        allocation_change_obj.status = allocation_change_status_active_obj
-
-                        form_data = allocation_change_form.cleaned_data
-
-                        if form_data.get('end_date_extension') != allocation_change_obj.end_date_extension:
-                            create_admin_action(
-                                request.user,
-                                {'end_date_extension': form_data.get('end_date_extension')},
-                                allocation_obj,
-                                allocation_change_obj
-                            )
-                            allocation_change_obj.end_date_extension = form_data.get('end_date_extension')
-
-                        if allocation_change_obj.allocation.end_date is not None:
-                            new_end_date = allocation_change_obj.allocation.end_date + relativedelta(
-                                days=allocation_change_obj.end_date_extension)
-
-                            allocation_change_obj.allocation.end_date = new_end_date
-                        allocation_change_obj.allocation.save()
-
-                        allocation_change_obj.save()
-                        # Add slate-project logic hear if needed.
-
-                        for entry in formset:
-                            formset_data = entry.cleaned_data
-                            new_value = formset_data.get('new_value')
-
-                            attribute_change = AllocationAttributeChangeRequest.objects.get(pk=formset_data.get('change_pk'))
-
-                            if new_value != attribute_change.new_value:
-                                create_admin_action(
-                                    request.user,
-                                    {'new_value': new_value},
-                                    allocation_obj,
-                                    attribute_change
-                                )
-                                attribute_change.new_value = new_value
-                                attribute_change.save()
-
-                        attribute_change_list = allocation_change_obj.allocationattributechangerequest_set.all()
-
-                        for attribute_change in attribute_change_list:
-                            attribute_change.allocation_attribute.value = attribute_change.new_value
-                            attribute_change.allocation_attribute.save()
-
-                        messages.success(request, 'Allocation change request to {} has been APPROVED for {} {} ({})'.format(
-                            allocation_change_obj.allocation.get_parent_resource,
-                            allocation_change_obj.allocation.project.pi.first_name,
-                            allocation_change_obj.allocation.project.pi.last_name,
-                            allocation_change_obj.allocation.project.pi.username)
-                        )
-
-                        allocation_change_approved.send(
-                            sender=self.__class__,
-                            allocation_pk=allocation_change_obj.allocation.pk,
-                            allocation_change_pk=allocation_change_obj.pk,)
-
-                        resource_name = allocation_change_obj.allocation.get_parent_resource
-                        domain_url = get_domain_url(self.request)
-                        allocation_url = '{}{}'.format(domain_url, reverse(
-                            'allocation-detail', kwargs={'pk': allocation_change_obj.allocation.pk}))
-
-                        if EMAIL_ENABLED:
-                            template_context = {
-                                'center_name': EMAIL_CENTER_NAME,
-                                'resource': resource_name,
-                                'allocation_url': allocation_url,
-                                'signature': EMAIL_SIGNATURE,
-                            }
-
-                            email_receiver_list = get_allocation_user_emails(allocation_obj)
-                            send_email_template(
-                                'Allocation Change Approved',
-                                'email/allocation_change_approved.txt',
-                                template_context,
-                                EMAIL_TICKET_SYSTEM_ADDRESS,
-                                email_receiver_list
-                            )
-
-                        logger.info(
-                            f'Admin {request.user.username} approved a {allocation_obj.get_parent_resource.name} '
-                            f'allocation change request (allocation pk={allocation_obj.pk})'
-                        )
-                        return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
-                    else:
-                        errors = []
-                        for error in allocation_change_form.errors:
-                            messages.error(request, error)
-                        for error in formset.errors:
-                            if error.get('__all__') is not None:
-                                    errors.append(error.get('__all__')[0])
-
-                        if errors:
-                            messages.error(request, ', '.join(errors))
-                        return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
-                else:
-                    if allocation_change_form.is_valid():
-                        form_data = allocation_change_form.cleaned_data
-                        selected_extension = form_data.get('end_date_extension')
-
-                        if selected_extension != 0:
-                            create_admin_action(
-                                request.user,
-                                {'notes': notes},
-                                allocation_obj,
-                                allocation_change_obj
-                            )
-                            allocation_change_obj.notes = notes
-
-                            allocation_change_status_active_obj = AllocationChangeStatusChoice.objects.get(
-                                name='Approved')
-                            create_admin_action(
-                                request.user,
-                                {'status': allocation_change_status_active_obj},
-                                allocation_obj,
-                                allocation_change_obj
-                            )
-                            allocation_change_obj.status = allocation_change_status_active_obj
-
-                            if selected_extension != allocation_change_obj.end_date_extension:
-                                create_admin_action(
-                                    request.user,
-                                    {'end_date_extension': selected_extension},
-                                    allocation_obj,
-                                    allocation_change_obj
-                                )
-                                allocation_change_obj.end_date_extension = selected_extension
-
-                            new_end_date = allocation_change_obj.allocation.end_date + relativedelta(
-                                days=allocation_change_obj.end_date_extension)
-                            allocation_change_obj.allocation.end_date = new_end_date
-
-                            allocation_change_obj.allocation.save()
-                            allocation_change_obj.save()
-
-                            messages.success(request, 'Allocation change request to {} has been APPROVED for {} {} ({})'.format(
-                                allocation_change_obj.allocation.get_parent_resource,
-                                allocation_change_obj.allocation.project.pi.first_name,
-                                allocation_change_obj.allocation.project.pi.last_name,
-                                allocation_change_obj.allocation.project.pi.username)
-                            )
-
-                            allocation_change_approved.send(
-                                sender=self.__class__,
-                                allocation_pk=allocation_change_obj.allocation.pk,
-                                allocation_change_pk=allocation_change_obj.pk,)
-
-                            resource_name = allocation_change_obj.allocation.get_parent_resource
-                            domain_url = get_domain_url(self.request)
-                            allocation_url = '{}{}'.format(domain_url, reverse(
-                                'allocation-detail', kwargs={'pk': allocation_change_obj.allocation.pk}))
-
-                            if EMAIL_ENABLED:
-                                template_context = {
-                                    'center_name': EMAIL_CENTER_NAME,
-                                    'resource': resource_name,
-                                    'allocation_url': allocation_url,
-                                    'signature': EMAIL_SIGNATURE
-                                }
-
-                                email_receiver_list = get_allocation_user_emails(allocation_obj)
-                                send_email_template(
-                                    'Allocation Change Approved',
-                                    'email/allocation_change_approved.txt',
-                                    template_context,
-                                    EMAIL_TICKET_SYSTEM_ADDRESS,
-                                    email_receiver_list
-                                )
-
-                            logger.info(
-                                f'Admin {request.user.username} approved a {allocation_obj.get_parent_resource.name} '
-                                f'allocation change request (allocation pk={allocation_obj.pk})'
-                            )
-                            return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
-
-                        else:
-                            messages.error(request, 'You must make a change to the allocation.')
-                            return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
-
-                    else:
-                        for error in allocation_change_form.errors:
-                            messages.error(request, error)
-                        return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
-
-            if request.POST.get('choice') == 'deny':
-                allocation_obj = allocation_change_obj.allocation
-                if not request.user.is_superuser:
-                    group_exists = check_if_groups_in_review_groups(
-                        allocation_obj.get_parent_resource.review_groups.all(),
-                        self.request.user.groups.all(),
-                        'change_allocationchangerequest'
-                    )
-                    if not group_exists:
-                        messages.error(
-                            request,
-                            'You do not have permission to deny this allocation change request with this resource.'
-                        )
-                        return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': allocation_change_obj.pk}))
-
-                create_admin_action(
-                    request.user,
-                    {'notes': notes},
-                    allocation_obj,
-                    allocation_change_obj
-                )
-                allocation_change_obj.notes = notes
-
-                allocation_change_status_denied_obj = AllocationChangeStatusChoice.objects.get(
-                    name='Denied')
-                create_admin_action(
-                    request.user,
-                    {'status': allocation_change_status_denied_obj},
-                    allocation_obj,
-                    allocation_change_obj
-                )
-                allocation_change_obj.status = allocation_change_status_denied_obj
-                allocation_change_obj.save()
-
-                messages.success(request, 'Allocation change request to {} has been DENIED for {} {} ({})'.format(
-                    allocation_change_obj.allocation.resources.first(),
-                    allocation_change_obj.allocation.project.pi.first_name,
-                    allocation_change_obj.allocation.project.pi.last_name,
-                    allocation_change_obj.allocation.project.pi.username)
-                )
-
-                resource_name = allocation_change_obj.allocation.get_parent_resource
-                domain_url = get_domain_url(self.request)
-                allocation_url = '{}{}'.format(domain_url, reverse(
-                    'allocation-detail', kwargs={'pk': allocation_change_obj.allocation.pk}))
-
-                if EMAIL_ENABLED:
-                    template_context = {
-                        'center_name': EMAIL_CENTER_NAME,
-                        'resource': resource_name,
-                        'allocation_url': allocation_url,
-                        'signature': EMAIL_SIGNATURE
-                    }
-
-                    email_receiver_list = get_allocation_user_emails(allocation_obj, True)
-                    send_email_template(
-                        'Allocation Change Denied',
-                        'email/allocation_change_denied.txt',
-                        template_context,
-                        EMAIL_TICKET_SYSTEM_ADDRESS,
-                        email_receiver_list
-                    )
-
-                logger.info(
-                    f'Admin {request.user.username} denied a {allocation_obj.get_parent_resource.name} '
-                    f'allocation change request (allocation pk={allocation_obj.pk})'
-                )
-                return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
-
-            if request.POST.get('choice') == 'update':
-                allocation_obj = allocation_change_obj.allocation
-                if not request.user.is_superuser:
-                    group_exists = check_if_groups_in_review_groups(
-                        allocation_obj.get_parent_resource.review_groups.all(),
-                        self.request.user.groups.all(),
-                        'change_allocationchangerequest'
-                    )
-                    if not group_exists:
-                        messages.error(
-                            request,
-                            'You do not have permission to update this allocation change request with this resource.'
-                        )
-                        return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': allocation_change_obj.pk}))
-
-                if allocation_change_obj.status.name != 'Pending':
-                    create_admin_action(
-                        request.user,
-                        {'notes': notes},
-                        allocation_obj,
-                        allocation_change_obj
-                    )
-                    allocation_change_obj.notes = notes
-                    allocation_change_obj.save()
-
-                    messages.success(
-                        request, 'Allocation change request updated!')
-
-                    logger.info(
-                        f'Admin {request.user.username} updated a {allocation_obj.get_parent_resource.name} '
-                        f'allocation change request (allocation pk={allocation_obj.pk})'
-                    )
-                    return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
-                else:
-                    if allocation_attributes_to_change:
-                        if allocation_change_form.is_valid() and formset.is_valid():
-                            create_admin_action(
-                                request.user,
-                                {'notes': notes},
-                                allocation_obj,
-                                allocation_change_obj
-                            )
-                            allocation_change_obj.notes = notes
-
-                            form_data = allocation_change_form.cleaned_data
-
-                            if form_data.get('end_date_extension') != allocation_change_obj.end_date_extension:
-                                create_admin_action(
-                                    request.user,
-                                    {'end_date_extension': form_data.get('end_date_extension')},
-                                    allocation_obj,
-                                    allocation_change_obj
-                                )
-                                allocation_change_obj.end_date_extension = form_data.get('end_date_extension')
-
-                            for entry in formset:
-                                formset_data = entry.cleaned_data
-                                new_value = formset_data.get('new_value')
-
-                                attribute_change = AllocationAttributeChangeRequest.objects.get(pk=formset_data.get('change_pk'))
-
-                                if new_value != attribute_change.new_value:
-                                    create_admin_action(
-                                        request.user,
-                                        {'new_value': new_value},
-                                        allocation_obj,
-                                        attribute_change
-                                    )
-                                    attribute_change.new_value = new_value
-                                    attribute_change.save()
-
-                            allocation_change_obj.save()
-
-                            messages.success(
-                                request, 'Allocation change request updated!')
-
-                            logger.info(
-                                f'Admin {request.user.username} updated a {allocation_obj.get_parent_resource.name} '
-                                f'allocation change request (allocation pk={allocation_obj.pk})'
-                            )
-                            return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
-                        else:
-                            attribute_errors = []
-                            for error in allocation_change_form.errors:
-                                messages.error(request, error)
-                            for error in formset.errors:
-                                if error.get('__all__') is not None:
-                                    attribute_errors.append(error.get('__all__')[0])
-
-                            if attribute_errors:
-                                messages.error(request, ', '.join(attribute_errors))
-                            return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
-                    else:
-                        if allocation_change_form.is_valid():
-                            form_data = allocation_change_form.cleaned_data
-                            selected_extension = form_data.get('end_date_extension')
-
-                            if selected_extension != 0:
-                                create_admin_action(
-                                    request.user,
-                                    {'notes': notes},
-                                    allocation_obj,
-                                    allocation_change_obj
-                                )
-                                allocation_change_obj.notes = notes
-
-                                if selected_extension != allocation_change_obj.end_date_extension:
-                                    create_admin_action(
-                                        request.user,
-                                        {'end_date_extension': selected_extension},
-                                        allocation_obj,
-                                        allocation_change_obj
-                                    )
-                                    allocation_change_obj.end_date_extension = selected_extension
-
-                                allocation_change_obj.save()
-
-                                messages.success(
-                                    request, 'Allocation change request updated!')
-
-
-                                logger.info(
-                                    f'Admin {request.user.username} updated a {allocation_obj.get_parent_resource.name} '
-                                    f'allocation change request (allocation pk={allocation_obj.pk})'
-                                )
-                                return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
-
-                            else:
-                                messages.error(request, 'You must make a change to the allocation.')
-                                return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
-                        else:
-                            for error in allocation_change_form.errors:
-                                messages.error(request, error)
-                            return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
-
-        else:
+        if not note_form.is_valid():
             allocation_change_form = AllocationChangeForm(
                 initial={'justification': allocation_change_obj.justification})
             allocation_change_form.fields['justification'].disabled = True
@@ -3962,6 +3545,149 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
             context['note_form'] = note_form
             context['allocation_change_form'] = allocation_change_form
             return render(request, self.template_name, context)
+
+        notes = note_form.cleaned_data.get('notes')
+
+        action = request.POST.get('action')
+        if action not in ['update', 'approve', 'deny']:
+            return HttpResponseBadRequest("Invalid request")
+
+        if action == 'deny':
+            create_admin_action(request.user, {'notes': notes}, allocation_obj, allocation_change_obj)
+            allocation_change_obj.notes = notes
+
+            allocation_change_status_denied_obj = AllocationChangeStatusChoice.objects.get(
+                name='Denied')
+            allocation_change_obj.status = allocation_change_status_denied_obj
+
+            allocation_change_obj.save()
+
+            messages.success(request, 'Allocation change request to {} has been DENIED for {} {} ({})'.format(
+                allocation_change_obj.allocation.resources.first(),
+                allocation_change_obj.allocation.project.pi.first_name,
+                allocation_change_obj.allocation.project.pi.last_name,
+                allocation_change_obj.allocation.project.pi.username)
+            )
+
+            send_allocation_customer_email(allocation_change_obj.allocation,
+                                           'Allocation Change Denied',
+                                           'email/allocation_change_denied.txt',
+                                           domain_url=get_domain_url(self.request))
+
+            logger.info(
+                f'Admin {request.user.username} denied a {allocation_obj.get_parent_resource.name} '
+                f'allocation change request (allocation pk={allocation_obj.pk})'
+            )
+            return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
+
+        if not allocation_change_form.is_valid():
+            for error in allocation_change_form.errors:
+                messages.error(request, error)
+            return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
+
+        allocation_change_obj.notes = notes
+
+        if action == 'update' and allocation_change_obj.status.name != 'Pending':
+            allocation_change_obj.save()
+            messages.success(request, 'Allocation change request updated!')
+            logger.info(
+                f'Admin {request.user.username} updated a {allocation_obj.get_parent_resource.name} '
+                f'allocation change request (allocation pk={allocation_obj.pk})'
+            )
+            return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
+        
+        if allocation_attributes_to_change and not formset.is_valid():
+            attribute_errors = ""
+            for error in formset.errors:
+                if error:
+                    attribute_errors += error.get('__all__')
+            messages.error(request, attribute_errors)
+            return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
+
+
+        form_data = allocation_change_form.cleaned_data
+        end_date_extension = form_data.get('end_date_extension')
+
+        if not allocation_attributes_to_change and end_date_extension == 0:
+            messages.error(request, 'You must make a change to the allocation.')
+            return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
+
+        if end_date_extension != allocation_change_obj.end_date_extension:
+            create_admin_action(request.user, {'new_value': end_date_extension}, allocation_obj, attribute_change)
+            allocation_change_obj.end_date_extension = end_date_extension
+
+        if allocation_attributes_to_change:
+            for entry in formset:
+                formset_data = entry.cleaned_data
+                new_value = formset_data.get('new_value')
+                attribute_change = AllocationAttributeChangeRequest.objects.get(
+                                            pk=formset_data.get('change_pk'))
+
+                if new_value != attribute_change.new_value:
+                    create_admin_action(request.user, {'new_value': new_value}, allocation_obj, attribute_change)
+                    attribute_change.new_value = new_value
+                    attribute_change.save()
+
+
+        if action == 'update':
+            allocation_change_obj.save()
+            messages.success(request, 'Allocation change request updated!')
+            logger.info(
+                f'Admin {request.user.username} updated a {allocation_obj.get_parent_resource.name} '
+                f'allocation change request (allocation pk={allocation_obj.pk})'
+            )
+
+
+        elif action == 'approve':
+            allocation_obj = allocation_change_obj.allocation
+            allocation_change_status_active_obj = AllocationChangeStatusChoice.objects.get(
+                name='Approved')
+            allocation_change_obj.status = allocation_change_status_active_obj
+
+            if allocation_change_obj.end_date_extension > 0:
+                create_admin_action(
+                    request.user,
+                    {'end_date_extension': form_data.get('end_date_extension')},
+                    allocation_obj,
+                    allocation_change_obj
+                )
+                new_end_date = allocation_change_obj.allocation.end_date + relativedelta(
+                    days=allocation_change_obj.end_date_extension)
+                allocation_change_obj.allocation.end_date = new_end_date
+
+                allocation_change_obj.allocation.save()
+
+            allocation_change_obj.save()
+            if allocation_attributes_to_change:
+                attribute_change_list = allocation_change_obj.allocationattributechangerequest_set.all()
+                for attribute_change in attribute_change_list:
+                    create_admin_action(request.user, {'new_value': attribute_change.new_value}, allocation_obj, attribute_change)
+                    attribute_change.allocation_attribute.value = attribute_change.new_value
+                    attribute_change.allocation_attribute.save()
+
+            messages.success(request, 'Allocation change request to {} has been APPROVED for {} {} ({})'.format(
+                allocation_change_obj.allocation.get_parent_resource,
+                allocation_change_obj.allocation.project.pi.first_name,
+                allocation_change_obj.allocation.project.pi.last_name,
+                allocation_change_obj.allocation.project.pi.username)
+            )
+
+            allocation_change_approved.send(
+                sender=self.__class__,
+                allocation_pk=allocation_change_obj.allocation.pk,
+                allocation_change_pk=allocation_change_obj.pk,)
+
+            send_allocation_customer_email(allocation_change_obj.allocation,
+                                           'Allocation Change Approved',
+                                           'email/allocation_change_approved.txt',
+                                           domain_url=get_domain_url(self.request))
+            
+            logger.info(
+                f'Admin {request.user.username} approved a {allocation_obj.get_parent_resource.name} '
+                f'allocation change request (allocation pk={allocation_obj.pk})'
+            )
+
+        return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': pk}))
 
 
 class AllocationChangeListView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
