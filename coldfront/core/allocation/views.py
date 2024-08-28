@@ -419,8 +419,9 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             else:
                 messages.success(request, 'Allocation updated!')
             logger.info(
-                f'Admin {request.user.username} {allocation_obj.status.name.lower()} a '
-                f'{allocation_obj.get_parent_resource.name} allocation (allocation pk={allocation_obj.pk})'
+                f'Admin {request.user.username} changed the status of a '
+                f'{allocation_obj.get_parent_resource.name} allocation to '
+                f'{allocation_obj.status.name} (allocation pk={allocation_obj.pk})'
             )
         else:
             messages.success(request, 'Allocation updated!')
