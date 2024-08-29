@@ -34,16 +34,21 @@ from doi2bib import crossref
 MANUAL_SOURCE = 'manual'
 
 def publication_gallery(request):
-    context = {}
+    context = dict()
+    imgs = list()
+    lnks = list()
     with open("coldfront/coldfront/components/site/static/links.txt", "r+") as f:
         contents = f.read()
     pairs = contents.strip().split('\n') 
     links = {pair.split(' ')[0]: pair.split(' ')[1] for pair in pairs} 
     for cnt, images in enumerate(sorted(os.listdir("coldfront/coldfront/components/site/static/images"))):
         img = images.split("_")[0]
-        context[f"img_{cnt}"] = "/static/images/"+images
-        if img in list(links.keys()):
-            context[f"url_{cnt}"] = links[img]
+        imgs.append("/static/images/"+images)
+        if img in list(links.keys()): lnks.append(links[img])
+        else: lnks.append("")
+    items = ["item item"+str((i%3)+1) for i in range(len(imgs))]
+    context["data"] = list(zip(imgs, lnks, items))
+    print(context)
     return render(request, 'publication/publication_gallery.html', context)
 
 def publication_catalogue(request):
