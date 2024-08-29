@@ -50,7 +50,7 @@ class ColdfrontAPI(APITestCase):
         self.client.force_login(self.pi_user)
         response = self.client.get('/api/allocations/', format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data), 2)
 
     def test_project_api_permissions(self):
         """Confirm permissions for project API:

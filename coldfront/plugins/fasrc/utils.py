@@ -28,7 +28,7 @@ class ATTAllocationQuery:
 
         query_dict = {
             'quota': {
-                'volumes': '|'.join(r.name.split('/')[0] for r in Resource.objects.filter(name__contains='tier0')),
+                'volumes': '|'.join(r.name.split('/')[0] for r in Resource.objects.filter(parent_resource__name='Tier 0')),
                 'relation': 'HasQuota',
                 'match': "(e:Quota) MATCH (d:ConfigValue {Name: 'Quota.Invocation'})",
                 'server': 'filesystem',
@@ -47,7 +47,7 @@ class ATTAllocationQuery:
                 'unique':'datetime(e.DotsLFSUpdateDate) as begin_date'
             },
             'isilon': {
-                'volumes': '|'.join(r.name.split('/')[0] for r in Resource.objects.filter(name__contains='tier1')),
+                'volumes': '|'.join(r.name.split('/')[0] for r in Resource.objects.filter(parent_resource__name='Tier 1')),
                 'relation': 'Owns',
                 'match': "(e:IsilonPath) MATCH (d:ConfigValue {Name: 'IsilonPath.Invocation'})",
                 'server': 'Isilon',
@@ -67,7 +67,7 @@ class ATTAllocationQuery:
                 'unique': 'datetime(e.DotsUpdateDate) as begin_date'
             },
             'volume': {
-                'volumes': '|'.join(r.name.split('/')[0] for r in Resource.objects.filter(name__contains='tier2')),
+                'volumes': '|'.join(r.name.split('/')[0] for r in Resource.objects.filter(parent_resource__name='Tier 2')),
                 'relation': 'Owns',
                 'match': '(e:Volume)',
                 'server': 'Hostname',
@@ -88,7 +88,8 @@ class ATTAllocationQuery:
 
         statement = {
             'statement': f"MATCH p=(g:Group)-[r:{d['relation']}]-{d['match']}\
-            WHERE (e.{d['server']} =~ '.*({d['volumes']}).*') AND {d['validation_query']}\
+            WHERE g.ATTStaleData = false AND (e.{d['server']} =~ '.*({d['volumes']}).*')\
+            AND {d['validation_query']}\
             AND NOT (g.ADSamAccountName =~ '.*(disabled|rc_admin).*')\
             RETURN\
             {d['unique']},\
@@ -286,7 +287,6 @@ def push_quota_data(result_file):
     # collect commonly used database objects here
     proj_models = proj_models.prefetch_related('allocation_set')
     allocation_attribute_types = AllocationAttributeType.objects.all()
-    allocation_attribute_type_payment = allocation_attribute_types.get(name='RequiresPayment')
 
     for lab, quota_dicts in result_json_cleaned.items():
         logger.info('PROJECT: %s ====================================', lab)
@@ -319,11 +319,6 @@ def push_quota_data(result_file):
                     alloc_attr_obj.allocationattributeusage.value = v[1]
                     alloc_attr_obj.allocationattributeusage.save()
 
-                # 5. AllocationAttribute
-                allocation.allocationattribute_set.update_or_create(
-                    allocation_attribute_type=allocation_attribute_type_payment,
-                    defaults={'value': True}
-                )
                 counts['complete'] += 1
             except Exception as exc:
                 allocation_name = f"{data_dict['lab']}/{data_dict['server']}"

@@ -56,7 +56,8 @@ class MonitorView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         projects = Project.objects.all()
         pi_not_projectuser = [p for p in projects if p.pi_id not in  p.projectuser_set.values_list('user_id', flat=True)]
         allocation_not_changeable = Allocation.objects.filter(
-            status__name__in=PENDING_ACTIVE_ALLOCATION_STATUSES, is_changeable=False
+            status__name__in=PENDING_ACTIVE_ALLOCATION_STATUSES, is_changeable=False,
+            resources__is_allocatable=True
         )
         multiple_allocation_resources = Allocation.objects.annotate(
             num_vols=Count('resources')

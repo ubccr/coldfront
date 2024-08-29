@@ -246,7 +246,8 @@ class AllocationUpdateForm(forms.Form):
         else:
             if allo_resource.resource_type.name == 'Storage Tier':
                 self.fields['resource'].queryset = Resource.objects.filter(
-                    parent_resource=allo_resource
+                    parent_resource=allo_resource,
+                    is_allocatable=True
                 )
             else:
                 self.fields['resource'].required = False

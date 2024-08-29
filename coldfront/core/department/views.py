@@ -203,7 +203,10 @@ class DepartmentDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 status__name='Active',
             )
             p.storage_allocs = p.allocs.filter(
-                resources__resource_type__name='Storage')
+                resources__resource_type__name='Storage',
+                allocationattribute__allocation_attribute_type__name='RequiresPayment',
+                allocationattribute__value='True'
+            )
             p.compute_allocs = p.allocs.filter(
                 resources__resource_type__name='Cluster')
             storage_pi_dict[p.pi].extend(list(p.storage_allocs))

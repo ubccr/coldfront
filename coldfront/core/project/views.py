@@ -195,10 +195,10 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 allocations = allocations.filter(
                     Q(project__projectuser__user=self.request.user)
                 )
-                if not self.object.has_perm(self.request.user, ProjectPermission.DATA_MANAGER):
-                    allocations = allocations.filter(
-                        Q(allocationuser__user=self.request.user)
-                    )
+                # if not self.object.has_perm(self.request.user, ProjectPermission.DATA_MANAGER):
+                #     allocations = allocations.filter(
+                #         Q(allocationuser__user=self.request.user)
+                #     )
         allocations = allocations.filter(
             status__name__in=['Active', 'Paid', 'Ready for Review','Payment Requested']
         ).distinct().order_by('-end_date')
@@ -206,7 +206,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         compute_allocations = allocations.filter(resources__resource_type__name='Cluster')
         allocation_total = {'allocation_user_count': 0, 'size': 0, 'cost': 0, 'usage':0}
         for allocation in storage_allocations:
-            if allocation.cost:
+            if allocation.cost and allocation.requires_payment:
                 allocation_total['cost'] += allocation.cost
             if allocation.size:
                 allocation_total['size'] += allocation.size

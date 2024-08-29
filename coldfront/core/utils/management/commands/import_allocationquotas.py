@@ -93,14 +93,6 @@ class Command(BaseCommand):
                     allocation_attribute_obj.allocationattributeusage.value = lab_usage
                     allocation_attribute_obj.allocationattributeusage.save()
 
-                    allocation_attribute_type_payment = AllocationAttributeType.objects.get(
-                    name='RequiresPayment')
-                    allocation_attribute_payment, _ = AllocationAttribute.objects.get_or_create(
-                        allocation_attribute_type=allocation_attribute_type_payment,
-                        allocation=allocation,
-                        defaults={'value': True}
-                    )
-                    allocation_attribute_payment.save()
             except Project.DoesNotExist:
                 print("Project not found: " + lab_name)
                 tocsv = [lab_name,resource_name,"Project"]

@@ -121,7 +121,7 @@ Project Detail
             <td>{{ allocation.allocationuser_set.count }}</td>
             <td>{{ allocation.size|floatformat:1 }} {{ allocation.get_parent_resource.unit }}</td>
             <td>{{ allocation.usage|floatformat:1 }}</td>
-            <td>${{allocation.cost|floatformat:2 }}</td>
+            <td>{% if allocation_obj.requires_payment %}${{allocation.cost|floatformat:2 }}{% endif %}</td>
             <td>
               <a href="{% url 'allocation-detail' allocation.pk %}">
               <span class="badge badge-success"><i class="fas fa-search" aria-hidden="true"></i>
@@ -323,7 +323,7 @@ Project Detail
             <th scope="col">Name</th>
             <th scope="col">Email</th>
             <th scope="col" class="text-nowrap">Role
-              <a class="info-button" title="User Role" data-toggle="popover" data-trigger="click" data-content="Manager role grants user access to add/remove users and add/remove/edit allocations for the project.">
+              <a class="info-button" title="User Role" data-toggle="popover" data-trigger="click" data-content="For details about User Roles, visit FASRC's <a href='https://docs.rc.fas.harvard.edu/kb/coldfront-allocation-management/' title='ColdFront User Guide'>ColdFront User Guide.">
                 <i class="fas fa-info-circle" aria-hidden="true"></i>
               </a>
             </th>
