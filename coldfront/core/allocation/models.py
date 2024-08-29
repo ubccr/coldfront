@@ -305,16 +305,6 @@ class Allocation(TimeStampedModel):
         return "%s (%s)" % (self.get_parent_resource.name, self.project.pi)
 
 
-class AllocationInvoice(TimeStampedModel):
-    allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE)
-    account_number = models.CharField(max_length=9)
-    sub_account_number = models.CharField(max_length=20, blank=True, null=True)
-    status = models.ForeignKey(AllocationStatusChoice, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return "{} Invoice".format(self.allocation.get_parent_resource.name)
-
-
 class AllocationAdminNote(TimeStampedModel):
     allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE)
     author = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -572,16 +562,6 @@ class AllocationAccount(TimeStampedModel):
         ordering = ['name', ]
 
 
-class AllocationUserRequestStatusChoice(TimeStampedModel):
-    name = models.CharField(max_length=64)
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        ordering = ['name', ]
-
-
 class AllocationChangeStatusChoice(TimeStampedModel):
     name = models.CharField(max_length=64)
 
@@ -590,17 +570,6 @@ class AllocationChangeStatusChoice(TimeStampedModel):
 
     class Meta:
         ordering = ['name', ]
-
-
-class AllocationUserRequest(TimeStampedModel):
-    requestor_user = models.ForeignKey(User, on_delete=models.CASCADE)
-    allocation_user = models.ForeignKey(AllocationUser, on_delete=models.CASCADE)
-    allocation_user_status = models.ForeignKey(AllocationUserStatusChoice, on_delete=models.CASCADE)
-    status = models.ForeignKey(AllocationUserRequestStatusChoice, on_delete=models.CASCADE)
-    history = HistoricalRecords()
-
-    def __str__(self):
-        return '{} ({})'.format(self.allocation_user.user.username, self.allocation_user_status)
 
 
 class AllocationChangeRequest(TimeStampedModel):
@@ -655,3 +624,34 @@ class AllocationRemovalRequest(TimeStampedModel):
     allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE)
     allocation_prior_status = models.ForeignKey(AllocationStatusChoice, on_delete=models.CASCADE)
     status = models.ForeignKey(AllocationRemovalStatusChoice, on_delete=models.CASCADE)
+
+
+class AllocationInvoice(TimeStampedModel):
+    allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE)
+    account_number = models.CharField(max_length=9)
+    sub_account_number = models.CharField(max_length=20, blank=True, null=True)
+    status = models.ForeignKey(AllocationStatusChoice, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return "{} Invoice".format(self.allocation.get_parent_resource.name)
+
+
+class AllocationUserRequestStatusChoice(TimeStampedModel):
+    name = models.CharField(max_length=64)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name', ]
+
+
+class AllocationUserRequest(TimeStampedModel):
+    requestor_user = models.ForeignKey(User, on_delete=models.CASCADE)
+    allocation_user = models.ForeignKey(AllocationUser, on_delete=models.CASCADE)
+    allocation_user_status = models.ForeignKey(AllocationUserStatusChoice, on_delete=models.CASCADE)
+    status = models.ForeignKey(AllocationUserRequestStatusChoice, on_delete=models.CASCADE)
+    history = HistoricalRecords()
+
+    def __str__(self):
+        return '{} ({})'.format(self.allocation_user.user.username, self.allocation_user_status)
