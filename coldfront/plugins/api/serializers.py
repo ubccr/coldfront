@@ -151,6 +151,7 @@ class AllocationChangeRequestSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'allocation',
+            'resource',
             'justification',
             'status',
             'created',
