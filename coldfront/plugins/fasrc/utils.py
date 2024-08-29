@@ -88,7 +88,8 @@ class ATTAllocationQuery:
 
         statement = {
             'statement': f"MATCH p=(g:Group)-[r:{d['relation']}]-{d['match']}\
-            WHERE (e.{d['server']} =~ '.*({d['volumes']}).*') AND {d['validation_query']}\
+            WHERE g.ATTStaleData = false AND (e.{d['server']} =~ '.*({d['volumes']}).*')\
+            AND {d['validation_query']}\
             AND NOT (g.ADSamAccountName =~ '.*(disabled|rc_admin).*')\
             RETURN\
             {d['unique']},\
