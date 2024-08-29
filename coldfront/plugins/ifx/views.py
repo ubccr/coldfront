@@ -113,6 +113,7 @@ def calculate_billing_month(request, year, month):
     try:
         if recalculate:
             ifxbilling_models.BillingRecord.objects.filter(year=year, month=month).delete()
+            ifxbilling_models.ProductUsageProcessing.objects.filter(product_usage__year=year, product_usage__month=month).delete()
         calculator = NewColdfrontBillingCalculator()
         calculator.calculate_billing_month(year, month, recalculate=recalculate)
         return Response('OK', status=status.HTTP_200_OK)

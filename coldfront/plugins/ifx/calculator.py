@@ -111,7 +111,6 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
         '''
         successes = []
         errors = []
-
         if organization.org_tree == 'Harvard':
             projects = [po.project for po in organization.projectorganization_set.all()]
             if not projects:
