@@ -756,7 +756,20 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         else:
             user = User.objects.filter(username=form.instance.pi_username).first()
             if user is None:
-                messages.error(self.request, 'This username does not exist in RT Projects')
+                if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
+                    from coldfront.plugins.ldap_user_info.utils import get_user_info
+                    result = get_user_info(form.instance.pi_username, ['sAMAccountName'])
+                    if not result.get('sAMAccountName')[0]:
+                        messages.error(self.request, 'This PI\'s username does not exist.')
+                        return super().form_invalid(form)
+
+                messages.error(
+                    self.request,
+                    f'This PI\'s username could not be found on RT Projects. If they haven\'t yet, '
+                    f'they will need to log onto the RT Projects site for their account to be '
+                    f'automatically created. Once they do that they can be added as a PI to this '
+                    f'project.'
+                )
                 return super().form_invalid(form)
             user_profile = UserProfile.objects.get(user=user)
             if user_profile.title not in ['Faculty', 'Staff', 'Academic (ACNP)',]:
@@ -1479,7 +1492,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
+        if project_obj.status.name in ['Archived', 'Denied', ]:
             messages.error(
                 request,
                 'You cannot remove users from a project with status "{}".'.format(project_obj.status.name)
@@ -1568,7 +1581,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
                     # get allocation to remove users from
                     allocations_to_remove_user_from = project_obj.allocation_set.filter(
-                        status__name__in=['Active', 'New', 'Renewal Requested'])
+                        status__name__in=['Active', 'New', 'Renewal Requested', 'Expired'])
                     for allocation in allocations_to_remove_user_from:
                         for allocation_user_obj in allocation.allocationuser_set.filter(user=user_obj, status__name__in=['Active', 'Inactive', 'Pending - Add', 'Pending - Remove', 'Eligible', 'Disabled', 'Retired']):
                             resource = allocation.get_parent_resource
@@ -1662,18 +1675,6 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
             return True
 
-    def check_user_is_data_manager(self, project_obj, project_user_obj):
-        # data_manager_list = [
-        #     allocation.data_manager for allocation in project_obj.allocation_set.filter( # TODO - Gone
-        #         resources__name="Slate-Project"
-        #     )
-        # ]
-
-        # if project_user_obj.user.username in set(data_manager_list):
-        #     return True
-
-        return False
-
     def check_user_is_manager(self, project_user_obj):
         if project_user_obj.role == ProjectUserRoleChoice.objects.get(name='Manager'):
             return True
@@ -1688,14 +1689,12 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             project_user_obj = project_obj.projectuser_set.get(
                 pk=project_user_pk)
 
-            is_data_manager = self.check_user_is_data_manager(project_obj, project_user_obj)
             is_manager = self.check_user_is_manager(project_user_obj)
             project_user_update_form = ProjectUserUpdateForm(
                 initial={
                     'role': project_user_obj.role,
                     'enable_notifications': project_user_obj.enable_notifications
                 },
-                disable_role=is_data_manager,
                 disable_enable_notifications=is_manager
             )
 
@@ -1703,7 +1702,6 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             context['project_obj'] = project_obj
             context['project_user_update_form'] = project_user_update_form
             context['project_user_obj'] = project_user_obj
-            context['is_data_manager'] = is_data_manager
 
             return render(request, self.template_name, context)
 
@@ -1725,7 +1723,6 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                     request, 'PI role and email notification option cannot be changed.')
                 return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_user_pk}))
 
-            is_data_manager = self.check_user_is_data_manager(project_obj, project_user_obj)
             is_manager = self.check_user_is_manager(project_user_obj)
             project_user_update_form = ProjectUserUpdateForm(
                 request.POST,
@@ -1733,13 +1730,8 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                     'role': project_user_obj.role.name,
                     'enable_notifications': project_user_obj.enable_notifications
                 },
-                disable_role=is_data_manager,
                 disable_enable_notifications=is_manager
             )
-
-            # If nothing has changed then don't update it.
-            if is_data_manager:
-                return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_obj.pk, 'project_user_pk': project_user_obj.pk}))
 
             if project_user_update_form.is_valid():
                 form_data = project_user_update_form.cleaned_data
@@ -1888,7 +1880,7 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                     ),
                     'status': allocation.status,
                     'expires_on': allocation.end_date,
-                    'renew': False
+                    'renew': True
                 }
                 initial_data.append(data)
 
@@ -2336,10 +2328,14 @@ class ProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin, View):
         project_obj.status = project_status_obj
 
         if project_review_obj.allocation_renewals:
-            allocation_status_choice = AllocationStatusChoice.objects.get(name="Active")
+            allocation_active_status_choice = AllocationStatusChoice.objects.get(name="Active")
+            allocation_expired_status_choice = AllocationStatusChoice.objects.get(name="Expired")
             for allocation_pk in project_review_obj.allocation_renewals.split(','):
                 allocation = Allocation.objects.get(pk=int(allocation_pk))
-                allocation.status = allocation_status_choice
+                if allocation.end_date <= datetime.datetime.now().date():
+                    allocation.status = allocation_expired_status_choice
+                else:
+                    allocation.status = allocation_active_status_choice
                 allocation.save()
 
         project_review_obj.save()
@@ -2584,7 +2580,7 @@ class ProjectRequestEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView)
                 cc = []
 
             send_email(
-                'Request for more information',
+                f'Follow-up on Project {project_obj.title}',
                 form_data.get('email_body'),
                 EMAIL_TICKET_SYSTEM_ADDRESS,
                 receiver_list,
@@ -2635,6 +2631,7 @@ class ProjectRequestAccessEmailView(LoginRequiredMixin, View):
                 'Add User to Project Request',
                 'email/project_add_user_request.txt',
                 {
+                    'center_name': EMAIL_CENTER_NAME,
                     'user': request.user,
                     'project_title': project_obj.title,
                     'project_url': project_url,

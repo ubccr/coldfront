@@ -74,11 +74,8 @@ class ProjectUserUpdateForm(forms.Form):
     enable_notifications = forms.BooleanField(initial=False, required=False)
 
     def __init__(self, *args, **kwargs):
-        disable_role = kwargs.pop('disable_role', False)
         disable_enable_notifications = kwargs.pop('disable_enable_notifications', False)
         super().__init__(*args, **kwargs)
-        if disable_role:
-            self.fields['role'].disabled = True
         if disable_enable_notifications:
             self.fields['enable_notifications'].disabled = True
 
@@ -149,7 +146,7 @@ class ProjectReviewAllocationForm(forms.Form):
         widget=forms.DateInput(attrs={'class': 'datepicker'}),
         disabled=True
     )
-    renew = forms.BooleanField(initial=False, required=False)
+    renew = forms.BooleanField(initial=True, required=False)
 
 
 class ProjectUpdateForm(forms.Form):

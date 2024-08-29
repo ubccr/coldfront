@@ -170,10 +170,12 @@ required to log onto the site at least once before they can be added.
         )
         return [manager.user.username for manager in project_managers]
     
-    def get_list_of_resources_with_slurm_accounts(self):
+    def get_list_of_resources_with_slurm_accounts(self, user):
         resources = set()
         allocations = self.allocation_set.filter(
-            status__name__in=['Active', 'Renewal Requested', ]
+            status__name__in=['Active', 'Renewal Requested', ],
+            allocationuser__user=user,
+            allocationuser__status__name='Active'
         )
         for allocation in allocations:
             resource = allocation.get_parent_resource

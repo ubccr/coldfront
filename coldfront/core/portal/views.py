@@ -83,7 +83,7 @@ def home(request):
 
         projects_with_a_slurm_account_to_list = []
         for project in project_list:
-            resources_with_slurm_accounts = project.get_list_of_resources_with_slurm_accounts()
+            resources_with_slurm_accounts = project.get_list_of_resources_with_slurm_accounts(request.user)
             if resources_with_slurm_accounts:
                 project_dict = {
                     'title': project.title,

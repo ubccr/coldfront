@@ -51,8 +51,6 @@ class Command(BaseCommand):
             ('cost_label', 'Text'),
             ('data_management_plan', 'Text'),
             ('data_management_plan_label', 'Text'),
-            ('data_manager', 'Text'),
-            ('data_manager_label', 'Text'),
             ('department_full_name', 'Text'),
             ('department_full_name_label', 'Text'),
             ('department_short_name', 'Text'),

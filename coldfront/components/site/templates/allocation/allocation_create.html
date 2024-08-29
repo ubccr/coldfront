@@ -167,10 +167,6 @@ Request New Allocation
 
     $('#div_id_justification').hide();
 
-    $('#id_data_manager').change(function () {
-      checkDataManager();
-    })
-
     var resource_label = $('label[for="id_resource"]');
     resource_label.html(
       'Resource<span class="asteriskField">*</span>\
@@ -347,15 +343,6 @@ Request New Allocation
     $('input[name="users"]').prop('disabled', true);
   }
 
-  function checkDataManager() {
-    var username = $('#id_data_manager').val();
-    if (request_user_username['username'] == username) {
-      enableUserSelection();
-    } else {
-      disableUserSelection();
-    }
-  }
-
   function checkDate(end_month, end_day) {
     let [month, date, year] = new Date().toLocaleDateString("en-US").split("/");
     var licenseEndDate = new Date(year, end_month, end_day);
@@ -452,12 +439,6 @@ Request New Allocation
       $('#posit_connect_link').show();
     } else {
       $('#posit_connect_link').hide();
-    }
-
-    if (resource_name === 'Slate-Project') {
-      checkDataManager();
-    } else {
-      enableUserSelection();
     }
 
     if (resources_requiring_user_accounts.includes(parseInt(resource_id)))

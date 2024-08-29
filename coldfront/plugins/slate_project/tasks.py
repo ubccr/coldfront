@@ -9,6 +9,7 @@ from coldfront.plugins.slate_project.utils import (sync_slate_project_users,
                                                    import_slate_projects,
                                                    get_new_user_status,
                                                    send_access_removed_email,
+                                                   create_slate_project_data_file,
                                                    LDAPModify,
                                                    LDAPImportSearch)
 
@@ -47,3 +48,7 @@ def update_all_user_statuses():
         status__name__in=['Active', 'Eligible', 'Disabled', 'Retired']
     ).select_related('user', 'status', 'allocation', 'allocation__project')
     sync_slate_project_user_statuses(slate_project_user_objs)
+
+
+def create_slate_project_data():
+    create_slate_project_data_file()

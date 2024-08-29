@@ -55,6 +55,7 @@ def send_expiry_emails():
             status__name='Active',
             end_date=expring_in_days,
             project__requires_review=True,
+            project__status__name__in=['Active', 'Review Pending'],
             is_locked=False
         )
         for allocation_obj in allocations_expiring_soon:
@@ -84,12 +85,12 @@ def send_expiry_emails():
                 'allocation_renew_url': allocation_renew_url,
                 'project_renewal_help_url': CENTER_PROJECT_RENEWAL_HELP_URL,
                 'help_email': EMAIL_TICKET_SYSTEM_ADDRESS,
-                'signature': EMAIL_SIGNATURE
-
+                'signature': EMAIL_SIGNATURE,
+                'project_title': allocation_obj.project.title
             }
 
             email_receiver_list = get_allocation_user_emails(allocation_obj)
-            send_email_template(f'Allocation to {resource_name} expiring in {days_remaining} days',
+            send_email_template(f'Your {resource_name} allocation is expiring in {days_remaining} days',
                                 'email/allocation_expiring.txt',
                                 template_context,
                                 EMAIL_TICKET_SYSTEM_ADDRESS,
@@ -97,7 +98,7 @@ def send_expiry_emails():
                                 )
 
             logger.info(
-                f'Allocation to {resource_name} expiring in {days_remaining} days, email '
+                f'A {resource_name} allocation is expiring in {days_remaining} days, email '
                 f'sent to allocation users (allocation pk={allocation_obj.pk}).'
             )
 
@@ -123,12 +124,12 @@ def send_expiry_emails():
             'allocation_renew_url': allocation_renew_url,
             'project_renewal_help_url': CENTER_PROJECT_RENEWAL_HELP_URL,
             'help_email': EMAIL_TICKET_SYSTEM_ADDRESS,
-            'signature': EMAIL_SIGNATURE
-
+            'signature': EMAIL_SIGNATURE,
+            'project_title': allocation_obj.project.title
         }
 
         email_receiver_list = get_allocation_user_emails(allocation_obj)
-        send_email_template(f'Allocation to {resource_name} expiring in {days_remaining} days',
+        send_email_template(f'Your {resource_name} allocation is expiring in {days_remaining} days',
                             'email/allocation_expiring.txt',
                             template_context,
                             EMAIL_TICKET_SYSTEM_ADDRESS,
@@ -136,7 +137,7 @@ def send_expiry_emails():
                             )
 
         logger.info(
-            f'Allocation to {resource_name} expiring in {days_remaining} days, email sent '
+            f'A {resource_name} allocation is expiring in {days_remaining} days, email sent '
             f'to allocation users (allocation pk={allocation_obj.pk}).'
         )
 
@@ -147,7 +148,8 @@ def send_expiry_emails():
     for allocation_obj in Allocation.objects.filter(
         end_date=expring_in_days,
         status__name__in=['Active', ],
-        project__requires_review=True):
+        project__requires_review=True,
+        is_locked=False):
 
         expire_notification = allocation_obj.allocationattribute_set.filter(
             allocation_attribute_type__name='EXPIRE NOTIFICATION').first()
@@ -169,11 +171,12 @@ def send_expiry_emails():
             'project_renewal_help_url': CENTER_PROJECT_RENEWAL_HELP_URL,
             'project_url': project_url,
             'help_email': EMAIL_TICKET_SYSTEM_ADDRESS,
-            'signature': EMAIL_SIGNATURE
+            'signature': EMAIL_SIGNATURE,
+            'project_title': allocation_obj.project.title
         }
 
         email_receiver_list = get_allocation_user_emails(allocation_obj)
-        send_email_template(f'Allocation to {resource_name} has expired',
+        send_email_template(f'Your {resource_name} allocation has expired',
                             'email/allocation_expired.txt',
                             template_context,
                             EMAIL_TICKET_SYSTEM_ADDRESS,
@@ -181,6 +184,6 @@ def send_expiry_emails():
                             )
 
         logger.info(
-            f'Allocation to {resource_name} expired, email sent to allocation users '
+            f'A {resource_name} allocation has expired, email sent to allocation users '
             f'(allocation pk={allocation_obj.pk}).'
         )

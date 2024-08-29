@@ -27,7 +27,8 @@ def update_all_user_profiles():
     for user_profile in user_profiles:
         current_title = user_profile.title
         current_department = user_profile.department
-        attributes = ldap_search.search_a_user(user_profile.user.username, ['title', 'department'])
+        current_email = user_profile.user.email
+        attributes = ldap_search.search_a_user(user_profile.user.username, ['title', 'department', 'mail'])
         title = attributes.get('title')
         if title:
             title = title[0]
@@ -38,10 +39,19 @@ def update_all_user_profiles():
             department = department[0]
         else:
             department = ''
+        email = attributes.get('mail')
+        if email:
+            email = email[0]
+        else:
+            email = ''
         if title != current_title or department != current_department:
             user_profile.title = title
             user_profile.department = department
             user_profile.save()
+
+        if email != current_email:
+            user_profile.user.email = email
+            user_profile.user.save()
 
         if UPDATE_USER_PROFILES_UPDATE_STATUSES:
             if not title or title in ['Former Employee', 'Retired Staff']:
@@ -99,7 +109,7 @@ class LDAPSearch:
             return dict.fromkeys(search_attributes_list, None)
 
         searchParameters = {'search_base': self.LDAP_USER_SEARCH_BASE,
-                            'search_filter': ldap.filter.filter_format("(cn=%s)", [user_search_string]),
+                            'search_filter': ldap.filter.filter_format("(sAMAccountName=%s)", [user_search_string]),
                             'attributes': search_attributes_list,
                             'size_limit': 1}
         self.conn.search(**searchParameters)

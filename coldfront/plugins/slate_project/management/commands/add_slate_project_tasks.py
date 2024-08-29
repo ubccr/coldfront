@@ -38,3 +38,7 @@ class Command(BaseCommand):
         schedule('coldfront.plugins.slate_project.tasks.send_ineligible_pis_email_report',
                  schedule_type=Schedule.WEEKLY,
                  next_run=date)
+        
+        schedule('coldfront.plugins.slate_project.tasks.create_slate_project_data',
+                 schedule_type=Schedule.WEEKLY,
+                 next_run=date)

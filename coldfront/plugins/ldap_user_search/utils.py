@@ -35,7 +35,7 @@ class LDAPUserSearch(UserSearch):
         user_dict = {
             'last_name': entry_dict.get('sn')[0] if entry_dict.get('sn') else '',
             'first_name': entry_dict.get('givenName')[0] if entry_dict.get('givenName') else '',
-            'username': entry_dict.get('cn')[0] if entry_dict.get('cn') else '',
+            'username': entry_dict.get('sAMAccountName')[0] if entry_dict.get('sAMAccountName') else '',
             'email': entry_dict.get('mail')[0] if entry_dict.get('mail') else '',
             'source': self.search_source,
         }
@@ -45,7 +45,7 @@ class LDAPUserSearch(UserSearch):
     def search_a_user(self, user_search_string=None, search_by='all_fields'):
         size_limit = 20
         if user_search_string and search_by == 'all_fields':
-            filter = ldap.filter.filter_format("(|(givenName=*%s*)(sn=*%s*)(cn=*%s*)(mail=*%s*))", [user_search_string] * 4)
+            filter = ldap.filter.filter_format("(|(givenName=*%s*)(sn=*%s*)(sAMAccountName=*%s*)(mail=*%s*))", [user_search_string] * 4)
         elif user_search_string and search_by == 'username_only':
             filter = ldap.filter.filter_format("(cn=%s)", [user_search_string])
             size_limit = 1
@@ -54,7 +54,7 @@ class LDAPUserSearch(UserSearch):
 
         searchParameters = {'search_base': self.LDAP_USER_SEARCH_BASE,
                             'search_filter': filter,
-                            'attributes': ['cn', 'sn', 'givenName', 'mail'],
+                            'attributes': ['sAMAccountName', 'sn', 'givenName', 'mail'],
                             'size_limit': size_limit}
         self.conn.search(**searchParameters)
         users = []

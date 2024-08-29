@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from django.dispatch import receiver
 
 from coldfront.core.allocation.signals import (allocation_activate_user,
@@ -37,6 +39,7 @@ def add_group(sender, **kwargs):
     if not allocation_obj.status.name == 'Active':
         return
     
+    return
     add_slate_project_groups(allocation_obj)
 
 @receiver(allocation_activate_user, sender=ProjectAddUsersView)
@@ -112,6 +115,7 @@ def sync_slate_project(sender, **kwargs):
 
     slate_project_user_objs = AllocationUser.objects.filter(
         allocation = allocation_obj,
-        status__name__in=['Active', 'Eligible', 'Disabled', 'Retired']
+        status__name__in=['Active', 'Eligible', 'Disabled', 'Retired'],
+        modified__lt = datetime.now() - timedelta(seconds=5)
     ).select_related('user', 'status', 'allocation', 'allocation__project')
     sync_slate_project_user_statuses(slate_project_user_objs)
