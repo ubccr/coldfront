@@ -82,7 +82,7 @@
     "fields": {
       "product_name": "holylfs10/tier1",
       "product_number": "IFXNANANANANANANANA2",
-      "product_description": "testresource/tier1",
+      "product_description": "holylfs10/tier1",
       "billing_calculator": "coldfront.plugins.ifx.calculator.ColdfrontBillingCalculator",
       "reporting_group": "null",
       "facility_id": 1,
@@ -93,9 +93,9 @@
     "model": "ifxbilling.product",
     "pk": 2,
     "fields": {
-      "product_name": "testresource/tier1",
+      "product_name": "holylfs09/tier1",
       "product_number": "IFXNANANANANANANANA",
-      "product_description": "testresource/tier1",
+      "product_description": "holylfs09/tier1",
       "billing_calculator": "coldfront.plugins.ifx.calculator.ColdfrontBillingCalculator",
       "reporting_group": "null",
       "facility_id": 1,
@@ -143,6 +143,20 @@
   {
     "model": "ifxbilling.rate",
     "pk": 2,
+    "fields": {
+      "name": "Uni Rate",
+      "price": 100,
+      "units": "TB",
+      "is_active": true,
+      "product_id": 2,
+      "created": "2022-02-22T16:26:49.635Z",
+      "updated": "2022-02-22T16:26:49.635Z",
+      "max_qty": null
+    }
+  },
+  {
+    "model": "ifxbilling.rate",
+    "pk": 3,
     "fields": {
       "name": "Uni Rate",
       "price": 100,

@@ -348,6 +348,7 @@ def setup_models(test_case):
         ResourceTypeFactory(name=resource_type)
     for resource, r_id, rtype in [
         ('holylfs10/tier1', 1, 'Storage'), 
+        ('holylfs09/tier1', 2, 'Storage'),
         ('Test Cluster', 3, 'Cluster')
     ]:
         ResourceFactory(name=resource, id=r_id, resource_type__name=rtype)
@@ -361,6 +362,7 @@ def setup_models(test_case):
         ('High Security', 'Yes/No', False, False),
         ('DUA', 'Yes/No', False, False),
         ('External Sharing', 'Yes/No', False, False),
+        ('RequiresPayment', 'Yes/No', False, False),
     ):
         AllocationAttributeTypeFactory(
             name=name,
