@@ -12,6 +12,7 @@ from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
 from coldfront.plugins.customizable_forms.custom.forms import PositConnectForm, SlateProjectForm
 from coldfront.plugins.customizable_forms.views import GenericView
+from coldfront.plugins.ldap_user_info.utils import get_users_info
 
 logger = logging.getLogger(__name__)
 
