@@ -305,7 +305,6 @@ Billing Records
                         alert(status + ' ' + error)
                     },
                 },
-                {% comment %}
                 footerCallback: function (row, data, start, end, display) {
                     // THIS DOES NOT WORK because the ajax call is not done yet
                     // Leaving it here, because I'd like to find a fix
@@ -338,7 +337,17 @@ Billing Records
                         api.column(4).footer().innerHTML =
                             '$' + pageTotal + ' ( $' + total + ' total)';
                     }
-                } {% endcomment %}
+                }
+            })
+            billingRecordsTable.on('select', function (e, dt, type, indexes) {
+                $('#delete-selected').prop('disabled', false)
+            })
+            billingRecordsTable.on('deselect', function (e, dt, type, indexes) {
+                if (type === 'row' && billingRecordsTable.rows({selected: true}).count() > 0) {
+                    $('#delete-selected').prop('disabled', false)
+                } else {
+                    $('#delete-selected').prop('disabled', true)
+                }
             })
 
         })
@@ -382,7 +391,7 @@ Billing Records
             <input id="start-notification" type="submit" value="Notify Lab Managers"></input>
         </div>
         <div class="righty">
-            <input id="delete-selected" type="submit" value="Delete Selected"></input>
+            <input id="delete-selected" type="submit" value="Delete Selected" disabled></input>
         </div>
         <div style="clear: both;"></div>
     </div>
