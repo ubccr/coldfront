@@ -12,6 +12,7 @@ from django.utils import timezone
 from django.db import connection
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
+from django.urls import reverse
 from django_q.tasks import async_task
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.response import Response
@@ -79,7 +80,9 @@ def billing_records(request):
     '''
     if not request.user.is_superuser:
         raise PermissionDenied
-    return render(request, 'plugins/ifx/billing_records.html')
+    delete_url = reverse('billing-record-detail', kwargs={'pk': 0})
+    token = request.user.auth_token.key
+    return render(request, 'plugins/ifx/billing_records.html', { 'delete_url': delete_url, 'auth_token': token })
 
 @api_view(['GET',])
 @authentication_classes([TokenAuthentication, SessionAuthentication, BasicAuthentication])

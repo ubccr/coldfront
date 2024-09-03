@@ -4,7 +4,11 @@
 {% load static %}
 
 {% block ifx_head %}
+<link rel="stylesheet" href="https://cdn.datatables.net/2.1.5/css/dataTables.dataTables.min.css"></style>
 <script src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js"></script>
+<script src="https://cdn.datatables.net/2.1.5/js/dataTables.js"></script>
+<script src="https://cdn.datatables.net/select/2.0.5/js/dataTables.select.js"></script>
+<script src="https://cdn.datatables.net/select/2.0.5/js/select.dataTables.js"></script>
 {% endblock %}
 
 {% block title %}
@@ -14,22 +18,19 @@ Calculate Billing Month
 
 {% block content %}
 <style>
-    .dataTables_filter {
-        display: inline-flex;
-        margin: 0 0.5em 0 0;
-    }
-    .dataTables_length {
-        display: inline-flex;
-        margin: 0 0.5em 0 0;
-        float: right;
-    }
     label {
         margin: 0 0 0 1em;
+    }
+    .dt-input {
+        margin: 0 0 0 1em;
+        width: 200px;
     }
 </style>
 <script>
     (function($){
         $(document).ready(function(){
+
+
 
             $( "#progressbar" ).progressbar({
                 value: false
@@ -85,8 +86,18 @@ Calculate Billing Month
                 }
             })
 
+            DataTable.defaults.layout = {
+                topStart: null,
+                topEnd: null,
+                bottomStart: null,
+                bottomEnd: null,
+            };
             var productUsagesTable = $("#product-usages").DataTable({
-                dom: '<fl>tp',
+                layout: {
+                    topStart: 'search',
+                    topEnd: 'pageLength',
+                    bottomStart: 'paging',
+                },
                 columns: [
                     {data: 'id', width: '100px'},
                     {data: 'full_name', width: '200px'},
@@ -95,7 +106,11 @@ Calculate Billing Month
                     {data: 'description', width: '500px'},
                     {data: 'error_message', width: '400px'},
                 ],
-                order: [[ 2, "asc" ], [ 1, "asc" ]],
+                order: [[ 3, "asc" ], [ 2, "asc" ]],
+                select: {
+                    style: 'os',
+                    selector: 'td:first-child'
+                },
                 ajax: {
                     url: '/ifx/api/get-product-usages/',
                     type: 'GET',
@@ -155,6 +170,7 @@ Calculate Billing Month
 
 </script>
 <div style="font-size: 10pt;">
+    <h2>Calculate Billing Month</h2>
     <div id="loading">
         <p>
             <div id="progressbar"></div>
@@ -195,7 +211,7 @@ Calculate Billing Month
     </div>
     <hr/>
     <div style="margin: 1em;">
-        <table id="product-usages" class="display" style="width: 100%" cellpadding="5px">
+        <table id="product-usages" class="display" cellpadding="5px">
             <thead>
                 <tr>
                     <th>ID</th>
