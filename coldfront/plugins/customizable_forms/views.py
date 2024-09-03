@@ -264,29 +264,6 @@ class GenericView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         resource_attributes = ResourceAttribute.objects.filter(resource__pk=self.kwargs.get('resource_pk'))
         return form_class(self.request.user, resource_attributes, project_obj, resource_obj, **self.get_form_kwargs())
 
-    def check_user_accounts(self, usernames, resource_obj):
-        denied_users = []
-        approved_users = []
-        # TODO - Maybe optimize so this is only done if the resource requires an account?
-        if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
-            from coldfront.plugins.ldap_user_info.utils import get_users_info
-            results = get_users_info(usernames, ['memberOf'])
-            for username in usernames:
-                if not resource_obj.check_user_account_exists(username, results.get(username).get('memberOf')):
-                    denied_users.append(username)
-                else:
-                    approved_users.append(username)
-
-        if denied_users:
-            messages.warning(self.request, format_html(
-                'The following users do not have an account on {} and were not added: {}. Please\
-                direct them to\
-                <a href="https://access.iu.edu/Accounts/Create">https://access.iu.edu/Accounts/Create</a>\
-                to create an account.'
-                .format(resource_obj.name, ', '.join(denied_users))
-            ))
-        return approved_users
-
     def add_allocation_attributes(self, resource_obj, form_data, allocation_obj):
         # This section of code first grabs all the allocation attribute types that are linked to
         # the selected resource. Then it makes sure the only allocation attribute types included
@@ -446,7 +423,6 @@ class GenericView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         usernames.append(self.request.user.username)
         # Remove potential duplicate usernames
         usernames = list(set(usernames))
-        usernames = self.check_user_accounts(usernames, resource_obj)
 
         if INVOICE_ENABLED and resource_obj.requires_payment:
             allocation_status_obj = AllocationStatusChoice.objects.get(
