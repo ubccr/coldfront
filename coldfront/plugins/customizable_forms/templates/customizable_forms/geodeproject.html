@@ -1,0 +1,118 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}
+Request New Allocation
+{% endblock %}
+
+{% block content %}
+<style>
+  label {
+    font-weight: bold;
+  }
+</style>
+
+<h2>Request New {{ resource_obj.name }} Allocation <br><small>Project: {{ project_obj.title }}</small></h2>
+<hr>
+
+<form method="post">
+	{% csrf_token %}
+	{{ form|as_crispy_errors }}
+  <fieldset>
+    <legend>Contact Information</legend>
+    {{ form.name|as_crispy_field }}
+    {{ form.username|as_crispy_field }}
+    {{ form.email|as_crispy_field }}
+    {{ form.phone_number|as_crispy_field }}
+    {{ form.primary_contact|as_crispy_field }}
+    {{ form.secondary_contact|as_crispy_field }}
+    {{ form.it_pros|as_crispy_field }}
+  </fieldset>
+  <fieldset>
+    <legend>Department Info</legend>
+    {{ form.department_full_name|as_crispy_field }}
+    {{ form.department_short_name|as_crispy_field }}
+    {{ form.department_primary_campus|as_crispy_field }}
+    {{ form.group_name|as_crispy_field }}
+  </fieldset>
+  <fieldset>
+    <legend>Storage Info</legend>
+    <div>
+      {{ form.storage_space|as_crispy_field }}
+      {{ form.start_date|as_crispy_field }}
+      {{ form.end_date|as_crispy_field }}
+      {{ form.use_indefinitely|as_crispy_field }}
+      {{ form.data_management_plan|as_crispy_field }}
+      {{ form.admin_ads_group|as_crispy_field }}
+      {{ form.user_ads_group|as_crispy_field }}
+      {{ form.data_domains|as_crispy_field }}
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>Billing Info</legend>
+    {{ form.fiscal_officer|as_crispy_field }}
+    {{ form.account_number|as_crispy_field }}
+    {{ form.sub_account_number|as_crispy_field }}
+  </fieldset>
+  <fieldset>
+    <legend>Terms of Service</legend>
+    {{ form.terms_of_service|as_crispy_field }}
+  </fieldset>
+  <fieldset>
+    <legend>Data Management Responsibilities</legend>
+    <div>
+      {{ form.data_management_responsibilities|as_crispy_field }}
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend>NOTE</legend>
+    <div>
+      <p>
+        By submitting this form you agree that UITS/Research Technologies may begin billing the
+        account number you provided 30 days after service has been established.
+      </p>
+      <p>
+        To keep up to date with the features, functions, and best practices of Geode-Project/Home
+        Directories, please review these IU Knowledge Base Articles.
+      </p>
+      <ul>
+        <li>About Geode at Indiana: <a href="https://kb.iu.edu/d/acxp" target="_blank" rel="noopener noreferrer">https://kb.iu.edu/d/acxp</a></li>
+        <li>About home directory space on IU research supercomputers: <a href="https://kb.iu.edu/d/auad" target="_blank" rel="noopener noreferrer">https://kb.iu.edu/d/auad</a></li>
+        <li>Geode home directory file system terms of service: <a href="https://kb.iu.edu/d/aygg" target="_blank" rel="noopener noreferrer">https://kb.iu.edu/d/aygg</a></li>
+        <li>About Protected Health Information: <a href="https://kb.iu.edu/d/bdtx" target="_blank" rel="noopener noreferrer">https://kb.iu.edu/d/bdtx</a></li>
+        <li>Your Responsibilities for Protecting PHI: <a href="https://kb.iu.edu/d/ayzm" target="_blank" rel="noopener noreferrer">https://kb.iu.edu/d/ayzm</a></li>
+        <li>Recommended tools for encrypting data: <a href="https://kb.iu.edu/d/ayzi" target="_blank" rel="noopener noreferrer">https://kb.iu.edu/d/ayzi</a></li>
+      </ul>
+    </div>
+  </fieldset>
+  {{ form.users|as_crispy_field }}
+  <input class="btn btn-primary" type="submit" value="Submit" />
+	{% if after_project_creation == 'true' %}
+		<a
+			class="btn btn-secondary"
+			href="{% url 'custom-allocation-create' project_obj.pk %}?after_project_creation=true"
+			role="button">Back to Resource Selection
+		</a>
+	{% else %}
+		<a
+			class="btn btn-secondary"
+			href="{% url 'custom-allocation-create' project_obj.pk %}"
+			role="button">Back to Resource Selection
+		</a>
+	{% endif %}
+</form>
+
+<script>
+	$(document).ready(function () {
+		var date = new Date();
+		var currentYear = date.getFullYear();
+		$(".datepicker")
+		.datepicker({
+			changeMonth: true,
+			changeYear: true,
+			yearRange: currentYear + ':' + (currentYear + 1),
+		})
+	})
+</script>
+{% endblock %}

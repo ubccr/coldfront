@@ -10,7 +10,7 @@ from django.utils.html import format_html
 from coldfront.core.allocation.models import AllocationAttributeType, AllocationAttribute
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
-from coldfront.plugins.customizable_forms.custom.forms import PositConnectForm, SlateProjectForm
+from coldfront.plugins.customizable_forms.custom.forms import PositConnectForm, SlateProjectForm, GeodeProjectForm
 from coldfront.plugins.customizable_forms.views import GenericView
 from coldfront.plugins.ldap_user_info.utils import get_users_info
 
@@ -88,6 +88,16 @@ class ComputeView(GenericView):
 class SlateProjectView(GenericView):
     form_class=SlateProjectForm
     template_name = 'customizable_forms/slateproject.html'
+
+    def form_valid(self, form):
+        http_response = super().form_valid(form)
+
+        return http_response
+
+
+class GeodeProjectForm(GenericView):
+    form_class = GeodeProjectForm
+    template_name = 'customizable_forms/geodeproject.html'
 
     def form_valid(self, form):
         http_response = super().form_valid(form)

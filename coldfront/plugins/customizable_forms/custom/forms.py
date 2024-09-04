@@ -99,3 +99,70 @@ class SlateProjectForm(BaseForm):
         if cleaned_data.get('start_date') <= date.today():
             self.add_error('start_date', 'Must be later than today')
             raise ValidationError('Please correct the error below')
+
+
+class GeodeProjectForm(BaseForm):
+    DATA_DOMAIN_CHOICES = (
+        ('Advancement', 'Advancement'),
+        ('Employee', 'Employee'),
+        ('Facilities', 'Facilities'),
+        ('Financial', 'Financial'),
+        ('Health', 'Health'),
+        ('International', 'International'),
+        ('Learning Management', 'Learning Management'),
+        ('Library', 'Library'),
+        ('Purchasing', 'Purchasing'),
+        ('Research', 'Research'),
+        ('Student', 'Student'),
+        ('Travel', 'Travel')
+    )
+    CAMPUS_CHOICES = (
+        ('', ''),
+        ('IUB', 'IUB'),
+        ('IUN', 'IUN'),
+        ('IUE', 'IUE'),
+        ('IUK', 'IUK'),
+        ('IUNW', 'IUNW'),
+        ('IUSB', 'IUSB'),
+        ('IUSE', 'IUSE'),
+        ('IUFW', 'IUFW'),
+        ('IUPUC', 'IUPUC'),
+    )
+
+    name = forms.CharField(max_length=80)
+    username = forms.CharField(max_length=40)
+    email = forms.EmailField(max_length=50)
+    phone_number = forms.CharField(max_length=12, required=False)
+    primary_contact = forms.CharField(max_length=20, required=False)
+    secondary_contact = forms.CharField(max_length=20, required=False)
+    it_pros = forms.CharField(max_length=100, required=False)
+    department_full_name = forms.CharField(max_length=30)
+    department_short_name = forms.CharField(max_length=15, required=False)
+    department_primary_campus = forms.ChoiceField(choices=CAMPUS_CHOICES, required=False)
+    group_name = forms.CharField(max_length=30, required=False)
+    storage_space = forms.IntegerField(min_value=1)
+    start_date = forms.DateField(widget=forms.TextInput(attrs={'class': 'datepicker'}), required=False)
+    end_date = forms.DateField(widget=forms.TextInput(attrs={'class': 'datepicker'}), required=False)
+    use_indefinitely = forms.BooleanField(required=False)
+    data_management_plan = forms.CharField(widget=forms.Textarea)
+    admin_ads_group = forms.CharField(max_length=64, required=False)
+    user_ads_group = forms.CharField(max_length=64, required=False)
+    data_domains = forms.MultipleChoiceField(choices=DATA_DOMAIN_CHOICES)
+    fiscal_officer = forms.CharField(max_length=80)
+    account_number = forms.CharField(max_length=9, validators=[ValidateAccountNumber()])
+    sub_account_number = forms.CharField(max_length=20, required=False)
+    terms_of_service = forms.BooleanField()
+    data_management_responsibilities = forms.BooleanField()
+
+    def __init__(self, request_user, resource_attributes, project_obj, resource_obj, *args, **kwargs):
+        super().__init__(request_user, resource_attributes, project_obj, resource_obj, *args, **kwargs)
+
+        self.fields['name'].initial = f'{request_user.first_name} {request_user.last_name}'
+        self.fields['username'].initial = request_user.username
+        self.fields['email'].initial = request_user.email
+
+        # self.fields['start_date'].widget.attrs.update({'placeholder': 'mm/dd/yyy'})
+        # self.fields['end_date'].widget.attrs.update({'placeholder': 'mm/dd/yyy'})
+
+    def clean(self):
+        pass
