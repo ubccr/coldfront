@@ -754,7 +754,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
         # if ldap is activated, prevent selection of users with project corresponding to primary group
         users_no_removal, users_to_remove = project_filter_users_to_remove.send(
-            sender=self.__class__, users=users_to_remove, project=project_obj
+            sender=self.__class__, users_to_remove=users_to_remove, project=project_obj
         )
 
         context = {}
