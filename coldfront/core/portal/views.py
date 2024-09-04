@@ -22,7 +22,6 @@ from coldfront.core.publication.models import Publication
 from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.utils.common import import_from_settings
 
-
 PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING = import_from_settings(
     'PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING',
     30

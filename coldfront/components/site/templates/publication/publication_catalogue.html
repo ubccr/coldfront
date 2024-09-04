@@ -1,0 +1,176 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+{% load common_tags %}
+{% load humanize %}
+
+{% block title %}
+Publication List
+{% endblock %}
+
+{% block content %}
+<style>
+    .collapsible.hold {
+        background-color: white;
+        color: black;
+        cursor: pointer;
+        padding: 18px;
+        width: 100%;
+        border: none;
+        text-align: left;
+        outline: none;
+        font-size: 31px;
+        padding: 10px;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .active.hold:hover {
+        background-color: #eee;
+    }
+
+    .hold:after {
+        content: "\002B";
+        color: black;
+        font-weight: bold;
+        float: right;
+        margin-left: 5px;
+        vertical-align: text-top;
+    }
+
+    .hold.active:after {
+        content: '\2212';
+        color: black;
+        vertical-align: text-top;
+    }
+
+    .content_step {
+        padding: 0 18px;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.2s ease-out;
+        background-color: #f6f6f6;
+    }
+
+    #myInput {
+        background-image: url('/css/searchicon.png');
+        background-position: 10px 12px;
+        background-repeat: no-repeat;
+        width: 100%;
+        font-size: 16px;
+        padding: 12px 20px 12px 40px;
+        border: 1px solid #ddd;
+        margin-bottom: 12px;
+    }
+
+    #myUL {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    #myUL li {
+        border: none;
+        margin-top: -1px; /* Prevent double borders */
+        background-color: #f6f6f6;
+        padding: 12px;
+        text-decoration: none;
+        font-size: 18px;
+        display: block;
+        width: 100%;
+    }
+
+    .inline-elements {
+        display: flex;
+        align-items: center;
+    }
+
+    .black-text {
+        color: black;
+        text-decoration: none;
+        margin-right: 10px;
+    }
+
+    .blue-link {
+        color: blue;
+        text-decoration: underline;
+    }
+
+    /* Remove background color on hover */
+    #myUL li a:hover {
+        background-color: transparent;
+    }
+</style>
+
+<h2>Publications</h2>
+<p> 
+    This is a partial representation of the research supported by RT resources. 
+    This list of publications comes from PIs/managers who submitted their publications on
+     RT Projects voluntarily. PIs/managers can add publications to their RT Project by 
+     logging into RT Projects > click on your project name > Add Publication.
+</p>
+
+<input type="text" id="myInput" onkeyup="myFunction()" placeholder="Search by author, publication title, journal, and more..." title="Type in a name">
+
+<h5>Last Updated: August 2, 2024</h5>
+
+<ul id="myUL">
+{% for k, v in data.items %}
+    <button class="button collapsible hold active">{{k}}</button>
+    <div class="content_step">
+        {% for r in v %}
+            <li class="inline-elements">
+                {% for k in r %}
+                    {% if forloop.counter == 1 %}
+                        <span class="black-text">{{k}}</span>
+                    {% elif forloop.counter == 2 %}  
+                        <a class="blue-link" href="{{k}}">{{k}}</a>
+                    {% endif %}
+                {% endfor %}
+            </li>
+        {% endfor %}
+    </div>
+{% endfor %}
+</ul>
+
+<script>
+    var coll = document.getElementsByClassName("collapsible hold");
+    var i;
+
+    // Show all content by default
+    for (i = 0; i < coll.length; i++) {
+        var content = coll[i].nextElementSibling;
+        content.style.maxHeight = content.scrollHeight + "px"; // Ensure content is fully expanded
+        
+        coll[i].addEventListener("click", function() {
+            this.classList.toggle("active");
+            var content = this.nextElementSibling;
+            if (content.style.maxHeight) {
+                content.style.maxHeight = null;  // Collapse content
+            } else {
+                content.style.maxHeight = content.scrollHeight + "px";  // Expand content
+            } 
+        });
+    }
+</script>
+
+<script>
+    function myFunction() {
+        var input, filter, ul, li, a, i, txtValue;
+        input = document.getElementById("myInput");
+        filter = input.value.toUpperCase();
+        ul = document.getElementById("myUL");
+        li = ul.getElementsByTagName("li");
+        for (i = 0; i < li.length; i++) {
+            a = li[i].getElementsByTagName("span")[0];
+            txtValue = a.textContent || a.innerText;
+            if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                li[i].style.display = "";
+            } else {
+                li[i].style.display = "none";
+            }
+        }
+    }
+</script>
+
+{% endblock %}
