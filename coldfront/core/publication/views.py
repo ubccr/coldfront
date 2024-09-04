@@ -33,6 +33,45 @@ from doi2bib import crossref
 
 MANUAL_SOURCE = 'manual'
 
+def publication_gallery(request):
+    context = dict()
+    imgs = list()
+    lnks = list()
+    with open("coldfront/coldfront/components/site/static/links.txt", "r+") as f:
+        contents = f.read()
+    pairs = contents.strip().split('\n') 
+    links = {pair.split(' ')[0]: pair.split(' ')[1] for pair in pairs} 
+    for cnt, images in enumerate(sorted(os.listdir("coldfront/coldfront/components/site/static/images"))):
+        img = images.split("_")[0]
+        imgs.append("/static/images/"+images)
+        if img in list(links.keys()): lnks.append(links[img])
+        else: lnks.append("")
+    items = ["item item"+str((i%3)+1) for i in range(len(imgs))]
+    context["data"] = list(zip(imgs, lnks, items))
+    print(context)
+    return render(request, 'publication/publication_gallery.html', context)
+
+def publication_catalogue(request):
+    context = {}
+    with open("coldfront/coldfront/components/site/static/apa.txt", "r+") as f:
+        temp = dict()
+        for l in f.readlines():
+            test = l.split("(")
+            for i in test:
+                if ("20" in i and i[:4].isdigit()) or "n.d." in i:
+                    t = i[:4]
+                    if t not in temp:
+                        temp[t] = list()
+                    temp[t].append(l)
+    cnt = 0
+    temp = dict(sorted(temp.items(), reverse=True))
+    for t in temp:
+        #print(temp[t][0])
+        #print(re.search("(https://).*", temp[t][0])[0])
+        temp[t] = [[(f"[{cnt+i}]\t" + x).replace(re.search("(https://).*", x)[0], ""), re.search("(https://).*", x)[0]] for i,x in enumerate(temp[t])]
+        cnt += len(temp[t])
+    context["data"] = temp
+    return render(request, 'publication/publication_catalogue.html', context)
 
 class PublicationSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'publication/publication_add_publication_search.html'
