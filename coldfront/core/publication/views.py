@@ -34,26 +34,29 @@ from doi2bib import crossref
 MANUAL_SOURCE = 'manual'
 
 def publication_gallery(request):
+    static_dir = settings.SITE_STATIC
+
     context = dict()
     imgs = list()
     lnks = list()
-    with open("coldfront/coldfront/components/site/static/links.txt", "r+") as f:
+    with open(os.path.join(static_dir, 'links.txt'), "r+") as f:
         contents = f.read()
     pairs = contents.strip().split('\n') 
     links = {pair.split(' ')[0]: pair.split(' ')[1] for pair in pairs} 
-    for cnt, images in enumerate(sorted(os.listdir("coldfront/coldfront/components/site/static/images"))):
+    for images in sorted(os.listdir(os.path.join(static_dir, 'images'))):
         img = images.split("_")[0]
         imgs.append("/static/images/"+images)
         if img in list(links.keys()): lnks.append(links[img])
         else: lnks.append("")
     items = ["item item"+str((i%3)+1) for i in range(len(imgs))]
     context["data"] = list(zip(imgs, lnks, items))
-    print(context)
     return render(request, 'publication/publication_gallery.html', context)
 
 def publication_catalogue(request):
+    static_dir = settings.SITE_STATIC
+
     context = {}
-    with open("coldfront/coldfront/components/site/static/apa.txt", "r+") as f:
+    with open(os.path.join(static_dir, 'apa.txt'), "r+") as f:
         temp = dict()
         for l in f.readlines():
             test = l.split("(")
@@ -66,8 +69,6 @@ def publication_catalogue(request):
     cnt = 0
     temp = dict(sorted(temp.items(), reverse=True))
     for t in temp:
-        #print(temp[t][0])
-        #print(re.search("(https://).*", temp[t][0])[0])
         temp[t] = [[(f"[{cnt+i}]\t" + x).replace(re.search("(https://).*", x)[0], ""), re.search("(https://).*", x)[0]] for i,x in enumerate(temp[t])]
         cnt += len(temp[t])
     context["data"] = temp
