@@ -164,9 +164,9 @@ class LDAPConn:
         """Return an AD user entry by the username"""
         user = self.search_users({"uid": username}, return_as=return_as, attributes=attributes)
         if len(user) > 1:
-            raise ValueError("too many users in value returned")
+            raise ValueError(f"too many users in value returned for username {username}")
         if not user:
-            raise ValueError("no users returned")
+            raise ValueError(f"no users returned for username {username}")
         return user[0]
 
     def return_group_by_name(self, groupname, return_as='dict', attributes=ALL_ATTRIBUTES):
