@@ -7,6 +7,12 @@ Request New Allocation
 {% endblock %}
 
 {% block content %}
+<style>
+  label {
+    font-weight: bold;
+  }
+</style>
+
 <h2>Request New {{ resource_obj.name }} Allocation <br><small>Project: {{ project_obj.title }}</small></h2>
 <hr>
 
@@ -45,9 +51,20 @@ Request New Allocation
 		<legend>Sensitive Information</legend>
 		{{ form.store_ephi|as_crispy_field }}
 	</fieldset>
-
 	<input class="btn btn-primary" type="submit" value="Submit" />
-	<a class="btn btn-secondary" href="{% url 'custom-allocation-create' project_obj.pk %}" role="button">Back to Resource Selection</a><br>
+	{% if after_project_creation == 'true' %}
+		<a
+			class="btn btn-secondary"
+			href="{% url 'custom-allocation-create' project_obj.pk %}?after_project_creation=true"
+			role="button">Back to Resource Selection
+		</a>
+	{% else %}
+		<a
+			class="btn btn-secondary"
+			href="{% url 'custom-allocation-create' project_obj.pk %}"
+			role="button">Back to Resource Selection
+		</a>
+	{% endif %}
 </form>
 
 <script>

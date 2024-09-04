@@ -10,12 +10,6 @@ Request New Allocation
 <h2>Request New {{ resource_obj.name }} Allocation <br><small>Project: {{ project_obj.title }}</small></h2>
 <hr>
 
-<p id="user_account_info">
-	You must first have an account on this resource to gain access to its partitions. To create an 
-	account, go to <a href="https://access.iu.edu/Accounts/Create" target="_blank">Create Additional 
-	Accounts.</a>
-</p>
-
 <form method="post">
 	{% csrf_token %}
   	{{form |crispy}}
