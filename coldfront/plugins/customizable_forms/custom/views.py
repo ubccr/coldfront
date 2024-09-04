@@ -22,7 +22,7 @@ class PositConnectView(GenericView):
 
 
 class ComputeView(GenericView):
-    template_name = 'customizable_forms/generic.html'
+    template_name = 'customizable_forms/compute.html'
 
     def dispatch(self, request, *args, **kwargs):
         resource_obj = get_object_or_404(Resource, pk=self.kwargs.get('resource_pk'))
