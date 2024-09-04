@@ -2,7 +2,6 @@ from coldfront.config.base import INSTALLED_APPS
 
 INSTALLED_APPS += [
     'django_filters',
-    'knox',
     'rest_framework',
     'coldfront.plugins.api',
 ]
