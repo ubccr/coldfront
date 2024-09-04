@@ -94,8 +94,10 @@ def send_allocation_admin_email(
     pi = allocation_obj.project.pi
     pi_name = f'{pi.first_name} {pi.last_name}'
     resource_name = allocation_obj.get_parent_resource
+    project_title = allocation_obj.project.title
 
     ctx = email_template_context(other_vars)
+    ctx['project_title'] = project_title
     ctx['pi_name'] = pi_name
     ctx['pi_username'] = f'{pi.username}'
     ctx['resource'] = resource_name
@@ -105,7 +107,7 @@ def send_allocation_admin_email(
     if ctx.get('user'):
         cc.append(ctx.get('user').email)
     send_email_template(
-        f'{subject}: {pi_name} - {resource_name}',
+        f'{subject}: {project_title} - {resource_name}',
         template_name,
         ctx,
         EMAIL_SENDER,
