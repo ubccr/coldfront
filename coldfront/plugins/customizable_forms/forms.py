@@ -39,9 +39,6 @@ class BaseForm(forms.Form):
                 if self.fields.get(name) is not None:
                     self.fields[name].initial = resource_attribute.value
 
-        for field in self.fields:
-            self.fields[field].label = f'<strong>{self.fields[field].label}</strong>'
-
         self.set_up_users_field(request_user, project_obj, resource_obj)
 
 
