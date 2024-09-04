@@ -83,6 +83,7 @@ class Command(BaseCommand):
             ('Tier 3', 'Attic Storage - Tape', True, storage_tier, None, 20, True, True),
             ('holylfs04/tier0', 'Holyoke data center lustre storage', True, storage, 'Tier 0', 1, True, True),
             ('holylfs05/tier0', 'Holyoke data center lustre storage', True, storage, 'Tier 0', 1, True, True),
+            ('holylfs06/tier0', 'Holyoke data center lustre storage', True, storage, 'Tier 0', 1, True, True),
             ('nesetape/tier3', 'Cold storage for past projects', True, storage, 'Tier 3', 20, True, True),
             ('holy-isilon/tier1', 'Tier1 storage with snapshots and disaster recovery copy', True, storage, 'Tier 1', 1, True, True),
             ('bos-isilon/tier1', 'Tier1 storage for on-campus storage mounting', True, storage, 'Tier 1', 1, True, True),
