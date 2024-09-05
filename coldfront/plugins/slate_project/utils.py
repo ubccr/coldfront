@@ -949,13 +949,10 @@ def send_ineligible_users_report():
     if ineligible_users:
         current_date = date.today().isoformat()
         with open(os.path.join(SLATE_PROJECT_DIR, f'ineligible_users_{current_date}.txt'), 'w') as ineligible_file:
-            ineligible_file.write(f'The ineligible users within Slate Project allocations found on {current_date}.\n\n')
             for user, roles in ineligible_users.items():
-                ineligible_file.write(user + '\n')
-                ineligible_file.write('---------------\n')
                 for role, projects in roles.items():
-                    ineligible_file.write(f'{role} - {", ".join(projects)}\n')
-                ineligible_file.write('\n')
+                    for project in projects:
+                        ineligible_file.write(f'{user.split(" - ")[0]},{project}\n')
         logger.info('Slate Project ineligible users file created')
 
         if EMAIL_ENABLED:
@@ -985,7 +982,6 @@ def send_ineligible_pis_report():
         'project__pi',
     )
     project_pis = set([allocation.project.pi for allocation in allocation_objs])
-    print(project_pis)
     allocation_user_objs = AllocationUser.objects.filter(
         status__name__in=['Retired', 'Disabled'],
         allocation__status__name='Active',
@@ -1059,7 +1055,7 @@ def create_slate_project_data_file():
         for _, allocation_attributes in allocations.items():
             csv_writer.writerow([
                 allocation_attributes.get('Allocation Created'),
-                allocation_attributes.get('Allocation Quantity'),
+                allocation_attributes.get('Allocated Quantity'),
                 allocation_attributes.get('GID'),
                 allocation_attributes.get('LDAP Group'),
                 allocation_attributes.get('Slate Project Directory')
