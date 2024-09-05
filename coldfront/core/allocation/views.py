@@ -325,7 +325,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             return HttpResponseBadRequest("Invalid request")
         
         form_data = form.cleaned_data
-
+        create_admin_action(request.user, form_data, allocation_obj)
         old_status = allocation_obj.status.name
 
         if action in ['update', 'approve', 'deny']:
