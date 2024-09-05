@@ -1,0 +1,78 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Allocation Detail
+{% endblock %}
+
+
+{% block content %}
+
+
+<div class="card mb-3">
+  <div class="card-body">
+    <h3 class="card-title">
+      {{ note.tags }}: {{ note.title }}
+    </h3>
+    <p class="card-text"><strong>Last Modified: </strong>{{ note.modified|date:"Y-m-d" }}</p>
+    <p class="card-text"><strong>Author: </strong>{{ note.author }}    </p>
+    <p class="card-text">{{ note.message }}</p>
+  </div>
+</div>
+
+
+
+
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Comments:</h3>
+    <span class="badge bg-secondary">{{notes.count}}</span>
+    <div class="float-end">
+        <a class="btn btn-success" href="{% url 'add-comment' note.pk %}" role="button">
+          <i class="fas fa-plus" aria-hidden="true"></i> Add Notification
+        </a>
+      {% if request.user.is_superuser %}
+        <a class="btn btn-info" href="{% url 'notes-download' note.allocation.pk %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Export to CSV</a>
+        {% if request.user.is_superuser or request.user.role == "Manager" %}
+        <a class="btn btn-danger" href="{% url 'allocation-delete-invoice-note' note.allocation.pk %}" role="button"><i class="fas fa-minus" aria-hidden="true"></i> Delete Notes</a>
+      {% endif %}
+      {% endif %}
+
+    </div>
+  </div>
+  <div class="card-body">
+    {% if comments %}
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th scope="col">Note</th>
+              <th scope="col">Administrator</th>
+              <th scope="col">Last Modified</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for note in comments %}
+              {% if not note.is_private or request.user.is_superuser %}
+                <tr>
+                  <td>{{ note.note }}</td>
+                  <td>{{ note.author.first_name }} {{ note.author.last_name }}</td>
+                  <td>{{ note.modified }}</td>
+                </tr>
+              {% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="alert alert-info" role="alert">
+        <i class="fa fa-info-circle" aria-hidden="true"></i> There are no comments on this note yet.
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}
+

@@ -1,0 +1,8 @@
+<div class="mb-3">
+  <h2>{{ note.tags }}: {{ note.title }}</h2>
+  <hr>
+  <h6> {{ note.message }}</h3>
+    <a class="btn btn-success" href="{% url 'add-comment' note.pk %}" role="button">
+      <i class="fas fa-plus" aria-hidden="true"></i> Add Notification
+    </a>
+</div>
