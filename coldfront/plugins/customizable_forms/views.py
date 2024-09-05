@@ -27,6 +27,7 @@ from coldfront.core.resource.models import ResourceAttribute
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.slack import send_message
 from coldfront.core.utils.mail import send_email_template, get_email_recipient_from_groups
+from coldfront.plugins.ldap_user_info.utils import get_user_info
 
 # Include doesn't work for my purpose. What if I set up an ajax call that gets a url and provides the name of the resource?
 # The view that is called will grab the current html file to render based on the resource selected and render that.
@@ -111,12 +112,12 @@ class AllocationResourceSelectionView(LoginRequiredMixin, UserPassesTestMixin, T
             resource_name = project_allocation.get_parent_resource.name
             if project_resource_count.get(resource_name) is None:
                 project_resource_count[resource_name] = 0
-            project_resource_count[resource_name] += 1 
+            project_resource_count[resource_name] += 1
 
         resource_objs = Resource.objects.filter(
             is_allocatable=True
         ).prefetch_related('resource_type', 'resourceattribute_set').order_by('resource_type')
-
+        accounts = get_user_info(self.request.user.username, ['memberOf']).get('memberOf')
         resource_categories = {}
         for resource_obj in resource_objs:
             resource_type_name = resource_obj.resource_type.name
@@ -138,7 +139,7 @@ class AllocationResourceSelectionView(LoginRequiredMixin, UserPassesTestMixin, T
                 help_url = None
 
             has_account = True
-            if not resource_obj.check_user_account_exists(self.request.user.username):
+            if not resource_obj.check_user_account_exists(self.request.user.username, accounts):
                 has_account = False
             resource_categories[resource_type_name]['resources'].append(
                 {
