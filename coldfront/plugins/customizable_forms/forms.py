@@ -69,7 +69,7 @@ class GenericForm(BaseForm):
 
         for name, info in new_fields.items():
             attribute_type = info.get('type')
-            label = f'<strong>{info.get("label")}</strong>'
+            label = info.get("label")
             if attribute_type == 'Text':
                 self.fields[name[:-len('_label')]] = forms.CharField(required=True, label=label)
             elif attribute_type == 'Yes/No':

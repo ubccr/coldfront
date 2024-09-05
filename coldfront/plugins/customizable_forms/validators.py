@@ -1,4 +1,5 @@
 from django.core.exceptions import ValidationError
+from coldfront.plugins.ldap_user_info.utils import get_user_info
 
 
 class ValidateNumberOfUsers():
@@ -30,3 +31,13 @@ class ValidateDirectoryName():
     def __call__(self, value):
         if any(char in self.invalid_characters for char in value):
             raise ValidationError(f'Contains invalid character(s)', code='invalid')
+
+
+class ValidateUsername():
+    def __call__(self, value):
+        if not value:
+            return
+
+        attribute = get_user_info(value, ['cn'])
+        if not attribute.get('cn') or not attribute.get('cn')[0]:
+            raise ValidationError('This username does not exist')

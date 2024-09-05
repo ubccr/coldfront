@@ -8,9 +8,13 @@ Request New Allocation
 
 {% block content %}
 <style>
-  label {
-    font-weight: bold;
-  }
+	label:not(.form-check-label) {
+	  font-weight: bold;
+	}
+  	.horizontal-radio li {
+       display: inline-block;
+       margin-right: 10px;
+   }
 </style>
 
 <h2>Request New {{ resource_obj.name }} Allocation <br><small>Project: {{ project_obj.title }}</small></h2>
@@ -20,7 +24,7 @@ Request New Allocation
 	{% csrf_token %}
 	{{ form|as_crispy_errors }}
 	<fieldset>
-		<legend>Contact Information</legend>
+		<legend><u>Contact Information</u></legend>
 		<div class="row">
 			<div class="col">
 				{{ form.first_name|as_crispy_field }}
@@ -39,16 +43,15 @@ Request New Allocation
 		</div>
 	</fieldset>
 	<fieldset>
-		<legend>Project Information</legend>
+		<legend><u>Project Information</u></legend>
 		{{ form.url|as_crispy_field }}
 		{{ form.project_directory_name|as_crispy_field }}
 		{{ form.storage_space|as_crispy_field }}
 		{{ form.start_date|as_crispy_field }}
 		{{ form.account_number|as_crispy_field }}
-		{{ form.faculty_email|as_crispy_field }}
 	</fieldset>
 	<fieldset>
-		<legend>Sensitive Information</legend>
+		<legend><u>Sensitive Information</u></legend>
 		{{ form.store_ephi|as_crispy_field }}
 	</fieldset>
 	<input class="btn btn-primary" type="submit" value="Submit" />
@@ -82,6 +85,10 @@ Request New Allocation
 			}
 		})
 
+		var radios = $("[type=radio]").parent()
+		for (var i = 0; i < radios.length; i++) {
+			console.log(radios[i].className = "custom-control custom-radio custom-control-inline")
+		}
 		var date = new Date();
 		var currentYear = date.getFullYear();
 		$(".datepicker")

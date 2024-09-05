@@ -7,6 +7,12 @@ Request New Allocation
 {% endblock %}
 
 {% block content %}
+<style>
+	label:not(.form-check-label) {
+	  font-weight: bold;
+	}
+</style>
+
 <h2>Request New {{ resource_obj.name }} Allocation <br><small>Project: {{ project_obj.title }}</small></h2>
 <hr>
 
@@ -36,4 +42,13 @@ Request New Allocation
 	
 	<br>
 </form>
+
+<script>
+	$(document).ready(function () {
+		var radios = $("[type=radio]").parent()
+		for (var i = 0; i < radios.length; i++) {
+			console.log(radios[i].className = "custom-control custom-radio custom-control-inline")
+		}
+	})
+</script>
 {% endblock content %}
