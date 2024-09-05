@@ -74,13 +74,12 @@ Allocation Review New and Pending Requests
               <td>Project must be approved first.</td>
             {% else %}
               <td class="text-nowrap">
-                {% if not allocation.get_allocation_attributes %}
-                  <a href="{% url 'allocation-activate-request' allocation.pk %}" class="btn btn-success mr-1 confirm-activate" aria-disabled="true">Approve</a>
+                <form method="post" action="{% url 'allocation-detail' allocation.pk %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="status" value="{{ allocation_status_active.id }}" />
+                  <button type="submit" name="action" value="auto-approve" class="btn btn-success mr-1{% if allocation.get_information == '' %} confirm-activate{% endif %}">Approve</button>
                   <a href="{% url 'allocation-detail' allocation.pk %}" class="btn btn-primary mr-1">Details</a>
-                {% else %}
-                    <a href="{% url 'allocation-activate-request' allocation.pk %}" class="btn btn-success mr-1">Activate</a>
-                    <a href="{% url 'allocation-detail' allocation.pk %}" class="btn btn-primary mr-1">Details</a>
-                {% endif %}
+                </form>
               </td>
             {% endif %}
           </tr>

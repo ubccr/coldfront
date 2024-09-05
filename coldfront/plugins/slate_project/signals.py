@@ -9,8 +9,7 @@ from coldfront.core.allocation.signals import (allocation_activate_user,
                                                allocation_remove,
                                                allocation_activate,
                                                visit_allocation_detail)
-from coldfront.core.allocation.views import (AllocationActivateRequestView,
-                                             AllocationAddUsersView,
+from coldfront.core.allocation.views import (AllocationAddUsersView,
                                              AllocationRemoveUsersView,
                                              AllocationUserDetailView,
                                              AllocationRemoveView,
@@ -30,7 +29,6 @@ from coldfront.plugins.slate_project.utils import (add_user_to_slate_project_gro
                                                    sync_slate_project_user_statuses)
 
 @receiver(allocation_activate, sender=AllocationDetailView)
-@receiver(allocation_activate, sender=AllocationActivateRequestView)
 def add_group(sender, **kwargs):
     allocation_pk = kwargs.get('allocation_pk')
     allocation_obj = Allocation.objects.get(pk=allocation_pk)

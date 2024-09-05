@@ -1,0 +1,63 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+{% load common_tags %}
+{% load humanize %}
+
+
+{% block title %}
+Publications
+{% endblock %}
+
+
+{% block content %}
+<!-- <h2>{% settings_value 'CENTER_NAME' %} Scientific Impact</h2> -->
+<style>
+.masonry {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    grid-gap: 10px;
+    grid-auto-rows: 100px;
+}
+
+.item1 { 
+    grid-column: span 3;
+    grid-row: span 3;
+    transition: transform .2s;
+}
+
+.item2 { 
+    grid-column: span 2;
+    grid-row: span 2;
+    transition: transform .2s;
+}
+
+.item3 { 
+    grid-column: span 4;
+    grid-row: span 4;
+    transition: transform .2s;
+}
+
+.item1:hover { 
+    transform: scale(2)
+}
+
+.item2:hover { 
+    transform: scale(3)
+}
+
+.item3:hover { 
+    transform: scale(1.5)
+}
+
+img {
+    width: 100%;
+    height: 100%;
+}
+</style>
+<div class="masonry" style="padding-top: 150px;">
+    {% for img, url, item in data %}
+        <div class="{{item}}"><a href={{url}}><img src={{img}}></a></div>
+    {% endfor %}
+</div>
+{% endblock %}
