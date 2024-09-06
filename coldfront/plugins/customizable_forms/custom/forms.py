@@ -3,7 +3,6 @@ from datetime import date
 from django import forms
 from django.forms.widgets import RadioSelect
 from django.core.exceptions import ValidationError
-from crispy_forms.helper import FormHelper
 
 from coldfront.plugins.customizable_forms.validators import (ValidateNumberOfUsers,
                                                              ValidateAccountNumber,
@@ -86,8 +85,6 @@ class SlateProjectForm(BaseForm):
         self.fields['email'].initial = request_user.email
 
         self.fields['start_date'].widget.attrs.update({'placeholder': 'MM/DD/YYYY'})
-
-        self.helper = FormHelper()
 
     def clean(self):
         cleaned_data = super().clean()
@@ -193,8 +190,6 @@ class GeodeProjectForm(BaseForm):
 
         self.fields['start_date'].widget.attrs.update({'placeholder': 'MM/DD/YYYY'})
         self.fields['end_date'].widget.attrs.update({'placeholder': 'MM/DD/YYYY'})
-
-        self.helper = FormHelper()
 
     def clean(self):
         cleaned_data = super().clean()

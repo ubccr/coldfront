@@ -1,5 +1,6 @@
 from django import forms
 from django.forms.widgets import RadioSelect
+from crispy_forms.helper import FormHelper
 
 
 class BaseForm(forms.Form):
@@ -10,6 +11,8 @@ class BaseForm(forms.Form):
         super().__init__(*args, **kwargs)
         if run_form_setup:
             self.set_up_fields(request_user, resource_attributes, project_obj, resource_obj)
+
+        self.helper = FormHelper()
 
     def set_up_users_field(self, request_user, project_obj, resource_obj):
         user_query_set = project_obj.projectuser_set.select_related('user').filter(

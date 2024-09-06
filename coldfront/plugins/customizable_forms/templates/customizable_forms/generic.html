@@ -21,7 +21,10 @@ Request New Allocation
 <hr>
 
 <form method="post">
-  {% crispy form %}
+  {% csrf_token %}
+  {% for field in form %}
+    {{ field|as_crispy_field }}
+  {% endfor %}
   <input class="btn btn-primary" type="submit" value="Submit" />
   {% if after_project_creation == 'true' %}
     <a
