@@ -27,26 +27,26 @@ Request New Allocation
 </p>
 
 <form method="post">
-	{% csrf_token %}
-	{{ form|as_crispy_errors }}
+  {% csrf_token %}
+  {{ form|as_crispy_errors }}
   <fieldset>
     <legend><u>Contact Information</u></legend>
     <div class="row">
-			<div class="col">
-				{{ form.first_name|as_crispy_field }}
-			</div>
-			<div class="col">
-				{{ form.last_name|as_crispy_field }}
-			</div>
-		</div>
+      <div class="col">
+        {{ form.first_name|as_crispy_field }}
+      </div>
+      <div class="col">
+        {{ form.last_name|as_crispy_field }}
+      </div>
+    </div>
     <div class="row">
-			<div class="col">
-				{{ form.username|as_crispy_field }}
-			</div>
-			<div class="col">
-				{{ form.email|as_crispy_field }}
-			</div>
-		</div>
+      <div class="col">
+        {{ form.username|as_crispy_field }}
+      </div>
+      <div class="col">
+        {{ form.email|as_crispy_field }}
+      </div>
+    </div>
     {{ form.phone_number|as_crispy_field }}
     {{ form.primary_contact|as_crispy_field }}
     {{ form.secondary_contact|as_crispy_field }}
@@ -61,16 +61,16 @@ Request New Allocation
   </fieldset>
   <fieldset>
     <legend><u>Storage Info</u></legend>
-    <div>
-      {{ form.storage_space|as_crispy_field }}
-      {{ form.start_date|as_crispy_field }}
-      {{ form.end_date|as_crispy_field }}
-      {{ form.use_indefinitely|as_crispy_field }}
-      {{ form.data_management_plan|as_crispy_field }}
-      {{ form.admin_ads_group|as_crispy_field }}
-      {{ form.user_ads_group|as_crispy_field }}
-      {{ form.data_domains|as_crispy_field }}
-    </div>
+      <div>
+        {{ form.storage_space|as_crispy_field }}
+        {{ form.start_date|as_crispy_field }}
+        {{ form.end_date|as_crispy_field }}
+        {{ form.use_indefinitely|as_crispy_field }}
+        {{ form.data_management_plan|as_crispy_field }}
+        {{ form.admin_ads_group|as_crispy_field }}
+        {{ form.user_ads_group|as_crispy_field }}
+        {{ form.data_domains|as_crispy_field }}
+      </div>
   </fieldset>
   <fieldset>
     <legend><u>Billing Info</u></legend>
@@ -111,19 +111,19 @@ Request New Allocation
   </fieldset>
   {{ form.users|as_crispy_field }}
   <input class="btn btn-primary" type="submit" value="Submit" />
-	{% if after_project_creation == 'true' %}
-		<a
-			class="btn btn-secondary"
-			href="{% url 'custom-allocation-create' project_obj.pk %}?after_project_creation=true"
-			role="button">Back to Resource Selection
-		</a>
-	{% else %}
-		<a
-			class="btn btn-secondary"
-			href="{% url 'custom-allocation-create' project_obj.pk %}"
-			role="button">Back to Resource Selection
-		</a>
-	{% endif %}
+  {% if after_project_creation == 'true' %}
+    <a
+     class="btn btn-secondary"
+     href="{% url 'custom-allocation-create' project_obj.pk %}?after_project_creation=true"
+     role="button">Back to Resource Selection
+    </a>
+  {% else %}
+    <a
+     class="btn btn-secondary"
+     href="{% url 'custom-allocation-create' project_obj.pk %}"
+     role="button">Back to Resource Selection
+    </a>
+  {% endif %}
 </form>
 
 <div id="id_data_best_practices_modal" class="modal fade bd-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="id_data_best_practices_modal_label" aria-hidden="true">
@@ -200,7 +200,7 @@ Request New Allocation
 </div>
 
 <script>
-	$(document).ready(function () {
+  $(document).ready(function () {
     var date = new Date();
     var currentYear = date.getFullYear();
     $(".datepicker")
@@ -247,6 +247,6 @@ Request New Allocation
         $('#div_id_end_date button').prop('disabled', false);
       }
     });
-	})
+  })
 </script>
 {% endblock %}
