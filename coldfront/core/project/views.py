@@ -209,6 +209,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING'] = PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING
         context['ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING'] = ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING
         context['ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING'] = ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING
+        context['enable_customizable_forms'] = 'coldfront.plugins.customizable_forms' in settings.INSTALLED_APPS
 
         try:
             context['ondemand_url'] = settings.ONDEMAND_URL
@@ -902,9 +903,13 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         return path + '?' + urllib.parse.urlencode(kwargs)
 
     def get_success_url(self):
+        url_name = 'allocation-create'
+        if 'coldfront.plugins.customizable_forms' in settings.INSTALLED_APPS:
+            url_name = 'custom-allocation-create'
+
         return self.reverse_with_params(
             reverse(
-                'allocation-create', kwargs={'project_pk': self.object.pk}
+                'custom-allocation-create', kwargs={'project_pk': self.object.pk}
             ),
             after_project_creation='true'
         )

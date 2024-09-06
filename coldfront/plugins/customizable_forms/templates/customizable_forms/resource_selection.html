@@ -1,0 +1,62 @@
+{% extends "common/base.html" %}
+{% load common_tags %}
+{% load static %}
+
+{% block title %}
+Choose a Resource for Your Allocation
+{% endblock %}
+
+{% block content %}
+  <h2>Available Resources <br><small>Project: {{ project_obj.title }}</small></h2>
+  <hr>
+  {% for resource_type, resources in resource_types.items %}
+    <div class="card mb-3">
+      <div class="card-header">
+        <h3>{{ resource_type }}s</h3>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          {% for resource in resources.resources %}
+            <div class="col-6">
+              <div class="card mb-3">
+                <div class="card-header">
+                  <h4 class="d-inline">{{ resource.resource.name }}</h4>
+                  {% if resource.info_link %}
+                    <a href="{{ resource.info_link }}" target="_blank" title="More information"><i class="fas fa-external-link-alt" aria-hidden="true"></i></a>
+                  {% endif %}
+                  <div class="float-right">
+                    {% if resource.limit_reached %}
+                      Allocated, limit reached
+                    {% elif resource.has_account %}
+                      {% if resource.resource.name in resources.allocated %}
+                        Allocated
+                      {% endif %}
+                      <a
+                       class="btn btn-primary"
+                       href="{% url 'resource-form-redirector' resource_pk=resource.resource.pk project_pk=project_obj.pk %}?after_project_creation={{after_project_creation}}"
+                       role="button"
+                      > Request Form</a>
+                    {% else %}
+                      <p>Requires an account. <a href="https://access.iu.edu/Accounts/Create">Please create one</a></p>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="card-body overflow-auto">
+                  <details>
+                    <summary>Details</summary>
+                    <p>{{ resource.resource.description }}</p>
+                  </details>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+  {% if after_project_creation == 'true' %}
+    <a class="btn btn-secondary" href="{% url 'project-add-users-search' project_obj.pk %}?after_project_creation=true" role="button">Skip this step</a><br>
+  {% else %}
+    <a class="btn btn-secondary" href="{% url 'project-detail' project_obj.pk %}" role="button">Back to Project</a><br>
+  {% endif %}
+{% endblock %}
