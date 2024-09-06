@@ -1,7 +1,6 @@
 import logging
 import urllib
 
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import TemplateView, FormView, View
@@ -29,14 +28,6 @@ from coldfront.core.utils.slack import send_message
 from coldfront.core.utils.mail import send_email_template, get_email_recipient_from_groups
 from coldfront.plugins.ldap_user_info.utils import get_user_info
 
-# Include doesn't work for my purpose. What if I set up an ajax call that gets a url and provides the name of the resource?
-# The view that is called will grab the current html file to render based on the resource selected and render that.
-
-# The problem with using the ajax call is there is a delay between the resource selected and the form fields appearing.
-# I can put a loading form animation but it doesn't feel good to select a resource then wait for the form to show up on
-# the same page. Another avenue I'm exploring is having a page that lists all available resources where a user can select
-# one to request that will take them to a different page. This way there are still separate forms and delay of waiting
-# for the page to load feels more natural.
 
 ALLOCATION_ENABLE_CHANGE_REQUESTS_BY_DEFAULT = import_from_settings(
     'ALLOCATION_ENABLE_CHANGE_REQUESTS_BY_DEFAULT', True
