@@ -8,84 +8,84 @@ Request New Allocation
 
 {% block content %}
 <style>
-	label:not(.custom-control-label) {
-		font-weight: bold;
-	}
+  label:not(.custom-control-label) {
+    font-weight: bold;
+  }
 </style>
 
 <h2>Request New {{ resource_obj.name }} Allocation <br><small>Project: {{ project_obj.title }}</small></h2>
 <hr>
 
 <form method="post">
-	{% csrf_token %}
-	{{ form|as_crispy_errors }}
-	<fieldset>
-		<legend><u>Contact Information</u></legend>
-		<div class="row">
-			<div class="col">
-				{{ form.first_name|as_crispy_field }}
-			</div>
-			<div class="col">
-				{{ form.last_name|as_crispy_field }}
-			</div>
-		</div>
-		<div class="row">
-			<div class="col">
-				{{ form.campus_affiliation|as_crispy_field }}
-			</div>
-			<div class="col">
-				{{ form.email|as_crispy_field }}
-			</div>
-		</div>
-	</fieldset>
-	<fieldset>
-		<legend><u>Project Information</u></legend>
-		{{ form.url|as_crispy_field }}
-		{{ form.project_directory_name|as_crispy_field }}
-		{{ form.storage_space|as_crispy_field }}
-		{{ form.start_date|as_crispy_field }}
-	</fieldset>
-	<fieldset>
-		<legend><u>Sensitive Information</u></legend>
-		{{ form.store_ephi|as_crispy_field }}
-	</fieldset>
-	<input class="btn btn-primary" type="submit" value="Submit" />
-	{% if after_project_creation == 'true' %}
-		<a
-			class="btn btn-secondary"
-			href="{% url 'custom-allocation-create' project_obj.pk %}?after_project_creation=true"
-			role="button">Back to Resource Selection
-		</a>
-	{% else %}
-		<a
-			class="btn btn-secondary"
-			href="{% url 'custom-allocation-create' project_obj.pk %}"
-			role="button">Back to Resource Selection
-		</a>
-	{% endif %}
+  {% csrf_token %}
+  {{ form|as_crispy_errors }}
+  <fieldset>
+    <legend><u>Contact Information</u></legend>
+    <div class="row">
+      <div class="col">
+        {{ form.first_name|as_crispy_field }}
+      </div>
+      <div class="col">
+        {{ form.last_name|as_crispy_field }}
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        {{ form.campus_affiliation|as_crispy_field }}
+      </div>
+      <div class="col">
+        {{ form.email|as_crispy_field }}
+      </div>
+    </div>
+  </fieldset>
+  <fieldset>
+  <legend><u>Project Information</u></legend>
+    {{ form.url|as_crispy_field }}
+    {{ form.project_directory_name|as_crispy_field }}
+    {{ form.storage_space|as_crispy_field }}
+    {{ form.start_date|as_crispy_field }}
+  </fieldset>
+  <fieldset>
+    <legend><u>Sensitive Information</u></legend>
+    {{ form.store_ephi|as_crispy_field }}
+  </fieldset>
+  <input class="btn btn-primary" type="submit" value="Submit" />
+  {% if after_project_creation == 'true' %}
+    <a
+     class="btn btn-secondary"
+     href="{% url 'custom-allocation-create' project_obj.pk %}?after_project_creation=true"
+     role="button">Back to Resource Selection
+    </a>
+  {% else %}
+    <a
+     class="btn btn-secondary"
+     href="{% url 'custom-allocation-create' project_obj.pk %}"
+     role="button">Back to Resource Selection
+    </a>
+  {% endif %}
 </form>
 
 <script>
-	$(document).ready(function () {
-		var radios = $("[type=radio]").parent();
-		for (var i = 0; i < radios.length; i++) {
-			radios[i].className = "custom-control custom-radio custom-control-inline";
-		}
+  $(document).ready(function () {
+    var radios = $("[type=radio]").parent();
+    for (var i = 0; i < radios.length; i++) {
+      radios[i].className = "custom-control custom-radio custom-control-inline";
+    }
 		
-		var date = new Date();
-		var currentYear = date.getFullYear();
-		$(".datepicker")
-		.wrap('<div class="input-group">')
-		.datepicker({
-			changeMonth: true,
-			changeYear: true,
-			minDate: 1,
-			maxDate: "+5Y",
-			showOn: "button",
-			buttonText: "Select Date"
-		})
-		.next("button")
-		.addClass("btn btn-secondary")
-	})
+    var date = new Date();
+    var currentYear = date.getFullYear();
+    $(".datepicker")
+    .wrap('<div class="input-group">')
+    .datepicker({
+      changeMonth: true,
+      changeYear: true,
+      minDate: 1,
+      maxDate: "+5Y",
+      showOn: "button",
+      buttonText: "Select Date"
+    })
+    .next("button")
+    .addClass("btn btn-secondary")
+  })
 </script>
 {% endblock %}
