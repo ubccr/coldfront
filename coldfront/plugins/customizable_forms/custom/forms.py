@@ -3,6 +3,7 @@ from datetime import date
 from django import forms
 from django.forms.widgets import RadioSelect
 from django.core.exceptions import ValidationError
+from crispy_forms.helper import FormHelper
 
 from coldfront.plugins.customizable_forms.validators import (ValidateNumberOfUsers,
                                                              ValidateAccountNumber,
@@ -76,12 +77,6 @@ class SlateProjectForm(BaseForm):
     storage_space = forms.IntegerField(min_value=1, max_value=30)
     start_date = forms.DateField(widget=forms.TextInput(attrs={'class': 'datepicker'}))
     store_ephi = forms.ChoiceField(choices=YES_NO_CHOICES, widget=RadioSelect)
-    account_number = forms.CharField(
-        max_length=9,
-        help_text='Required for requests of 15 TB or greater',
-        validators=[ValidateAccountNumber()],
-        required=False
-    )
 
     def __init__(self, request_user, resource_attributes, project_obj, resource_obj, *args, **kwargs):
         super().__init__(request_user, resource_attributes, project_obj, resource_obj, *args, **kwargs)
@@ -92,13 +87,10 @@ class SlateProjectForm(BaseForm):
 
         self.fields['start_date'].widget.attrs.update({'placeholder': 'MM/DD/YYYY'})
 
+        self.helper = FormHelper()
+
     def clean(self):
         cleaned_data = super().clean()
-        if cleaned_data.get('storage_space') > 15:
-            account_number = cleaned_data.get('account_number')
-            if account_number is not None and not account_number:
-                self.add_error('account_number', 'This field is required')
-                raise ValidationError('Please correct the error below')
 
         if cleaned_data.get('start_date') <= date.today():
             self.add_error('start_date', 'Must be later than today')
@@ -201,6 +193,8 @@ class GeodeProjectForm(BaseForm):
 
         self.fields['start_date'].widget.attrs.update({'placeholder': 'MM/DD/YYYY'})
         self.fields['end_date'].widget.attrs.update({'placeholder': 'MM/DD/YYYY'})
+
+        self.helper = FormHelper()
 
     def clean(self):
         cleaned_data = super().clean()

@@ -8,7 +8,7 @@ Request New Allocation
 
 {% block content %}
 <style>
-  label:not(.form-check-label) {
+  label:not(.custom-control-label) {
     font-weight: bold;
   }
 </style>
@@ -201,14 +201,41 @@ Request New Allocation
 
 <script>
 	$(document).ready(function () {
-		var date = new Date();
-		var currentYear = date.getFullYear();
-		$(".datepicker")
-		.datepicker({
-			changeMonth: true,
-			changeYear: true,
-			yearRange: currentYear + ':' + (currentYear + 1),
-		})
+    var date = new Date();
+    var currentYear = date.getFullYear();
+    $(".datepicker")
+    .wrap('<div class="input-group">')
+    .datepicker({
+      changeMonth: true,
+      changeYear: true,
+      minDate: 0,
+      maxDate: "+5Y",
+      showOn: "button",
+      buttonText: "Select Date"
+    })
+    .next("button")
+    .addClass("btn btn-secondary")
+
+    $(
+      '<br>\
+      <div class="custom-control custom-checkbox">\
+      <input id="selectAll" class="custom-control-input" type="checkbox">\
+      <label class="custom-control-label" for="selectAll">\
+      <strong>Select All Users<strong>\
+      </label>\
+      </div>'
+    ).insertAfter($("#div_id_users > label"))
+
+    $("#selectAll").click(function () {
+      $("input[name^='users']").prop('checked', $(this).prop('checked'));
+    });
+
+    $("input[name^='users']").click(function (ele) {
+      var id = $(this).attr('id');
+      if (id != "selectAll") {
+        $("#selectAll").prop('checked', false);
+      }
+    });
 
     $('#id_use_indefinitely').change(function (e) {
       if (e.target.checked) {
