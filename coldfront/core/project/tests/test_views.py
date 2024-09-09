@@ -1,6 +1,6 @@
 import logging
 
-from django.test import TestCase, tag
+from django.test import TestCase, tag, override_settings
 from django.urls import reverse
 
 from coldfront.core.test_helpers import utils
@@ -12,7 +12,11 @@ from coldfront.core.test_helpers.factories import (
     ProjectStatusChoiceFactory,
     ProjectAttributeTypeFactory,
 )
-from coldfront.core.project.models import Project, ProjectUserStatusChoice
+from coldfront.core.project.models import (
+    Project, ProjectUser,
+    ProjectUserRoleChoice,
+    ProjectUserStatusChoice
+)
 
 logging.disable(logging.CRITICAL)
 
@@ -161,7 +165,6 @@ class ProjectAttributeCreateTest(ProjectViewTestBase):
 
     def test_project_attribute_create_value_type_match(self):
         """ProjectAttributeCreate correctly flags value-type mismatch"""
-
         self.client.force_login(self.admin_user,
                     backend='django.contrib.auth.backends.ModelBackend')
         # test that value must be numeric if proj_attr_type is string
@@ -351,7 +354,7 @@ class ProjectNoteCreateViewTest(ProjectViewTestBase):
         self.project_access_tstbase(self.url)
 
 
-class ProjectAddUsersSearchView(ProjectViewTestBase):
+class ProjectAddUsersSearchViewTest(ProjectViewTestBase):
     """Tests for ProjectAddUsersSearchView"""
     def setUp(self):
         """set up users and project for testing"""
@@ -364,6 +367,39 @@ class ProjectAddUsersSearchView(ProjectViewTestBase):
         utils.test_user_can_access(self, self.proj_accessmanager, self.url)# access manager can access
         utils.test_user_cannot_access(self, self.proj_datamanager, self.url)# data manager cannot access
         utils.test_user_cannot_access(self, self.proj_allocation_user, self.url)# user cannot access
+
+class ProjectAddUsersViewTest(ProjectViewTestBase):
+    """Tests for ProjectAddUsersView"""
+    def setUp(self):
+        """set up users and project for testing"""
+        self.url = reverse('project-add-users', kwargs={'pk': self.project.pk})
+
+    @override_settings(PLUGIN_LDAP=True)
+    def test_projectaddusers_ldapsignalfail_messages(self):
+        """Test the messages displayed when the add user signal fails"""
+        self.client.force_login(self.pi_user)
+
+    def test_add_users_form_validation(self):
+        """Test that the formset and allocation form are validated correctly"""
+        self.client.force_login(self.proj_accessmanager)
+        # Prepare form data for adding a user
+        form_data = {
+            'q': 'search_user',
+            'search_by': 'username',
+            'userform-TOTAL_FORMS': '1',
+            'userform-INITIAL_FORMS': '0',
+            'userform-MIN_NUM_FORMS': '0',
+            'userform-MAX_NUM_FORMS': '1',
+            'userform-0-selected': 'on',
+            'userform-0-role': ProjectUserRoleChoice.objects.get(name='User').pk,
+            'userform-0-username': self.nonproj_allocation_user.username,
+            'allocationform-allocation': [self.proj_allocation.pk]
+        }
+        response = self.client.post(self.url, data=form_data)
+        self.assertEqual(response.url, reverse('project-detail', kwargs={'pk': self.project.pk}))
+        self.assertEqual(response.status_code, 302)
+        # Check that user was added
+        self.assertTrue(ProjectUser.objects.filter(project=self.project, user=self.nonproj_allocation_user).exists())
 
 
 class ProjectUserDetailViewTest(ProjectViewTestBase):

@@ -1,5 +1,5 @@
 """utility functions for unit and integration testing"""
-from bs4 import BeautifulSoup
+from beautifulsoup4 import BeautifulSoup
 
 def page_contains_for_user(test_case, user, url, text):
     """Check that page contains text for user"""

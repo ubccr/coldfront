@@ -749,15 +749,20 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
     def get(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         project_obj = get_object_or_404(Project, pk=pk)
-        users_to_remove = self.get_users_to_remove(project_obj)
+        users_list = self.get_users_to_remove(project_obj)
 
         # if ldap is activated, prevent selection of users with project corresponding to primary group
         signal_response = project_filter_users_to_remove.send(
-            sender=self.__class__, users_to_remove=users_to_remove, project=project_obj
+            sender=self.__class__, users_to_remove=users_list, project=project_obj
         )
-        user_categories = signal_response[0][1]
-        users_no_removal = user_categories[0]
-        users_to_remove = user_categories[1]
+        print('signal_response', signal_response)
+        if signal_response:
+            user_categories = signal_response[0][1]
+            users_no_removal = user_categories[0]
+            users_to_remove = user_categories[1]
+        else:
+            users_no_removal = users_list
+            users_to_remove = []
 
         context = {}
 
@@ -781,9 +786,11 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         signal_response = project_filter_users_to_remove.send(
             sender=self.__class__, users_to_remove=users_to_remove, project=project_obj
         )
-        user_categories = signal_response[0][1]
-        users_no_removal = user_categories[0]
-        users_to_remove = user_categories[1]
+        if signal_response:
+            user_categories = signal_response[0][1]
+            users_to_remove = user_categories[1]
+        else:
+            users_to_remove = users_to_remove
 
         formset = formset_factory(ProjectRemoveUserForm, max_num=len(users_to_remove))
         formset = formset(request.POST, initial=users_to_remove, prefix='userform')
