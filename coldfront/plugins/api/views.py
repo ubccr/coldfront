@@ -8,6 +8,8 @@ from ifxuser.models import Organization
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.renderers import AdminRenderer, JSONRenderer
+from rest_framework import filters as drf_filters
+
 from simple_history.utils import get_history_model_for_model
 
 from coldfront.core.utils.common import import_from_settings
@@ -94,10 +96,10 @@ class AllocationRequestFilter(filters.FilterSet):
     created_before is the date the request was created before.
     created_after is the date the request was created after.
     '''
-    created = filters.DateFromToRangeFilter()
-    fulfilled = filters.BooleanFilter(method='filter_fulfilled')
-    fulfilled_date = filters.DateFromToRangeFilter()
-    time_to_fulfillment = filters.NumericRangeFilter(method='filter_time_to_fulfillment')
+    created = filters.DateFromToRangeFilter(label='Created Range')
+    fulfilled = filters.BooleanFilter(label='Fulfilled', method='filter_fulfilled')
+    fulfilled_date = filters.DateFromToRangeFilter(label='Fulfilled Date Range')
+    time_to_fulfillment = filters.NumericRangeFilter(label='Time-to-fulfillment Range', method='filter_time_to_fulfillment')
 
     class Meta:
         model = Allocation
@@ -151,10 +153,12 @@ class AllocationRequestViewSet(viewsets.ReadOnlyModelViewSet):
         Set to the maximum/minimum number of days between request creation and time_to_fulfillment.
     '''
     serializer_class = serializers.AllocationRequestSerializer
-    filter_backends = (filters.DjangoFilterBackend,)
+    filter_backends = (filters.DjangoFilterBackend, drf_filters.OrderingFilter)
     filterset_class = AllocationRequestFilter
     permission_classes = [IsAuthenticated, IsAdminUser]
-    renderer_classes = [CustomAdminRenderer, JSONRenderer]
+    renderer_classes = [AdminRenderer, JSONRenderer]
+    ordering_fields = ['id', 'project', 'pi', 'status', 'requested_size', 'created', 'fulfilled_date', 'time_to_fulfillment']
+    ordering = ['created']
 
     def get_queryset(self):
         HistoricalAllocation = get_history_model_for_model(Allocation)
@@ -171,7 +175,7 @@ class AllocationRequestViewSet(viewsets.ReadOnlyModelViewSet):
         # Annotate allocations with the status_id of their earliest historical record
         allocations = Allocation.objects.annotate(
             earliest_status_name=Subquery(earliest_history)
-        ).filter(earliest_status_name='New').order_by('created')
+        ).filter(earliest_status_name='New')
 
         allocations = allocations.annotate(
             fulfilled_date=Subquery(fulfilled_date)
