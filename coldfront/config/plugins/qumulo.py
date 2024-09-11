@@ -6,13 +6,13 @@ from coldfront.config.base import (
 )
 from coldfront.config.env import ENV
 
-if "coldfront.plugins.qumulo" not in INSTALLED_APPS:
-    INSTALLED_APPS += [
-        "coldfront.plugins.qumulo",
-    ]
 
-    STATICFILES_DIRS += [
-        PROJECT_ROOT("coldfront/plugins/qumulo/static"),
-    ]
+INSTALLED_APPS += [
+    "coldfront.plugins.qumulo",
+]
 
-    TEMPLATES[0]["DIRS"] += [PROJECT_ROOT("coldfront/plugins/qumulo/templates")]
+STATICFILES_DIRS += [
+    PROJECT_ROOT("coldfront/plugins/qumulo/static"),
+]
+
+TEMPLATES[0]["DIRS"] += [PROJECT_ROOT("coldfront/plugins/qumulo/templates")]
