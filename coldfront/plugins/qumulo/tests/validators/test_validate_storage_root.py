@@ -1,6 +1,6 @@
 from django.test import TestCase
 
-from coldfront_plugin_qumulo.validators import validate_storage_root
+from coldfront.plugins.qumulo.validators import validate_storage_root
 from django.core.exceptions import ValidationError
 
 import os

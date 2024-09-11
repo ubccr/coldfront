@@ -1,6 +1,6 @@
 from django.test import TestCase
 from django.core.exceptions import ValidationError
-from coldfront_plugin_qumulo.validators import validate_leading_forward_slash
+from coldfront.plugins.qumulo.validators import validate_leading_forward_slash
 
 
 class TestValidateLeadingForwardSlash(TestCase):

@@ -1,13 +1,13 @@
 from django.test import TestCase
 from unittest.mock import patch, MagicMock
 
-from coldfront_plugin_qumulo.utils.qumulo_api import QumuloAPI
-from coldfront_plugin_qumulo.utils.aces_manager import AcesManager
+from coldfront.plugins.qumulo.utils.qumulo_api import QumuloAPI
+from coldfront.plugins.qumulo.utils.aces_manager import AcesManager
 
 from deepdiff import DeepDiff
 
 
-@patch("coldfront_plugin_qumulo.utils.qumulo_api.RestClient")
+@patch("coldfront.plugins.qumulo.utils.qumulo_api.RestClient")
 class SetupAllocation(TestCase):
     def test_calls_create_directory_if_root_path(self, mock_RestClient: MagicMock):
         mock_create_directory = MagicMock()
@@ -17,7 +17,7 @@ class SetupAllocation(TestCase):
 
         qumulo_instance = QumuloAPI()
 
-        with patch("coldfront_plugin_qumulo.utils.qumulo_api.open") as mock_open:
+        with patch("coldfront.plugins.qumulo.utils.qumulo_api.open") as mock_open:
             qumulo_instance.setup_allocation(fs_path)
 
             mock_create_directory.assert_called_once_with(
@@ -46,7 +46,7 @@ class SetupAllocation(TestCase):
 
         qumulo_instance = QumuloAPI()
 
-        with patch("coldfront_plugin_qumulo.utils.qumulo_api.open") as mock_open:
+        with patch("coldfront.plugins.qumulo.utils.qumulo_api.open") as mock_open:
             qumulo_instance.setup_allocation(fs_path)
 
             mock_set_acl_v2.assert_called_once()

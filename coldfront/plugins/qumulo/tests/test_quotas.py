@@ -7,8 +7,8 @@ from coldfront.core.allocation.models import (
     AllocationAttribute,
     AllocationAttributeType,
 )
-from coldfront_plugin_qumulo.tasks import ingest_quotas_with_daily_usage
-from coldfront_plugin_qumulo.tests.utils.mock_data import (
+from coldfront.plugins.qumulo.tasks import ingest_quotas_with_daily_usage
+from coldfront.plugins.qumulo.tests.utils.mock_data import (
     build_models,
     create_allocation,
 )
@@ -278,7 +278,7 @@ class TestIngestAllocationDailyUsages(TestCase):
             self.assertEqual(allocation_attribute_usage.value, 0)
             self.assertEqual(allocation_attribute_usage.history.first().value, 0)
 
-    @patch("coldfront_plugin_qumulo.tasks.QumuloAPI")
+    @patch("coldfront.plugins.qumulo.tasks.QumuloAPI")
     def test_after_getting_daily_usages_from_qumulo_api(
         self, qumulo_api_mock: MagicMock
     ) -> None:

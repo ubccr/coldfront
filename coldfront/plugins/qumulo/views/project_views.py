@@ -4,7 +4,7 @@ from coldfront.core.project.models import (Project,
                                            ProjectUser,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice)
-from coldfront_plugin_qumulo.forms import ProjectCreateForm
+from coldfront.plugins.qumulo.forms import ProjectCreateForm
 
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User

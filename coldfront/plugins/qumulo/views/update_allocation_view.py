@@ -13,10 +13,10 @@ from coldfront.core.allocation.models import (
     AllocationChangeStatusChoice,
     AllocationUser,
 )
-from coldfront_plugin_qumulo.forms import UpdateAllocationForm
-from coldfront_plugin_qumulo.views.allocation_view import AllocationView
-from coldfront_plugin_qumulo.utils.acl_allocations import AclAllocations
-from coldfront_plugin_qumulo.utils.active_directory_api import ActiveDirectoryAPI
+from coldfront.plugins.qumulo.forms import UpdateAllocationForm
+from coldfront.plugins.qumulo.views.allocation_view import AllocationView
+from coldfront.plugins.qumulo.utils.acl_allocations import AclAllocations
+from coldfront.plugins.qumulo.utils.active_directory_api import ActiveDirectoryAPI
 
 
 class UpdateAllocationView(AllocationView):

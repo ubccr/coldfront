@@ -4,8 +4,8 @@ import re
 import time
 import urllib.parse
 
-from coldfront_plugin_qumulo.utils.aces_manager import AcesManager
-from coldfront_plugin_qumulo import constants
+from coldfront.plugins.qumulo.utils.aces_manager import AcesManager
+from coldfront.plugins.qumulo import constants
 
 from qumulo.lib.request import RequestError
 from qumulo.rest_client import RestClient

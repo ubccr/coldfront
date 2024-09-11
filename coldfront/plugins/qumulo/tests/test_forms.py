@@ -9,22 +9,22 @@ from coldfront.core.project.models import Project, ProjectStatusChoice
 from coldfront.core.user.models import User
 from coldfront.core.field_of_science.models import FieldOfScience
 
-from coldfront_plugin_qumulo.forms import AllocationForm, ProjectCreateForm
-from coldfront_plugin_qumulo.tests.helper_classes.filesystem_path import (
+from coldfront.plugins.qumulo.forms import AllocationForm, ProjectCreateForm
+from coldfront.plugins.qumulo.tests.helper_classes.filesystem_path import (
     PathExistsMock,
     ValidFormPathMock,
 )
-from coldfront_plugin_qumulo.tests.utils.mock_data import (
+from coldfront.plugins.qumulo.tests.utils.mock_data import (
     build_models,
     build_models_without_project,
 )
 
 
-@patch("coldfront_plugin_qumulo.validators.ActiveDirectoryAPI")
+@patch("coldfront.plugins.qumulo.validators.ActiveDirectoryAPI")
 class AllocationFormTests(TestCase):
     def setUp(self):
         build_data = build_models()
-        self.patcher = patch("coldfront_plugin_qumulo.validators.QumuloAPI")
+        self.patcher = patch("coldfront.plugins.qumulo.validators.QumuloAPI")
         self.mock_qumulo_api = self.patcher.start()
         os.environ["STORAGE2_PATH"] = "/path/to"
 
@@ -238,7 +238,7 @@ class AllocationFormTests(TestCase):
 class AllocationFormProjectChoiceTests(TestCase):
     def setUp(self):
         build_models_without_project()
-        self.patcher = patch("coldfront_plugin_qumulo.validators.QumuloAPI")
+        self.patcher = patch("coldfront.plugins.qumulo.validators.QumuloAPI")
         self.mock_qumulo_api = self.patcher.start()
 
         self.activeStatus = ProjectStatusChoice.objects.get(name="Active")
@@ -332,7 +332,7 @@ class AllocationFormProjectChoiceTests(TestCase):
         )
 
 
-@patch("coldfront_plugin_qumulo.validators.ActiveDirectoryAPI")
+@patch("coldfront.plugins.qumulo.validators.ActiveDirectoryAPI")
 class ProjectFormTests(TestCase):
     def setUp(self):
         self.fieldOfScience = FieldOfScience.objects.create(description="Bummerology")

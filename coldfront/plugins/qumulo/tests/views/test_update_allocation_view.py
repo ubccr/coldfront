@@ -3,12 +3,12 @@ from unittest.mock import patch, call, MagicMock
 
 from coldfront.core.allocation.models import AllocationUser
 
-from coldfront_plugin_qumulo.views.update_allocation_view import UpdateAllocationView
-from coldfront_plugin_qumulo.tests.utils.mock_data import (
+from coldfront.plugins.qumulo.views.update_allocation_view import UpdateAllocationView
+from coldfront.plugins.qumulo.tests.utils.mock_data import (
     create_allocation,
     build_models,
 )
-from coldfront_plugin_qumulo.utils.acl_allocations import AclAllocations
+from coldfront.plugins.qumulo.utils.acl_allocations import AclAllocations
 
 from coldfront.core.allocation.models import (
     AllocationChangeRequest,
@@ -19,7 +19,7 @@ from coldfront.core.allocation.models import (
 )
 
 
-@patch("coldfront_plugin_qumulo.views.update_allocation_view.ActiveDirectoryAPI")
+@patch("coldfront.plugins.qumulo.views.update_allocation_view.ActiveDirectoryAPI")
 class UpdateAllocationViewTests(TestCase):
     def setUp(self):
         self.client = Client()
@@ -141,7 +141,7 @@ class UpdateAllocationViewTests(TestCase):
         storage_allocation = create_allocation(self.project, self.user, form_data)
 
         with patch(
-            "coldfront_plugin_qumulo.views.update_allocation_view.AclAllocations.add_user_to_access_allocation",
+            "coldfront.plugins.qumulo.views.update_allocation_view.AclAllocations.add_user_to_access_allocation",
         ) as mock_add_user_to_access_allocation:
             UpdateAllocationView.set_access_users(
                 "rw", form_data["rw_users"], storage_allocation
@@ -170,7 +170,7 @@ class UpdateAllocationViewTests(TestCase):
         new_rw_users.append("baz")
 
         with patch(
-            "coldfront_plugin_qumulo.views.update_allocation_view.AclAllocations.add_user_to_access_allocation",
+            "coldfront.plugins.qumulo.views.update_allocation_view.AclAllocations.add_user_to_access_allocation",
         ) as mock_add_user_to_access_allocation:
             UpdateAllocationView.set_access_users(
                 "rw", new_rw_users, storage_allocation
@@ -200,7 +200,7 @@ class UpdateAllocationViewTests(TestCase):
         }
 
         with patch(
-            "coldfront_plugin_qumulo.signals.update_user_with_additional_data"
+            "coldfront.plugins.qumulo.signals.update_user_with_additional_data"
         ) as mock_update:
             storage_allocation = create_allocation(self.project, self.user, form_data)
             update_calls = [
@@ -214,7 +214,7 @@ class UpdateAllocationViewTests(TestCase):
         new_rw_users: list = form_data["rw_users"].copy() + extra_users
 
         with patch(
-            "coldfront_plugin_qumulo.views.update_allocation_view.AclAllocations.add_user_to_access_allocation",
+            "coldfront.plugins.qumulo.views.update_allocation_view.AclAllocations.add_user_to_access_allocation",
         ) as mock_add_user_to_access_allocation:
             UpdateAllocationView.set_access_users(
                 "rw", new_rw_users, storage_allocation

@@ -11,8 +11,8 @@ from coldfront.core.allocation.models import (
     AllocationAttribute,
 )
 
-from coldfront_plugin_qumulo.utils.acl_allocations import AclAllocations
-from coldfront_plugin_qumulo.management.commands.qumulo_plugin_setup import (
+from coldfront.plugins.qumulo.utils.acl_allocations import AclAllocations
+from coldfront.plugins.qumulo.management.commands.qumulo_plugin_setup import (
     call_base_commands,
 )
 

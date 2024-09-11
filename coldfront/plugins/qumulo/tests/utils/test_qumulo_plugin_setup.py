@@ -1,6 +1,6 @@
 from django.test import TestCase
 from coldfront.core.allocation.models import AllocationStatusChoice
-from coldfront_plugin_qumulo.management.commands.add_allocation_status import (
+from coldfront.plugins.qumulo.management.commands.add_allocation_status import (
     Command,
 )
 

@@ -1,4 +1,4 @@
-from coldfront_plugin_qumulo.utils.active_directory_api import ActiveDirectoryAPI
+from coldfront.plugins.qumulo.utils.active_directory_api import ActiveDirectoryAPI
 from typing import Optional
 
 from coldfront.core.allocation.models import (
@@ -12,8 +12,8 @@ from coldfront.core.allocation.models import (
     User,
 )
 
-from coldfront_plugin_qumulo.utils.qumulo_api import QumuloAPI
-from coldfront_plugin_qumulo.utils.aces_manager import AcesManager
+from coldfront.plugins.qumulo.utils.qumulo_api import QumuloAPI
+from coldfront.plugins.qumulo.utils.aces_manager import AcesManager
 
 from ldap3.core.exceptions import LDAPException
 

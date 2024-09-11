@@ -1,5 +1,5 @@
 from django.test import TestCase
-from coldfront_plugin_qumulo.utils.qumulo_api import QumuloAPI
+from coldfront.plugins.qumulo.utils.qumulo_api import QumuloAPI
 
 
 class TestListNFSExports(TestCase):

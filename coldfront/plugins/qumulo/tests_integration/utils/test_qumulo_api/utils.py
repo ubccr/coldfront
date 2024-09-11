@@ -1,4 +1,4 @@
-from coldfront_plugin_qumulo.utils.qumulo_api import QumuloAPI
+from coldfront.plugins.qumulo.utils.qumulo_api import QumuloAPI
 
 
 def create_test_export(

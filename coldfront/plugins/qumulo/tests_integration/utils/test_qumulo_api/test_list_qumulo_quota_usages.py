@@ -1,6 +1,6 @@
 from django.test import TestCase
-from coldfront_plugin_qumulo.utils.qumulo_api import QumuloAPI
-from coldfront_plugin_qumulo.tests_integration.utils.test_qumulo_api.utils import (
+from coldfront.plugins.qumulo.utils.qumulo_api import QumuloAPI
+from coldfront.plugins.qumulo.tests_integration.utils.test_qumulo_api.utils import (
     print_all_quotas_with_usage,
 )
 

@@ -5,11 +5,11 @@ from django.core.exceptions import ValidationError
 
 from coldfront.core.allocation.models import AllocationStatusChoice
 
-from coldfront_plugin_qumulo.tests.helper_classes.filesystem_path import (
+from coldfront.plugins.qumulo.tests.helper_classes.filesystem_path import (
     ValidFormPathMock,
 )
-from coldfront_plugin_qumulo.validators import validate_filesystem_path_unique
-from coldfront_plugin_qumulo.tests.utils.mock_data import (
+from coldfront.plugins.qumulo.validators import validate_filesystem_path_unique
+from coldfront.plugins.qumulo.tests.utils.mock_data import (
     build_models,
     build_user_plus_project,
     create_allocation,
@@ -58,7 +58,7 @@ existing_path_mocked_response = {
 class TestValidateFilesystemPathUnique(TestCase):
     def setUp(self):
         build_models()
-        self.patcher = patch("coldfront_plugin_qumulo.validators.QumuloAPI")
+        self.patcher = patch("coldfront.plugins.qumulo.validators.QumuloAPI")
         self.mock_qumulo_api = self.patcher.start()
         self.mock_get_file_attr = None
 

@@ -1,10 +1,10 @@
 from django.test import TestCase
 from unittest.mock import patch, MagicMock, PropertyMock
-from coldfront_plugin_qumulo.utils.qumulo_api import QumuloAPI
+from coldfront.plugins.qumulo.utils.qumulo_api import QumuloAPI
 
 
 @patch.object(QumuloAPI, "get_id", MagicMock())
-@patch("coldfront_plugin_qumulo.utils.qumulo_api.RestClient")
+@patch("coldfront.plugins.qumulo.utils.qumulo_api.RestClient")
 class DeleteProtocol(TestCase):
     def test_gets_nfs_export_id(self, mock_RestClient: MagicMock):
         with patch.object(QumuloAPI, "get_id", MagicMock()) as mock_get_id:

@@ -1,7 +1,7 @@
 from typing import Optional
 from django.contrib.auth.models import User
 
-from coldfront_plugin_qumulo.utils.active_directory_api import ActiveDirectoryAPI
+from coldfront.plugins.qumulo.utils.active_directory_api import ActiveDirectoryAPI
 
 import sys
 

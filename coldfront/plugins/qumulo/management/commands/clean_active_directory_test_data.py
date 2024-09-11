@@ -1,4 +1,4 @@
-from coldfront_plugin_qumulo.utils.active_directory_api import ActiveDirectoryAPI
+from coldfront.plugins.qumulo.utils.active_directory_api import ActiveDirectoryAPI
 from django.core.management.base import BaseCommand, CommandParser
 
 import os

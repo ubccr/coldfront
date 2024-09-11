@@ -1,6 +1,6 @@
 from django.test import TestCase
 from unittest.mock import patch, call, MagicMock
-from coldfront_plugin_qumulo.utils.active_directory_api import ActiveDirectoryAPI
+from coldfront.plugins.qumulo.utils.active_directory_api import ActiveDirectoryAPI
 from ldap3 import MODIFY_DELETE
 
 import os
@@ -10,7 +10,7 @@ load_dotenv(override=True)
 
 
 class TestActiveDirectoryAPI(TestCase):
-    @patch("coldfront_plugin_qumulo.utils.active_directory_api.Connection")
+    @patch("coldfront.plugins.qumulo.utils.active_directory_api.Connection")
     def setUp(self, mock_connection):
         self.mock_connection = mock_connection.return_value
         self.ad_api = ActiveDirectoryAPI()
@@ -56,7 +56,7 @@ class TestActiveDirectoryAPI(TestCase):
 
     def test_get_user_returns_value_error_on_invalid_wustlkey(self):
         with patch(
-            "coldfront_plugin_qumulo.utils.active_directory_api.Connection.search",
+            "coldfront.plugins.qumulo.utils.active_directory_api.Connection.search",
             return_value=[],
         ):
             with self.assertRaises(ValueError) as context:
@@ -77,13 +77,13 @@ class TestActiveDirectoryAPI(TestCase):
         )
 
     @patch(
-        "coldfront_plugin_qumulo.utils.active_directory_api.ActiveDirectoryAPI.get_group_dn"
+        "coldfront.plugins.qumulo.utils.active_directory_api.ActiveDirectoryAPI.get_group_dn"
     )
     @patch(
-        "coldfront_plugin_qumulo.utils.active_directory_api.ActiveDirectoryAPI.get_user"
+        "coldfront.plugins.qumulo.utils.active_directory_api.ActiveDirectoryAPI.get_user"
     )
     @patch(
-        "coldfront_plugin_qumulo.utils.active_directory_api.ad_add_members_to_groups"
+        "coldfront.plugins.qumulo.utils.active_directory_api.ad_add_members_to_groups"
     )
     def test_add_user_to_ad_group_adds_wustlkey_to_group(
         self, mock_ad_add_members_to_groups, mock_get_user, mock_get_group_dn
@@ -202,7 +202,7 @@ class TestActiveDirectoryAPI(TestCase):
 
         self.mock_connection.search.assert_has_calls([call(groups_OU, expected_filter)])
 
-    @patch("coldfront_plugin_qumulo.utils.active_directory_api.Connection")
+    @patch("coldfront.plugins.qumulo.utils.active_directory_api.Connection")
     def test_remove_user_from_group_calls_modify(self, mock_connection):
         group_name = "some_group_name"
         user_name = "some_user_name"

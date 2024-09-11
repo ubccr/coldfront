@@ -1,6 +1,6 @@
 from django.test import TestCase
-from coldfront_plugin_qumulo.utils.qumulo_api import QumuloAPI
-from coldfront_plugin_qumulo.tests_integration.utils.test_qumulo_api.utils import (
+from coldfront.plugins.qumulo.utils.qumulo_api import QumuloAPI
+from coldfront.plugins.qumulo.tests_integration.utils.test_qumulo_api.utils import (
     create_test_export,
 )
 from qumulo.commands.nfs import parse_nfs_export_restrictions

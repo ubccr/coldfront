@@ -10,9 +10,9 @@ from coldfront.core.allocation.models import (
 )
 from coldfront.core.resource.models import Resource
 
-from coldfront_plugin_qumulo.utils.qumulo_api import QumuloAPI
-from coldfront_plugin_qumulo.utils.acl_allocations import AclAllocations
-from coldfront_plugin_qumulo.utils.active_directory_api import ActiveDirectoryAPI
+from coldfront.plugins.qumulo.utils.qumulo_api import QumuloAPI
+from coldfront.plugins.qumulo.utils.acl_allocations import AclAllocations
+from coldfront.plugins.qumulo.utils.active_directory_api import ActiveDirectoryAPI
 
 from qumulo.lib.request import RequestError
 

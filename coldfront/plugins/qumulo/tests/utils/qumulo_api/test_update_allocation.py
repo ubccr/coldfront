@@ -1,10 +1,10 @@
 from django.test import TestCase
 from unittest.mock import call, patch, MagicMock
-from coldfront_plugin_qumulo.utils.qumulo_api import QumuloAPI
+from coldfront.plugins.qumulo.utils.qumulo_api import QumuloAPI
 from qumulo.lib.request import RequestError
 
 
-@patch("coldfront_plugin_qumulo.utils.qumulo_api.RestClient")
+@patch("coldfront.plugins.qumulo.utils.qumulo_api.RestClient")
 class UpdateAllocation(TestCase):
     def test_rejects_when_missing_protocol(self, mock_RestClient: MagicMock):
         qumulo_instance = QumuloAPI()

@@ -6,8 +6,8 @@ from django import forms
 from coldfront.core.project.models import Project
 from coldfront.core.user.models import User
 from coldfront.core.field_of_science.models import FieldOfScience
-from coldfront_plugin_qumulo.fields import ADUserField, StorageFileSystemPathField
-from coldfront_plugin_qumulo.validators import (
+from coldfront.plugins.qumulo.fields import ADUserField, StorageFileSystemPathField
+from coldfront.plugins.qumulo.validators import (
     validate_leading_forward_slash,
     validate_single_ad_user_skip_admin,
     validate_single_ad_user,
@@ -15,7 +15,7 @@ from coldfront_plugin_qumulo.validators import (
     validate_storage_name,
 )
 
-from coldfront_plugin_qumulo.constants import STORAGE_SERVICE_RATES, PROTOCOL_OPTIONS
+from coldfront.plugins.qumulo.constants import STORAGE_SERVICE_RATES, PROTOCOL_OPTIONS
 
 
 from coldfront.core.allocation.models import (

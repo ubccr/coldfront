@@ -1,7 +1,7 @@
 from django.test import TestCase
 
-from coldfront_plugin_qumulo.validators import validate_storage_name
-from coldfront_plugin_qumulo.tests.utils.mock_data import (
+from coldfront.plugins.qumulo.validators import validate_storage_name
+from coldfront.plugins.qumulo.tests.utils.mock_data import (
     build_models,
     create_allocation,
     default_form_data,

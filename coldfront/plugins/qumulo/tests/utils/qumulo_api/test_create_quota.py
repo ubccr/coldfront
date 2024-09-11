@@ -1,9 +1,9 @@
 from django.test import TestCase
 from unittest.mock import patch, MagicMock, PropertyMock
-from coldfront_plugin_qumulo.utils.qumulo_api import QumuloAPI
+from coldfront.plugins.qumulo.utils.qumulo_api import QumuloAPI
 
 
-@patch("coldfront_plugin_qumulo.utils.qumulo_api.RestClient")
+@patch("coldfront.plugins.qumulo.utils.qumulo_api.RestClient")
 class CreateQuota(TestCase):
     def test_calls_get_file_attr(self, mock_RestClient: MagicMock):
         mock_quota = PropertyMock(return_value=MagicMock())

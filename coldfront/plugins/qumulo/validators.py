@@ -11,8 +11,8 @@ from coldfront.core.allocation.models import (
     AllocationStatusChoice,
 )
 
-from coldfront_plugin_qumulo.utils.active_directory_api import ActiveDirectoryAPI
-from coldfront_plugin_qumulo.utils.qumulo_api import QumuloAPI
+from coldfront.plugins.qumulo.utils.active_directory_api import ActiveDirectoryAPI
+from coldfront.plugins.qumulo.utils.qumulo_api import QumuloAPI
 
 from pathlib import PurePath
 from qumulo.lib import request

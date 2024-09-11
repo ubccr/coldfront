@@ -3,12 +3,12 @@ from unittest.mock import patch, MagicMock
 
 from coldfront.core.allocation.models import Allocation
 
-from coldfront_plugin_qumulo.tests.utils.mock_data import build_models
-from coldfront_plugin_qumulo.views.allocation_view import AllocationView
+from coldfront.plugins.qumulo.tests.utils.mock_data import build_models
+from coldfront.plugins.qumulo.views.allocation_view import AllocationView
 
 
-@patch("coldfront_plugin_qumulo.views.allocation_view.AclAllocations")
-@patch("coldfront_plugin_qumulo.validators.ActiveDirectoryAPI")
+@patch("coldfront.plugins.qumulo.views.allocation_view.AclAllocations")
+@patch("coldfront.plugins.qumulo.validators.ActiveDirectoryAPI")
 class AllocationViewTests(TestCase):
     def setUp(self):
         build_data = build_models()

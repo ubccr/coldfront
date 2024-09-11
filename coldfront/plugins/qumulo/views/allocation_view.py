@@ -19,9 +19,9 @@ from coldfront.core.allocation.models import (
     AllocationUser,
 )
 
-from coldfront_plugin_qumulo.forms import AllocationForm
-from coldfront_plugin_qumulo.utils.acl_allocations import AclAllocations
-from coldfront_plugin_qumulo.validators import validate_filesystem_path_unique
+from coldfront.plugins.qumulo.forms import AllocationForm
+from coldfront.plugins.qumulo.utils.acl_allocations import AclAllocations
+from coldfront.plugins.qumulo.validators import validate_filesystem_path_unique
 
 from pathlib import PurePath
 

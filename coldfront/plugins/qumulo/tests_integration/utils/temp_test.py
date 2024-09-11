@@ -1,4 +1,4 @@
-from coldfront_plugin_qumulo.utils.qumulo_api import QumuloAPI
+from coldfront.plugins.qumulo.utils.qumulo_api import QumuloAPI
 import json
 
 # jprew - TODO - what is this file?

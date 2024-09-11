@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 from django.contrib.auth.models import User
 
-from coldfront_plugin_qumulo.utils.update_user_data import (
+from coldfront.plugins.qumulo.utils.update_user_data import (
     update_user_with_additional_data,
 )
 
@@ -20,7 +20,7 @@ class TestUpdateUserData(TestCase):
     def test_update_user_with_additional_data_saves_user(self):
         wustlkey = "test_wustlkey"
         with patch(
-            "coldfront_plugin_qumulo.utils.update_user_data.ActiveDirectoryAPI"
+            "coldfront.plugins.qumulo.utils.update_user_data.ActiveDirectoryAPI"
         ) as mock_init:
             mock_instance = MagicMock()
             mock_init.return_value = mock_instance

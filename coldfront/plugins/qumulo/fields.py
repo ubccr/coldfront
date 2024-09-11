@@ -1,14 +1,14 @@
 import os
 from django import forms
 
-from coldfront_plugin_qumulo.validators import (
+from coldfront.plugins.qumulo.validators import (
     validate_ad_users,
     validate_filesystem_path_unique,
     validate_parent_directory,
     validate_storage_root,
 )
 
-from coldfront_plugin_qumulo.widgets import MultiSelectLookupInput
+from coldfront.plugins.qumulo.widgets import MultiSelectLookupInput
 
 from pathlib import PurePath
 

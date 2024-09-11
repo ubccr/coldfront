@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 
 from coldfront.core.user.models import User
 
-from coldfront_plugin_qumulo.validators import validate_single_ad_user
+from coldfront.plugins.qumulo.validators import validate_single_ad_user
 
 
 class PrincipalInvestigatorField(forms.CharField):

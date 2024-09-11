@@ -1,1 +1,1 @@
-default_app_config = "coldfront_plugin_qumulo.apps.QumuloConfig"
+default_app_config = "coldfront.plugins.qumulo.apps.QumuloConfig"

@@ -1,7 +1,7 @@
 from django.test import TestCase, Client
 from unittest.mock import patch, MagicMock
 
-from coldfront_plugin_qumulo.tests.utils.mock_data import (
+from coldfront.plugins.qumulo.tests.utils.mock_data import (
     create_allocation,
     build_models,
 )
@@ -26,8 +26,8 @@ def mock_get_attribute(name):
     return attribute_dict[name]
 
 
-@patch("coldfront_plugin_qumulo.signals.QumuloAPI")
-@patch("coldfront_plugin_qumulo.utils.acl_allocations.ActiveDirectoryAPI")
+@patch("coldfront.plugins.qumulo.signals.QumuloAPI")
+@patch("coldfront.plugins.qumulo.utils.acl_allocations.ActiveDirectoryAPI")
 class TestSignals(TestCase):
     def setUp(self) -> int:
         self.client = Client()
@@ -77,7 +77,7 @@ class TestSignals(TestCase):
             limit_in_bytes=mock_get_attribute("storage_quota") * (2**40),
         )
 
-    @patch("coldfront_plugin_qumulo.signals.logging.getLogger")
+    @patch("coldfront.plugins.qumulo.signals.logging.getLogger")
     def test_allocation_activate_handles_missing_attribute_error(
         self,
         mock_getLogger: MagicMock,
@@ -125,7 +125,7 @@ class TestSignals(TestCase):
         qumulo_instance = mock_QumuloAPI.return_value
 
         with patch(
-            "coldfront_plugin_qumulo.signals.AclAllocations.remove_acl_access"
+            "coldfront.plugins.qumulo.signals.AclAllocations.remove_acl_access"
         ) as mock_remove_acl_access:
             allocation_disable.send(
                 sender=self.__class__, allocation_pk=self.storage_allocation.pk

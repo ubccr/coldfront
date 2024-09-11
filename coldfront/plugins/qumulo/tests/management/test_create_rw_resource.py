@@ -1,7 +1,7 @@
 from django.test import TestCase
 
 # jprew - TODO - change this command name
-from coldfront_plugin_qumulo.management.commands.add_qumulo_resource import Command
+from coldfront.plugins.qumulo.management.commands.add_qumulo_resource import Command
 from coldfront.core.resource.models import Resource, ResourceType
 
 

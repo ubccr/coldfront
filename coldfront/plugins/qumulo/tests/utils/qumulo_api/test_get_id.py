@@ -1,9 +1,9 @@
 from django.test import TestCase
 from unittest.mock import patch, MagicMock
-from coldfront_plugin_qumulo.utils.qumulo_api import QumuloAPI
+from coldfront.plugins.qumulo.utils.qumulo_api import QumuloAPI
 
 
-@patch("coldfront_plugin_qumulo.utils.qumulo_api.RestClient")
+@patch("coldfront.plugins.qumulo.utils.qumulo_api.RestClient")
 class GetId(TestCase):
     def test_calls_nfs_endpoint_with_url_encode(self, mock_RestClient: MagicMock):
         mock_request: MagicMock = mock_RestClient.return_value.request

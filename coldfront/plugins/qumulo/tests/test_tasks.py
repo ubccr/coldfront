@@ -2,17 +2,17 @@ from django.test import TestCase, Client
 
 from unittest.mock import patch, MagicMock
 
-from coldfront_plugin_qumulo.tests.utils.mock_data import (
+from coldfront.plugins.qumulo.tests.utils.mock_data import (
     build_models,
     create_allocation,
 )
-from coldfront_plugin_qumulo.tasks import (
+from coldfront.plugins.qumulo.tasks import (
     poll_ad_group,
     poll_ad_groups,
     conditionally_update_storage_allocation_status,
     conditionally_update_storage_allocation_statuses,
 )
-from coldfront_plugin_qumulo.utils.acl_allocations import AclAllocations
+from coldfront.plugins.qumulo.utils.acl_allocations import AclAllocations
 
 from coldfront.core.allocation.models import Allocation, AllocationStatusChoice
 from coldfront.core.resource.models import Resource
@@ -23,7 +23,7 @@ import datetime
 from django.utils import timezone
 
 
-@patch("coldfront_plugin_qumulo.tasks.QumuloAPI")
+@patch("coldfront.plugins.qumulo.tasks.QumuloAPI")
 class TestPollAdGroup(TestCase):
     def setUp(self) -> None:
         self.client = Client()
@@ -96,7 +96,7 @@ class TestPollAdGroup(TestCase):
         self.assertEqual(acl_allocation.status.name, "Expired")
 
 
-@patch("coldfront_plugin_qumulo.tasks.QumuloAPI")
+@patch("coldfront.plugins.qumulo.tasks.QumuloAPI")
 class TestPollAdGroups(TestCase):
     def setUp(self) -> None:
         self.client = Client()
@@ -136,7 +136,7 @@ class TestPollAdGroups(TestCase):
         )
         acl_allocation_c.resources.add(resource_b)
 
-        with patch("coldfront_plugin_qumulo.tasks.poll_ad_group") as poll_ad_group_mock:
+        with patch("coldfront.plugins.qumulo.tasks.poll_ad_group") as poll_ad_group_mock:
             poll_ad_groups()
 
             self.assertEqual(poll_ad_group_mock.call_count, 2)
@@ -238,7 +238,7 @@ class TestStorageAllocationStatuses(TestCase):
         non_pending_allocation.save()
 
         with patch(
-            "coldfront_plugin_qumulo.tasks.conditionally_update_storage_allocation_status"
+            "coldfront.plugins.qumulo.tasks.conditionally_update_storage_allocation_status"
         ) as conditionally_update_storage_allocation_status_mock:
             conditionally_update_storage_allocation_statuses()
 

@@ -1,12 +1,12 @@
 from django.test import TestCase, Client
 from unittest.mock import MagicMock, patch, call
 
-from coldfront_plugin_qumulo.tests.utils.mock_data import (
+from coldfront.plugins.qumulo.tests.utils.mock_data import (
     build_models,
     create_allocation,
 )
-from coldfront_plugin_qumulo.utils.acl_allocations import AclAllocations
-from coldfront_plugin_qumulo.utils.aces_manager import AcesManager
+from coldfront.plugins.qumulo.utils.acl_allocations import AclAllocations
+from coldfront.plugins.qumulo.utils.aces_manager import AcesManager
 
 from coldfront.core.allocation.models import (
     Allocation,
@@ -48,9 +48,9 @@ class TestAclAllocations(TestCase):
 
         self.client.force_login(self.user)
 
-    @patch("coldfront_plugin_qumulo.utils.acl_allocations.ActiveDirectoryAPI")
+    @patch("coldfront.plugins.qumulo.utils.acl_allocations.ActiveDirectoryAPI")
     @patch(
-        "coldfront_plugin_qumulo.utils.acl_allocations.AclAllocations.create_acl_allocation"
+        "coldfront.plugins.qumulo.utils.acl_allocations.AclAllocations.create_acl_allocation"
     )
     def test_create_acl_allocations_calls_create_acl_allocation(
         self,
@@ -77,15 +77,15 @@ class TestAclAllocations(TestCase):
         )
         mock_active_directory_api.assert_called_once()
 
-    @patch("coldfront_plugin_qumulo.utils.acl_allocations.ActiveDirectoryAPI")
+    @patch("coldfront.plugins.qumulo.utils.acl_allocations.ActiveDirectoryAPI")
     @patch(
-        "coldfront_plugin_qumulo.utils.acl_allocations.AclAllocations.create_ad_group_and_add_users"
+        "coldfront.plugins.qumulo.utils.acl_allocations.AclAllocations.create_ad_group_and_add_users"
     )
     @patch(
-        "coldfront_plugin_qumulo.utils.acl_allocations.AclAllocations.set_allocation_attributes"
+        "coldfront.plugins.qumulo.utils.acl_allocations.AclAllocations.set_allocation_attributes"
     )
     @patch(
-        "coldfront_plugin_qumulo.utils.acl_allocations.AclAllocations.add_allocation_users"
+        "coldfront.plugins.qumulo.utils.acl_allocations.AclAllocations.add_allocation_users"
     )
     def test_create_acl_allocation_creates_acl_allocation(
         self,
@@ -131,16 +131,16 @@ class TestAclAllocations(TestCase):
             active_directory_api=mock_active_directory_instance,
         )
 
-    @patch("coldfront_plugin_qumulo.utils.acl_allocations.ActiveDirectoryAPI")
+    @patch("coldfront.plugins.qumulo.utils.acl_allocations.ActiveDirectoryAPI")
     @patch(
-        "coldfront_plugin_qumulo.utils.acl_allocations.AclAllocations.create_ad_group_and_add_users",
+        "coldfront.plugins.qumulo.utils.acl_allocations.AclAllocations.create_ad_group_and_add_users",
         side_effect=LDAPException,
     )
     @patch(
-        "coldfront_plugin_qumulo.utils.acl_allocations.AclAllocations.set_allocation_attributes"
+        "coldfront.plugins.qumulo.utils.acl_allocations.AclAllocations.set_allocation_attributes"
     )
     @patch(
-        "coldfront_plugin_qumulo.utils.acl_allocations.AclAllocations.add_allocation_users"
+        "coldfront.plugins.qumulo.utils.acl_allocations.AclAllocations.add_allocation_users"
     )
     def test_create_acl_allocation_catches_LDAPexception_and_deletes_allocation(
         self,
@@ -182,7 +182,7 @@ class TestAclAllocations(TestCase):
 
         self.assertEqual(len(all_allocation_attributes), 1)
 
-    @patch("coldfront_plugin_qumulo.utils.acl_allocations.ActiveDirectoryAPI")
+    @patch("coldfront.plugins.qumulo.utils.acl_allocations.ActiveDirectoryAPI")
     def test_create_ad_group_and_add_users_creates_ad_group_and_adds_users(
         self, mock_active_directory_api
     ):
@@ -204,7 +204,7 @@ class TestAclAllocations(TestCase):
 
         mock_active_directory_instance.add_user_to_ad_group.assert_called()
 
-    @patch("coldfront_plugin_qumulo.utils.acl_allocations.ActiveDirectoryAPI")
+    @patch("coldfront.plugins.qumulo.utils.acl_allocations.ActiveDirectoryAPI")
     def test_create_ad_group_and_add_users_creates_ad_group_and_adds_users_without_ad_argument(
         self,
         mock_active_directory_api: MagicMock,
@@ -247,7 +247,7 @@ class TestAclAllocations(TestCase):
             )
 
         with patch(
-            "coldfront_plugin_qumulo.utils.acl_allocations.QumuloAPI"
+            "coldfront.plugins.qumulo.utils.acl_allocations.QumuloAPI"
         ) as mock_qumulo_api:
             mock_return_data = {
                 "control": ["PRESENT"],
@@ -274,7 +274,7 @@ class TestAclAllocations(TestCase):
         acl_allocations = AclAllocations.get_access_allocations(test_allocation)
 
         with patch(
-            "coldfront_plugin_qumulo.utils.acl_allocations.QumuloAPI"
+            "coldfront.plugins.qumulo.utils.acl_allocations.QumuloAPI"
         ) as mock_qumulo_api:
             mock_return_data = {
                 "control": ["PRESENT"],
@@ -319,7 +319,7 @@ class TestAclAllocations(TestCase):
         mock_get_acl_v2.return_value = AcesManager.get_base_acl()
 
         with patch(
-            "coldfront_plugin_qumulo.utils.acl_allocations.AclAllocations.set_traverse_acl"
+            "coldfront.plugins.qumulo.utils.acl_allocations.AclAllocations.set_traverse_acl"
         ) as mock_set_traverse_acl:
             AclAllocations.set_allocation_acls(allocation, mock_qumulo_api)
 
@@ -362,7 +362,7 @@ class TestAclAllocations(TestCase):
         allocation = create_allocation(self.project, self.user, form_data)
 
         with patch(
-            "coldfront_plugin_qumulo.utils.acl_allocations.AclAllocations.set_traverse_acl"
+            "coldfront.plugins.qumulo.utils.acl_allocations.AclAllocations.set_traverse_acl"
         ) as mock_set_traverse_acl:
             AclAllocations.set_allocation_acls(allocation, mock_qumulo_api)
 
@@ -392,7 +392,7 @@ class TestAclAllocations(TestCase):
         mock_get_acl_v2.return_value = AcesManager.get_base_acl()
 
         with patch(
-            "coldfront_plugin_qumulo.utils.acl_allocations.AclAllocations.set_traverse_acl"
+            "coldfront.plugins.qumulo.utils.acl_allocations.AclAllocations.set_traverse_acl"
         ) as mock_set_traverse_acl:
             AclAllocations.set_allocation_acls(allocation, mock_qumulo_api)
 
@@ -430,7 +430,7 @@ class TestAclAllocations(TestCase):
         mock_get_acl_v2.return_value = AcesManager.get_base_acl()
 
         with patch(
-            "coldfront_plugin_qumulo.utils.acl_allocations.AclAllocations.set_traverse_acl"
+            "coldfront.plugins.qumulo.utils.acl_allocations.AclAllocations.set_traverse_acl"
         ) as mock_set_traverse_acl:
             AclAllocations.set_allocation_acls(allocation, mock_qumulo_api)
 
@@ -479,7 +479,7 @@ class TestAclAllocations(TestCase):
         allocation = create_allocation(self.project, self.user, form_data)
 
         with patch(
-            "coldfront_plugin_qumulo.utils.acl_allocations.AclAllocations.set_traverse_acl"
+            "coldfront.plugins.qumulo.utils.acl_allocations.AclAllocations.set_traverse_acl"
         ) as mock_set_traverse_acl:
             AclAllocations.set_allocation_acls(allocation, mock_qumulo_api)
 

@@ -1,9 +1,9 @@
 from django.test import TestCase
 from unittest.mock import call, patch, MagicMock, PropertyMock
-from coldfront_plugin_qumulo.utils.qumulo_api import QumuloAPI
+from coldfront.plugins.qumulo.utils.qumulo_api import QumuloAPI
 
 
-@patch("coldfront_plugin_qumulo.utils.qumulo_api.RestClient")
+@patch("coldfront.plugins.qumulo.utils.qumulo_api.RestClient")
 class CreateAllocation(TestCase):
     def test_rejects_when_incorrect_protocol(self, mock_RestClient: MagicMock):
         qumulo_instance = QumuloAPI()

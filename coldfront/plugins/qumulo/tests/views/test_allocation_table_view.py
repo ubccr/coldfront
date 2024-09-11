@@ -3,12 +3,12 @@ from unittest.mock import patch, MagicMock
 
 from coldfront.core.allocation.models import Allocation
 
-from coldfront_plugin_qumulo.tests.utils.mock_data import (
+from coldfront.plugins.qumulo.tests.utils.mock_data import (
     build_models,
     create_allocation,
     build_user_plus_project,
 )
-from coldfront_plugin_qumulo.views.allocation_table_view import (
+from coldfront.plugins.qumulo.views.allocation_table_view import (
     AllocationTableView,
 )
 
@@ -38,7 +38,7 @@ class AllocationTableViewTests(TestCase):
 
     def test_get_queryset(self):
         request = RequestFactory().get(
-            "src/coldfront_plugin_qumulo/views/allocation_table_view.py"
+            "src/coldfront.plugins.qumulo/views/allocation_table_view.py"
         )
         view = AllocationTableView()
         view.request = request
@@ -76,7 +76,7 @@ class AllocationTableViewTests(TestCase):
 
         query_params = {"department_number": "Whale-watching"}
         request = RequestFactory().get(
-            "src/coldfront_plugin_qumulo/views/allocation_table_view.py",
+            "src/coldfront.plugins.qumulo/views/allocation_table_view.py",
             data=query_params,
         )
         view = AllocationTableView()
@@ -121,7 +121,7 @@ class AllocationTableViewTests(TestCase):
 
         query_params = {"department_number": "Whale-watching"}
         request = RequestFactory().get(
-            "src/coldfront_plugin_qumulo/views/allocation_table_view.py",
+            "src/coldfront.plugins.qumulo/views/allocation_table_view.py",
             data=query_params,
         )
         view = AllocationTableView()

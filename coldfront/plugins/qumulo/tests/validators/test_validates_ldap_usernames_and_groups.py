@@ -1,7 +1,7 @@
 from django.test import TestCase
 
 from django.core.exceptions import ValidationError
-from coldfront_plugin_qumulo.validators import validate_ldap_usernames_and_groups
+from coldfront.plugins.qumulo.validators import validate_ldap_usernames_and_groups
 
 
 class TestValidatesLdapUsernamesAndGroups(TestCase):

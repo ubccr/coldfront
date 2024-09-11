@@ -1,8 +1,8 @@
 from django.test import TestCase
 from unittest.mock import MagicMock, patch
 
-from coldfront_plugin_qumulo.utils.acl_allocations import AclAllocations
-from coldfront_plugin_qumulo.views.allocation_view import AllocationView
+from coldfront.plugins.qumulo.utils.acl_allocations import AclAllocations
+from coldfront.plugins.qumulo.views.allocation_view import AllocationView
 
 from coldfront.core.user.models import User
 from coldfront.core.project.models import Project
@@ -12,9 +12,9 @@ from coldfront.core.allocation.models import (
     AllocationAttribute,
 )
 
-from coldfront_plugin_qumulo.utils.qumulo_api import QumuloAPI
-from coldfront_plugin_qumulo.utils.active_directory_api import ActiveDirectoryAPI
-from coldfront_plugin_qumulo.tests.utils.mock_data import build_models
+from coldfront.plugins.qumulo.utils.qumulo_api import QumuloAPI
+from coldfront.plugins.qumulo.utils.active_directory_api import ActiveDirectoryAPI
+from coldfront.plugins.qumulo.tests.utils.mock_data import build_models
 
 import time
 

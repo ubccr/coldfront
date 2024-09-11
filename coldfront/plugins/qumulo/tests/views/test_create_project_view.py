@@ -1,14 +1,14 @@
 from coldfront.core.field_of_science.models import FieldOfScience
 
-from coldfront_plugin_qumulo.forms import ProjectCreateForm
-from coldfront_plugin_qumulo.tests.utils.mock_data import build_models
-from coldfront_plugin_qumulo.views.project_views import PluginProjectCreateView
+from coldfront.plugins.qumulo.forms import ProjectCreateForm
+from coldfront.plugins.qumulo.tests.utils.mock_data import build_models
+from coldfront.plugins.qumulo.views.project_views import PluginProjectCreateView
 
 from django.test import TestCase
 from django.urls.exceptions import NoReverseMatch
 from unittest.mock import patch, MagicMock
 
-@patch("coldfront_plugin_qumulo.validators.ActiveDirectoryAPI")
+@patch("coldfront.plugins.qumulo.validators.ActiveDirectoryAPI")
 class ProjectCreateViewTests(TestCase):
     def setUp(self):
         self.testPI = 'sleong'

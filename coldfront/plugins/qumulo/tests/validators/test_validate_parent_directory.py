@@ -3,7 +3,7 @@ from unittest.mock import patch, MagicMock
 
 from django.core.exceptions import ValidationError
 
-from coldfront_plugin_qumulo.validators import validate_parent_directory
+from coldfront.plugins.qumulo.validators import validate_parent_directory
 
 mock_response = {
     "control": ["PRESENT"],
@@ -28,7 +28,7 @@ mock_response = {
 
 class TestValidateParentDirectory(TestCase):
     def setUp(self):
-        self.patcher = patch("coldfront_plugin_qumulo.validators.QumuloAPI")
+        self.patcher = patch("coldfront.plugins.qumulo.validators.QumuloAPI")
         self.mock_qumulo_api = self.patcher.start()
 
         self.mock_get_file_attr = MagicMock()

@@ -3,8 +3,8 @@ from django.dispatch import receiver
 import logging
 import json
 
-from coldfront_plugin_qumulo.utils.qumulo_api import QumuloAPI
-from coldfront_plugin_qumulo.utils.acl_allocations import AclAllocations
+from coldfront.plugins.qumulo.utils.qumulo_api import QumuloAPI
+from coldfront.plugins.qumulo.utils.acl_allocations import AclAllocations
 
 
 from coldfront.core.allocation.models import Allocation
@@ -18,7 +18,7 @@ from coldfront.core.allocation.signals import (
 from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 
-from coldfront_plugin_qumulo.utils.update_user_data import (
+from coldfront.plugins.qumulo.utils.update_user_data import (
     update_user_with_additional_data,
 )
 
