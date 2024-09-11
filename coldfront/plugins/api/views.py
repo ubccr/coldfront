@@ -156,7 +156,7 @@ class AllocationRequestViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = (filters.DjangoFilterBackend, drf_filters.OrderingFilter)
     filterset_class = AllocationRequestFilter
     permission_classes = [IsAuthenticated, IsAdminUser]
-    renderer_classes = [AdminRenderer, JSONRenderer]
+    renderer_classes = [CustomAdminRenderer, JSONRenderer]
     ordering_fields = ['id', 'project', 'pi', 'status', 'requested_size', 'created', 'fulfilled_date', 'time_to_fulfillment']
     ordering = ['created']
 
@@ -196,9 +196,9 @@ class AllocationChangeRequestFilter(filters.FilterSet):
     created_after is the date the request was created after.
     '''
     created = filters.DateFromToRangeFilter()
-    fulfilled = filters.BooleanFilter(method='filter_fulfilled')
-    fulfilled_date = filters.DateFromToRangeFilter()
-    time_to_fulfillment = filters.NumericRangeFilter(method='filter_time_to_fulfillment')
+    fulfilled = filters.BooleanFilter(label='Fulfilled', method='filter_fulfilled')
+    fulfilled_date = filters.DateFromToRangeFilter(label='Fulfilled Date Range')
+    time_to_fulfillment = filters.NumericRangeFilter(label='Time-to-fulfillment Range', method='filter_time_to_fulfillment')
 
     class Meta:
         model = AllocationChangeRequest
@@ -247,9 +247,11 @@ class AllocationChangeRequestViewSet(viewsets.ReadOnlyModelViewSet):
         Set to the maximum/minimum number of days between request creation and time_to_fulfillment.
     '''
     serializer_class = serializers.AllocationChangeRequestSerializer
-    filter_backends = (filters.DjangoFilterBackend,)
+    filter_backends = (filters.DjangoFilterBackend, drf_filters.OrderingFilter)
     filterset_class = AllocationChangeRequestFilter
     renderer_classes = [CustomAdminRenderer, JSONRenderer]
+    ordering_fields = ['id', 'allocation', 'project', 'pi', 'status', 'created', 'fulfilled_date', 'time_to_fulfillment']
+    ordering = ['created']
 
     def get_queryset(self):
         requests = AllocationChangeRequest.objects.prefetch_related(
@@ -284,7 +286,6 @@ class AllocationChangeRequestViewSet(viewsets.ReadOnlyModelViewSet):
                 output_field=fields.DurationField()
             )
         )
-        requests = requests.order_by('created')
 
         return requests
 

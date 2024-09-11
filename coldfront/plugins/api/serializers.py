@@ -107,7 +107,7 @@ class AllocationSerializer(serializers.ModelSerializer):
 class AllocationRequestSerializer(serializers.ModelSerializer):
     project = serializers.SlugRelatedField(slug_field='title', read_only=True)
     pi = serializers.ReadOnlyField(source='project.pi.full_name')
-    resource = serializers.ReadOnlyField(source='get_resources_as_string', allow_null=True)
+    resource = serializers.ReadOnlyField(source='get_parent_resource.name', allow_null=True)
     tier = serializers.ReadOnlyField(source='get_parent_resource.parent_resource.name', allow_null=True)
     status = serializers.SlugRelatedField(slug_field='name', read_only=True)
     requested_size = serializers.ReadOnlyField(source='quantity')
@@ -155,10 +155,13 @@ class AllocationRequestSerializer(serializers.ModelSerializer):
 
 class AllocationChangeRequestSerializer(serializers.ModelSerializer):
     project = serializers.ReadOnlyField(source='allocation.project.title')
+    pi = serializers.ReadOnlyField(source='allocation.project.pi.full_name')
     resource = serializers.ReadOnlyField(source='allocation.get_resources_as_string')
+    tier = serializers.ReadOnlyField(source='allocation.get_parent_resource.parent_resource.name', allow_null=True)
     status = serializers.SlugRelatedField(slug_field='name', read_only=True)
+    created = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
     created_by = serializers.SerializerMethodField(read_only=True)
-    fulfilled_date = serializers.DateTimeField(read_only=True)
+    fulfilled_date = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
     fulfilled_by = serializers.SerializerMethodField(read_only=True)
     time_to_fulfillment = serializers.DurationField(read_only=True)
 
@@ -168,7 +171,9 @@ class AllocationChangeRequestSerializer(serializers.ModelSerializer):
             'id',
             'allocation',
             'project',
+            'pi',
             'resource',
+            'tier',
             'justification',
             'status',
             'created',
