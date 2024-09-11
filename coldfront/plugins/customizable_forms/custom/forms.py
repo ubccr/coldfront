@@ -179,6 +179,9 @@ class GeodeProjectForm(BaseForm):
     data_management_responsibilities = forms.BooleanField(
         help_text='<a href="https://kb.iu.edu/d/ayyz" target="_blank" rel="noopener noreferrer">Data management responsibilities</a>'
     )
+    confirm_best_practices = forms.BooleanField(
+        help_text='<a href="#" data-toggle="modal" data-target="#id_data_best_practices_modal">Data Management Plan ideas and best practices</a>'
+    )
 
     def __init__(self, request_user, resource_attributes, project_obj, resource_obj, *args, **kwargs):
         super().__init__(request_user, resource_attributes, project_obj, resource_obj, *args, **kwargs)

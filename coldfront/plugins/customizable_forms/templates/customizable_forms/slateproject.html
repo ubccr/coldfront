@@ -40,10 +40,22 @@ Request New Allocation
   </fieldset>
   <fieldset>
   <legend><u>Project Information</u></legend>
-    {{ form.url|as_crispy_field }}
-    {{ form.project_directory_name|as_crispy_field }}
-    {{ form.storage_space|as_crispy_field }}
-    {{ form.start_date|as_crispy_field }}
+    <div class="row">
+      <div class="col">
+        {{ form.project_directory_name|as_crispy_field }}
+      </div>
+      <div class="col">
+        {{ form.url|as_crispy_field }}
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        {{ form.storage_space|as_crispy_field }}
+      </div>
+      <div class="col">
+        {{ form.start_date|as_crispy_field }}
+      </div>
+    </div>
   </fieldset>
   <fieldset>
     <legend><u>Sensitive Information</u></legend>
