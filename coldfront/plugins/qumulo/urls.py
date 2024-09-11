@@ -2,7 +2,7 @@ from django.urls import path
 
 from coldfront.plugins.qumulo.views import allocation_view, update_allocation_view, allocation_table_view
 
-app_name = "coldfront.plugins.qumulo"
+app_name = "qumulo"
 urlpatterns = [
     path("allocation", allocation_view.AllocationView.as_view(), name="allocation"),
     path(
