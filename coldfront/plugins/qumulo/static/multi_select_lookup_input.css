@@ -1,0 +1,24 @@
+ul.multi-select-lookup {
+    width: 45%;
+    height: 200px;
+    overflow-y: auto;
+}
+
+li.multi-select-lookup {
+    height: 45px;
+}
+
+li.multi-select-lookup > button.remove-list-item-button {
+    visibility: hidden;
+}
+
+li.multi-select-lookup[selected] {
+    background: blue;
+    color: white
+}
+
+li.multi-select-lookup[selected] > button.remove-list-item-button {
+    visibility: visible;
+    background-color: white;
+    color: blue;
+}

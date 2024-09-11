@@ -1,0 +1,32 @@
+{% load static %}
+
+<input type="hidden" id="{{widget.name}}-output" name="{{ widget.name }}" value="{{ widget.value }}"/>
+<p id="{{widget.name}}-error-message" class="invalid-feedback"><strong></strong></p>
+<div class="d-flex flex-row justify-content-between">
+      <textarea
+        id="{{widget.name}}-textarea"
+        class="align-self-start"
+        rows="4"
+      ></textarea>
+      <div>
+      <button 
+        id="{{widget.name}}-add-button"
+        type="button"
+        class="btn btn-outline-primary btn-sm align-self-start"
+      >
+        >>
+      </button>
+      <button 
+        id="{{widget.name}}-remove-button"
+        type="button"
+        class="btn btn-outline-primary btn-sm align-self-start"
+      >
+        <<
+      </button>
+    </div>
+      <ul id="{{widget.name}}-output-list" class="list-group multi-select-lookup"></ul>
+</div>
+
+<script type="text/javascript">
+  window.addEventListener("DOMContentLoaded", () => new MultiSelectLookupInput("{{widget.name}}", "{% static "multi_select_lookup_input.css" %}"))
+</script> 

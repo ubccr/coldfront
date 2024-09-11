@@ -1,0 +1,45 @@
+{% extends "common/base.html" %} 
+{% load crispy_forms_tags %}
+{% load common_tags %}
+{% load static %}
+
+{% block title %}
+Create Allocation
+{% endblock %}
+
+{% block content %}
+<div>
+  <form method="post" id="allocation_form">
+    {% csrf_token %}
+    {{ form | crispy }}
+    <div class="d-flex justify-content-end">
+      <button type="submit" class="btn btn-primary mr-2" id="allocation_form_submit">Submit</button>
+      <button type="reset" class="btn btn-primary">Reset</button>
+    </div>
+  </form>
+
+  <div id="smb_warning_modal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Warning</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>Warning: Most allocations require an SMB share.  Submit to confirm.</p>
+        </div>
+        <div class="modal-footer">
+          <button id="smb_warning_button_submit" type="button" class="btn btn-primary">Submit</button>
+          <button id="smb_warning_button_cancel" type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}
+
+{% block javascript %}
+{{ form.media }}
+{% endblock javascript%}
