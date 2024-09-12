@@ -15,4 +15,4 @@ STATICFILES_DIRS += [
     PROJECT_ROOT("coldfront/plugins/qumulo/static"),
 ]
 
-# TEMPLATES[0]["DIRS"] += [PROJECT_ROOT("coldfront/plugins/qumulo/templates")]
+TEMPLATES[0]["DIRS"] += [PROJECT_ROOT("coldfront/plugins/qumulo/templates")]
