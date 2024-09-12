@@ -112,6 +112,7 @@ TEMPLATES = [
             PROJECT_ROOT('site/templates'),
             '/usr/share/coldfront/site/templates',
             PROJECT_ROOT('coldfront/templates'),
+            PROJECT_ROOT("coldfront/plugins/qumulo/templates")
         ],
         'APP_DIRS': True,
         'OPTIONS': {
