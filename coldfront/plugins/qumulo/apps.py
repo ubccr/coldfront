@@ -2,7 +2,7 @@ from django.apps import AppConfig
 
 
 class QumuloConfig(AppConfig):
-    name = "qumulo"
+    name = "coldfront.plugins.qumulo"
 
     def ready(self):
         import coldfront.plugins.qumulo.signals
