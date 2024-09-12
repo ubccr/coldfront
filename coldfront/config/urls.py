@@ -11,7 +11,6 @@ import coldfront.core.portal.views as portal_views
 admin.site.site_header = 'ColdFront Administration'
 admin.site.site_title = 'ColdFront Administration'
 
-import logging
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -39,7 +38,5 @@ if 'mozilla_django_oidc' in settings.INSTALLED_APPS:
 if 'django_su.backends.SuBackend' in settings.AUTHENTICATION_BACKENDS:
     urlpatterns.append(path('su/', include('django_su.urls')))
     
-logging.warn("HERE")
 if 'coldfront.plugins.qumulo' in settings.INSTALLED_APPS:
-    logging.warn("EVEN FURTHER")
     urlpatterns.append(path('qumulo/', include('coldfront.plugins.qumulo.urls'), name='qumulo'))
