@@ -130,10 +130,13 @@ class AllocationRequestFilter(filters.FilterSet):
 
 class AllocationRequestViewSet(viewsets.ReadOnlyModelViewSet):
     '''Report view on allocations requested through Coldfront.
+
     Data:
     - id: allocation id
     - project: project name
-    - resource: resource name
+    - pi: full name of project PI
+    - resource: name of allocation's resource
+    - tier: storage tier of allocation's resource
     - path: path to the allocation on the resource
     - status: current status of the allocation
     - size: current size of the allocation
@@ -141,8 +144,9 @@ class AllocationRequestViewSet(viewsets.ReadOnlyModelViewSet):
     - created_by: user who submitted the allocation request
     - fulfilled_date: date the allocation's status was first set to "Active"
     - fulfilled_by: user who first set the allocation status to "Active"
-    - time_to_fulfillment: time between request creation and time_to_fulfillment
-        displayed as "DAY_INTEGER HH:MM:SS"
+    - time_to_fulfillment: time from request creation to time_to_fulfillment displayed as "DAY_INTEGER HH:MM:SS"
+
+    Filters and ordering can be added either by manually defining in the url or by clicking on the "filters" button in the top right corner.
 
     Filters:
     - created_before/created_after (structure date as 'YYYY-MM-DD')
@@ -230,7 +234,12 @@ class AllocationChangeRequestFilter(filters.FilterSet):
 class AllocationChangeRequestViewSet(viewsets.ReadOnlyModelViewSet):
     '''
     Data:
-    - allocation: allocation object details
+    - id: allocationchangerequest id
+    - allocation: allocation id
+    - project: project title
+    - pi: full name of project PI
+    - resource: allocation's resource
+    - tier: storage tier of allocation's resource
     - justification: justification provided at time of filing
     - status: request status
     - created: date created
@@ -238,7 +247,9 @@ class AllocationChangeRequestViewSet(viewsets.ReadOnlyModelViewSet):
     - fulfilled_date: date the allocationchangerequests's status was first set to "Approved"
     - fulfilled_by: user who last modified an approved object.
 
-    Query parameters:
+    Filters and ordering can be added either by manually defining in the url or by clicking on the "filters" button in the top right corner.
+
+    Filters:
     - created_before/created_after (structure date as 'YYYY-MM-DD')
     - fulfilled (boolean)
         Set to true to return all approved requests, false to return all pending and denied requests.
