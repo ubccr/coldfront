@@ -121,6 +121,9 @@ class AllocationRequestFilter(filters.FilterSet):
     created = filters.DateFromToRangeFilter(label='Created Range')
     fulfilled = filters.BooleanFilter(label='Fulfilled', method='filter_fulfilled')
     fulfilled_date = filters.DateFromToRangeFilter(label='Fulfilled Date Range')
+    requested_size = filters.NumericRangeFilter(label='Requested Size', field_name='requested_size')
+    pi = filters.CharFilter(label='PI', field_name='project__pi__full_name', lookup_expr='icontains')
+    project = filters.CharFilter(label='Project', field_name='project__title', lookup_expr='icontains')
     time_to_fulfillment = filters.NumericRangeFilter(label='Time-to-fulfillment Range', method='filter_time_to_fulfillment')
 
     class Meta:
@@ -129,6 +132,8 @@ class AllocationRequestFilter(filters.FilterSet):
             'created',
             'fulfilled',
             'fulfilled_date',
+            'pi',
+            'requested_size',
             'time_to_fulfillment',
         ]
 
@@ -262,6 +267,8 @@ class AllocationChangeRequestFilter(filters.FilterSet):
     created = filters.DateFromToRangeFilter()
     fulfilled = filters.BooleanFilter(label='Fulfilled', method='filter_fulfilled')
     fulfilled_date = filters.DateFromToRangeFilter(label='Fulfilled Date Range')
+    pi = filters.CharFilter(label='PI', field_name='allocation__project__pi__full_name', lookup_expr='icontains')
+    project = filters.CharFilter(label='Project', field_name='allocation__project__title', lookup_expr='icontains')
     time_to_fulfillment = filters.NumericRangeFilter(label='Time-to-fulfillment Range', method='filter_time_to_fulfillment')
 
     class Meta:
@@ -270,6 +277,8 @@ class AllocationChangeRequestFilter(filters.FilterSet):
             'created',
             'fulfilled',
             'fulfilled_date',
+            'pi',
+            'project',
             'time_to_fulfillment',
         ]
 
