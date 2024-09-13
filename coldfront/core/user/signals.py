@@ -26,7 +26,6 @@ def create_user_profile(sender, instance, created, **kwargs):
             title = ''
             if attributes['title']:
                 title = attributes['title'][0]
-            max_projects = -1
             is_pi = True
             if title == 'group':
                 is_pi = False
@@ -44,7 +43,6 @@ def create_user_profile(sender, instance, created, **kwargs):
                 title=title,
                 department=department,
                 division=division,
-                max_projects=max_projects,
                 is_pi=is_pi
             )
 
@@ -61,7 +59,6 @@ def create_user_profile(sender, instance, created, **kwargs):
                 title='',
                 department='',
                 division='',
-                max_projects=-1
             )
 
 

@@ -320,15 +320,6 @@ class ProjectListView(LoginRequiredMixin, ListView):
         projects_count = self.get_queryset().count()
         context['projects_count'] = projects_count
 
-        max_projects = self.request.user.userprofile.max_projects
-        project_count = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
-            Q(pi__username=self.request.user.username) &
-            Q(projectuser__status__name='Active') &
-            Q(status__name__in=['New', 'Active', 'Review Pending', 'Waiting For Admin Approval', 'Contacted By Admin', ])
-        ).distinct().count()
-        # Not being used.
-        context['project_requests_remaining'] = 10  # max(0, max_projects - project_count)
-
         project_pi_search_form = ProjectPISearchForm()
         context['project_pi_search_form'] = project_pi_search_form
 
@@ -703,18 +694,10 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-        max_projects = self.request.user.userprofile.max_projects
-        project_count = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
-            Q(pi__username=self.request.user.username) &
-            Q(projectuser__status__name='Active') &
-            Q(status__name__in=['New', 'Active', ])
-        ).distinct().count()
-
         if self.request.user.is_superuser:
             return True
 
-        # Number of projects are not being checked.
-        if self.request.user.userprofile.is_pi:  # and max_projects - project_count > 0:
+        if self.request.user.userprofile.is_pi:
             return True
 
     def check_max_project_type_count_reached(self, project_type_obj, pi_obj):

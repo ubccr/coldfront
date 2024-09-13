@@ -16,7 +16,7 @@ Project List
       <div class="col-5 my-auto">
         {% if user.is_superuser %}
           <a class="btn btn-primary"a href="{% url 'project-create' %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add a project</a>
-        {% elif user.userprofile.is_pi and project_requests_remaining > 0 %}
+        {% elif user.userprofile.is_pi %}
           <a class="btn btn-primary" href="{% url 'project-create' %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add a project</a>
         {% endif %}
         {% if not user.userprofile.is_pi and user.userprofile.title == 'group' %}
@@ -73,7 +73,6 @@ Project List
   {% if user.is_superuser or user.userprofile.is_pi %}
     <p>
       You can use the PI Search function below to search for a project your PI is in and request to be added to it.
-      {% if project_requests_remaining < 1 %} You have reached the max projects you can have.{% endif %}
     </p>
   {% else %}
     <p>
