@@ -14,6 +14,13 @@ CENTER_PROJECT_RENEWAL_HELP_URL = ENV.str('CENTER_PROJECT_RENEWAL_HELP_URL', def
 CENTER_BASE_URL = ENV.str('CENTER_BASE_URL', default='')
 
 #------------------------------------------------------------------------------
+# Enable Research Outputs, Grants, Publications
+#------------------------------------------------------------------------------
+RESEARCH_OUTPUT_ENABLE = ENV.bool('RESEARCH_OUTPUT_ENABLE', default=True)
+GRANT_ENABLE = ENV.bool('GRANT_ENABLE', default=True)
+PUBLICATION_ENABLE = ENV.bool('PUBLICATION_ENABLE', default=True)
+
+#------------------------------------------------------------------------------
 # Enable Project Review
 #------------------------------------------------------------------------------
 PROJECT_ENABLE_PROJECT_REVIEW = ENV.bool('PROJECT_ENABLE_PROJECT_REVIEW', default=True)
@@ -38,7 +45,10 @@ ALLOCATION_ACCOUNT_MAPPING = ENV.dict('ALLOCATION_ACCOUNT_MAPPING', default={})
 
 SETTINGS_EXPORT += [
     'ALLOCATION_ACCOUNT_ENABLED',
-    'CENTER_HELP_URL'
+    'CENTER_HELP_URL',
+    'RESEARCH_OUTPUT_ENABLE',
+    'GRANT_ENABLE',
+    'PUBLICATION_ENABLE',
 ]
 
 ADMIN_COMMENTS_SHOW_EMPTY = ENV.bool('ADMIN_COMMENTS_SHOW_EMPTY', default=True)
