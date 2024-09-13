@@ -74,7 +74,7 @@ class SlateProjectForm(BaseForm):
     email = forms.EmailField(max_length=40, disabled=True)
     url = forms.CharField(max_length=50, required=False)
     project_directory_name = forms.CharField(
-        max_length=10, validators=[ValidateDirectoryName(), ValidateDupDirectoryName()]
+        max_length=23, validators=[ValidateDirectoryName(), ValidateDupDirectoryName()]
     )
     storage_space = forms.IntegerField(min_value=1, max_value=30)
     start_date = forms.DateField(widget=forms.TextInput(attrs={'class': 'datepicker'}))
