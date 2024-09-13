@@ -132,12 +132,22 @@ class AllocationResourceSelectionView(LoginRequiredMixin, UserPassesTestMixin, T
             has_account = True
             if not resource_obj.check_user_account_exists(self.request.user.username, accounts):
                 has_account = False
+
+            pi_request_only = resource_obj.resourceattribute_set.filter(resource_attribute_type__name='pi_request_only')
+            if not pi_request_only.exists() or self.request.user.is_superuser:
+                can_request = True
+            else:
+                can_request = True
+                if pi_request_only[0].value.lower() == 'true' and project_obj.pi != self.request.user:
+                    can_request = False
+
             resource_categories[resource_type_name]['resources'].append(
                 {
                     'resource': resource_obj,
                     'info_link': help_url,
                     'limit_reached': limit_reached,
-                    'has_account': has_account
+                    'has_account': has_account,
+                    'can_request': can_request 
                 }
             )
 
@@ -229,6 +239,20 @@ class GenericView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                     'Your project is at the allocation limit allowed for this resource.'
                 )
                 return HttpResponseRedirect(reverse('custom-allocation-create', kwargs={'project_pk': project_obj.pk}))
+            
+        pi_request_only = resource_obj.resourceattribute_set.filter(resource_attribute_type__name='pi_request_only')
+        if not pi_request_only.exists() or self.request.user.is_superuser:
+            can_request = True
+        else:
+            can_request = True
+            if pi_request_only[0].value.lower() == 'true' and project_obj.pi != self.request.user:
+                can_request = False
+        if not can_request:
+            messages.error(
+                request,
+                'Only the PI can request a new allocation for this resource.'
+            )
+            return HttpResponseRedirect(reverse('custom-allocation-create', kwargs={'project_pk': project_obj.pk}))
 
         return super().dispatch(request, *args, **kwargs)
 
