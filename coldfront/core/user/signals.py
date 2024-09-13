@@ -19,25 +19,15 @@ def create_user_profile(sender, instance, created, **kwargs):
     if created:
         if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
             from coldfront.plugins.ldap_user_info.utils import get_user_info
-            attributes = get_user_info(instance.username, ['title', 'department', 'mail', 'sn', 'givenName'])
+            attributes = get_user_info(
+                instance.username, ['title', 'department', 'division', 'mail', 'sn', 'givenName']
+            )
 
             title = ''
             if attributes['title']:
                 title = attributes['title'][0]
-            # max_projects = 0
-            # if title in ['Faculty', 'Staff', 'Academic (ACNP)', 'Affiliate', 'Regular Hourly', ]:
-            #     max_projects = 2
-            # elif title in ['Graduate', 'Student Hourly']:
-            #     max_projects = 1
-            # else:
-            #     logger.error(
-            #         'Max projects not set for title: {}'.format(title)
-            #     )
-            #     max_projects = -1
             max_projects = -1
             is_pi = True
-            # if title in ['Faculty', 'Staff', ]:
-            #     is_pi = True
             if title == 'group':
                 is_pi = False
 
@@ -45,10 +35,15 @@ def create_user_profile(sender, instance, created, **kwargs):
             if attributes['department']:
                 department = attributes['department'][0]
 
+            division = ''
+            if attributes['division']:
+                division = attributes['division'][0]
+
             UserProfile.objects.create(
                 user=instance,
                 title=title,
                 department=department,
+                division=division,
                 max_projects=max_projects,
                 is_pi=is_pi
             )
@@ -65,7 +60,8 @@ def create_user_profile(sender, instance, created, **kwargs):
                 user=instance,
                 title='',
                 department='',
-                max_projects=1
+                division='',
+                max_projects=-1
             )
 
 
@@ -78,7 +74,7 @@ def save_user_profile(sender, instance, **kwargs):
 def update_user_profile(sender, user, **kwargs):
     if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
         from coldfront.plugins.ldap_user_info.utils import get_user_info
-        attributes = get_user_info(user.username, ['title', 'department', 'mail'])
+        attributes = get_user_info(user.username, ['title', 'department', 'division', 'mail'])
         user_profile = UserProfile.objects.get(user=user)
         if attributes['title']:
             user_profile.title = attributes['title'][0]
@@ -87,6 +83,11 @@ def update_user_profile(sender, user, **kwargs):
         if attributes['department']:
             department = attributes['department'][0]
         user_profile.department = department
+
+        division = ''
+        if attributes['division']:
+            division = attributes['division'][0]
+        user_profile.division = division
 
         email = ''
         if attributes['mail']:

@@ -28,7 +28,10 @@ def update_all_user_profiles():
         current_title = user_profile.title
         current_department = user_profile.department
         current_email = user_profile.user.email
-        attributes = ldap_search.search_a_user(user_profile.user.username, ['title', 'department', 'mail'])
+        current_division = user_profile.division
+        attributes = ldap_search.search_a_user(
+            user_profile.user.username, ['title', 'department', 'division', 'mail']
+        )
         title = attributes.get('title')
         if title:
             title = title[0]
@@ -44,6 +47,12 @@ def update_all_user_profiles():
             email = email[0]
         else:
             email = ''
+        division = attributes.get('division')
+        if division:
+            division = division[0]
+        else:
+            division = ''
+
         if title != current_title or department != current_department:
             user_profile.title = title
             user_profile.department = department
@@ -52,6 +61,9 @@ def update_all_user_profiles():
         if email != current_email:
             user_profile.user.email = email
             user_profile.user.save()
+        
+        if division != current_division:
+            user_profile.division = division
 
         if UPDATE_USER_PROFILES_UPDATE_STATUSES:
             if not title or title in ['Former Employee', 'Retired Staff']:
