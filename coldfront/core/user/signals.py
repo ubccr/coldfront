@@ -71,29 +71,27 @@ def save_user_profile(sender, instance, **kwargs):
 def update_user_profile(sender, user, **kwargs):
     if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
         from coldfront.plugins.ldap_user_info.utils import get_user_info
-        attributes = get_user_info(user.username, ['title', 'department', 'division', 'mail'])
+        search_attributes = {'title': '', 'department': '', 'division': '', 'mail': ''}
+        attributes = get_user_info(user.username, list(search_attributes.keys()))
         user_profile = UserProfile.objects.get(user=user)
-        if attributes['title']:
-            user_profile.title = attributes['title'][0]
 
-        department = ''
-        if attributes['department']:
-            department = attributes['department'][0]
-        user_profile.department = department
+        for name, value in attributes.items():
+            if value:
+                search_attributes[name] = value[0]
 
-        division = ''
-        if attributes['division']:
-            division = attributes['division'][0]
-        user_profile.division = division
+        save_changes = False
+        for name, value in search_attributes.items():
+            if name == 'mail':
+                if user_profile.user.email != value:
+                    user_profile.user.email = value
+                    user_profile.user.save()
+            else:
+                if getattr(user_profile, name) != value:
+                    setattr(user_profile, name, value)
+                    save_changes = True
 
-        email = ''
-        if attributes['mail']:
-            email = attributes['mail'][0]
-        if email != user_profile.user.email:
-            user_profile.user.email = email
-            user_profile.user.save()
-
-        user_profile.save()
+        if save_changes:
+            user_profile.save()
 
 
 @receiver(cas_user_authenticated)
