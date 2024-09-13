@@ -1,8 +1,12 @@
+import csv
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
-from django.db.models import OuterRef, Subquery, Q, F, ExpressionWrapper, fields
+
+from django.db.models import OuterRef, Subquery, Q, F, ExpressionWrapper, Case, When, Value, fields, DurationField
 from django.db.models.functions import Cast
+from django.http import HttpResponse
+from django.utils.http import urlencode
 from django_filters import rest_framework as filters
 from ifxuser.models import Organization
 from rest_framework import viewsets
@@ -24,24 +28,42 @@ UNFULFILLED_ALLOCATION_STATUSES = ['Denied'] + import_from_settings(
 
 class CustomAdminRenderer(AdminRenderer):
     def render(self, data, accepted_media_type=None, renderer_context=None):
+
         # Get the count of objects
         count = len(data['results']) if 'results' in data else len(data)
-        
+
         # Create the count HTML
         count_html = f'<div><strong>Total Objects: {count}</strong></div>'
-        
+
         # Render the original content
         original_content = super().render(data, accepted_media_type, renderer_context)
-        
+
         # Ensure original_content is a string
         if isinstance(original_content, bytes):
             original_content = original_content.decode('utf-8')
-        
+
+
+        # Get the request object
+        request = renderer_context.get('request')
+
+        # Generate the CSV export URL
+        query_params = request.GET.copy()
+        params_present = request.build_absolute_uri(request.path) != request.build_absolute_uri()
+        connector = '&' if params_present else '?'
+        export_url = f"{request.build_absolute_uri()}{connector}export=csv"
+
+        # Create the button HTML
+        button_html = f'''
+        <div style="margin: 20px 0;">
+            <a href="{export_url}" class="button" style="padding: 10px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">Export to CSV</a>
+        </div>
+        '''
+
         # Insert the count HTML after the docstring and before the results table
         parts = original_content.split('<table', 1)
-        content_with_count = parts[0] + count_html + '<table' + parts[1]
-        
-        return content_with_count.encode('utf-8')
+        content_with_count_and_button = parts[0] + count_html + button_html +'<table' + parts[1]
+
+        return content_with_count_and_button.encode('utf-8')
 
 class ResourceViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = serializers.ResourceSerializer
@@ -161,6 +183,7 @@ class AllocationRequestViewSet(viewsets.ReadOnlyModelViewSet):
     filterset_class = AllocationRequestFilter
     permission_classes = [IsAuthenticated, IsAdminUser]
     renderer_classes = [CustomAdminRenderer, JSONRenderer]
+    csv_filename = 'allocation_requests.csv'
     ordering_fields = ['id', 'project', 'pi', 'status', 'requested_size', 'created', 'fulfilled_date', 'time_to_fulfillment']
     ordering = ['created']
 
@@ -184,14 +207,51 @@ class AllocationRequestViewSet(viewsets.ReadOnlyModelViewSet):
         allocations = allocations.annotate(
             fulfilled_date=Subquery(fulfilled_date)
         )
-
+        # Use Case and When to handle null fulfilled_date
         allocations = allocations.annotate(
-            time_to_fulfillment=ExpressionWrapper(
-                (Cast(Subquery(fulfilled_date), fields.DateTimeField()) - F('created')),
-                output_field=fields.DurationField()
+            time_to_fulfillment=Case(
+                When(
+                    fulfilled_date__isnull=False,
+                    then=ExpressionWrapper(
+                        (Cast(Subquery(fulfilled_date), fields.DateTimeField()) - F('created')),
+                        output_field=DurationField()
+                    )
+                ),
+                default=Value(None),  # If fulfilled_date is null, set time_to_fulfillment to None
+                output_field=DurationField()
             )
         )
         return allocations
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        # Check if the export query parameter is present
+        if request.GET.get('export') == 'csv':
+            return self.export_to_csv(queryset)
+
+        # Otherwise, use the default list implementation
+        return super().list(request, *args, **kwargs)
+
+    def export_to_csv(self, queryset):
+        # Create the HttpResponse object with CSV header.
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="{self.csv_filename}"'
+
+        # Create a CSV writer object
+        writer = csv.writer(response)
+
+        serializer = self.get_serializer()
+        field_names = [field.label or field_name for field_name, field in serializer.fields.items()]
+        # Write the header row
+        writer.writerow(field_names)
+
+        # Write data rows
+        for item in queryset:
+            serializer_instance = self.get_serializer(item)
+            row = [serializer_instance.data[field_name] for field_name in serializer.fields.keys()]
+            writer.writerow(row)
+
+        return response
 
 
 class AllocationChangeRequestFilter(filters.FilterSet):
@@ -261,6 +321,7 @@ class AllocationChangeRequestViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = (filters.DjangoFilterBackend, drf_filters.OrderingFilter)
     filterset_class = AllocationChangeRequestFilter
     renderer_classes = [CustomAdminRenderer, JSONRenderer]
+    csv_filename = 'allocation_change_requests.csv'
     ordering_fields = ['id', 'allocation', 'project', 'pi', 'status', 'created', 'fulfilled_date', 'time_to_fulfillment']
     ordering = ['created']
 
@@ -299,6 +360,36 @@ class AllocationChangeRequestViewSet(viewsets.ReadOnlyModelViewSet):
         )
 
         return requests
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        # Check if the export query parameter is present
+        if request.GET.get('export') == 'csv':
+            return self.export_to_csv(queryset)
+
+        # Otherwise, use the default list implementation
+        return super().list(request, *args, **kwargs)
+
+    def export_to_csv(self, queryset):
+        # Create the HttpResponse object with CSV header.
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="{self.csv_filename}"'
+
+        # Create a CSV writer object
+        writer = csv.writer(response)
+
+        serializer = self.get_serializer()
+        field_names = [field.label or field_name for field_name, field in serializer.fields.items()]
+        # Write the header row
+        writer.writerow(field_names)
+
+        # Write data rows
+        for item in queryset:
+            serializer_instance = self.get_serializer(item)
+            row = [serializer_instance.data[field_name] for field_name in serializer.fields.keys()]
+            writer.writerow(row)
+
+        return response
 
 
 class ProjectFilter(filters.FilterSet):
