@@ -1,6 +1,6 @@
 from django.core.exceptions import ValidationError
 from coldfront.plugins.ldap_user_info.utils import get_user_info
-
+from coldfront.core.allocation.models import AllocationAttribute
 
 class ValidateNumberOfUsers():
     def __init__(self, limit, count_start=0):
@@ -42,3 +42,16 @@ class ValidateUsername():
         attribute = get_user_info(value, ['cn'])
         if not attribute.get('cn') or not attribute.get('cn')[0]:
             raise ValidationError('This username does not exist')
+
+
+class ValidateDupDirectoryName():
+    def __call__(self, value):
+        if not value:
+            return
+        
+        directory_names = AllocationAttribute.objects.filter(
+            allocation_attribute_type__name='Slate Project Directory'
+        ).values_list('value', flat=True)
+        for directory_name in directory_names:
+            if directory_name == value:
+                raise ValidationError('This Slate Project directory name already exists')

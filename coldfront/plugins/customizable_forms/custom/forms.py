@@ -7,7 +7,8 @@ from django.core.exceptions import ValidationError
 from coldfront.plugins.customizable_forms.validators import (ValidateNumberOfUsers,
                                                              ValidateAccountNumber,
                                                              ValidateDirectoryName,
-                                                             ValidateUsername)
+                                                             ValidateUsername,
+                                                             ValidateDupDirectoryName)
 from coldfront.plugins.customizable_forms.forms import BaseForm
 
 
@@ -72,7 +73,9 @@ class SlateProjectForm(BaseForm):
     campus_affiliation = forms.ChoiceField(choices=CAMPUS_CHOICES)
     email = forms.EmailField(max_length=40, disabled=True)
     url = forms.CharField(max_length=50, required=False)
-    project_directory_name = forms.CharField(max_length=10, validators=[ValidateDirectoryName()])
+    project_directory_name = forms.CharField(
+        max_length=10, validators=[ValidateDirectoryName(), ValidateDupDirectoryName()]
+    )
     storage_space = forms.IntegerField(min_value=1, max_value=30)
     start_date = forms.DateField(widget=forms.TextInput(attrs={'class': 'datepicker'}))
     store_ephi = forms.ChoiceField(choices=YES_NO_CHOICES, widget=RadioSelect)
