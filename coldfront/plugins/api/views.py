@@ -124,7 +124,20 @@ class AllocationRequestFilter(filters.FilterSet):
     requested_size = filters.NumericRangeFilter(label='Requested Size', field_name='requested_size')
     pi = filters.CharFilter(label='PI', field_name='project__pi__full_name', lookup_expr='icontains')
     project = filters.CharFilter(label='Project', field_name='project__title', lookup_expr='icontains')
+    status = filters.CharFilter(label='Status', field_name='status__name', lookup_expr='icontains')
     time_to_fulfillment = filters.NumericRangeFilter(label='Time-to-fulfillment Range', method='filter_time_to_fulfillment')
+    o = filters.OrderingFilter(
+        fields=(
+            ('id', 'id'),
+            ('created', 'created'),
+            ('project__title', 'project'),
+            ('project__pi__full_name', 'pi'),
+            ('status__name', 'status'),
+            ('quantity', 'requested_size'),
+            ('fulfilled_date', 'fulfilled_date'),
+            ('time_to_fulfillment', 'time_to_fulfillment'),
+        )
+    )
 
     class Meta:
         model = Allocation
@@ -184,13 +197,11 @@ class AllocationRequestViewSet(viewsets.ReadOnlyModelViewSet):
         Set to the maximum/minimum number of days between request creation and time_to_fulfillment.
     '''
     serializer_class = serializers.AllocationRequestSerializer
-    filter_backends = (filters.DjangoFilterBackend, drf_filters.OrderingFilter)
+    filter_backends = (filters.DjangoFilterBackend, )
     filterset_class = AllocationRequestFilter
     permission_classes = [IsAuthenticated, IsAdminUser]
     renderer_classes = [CustomAdminRenderer, JSONRenderer]
     csv_filename = 'allocation_requests.csv'
-    ordering_fields = ['id', 'project', 'pi', 'status', 'requested_size', 'created', 'fulfilled_date', 'time_to_fulfillment']
-    ordering = ['created']
 
     def get_queryset(self):
         HistoricalAllocation = get_history_model_for_model(Allocation)
@@ -270,10 +281,22 @@ class AllocationChangeRequestFilter(filters.FilterSet):
     pi = filters.CharFilter(label='PI', field_name='allocation__project__pi__full_name', lookup_expr='icontains')
     project = filters.CharFilter(label='Project', field_name='allocation__project__title', lookup_expr='icontains')
     time_to_fulfillment = filters.NumericRangeFilter(label='Time-to-fulfillment Range', method='filter_time_to_fulfillment')
-
+    o = filters.OrderingFilter(
+        fields=(
+            ('created', 'created'),
+            ('id', 'id'),
+            ('allocation__id', 'allocation'),
+            ('allocation__project__title', 'project'),
+            ('allocation__project__pi__full_name', 'pi'),
+            ('status__name', 'status'),
+            ('fulfilled_date', 'fulfilled_date'),
+            ('time_to_fulfillment', 'time_to_fulfillment'),
+        )
+    )
     class Meta:
         model = AllocationChangeRequest
         fields = [
+            'id',
             'created',
             'fulfilled',
             'fulfilled_date',
@@ -327,12 +350,10 @@ class AllocationChangeRequestViewSet(viewsets.ReadOnlyModelViewSet):
         Set to the maximum/minimum number of days between request creation and time_to_fulfillment.
     '''
     serializer_class = serializers.AllocationChangeRequestSerializer
-    filter_backends = (filters.DjangoFilterBackend, drf_filters.OrderingFilter)
+    filter_backends = (filters.DjangoFilterBackend, )
     filterset_class = AllocationChangeRequestFilter
     renderer_classes = [CustomAdminRenderer, JSONRenderer]
     csv_filename = 'allocation_change_requests.csv'
-    ordering_fields = ['id', 'allocation', 'project', 'pi', 'status', 'created', 'fulfilled_date', 'time_to_fulfillment']
-    ordering = ['created']
 
     def get_queryset(self):
         requests = AllocationChangeRequest.objects.prefetch_related(
