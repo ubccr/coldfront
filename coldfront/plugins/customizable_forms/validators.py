@@ -26,10 +26,11 @@ class ValidateAccountNumber():
 
 
 class ValidateDirectoryName():
-    invalid_characters = '''!"#$%&'()*+,./:;<=>?@[\]^`{|}~'''
+    def is_underscore(self, char):
+        return char == '_'
 
     def __call__(self, value):
-        if any(char in self.invalid_characters for char in value):
+        if not all(char.isalnum() or self.is_underscore(char) for char in value):
             raise ValidationError(f'Contains invalid character(s)', code='invalid')
 
 

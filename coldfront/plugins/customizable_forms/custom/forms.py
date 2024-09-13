@@ -85,6 +85,7 @@ class SlateProjectForm(BaseForm):
         self.fields['email'].initial = request_user.email
 
         self.fields['start_date'].widget.attrs.update({'placeholder': 'MM/DD/YYYY'})
+        self.fields['project_directory_name'].widget.attrs.update({'placeholder': 'example_A-Za-z0-9'})
 
     def clean(self):
         cleaned_data = super().clean()
