@@ -580,6 +580,19 @@ class AllocationUser(TimeStampedModel):
                                verbose_name='Allocation User Status')
     history = HistoricalRecords()
 
+    def is_active(self):
+        """Helper function returns True if allocation user status == Active and
+           allocation status is one of the accepted active states where users
+           should be considered active and have actions taken on them (i.e. 
+           groups added, accounts created in other systems, etc.)"""
+
+        active_allocation_statuses = [
+            'Active',
+            'Renewal Requested',
+        ]
+
+        return self.status.name == 'Active' and self.allocation.status.name in active_allocation_statuses
+
     def __str__(self):
         return '%s' % (self.user)
 
