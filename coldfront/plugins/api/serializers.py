@@ -94,15 +94,27 @@ class AllocationSerializer(serializers.ModelSerializer):
             'usage',
             'pct_full',
             'cost',
+            'created',
         )
+
+    def get_type(self, obj):
+        resource = obj.get_parent_resource
+        if resource:
+            return resource.resource_type.name
+        return None
 
 
 class AllocationRequestSerializer(serializers.ModelSerializer):
     project = serializers.SlugRelatedField(slug_field='title', read_only=True)
-    resource = serializers.ReadOnlyField(source='get_resources_as_string', read_only=True)
+    pi = serializers.ReadOnlyField(source='project.pi.full_name')
+    resource = serializers.ReadOnlyField(source='get_parent_resource.name', allow_null=True)
+    tier = serializers.ReadOnlyField(source='get_parent_resource.parent_resource.name', allow_null=True)
     status = serializers.SlugRelatedField(slug_field='name', read_only=True)
-    fulfilled_date = serializers.DateTimeField(read_only=True)
+    requested_size = serializers.ReadOnlyField(source='quantity')
+    current_size = serializers.ReadOnlyField(source='size')
+    created = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
     created_by = serializers.SerializerMethodField(read_only=True)
+    fulfilled_date = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
     fulfilled_by = serializers.SerializerMethodField(read_only=True)
     time_to_fulfillment = serializers.DurationField(read_only=True)
 
@@ -111,10 +123,13 @@ class AllocationRequestSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'project',
+            'pi',
             'resource',
+            'tier',
             'path',
             'status',
-            'size',
+            'requested_size',
+            'current_size',
             'created',
             'created_by',
             'fulfilled_date',
@@ -139,10 +154,14 @@ class AllocationRequestSerializer(serializers.ModelSerializer):
 
 
 class AllocationChangeRequestSerializer(serializers.ModelSerializer):
-    allocation = AllocationSerializer(read_only=True)
+    project = serializers.ReadOnlyField(source='allocation.project.title')
+    pi = serializers.ReadOnlyField(source='allocation.project.pi.full_name')
+    resource = serializers.ReadOnlyField(source='allocation.get_resources_as_string')
+    tier = serializers.ReadOnlyField(source='allocation.get_parent_resource.parent_resource.name', allow_null=True)
     status = serializers.SlugRelatedField(slug_field='name', read_only=True)
+    created = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
     created_by = serializers.SerializerMethodField(read_only=True)
-    fulfilled_date = serializers.DateTimeField(read_only=True)
+    fulfilled_date = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
     fulfilled_by = serializers.SerializerMethodField(read_only=True)
     time_to_fulfillment = serializers.DurationField(read_only=True)
 
@@ -151,6 +170,10 @@ class AllocationChangeRequestSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'allocation',
+            'project',
+            'pi',
+            'resource',
+            'tier',
             'justification',
             'status',
             'created',
@@ -205,7 +228,15 @@ class ProjectSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Project
-        fields = ('id', 'title', 'pi', 'status', 'project_users', 'allocations')
+        fields = (
+            'id',
+            'title',
+            'pi',
+            'status',
+            'project_users',
+            'allocations',
+            'created',
+        )
 
     def get_project_users(self, obj):
         request = self.context.get('request', None)
