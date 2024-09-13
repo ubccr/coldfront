@@ -97,6 +97,9 @@ The following settings are ColdFront specific settings related to the core appli
 | ONDEMAND_URL                           | The URL to your Open OnDemand installation     |
 | LOGIN_FAIL_MESSAGE                     | Custom message when user fails to login. Here you can paint a custom link to your user account portal |
 | ENABLE_SU                              | Enable administrators to login as other users. Default True |
+| RESEARCH_OUTPUT_ENABLE                 | Enable or disable research outputs. Default True |
+| GRANT_ENABLE                           | Enable or disable grants. Default True           |
+| PUBLICATION_ENABLE                     | Enable or disable publications. Default True     |
 
 
 ### Database settings

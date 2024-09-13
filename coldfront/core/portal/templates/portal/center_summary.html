@@ -14,6 +14,7 @@ Center Summary
 <h2>{% settings_value 'CENTER_NAME' %} Scientific Impact</h2>
 <hr>
 
+{% if settings.PUBLICATION_ENABLE %}
 <!-- Start  Publications -->
 <div class="card mb-3 border-primary">
   <div class="card-header bg-primary text-white">
@@ -25,7 +26,9 @@ Center Summary
   </div>
 </div>
 <!-- End Publications -->
+{% endif %}
 
+{% if settings.RESEARCH_OUTPUT_ENABLE %}
 <!-- Start  Research Outputs -->
 <div class="card mb-3 border-primary">
   <div class="card-header bg-primary text-white">
@@ -36,7 +39,9 @@ Center Summary
   </div>
 </div>
 <!-- End Research Outputs -->
+{% endif %}
 
+{% if settings.GRANT_ENABLE %}
 <!-- Start  Grants -->
 <div class="card mb-3 border-primary">
   <div class="card-header bg-primary text-white">
@@ -52,6 +57,7 @@ Center Summary
   </div>
 </div>
 <!-- End Grants -->
+{% endif %}
 
 <!-- Start Allocation by Field of Science -->
 <div class="card mb-3 border-primary">
