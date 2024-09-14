@@ -612,7 +612,6 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
         allocation_form = ProjectAddUsersToAllocationForm(
             request.user, project_obj.pk, request.POST, prefix='allocationform'
         )
-
         added_users_count = 0
 
         if formset.is_valid() and allocation_form.is_valid():
@@ -672,7 +671,6 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                             'status': projuserstatus_active,
                         }
                     )
-
                     added_users_count += 1
                     for allocation in Allocation.objects.filter(
                         pk__in=allocation_form_data
@@ -755,14 +753,13 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         signal_response = project_filter_users_to_remove.send(
             sender=self.__class__, users_to_remove=users_list, project=project_obj
         )
-        print('signal_response', signal_response)
         if signal_response:
             user_categories = signal_response[0][1]
             users_no_removal = user_categories[0]
             users_to_remove = user_categories[1]
         else:
-            users_no_removal = users_list
-            users_to_remove = []
+            users_no_removal = []
+            users_to_remove = users_list
 
         context = {}
 

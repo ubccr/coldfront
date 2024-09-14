@@ -384,15 +384,14 @@ class ProjectAddUsersViewTest(ProjectViewTestBase):
         self.client.force_login(self.proj_accessmanager)
         # Prepare form data for adding a user
         form_data = {
-            'q': 'search_user',
-            'search_by': 'username',
+            'q': self.nonproj_allocation_user.username,
+            'search_by': 'username_only',
             'userform-TOTAL_FORMS': '1',
             'userform-INITIAL_FORMS': '0',
             'userform-MIN_NUM_FORMS': '0',
             'userform-MAX_NUM_FORMS': '1',
             'userform-0-selected': 'on',
             'userform-0-role': ProjectUserRoleChoice.objects.get(name='User').pk,
-            'userform-0-username': self.nonproj_allocation_user.username,
             'allocationform-allocation': [self.proj_allocation.pk]
         }
         response = self.client.post(self.url, data=form_data)
