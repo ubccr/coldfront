@@ -175,7 +175,7 @@ class GeodeProjectForm(BaseForm):
         widget=forms.CheckboxSelectMultiple
     )
     fiscal_officer = forms.CharField(max_length=80, validators=[ValidateUsername()])
-    account_number = forms.CharField(max_length=9, validators=[ValidateAccountNumber()])
+    account_number = forms.CharField(max_length=9, help_text='Format: xx-xxx-xx', validators=[ValidateAccountNumber()])
     sub_account_number = forms.CharField(max_length=20, required=False)
     terms_of_service = forms.BooleanField(
         help_text='<a href="https://kb.iu.edu/d/aysw" target="_blank" rel="noopener noreferrer">Geode-Project Terms of Service</a>'
