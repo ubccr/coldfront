@@ -1,4 +1,4 @@
-from django.test import TestCase
+from django.test import TestCase, tag
 from coldfront.plugins.qumulo.utils.qumulo_api import QumuloAPI
 from coldfront.plugins.qumulo.tests_integration.utils.test_qumulo_api.utils import (
     create_test_export,
@@ -6,6 +6,7 @@ from coldfront.plugins.qumulo.tests_integration.utils.test_qumulo_api.utils impo
 
 
 class TestUpdateNFSExport(TestCase):
+    @tag('integration')
     def test_updates_an_export_description(self):
         qumulo_api = QumuloAPI()
         description = "test-test_update_project-active"
@@ -31,6 +32,7 @@ class TestUpdateNFSExport(TestCase):
 
         self.assertEqual(update_response["description"], update_description)
 
+    @tag('integration')
     def test_updates_paths(self):
         qumulo_api = QumuloAPI()
 

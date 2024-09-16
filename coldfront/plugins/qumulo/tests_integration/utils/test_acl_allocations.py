@@ -1,8 +1,6 @@
-from django.test import TestCase
-from unittest.mock import MagicMock, patch
+from django.test import TestCase, tag
 
 from coldfront.plugins.qumulo.utils.acl_allocations import AclAllocations
-from coldfront.plugins.qumulo.views.allocation_view import AllocationView
 
 from coldfront.core.user.models import User
 from coldfront.core.project.models import Project
@@ -15,8 +13,6 @@ from coldfront.core.allocation.models import (
 from coldfront.plugins.qumulo.utils.qumulo_api import QumuloAPI
 from coldfront.plugins.qumulo.utils.active_directory_api import ActiveDirectoryAPI
 from coldfront.plugins.qumulo.tests.utils.mock_data import build_models
-
-import time
 
 
 class TestAclAllocations(TestCase):
@@ -34,6 +30,7 @@ class TestAclAllocations(TestCase):
 
         return super().setUp()
 
+    @tag('integration')
     def test_create_acl_allocation(self):
         acl_type = "ro"
         test_users = ["test"]

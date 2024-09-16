@@ -1,4 +1,4 @@
-from django.test import TestCase
+from django.test import TestCase, tag
 from coldfront.plugins.qumulo.utils.active_directory_api import ActiveDirectoryAPI
 
 
@@ -21,14 +21,17 @@ class TestActiveDirectoryAPI(TestCase):
         for group in test_groups:
             self.ad_api.conn.delete(group["dn"])
 
+    @tag('integration')
     def test_init_creates_connection(self):
         self.assertTrue(self.ad_api.conn.bind())
 
+    @tag('integration')
     def test_get_user(self):
         user = self.ad_api.get_user(self.test_wustlkey)
 
         self.assertIn("Harter", user["dn"])
 
+    @tag('integration')
     def test_create_ad_group(self):
         group_name = "storage-delme-test-create_ad_group"
 
@@ -37,6 +40,7 @@ class TestActiveDirectoryAPI(TestCase):
         group_dn = self.ad_api.get_group_dn(group_name)
         self.assertGreater(len(group_dn), 0)
 
+    @tag('integration')
     def test_add_user_to_ad_group(self):
         group_name = "storage-delme-test-add_user_to_ad_group"
 
@@ -54,6 +58,7 @@ class TestActiveDirectoryAPI(TestCase):
 
         self.assertTrue(user_in_group)
 
+    @tag('integration')
     def test_get_group_dn(self):
         group_name = "storage-delme-test-get_group_dn"
 
@@ -68,6 +73,7 @@ class TestActiveDirectoryAPI(TestCase):
 
         self.assertEqual(response_group_dn, group_dn)
 
+    @tag('integration')
     def test_delete_ad_group(self):
         group_name = "storage-delme-test-delete_ad_group"
 
@@ -86,6 +92,7 @@ class TestActiveDirectoryAPI(TestCase):
         )
         self.assertEqual(len(self.ad_api.conn.response), 0)
 
+    @tag('integration')
     def test_remove_user_from_group(self):
         group_name = "storage-delme-test-remove_user_from_group"
 

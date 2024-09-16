@@ -1,12 +1,10 @@
-from django.test import TestCase
+from django.test import TestCase, tag
 from coldfront.plugins.qumulo.utils.qumulo_api import QumuloAPI
-from coldfront.plugins.qumulo.tests_integration.utils.test_qumulo_api.utils import (
-    create_test_export,
-)
 from qumulo.commands.nfs import parse_nfs_export_restrictions
 
 
 class TestCreateQuota(TestCase):
+    @tag('integration')
     def test_creates_quota(self):
         qumulo_api = QumuloAPI()
 
