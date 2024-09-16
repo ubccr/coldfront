@@ -92,8 +92,9 @@ class SlateProjectForm(BaseForm):
 
     def clean(self):
         cleaned_data = super().clean()
+        start_date = cleaned_data.get('start_date')
 
-        if cleaned_data.get('start_date') <= date.today():
+        if start_date and start_date <= date.today():
             self.add_error('start_date', 'Must be later than today')
             raise ValidationError('Please correct the error below')
 
@@ -203,11 +204,11 @@ class GeodeProjectForm(BaseForm):
         start_date = cleaned_data.get('start_date')
         end_date = cleaned_data.get('end_date')
 
-        if start_date < date.today():
+        if start_date and start_date < date.today():
             self.add_error('start_date', 'Must be today or later')
             raise ValidationError('Please correct the error below')
 
-        if end_date < date.today():
+        if end_date and end_date < date.today():
             self.add_error('end_date', 'Must be today or later')
             raise ValidationError('Please correct the error below')
 
