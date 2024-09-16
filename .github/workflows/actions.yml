@@ -20,7 +20,6 @@ jobs:
       - name: install python packages
         run: |
           pip install -r requirements.txt
-          pip install ./
 
       - name: run tests
         run: python3 manage.py test --exclude-tag integration -b
