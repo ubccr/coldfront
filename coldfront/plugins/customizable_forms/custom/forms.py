@@ -90,6 +90,10 @@ class SlateProjectForm(BaseForm):
         self.fields['start_date'].widget.attrs.update({'placeholder': 'MM/DD/YYYY'})
         self.fields['project_directory_name'].widget.attrs.update({'placeholder': 'example_A-Za-z0-9'})
 
+        for field in self.errors:
+            self.fields[field].widget.attrs.update({'autofocus': ''})
+            break
+
     def clean(self):
         cleaned_data = super().clean()
         start_date = cleaned_data.get('start_date')
@@ -198,6 +202,10 @@ class GeodeProjectForm(BaseForm):
 
         self.fields['start_date'].widget.attrs.update({'placeholder': 'MM/DD/YYYY'})
         self.fields['end_date'].widget.attrs.update({'placeholder': 'MM/DD/YYYY'})
+
+        for field in self.errors:
+            self.fields[field].widget.attrs.update({'autofocus': ''})
+            break
 
     def clean(self):
         cleaned_data = super().clean()
