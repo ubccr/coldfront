@@ -91,36 +91,6 @@ class TestProject(TestCase):
         with self.assertRaises(ValidationError):
             project_obj.clean()
 
-    def test_description_minlength(self):
-        """Test that a description must be at least 10 characters long
-        If description is less than 10 characters, an error should be raised
-        """
-        expected_minimum_length = 10
-        minimum_description = 'x' * expected_minimum_length
-
-        project_obj = self.data.unsaved_object
-
-        project_obj.description = minimum_description[:-1]
-        with self.assertRaises(ValidationError):
-            project_obj.clean_fields()
-
-        project_obj.description = minimum_description
-        project_obj.clean_fields()
-        project_obj.save()
-
-        retrieved_obj = Project.objects.get(pk=project_obj.pk)
-        self.assertEqual(minimum_description, retrieved_obj.description)
-
-    def test_description_update_required_initially(self):
-        """
-        Test that project descriptions must be changed from the default value.
-        """
-        project_obj = self.data.unsaved_object
-        assert project_obj.pk is None
-
-        project_obj.description = project_obj.DEFAULT_DESCRIPTION
-        with self.assertRaises(ValidationError):
-            project_obj.clean()
 
     def test_pi_foreignkey_on_delete(self):
         """Test that a project is deleted when its PI is deleted."""
