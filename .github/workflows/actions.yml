@@ -25,7 +25,7 @@ jobs:
         run: python3 manage.py test --exclude-tag integration -b
         env:
           ENVIRONMENT: test
-          QUMULO_PLUGIN: True
+          PLUGIN_QUMULO: True
           AD_USER_PASS: ADPassword@123
           AD_USERNAME: ADUsername
           AD_SERVER_NAME: accounts-ldap.wusm.wustl.edu
