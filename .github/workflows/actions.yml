@@ -23,7 +23,7 @@ jobs:
           pip install ./
 
       - name: run tests
-        run: python3 src/manage.py test python manage.py test --exclude-tag integration
+        run: python3 manage.py test --exclude-tag integration
         env:
           ENVIRONMENT: test
           AD_USER_PASS: ADPassword@123
