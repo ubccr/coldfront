@@ -2,6 +2,7 @@ import logging
 from datetime import date
 from coldfront.core.user.models import UserProfile
 from django import forms
+from django.db.models.functions import Lower
 from django.core.exceptions import ValidationError
 from django.forms.widgets import RadioSelect
 from django.shortcuts import get_object_or_404
@@ -646,6 +647,15 @@ class AllocationChangeNoteForm(forms.Form):
             required=False, 
             widget=forms.Textarea,
             help_text="Leave any feedback about the allocation change request.")
+
+
+class AllocationAttributeCreateForm(forms.ModelForm):
+    class Meta:
+        model = AllocationAttribute
+        fields = '__all__'
+    def __init__(self, *args, **kwargs):
+        super(AllocationAttributeCreateForm, self).__init__(*args, **kwargs) 
+        self.fields['allocation_attribute_type'].queryset = self.fields['allocation_attribute_type'].queryset.order_by(Lower('name'))
 
 
 class AllocationExportForm(forms.Form):

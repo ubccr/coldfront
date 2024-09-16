@@ -42,7 +42,8 @@ from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationUpdateForm,
                                              AllocationInvoiceSearchForm,
                                              AllocationExportForm,
-                                             AllocationUserUpdateForm)
+                                             AllocationUserUpdateForm,
+                                             AllocationAttributeCreateForm)
 from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationAttribute,
                                               AllocationAttributeType,
@@ -1632,8 +1633,7 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
 class AllocationAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = AllocationAttribute
-    # fields = ['allocation_attribute_type', 'value', 'is_private', ]
-    fields = '__all__'
+    form_class = AllocationAttributeCreateForm
     template_name = 'allocation/allocation_allocationattribute_create.html'
 
     def test_func(self):
