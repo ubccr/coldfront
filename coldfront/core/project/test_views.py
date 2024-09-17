@@ -278,9 +278,11 @@ class ProjectListViewTest(ProjectViewTestBase):
         # add 100 projects to test pagination, permissions, search functionality
 
         # create 100 random users with last names following a pattern
-        last_name_base = "AntidisestablishmentarianBacterium"
-        users = [UserFactory(last_name=f"{x}{last_name_base}") for x in range(100)]
-        additional_projects = [ProjectFactory(pi=users[i]) for i in list(range(100))]
+        # last_name_base = "AntidisestablishmentarianBacterium"
+        # users = [UserFactory(last_name=f"{x}{last_name_base}") for x in range(100)]
+        # additional_projects = [ProjectFactory(pi=users[i]) for i in list(range(100))]
+        additional_projects = [ProjectFactory() for i in list(range(100))]
+
         cls.additional_projects = [
             p for p in additional_projects if p.pi.last_name != cls.project.pi.last_name
         ]
