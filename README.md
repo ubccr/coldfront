@@ -59,6 +59,7 @@ PLUGIN_QUMULO=True
 AD_SERVER_NAME=foo
 AD_USERNAME=bar
 AD_USER_PASS=bah
+STORAGE2_PATH=/foo/bar
 ```
 
 ### Running
