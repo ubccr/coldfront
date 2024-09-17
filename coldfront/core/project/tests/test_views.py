@@ -2,6 +2,7 @@ import logging
 
 from django.test import TestCase, tag, override_settings
 from django.urls import reverse
+from unittest.mock import patch
 
 from coldfront.core.test_helpers import utils
 from coldfront.core.test_helpers.factories import (
@@ -309,6 +310,16 @@ class ProjectRemoveUsersViewTest(ProjectViewTestBase):
         users_to_remove = context['formset'].initial
         self.assertNotIn(self.pi_user.username, [u['username'] for u in users_to_remove])
 
+    @patch('coldfront.core.project.signals.project_preremove_projectuser.send')
+    def test_projectremove_users_signal_fail(self, mock_signal):
+        """Test that the add users form fails when the signal sent to LDAP fails"""
+        self.client.force_login(self.proj_accessmanager)
+        mock_signal.side_effect = Exception("LDAP error occurred")
+        # Prepare form data for adding a user
+        response = self.client.post(self.url, data=self.form_data, follow=True)
+        self.assertContains(response, 'LDAP error occurred')
+        self.assertContains(response, 'Could not remove user')
+
 
 class ProjectUpdateViewTest(ProjectViewTestBase):
     """Tests for ProjectUpdateView"""
@@ -373,17 +384,7 @@ class ProjectAddUsersViewTest(ProjectViewTestBase):
     def setUp(self):
         """set up users and project for testing"""
         self.url = reverse('project-add-users', kwargs={'pk': self.project.pk})
-
-    @override_settings(PLUGIN_LDAP=True)
-    def test_projectaddusers_ldapsignalfail_messages(self):
-        """Test the messages displayed when the add user signal fails"""
-        self.client.force_login(self.pi_user)
-
-    def test_add_users_form_validation(self):
-        """Test that the formset and allocation form are validated correctly"""
-        self.client.force_login(self.proj_accessmanager)
-        # Prepare form data for adding a user
-        form_data = {
+        self.form_data = {
             'q': self.nonproj_allocation_user.username,
             'search_by': 'username_only',
             'userform-TOTAL_FORMS': '1',
@@ -394,11 +395,31 @@ class ProjectAddUsersViewTest(ProjectViewTestBase):
             'userform-0-role': ProjectUserRoleChoice.objects.get(name='User').pk,
             'allocationform-allocation': [self.proj_allocation.pk]
         }
-        response = self.client.post(self.url, data=form_data)
+
+    @override_settings(PLUGIN_LDAP=True)
+    def test_projectaddusers_ldapsignalfail_messages(self):
+        """Test the messages displayed when the add user signal fails"""
+        self.client.force_login(self.pi_user)
+
+    def test_projectaddusers_form_validation(self):
+        """Test that the formset and allocation form are validated correctly"""
+        self.client.force_login(self.proj_accessmanager)
+        # Prepare form data for adding a user
+        response = self.client.post(self.url, data=self.form_data)
         self.assertEqual(response.url, reverse('project-detail', kwargs={'pk': self.project.pk}))
         self.assertEqual(response.status_code, 302)
         # Check that user was added
         self.assertTrue(ProjectUser.objects.filter(project=self.project, user=self.nonproj_allocation_user).exists())
+
+    @patch('coldfront.core.project.signals.project_make_projectuser.send')
+    def test_projectaddusers_signal_fail(self, mock_signal):
+        """Test that the add users form fails when the signal sent to LDAP fails"""
+        self.client.force_login(self.proj_accessmanager)
+        mock_signal.side_effect = Exception("LDAP error occurred")
+        # Prepare form data for adding a user
+        response = self.client.post(self.url, data=self.form_data, follow=True)
+        self.assertContains(response, 'LDAP error occurred')
+        self.assertContains(response, 'Added 0 users')
 
 
 class ProjectUserDetailViewTest(ProjectViewTestBase):
