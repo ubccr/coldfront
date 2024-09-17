@@ -22,6 +22,7 @@ plugin_configs = {
     'PLUGIN_AUTH_OIDC': 'plugins/openid.py',
     'PLUGIN_AUTH_LDAP': 'plugins/ldap.py',
     'PLUGIN_LDAP_USER_SEARCH': 'plugins/ldap_user_search.py',
+    'PLUGIN_QUMULO': 'plugins/qumulo.py',
 }
 
 # This allows plugins to be enabled via environment variables. Can alternatively

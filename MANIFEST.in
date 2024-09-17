@@ -11,3 +11,5 @@ recursive-include coldfront/core/publication/templates *
 recursive-include coldfront/core/grant/templates *
 recursive-include coldfront/core/user/templates *
 recursive-include coldfront/core/resource/templates *
+recursive-include coldfront/plugins/qumulo/templates *
+recursive-include coldfront/plugins/qumulo/static *

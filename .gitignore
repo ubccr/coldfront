@@ -16,7 +16,6 @@ local_settings.py
 local_strings.py
 coldfront.db
 *.code-workspace
-.vscode
 db.json
 .env
 .devcontainer/*
