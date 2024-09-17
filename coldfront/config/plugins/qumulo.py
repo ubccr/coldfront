@@ -4,8 +4,6 @@ from coldfront.config.base import (
     PROJECT_ROOT,
     STATICFILES_DIRS,
 )
-from coldfront.config.env import ENV
-
 
 INSTALLED_APPS += [
     "coldfront.plugins.qumulo",
