@@ -63,6 +63,19 @@ Allocation Detail
               {% else %}
                 None
               {% endif %}
+              {% if warranty and service %}
+              <span class="badge badge-warning"><i class="far fa-clock" aria-hidden="true"></i>
+                Resource(s) warranty expiring within {{warranty_days}} days and service expiring in {{service_days}} days
+              </span>
+              {% elif warranty and not service %}
+                  <span class="badge badge-warning"><i class="far fa-clock" aria-hidden="true"></i>
+                  Resource(s) warranty expiring within {{warranty_days}} days 
+                </span>
+              {% elif service and not warranty %}
+                <span class="badge badge-warning"><i class="far fa-clock" aria-hidden="true"></i>
+                Resource(s) service expiring within {{service_days}} days 
+              </span>
+              {% endif %}
             </td>
           </tr>
           {% if request.user.is_superuser %}

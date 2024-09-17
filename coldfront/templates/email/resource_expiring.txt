@@ -1,0 +1,13 @@
+Dear {{center_name}} PI,
+
+Your access to {{center_name}} resources are expiring soon. Failure to renew the expiring resources(s) on time will terminate access to the resource 
+for all users on the allocation. Below is a list of links to your project(s) containing at least one expiring resource:
+{% for resources_key, resources_value in resources.items %} 
+Resource Name: {{ resources_key.0 }}
+Resource URL: {{ resources_key.1 }}
+{% for days in expiry_days %} {% for resource in resources_value %} {% if days == resource.1 %}
+    {{ resource.0 }} is expiring in {{days}} days
+       {% endif %}{% endfor %}{% endfor %}{% endfor %}
+
+Thank you,
+{{ signature }}
