@@ -71,6 +71,10 @@ INVOICE_DEFAULT_STATUS = ENV.str('INVOICE_DEFAULT_STATUS', default='New')
 ONDEMAND_URL = ENV.str('ONDEMAND_URL', default=None)
 
 #------------------------------------------------------------------------------
+# Toggle Generic Search Form
+#------------------------------------------------------------------------------
+GENERIC_SEARCH_FIELD = ENV.str('GENERIC_SEARCH_FIELD', default=False)
+#------------------------------------------------------------------------------
 # Default Strings. Override these in local_settings.py
 #------------------------------------------------------------------------------
 LOGIN_FAIL_MESSAGE = ENV.str('LOGIN_FAIL_MESSAGE', '')
