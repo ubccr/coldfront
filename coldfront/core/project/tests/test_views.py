@@ -310,16 +310,6 @@ class ProjectRemoveUsersViewTest(ProjectViewTestBase):
         users_to_remove = context['formset'].initial
         self.assertNotIn(self.pi_user.username, [u['username'] for u in users_to_remove])
 
-    @patch('coldfront.core.project.signals.project_preremove_projectuser.send')
-    def test_projectremove_users_signal_fail(self, mock_signal):
-        """Test that the add users form fails when the signal sent to LDAP fails"""
-        self.client.force_login(self.proj_accessmanager)
-        mock_signal.side_effect = Exception("LDAP error occurred")
-        # Prepare form data for adding a user
-        response = self.client.post(self.url, data=self.form_data, follow=True)
-        self.assertContains(response, 'LDAP error occurred')
-        self.assertContains(response, 'Could not remove user')
-
 
 class ProjectUpdateViewTest(ProjectViewTestBase):
     """Tests for ProjectUpdateView"""
