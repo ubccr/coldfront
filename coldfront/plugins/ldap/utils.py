@@ -198,8 +198,9 @@ class LDAPConn:
         except Exception as e:
             logger.exception("Error encountered while adding user to group: %s", e)
             raise LDAPUserAdditionError("Error adding user to group.")
-        if not self.member_in_group(member_dn, group_dn):
+        if not self.member_in_group(member_dn, group_dn) or not result:
             raise LDAPUserAdditionError("Member not successfully added to group.")
+        logger.info('user %s added to AD group %s', member_dn, group_dn)
         return result
 
     def remove_member_from_group(self, user_name, group_name):
@@ -219,8 +220,9 @@ class LDAPConn:
         except Exception as e:
             logger.exception("Error encountered while removing user from group: %s", e)
             raise LDAPUserRemovalError("Error removing user from group.")
-        if self.member_in_group(user_dn, group_dn):
+        if self.member_in_group(user_dn, group_dn) or not result:
             raise LDAPUserRemovalError("Member not successfully removed from group.")
+        logger.info('user %s removed from AD group %s', user_dn, group_dn)
         return result
 
     def users_in_primary_group(self, usernames, groupname):

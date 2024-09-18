@@ -828,7 +828,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                             request,
                             f"could not remove user {user_obj}: {e}"
                         )
-                        logger.error(
+                        logger.exception(
                             "P802: Coldfront user %s could NOT remove AD User for %s from AD Group for %s: %s",
                             self.request.user,
                             user_obj.username,
