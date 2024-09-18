@@ -29,7 +29,12 @@ from pathlib import PurePath
 class AllocationView(LoginRequiredMixin, FormView):
     form_class = AllocationForm
     template_name = "allocation.html"
-    success_url = reverse_lazy("home")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["form_title"] = "Update Allocation"
+        context["is_pending"] = Allocation
+        return context
 
     def get_form_kwargs(self):
         kwargs = super(AllocationView, self).get_form_kwargs()
