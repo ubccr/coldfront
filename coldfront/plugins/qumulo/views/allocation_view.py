@@ -32,8 +32,8 @@ class AllocationView(LoginRequiredMixin, FormView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["form_title"] = "Update Allocation"
-        context["is_pending"] = Allocation
+
+        context["is_pending"] = self.is_pending
         return context
 
     def get_form_kwargs(self):
@@ -60,6 +60,7 @@ class AllocationView(LoginRequiredMixin, FormView):
             form_data, user, parent_allocation
         )
         self.success_id = new_allocation.get("allocation").id
+        self.is_pending = True
 
         return super().form_valid(form)
 
