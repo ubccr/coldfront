@@ -391,9 +391,11 @@ class ProjectAddUsersViewTest(ProjectViewTestBase):
         """Test the messages displayed when the add user signal fails"""
         self.client.force_login(self.pi_user)
 
-    def test_projectaddusers_form_validation(self):
+    @patch('coldfront.core.project.signals.project_make_projectuser.send')
+    def test_projectaddusers_form_validation(self, mock_signal):
         """Test that the formset and allocation form are validated correctly"""
         self.client.force_login(self.proj_accessmanager)
+        mock_signal.return_value = None
         # Prepare form data for adding a user
         response = self.client.post(self.url, data=self.form_data)
         self.assertEqual(response.url, reverse('project-detail', kwargs={'pk': self.project.pk}))
