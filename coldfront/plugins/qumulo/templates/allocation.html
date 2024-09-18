@@ -9,6 +9,9 @@ Create Allocation
 
 {% block content %}
 <div>
+  <div class="alert alert-warning" role="alert">
+    This allocation is marked as pending, please do not update until the status changes.
+  </div>
   <form method="post" id="allocation_form">
     {% csrf_token %}
     {{ form | crispy }}

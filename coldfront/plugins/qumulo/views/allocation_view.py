@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic.edit import FormView
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 
 from typing import Union
 
@@ -54,6 +54,13 @@ class AllocationView(LoginRequiredMixin, FormView):
         AllocationView.create_new_allocation(form_data, user, parent_allocation)
 
         return super().form_valid(form)
+
+    def get_success_url(self):
+
+        return reverse(
+            "coldfront_plugin_qumulo:updateAllocation",
+            kwargs={"allocation_id": self.success_id},
+        )
 
     @staticmethod
     def create_new_allocation(
