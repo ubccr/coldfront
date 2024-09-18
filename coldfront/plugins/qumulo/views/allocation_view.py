@@ -51,7 +51,10 @@ class AllocationView(LoginRequiredMixin, FormView):
             absolute_path = f"/{storage_root}/{storage_filesystem_path}"
         validate_filesystem_path_unique(absolute_path)
 
-        AllocationView.create_new_allocation(form_data, user, parent_allocation)
+        new_allocation = AllocationView.create_new_allocation(
+            form_data, user, parent_allocation
+        )
+        self.success_id = new_allocation.get("allocation").id
 
         return super().form_valid(form)
 
