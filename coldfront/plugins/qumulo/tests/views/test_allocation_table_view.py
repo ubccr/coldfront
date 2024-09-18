@@ -1,7 +1,11 @@
 from django.test import TestCase, RequestFactory
 from unittest.mock import patch, MagicMock
 
-from coldfront.core.allocation.models import Allocation
+from coldfront.core.allocation.models import (
+    Allocation,
+    AllocationAttributeType,
+    AttributeType,
+)
 
 from coldfront.plugins.qumulo.tests.utils.mock_data import (
     build_models,
@@ -86,6 +90,79 @@ class AllocationTableViewTests(TestCase):
 
         self.assertEqual(len(qs), 1)
         self.assertEqual(qs[0].id, other_allocation.id)
+
+    def test_parent_child_allocation_query(self):
+        attr_type = AttributeType.objects.create(name="ParentChildAttributeType")
+        attr_type.save()
+        attr_alloc_type = AllocationAttributeType.objects.create(
+            attribute_type=AttributeType.objects.get(name="ParentChildAttributeType"),
+            name="parent_child_attribute",
+        )
+        attr_alloc_type.save()
+
+        other_models_a = build_user_plus_project(
+            username="jack.frost", project_name="Ice Age Project"
+        )
+
+        other_project_a = other_models_a["project"]
+        other_user_a = other_models_a["user"]
+
+        other_models_b = build_user_plus_project(
+            username="johnny.appleseed", project_name="Really Big Orchard"
+        )
+
+        other_project_b = other_models_b["project"]
+        other_user_b = other_models_b["user"]
+
+        other_form_data_a = {
+            "storage_filesystem_path": "xyz",
+            "storage_export_path": "abc",
+            "storage_ticket": "ITSD-78910",
+            "storage_name": "general_store",
+            "storage_quota": 8,
+            "protocols": ["nfs"],
+            "rw_users": ["test2"],
+            "ro_users": ["test3"],
+            "cost_center": "Scrooge McDuck",
+            "department_number": "Whale-watching",
+            "service_rate": "consumption",
+        }
+
+        other_form_data_b = {
+            "storage_filesystem_path": "abc",
+            "storage_export_path": "xyz",
+            "storage_ticket": "ITSD-78911",
+            "storage_name": "svalbard_seed_vault",
+            "storage_quota": 29,
+            "protocols": ["nfs"],
+            "rw_users": ["test2"],
+            "ro_users": ["test3"],
+            "cost_center": "CC-001122",
+            "department_number": "Whale-watching",
+            "service_rate": "consumption",
+        }
+
+        _ = create_allocation(
+            other_project_a, other_user_a, other_form_data_a, self.allocation
+        )
+
+        _ = create_allocation(
+            other_project_b, other_user_b, other_form_data_b, self.allocation
+        )
+
+        request = RequestFactory().get(
+            "src/coldfront_plugin_qumulo/views/allocation_table_view.py",
+        )
+        view = AllocationTableView()
+        view.request = request
+
+        qs = view.get_queryset()
+
+        self.assertEqual(len(qs), 3)
+
+        self.assertEqual(
+            qs[0].child_allocation_ids, [str(qs[1].id), str(qs[2].id)]
+        )
 
     def test_result_pagination(self):
         # call build_models again to get a different set of projects/users
