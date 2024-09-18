@@ -58,7 +58,7 @@ class AllocationView(LoginRequiredMixin, FormView):
     def get_success_url(self):
 
         return reverse(
-            "coldfront_plugin_qumulo:updateAllocation",
+            "qumulo:updateAllocation",
             kwargs={"allocation_id": self.success_id},
         )
 
