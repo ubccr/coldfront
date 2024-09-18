@@ -342,6 +342,27 @@ class Allocation(TimeStampedModel):
     def __str__(self):
         return "%s (%s)" % (self.get_parent_resource.name, self.project.pi)
 
+
+
+class AllocationLinkage(TimeStampedModel):
+    """An allocation linkage maintains a relationship between a parent allocation and 1-or-more children
+    Attributes:
+        parent (Allocation): the parent Allocation
+        children (Allocation): the children of the above parent
+    """
+
+    parent = models.ForeignKey(
+        Allocation, on_delete=models.CASCADE, related_name="child_links"
+    )
+    children = models.ManyToManyField(Allocation, related_name="parent_links")
+
+    def __str__(self):
+        child_ids = [str(child.pk) for child in self.children.all()]
+        child_ids_str = ",".join(child_ids)
+        return f"{self.parent.pk}->{child_ids_str}"
+
+
+
 class AllocationAdminNote(TimeStampedModel):
     """ An allocation admin note is a note that an admin makes on an allocation.
     
