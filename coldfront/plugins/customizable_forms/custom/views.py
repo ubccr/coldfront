@@ -101,5 +101,7 @@ class GeodeProjectForm(GenericView):
 
     def form_valid(self, form):
         http_response = super().form_valid(form)
+        self.allocation_obj.end_date = None
+        self.allocation_obj.save()
 
         return http_response
