@@ -5,3 +5,9 @@ STORAGE_SERVICE_RATES = [
 ]
 
 PROTOCOL_OPTIONS = [("nfs", "NFS"), ("smb", "SMB")]
+
+BILLING_CYCLES = [
+    ("monthly", "Monthly"),
+    ("prepaid", "Prepayment"),
+    ("yearly", "Yearly"),
+]
