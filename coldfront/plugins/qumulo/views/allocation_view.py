@@ -32,7 +32,7 @@ class AllocationView(LoginRequiredMixin, FormView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        form_data = context.form.cleaned_data
+        form_data = context["form"].cleaned_data
         user = self.request.user
         new_allocation = AllocationView.create_new_allocation(form_data, user)
         alloc_status = new_allocation.get("allocation").status.name
