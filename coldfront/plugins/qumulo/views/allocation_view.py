@@ -33,7 +33,7 @@ class AllocationView(LoginRequiredMixin, FormView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        context["is_pending"] = True
+        context["is_pending"] = False
         return context
 
     def get_form_kwargs(self):
