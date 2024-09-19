@@ -304,7 +304,9 @@ class GenericView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         for allocation_attribute_type_obj in allocation_attribute_type_objs:
             if allocation_attribute_type_obj.linked_resource_attribute_type in resource_attribute_type_objs:
                 value = form_data.get(allocation_attribute_type_obj.linked_resource_attribute_type.name)
-                if value:
+                if value is not None and value is not '':
+                    if type(value) == list:
+                        value = ','.join(value)
                     AllocationAttribute.objects.create(
                         allocation_attribute_type=allocation_attribute_type_obj,
                         allocation=allocation_obj,

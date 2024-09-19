@@ -148,7 +148,7 @@ class GeodeProjectForm(BaseForm):
     storage_space = forms.IntegerField(min_value=1, help_text='Enter the size of storage needed in gigabytes (GB)')
     start_date = forms.DateField(widget=forms.TextInput(attrs={'class': 'datepicker'}), required=False)
     end_date = forms.DateField(widget=forms.TextInput(attrs={'class': 'datepicker'}), required=False)
-    use_indefinitely = forms.BooleanField(required=False)
+    use_indefinitely = forms.BooleanField(initial=False, required=False)
     data_management_plan = forms.CharField(
         widget=forms.Textarea,
         help_text='<a href="#" data-toggle="modal" data-target="#id_data_best_practices_modal">Data Management Plan ideas and best practices</a>'    
