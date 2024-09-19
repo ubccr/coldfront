@@ -429,6 +429,9 @@ class GenericView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         resource_obj =  get_object_or_404(Resource, pk=self.kwargs.get('resource_pk'))
         allocation_account = form_data.get('allocation_account', None)
 
+        start_date = form_data.get('start_date', None)
+        end_date = form_data.get('end_date', None)
+
         # A resource is selected that requires an account name selection but user has no account names
         if ALLOCATION_ACCOUNT_ENABLED and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING and AllocationAttributeType.objects.filter(
                 name=ALLOCATION_ACCOUNT_MAPPING[resource_obj.name]).exists() and not allocation_account:
@@ -451,7 +454,9 @@ class GenericView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         allocation_obj = Allocation.objects.create(
             project=project_obj,
-            status=allocation_status_obj
+            status=allocation_status_obj,
+            start_date=start_date,
+            end_date=end_date
         )
 
         if ALLOCATION_ENABLE_CHANGE_REQUESTS_BY_DEFAULT:
