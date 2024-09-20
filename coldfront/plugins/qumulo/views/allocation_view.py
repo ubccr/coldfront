@@ -35,7 +35,6 @@ class AllocationView(LoginRequiredMixin, FormView):
         context = super().get_context_data(**kwargs)
         if self.new_allocation != None:
             alloc_status = self.new_allocation.get("allocation").status.name
-            print(alloc_status)
             if alloc_status == "Pending":
                 is_pending = True
             else:
