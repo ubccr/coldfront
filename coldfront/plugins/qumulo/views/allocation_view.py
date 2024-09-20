@@ -37,10 +37,10 @@ class AllocationView(LoginRequiredMixin, FormView):
         if self.new_allocation != None:
             alloc_status = context_allocation.get("allocation").status.name
             if alloc_status == "Pending":
-                is_pending = True
+                pending_status = True
             else:
-                is_pending = False
-            context["is_pending"] = is_pending
+                pending_status = False
+            context["is_pending"] = pending_status
         return context
 
     def get_form_kwargs(self):
