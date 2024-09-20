@@ -29,13 +29,11 @@ from pathlib import PurePath
 class AllocationView(LoginRequiredMixin, FormView):
     form_class = AllocationForm
     template_name = "allocation.html"
+    new_allocation = None
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        form_data = context["form"]
-        user = self.request.user
-        new_allocation = AllocationView.create_new_allocation(form_data, user)
-        alloc_status = new_allocation.get("allocation").status.name
+        alloc_status = self.new_allocation.get("allocation").status.name
         if alloc_status == "Pending":
             is_pending = True
         else:
@@ -63,10 +61,10 @@ class AllocationView(LoginRequiredMixin, FormView):
             absolute_path = f"/{storage_root}/{storage_filesystem_path}"
         validate_filesystem_path_unique(absolute_path)
 
-        new_allocation = AllocationView.create_new_allocation(
+        self.new_allocation = AllocationView.create_new_allocation(
             form_data, user, parent_allocation
         )
-        self.success_id = new_allocation.get("allocation").id
+        self.success_id = self.new_allocation.get("allocation").id
 
         return super().form_valid(form)
 
