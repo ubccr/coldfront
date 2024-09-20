@@ -22,7 +22,7 @@ let confirmed = false;
 
 const submitButton = document.getElementById("allocation_form_submit");
 submitButton.addEventListener("click", (event) => {
-  const id_project_pk_elem = document.getElementById("id_project_pk");
+  const id_project_pk_elem = document.getElementById("div_id_project_pk");
   const smb = protocols.find((protocol) => protocol.value === "smb");
 
   // NOTE: we're using id_project_pk to determine whether we are on a
