@@ -14,10 +14,10 @@ Create Allocation
     This allocation is marked as pending, please do not update until the status changes.
   </div>
   {% endif %}
-  {{ status_allocation }}
   <form method="post" id="allocation_form">
     {% csrf_token %}
     {{ form | crispy }}
+    {{ status_allocation }}
     <div class="d-flex justify-content-end">
       <button type="submit" class="btn btn-primary mr-2" id="allocation_form_submit">Submit</button>
       <button type="reset" class="btn btn-primary">Reset</button>
