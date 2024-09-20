@@ -36,7 +36,6 @@ class CreateSubAllocationView(UpdateAllocationView):
         # jprew - NOTE: storage name and file path should be cleared
         allocation_attribute_keys = [
             "storage_quota",
-            "protocols",
             "storage_export_path",
             "storage_ticket",
             "cost_center",
@@ -45,10 +44,14 @@ class CreateSubAllocationView(UpdateAllocationView):
             "billing_contact",
             "service_rate",
         ]
+        
         for key in allocation_attribute_keys:
             form_data[key] = self.get_allocation_attribute(
                 allocation_attributes=parent_allocation_attrs, attribute_key=key
             )
+        
+        # for sub-allocations protocols should default to empty
+        form_data["protocols"] = []
 
         access_keys = ["rw", "ro"]
         for key in access_keys:
