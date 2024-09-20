@@ -67,6 +67,27 @@ A complete test suite can be run with `manage.py test`.  You can target sub-grou
 
 Typically, you'll want to run non integration tests separately, which can be done with `python manage.py test --exclude-tag integration`.  Integrations can be run with `python manage.py test --tag integration`.
 
+### Set up Local Environment and Run tests
+
+1. Go to the root of the `coldfront-wustl-fork` repo.
+2. Create a (Python) virtual environment: `python3 -mvenv coldfront-venv`
+3. Activate the virtual environment: `source coldfront-venv/bin/activate`
+4. Install the dependencies
+```
+pip install --upgrade pip
+pip install -r requirements-dev.txt
+```
+5. Run a test to verify the installation: `python manage.py test coldfront.plugins.qumulo.tests`
+
+**Steps for local development**
+```
+python3 -mvenv coldfront-venv
+source coldfront-venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements-dev.txt
+python manage.py test coldfront.plugins.qumulo.tests
+```
+
 ### Integration Test ENV
 Integration Tests need to be run while connected to a VPN.  The following variables need to be included for functioning integration tests.  Credentials should be stored in the `pass` store.
 
