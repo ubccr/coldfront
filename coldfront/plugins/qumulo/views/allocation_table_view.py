@@ -153,7 +153,14 @@ class AllocationTableView(LoginRequiredMixin, ListView):
             all_children = set()
 
             for linkage in allocation_linkages:
-                children = [str(child.id) for child in linkage.children.all().order_by(order_by)]
+                linkage_children = linkage.children.all().annotate(
+                    department_number=Subquery(department_sub_q),
+                    itsd_ticket=Subquery(itsd_ticket_sub_q),
+                    file_path=Subquery(file_path_sub_q),
+                    service_rate=Subquery(service_rate_sub_q),
+                )
+                linkage_children = linkage_children.order_by(order_by)
+                children = [str(child.id) for child in linkage_children]
                 all_children.update(children)
                 parent_to_children_map[linkage.parent.id] = children
 
