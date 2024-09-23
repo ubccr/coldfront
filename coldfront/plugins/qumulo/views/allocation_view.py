@@ -42,7 +42,7 @@ class AllocationView(LoginRequiredMixin, FormView):
             else:
                 pending_status = False
             context["is_pending"] = pending_status
-        context["status_allocation"] = self.success_id
+        context["status_allocation"] = context_allocation
         context["alloc_form"] = context.form
         return context
 
