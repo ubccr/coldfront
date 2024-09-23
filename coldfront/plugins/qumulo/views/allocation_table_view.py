@@ -1,7 +1,7 @@
 from typing import List
 
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+from django.core.paginator import EmptyPage, Paginator
 from django.db.models.query import QuerySet
 from django.views.generic import ListView
 
@@ -15,7 +15,7 @@ from coldfront.core.allocation.models import (
 )
 from coldfront.core.resource.models import Resource
 
-from django.db.models import OuterRef, Subquery, CharField, F, Value
+from django.db.models import OuterRef, Subquery
 
 from collections import defaultdict
 

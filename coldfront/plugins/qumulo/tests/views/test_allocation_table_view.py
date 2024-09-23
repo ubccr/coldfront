@@ -91,6 +91,64 @@ class AllocationTableViewTests(TestCase):
         self.assertEqual(len(qs), 1)
         self.assertEqual(qs[0].id, other_allocation.id)
 
+    def test_queryset_order_by(self):
+        # call build_models again to get a different set of projects/users
+        other_models = build_user_plus_project(
+            username="jack.frost", project_name="Ice Age Project"
+        )
+
+        other_project = other_models["project"]
+        other_user = other_models["user"]
+
+        other_form_data = {
+            "storage_filesystem_path": "xyz",
+            "storage_export_path": "abc",
+            "storage_ticket": "ITSD-78910",
+            "storage_name": "general_store",
+            "storage_quota": 8,
+            "protocols": ["nfs"],
+            "rw_users": ["test2"],
+            "ro_users": ["test3"],
+            "cost_center": "Scrooge McDuck",
+            "department_number": "Whale-watching",
+            "service_rate": "consumption",
+        }
+
+        other_allocation = create_allocation(other_project, other_user, other_form_data)
+
+        query_params = {
+            "order_by": "department_number",
+            "direction": "asc",
+        }
+        request = RequestFactory().get(
+            "src/coldfront.plugins.qumulo/views/allocation_table_view.py",
+            data=query_params,
+        )
+        view = AllocationTableView()
+        view.request = request
+
+        qs = view.get_queryset()
+        self.assertEqual(len(qs), 2)
+        self.assertEqual(qs[0].id, self.allocation.id)
+        self.assertEqual(qs[1].id, other_allocation.id)
+
+        query_params = {
+            "order_by": "department_number",
+            "direction": "des",
+        }
+        request = RequestFactory().get(
+            "src/coldfront.plugins.qumulo/views/allocation_table_view.py",
+            data=query_params,
+        )
+        view = AllocationTableView()
+        view.request = request
+
+        qs = view.get_queryset()
+        self.assertEqual(len(qs), 2)
+        self.assertEqual(qs[0].id, other_allocation.id)
+        self.assertEqual(qs[1].id, self.allocation.id)
+
+
     def test_parent_child_allocation_query(self):
         attr_type = AttributeType.objects.create(name="ParentChildAttributeType")
         attr_type.save()
