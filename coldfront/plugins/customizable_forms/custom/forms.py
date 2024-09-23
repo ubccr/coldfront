@@ -78,6 +78,7 @@ class SlateProjectForm(BaseForm):
     )
     storage_space = forms.IntegerField(min_value=1, max_value=30)
     start_date = forms.DateField(widget=forms.TextInput(attrs={'class': 'datepicker'}))
+    account_number = forms.CharField(max_length=9, initial='00-000-00', validators=[ValidateAccountNumber()])
     store_ephi = forms.ChoiceField(choices=YES_NO_CHOICES, widget=RadioSelect)
 
     def __init__(self, request_user, resource_attributes, project_obj, resource_obj, *args, **kwargs):

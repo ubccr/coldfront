@@ -38,11 +38,13 @@ ENABLE_LDAP_SLATE_PROJECT_SYNCING = import_from_settings('ENABLE_LDAP_SLATE_PROJ
 SLATE_PROJECT_ELIGIBILITY_ACCOUNT = import_from_settings('SLATE_PROJECT_ELIGIBILITY_ACCOUNT', '')
 SLATE_PROJECT_ACCOUNT = import_from_settings('SLATE_PROJECT_ACCOUNT', '')
 SLATE_PROJECT_DIR = import_from_settings('SLATE_PROJECT_DIR', '')
+SLATE_PROJECT_INCOMING_DIR = import_from_settings('SLATE_PROJECT_INCOMING_DIR', '')
+SLATE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD = import_from_settings('SLATE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD', 120)
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 CENTER_BASE_URL = import_from_settings('CENTER_BASE_URL')
 PROJECT_DEFAULT_MAX_MANAGERS = import_from_settings('PROJECT_DEFAULT_MAX_MANAGERS', 3)
 if EMAIL_ENABLED:
-    SLATE_PROJECT_EMAIL = import_from_settings('SLATE_PROJECT_EMAIL')
+    SLATE_PROJECT_EMAIL = import_from_settings('SLATE_PROJECT_EMAIL', '')
     EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
     EMAIL_CENTER_NAME = import_from_settings('CENTER_NAME')
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
@@ -370,7 +372,22 @@ def sync_slate_project_users(allocation_obj, ldap_conn=None, ldap_search_conn=No
                     logger.info(
                         f'User {ldap_read_only_username}\'s role was changed to read only in '
                         f'Slate Project allocation {allocation_obj.pk} during sync'
-                    )
+
+
+def get_pi_total_allocated_quantity(pi_username):
+    total_allocated_quantity = 0
+    with open(os.path.join(SLATE_PROJECT_INCOMING_DIR, 'netid-total-allocation.csv'), 'r') as netid_total_allocation_csv:
+        csv_reader = csv.reader(netid_total_allocation_csv)
+        for line in csv_reader:
+            if line[0] == pi_username:
+                total_allocated_quantity = line[1]
+                break
+            
+    return total_allocated_quantity
+
+
+def check_pi_total_allocated_quantity(pi_username):
+    return get_pi_total_allocated_quantity(pi_username) > SLATE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD
 
 
 def send_expiry_email(allocation_obj):
