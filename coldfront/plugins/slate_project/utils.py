@@ -372,6 +372,60 @@ def sync_slate_project_users(allocation_obj, ldap_conn=None, ldap_search_conn=No
                     logger.info(
                         f'User {ldap_read_only_username}\'s role was changed to read only in '
                         f'Slate Project allocation {allocation_obj.pk} during sync'
+                    )
+
+
+def sync_slate_project_allocated_quantities():
+    logger.info('Syncing Slate Project allocated quantities...')
+    ldap_groups = {}
+    with open(os.path.join(SLATE_PROJECT_INCOMING_DIR, 'allocated_quantity.csv'), 'r') as allocated_quantities_csv:
+        csv_reader = csv.reader(allocated_quantities_csv)
+        for line in csv_reader:
+            ldap_groups['condo_' + line[0]] = line[1]
+
+    allocated_quantity_objs = AllocationAttribute.objects.filter(
+        allocation_attribute_type__name='Allocated Quantity', allocation__resources__name='Slate Project'
+    ).prefetch_related('allocation')
+    ldap_group_objs = AllocationAttribute.objects.filter(
+        allocation_attribute_type__name='LDAP Group', allocation__resources__name='Slate Project'
+    ).prefetch_related('allocation')
+    ldap_group_dict = {}
+    for ldap_group_obj in ldap_group_objs:
+        ldap_group_dict[ldap_group_obj.value] = ldap_group_obj.allocation.id
+
+    allocated_quantity_dict = {}
+    for allocated_quantity_obj in allocated_quantity_objs:
+        allocated_quantity_dict[allocated_quantity_obj.allocation.id] = allocated_quantity_obj
+
+    allocation_attribute_type = AllocationAttributeType.objects.get(name='Allocated Quantity')
+    for ldap_group, allocated_quantity in ldap_groups.items():
+        ldap_group_allocation_id = ldap_group_dict.get(ldap_group)
+        if ldap_group_allocation_id is None:
+            logger.warning(f'LDAP group {ldap_group} not found')
+            continue
+
+        allocated_quantity_obj = allocated_quantity_dict.get(ldap_group_allocation_id)
+        if allocated_quantity_obj is None:
+            logger.info(
+                f'LDAP group {ldap_group} allocated quantity not found. Creating one with value {allocated_quantity}'
+            )
+            allocated_quantity_obj = AllocationAttribute.objects.create(
+                allocation=Allocation.objects.get(id=ldap_group_allocation_id),
+                value=allocated_quantity,
+                allocation_attribute_type=allocation_attribute_type
+            )
+            continue
+
+        current_allocated_quantity = allocated_quantity_obj.value
+        if allocated_quantity != current_allocated_quantity:
+            allocated_quantity_obj.value = allocated_quantity
+            allocated_quantity_obj.save()
+
+            logger.info(
+                f'LDAP group {ldap_group} allocated quantity was updated from {current_allocated_quantity} to {allocated_quantity}'
+            )
+
+    logger.info('Done syncing Slate Project allocated quantities')
 
 
 def get_pi_total_allocated_quantity(pi_username):
@@ -382,7 +436,7 @@ def get_pi_total_allocated_quantity(pi_username):
             if line[0] == pi_username:
                 total_allocated_quantity = line[1]
                 break
-            
+
     return total_allocated_quantity
 
 

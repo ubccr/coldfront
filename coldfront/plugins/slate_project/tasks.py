@@ -4,6 +4,7 @@ from coldfront.core.allocation.models import Allocation, AllocationUser, Allocat
 from coldfront.plugins.slate_project.utils import (sync_slate_project_users,
                                                    sync_slate_project_ldap_group,
                                                    sync_slate_project_user_statuses,
+                                                   sync_slate_project_allocated_quantities,
                                                    send_ineligible_users_report,
                                                    send_ineligible_pis_report,
                                                    import_slate_projects,
@@ -27,6 +28,10 @@ def sync_all_slate_project_allocations():
         sync_slate_project_ldap_group(slate_project_allocation_obj, ldap_conn)
         sync_slate_project_users(slate_project_allocation_obj, ldap_conn, ldap_search_conn)
     logger.info('Sync complete')
+
+
+def sync_all_slate_project_allocated_quantities():
+    sync_slate_project_allocated_quantities()
 
 
 def send_ineligible_users_email_report():
