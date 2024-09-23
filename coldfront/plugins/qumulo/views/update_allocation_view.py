@@ -26,17 +26,16 @@ class UpdateAllocationView(AllocationView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context_allocation = self.new_allocation
-        alloc_status = " "
-        if self.new_allocation != None:
-            alloc_status = context_allocation.get("allocation").status.name
-            if alloc_status == "Pending":
-                pending_status = True
-            else:
-                pending_status = False
-            context["is_pending"] = pending_status
-        context["status_allocation"] = context_allocation
-        context["alloc_form"] = context.form
+        allocation_id = self.kwargs.get("allocation_id")
+        allocation = Allocation.objects.get(pk=allocation_id)
+        alloc_status = allocation.get("allocation").status.name
+
+        if alloc_status == "Pending":
+            pending_status = True
+        else:
+            pending_status = False
+        context["is_pending"] = pending_status
+
         return context
 
     def get_form_kwargs(self):
