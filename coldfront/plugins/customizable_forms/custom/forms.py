@@ -238,4 +238,4 @@ class GeodeProjectForm(BaseForm):
                 raise_error = True
 
         if raise_error:
-            ValidationError('Please correct the error(s) below')
+            raise ValidationError('Please correct the error(s) below')
