@@ -3,6 +3,14 @@
 {% load crispy_forms_tags %}
 {% load static %}
 
+{% block ifx_head %}
+<link rel="stylesheet" href="https://cdn.datatables.net/2.1.5/css/dataTables.dataTables.min.css"></style>
+<script src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js"></script>
+<script src="https://cdn.datatables.net/2.1.5/js/dataTables.js"></script>
+<script src="https://cdn.datatables.net/select/2.0.5/js/dataTables.select.js"></script>
+<script src="https://cdn.datatables.net/select/2.0.5/js/select.dataTables.js"></script>
+{% endblock %}
+
 {% block title %}
 Calculate Billing Month
 {% endblock %}
@@ -10,22 +18,19 @@ Calculate Billing Month
 
 {% block content %}
 <style>
-    .dataTables_filter {
-        display: inline-flex;
-        margin: 0 0.5em 0 0;
-    }
-    .dataTables_length {
-        display: inline-flex;
-        margin: 0 0.5em 0 0;
-        float: right;
-    }
     label {
         margin: 0 0 0 1em;
+    }
+    .dt-input {
+        margin: 0 0 0 1em;
+        width: 200px;
     }
 </style>
 <script>
     (function($){
         $(document).ready(function(){
+
+
 
             $( "#progressbar" ).progressbar({
                 value: false
@@ -47,6 +52,30 @@ Calculate Billing Month
                     dialog.dialog("close");
                 });
 
+
+            // Get month and year cookie and errorsOnly if it exists using js-cookie
+            var year = Cookies.get('coldfront-billing-year') || new Date().getFullYear()
+            var month = Cookies.get('coldfront-billing-month') || new Date().getMonth() - 1
+            var errorsOnly = Cookies.get('coldfront-billing-errors-only') || false
+            $("#year").val(year)
+            $("#month").val(month)
+            $("#errorsOnly").prop('checked', errorsOnly)
+
+            // Set month and year cookie when changed
+            $("#year").change(function() {
+                Cookies.set('coldfront-billing-year', $(this).val())
+            })
+            $("#month").change(function() {
+                Cookies.set('coldfront-billing-month', $(this).val())
+            })
+            $("#errorsOnly").change(function() {
+                if ($(this).is(":checked")) {
+                    Cookies.set('coldfront-billing-errors-only', 'true')
+                } else {
+                    Cookies.remove('coldfront-billing-errors-only')
+                }
+            })
+
             $("#productUsageReload").click((ev) => {
                 ev.preventDefault()
                 if (!$("#year").val() || !$("#month").val()) {
@@ -57,8 +86,18 @@ Calculate Billing Month
                 }
             })
 
+            DataTable.defaults.layout = {
+                topStart: null,
+                topEnd: null,
+                bottomStart: null,
+                bottomEnd: null,
+            };
             var productUsagesTable = $("#product-usages").DataTable({
-                dom: '<fl>tp',
+                layout: {
+                    topStart: 'search',
+                    topEnd: 'pageLength',
+                    bottomStart: 'paging',
+                },
                 columns: [
                     {data: 'id', width: '100px'},
                     {data: 'full_name', width: '200px'},
@@ -67,14 +106,18 @@ Calculate Billing Month
                     {data: 'description', width: '500px'},
                     {data: 'error_message', width: '400px'},
                 ],
-                order: [[ 2, "asc" ], [ 1, "asc" ]],
+                order: [[ 3, "asc" ], [ 2, "asc" ]],
+                select: {
+                    style: 'os',
+                    selector: 'td:first-child'
+                },
                 ajax: {
                     url: '/ifx/api/get-product-usages/',
                     type: 'GET',
                     data: function (d)  {
                         d.year = $("#year").val()
                         d.month = $("#month").val()
-                        d.errors_only = $("#errors_only").is(":checked") ? 'true' : 'false'
+                        d.errors_only = $("#errorsOnly").is(":checked") ? 'true' : 'false'
                     },
                     dataSrc: '',
                     error: function (jqXHR, status, error) {
@@ -127,6 +170,7 @@ Calculate Billing Month
 
 </script>
 <div style="font-size: 10pt;">
+    <h2>Calculate Billing Month</h2>
     <div id="loading">
         <p>
             <div id="progressbar"></div>
@@ -135,11 +179,11 @@ Calculate Billing Month
     <div style="margin: 1em; width: 100%;">
         <div style="position: relative; float: left;">
             <label for="year">Year</label>
-            <input type="text" id="year" name="year" value="2024"/>
+            <input type="text" id="year" name="year"/>
             <label for="month">Month</label>
-            <input type="text" id="month" name="month" value="5"/>
-            <label for="errors_only">Errors Only</label>
-            <input type="checkbox" id="errors_only" name="errors_only"/>
+            <input type="text" id="month" name="month"/>
+            <label for="errorsOnly">Errors Only</label>
+            <input type="checkbox" id="errorsOnly" name="errorsOnly"/>
         </div>
         <div style="position: relative; float: left; margin-left: 1em;">
             <input id="productUsageReload" type="submit" value="Reload Data"></input>
@@ -167,7 +211,7 @@ Calculate Billing Month
     </div>
     <hr/>
     <div style="margin: 1em;">
-        <table id="product-usages" class="display" style="width: 100%" cellpadding="5px">
+        <table id="product-usages" class="display" cellpadding="5px">
             <thead>
                 <tr>
                     <th>ID</th>

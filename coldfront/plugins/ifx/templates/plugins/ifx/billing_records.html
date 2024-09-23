@@ -3,6 +3,14 @@
 {% load crispy_forms_tags %}
 {% load static %}
 
+{% block ifx_head %}
+<link rel="stylesheet" href="https://cdn.datatables.net/2.1.5/css/dataTables.dataTables.min.css"></style>
+<script src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js"></script>
+<script src="https://cdn.datatables.net/2.1.5/js/dataTables.js"></script>
+<script src="https://cdn.datatables.net/select/2.0.5/js/dataTables.select.js"></script>
+<script src="https://cdn.datatables.net/select/2.0.5/js/select.dataTables.js"></script>
+{% endblock %}
+
 {% block title %}
 Billing Records
 {% endblock %}
@@ -10,15 +18,6 @@ Billing Records
 
 {% block content %}
 <style>
-    .dataTables_filter {
-        display: inline-flex;
-        margin: 0 0.5em 0 0;
-    }
-    .dataTables_length {
-        display: inline-flex;
-        margin: 0 0.5em 0 0;
-        float: right;
-    }
     #notification-errors {
         margin: 1em 0 0.5em 1em;
         font-size: 10pt;
@@ -34,6 +33,12 @@ Billing Records
     }
     #organizations {
         width: 400px;
+    }
+    #delete-selected {
+        color: red;
+    }
+    #delete-selected:disabled {
+        color: grey;
     }
     .result-header {
         font-size: 12pt;
@@ -54,12 +59,55 @@ Billing Records
     .righty {
         position: relative;
         float: right;
+        margin-left: 1em;
+    }
+    .dt-input {
+        margin: 0 0 0 1em;
+        width: 300px;
     }
 </style>
 <script>
     (function($){
         $(document).ready(function(){
+            var token = '{{ auth_token }}'
+            function deleteSelectedBillingRecords() {
+                const delete_url_template = '{{ delete_url }}'
+                const promises = []
+                const errors = []
+                billingRecordsTable.rows({selected: true}).data().each((row) => {
+                    const delete_url = delete_url_template.replace('0', row.id)
+                    promises.push(
+                        $.ajax({
+                            headers: {
+                                'X-CSRFToken': Cookies.get('csrftoken'),
+                                'sessionid': Cookies.get('sessionid'),
+                                'Authorization': `Token ${token}`,
+                            },
+                            url: delete_url,
+                            type: 'DELETE',
+                            error: function (jqXHR, status, error) {
+                                errors.push(`Error for row ${row.id}: ${status} ${error}`)
+                            }
+                        })
+                    )
 
+                })
+                Promise.allSettled(promises).then(() => {
+                    if (errors.length) {
+                        alert(errors.join('\n'))
+                    }
+                    billingRecordsTable.ajax.reload()
+                }).catch(() => {
+                    if (errors.length) {
+                        alert(errors.join('\n'))
+                    }
+                    billingRecordsTable.ajax.reload()
+                })
+            }
+            $("#delete-selected").click((ev) => {
+                ev.preventDefault()
+                deleteSelectedBillingRecords()
+            })
             $( "#progressbar" ).progressbar({
                 value: false
             });
@@ -88,6 +136,20 @@ Billing Records
                 .ajaxStop(function () {
                     dialog.dialog("close")
                 });
+
+            // Get month and year cookie and errorsOnly if it exists using js-cookie
+            var year = Cookies.get('coldfront-billing-year') || new Date().getFullYear()
+            var month = Cookies.get('coldfront-billing-month') || new Date().getMonth() - 1
+            $("#year").val(year)
+            $("#month").val(month)
+
+            // Set month and year cookie when changed
+            $("#year").change(function() {
+                Cookies.set('coldfront-billing-year', $(this).val())
+            })
+            $("#month").change(function() {
+                Cookies.set('coldfront-billing-month', $(this).val())
+            })
 
             var organizationSource = []
             $.ajax({
@@ -208,9 +270,21 @@ Billing Records
                     })
                 }
             })
+            DataTable.defaults.layout = {
+                topStart: null,
+                topEnd: null,
+                bottomStart: null,
+                bottomEnd: null,
+            };
             var billingRecordsTable = $("#billing-records").DataTable({
-                dom: '<fl>tp',
+                layout: {
+                    topStart: 'search',
+                    topEnd: 'pageLength',
+                    bottomStart: 'paging',
+                },
                 columns: [
+                    {render: DataTable.render.select(), orderable: false, targets: 0},
+                    {data: 'id'},
                     {data: function(item){ return item.current_state.replace(/_/g, ' ')}, width: '200px'},
                     {data: 'product_usage.product_user.full_name', width: '100px'},
                     {data: function(item){ return item.account.organization.replace(/ \(a Harvard.*/, '')}, width: '300px'},
@@ -219,7 +293,11 @@ Billing Records
                     {data: 'percent', width: '50px'},
                     {data: 'description', width: '500px'},
                 ],
-                order: [[ 2, "asc" ], [ 1, "asc" ]],
+                select: {
+                    style: 'os',
+                    selector: 'td:first-child'
+                },
+                order: [[ 4, "asc" ], [ 1, "asc" ]],
                 ajax: {
                     url: '/ifx/api/billing/get-billing-record-list/',
                     type: 'GET',
@@ -234,7 +312,6 @@ Billing Records
                         alert(status + ' ' + error)
                     },
                 },
-                {% comment %}
                 footerCallback: function (row, data, start, end, display) {
                     // THIS DOES NOT WORK because the ajax call is not done yet
                     // Leaving it here, because I'd like to find a fix
@@ -267,7 +344,17 @@ Billing Records
                         api.column(4).footer().innerHTML =
                             '$' + pageTotal + ' ( $' + total + ' total)';
                     }
-                } {% endcomment %}
+                }
+            })
+            billingRecordsTable.on('select', function (e, dt, type, indexes) {
+                $('#delete-selected').prop('disabled', false)
+            })
+            billingRecordsTable.on('deselect', function (e, dt, type, indexes) {
+                if (type === 'row' && billingRecordsTable.rows({selected: true}).count() > 0) {
+                    $('#delete-selected').prop('disabled', false)
+                } else {
+                    $('#delete-selected').prop('disabled', true)
+                }
             })
 
         })
@@ -275,6 +362,7 @@ Billing Records
 
 </script>
 <div style="font-size: 10pt;">
+    <h2>Billing Records</h2>
     <div id="loading">
         <p>
             <div id="progressbar"></div>
@@ -299,15 +387,18 @@ Billing Records
     <div style="margin: 1em; width: 100%;">
         <div class="lefty">
             <label for="year">Year</label>
-            <input type="text" id="year" name="year" value="2024"/>
+            <input type="text" id="year" name="year"/>
             <label for="month">Month</label>
-            <input type="text" id="month" name="month" value="5"/>
+            <input type="text" id="month" name="month"/>
         </div>
         <div class="lefty">
             <input id="billing-record-reload" type="submit" value="Reload Data"></input>
         </div>
         <div class="righty">
             <input id="start-notification" type="submit" value="Notify Lab Managers"></input>
+        </div>
+        <div class="righty">
+            <input id="delete-selected" type="submit" value="Delete Selected" disabled></input>
         </div>
         <div style="clear: both;"></div>
     </div>
@@ -316,6 +407,8 @@ Billing Records
         <table id="billing-records" class="display" style="width: 100%" cellpadding="5px">
             <thead>
                 <tr>
+                    <th></th>
+                    <th>Id</th>
                     <th>State</th>
                     <th>User</th>
                     <th>Lab</th>
