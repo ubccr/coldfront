@@ -28,7 +28,7 @@ class UpdateAllocationView(AllocationView):
         context = super().get_context_data(**kwargs)
         allocation_id = self.kwargs.get("allocation_id")
         allocation = Allocation.objects.get(pk=allocation_id)
-        alloc_status = allocation.get("allocation").status.name
+        alloc_status = allocation.status.name
 
         if alloc_status == "Pending":
             pending_status = True
