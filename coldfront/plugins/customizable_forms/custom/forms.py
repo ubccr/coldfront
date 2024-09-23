@@ -7,9 +7,9 @@ from django.core.exceptions import ValidationError
 from coldfront.plugins.customizable_forms.validators import (ValidateNumberOfUsers,
                                                              ValidateAccountNumber,
                                                              ValidateDirectoryName,
-                                                             ValidateUsername,
                                                              ValidateDupDirectoryName)
 from coldfront.plugins.customizable_forms.forms import BaseForm
+from coldfront.plugins.ldap_user_info.utils import LDAPSearch, check_if_user_exists
 
 
 class ComputeForm(BaseForm):
@@ -136,9 +136,9 @@ class GeodeProjectForm(BaseForm):
     username = forms.CharField(max_length=40, disabled=True)
     email = forms.EmailField(max_length=50, disabled=True)
     phone_number = forms.CharField(max_length=12, required=False)
-    primary_contact = forms.CharField(max_length=20, required=False, validators=[ValidateUsername()])
-    secondary_contact = forms.CharField(max_length=20, required=False, validators=[ValidateUsername()])
-    it_pro = forms.CharField(max_length=100, required=False, validators=[ValidateUsername()])
+    primary_contact = forms.CharField(max_length=20, required=False)
+    secondary_contact = forms.CharField(max_length=20, required=False)
+    it_pro = forms.CharField(max_length=100, required=False)
     department_full_name = forms.CharField(max_length=30)
     department_short_name = forms.CharField(max_length=15, required=False, help_text='ex. UA-VPIT')
     department_primary_campus = forms.ChoiceField(choices=CAMPUS_CHOICES, required=False)
@@ -179,7 +179,7 @@ class GeodeProjectForm(BaseForm):
         help_text='Select all domains of data which may be stored.',
         widget=forms.CheckboxSelectMultiple
     )
-    fiscal_officer = forms.CharField(max_length=80, validators=[ValidateUsername()])
+    fiscal_officer = forms.CharField(max_length=80)
     account_number = forms.CharField(max_length=9, help_text='Format: xx-xxx-xx', validators=[ValidateAccountNumber()])
     sub_account_number = forms.CharField(max_length=20, required=False)
     terms_of_service = forms.BooleanField(
@@ -212,15 +212,29 @@ class GeodeProjectForm(BaseForm):
         start_date = cleaned_data.get('start_date')
         end_date = cleaned_data.get('end_date')
 
+        username_fields = ['primary_contact', 'secondary_contact', 'it_pro', 'fiscal_officer']
+        ldap_conn = LDAPSearch()
+        raise_error = False
+        for username_field in username_fields:
+            username = cleaned_data.get(username_field)
+            if username:
+                username_exists = check_if_user_exists(username, ldap_conn)
+                if not username_exists:
+                    self.add_error(username_field, 'This username does not exist')
+                    raise_error = True
+
         if start_date and start_date < date.today():
             self.add_error('start_date', 'Must be today or later')
-            raise ValidationError('Please correct the error below')
+            raise_error = True
 
         if end_date and end_date < date.today():
             self.add_error('end_date', 'Must be today or later')
-            raise ValidationError('Please correct the error below')
+            raise_error = True
 
         if end_date and start_date:
             if end_date < start_date:
                 self.add_error('end_date', 'Must be later than the start date')
-                raise ValidationError('Please correct the error below')
+                raise_error = True
+
+        if raise_error:
+            ValidationError('Please correct the error(s) below')

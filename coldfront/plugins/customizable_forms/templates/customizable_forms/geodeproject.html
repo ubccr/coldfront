@@ -204,6 +204,49 @@ Request New Allocation
 </div>
 
 <script>
+  function setUpUserSearch(username_field) {
+    $('#id_' + username_field).change(function (e) {
+      field_id = e.target.id;
+      if ($('#' + field_id + '_results').length) {
+        $('#' + field_id + '_results').remove();
+      }
+
+      if (!e.target.value.length) {
+        return;
+      }
+
+      $('#' + field_id).after(
+        '\
+        <div id="' + field_id + '_results">\
+          <br>\
+          <button type="button" class="btn btn-primary">\
+            <i class="fas fa-sync fa-spin fa-fw" aria-hidden="true"></i> Searching for user <span class="sr-only">...</span>\
+          </button>\
+        <\div>\
+        '
+      );
+
+      $.ajax({
+        url : "{% url 'ldap-user-search' %}",
+        type : "POST",
+        data : {
+          username: e.target.value,
+          id: field_id,
+          csrfmiddlewaretoken: "{{ csrf_token }}"
+        },
+        success : function (data) {
+          if ($('#' + field_id + '_results').length) {
+            $('#' + field_id + '_results').remove();
+          }
+          $('#' + field_id).after(data);
+          if ($('#error_1_' + field_id).length) {
+            $('#error_1_' + field_id).remove();
+          }
+        }
+      })
+    });
+  }
+
   $(document).ready(function () {
     var date = new Date();
     var currentYear = date.getFullYear();
@@ -251,6 +294,12 @@ Request New Allocation
         $('#div_id_end_date button').prop('disabled', false);
       }
     });
+
+    var username_fields = ['primary_contact', 'secondary_contact', 'it_pro', 'fiscal_officer'];
+    for (var i=0; i < username_fields.length; i++) {
+      var username_field = username_fields[i];
+      setUpUserSearch(username_field);
+    }
   })
 </script>
 {% endblock %}

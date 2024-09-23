@@ -95,7 +95,7 @@ class SlateProjectView(GenericView):
         return http_response
 
 
-class GeodeProjectForm(GenericView):
+class GeodeProjectView(GenericView):
     form_class = GeodeProjectForm
     template_name = 'customizable_forms/geodeproject.html'
 

@@ -39,6 +39,9 @@ if 'coldfront.plugins.academic_analytics' in settings.INSTALLED_APPS:
 if 'coldfront.plugins.advanced_search' in settings.INSTALLED_APPS:
     urlpatterns.append(path('advanced_search/', include('coldfront.plugins.advanced_search.urls')))
 
+if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
+    urlpatterns.append(path('ldap_user_info/', include('coldfront.plugins.ldap_user_info.urls')))
+
 if 'coldfront.plugins.slate_project' in settings.INSTALLED_APPS:
     urlpatterns.append(path('slate_project/', include('coldfront.plugins.slate_project.urls')))
 

@@ -1,5 +1,5 @@
 from django.urls import path
-from coldfront.plugins.customizable_forms.custom.views import ComputeView, PositConnectView, SlateProjectView, GeodeProjectForm
+from coldfront.plugins.customizable_forms.custom.views import ComputeView, PositConnectView, SlateProjectView, GeodeProjectView
 
 
 urlpatterns = [
@@ -25,7 +25,7 @@ urlpatterns = [
     ),
     path(
         '<int:project_pk>/create/<int:resource_pk>/geode-projects',
-        GeodeProjectForm.as_view(),
+        GeodeProjectView.as_view(),
         name='geodeproject-form'
     ),
 ]
