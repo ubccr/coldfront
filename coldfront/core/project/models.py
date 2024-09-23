@@ -384,6 +384,7 @@ class ProjectAttributeType(TimeStampedModel):
         is_unique (bool): indicates whether or not the value is unique
         is_private (bool): indicates whether or not the attribute type is private
         is_changeable (bool): indicates whether or not the attribute type is changeable
+        is_default (bool): indicates whether or not the attribute type is default added to all new projects
     """
 
     attribute_type = models.ForeignKey(AttributeType, on_delete=models.CASCADE)
@@ -393,6 +394,8 @@ class ProjectAttributeType(TimeStampedModel):
     is_unique = models.BooleanField(default=False)
     is_private = models.BooleanField(default=True)
     is_changeable = models.BooleanField(default=False)
+    is_default = models.BooleanField(default=False)
+    is_default_value = models.CharField(max_length=128, blank=True, null=True)
     history = HistoricalRecords()
 
     def __str__(self):
