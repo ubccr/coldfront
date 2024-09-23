@@ -31,21 +31,6 @@ class AllocationView(LoginRequiredMixin, FormView):
     template_name = "allocation.html"
     new_allocation = None
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context_allocation = self.new_allocation
-        alloc_status = " "
-        if self.new_allocation != None:
-            alloc_status = context_allocation.get("allocation").status.name
-            if alloc_status == "Pending":
-                pending_status = True
-            else:
-                pending_status = False
-            context["is_pending"] = pending_status
-        context["status_allocation"] = context_allocation
-        context["alloc_form"] = context.form
-        return context
-
     def get_form_kwargs(self):
         kwargs = super(AllocationView, self).get_form_kwargs()
         kwargs["user_id"] = self.request.user.id
