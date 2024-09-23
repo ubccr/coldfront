@@ -24,6 +24,20 @@ class UpdateAllocationView(AllocationView):
     template_name = "allocation.html"
     success_url = reverse_lazy("home")
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        allocation_id = self.kwargs.get("allocation_id")
+        allocation = Allocation.objects.get(pk=allocation_id)
+        alloc_status = allocation.status.name
+
+        if alloc_status == "Pending":
+            pending_status = True
+        else:
+            pending_status = False
+        context["is_pending"] = pending_status
+
+        return context
+
     def get_form_kwargs(self):
         kwargs = super(UpdateAllocationView, self).get_form_kwargs()
         kwargs["user_id"] = self.request.user.id

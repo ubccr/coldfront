@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic.edit import FormView
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, reverse
 
 from typing import Union
 
@@ -29,7 +29,7 @@ from pathlib import PurePath
 class AllocationView(LoginRequiredMixin, FormView):
     form_class = AllocationForm
     template_name = "allocation.html"
-    success_url = reverse_lazy("home")
+    new_allocation = None
 
     def get_form_kwargs(self):
         kwargs = super(AllocationView, self).get_form_kwargs()
@@ -51,9 +51,19 @@ class AllocationView(LoginRequiredMixin, FormView):
             absolute_path = f"/{storage_root}/{storage_filesystem_path}"
         validate_filesystem_path_unique(absolute_path)
 
-        AllocationView.create_new_allocation(form_data, user, parent_allocation)
+        self.new_allocation = AllocationView.create_new_allocation(
+            form_data, user, parent_allocation
+        )
+        self.success_id = self.new_allocation.get("allocation").id
 
         return super().form_valid(form)
+
+    def get_success_url(self):
+
+        return reverse(
+            "qumulo:updateAllocation",
+            kwargs={"allocation_id": self.success_id},
+        )
 
     @staticmethod
     def create_new_allocation(
