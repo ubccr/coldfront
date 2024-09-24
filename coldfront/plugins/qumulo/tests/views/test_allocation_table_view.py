@@ -148,7 +148,6 @@ class AllocationTableViewTests(TestCase):
         self.assertEqual(qs[0].id, other_allocation.id)
         self.assertEqual(qs[1].id, self.allocation.id)
 
-
     def test_parent_child_allocation_query(self):
         attr_type = AttributeType.objects.create(name="ParentChildAttributeType")
         attr_type.save()
@@ -218,9 +217,7 @@ class AllocationTableViewTests(TestCase):
 
         self.assertEqual(len(qs), 3)
 
-        self.assertEqual(
-            qs[0].child_allocation_ids, [str(qs[1].id), str(qs[2].id)]
-        )
+        self.assertEqual(qs[0].child_allocation_ids, [str(qs[1].id), str(qs[2].id)])
 
     def test_result_pagination(self):
         # call build_models again to get a different set of projects/users

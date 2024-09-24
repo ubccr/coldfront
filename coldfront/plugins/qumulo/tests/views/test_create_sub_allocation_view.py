@@ -5,11 +5,17 @@ from coldfront.core.allocation.models import Allocation
 
 from coldfront.plugins.qumulo.tests.utils.mock_data import build_models
 from coldfront.plugins.qumulo.views.allocation_view import AllocationView
-from coldfront.plugins.qumulo.views.create_sub_allocation_view import CreateSubAllocationView
+from coldfront.plugins.qumulo.views.create_sub_allocation_view import (
+    CreateSubAllocationView,
+)
 
 from coldfront.core.resource.models import Resource
 
-from coldfront.core.allocation.models import AllocationLinkage, AllocationAttributeType, AllocationAttribute
+from coldfront.core.allocation.models import (
+    AllocationLinkage,
+    AllocationAttributeType,
+    AllocationAttribute,
+)
 
 from coldfront.plugins.qumulo.forms import CreateSubAllocationForm
 
@@ -61,8 +67,10 @@ class AllocationViewTests(TestCase):
         mock_AclAllocations: MagicMock,
         mock_ActiveDirectoryAPI: MagicMock,
     ):
-        parent_result = AllocationView.create_new_allocation(self.parent_form_data, self.user)
-        
+        parent_result = AllocationView.create_new_allocation(
+            self.parent_form_data, self.user
+        )
+
         # verifying that a new Allocation object was created
         self.assertEqual(Allocation.objects.count(), 3)
         resource = Resource.objects.get(name="Storage2")
@@ -73,9 +81,7 @@ class AllocationViewTests(TestCase):
 
         # create a sub-allocation
         sub_result = CreateSubAllocationView.create_new_allocation(
-            self.sub_form_data, 
-            self.user, 
-            parent_allocation=parent_result["allocation"]
+            self.sub_form_data, self.user, parent_allocation=parent_result["allocation"]
         )
 
         # verifying that a new sub-Allocation object was created
@@ -95,12 +101,10 @@ class AllocationViewTests(TestCase):
         storage_name_type = AllocationAttributeType.objects.get(name="storage_name")
         child_storage_name = AllocationAttribute.objects.get(
             allocation=sub_result["allocation"],
-            allocation_attribute_type=storage_name_type
+            allocation_attribute_type=storage_name_type,
         )
 
         self.assertEqual(child_storage_name.value, "baz-general_store")
-
-
 
     # def test_new_allocation_status_is_pending(
     #     self,

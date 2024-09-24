@@ -73,7 +73,7 @@ def build_user_plus_project(
     fieldOfScience = FieldOfScience.objects.get(description="Other")
 
     prev_projects = list(Project.objects.all())
-    
+
     max_id = 0
     if prev_projects:
         for prev_project in prev_projects:
@@ -185,7 +185,7 @@ def set_allocation_attributes(
         linkage, _ = AllocationLinkage.objects.get_or_create(parent=parent)
         linkage.children.add(allocation)
         linkage.save()
-    
+
     allocation_attribute_names = [
         "storage_name",
         "storage_quota",

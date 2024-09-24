@@ -182,7 +182,9 @@ class AllocationTableView(LoginRequiredMixin, ListView):
                                 itsd_ticket=allocation.itsd_ticket,
                                 file_path=allocation.file_path,
                                 service_rate=allocation.service_rate,
-                                child_allocation_ids=parent_to_children_map[allocation.id],
+                                child_allocation_ids=parent_to_children_map[
+                                    allocation.id
+                                ],
                                 is_child=False,
                             )
                         )
@@ -208,23 +210,23 @@ class AllocationTableView(LoginRequiredMixin, ListView):
                             )
                 else:
                     view_list.append(
-                            AllocationListItem(
-                                id=allocation.pk,
-                                pi_last_name=allocation.project.pi.last_name,
-                                pi_first_name=allocation.project.pi.first_name,
-                                pi_user_name=allocation.project.pi.username,
-                                project_id=allocation.project.pk,
-                                project_name=allocation.project.title,
-                                resource_name=resource.name,
-                                allocation_status=allocation.status.name,
-                                department_number=allocation.department_number,
-                                itsd_ticket=allocation.itsd_ticket,
-                                file_path=allocation.file_path,
-                                service_rate=allocation.service_rate,
-                                child_allocation_ids=parent_to_children_map[allocation.id],
-                                is_child=(str(allocation.pk) in all_children),
-                            )
+                        AllocationListItem(
+                            id=allocation.pk,
+                            pi_last_name=allocation.project.pi.last_name,
+                            pi_first_name=allocation.project.pi.first_name,
+                            pi_user_name=allocation.project.pi.username,
+                            project_id=allocation.project.pk,
+                            project_name=allocation.project.title,
+                            resource_name=resource.name,
+                            allocation_status=allocation.status.name,
+                            department_number=allocation.department_number,
+                            itsd_ticket=allocation.itsd_ticket,
+                            file_path=allocation.file_path,
+                            service_rate=allocation.service_rate,
+                            child_allocation_ids=parent_to_children_map[allocation.id],
+                            is_child=(str(allocation.pk) in all_children),
                         )
+                    )
 
         return view_list
 

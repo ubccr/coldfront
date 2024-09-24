@@ -44,12 +44,12 @@ class CreateSubAllocationView(UpdateAllocationView):
             "billing_contact",
             "service_rate",
         ]
-        
+
         for key in allocation_attribute_keys:
             form_data[key] = self.get_allocation_attribute(
                 allocation_attributes=parent_allocation_attrs, attribute_key=key
             )
-        
+
         # for sub-allocations protocols should default to empty
         form_data["protocols"] = []
 
