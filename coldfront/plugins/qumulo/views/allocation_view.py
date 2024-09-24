@@ -67,9 +67,32 @@ class AllocationView(LoginRequiredMixin, FormView):
         return super().form_valid(form)
 
     @staticmethod
+    def _handle_sub_allocation_scoping(sub_allocation_name: str, parent_allocation_name: str):
+        """
+            NOTE:
+              if sub_allocation_name is same as parent, or is completely different, then
+              prepend parent name to sub name 
+              if sub-allocation name provided already *has* parent name prepended (but is not identical to parent name)
+              use it directly
+            EXAMPLE:
+              parent: foo + sub: bar => foo-bar
+              parent: foo + sub: foo => foo-foo
+              parent: foo + sub: foo-blah => foo-blah
+        """
+        if sub_allocation_name.startswith(parent_allocation_name) and sub_allocation_name != parent_allocation_name:
+            return sub_allocation_name
+        return f"{parent_allocation_name}-{sub_allocation_name}"
+
+    @staticmethod
     def create_new_allocation(
         form_data, user, parent_allocation: Optional[Allocation] = None
-    ):
+    ):  
+        if parent_allocation:
+            form_data["storage_name"] = AllocationView._handle_sub_allocation_scoping(
+                form_data["storage_name"],
+                parent_allocation.get_attribute(name="storage_name"),
+            )
+        
         project_pk = form_data.get("project_pk")
         project = get_object_or_404(Project, pk=project_pk)
 
