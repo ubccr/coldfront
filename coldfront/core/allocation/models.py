@@ -395,12 +395,12 @@ class AllocationAttribute(TimeStampedModel):
                 raise ValidationError(
                     'Invalid Value "%s" for "%s". Date must be in format YYYY-MM-DD' % (self.value, self.allocation_attribute_type.name))
 
-        linked_attribute = self.allocation_attribute_type.linked_allocation_attribute
+        linked_attribute_type_obj = self.allocation_attribute_type.linked_resource_attribute_type
         if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
             from coldfront.plugins.ldap_user_info.utils import check_if_user_exists
             linked_attribute_obj = ResourceAttribute.objects.filter(
                 resource=self.allocation.get_parent_resource,
-                resource_attribute_type__name=linked_attribute,
+                resource_attribute_type=linked_attribute_type_obj,
                 check_if_username_exists=True
             )
             if linked_attribute_obj.exists():
