@@ -339,7 +339,6 @@ class AllocationAttributeType(TimeStampedModel):
     """ AllocationAttributeType. """
     attribute_type = models.ForeignKey(AttributeType, on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
-    linked_allocation_attribute = models.CharField(max_length=50, blank=True)
     linked_resource_attribute_type = models.ForeignKey(ResourceAttributeType, on_delete=models.CASCADE, blank=True, null=True)
     linked_resources = models.ManyToManyField(Resource, blank=True)
     has_usage = models.BooleanField(default=False)
