@@ -401,7 +401,8 @@ def sync_slate_project_allocated_quantities():
     for ldap_group, allocated_quantity in ldap_groups.items():
         ldap_group_allocation_id = ldap_group_dict.get(ldap_group)
         if ldap_group_allocation_id is None:
-            logger.warning(f'LDAP group {ldap_group} not found')
+            # Disabled until imports are done
+            # logger.warning(f'LDAP group {ldap_group} not found')
             continue
 
         allocated_quantity_obj = allocated_quantity_dict.get(ldap_group_allocation_id)
