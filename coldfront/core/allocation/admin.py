@@ -148,6 +148,7 @@ class AttributeTypeAdmin(admin.ModelAdmin):
 @admin.register(AllocationAttributeType)
 class AllocationAttributeTypeAdmin(admin.ModelAdmin):
     list_display = ('pk', 'name', 'linked_resource_attribute_type', 'list_linked_resources', 'attribute_type', 'has_usage', 'is_private')
+    list_filter = ('linked_resources', )
     filter_horizontal = ('linked_resources', )
 
     def list_linked_resources(self, obj):
