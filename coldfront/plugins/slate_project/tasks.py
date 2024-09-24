@@ -11,6 +11,7 @@ from coldfront.plugins.slate_project.utils import (sync_slate_project_users,
                                                    get_new_user_status,
                                                    send_access_removed_email,
                                                    create_slate_project_data_file,
+                                                   download_files,
                                                    LDAPModify,
                                                    LDAPImportSearch)
 
@@ -32,6 +33,10 @@ def sync_all_slate_project_allocations():
 
 def sync_all_slate_project_allocated_quantities():
     sync_slate_project_allocated_quantities()
+
+
+def download_all_files():
+    download_files()
 
 
 def send_ineligible_users_email_report():

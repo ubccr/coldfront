@@ -3,6 +3,7 @@ import csv
 import logging
 import json
 import datetime
+import subprocess
 from decimal import Decimal
 from datetime import date
 
@@ -443,6 +444,10 @@ def get_pi_total_allocated_quantity(pi_username):
 
 def check_pi_total_allocated_quantity(pi_username):
     return get_pi_total_allocated_quantity(pi_username) > SLATE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD
+
+
+def download_files():
+    subprocess.run(['bash', os.path.join(SLATE_PROJECT_INCOMING_DIR, 'get_hpfs_data.sh')])
 
 
 def send_expiry_email(allocation_obj):
