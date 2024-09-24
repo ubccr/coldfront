@@ -76,10 +76,10 @@ class QumuloAPI:
             self.rc.fs.write_file(id_=readme_meta["id"], data_file=arf)
         fs_path = f"{path}/{file_name}"
         acl = AcesManager().get_base_acl()
-        
-        aces = #build_aces
-        acl['aces'] = aces
-        
+
+        aces = default_aces
+        acl["aces"] = aces
+
         self.rc.fs.set_acl_v2(path=fs_path, acl=acl)
 
     def create_protocol(self, export_path: str, fs_path: str, name: str, protocol: str):
