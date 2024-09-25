@@ -892,7 +892,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
         return self.reverse_with_params(
             reverse(
-                'custom-allocation-create', kwargs={'project_pk': self.object.pk}
+                url_name, kwargs={'project_pk': self.object.pk}
             ),
             after_project_creation='true'
         )
