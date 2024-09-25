@@ -120,7 +120,7 @@ class AllocationForm(forms.Form):
     license_term = forms.ChoiceField(choices=LICENSE_TERM_CHOICES, required=False)
     faculty_email = forms.EmailField(max_length=40, required=False)
     store_ephi = forms.ChoiceField(choices=YES_NO_CHOICES, required=False, widget=RadioSelect)
-    it_pros = forms.CharField(max_length=100, required=False)
+    it_pro = forms.CharField(max_length=100, required=False)
     devices_ip_addresses = forms.CharField(max_length=128, required=False)
     data_management_plan = forms.CharField(widget=forms.Textarea, required=False)
     prorated_cost = forms.IntegerField(disabled=True, required=False)
