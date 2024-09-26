@@ -23,7 +23,7 @@ def get_user_info(username, attributes):
     )
 
 def get_users_to_check():
-    return ['primary_contact', 'secondary_contact', 'fiscal_officer', 'it_pros']
+    return ['primary_contact', 'secondary_contact', 'fiscal_officer', 'it_pro']
 
 def check_if_user_exists(username, ldap_search=None):
     if ldap_search is None:
