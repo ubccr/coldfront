@@ -7,6 +7,7 @@ from datetime import date
 from dateutil.relativedelta import relativedelta
 from django import forms
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
@@ -62,7 +63,8 @@ from coldfront.core.allocation.models import (Allocation,
                                               AllocationInvoice,
                                               AllocationRemovalRequest,
                                               AllocationRemovalStatusChoice)
-from coldfront.core.allocation.signals import (allocation_activate,
+from coldfront.core.allocation.signals import (allocation_new,
+                                               allocation_activate,
                                                allocation_activate_user,
                                                allocation_disable,
                                                allocation_remove_user,
@@ -580,8 +582,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             Project, pk=self.kwargs.get('project_pk'))
 
         if project_obj.needs_review:
-            messages.error(
-                request, 'You cannot request a new allocation because you have to review your project first.')
+            messages.error(request, 'You cannot request a new allocation because you have to review your project first.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
         if project_obj.status.name in ['Archived', 'Denied', 'Review Pending', 'Expired', ]:
@@ -598,272 +599,46 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         project_obj = get_object_or_404(
             Project, pk=self.kwargs.get('project_pk'))
         context['project'] = project_obj
-        context['request_user_username'] = {'username': self.request.user.username}
 
         user_resources = get_user_resources(self.request.user)
-
-        # Format:
-        # {
-        #   field
-        #   label
-        #   type
-        # }
-        resource_form = []
-        resource_attributes_type_labels = ResourceAttributeType.objects.filter(
-            name__endswith='label'
-        )
-        resource_attributes_type_field_names = [x.name[:-6] for x in resource_attributes_type_labels]
-        resource_attributes_type_fields = ResourceAttributeType.objects.filter(
-            name__in=resource_attributes_type_field_names
-        )
-        for resource_attributes_type_field in resource_attributes_type_fields:
-            resource_attributes_type_field_name = resource_attributes_type_field.name
-            resource_attributes_type_attribute_type_name = resource_attributes_type_field.attribute_type.name
-            if resource_attributes_type_attribute_type_name == 'Yes/No':
-                resource_attributes_type_attribute_type_name = 'radio'
-            elif resource_attributes_type_attribute_type_name == 'True/False':
-                resource_attributes_type_attribute_type_name = 'checkbox'
-
-            if resource_attributes_type_field_name in ['access_level', 'system', 'storage_space_unit', 'use_type']:
-                resource_attributes_type_attribute_type_name = 'radio'
-            elif resource_attributes_type_field_name in ['campus_affiliation', 'training_or_inference']:
-                resource_attributes_type_attribute_type_name = 'choice'
-            elif resource_attributes_type_field_name in ['email', 'faculty_email']:
-                resource_attributes_type_attribute_type_name = 'email'
-
-            resource_form.append({
-                resource_attributes_type_field_name: {},
-                resource_attributes_type_field_name + '_label': {},
-                'type': resource_attributes_type_attribute_type_name.lower()
-            })
-
-        # These do not exist as ResourceAttributeTypes
-        resource_form.append({
-            'group_account_name': {},
-            'group_account_name_label': {},
-            'type': 'text',
-        })
-        resource_form.append({
-            'group_account_name_exists': {},
-            'group_account_name_exists_label': {},
-            'type': 'checkbox',
-        })
-        resource_form.append({
-            'prorated_cost': {},
-            'prorated_cost_label': {},
-            'type': 'int',
-        })
-        resource_form.append({
-            'quantity': {},
-            'quantity_label': {},
-            'type': 'int',
-        })
-
-        resource_special_attributes = [
-            {
-                'slurm_cluster': {},
-                'has_requirement': {},
-            }
-        ]
-
-        resource_descriptions = {}
-        resources_requiring_user_accounts = []
-        for resource in user_resources:
-            resource_descriptions[resource.id] = resource.description
-
-            if resource.resourceattribute_set.filter(resource_attribute_type__name='check_user_account').exists():
-                resources_requiring_user_accounts.append(resource.pk)
-
-            for attribute in resource_special_attributes:
-                keys = list(attribute.keys())
-                field = keys[0]
-                check = keys[1]
-                if resource.resourceattribute_set.filter(resource_attribute_type__name=field).exists():
-                    value = resource.resourceattribute_set.get(resource_attribute_type__name=field).value
-                    attribute[field][resource.id] = value
-                    if project_obj.slurm_account_name != '':
-                        attribute[check][resource.id] = 'Yes'
-                    else:
-                        attribute[check][resource.id] = 'No'
-
-            for field_set in resource_form:
-                keys = list(field_set.keys())
-                field = keys[0]
-                label = keys[1]
-                input_type = keys[2]
-
-                # prorated_cost is a special case
-                if field == 'prorated_cost':
-                    if resource.resourceattribute_set.filter(resource_attribute_type__name='prorated').exists():
-                        if resource.resourceattribute_set.get(resource_attribute_type__name='prorated'):
-                            if resource.resourceattribute_set.filter(resource_attribute_type__name=label).exists():
-                                value = resource.resourceattribute_set.get(
-                                    resource_attribute_type__name=label).value
-                                field_set[label][resource.id] = mark_safe(
-                                    '<strong>{}</strong>'.format(value))
-
-                            if resource.resourceattribute_set.filter(resource_attribute_type__name='cost').exists():
-                                field_set[field][resource.id] = compute_prorated_amount(
-                                    int(resource.resourceattribute_set.get(resource_attribute_type__name='cost').value)
-                                )
-                            else:
-                                field_set[field][resource.id] = 0
-                    continue
-
-                if resource.resourceattribute_set.filter(resource_attribute_type__name=label).exists():
-                    value = resource.resourceattribute_set.get(
-                        resource_attribute_type__name=label
-                    ).value
-                    if field_set[input_type] == 'checkbox':
-                        field_set[label][resource.id] = mark_safe(
-                            '{}'.format(value)
-                        )
-                    else:
-                        field_set[label][resource.id] = mark_safe(
-                            '<strong>{}</strong>'.format(value)
-                        )
-
-                if field_set[input_type] == 'int':
-                    if resource.resourceattribute_set.filter(resource_attribute_type__name=field).exists():
-                        value = resource.resourceattribute_set.get(
-                            resource_attribute_type__name=field).value
-                        if value == '':
-                            field_set[field][resource.id] = 0
-                        else:
-                            field_set[field][resource.id] = int(value)
-                else:
-                    if resource.resourceattribute_set.filter(resource_attribute_type__name=field).exists():
-                        value = resource.resourceattribute_set.get(
-                            resource_attribute_type__name=field
-                        ).value
-                        field_set[field][resource.id] = value
-
-        context['resource_special_attributes'] = resource_special_attributes
-        context['resource_form'] = resource_form
-
+        resources_form_default_quantities = {}
+        resources_form_label_texts = {}
         resources_with_eula = {}
+        attr_names = ('quantity_default_value', 'quantity_label', 'eula')
+        for resource in user_resources:
+            for attr_name in attr_names:
+                query = Q(resource_attribute_type__name=attr_name)
+                if resource.resourceattribute_set.filter(query).exists():
+                    value = resource.resourceattribute_set.get(query).value
+                    if attr_name == 'quantity_default_value':
+                        resources_form_default_quantities[resource.id] = int(value)
+                    if attr_name == 'quantity_label':
+                        resources_form_label_texts[resource.id] = mark_safe(f'<strong>{value}*</strong>')
+                    if attr_name == 'eula':
+                        resources_with_eula[resource.id] = value
 
-        context['AllocationAccountForm'] = AllocationAccountForm()
-        context['resource_descriptions'] = resource_descriptions
-
-        context['resources_requiring_user_accounts'] = resources_requiring_user_accounts
+        context['resources_form_default_quantities'] = resources_form_default_quantities
+        context['resources_form_label_texts'] = resources_form_label_texts
         context['resources_with_eula'] = resources_with_eula
         context['resources_with_accounts'] = list(Resource.objects.filter(
             name__in=list(ALLOCATION_ACCOUNT_MAPPING.keys())).values_list('id', flat=True))
-
-        after_project_creation = self.request.GET.get('after_project_creation')
-        if after_project_creation is None:
-            after_project_creation = 'false'
-        context['after_project_creation'] = after_project_creation
 
         return context
 
     def get_form(self, form_class=None):
         """Return an instance of the form to be used in this view."""
-        after_project_creation = self.request.GET.get('after_project_creation')
-        if after_project_creation == 'true':
-            after_project_creation = True
-        else:
-            after_project_creation = False
-
         if form_class is None:
             form_class = self.get_form_class()
-        return form_class(self.request.user, self.kwargs.get('project_pk'), after_project_creation, **self.get_form_kwargs())
-
-    def calculate_end_date(self, month, day, license_term='current'):
-        current_date = datetime.date.today()
-        license_end_date = datetime.date(current_date.year, month, day)
-        if current_date > license_end_date:
-            license_end_date = license_end_date.replace(year=license_end_date.year + 1)
-
-        if license_term == 'current_and_next_year':
-            license_end_date = license_end_date.replace(year=license_end_date.year + 1)
-
-        return license_end_date
-
-    def check_user_accounts(self, usernames, resource_obj):
-        denied_users = []
-        approved_users = []
-        if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
-            from coldfront.plugins.ldap_user_info.utils import get_users_info
-            results = get_users_info(usernames, ['memberOf'])
-            for username in usernames:
-                if not resource_obj.check_user_account_exists(username, results.get(username).get('memberOf')):
-                    denied_users.append(username)
-                else:
-                    approved_users.append(username)
-
-        if denied_users:
-            messages.warning(self.request, format_html(
-                'The following users do not have an account on {} and were not added: {}. Please\
-                direct them to\
-                <a href="https://access.iu.edu/Accounts/Create">https://access.iu.edu/Accounts/Create</a>\
-                to create an account.'
-                .format(resource_obj.name, ', '.join(denied_users))
-            ))
-        return approved_users
+        return form_class(self.request.user, self.kwargs.get('project_pk'), **self.get_form_kwargs())
 
     def form_valid(self, form):
         form_data = form.cleaned_data
         project_obj = get_object_or_404(
             Project, pk=self.kwargs.get('project_pk'))
-        resource_obj = Resource.objects.get(pk=form_data.get('resource'))
+        resource_obj = form_data.get('resource')
         justification = form_data.get('justification')
-        end_date = form_data.get('end_date')
+        quantity = form_data.get('quantity', 1)
         allocation_account = form_data.get('allocation_account', None)
-
-        allocation_limit = resource_obj.get_attribute('allocation_limit')
-        if allocation_limit is not None:
-            num_allocations = 0
-            allocations = project_obj.allocation_set.filter(
-                status__in=[
-                    AllocationStatusChoice.objects.get(name="Active"),
-                    AllocationStatusChoice.objects.get(name="New"),
-                    AllocationStatusChoice.objects.get(name="Billing Information Submitted"),
-                    AllocationStatusChoice.objects.get(name="Renewal Requested"),
-                    AllocationStatusChoice.objects.get(name="Paid"),
-                    AllocationStatusChoice.objects.get(name="Payment Pending"),
-                    AllocationStatusChoice.objects.get(name="Payment Requested")
-                ]
-            )
-            for allocation in allocations:
-                if allocation.get_parent_resource == resource_obj:
-                    num_allocations += 1
-
-            if num_allocations >= allocation_limit:
-                form.add_error(
-                    None,
-                    'Your project has reached the max allocations it can have with this resource.'
-                )
-                return self.form_invalid(form)
-        
-        allocation_limit_per_pi = resource_obj.get_attribute('allocation_limit_per_pi')
-        if allocation_limit_per_pi is not None:
-            allocations = Allocation.objects.filter(
-                project__status__name='Active',
-                project__pi=project_obj.pi,
-                status__name__in=['Active', 'New', 'Renewal Requested'],
-                resources__name='Slate Project'
-            )
-            if len(allocations) > allocation_limit_per_pi:
-                error_message = 'This PI has reached their limit on owning Slate Projects.'
-                if self.request.user == project_obj.pi:
-                    error_message = 'You have reached your limit on owning Slate Projects'
-                form.add_error(
-                    None,
-                    error_message
-                )
-                return self.form_invalid(form)
-
-        if end_date is None:
-            end_date = project_obj.end_date
-            expiry_date = resource_obj.get_attribute('expiry_date')
-            if expiry_date is not None:
-                month, day, year = expiry_date.split('/')
-                end_date = self.calculate_end_date(int(month), int(day))
-        elif end_date > project_obj.end_date:
-            end_date = project_obj.end_date
-
         # A resource is selected that requires an account name selection but user has no account names
         if ALLOCATION_ACCOUNT_ENABLED and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING and AllocationAttributeType.objects.filter(
                 name=ALLOCATION_ACCOUNT_MAPPING[resource_obj.name]).exists() and not allocation_account:
@@ -873,29 +648,11 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         usernames = form_data.get('users')
         usernames.append(project_obj.pi.username)
-        usernames.append(self.request.user.username)
-        # Remove potential duplicate usernames
         usernames = list(set(usernames))
 
-        # If a resource has a user limit make sure it's not surpassed.
-        total_users = len(usernames)
-        user_limit = resource_obj.get_attribute("user_limit")
-        if user_limit is not None:
-            if total_users > int(user_limit):
-                form.add_error(None, format_html(
-                    'Too many users are being added (total users: {}). The user limit for this resource is {}.'.format(total_users, user_limit)
-                ))
-                return self.form_invalid(form)
-
-        if not resource_obj.check_user_account_exists(self.request.user.username):
-            form.add_error(
-                None,
-                format_html('You do not have an account on {}. You will need to create one\
-                <a href="https://access.iu.edu/Accounts/Create">here</a> in order to submit a\
-                resource request for this resource.'.format(resource_obj.name))
-            )
-            return self.form_invalid(form)
-        usernames = self.check_user_accounts(usernames, resource_obj)
+        users = [get_user_model().objects.get(username=username) for username in usernames]
+        if project_obj.pi not in users:
+            users.append(project_obj.pi)
 
         if INVOICE_ENABLED and resource_obj.requires_payment:
             allocation_status_obj = AllocationStatusChoice.objects.get(
@@ -907,6 +664,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         allocation_obj = Allocation.objects.create(
             project=project_obj,
             justification=justification,
+            quantity=quantity,
             status=allocation_status_obj
         )
 
@@ -915,47 +673,6 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             allocation_obj.save()
 
         allocation_obj.resources.add(resource_obj)
-
-        # This section of code first grabs all the allocation attribute types that are linked to
-        # the selected resource. Then it makes sure the only allocation attribute types included
-        # are ones that have a linked resource attribute type that exists in a resource attribute
-        # the selected resource has.
-        allocation_attribute_type_objs = AllocationAttributeType.objects.filter(
-            linked_resources__id__exact=resource_obj.id,
-            linked_resource_attribute_type__isnull=False
-        )
-        linked_resource_attribute_type_objs = [
-            allocation_attribute_type_obj.linked_resource_attribute_type
-            for allocation_attribute_type_obj in allocation_attribute_type_objs
-        ]
-        resource_attribute_type_objs = resource_obj.resourceattribute_set.filter(
-            resource=resource_obj,
-            resource_attribute_type__in=linked_resource_attribute_type_objs
-        )
-        resource_attribute_type_objs = [
-            resource_attribute_type_obj.resource_attribute_type
-            for resource_attribute_type_obj in resource_attribute_type_objs
-        ]
-        for allocation_attribute_type_obj in allocation_attribute_type_objs:
-            if allocation_attribute_type_obj.linked_resource_attribute_type in resource_attribute_type_objs:
-                value = form_data.get(allocation_attribute_type_obj.linked_resource_attribute_type.name)
-                if value:
-                    AllocationAttribute.objects.create(
-                        allocation_attribute_type=allocation_attribute_type_obj,
-                        allocation=allocation_obj,
-                        value=value
-                    )
-
-        slurm_account_allocation_attribute_type_obj = AllocationAttributeType.objects.filter(
-            name='slurm_account_name',
-            linked_resources__id__exact=resource_obj.id
-        )
-        if slurm_account_allocation_attribute_type_obj.exists():
-            AllocationAttribute.objects.create(
-                allocation_attribute_type=slurm_account_allocation_attribute_type_obj[0],
-                allocation=allocation_obj,
-                value=project_obj.slurm_account_name
-            )
 
         if ALLOCATION_ACCOUNT_ENABLED and allocation_account and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING:
 
@@ -967,154 +684,30 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 value=allocation_account
             )
 
+
         for linked_resource in resource_obj.linked_resources.all():
             allocation_obj.resources.add(linked_resource)
 
-        users = [User.objects.get(username=username) for username in usernames]
+        allocation_user_active_status = AllocationUserStatusChoice.objects.get(
+            name='Active')
+        for user in users:
+            AllocationUser.objects.create(allocation=allocation_obj, user=user,
+                                            status=allocation_user_active_status)
 
-        new_user_requests = []
-        allocation_user_active_status_choice = AllocationUserStatusChoice.objects.get(name='Active')
-        requires_user_request = allocation_obj.get_parent_resource.get_attribute('requires_user_request')
-        requestor_user = User.objects.get(username=self.request.user.username)
-        if requires_user_request is not None and requires_user_request == 'Yes':
-            allocation_user_pending_status_choice = AllocationUserStatusChoice.objects.get(
-                name='Pending - Add'
-            )
-            for user in users:
-                if user.username == self.request.user.username or user.username == allocation_obj.project.pi.username:
-                    allocation_user_obj = AllocationUser.objects.create(
-                        allocation=allocation_obj,
-                        user=user,
-                        status=allocation_user_active_status_choice
-                    )
-                else:
-                    allocation_user_obj = AllocationUser.objects.create(
-                        allocation=allocation_obj,
-                        user=user,
-                        status=allocation_user_pending_status_choice
-                    )
-
-                    allocation_obj.create_user_request(
-                        requestor_user=requestor_user,
-                        allocation_user=allocation_user_obj,
-                        allocation_user_status=allocation_user_pending_status_choice
-                    )
-
-                    new_user_requests.append(user.username)
-
-                set_default_allocation_user_role(resource_obj, allocation_user_obj)
-        else:
-            for user in users:
-                allocation_user_obj = AllocationUser.objects.create(
-                    allocation=allocation_obj,
-                    user=user,
-                    status=allocation_user_active_status_choice
-                )
-
-                set_default_allocation_user_role(resource_obj, allocation_user_obj)
-
-        pi_name = '{} {} ({})'.format(allocation_obj.project.pi.first_name,
-                                      allocation_obj.project.pi.last_name, allocation_obj.project.pi.username)
-        domain_url = get_domain_url(self.request)
-        url = '{}{}'.format(domain_url, reverse('allocation-request-list'))
-        project_detail_url = '{}{}'.format(
-            domain_url, reverse('project-detail', kwargs={'pk': allocation_obj.project.pk})
+        send_allocation_admin_email(
+            allocation_obj,
+            'New Allocation Request',
+            'email/new_allocation_request.txt',
+            domain_url=get_domain_url(self.request)
         )
-        resource_name = allocation_obj.get_parent_resource
-        if SLACK_MESSAGING_ENABLED:
-            text = (
-                f'A new allocation in project "{project_obj.title}" with id {project_obj.pk} has '
-                f'been requested for {pi_name} - {resource_name}. Please review the allocation: '
-                f'{url}. Project detail url: {project_detail_url}'
-            )
-            send_message(text)
-        if EMAIL_ENABLED:
-            template_context = {
-                'project_title': project_obj.title,
-                'project_id': project_obj.pk,
-                'pi': pi_name,
-                'resource': resource_name,
-                'url': url,
-                'project_detail_url': project_detail_url
-            }
-
-            email_recipient = get_email_recipient_from_groups(
-                allocation_obj.get_parent_resource.review_groups.all()
-            )
-
-            send_email_template(
-                'New allocation request: {} - {}'.format(
-                    pi_name, resource_name),
-                'email/new_allocation_request.txt',
-                template_context,
-                EMAIL_SENDER,
-                [email_recipient, ]
-            )
-
-            if new_user_requests:
-                send_allocation_user_request_email(
-                    self.request, new_user_requests, resource_name, email_recipient
-                )
-            else:
-                users.remove(self.request.user)
-                if project_obj.pi in users:
-                    users.remove(project_obj.pi)
-
-                if users:
-                    allocations_added_users = [user.username for user in users]
-                    allocations_added_users_emails = list(project_obj.projectuser_set.filter(
-                        user__in=users,
-                        enable_notifications=True
-                    ).values_list('user__email', flat=True))
-                    if project_obj.pi.email not in allocations_added_users_emails:
-                        allocations_added_users_emails.append(project_obj.pi.email)
-
-                    send_added_user_email(
-                        self.request,
-                        allocation_obj,
-                        allocations_added_users,
-                        allocations_added_users_emails
-                    )
-
-        logger.info(
-            f'User {self.request.user.username} submitted a request for a '
-            f'{allocation_obj.get_parent_resource.name} allocation (allocation pk={allocation_obj.pk})'
-        )
-
-        added_users = [user.username for user in users if user != self.request.user]
-        if added_users:
-            logger.info (
-                f'User {self.request.user.username} added {", ".join(added_users)} to a new allocation '
-                f'(allocation pk={allocation_obj.pk})'
-            )
+        allocation_new.send(sender=self.__class__,
+                            allocation_pk=allocation_obj.pk)
         return super().form_valid(form)
 
-    def reverse_with_params(self, path, **kwargs):
-        return path + '?' + urllib.parse.urlencode(kwargs)
-
     def get_success_url(self):
-        after_project_creation = self.request.GET.get('after_project_creation')
-        if after_project_creation is None:
-            after_project_creation = False
-
-        if not after_project_creation:
-            url = self.reverse_with_params(
-                reverse(
-                    'project-detail',
-                    kwargs={'pk': self.kwargs.get('project_pk')}
-                ),
-                allocation_submitted='true'
-            )
-        else:
-            url = self.reverse_with_params(
-                reverse(
-                    'project-add-users-search',
-                    kwargs={'pk': self.kwargs.get('project_pk')}
-                ),
-                after_project_creation='true'
-            )
-
-        return url
+        msg = 'Allocation requested. It will be available once it is approved.'
+        messages.success(self.request, msg)
+        return reverse('project-detail', kwargs={'pk': self.kwargs.get('project_pk')})
 
 
 class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
