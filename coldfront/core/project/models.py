@@ -1,4 +1,5 @@
 import datetime
+from enum import Enum
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
@@ -9,6 +10,7 @@ from simple_history.models import HistoricalRecords
 
 from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.utils.common import import_from_settings
+from coldfront.core.utils.groups import check_if_groups_in_review_groups
 
 PROJECT_ENABLE_PROJECT_REVIEW = import_from_settings('PROJECT_ENABLE_PROJECT_REVIEW', False)
 PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING = import_from_settings(
@@ -19,6 +21,14 @@ PROJECT_DAYS_TO_REVIEW_BEFORE_EXPIRING = import_from_settings(
     'PROJECT_DAYS_TO_REVIEW_BEFORE_EXPIRING',
     30
 )
+
+class ProjectPermission(Enum):
+    """ A project permission stores the user, manager, pi, and update fields of a project. """
+
+    USER = 'user'
+    MANAGER = 'manager'
+    PI = 'pi'
+    UPDATE = 'update'
 
 
 class ProjectStatusChoice(TimeStampedModel):
@@ -158,6 +168,54 @@ required to log onto the site at least once before they can be added.
             return True
 
         return False
+    
+    def user_permissions(self, user, permission=''):
+        """
+        Params:
+            user (User): represents the user whose permissions are to be retrieved
+
+        Returns:
+            list[ProjectPermission]: a list of the user's permissions for the project
+        """
+
+        if user.is_superuser:
+            return list(ProjectPermission)
+
+        user_conditions = (models.Q(status__name__in=('Active', 'New')) & models.Q(user=user))
+        if not self.projectuser_set.filter(user_conditions).exists():
+            group_exists = check_if_groups_in_review_groups(
+                self.get_parent_resource.review_groups.all(),
+                user.groups.all(),
+                permission
+            )
+            if not group_exists:  
+                return []
+
+        permissions = [ProjectPermission.USER]
+
+        if self.projectuser_set.filter(user_conditions & models.Q(role__name='Manager')).exists() or group_exists:
+            permissions.append(ProjectPermission.MANAGER)
+
+        if self.projectuser_set.filter(user_conditions & models.Q(project__pi_id=user.id)).exists():
+            permissions.append(ProjectPermission.PI)
+
+        if ProjectPermission.MANAGER in permissions or ProjectPermission.MANAGER in permissions:
+            permissions.append(ProjectPermission.UPDATE)
+
+        return permissions
+
+    def has_perm(self, user, perm, addtl_perm=''):
+        """
+        Params:
+            user (User): user to check permissions for
+            perm (ProjectPermission): permission to check for in user's list
+
+        Returns:
+            bool: whether or not the user has the specified permission
+        """
+
+        perms = self.user_permissions(user, addtl_perm)
+        return perm in perms
 
     @property
     def expires_in(self):

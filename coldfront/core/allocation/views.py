@@ -5,27 +5,28 @@ import csv
 from datetime import date
 
 from dateutil.relativedelta import relativedelta
-from django.conf import settings
 from django import forms
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
-from django.contrib.messages.views import SuccessMessageMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
 from django.db.models.query import QuerySet
 from django.forms import formset_factory
 from django.http import HttpResponseRedirect, JsonResponse, HttpResponseBadRequest
-from django.http.response import StreamingHttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse, reverse_lazy
 from django.utils.html import format_html, mark_safe
 from django.views import View
 from django.views.generic import ListView, TemplateView
 from django.views.generic.edit import CreateView, FormView, UpdateView
+from django.conf import settings
+from django.contrib.messages.views import SuccessMessageMixin
+from django.http.response import StreamingHttpResponse
 
 from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationAddUserForm,
+                                             AllocationAttributeCreateForm,
                                              AllocationAttributeDeleteForm,
                                              AllocationChangeForm,
                                              AllocationChangeNoteForm,
@@ -35,16 +36,18 @@ from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationForm,
                                              AllocationInvoiceNoteDeleteForm,
                                              AllocationInvoiceUpdateForm,
-                                             AllocationInvoiceExportForm,
                                              AllocationRemoveUserForm,
                                              AllocationReviewUserForm,
                                              AllocationSearchForm,
                                              AllocationUpdateForm,
+                                             AllocationInvoiceExportForm,
                                              AllocationInvoiceSearchForm,
                                              AllocationExportForm,
                                              AllocationUserUpdateForm,
-                                             AllocationAttributeCreateForm)
-from coldfront.core.allocation.models import (Allocation, AllocationAccount,
+                                             )
+from coldfront.core.allocation.models import (Allocation,
+                                              AllocationPermission,
+                                              AllocationAccount,
                                               AllocationAttribute,
                                               AllocationAttributeType,
                                               AllocationChangeRequest,
@@ -59,6 +62,14 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationInvoice,
                                               AllocationRemovalRequest,
                                               AllocationRemovalStatusChoice)
+from coldfront.core.allocation.signals import (allocation_activate,
+                                               allocation_activate_user,
+                                               allocation_disable,
+                                               allocation_remove_user,
+                                               allocation_change_approved,
+                                               allocation_change_user_role,
+                                               allocation_remove,
+                                               visit_allocation_detail)
 from coldfront.core.allocation.utils import (compute_prorated_amount,
                                              generate_guauge_data_from_usage,
                                              get_user_resources,
@@ -72,19 +83,10 @@ from coldfront.core.allocation.utils import (compute_prorated_amount,
                                              check_if_roles_are_enabled,
                                              set_default_allocation_user_role,
                                              get_default_allocation_user_role)
-from coldfront.core.utils.common import Echo
-from coldfront.core.allocation.signals import (allocation_activate,
-                                               allocation_activate_user,
-                                               allocation_disable,
-                                               allocation_remove_user,
-                                               allocation_change_approved,
-                                               allocation_change_user_role,
-                                               allocation_remove,
-                                               visit_allocation_detail)
-from coldfront.core.project.models import (Project, ProjectUser,
+from coldfront.core.project.models import (Project, ProjectUser, ProjectPermission,
                                            ProjectUserStatusChoice)
 from coldfront.core.resource.models import Resource, ResourceAttributeType
-from coldfront.core.utils.common import get_domain_url, import_from_settings
+from coldfront.core.utils.common import get_domain_url, import_from_settings, Echo
 from coldfront.core.utils.mail import send_allocation_admin_email, send_allocation_customer_email, send_email_template, get_email_recipient_from_groups
 from coldfront.core.utils.slack import send_message
 from coldfront.core.utils.groups import check_if_groups_in_review_groups
@@ -142,28 +144,13 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-        if self.request.user.is_superuser:
-            return True
-
-        if self.request.user.has_perm('allocation.can_view_all_allocations'):
-            return True
-
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
 
-        user_can_access_project = allocation_obj.project.projectuser_set.filter(
-            user=self.request.user, status__name__in=['Active', 'New', ]).exists()
-
-        user_can_access_allocation = allocation_obj.allocationuser_set.filter(
-            user=self.request.user, status__name__in=['Active', 'Pending - Remove', 'Eligible', 'Disabled', 'Retired']).exists()
-        if not user_can_access_allocation:
-            user_can_access_allocation = allocation_obj.project.projectuser_set.filter(
-                user=self.request.user, role__name='Manager').exists()
-
-        if user_can_access_project and user_can_access_allocation:
+        if self.request.user.has_perm('allocation.can_view_all_allocations'):
             return True
-
-        return False
+        
+        return allocation_obj.has_perm(self.request.user, AllocationPermission.USER)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -211,27 +198,13 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context['attributes_with_usage'] = attributes_with_usage
         context['attributes'] = attributes
         context['allocation_changes'] = allocation_changes
-        context['allocation_changes_enabled'] = allocation_changes_enabled
+        context['allocation_changes_enabled'] = allocation_obj.is_changeable
         context['display_estimated_cost'] = False
         if 'coldfront.plugins.slate_project' in settings.INSTALLED_APPS: 
             context['display_estimated_cost'] = SLATE_PROJECT_SHOW_ESTIMATED_COST
 
         # Can the user update the project?
-        context['is_allowed_to_update_project'] = False
-        group_exists = check_if_groups_in_review_groups(
-            allocation_obj.get_parent_resource.review_groups.all(),
-            self.request.user.groups.all(),
-            'change_project'
-        )
-        if self.request.user.is_superuser:
-            context['is_allowed_to_update_project'] = True
-        elif group_exists:
-            context['is_allowed_to_update_project'] = True
-        elif allocation_obj.project.projectuser_set.filter(user=self.request.user).exists():
-            project_user = allocation_obj.project.projectuser_set.get(
-                user=self.request.user)
-            if project_user.role.name == 'Manager':
-                context['is_allowed_to_update_project'] = True
+        context['is_allowed_to_update_project'] = allocation_obj.project.has_perm(self.request.user, ProjectPermission.UPDATE, 'change_project')
 
         context['allocation_user_roles_enabled'] = check_if_roles_are_enabled(allocation_obj)
         context['allocation_users'] = allocation_users
@@ -605,20 +578,12 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-        if self.request.user.is_superuser:
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
+        if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
             return True
 
-        project_obj = get_object_or_404(
-            Project, pk=self.kwargs.get('project_pk'))
-
-        if project_obj.pi == self.request.user:
-            return True
-
-        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
-            return True
-
-        messages.error(
-            self.request, 'You do not have permission to create a new allocation.')
+        messages.error(self.request, 'You do not have permission to create a new allocation.')
+        return False
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(
@@ -1167,28 +1132,12 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-        if self.request.user.is_superuser:
+        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
+        if allocation_obj.has_perm(self.request.user, AllocationPermission.MANAGER, 'add_allocationuser'):
             return True
 
-        allocation_obj = get_object_or_404(
-            Allocation, pk=self.kwargs.get('pk'))
-
-        if allocation_obj.project.pi == self.request.user:
-            return True
-
-        if allocation_obj.project.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
-            return True
-
-        group_exists = check_if_groups_in_review_groups(
-            allocation_obj.get_parent_resource.review_groups.all(),
-            self.request.user.groups.all(),
-            'add_allocationuser'
-        )
-        if group_exists:
-            return True
-
-        messages.error(
-            self.request, 'You do not have permission to add users to this allocation.')
+        messages.error(self.request, 'You do not have permission to add users to the allocation.')
+        return False
 
     def dispatch(self, request, *args, **kwargs):
         allocation_obj = get_object_or_404(
@@ -1453,28 +1402,12 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-        if self.request.user.is_superuser:
+        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
+        if allocation_obj.has_perm(self.request.user, AllocationPermission.MANAGER, 'delete_allocationuser'):
             return True
 
-        allocation_obj = get_object_or_404(
-            Allocation, pk=self.kwargs.get('pk'))
-
-        if allocation_obj.project.pi == self.request.user:
-            return True
-
-        if allocation_obj.project.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
-            return True
-
-        group_exists = check_if_groups_in_review_groups(
-            allocation_obj.get_parent_resource.review_groups.all(),
-            self.request.user.groups.all(),
-            'delete_allocationuser'
-        )
-        if group_exists:
-            return True
-
-        messages.error(
-            self.request, 'You do not have permission to remove users from this allocation.')
+        messages.error(self.request, 'You do not have permission to remove users from allocation.')
+        return False
 
     def dispatch(self, request, *args, **kwargs):
         allocation_obj = get_object_or_404(
@@ -2077,28 +2010,11 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-        if self.request.user.is_superuser:
+        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
+        if allocation_obj.has_perm(self.request.user, AllocationPermission.MANAGER, 'can_review_allocation_requests'):
             return True
 
-        allocation_obj = get_object_or_404(
-            Allocation, pk=self.kwargs.get('pk'))
-
-        if allocation_obj.project.pi == self.request.user:
-            return True
-
-        if allocation_obj.project.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
-            return True
-
-        group_exists = check_if_groups_in_review_groups(
-            allocation_obj.get_parent_resource.review_groups.all(),
-            self.request.user.groups.all(),
-            'can_review_allocation_requests'
-        )
-        if group_exists:
-            return True
-
-        messages.error(
-            self.request, 'You do not have permission to renew allocation.')
+        messages.error(self.request, 'You do not have permission to renew allocation.')
         return False
 
     def dispatch(self, request, *args, **kwargs):
@@ -3139,34 +3055,12 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-        if self.request.user.is_superuser:
+        allocation_change_obj = get_object_or_404(AllocationChangeRequest, pk=self.kwargs.get('pk'))
+
+        if self.request.user.has_perm('allocation.can_view_all_allocations'):
             return True
 
-        allocation_change_obj = get_object_or_404(
-            AllocationChangeRequest, pk=self.kwargs.get('pk'))
-
-        if allocation_change_obj.allocation.project.pi == self.request.user:
-            return True
-
-        if allocation_change_obj.allocation.project.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
-            return True
-
-        user_can_access_project = allocation_change_obj.allocation.project.projectuser_set.filter(
-            user=self.request.user, status__name__in=['Active', 'New', ]).exists()
-
-        user_can_access_allocation = allocation_change_obj.allocation.allocationuser_set.filter(
-            user=self.request.user, status__name__in=['Active', 'Eligible', 'Disabled', 'Retired']).exists()
-
-        if user_can_access_project and user_can_access_allocation:
-            return True
-
-        allocation_obj = allocation_change_obj.allocation
-        group_exists = check_if_groups_in_review_groups(
-            allocation_obj.get_parent_resource.review_groups.all(),
-            self.request.user.groups.all(),
-            'view_allocationchangerequest'
-        )
-        if group_exists:
+        if allocation_change_obj.allocation.has_perm(self.request.user, AllocationPermission.MANAGER, 'view_allocationchangerequest'):
             return True
 
         return False
@@ -3473,28 +3367,13 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-        if self.request.user.is_superuser:
+        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
+        if allocation_obj.has_perm(self.request.user, AllocationPermission.MANAGER, 'add_allocationchangerequest'):
             return True
 
-        allocation_obj = get_object_or_404(
-            Allocation, pk=self.kwargs.get('pk'))
+        messages.error(self.request, 'You do not have permission to request changes to this allocation.')
 
-        if allocation_obj.project.pi == self.request.user:
-            return True
-
-        if allocation_obj.project.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
-            return True
-
-        group_exists = check_if_groups_in_review_groups(
-            allocation_obj.get_parent_resource.review_groups.all(),
-            self.request.user.groups.all(),
-            'add_allocationchangerequest'
-        )
-        if group_exists:
-            return True
-
-        messages.error(
-            self.request, 'You do not have permission to request changes to this allocation.')
+        return False
 
     def dispatch(self, request, *args, **kwargs):
         allocation_obj = get_object_or_404(

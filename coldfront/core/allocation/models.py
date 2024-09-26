@@ -1,6 +1,7 @@
 import datetime
 import logging
 from ast import literal_eval
+from enum import Enum
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -11,10 +12,11 @@ from django.utils.module_loading import import_string
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
-from coldfront.core.project.models import Project
+from coldfront.core.project.models import Project, ProjectPermission
 from coldfront.core.resource.models import Resource, ResourceAttribute, ResourceAttributeType
 from coldfront.core.utils.common import import_from_settings
 import coldfront.core.attribute_expansion as attribute_expansion
+from coldfront.core.utils.groups import check_if_groups_in_review_groups
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +46,13 @@ if EMAIL_ENABLED:
         'EMAIL_OPT_OUT_INSTRUCTION_URL')
     EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
     EMAIL_CENTER_NAME = import_from_settings('CENTER_NAME')
+
+class AllocationPermission(Enum):
+    """ A project permission stores the user and manager fields of a project. """
+
+    USER = 'USER'
+    MANAGER = 'MANAGER'
+
 
 class AllocationStatusChoice(TimeStampedModel):
     name = models.CharField(max_length=64)
@@ -275,6 +284,51 @@ class Allocation(TimeStampedModel):
                 return [a.typed_value() for a in attr]
             else:
                 return [a.value for a in attr]
+
+    def user_permissions(self, user, permission=''):
+        """
+        Params:
+            user (User): user for whom to return permissions
+
+        Returns:
+            list[AllocationPermission]: list of user permissions for the allocation
+        """
+
+        if user.is_superuser:
+            return list(AllocationPermission)
+
+        project_perms = self.project.user_permissions(user)
+
+        if ProjectPermission.USER not in project_perms:
+            group_exists = check_if_groups_in_review_groups(
+                self.get_parent_resource.review_groups.all(),
+                user.groups.all(),
+                permission
+            )
+            if group_exists:
+                return [AllocationPermission.USER, AllocationPermission.MANAGER]
+            return []
+
+        if ProjectPermission.PI in project_perms or ProjectPermission.MANAGER in project_perms:
+            return [AllocationPermission.USER, AllocationPermission.MANAGER]
+
+        if self.allocationuser_set.filter(user=user, status__name__in=['Active', 'New', 'Eligible']).exists():
+            return [AllocationPermission.USER]
+
+        return []
+    
+    def has_perm(self, user, perm, addtl_perm=''):
+        """
+        Params:
+            user (User): user to check permissions for
+            perm (AllocationPermission): permission to check for in user's list
+
+        Returns:
+            bool: whether or not the user has the specified permission
+        """
+
+        perms = self.user_permissions(user, addtl_perm)
+        return perm in perms
 
     def create_user_request(self, requestor_user, allocation_user, allocation_user_status):
         """
