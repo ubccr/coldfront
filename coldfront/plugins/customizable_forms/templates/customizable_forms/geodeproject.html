@@ -1,0 +1,305 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}
+Request New Allocation
+{% endblock %}
+
+{% block content %}
+<style>
+  label:not(.custom-control-label) {
+    font-weight: bold;
+  }
+</style>
+
+<h2>Request New {{ resource_obj.name }} Allocation <br><small>Project: {{ project_obj.title }}</small></h2>
+<hr>
+
+<p>
+  <strong>Geode-Project</strong> is a fee-based Research Technologies service providing disk-based 
+  persistent storage allocations to research projects using Indiana University's research supercomputers 
+  we well as IU networked computers.  Geode-Project allocations are offered in 100GB blocks larger than 
+  200GB (up to 10TB) free.  Storage requests beyond 10TB for a nominal 
+  <a href="https://uitsfs.uits.iu.edu/scripts/rates/Rates21.html#rt" target="_blank" rel="noopener noreferrer">fee</a>. 
+  A Research Storage team member will contact you to confirm the details of your request. Learn more 
+  <a href="https://kb.iu.edu/d/acxp" target="_blank" rel="noopener noreferrer">About Geode at Indiana University</a>.
+</p>
+
+<form method="post">
+  {% csrf_token %}
+  {{ form|as_crispy_errors }}
+  <fieldset>
+    <legend><u>Contact Information</u></legend>
+    <div class="row">
+      <div class="col">
+        {{ form.first_name|as_crispy_field }}
+      </div>
+      <div class="col">
+        {{ form.last_name|as_crispy_field }}
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        {{ form.username|as_crispy_field }}
+      </div>
+      <div class="col">
+        {{ form.email|as_crispy_field }}
+      </div>
+    </div>
+    {{ form.phone_number|as_crispy_field }}
+    {{ form.primary_contact|as_crispy_field }}
+    {{ form.secondary_contact|as_crispy_field }}
+    {{ form.it_pro|as_crispy_field }}
+  </fieldset>
+  <fieldset>
+    <legend><u>Department Info</u></legend>
+    {{ form.department_full_name|as_crispy_field }}
+    {{ form.department_short_name|as_crispy_field }}
+    {{ form.department_primary_campus|as_crispy_field }}
+    {{ form.group_name|as_crispy_field }}
+  </fieldset>
+  <fieldset>
+    <legend><u>Storage Info</u></legend>
+      <div>
+        {{ form.storage_space|as_crispy_field }}
+        {{ form.start_date|as_crispy_field }}
+        {{ form.end_date|as_crispy_field }}
+        {{ form.use_indefinitely|as_crispy_field }}
+        {{ form.data_management_plan|as_crispy_field }}
+        {{ form.admin_ads_group|as_crispy_field }}
+        {{ form.user_ads_group|as_crispy_field }}
+        {{ form.data_domains|as_crispy_field }}
+      </div>
+  </fieldset>
+  <fieldset>
+    <legend><u>Billing Info</u></legend>
+    {{ form.fiscal_officer|as_crispy_field }}
+    {{ form.account_number|as_crispy_field }}
+    {{ form.sub_account_number|as_crispy_field }}
+  </fieldset>
+  <fieldset>
+    <legend><u>Terms of Service</u></legend>
+    {{ form.terms_of_service|as_crispy_field }}
+  </fieldset>
+  <fieldset>
+    <legend><u>Data Management Responsibilities</u></legend>
+    <div>
+      {{ form.data_management_responsibilities|as_crispy_field }}
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend><u>Best Practices</u></legend>
+    {{ form.confirm_best_practices|as_crispy_field }}
+  </fieldset>
+  <fieldset>
+    <legend><u>NOTE</u></legend>
+    <div>
+      <p>
+        By submitting this form you agree that UITS/Research Technologies may begin billing the
+        account number you provided 30 days after service has been established.
+      </p>
+      <p>
+        To keep up to date with the features, functions, and best practices of Geode-Project/Home
+        Directories, please review these IU Knowledge Base Articles.
+      </p>
+      <ul>
+        <li>About Geode at Indiana: <a href="https://kb.iu.edu/d/acxp" target="_blank" rel="noopener noreferrer">https://kb.iu.edu/d/acxp</a></li>
+        <li>About home directory space on IU research supercomputers: <a href="https://kb.iu.edu/d/auad" target="_blank" rel="noopener noreferrer">https://kb.iu.edu/d/auad</a></li>
+        <li>Geode home directory file system terms of service: <a href="https://kb.iu.edu/d/aygg" target="_blank" rel="noopener noreferrer">https://kb.iu.edu/d/aygg</a></li>
+        <li>About Protected Health Information: <a href="https://kb.iu.edu/d/bdtx" target="_blank" rel="noopener noreferrer">https://kb.iu.edu/d/bdtx</a></li>
+        <li>Your Responsibilities for Protecting PHI: <a href="https://kb.iu.edu/d/ayzm" target="_blank" rel="noopener noreferrer">https://kb.iu.edu/d/ayzm</a></li>
+        <li>Recommended tools for encrypting data: <a href="https://kb.iu.edu/d/ayzi" target="_blank" rel="noopener noreferrer">https://kb.iu.edu/d/ayzi</a></li>
+      </ul>
+    </div>
+  </fieldset>
+  {{ form.users|as_crispy_field }}
+  <input class="btn btn-primary" type="submit" value="Submit" />
+  {% if after_project_creation == 'true' %}
+    <a
+     class="btn btn-secondary"
+     href="{% url 'custom-allocation-create' project_obj.pk %}?after_project_creation=true"
+     role="button">Back to Resource Selection
+    </a>
+  {% else %}
+    <a
+     class="btn btn-secondary"
+     href="{% url 'custom-allocation-create' project_obj.pk %}"
+     role="button">Back to Resource Selection
+    </a>
+  {% endif %}
+</form>
+
+<div id="id_data_best_practices_modal" class="modal fade bd-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="id_data_best_practices_modal_label" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="id_data_best_practices_label">Data Management Ideas and Best Practices</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="card mb-3">
+          <div class="card-header">
+            <h4 class="card-title">General Info</h4>
+          </div>
+          <div class="card-body">
+            <ul>
+              <li>Store files that naturally group by lab, project, category, date, experiment, meeting, etc…</li>
+              <li>Separate ongoing work from completed work.</li>
+              <li>Organize files so that it’s easy to delete or archive large numbers of files when they are no longer actively worked on or needed.</li>
+              <li>Consider using a group account and or a security group when sharing and storing data with others.</li>
+              <li>
+                Review IU's <a href="https://securemyresearch.iu.edu/" target="_blank" rel="noopener noreferrer">Secure My Research</a> for information on data handling best practices.
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="card mb-3">
+          <div class="card-header">
+            <h4 class="card-title">For Filenames</h4>
+          </div>
+          <div class="card-body">
+            <ul>
+              <li>Use consistent file naming conventions and ensure all users of the storage adhere to those conventions.</li>
+              <li>Use a coded naming convention to keep file names, directory names, and subsequently path names as short as possible.</li>
+              <li>Use a file naming scheme that includes the date as the preface of the file to naturally organize files by date. This can be useful when the file name may be the same.</li>
+              <li>Pattern: [YYYY][MM][DD][HR][MIN]-</li>
+              <li>Example: 20201017-team-meeting-notes.txt</li>
+              <li>Example: 20210721-expr14-run5.dat</li>
+            </ul>
+          </div>
+        </div>
+        <div class="card mb-3">
+          <div class="card-header">
+            <h4 class="card-title">For Directory Name</h4>
+          </div>
+          <div class="card-body">
+            <ul>
+              <li>Use directories and sub-directories to organize your data/files.</li>
+              <li>Organize directories by date, with the intention to keep X number of months or years.</li>
+              <li>Use an index file within a directory to explain the contents of the directory.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h4 class="card-title">Things to Avoid</h4>
+          </div>
+          <div class="card-body">
+            <ul>
+              <li>Avoid saving unused, unneeded data/files.</li>
+              <li>Avoid overfilling directories.</li>
+              <li>Avoid directories with a single file.</li>
+              <li>Avoid lengthy file names, directory names, and pathnames. Many storage systems have limits to their length.</li>
+              <li>Avoid spaces in directory and file names. Some search programs can struggle with spaces in names plus it can make coding more difficult.</li>
+              <li>Avoid special characters or Unicode in directory and filenames. Not all storage systems recognize Unicode.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function setUpUserSearch(username_field) {
+    $('#id_' + username_field).change(function (e) {
+      field_id = e.target.id;
+      if ($('#' + field_id + '_results').length) {
+        $('#' + field_id + '_results').remove();
+      }
+
+      if (!e.target.value.length) {
+        return;
+      }
+
+      $('#' + field_id).after(
+        '\
+        <div id="' + field_id + '_results">\
+          <br>\
+          <button type="button" class="btn btn-primary">\
+            <i class="fas fa-sync fa-spin fa-fw" aria-hidden="true"></i> Searching for user <span class="sr-only">...</span>\
+          </button>\
+        <\div>\
+        '
+      );
+
+      $.ajax({
+        url : "{% url 'ldap-user-search' %}",
+        type : "POST",
+        data : {
+          username: e.target.value,
+          id: field_id,
+          csrfmiddlewaretoken: "{{ csrf_token }}"
+        },
+        success : function (data) {
+          if ($('#' + field_id + '_results').length) {
+            $('#' + field_id + '_results').remove();
+          }
+          $('#' + field_id).after(data);
+          if ($('#error_1_' + field_id).length) {
+            $('#error_1_' + field_id).remove();
+          }
+        }
+      })
+    });
+  }
+
+  $(document).ready(function () {
+    var date = new Date();
+    var currentYear = date.getFullYear();
+    $(".datepicker")
+    .wrap('<div class="input-group">')
+    .datepicker({
+      changeMonth: true,
+      changeYear: true,
+      minDate: 0,
+      maxDate: "+5Y",
+      showOn: "button",
+      buttonText: "Select Date"
+    })
+    .next("button")
+    .addClass("btn btn-secondary")
+
+    $(
+      '<br>\
+      <div class="custom-control custom-checkbox">\
+      <input id="selectAll" class="custom-control-input" type="checkbox">\
+      <label class="custom-control-label" for="selectAll">\
+      <strong>Select All Users<strong>\
+      </label>\
+      </div>'
+    ).insertAfter($("#div_id_users > label"))
+
+    $("#selectAll").click(function () {
+      $("input[name^='users']").prop('checked', $(this).prop('checked'));
+    });
+
+    $("input[name^='users']").click(function (ele) {
+      var id = $(this).attr('id');
+      if (id != "selectAll") {
+        $("#selectAll").prop('checked', false);
+      }
+    });
+
+    $('#id_use_indefinitely').change(function (e) {
+      if (e.target.checked) {
+        $('#id_end_date').prop('disabled', true);
+        $('#div_id_end_date button').prop('disabled', true);
+        $('#id_end_date').val('')
+      } else {
+        $('#id_end_date').prop('disabled', false);
+        $('#div_id_end_date button').prop('disabled', false);
+      }
+    });
+
+    var username_fields = ['primary_contact', 'secondary_contact', 'it_pro', 'fiscal_officer'];
+    for (var i=0; i < username_fields.length; i++) {
+      var username_field = username_fields[i];
+      setUpUserSearch(username_field);
+    }
+  })
+</script>
+{% endblock %}

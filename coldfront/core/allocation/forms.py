@@ -2,6 +2,7 @@ import logging
 from datetime import date
 from coldfront.core.user.models import UserProfile
 from django import forms
+from django.db.models.functions import Lower
 from django.core.exceptions import ValidationError
 from django.forms.widgets import RadioSelect
 from django.shortcuts import get_object_or_404
@@ -119,7 +120,7 @@ class AllocationForm(forms.Form):
     license_term = forms.ChoiceField(choices=LICENSE_TERM_CHOICES, required=False)
     faculty_email = forms.EmailField(max_length=40, required=False)
     store_ephi = forms.ChoiceField(choices=YES_NO_CHOICES, required=False, widget=RadioSelect)
-    it_pros = forms.CharField(max_length=100, required=False)
+    it_pro = forms.CharField(max_length=100, required=False)
     devices_ip_addresses = forms.CharField(max_length=128, required=False)
     data_management_plan = forms.CharField(widget=forms.Textarea, required=False)
     prorated_cost = forms.IntegerField(disabled=True, required=False)
@@ -646,6 +647,15 @@ class AllocationChangeNoteForm(forms.Form):
             required=False, 
             widget=forms.Textarea,
             help_text="Leave any feedback about the allocation change request.")
+
+
+class AllocationAttributeCreateForm(forms.ModelForm):
+    class Meta:
+        model = AllocationAttribute
+        fields = '__all__'
+    def __init__(self, *args, **kwargs):
+        super(AllocationAttributeCreateForm, self).__init__(*args, **kwargs) 
+        self.fields['allocation_attribute_type'].queryset = self.fields['allocation_attribute_type'].queryset.order_by(Lower('name'))
 
 
 class AllocationExportForm(forms.Form):

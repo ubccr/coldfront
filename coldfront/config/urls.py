@@ -30,11 +30,17 @@ urlpatterns = [
     path('research-output/', include('coldfront.core.research_output.urls')), 
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
+if 'coldfront.plugins.customizable_forms' in settings.INSTALLED_APPS:
+    urlpatterns.append(path('allocation/', include('coldfront.plugins.customizable_forms.urls')))
+
 if 'coldfront.plugins.academic_analytics' in settings.INSTALLED_APPS:
     urlpatterns.append(path('academic-analytics/', include('coldfront.plugins.academic_analytics.urls')))
 
 if 'coldfront.plugins.advanced_search' in settings.INSTALLED_APPS:
     urlpatterns.append(path('advanced_search/', include('coldfront.plugins.advanced_search.urls')))
+
+if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
+    urlpatterns.append(path('ldap_user_info/', include('coldfront.plugins.ldap_user_info.urls')))
 
 if 'coldfront.plugins.slate_project' in settings.INSTALLED_APPS:
     urlpatterns.append(path('slate_project/', include('coldfront.plugins.slate_project.urls')))

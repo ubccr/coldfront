@@ -25,8 +25,10 @@ def get_user_info(username, attributes):
 def get_users_to_check():
     return ['primary_contact', 'secondary_contact', 'fiscal_officer', 'it_pros']
 
-def check_if_user_exists(username):
-    ldap_search = LDAPSearch()
+def check_if_user_exists(username, ldap_search=None):
+    if ldap_search is None:
+        ldap_search = LDAPSearch()
+
     attributes = ldap_search.search_a_user(
         username,
         ['memberOf']

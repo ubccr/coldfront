@@ -1,0 +1,25 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}
+Request New Allocation
+{% endblock %}
+
+{% block content %}
+<h2>Request New {{ resource_obj.name }} Allocation <br><small>Project: {{ project_obj.title }}</small></h2>
+<hr>
+
+<p id="user_account_info">
+	You must first have an account on this resource to gain access to its partitions. To create an 
+	account, go to <a href="https://access.iu.edu/Accounts/Create" target="_blank">Create Additional 
+	Accounts.</a> This is a custom form.
+</p>
+
+<form method="post">
+	{% csrf_token %}
+	{{form |crispy}}
+	<input class="btn btn-primary" type="submit" value="Submit" />
+	<a class="btn btn-secondary" href="{% url 'custom-allocation-create' project_obj.pk %}" role="button">Back to Resource Selection</a><br>
+</form>
+{% endblock content %}

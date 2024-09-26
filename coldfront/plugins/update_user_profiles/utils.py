@@ -25,35 +25,29 @@ def update_all_user_profiles():
     project_user_inactive_status = ProjectUserStatusChoice.objects.get(name='Inactive')
     allocation_user_inactive_status = AllocationUserStatusChoice.objects.get(name='Inactive')
     for user_profile in user_profiles:
-        current_title = user_profile.title
-        current_department = user_profile.department
-        current_email = user_profile.user.email
-        attributes = ldap_search.search_a_user(user_profile.user.username, ['title', 'department', 'mail'])
-        title = attributes.get('title')
-        if title:
-            title = title[0]
-        else:
-            title = ''
-        department = attributes.get('department')
-        if department:
-            department = department[0]
-        else:
-            department = ''
-        email = attributes.get('mail')
-        if email:
-            email = email[0]
-        else:
-            email = ''
-        if title != current_title or department != current_department:
-            user_profile.title = title
-            user_profile.department = department
+        search_attributes = {'title': '', 'department': '', 'division': '', 'mail': ''}
+        attributes = ldap_search.search_a_user(user_profile.user.username, list(search_attributes.keys()))
+
+        for name, value in attributes.items():
+            if value:
+                search_attributes[name] = value[0]
+
+        save_changes = False
+        for name, value in search_attributes.items():
+            if name == 'mail':
+                if user_profile.user.email != value:
+                    user_profile.user.email = value
+                    user_profile.user.save()
+            else:
+                if getattr(user_profile, name) != value:
+                    setattr(user_profile, name, value)
+                    save_changes = True
+
+        if save_changes:
             user_profile.save()
 
-        if email != current_email:
-            user_profile.user.email = email
-            user_profile.user.save()
-
         if UPDATE_USER_PROFILES_UPDATE_STATUSES:
+            title = search_attributes.get('title')
             if not title or title in ['Former Employee', 'Retired Staff']:
                 project_pks = []
                 project_users = ProjectUser.objects.filter(

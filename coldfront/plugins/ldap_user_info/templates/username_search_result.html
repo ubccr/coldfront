@@ -1,0 +1,20 @@
+<div id="{{ id }}_results">
+  <br>
+  <div class="card">
+    {% if username_exists %}
+      <div class="card-header">
+        <strong>Username found</strong>
+      </div>
+      <div class="card-body">
+        <p><strong>Name:</strong> {{ name }}</p>
+        <p><strong>Email:</strong> {{ email }}</p>
+      </div>
+    {% else %}
+      <div class="card-body">
+        <div id="id_username_not_found" class="alert alert-danger" role="alert">
+          <i class="fas fa-info-circle" aria-hidden="true"></i> Username not found
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>

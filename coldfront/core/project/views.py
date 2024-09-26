@@ -209,6 +209,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING'] = PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING
         context['ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING'] = ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING
         context['ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING'] = ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING
+        context['enable_customizable_forms'] = 'coldfront.plugins.customizable_forms' in settings.INSTALLED_APPS
 
         try:
             context['ondemand_url'] = settings.ONDEMAND_URL
@@ -318,15 +319,6 @@ class ProjectListView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         projects_count = self.get_queryset().count()
         context['projects_count'] = projects_count
-
-        max_projects = self.request.user.userprofile.max_projects
-        project_count = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
-            Q(pi__username=self.request.user.username) &
-            Q(projectuser__status__name='Active') &
-            Q(status__name__in=['New', 'Active', 'Review Pending', 'Waiting For Admin Approval', 'Contacted By Admin', ])
-        ).distinct().count()
-        # Not being used.
-        context['project_requests_remaining'] = 10  # max(0, max_projects - project_count)
 
         project_pi_search_form = ProjectPISearchForm()
         context['project_pi_search_form'] = project_pi_search_form
@@ -702,18 +694,10 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-        max_projects = self.request.user.userprofile.max_projects
-        project_count = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
-            Q(pi__username=self.request.user.username) &
-            Q(projectuser__status__name='Active') &
-            Q(status__name__in=['New', 'Active', ])
-        ).distinct().count()
-
         if self.request.user.is_superuser:
             return True
 
-        # Number of projects are not being checked.
-        if self.request.user.userprofile.is_pi:  # and max_projects - project_count > 0:
+        if self.request.user.userprofile.is_pi:
             return True
 
     def check_max_project_type_count_reached(self, project_type_obj, pi_obj):
@@ -902,9 +886,13 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         return path + '?' + urllib.parse.urlencode(kwargs)
 
     def get_success_url(self):
+        url_name = 'allocation-create'
+        if 'coldfront.plugins.customizable_forms' in settings.INSTALLED_APPS:
+            url_name = 'custom-allocation-create'
+
         return self.reverse_with_params(
             reverse(
-                'allocation-create', kwargs={'project_pk': self.object.pk}
+                url_name, kwargs={'project_pk': self.object.pk}
             ),
             after_project_creation='true'
         )

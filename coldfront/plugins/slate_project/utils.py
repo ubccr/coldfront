@@ -3,6 +3,7 @@ import csv
 import logging
 import json
 import datetime
+import subprocess
 from decimal import Decimal
 from datetime import date
 
@@ -38,11 +39,13 @@ ENABLE_LDAP_SLATE_PROJECT_SYNCING = import_from_settings('ENABLE_LDAP_SLATE_PROJ
 SLATE_PROJECT_ELIGIBILITY_ACCOUNT = import_from_settings('SLATE_PROJECT_ELIGIBILITY_ACCOUNT', '')
 SLATE_PROJECT_ACCOUNT = import_from_settings('SLATE_PROJECT_ACCOUNT', '')
 SLATE_PROJECT_DIR = import_from_settings('SLATE_PROJECT_DIR', '')
+SLATE_PROJECT_INCOMING_DIR = import_from_settings('SLATE_PROJECT_INCOMING_DIR', '')
+SLATE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD = import_from_settings('SLATE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD', 120)
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 CENTER_BASE_URL = import_from_settings('CENTER_BASE_URL')
 PROJECT_DEFAULT_MAX_MANAGERS = import_from_settings('PROJECT_DEFAULT_MAX_MANAGERS', 3)
 if EMAIL_ENABLED:
-    SLATE_PROJECT_EMAIL = import_from_settings('SLATE_PROJECT_EMAIL')
+    SLATE_PROJECT_EMAIL = import_from_settings('SLATE_PROJECT_EMAIL', '')
     EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
     EMAIL_CENTER_NAME = import_from_settings('CENTER_NAME')
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
@@ -373,6 +376,80 @@ def sync_slate_project_users(allocation_obj, ldap_conn=None, ldap_search_conn=No
                     )
 
 
+def sync_slate_project_allocated_quantities():
+    logger.info('Syncing Slate Project allocated quantities...')
+    ldap_groups = {}
+    with open(os.path.join(SLATE_PROJECT_INCOMING_DIR, 'allocated_quantity.csv'), 'r') as allocated_quantities_csv:
+        csv_reader = csv.reader(allocated_quantities_csv)
+        for line in csv_reader:
+            ldap_groups['condo_' + line[0]] = line[1]
+
+    allocated_quantity_objs = AllocationAttribute.objects.filter(
+        allocation_attribute_type__name='Allocated Quantity', allocation__resources__name='Slate Project'
+    ).prefetch_related('allocation')
+    ldap_group_objs = AllocationAttribute.objects.filter(
+        allocation_attribute_type__name='LDAP Group', allocation__resources__name='Slate Project'
+    ).prefetch_related('allocation')
+    ldap_group_dict = {}
+    for ldap_group_obj in ldap_group_objs:
+        ldap_group_dict[ldap_group_obj.value] = ldap_group_obj.allocation.id
+
+    allocated_quantity_dict = {}
+    for allocated_quantity_obj in allocated_quantity_objs:
+        allocated_quantity_dict[allocated_quantity_obj.allocation.id] = allocated_quantity_obj
+
+    allocation_attribute_type = AllocationAttributeType.objects.get(name='Allocated Quantity')
+    for ldap_group, allocated_quantity in ldap_groups.items():
+        ldap_group_allocation_id = ldap_group_dict.get(ldap_group)
+        if ldap_group_allocation_id is None:
+            # Disabled until imports are done
+            # logger.warning(f'LDAP group {ldap_group} not found')
+            continue
+
+        allocated_quantity_obj = allocated_quantity_dict.get(ldap_group_allocation_id)
+        if allocated_quantity_obj is None:
+            logger.info(
+                f'LDAP group {ldap_group} allocated quantity not found. Creating one with value {allocated_quantity}'
+            )
+            allocated_quantity_obj = AllocationAttribute.objects.create(
+                allocation=Allocation.objects.get(id=ldap_group_allocation_id),
+                value=allocated_quantity,
+                allocation_attribute_type=allocation_attribute_type
+            )
+            continue
+
+        current_allocated_quantity = allocated_quantity_obj.value
+        if allocated_quantity != current_allocated_quantity:
+            allocated_quantity_obj.value = allocated_quantity
+            allocated_quantity_obj.save()
+
+            logger.info(
+                f'LDAP group {ldap_group} allocated quantity was updated from {current_allocated_quantity} to {allocated_quantity}'
+            )
+
+    logger.info('Done syncing Slate Project allocated quantities')
+
+
+def get_pi_total_allocated_quantity(pi_username):
+    total_allocated_quantity = 0
+    with open(os.path.join(SLATE_PROJECT_INCOMING_DIR, 'netid-total-allocation.csv'), 'r') as netid_total_allocation_csv:
+        csv_reader = csv.reader(netid_total_allocation_csv)
+        for line in csv_reader:
+            if line[0] == pi_username:
+                total_allocated_quantity = line[1]
+                break
+
+    return total_allocated_quantity
+
+
+def check_pi_total_allocated_quantity(pi_username):
+    return get_pi_total_allocated_quantity(pi_username) > SLATE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD
+
+
+def download_files():
+    subprocess.run(['bash', os.path.join(SLATE_PROJECT_INCOMING_DIR, 'get_hpfs_data.sh')])
+
+
 def send_expiry_email(allocation_obj):
     """
     Sends an email to the Slate Project ticket queue about an expired slate project.
@@ -397,7 +474,7 @@ def send_expiry_email(allocation_obj):
         )
 
 
-def send_missing_account_email(email_receiver):
+def send_missing_account_email(email_receivers):
     """
     Sends an email about needing to create a Slate Project account.
 
@@ -415,7 +492,7 @@ def send_missing_account_email(email_receiver):
             'slate_project/email/missing_account_email.txt',
             template_context,
             EMAIL_TICKET_SYSTEM_ADDRESS,
-            [email_receiver]
+            email_receivers
         )
 
 
@@ -479,7 +556,7 @@ def send_access_removed_email(allocation_user, receiver):
         )
 
 
-def check_slate_project_account(user_obj, notifications_enabled, ldap_search_conn=None, ldap_eligibility_conn=None):
+def check_slate_project_account(project_pi, user_obj, notifications_enabled, ldap_search_conn=None, ldap_eligibility_conn=None):
     """
     Checks if the user is in the eligibility group in LDAP. If they aren't it adds them and sends
     an email to the user about creating a Slate Project account. If they are in it but do not have
@@ -515,11 +592,11 @@ def check_slate_project_account(user_obj, notifications_enabled, ldap_search_con
                 f'LDAP: Added user {user_obj.username} to the HPFS ADS eligibility group'
             )
             if notifications_enabled:
-                send_missing_account_email(user_obj.email)
+                send_missing_account_email([project_pi.email, user_obj.email])
             return True
     elif not SLATE_PROJECT_ACCOUNT in accounts:
         if notifications_enabled:
-            send_missing_account_email(user_obj.email)
+            send_missing_account_email([project_pi.email, user_obj.email])
 
     return False
 
@@ -581,6 +658,8 @@ def add_slate_project_groups(allocation_obj):
         value=read_write_gid_number
     )
 
+    project_pi = allocation_obj.project.pi
+
     read_write_allocation_user_objs = allocation_obj.allocationuser_set.filter(
         status__name='Active', role__name='read/write'
     ).prefetch_related('user')
@@ -610,6 +689,7 @@ def add_slate_project_groups(allocation_obj):
                 notifications_enabled[project_user_obj.user.username] = project_user_obj.enable_notifications
             for allocation_user_obj in read_write_allocation_user_objs:
                 check_slate_project_account(
+                    project_pi,
                     allocation_user_obj.user,
                     notifications_enabled.get(allocation_user_obj.user.username),
                     ldap_search_conn,
@@ -650,6 +730,7 @@ def add_slate_project_groups(allocation_obj):
                 notifications_enabled[project_user_obj.user.username] = project_user_obj.enable_notifications
             for allocation_user_obj in read_only_allocation_user_objs:
                 check_slate_project_account(
+                    project_pi,
                     allocation_user_obj.user,
                     notifications_enabled.get(allocation_user_obj.user.username),
                     ldap_search_conn,
@@ -684,6 +765,8 @@ def add_user_to_slate_project_group(allocation_user_obj):
     if user_role == 'read only':
         ldap_group_gid += 1
 
+    project_pi = allocation_obj.project.pi
+
     ldap_conn = LDAPModify()
     added, output = ldap_conn.add_user(username, ldap_group_gid)
     if not added:
@@ -703,7 +786,7 @@ def add_user_to_slate_project_group(allocation_user_obj):
                 user=allocation_user_obj.user
             ).enable_notifications
             added_to_eligibility_group = check_slate_project_account(
-                allocation_user_obj.user, notifications_enabled
+                project_pi, allocation_user_obj.user, notifications_enabled
             )
 
         # The user's new eligibility account is not propagated fast enough to be picked up in 
