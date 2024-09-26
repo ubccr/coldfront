@@ -77,7 +77,7 @@ class QumuloAPI:
         fs_path = f"{path}/{file_name}"
         acl = AcesManager().get_base_acl()
 
-        aces = default_aces
+        aces = AcesManager.readme_aces
         acl["aces"] = aces
 
         self.rc.fs.set_acl_v2(path=fs_path, acl=acl)
