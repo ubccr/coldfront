@@ -72,8 +72,7 @@ from coldfront.core.allocation.signals import (allocation_new,
                                                allocation_change_user_role,
                                                allocation_remove,
                                                visit_allocation_detail)
-from coldfront.core.allocation.utils import (compute_prorated_amount,
-                                             generate_guauge_data_from_usage,
+from coldfront.core.allocation.utils import (generate_guauge_data_from_usage,
                                              get_user_resources,
                                              send_allocation_user_request_email,
                                              send_added_user_email,
@@ -83,14 +82,12 @@ from coldfront.core.allocation.utils import (compute_prorated_amount,
                                              create_admin_action_for_creation,
                                              get_allocation_user_emails,
                                              check_if_roles_are_enabled,
-                                             set_default_allocation_user_role,
                                              get_default_allocation_user_role)
 from coldfront.core.project.models import (Project, ProjectUser, ProjectPermission,
                                            ProjectUserStatusChoice)
 from coldfront.core.resource.models import Resource, ResourceAttributeType
 from coldfront.core.utils.common import get_domain_url, import_from_settings, Echo
 from coldfront.core.utils.mail import send_allocation_admin_email, send_allocation_customer_email, send_email_template, get_email_recipient_from_groups
-from coldfront.core.utils.slack import send_message
 from coldfront.core.utils.groups import check_if_groups_in_review_groups
 
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
@@ -186,6 +183,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         for a in invalid_attributes:
             attributes_with_usage.remove(a)
 
+        context['allocation_users'] = allocation_users
         context['guage_data'] = guage_data
         context['attributes_with_usage'] = attributes_with_usage
         context['attributes'] = attributes
@@ -199,17 +197,13 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context['is_allowed_to_update_project'] = allocation_obj.project.has_perm(self.request.user, ProjectPermission.UPDATE, 'change_project')
 
         context['allocation_user_roles_enabled'] = check_if_roles_are_enabled(allocation_obj)
-        context['allocation_users'] = allocation_users
         context['allocation_invoices'] = allocation_obj.allocationinvoice_set.all()
 
-        if (
-            self.request.user.is_superuser
-            or self.request.user.has_perm('allocation.view_allocationusernote')
-        ):
-            notes = allocation_obj.allocationusernote_set.all()
+        noteset = allocation_obj.allocationusernote_set
+        if self.request.user.is_superuser or self.request.user.has_perm('allocation.view_allocationusernote'):
+            notes = noteset.all()
         else:
-            notes = allocation_obj.allocationusernote_set.filter(
-                is_private=False)
+            notes = noteset.filter(is_private=False)
 
         context['user_has_permissions'] = check_if_groups_in_review_groups(
             allocation_obj.get_parent_resource.review_groups.all(),
@@ -251,8 +245,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context = self.get_context_data()
         context['form'] = form
         context['allocation'] = allocation_obj
-
-        return render(request, self.template_name, context)
+        return self.render_to_response(context)
 
     def post(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
