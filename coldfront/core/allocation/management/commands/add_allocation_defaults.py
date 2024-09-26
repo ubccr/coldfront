@@ -3,8 +3,9 @@ from django.core.management.base import BaseCommand
 from coldfront.core.allocation.models import (AttributeType,
                                               AllocationAttributeType,
                                               AllocationStatusChoice,
-                                              AllocationChangeStatusChoice,
-                                              AllocationUserStatusChoice)
+                                              AllocationUserStatusChoice,
+                                              AllocationUserRequestStatusChoice,
+                                              AllocationChangeStatusChoice)
 
 
 class Command(BaseCommand):
@@ -19,14 +20,19 @@ class Command(BaseCommand):
         for choice in ('Active', 'Denied', 'Expired',
                        'New', 'Paid', 'Payment Pending',
                        'Payment Requested', 'Payment Declined',
-                       'Renewal Requested', 'Revoked', 'Unpaid',):
+                       'Renewal Requested', 'Revoked', 'Unpaid',
+                       'Removal Requested', 'Removed',
+                       'Billing Information Submitted',):
             AllocationStatusChoice.objects.get_or_create(name=choice)
 
         for choice in ('Pending', 'Approved', 'Denied',):
             AllocationChangeStatusChoice.objects.get_or_create(name=choice)
 
-        for choice in ('Active', 'Error', 'Removed', ):
+        for choice in ('Active', 'Error', 'Removed', 'Pending - Add', 'Pending - Remove'):
             AllocationUserStatusChoice.objects.get_or_create(name=choice)
+
+        for choice in ('Approved', 'Pending', 'Denied', ):
+            AllocationUserRequestStatusChoice.objects.get_or_create(name=choice)
 
         for name, attribute_type, has_usage, is_private in (
             ('Cloud Account Name', 'Text', False, False),
@@ -49,9 +55,12 @@ class Command(BaseCommand):
             ('slurm_user_specs', 'Attribute Expanded Text', False, True),
             ('slurm_user_specs_attriblist', 'Text', False, True),
             ('Storage Quota (GB)', 'Int', False, False),
+            ('Storage Quota (TB)', 'Int', False, False),
             ('Storage_Group_Name', 'Text', False, False),
             ('SupportersQOS', 'Yes/No', False, False),
             ('SupportersQOSExpireDate', 'Date', False, False),
+            ('Account Number', 'Text', False, False),
+            ('Sub-Account Number', 'Text', False, False)
         ):
             AllocationAttributeType.objects.get_or_create(name=name, attribute_type=AttributeType.objects.get(
                 name=attribute_type), has_usage=has_usage, is_private=is_private)

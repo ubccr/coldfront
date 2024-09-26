@@ -1,6 +1,7 @@
 recursive-include coldfront/core/field_of_science/management/commands/data *
 recursive-include coldfront/plugins/iquota/templates *
 recursive-include coldfront/plugins/system_monitor/templates *
+recursive-include coldfront/plugins/academic_analytics/templates *
 recursive-include coldfront/templates *
 recursive-include coldfront/static *
 recursive-include coldfront/core/portal/templates *
@@ -11,3 +12,11 @@ recursive-include coldfront/core/publication/templates *
 recursive-include coldfront/core/grant/templates *
 recursive-include coldfront/core/user/templates *
 recursive-include coldfront/core/resource/templates *
+recursive-include coldfront/plugins/maintenance_mode/templates *
+recursive-include coldfront/plugins/maintenance_mode/management/commands *
+recursive-include coldfront/plugins/slate_project/templates *
+recursive-include coldfront/plugins/slate_project/management/commands *
+recursive-include coldfront/plugins/advanced_search/templates *
+recursive-include coldfront/plugins/update_user_profiles/management/commands *
+recursive-include coldfront/plugins/customizable_forms/templates *
+recursive-include coldfront/plugins/ldap_user_info/templates *

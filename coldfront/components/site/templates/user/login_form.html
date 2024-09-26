@@ -1,0 +1,9 @@
+{% load common_tags %} 
+{% load crispy_forms_tags %}
+
+
+<form method="post" action="{% url 'login' %}?next={{request.GET.next}}">
+  {% csrf_token %}
+  {{ form|crispy }}
+  <button type="submit" class="btn btn-primary btn-block"><i class="fas fa-sign-in-alt" aria-hidden="true"></i> Log In</button>
+</form>

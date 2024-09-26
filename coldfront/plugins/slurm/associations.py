@@ -115,7 +115,7 @@ class SlurmCluster(SlurmBase):
             cluster.add_allocation(allocation, user_specs=user_specs)
 
         # Process child resources
-        children = Resource.objects.filter(parent_resource_id=resource.id, resource_type__name='Cluster Partition')
+        children = Resource.objects.filter(parent_resource_id=resource.id, resource_type__name__in=['Cluster Partition', 'Compute'])
         for r in children:
             partition_specs = r.get_attribute_list(SLURM_SPECS_ATTRIBUTE_NAME)
             partition_user_specs = r.get_attribute_list(SLURM_USER_SPECS_ATTRIBUTE_NAME)
@@ -131,7 +131,8 @@ class SlurmCluster(SlurmBase):
         """Add accounts from a ColdFront Allocation model to SlurmCluster"""
         name = allocation.get_attribute(SLURM_ACCOUNT_ATTRIBUTE_NAME)
         if not name:
-            name = 'root'
+            return
+            # name = 'root'
 
         logger.debug("Adding allocation name=%s specs=%s user_specs=%s", name, specs, user_specs)
         account = self.accounts.get(name, SlurmAccount(name))

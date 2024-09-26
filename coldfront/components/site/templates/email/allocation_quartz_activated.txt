@@ -1,0 +1,24 @@
+Dear {{ center_name }} user,
+
+Your allocation request for {{ resource }} has been activated and it may take up to 2 hours for these changes to propagate through the system.
+
+To view your allocations information, please go to {{ allocation_url }}
+
+The Quartz system consists of 92 nodes, each with two AMD EPYC 7742 2.25 GHz CPUs and 512 GB of RAM.
+
+The system is managed via the Slurm scheduler. You can log into a Quartz login node and submit jobs to one of the available partitions. The two partitions are general and debug.
+
+For more information about Quartz you can refer to the Knowledge Base article https://kb.iu.edu/d/qrtz.
+
+Another article https://kb.iu.edu/d/awrz, contains more information on the Slurm scheduler. If you need help using the Slurm scheduler please don’t hesitate to contact us at {{ help_url }}.
+
+To use this new account you will need to add this line to your job script:
+#SBATCH -A {{ slurm_account_name }}
+
+Interactive jobs will require this:
+srun -A {{ slurm_account_name }} <commands>
+
+We are also happy to help with the development and optimization of your workflow, just contact us at {{ help_url }}. Thanks!
+
+Thank you,
+{{ signature }}

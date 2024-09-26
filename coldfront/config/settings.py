@@ -1,3 +1,4 @@
+import os
 import environ
 from split_settings.tools import optional, include
 from coldfront.config.env import ENV, PROJECT_ROOT
@@ -10,6 +11,7 @@ coldfront_configs = [
     'logging.py',
     'core.py',
     'email.py',
+    'plugins/cas_login.py',
 ]
 
 # ColdFront plugin settings
@@ -22,6 +24,14 @@ plugin_configs = {
     'PLUGIN_AUTH_OIDC': 'plugins/openid.py',
     'PLUGIN_AUTH_LDAP': 'plugins/ldap.py',
     'PLUGIN_LDAP_USER_SEARCH': 'plugins/ldap_user_search.py',
+    'PLUGIN_LDAP_USER_INFO': 'plugins/ldap_user_info.py',
+    'PLUGIN_CAS': 'plugins/cas_login.py',
+    'PLUGIN_ACADEMIC_ANALYTICS': 'plugins/academic_analytics.py',
+    'PLUGIN_ADVANCED_SEARCH': 'plugins/advanced_search.py',
+    'PLUGIN_MAINTENANCE_MODE': 'plugins/maintenance_mode.py',
+    'PLUGIN_SLATE_PROJECT': 'plugins/slate_project.py',
+    'PLUGIN_UPDATE_USER_PROFILES': 'plugins/update_user_profiles.py',
+    'PLUGIN_CUSTOMIZABLE_FORMS': 'plugins/customizable_forms.py'
 }
 
 # This allows plugins to be enabled via environment variables. Can alternatively

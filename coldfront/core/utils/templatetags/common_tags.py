@@ -14,6 +14,7 @@ def settings_value(name):
         'CENTER_NAME',
         'CENTER_HELP_URL',
         'EMAIL_PROJECT_REVIEW_CONTACT',
+        'EMAIL_TICKET_SYSTEM_ADDRESS',
     ]
     return mark_safe(getattr(settings, name, '') if name in allowed_names else '')
 
@@ -48,8 +49,6 @@ def convert_status_to_icon(project):
         return mark_safe('<h4><span class="badge badge-success"><i class="fas fa-check-circle"></i></span></h4>')
 
 
-
-
 @register.filter('get_value_from_dict')
 def get_value_from_dict(dict_data, key):
     """
@@ -57,3 +56,18 @@ def get_value_from_dict(dict_data, key):
     """
     if key:
         return dict_data.get(key)
+
+
+@register.filter
+def split(string, char):
+    return string.split(char)
+
+
+@register.filter
+def change_sign(int):
+    return -int
+
+
+@register.filter
+def divide(int, divisor):
+    return int // divisor

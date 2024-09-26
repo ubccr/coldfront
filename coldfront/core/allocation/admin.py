@@ -16,7 +16,14 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationUser,
                                               AllocationUserNote,
                                               AllocationUserStatusChoice,
-                                              AttributeType)
+                                              AllocationUserRequestStatusChoice,
+                                              AllocationUserRequest,
+                                              AllocationInvoice,
+                                              AllocationAdminAction,
+                                              AttributeType,
+                                              AllocationRemovalRequest,
+                                              AllocationRemovalStatusChoice,
+                                              AllocationUserRoleChoice,)
 
 
 @admin.register(AllocationStatusChoice)
@@ -51,6 +58,14 @@ class AllocationUserNoteInline(admin.TabularInline):
     readonly_fields = ('author', 'created')
 
 
+class AllocationAdminActionInline(admin.TabularInline):
+    model = AllocationAdminAction
+    fields = ['user', 'action', 'created', ]
+    readonly_fields = ['user', 'action', 'created']
+    can_delete = False
+    extra = 0
+
+
 @admin.register(Allocation)
 class AllocationAdmin(SimpleHistoryAdmin):
     readonly_fields_change = (
@@ -62,7 +77,8 @@ class AllocationAdmin(SimpleHistoryAdmin):
     inlines = [AllocationUserInline,
                AllocationAttributeInline,
                AllocationAdminNoteInline,
-               AllocationUserNoteInline]
+               AllocationUserNoteInline,
+               AllocationAdminActionInline]
     list_filter = ('resources__resource_type__name',
                    'status', 'resources__name', 'is_locked')
     search_fields = ['project__pi__username', 'project__pi__first_name', 'project__pi__last_name', 'resources__name',
@@ -108,6 +124,21 @@ class AllocationAdmin(SimpleHistoryAdmin):
         else:
             formset.save()
 
+    # def set_locked(self, request, queryset):
+    #     queryset.update(is_locked=True)
+
+    # def set_unlocked(self, request, queryset):
+    #     queryset.update(is_locked=False)
+
+    # set_locked.short_description = "Lock Selected Allocations"
+
+    # set_unlocked.short_description = "Unlock Selected Allocations"
+
+    # actions = [
+    #     set_locked,
+    #     set_unlocked
+    # ]
+
 
 @admin.register(AttributeType)
 class AttributeTypeAdmin(admin.ModelAdmin):
@@ -116,7 +147,12 @@ class AttributeTypeAdmin(admin.ModelAdmin):
 
 @admin.register(AllocationAttributeType)
 class AllocationAttributeTypeAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'name', 'attribute_type', 'has_usage', 'is_private')
+    list_display = ('pk', 'name', 'linked_resource_attribute_type', 'list_linked_resources', 'attribute_type', 'has_usage', 'is_private')
+    list_filter = ('linked_resources', )
+    filter_horizontal = ('linked_resources', )
+
+    def list_linked_resources(self, obj):
+        return list(obj.linked_resources.all())
 
 
 class AllocationAttributeUsageInline(admin.TabularInline):
@@ -220,13 +256,22 @@ class AllocationUserStatusChoiceAdmin(admin.ModelAdmin):
     list_display = ('name',)
 
 
+@admin.register(AllocationUserRoleChoice)
+class AllocationUserRoleChoiceAdmin(admin.ModelAdmin):
+    list_display = ('name', 'list_resources')
+    filter_horizontal = ('resources', )
+
+    def list_resources(self, obj):
+        return list(obj.resources.all())
+
+
 @admin.register(AllocationUser)
 class AllocationUserAdmin(SimpleHistoryAdmin):
     readonly_fields_change = ('allocation', 'user',
                               'resource', 'created', 'modified',)
-    fields_change = ('allocation', 'user', 'status', 'created', 'modified',)
+    fields_change = ('allocation', 'user', 'role', 'status', 'created', 'modified',)
     list_display = ('pk', 'project', 'project_pi', 'resource', 'allocation_status',
-                    'user_info', 'status', 'created', 'modified',)
+                    'user_info', 'role', 'status', 'created', 'modified',)
     list_filter = ('status', 'allocation__status', 'allocation__resources',)
     search_fields = (
         'user__first_name',
@@ -348,6 +393,80 @@ class AllocationAccountAdmin(SimpleHistoryAdmin):
     list_display = ('name', 'user', )
 
 
+@admin.register(AllocationUserRequestStatusChoice)
+class AllocationUserRequestStatusChoiceAdmin(admin.ModelAdmin):
+    list_display = ('name', )
+
+
+@admin.register(AllocationUserRequest)
+class AllocationUserRequestAdmin(SimpleHistoryAdmin):
+    list_display = (
+        'pk',
+        'project',
+        'allocation_id',
+        'resource',
+        'requestor',
+        'allocation_user_status',
+        'user',
+        'review_status',
+        'created',
+        'modified'
+    )
+
+    readonly_fields_change = (
+        'requestor_user',
+        'allocation_user',
+        'allocation_user_status',
+        'created',
+        'modified'
+    )
+
+    list_filter = (
+        'status',
+        'allocation_user_status',
+        'allocation_user__allocation__resources'
+    )
+
+    raw_id_fields = (
+        'requestor_user',
+        'allocation_user'
+    )
+
+    def project(self, obj):
+        return textwrap.shorten(obj.allocation_user.allocation.project.title, width=50)
+
+    def allocation_id(self, obj):
+        return obj.allocation_user.allocation.pk
+
+    def resource(self, obj):
+        return obj.allocation_user.allocation.resources.first().name
+
+    def review_status(self, obj):
+        return obj.status.name
+
+    def requestor(self, obj):
+        return '{} {} ({})'.format(
+            obj.requestor_user.first_name,
+            obj.requestor_user.last_name,
+            obj.requestor_user.username
+        )
+
+    def user(self, obj):
+        return '{} {} ({})'.format(
+            obj.allocation_user.user.first_name,
+            obj.allocation_user.user.last_name,
+            obj.allocation_user.user.username
+        )
+
+    def get_readonly_fields(self, request, obj):
+        # If a new object is being created then make the fields in the readonly_fields_change
+        # list editable.
+        if obj is None:
+            return super().get_readonly_fields(request, obj)
+        else:
+            return self.readonly_fields_change
+
+
 @admin.register(AllocationChangeStatusChoice)
 class AllocationChangeStatusChoiceAdmin(admin.ModelAdmin):
     list_display = ('name', )
@@ -362,3 +481,53 @@ class AllocationChangeRequestAdmin(admin.ModelAdmin):
 class AllocationChangeStatusChoiceAdmin(admin.ModelAdmin):
     list_display = ('pk', 'allocation_change_request', 'allocation_attribute', 'new_value', )
 
+
+@admin.register(AllocationInvoice)
+class AllocationInvoice(SimpleHistoryAdmin):
+    list_display = ('allocation_pk', 'resource', 'status', 'created', )
+
+    def allocation_pk(self, obj):
+        return obj.allocation.pk
+
+    def resource(self, obj):
+        return obj.allocation.get_parent_resource.name
+
+
+@admin.register(AllocationAdminAction)
+class AllocationAdminActionAdmin(admin.ModelAdmin):
+    list_display = ('pk', 'user', 'allocation_pk', 'allocation', 'action', 'created', )
+    readonly_fields = ('user', 'allocation', 'action', 'created', )
+    list_filter = ('allocation__resources', )
+
+    def allocation_pk(self, obj):
+        return obj.allocation.pk
+
+
+@admin.register(AllocationRemovalRequest)
+class AllocationRemovalRequestAdmin(admin.ModelAdmin):
+    list_display = ('pk', 'allocation_pk', 'project_pi', 'requestor', 'allocation_prior_status',
+                    'resource', 'status')
+    readonly_fields = ('project_pi', 'requestor', 'allocation_prior_status', 'allocation')
+    list_filter = (
+        'status',
+        'allocation__resources',
+        'allocation_prior_status'
+    )
+    search_fields = (
+        'requestor__username',
+        'requestor__first_name',
+        'requestor__last_name',
+    )
+
+    def resource(self, obj):
+        allocation_obj = obj.allocation
+        return allocation_obj.get_parent_resource.name
+    
+    def allocation_pk(self, obj):
+        allocation_obj = obj.allocation
+        return allocation_obj.pk
+
+
+@admin.register(AllocationRemovalStatusChoice)
+class AllocationRemovalStatusChoiceAdmin(admin.ModelAdmin):
+    list_display = ('pk', 'name')

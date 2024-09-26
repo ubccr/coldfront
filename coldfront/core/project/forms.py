@@ -8,8 +8,13 @@ from django.db.models.functions import Lower
 from cProfile import label
 
 from coldfront.core.project.models import (Project, ProjectAttribute, ProjectAttributeType, ProjectReview,
-                                           ProjectUserRoleChoice)
+                                           ProjectUserRoleChoice, ProjectStatusChoice)
+from django.core.validators import MinLengthValidator
 from coldfront.core.utils.common import import_from_settings
+from coldfront.core.field_of_science.models import FieldOfScience
+from django.core.validators import MinLengthValidator
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import Layout, Submit, Fieldset, Reset, Row, Column
 
 EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL = import_from_settings(
     'EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL')
@@ -18,18 +23,23 @@ EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
     'EMAIL_DIRECTOR_EMAIL_ADDRESS', '')
 
 
+class ProjectPISearchForm(forms.Form):
+    PI_USERNAME = 'PI Username'
+    pi_username = forms.CharField(label=PI_USERNAME, max_length=100, required=False)
+
+
 class ProjectSearchForm(forms.Form):
     """ Search form for the Project list page.
     """
     LAST_NAME = 'Last Name'
     USERNAME = 'Username'
-    FIELD_OF_SCIENCE = 'Field of Science'
+    # FIELD_OF_SCIENCE = 'Field of Science'
 
     last_name = forms.CharField(
         label=LAST_NAME, max_length=100, required=False)
     username = forms.CharField(label=USERNAME, max_length=100, required=False)
-    field_of_science = forms.CharField(
-        label=FIELD_OF_SCIENCE, max_length=100, required=False)
+    # field_of_science = forms.CharField(
+    #     label=FIELD_OF_SCIENCE, max_length=100, required=False)
     show_all_projects = forms.BooleanField(initial=False, required=False)
 
 
@@ -80,37 +90,29 @@ class ProjectUserUpdateForm(forms.Form):
         queryset=ProjectUserRoleChoice.objects.all(), empty_label=None)
     enable_notifications = forms.BooleanField(initial=False, required=False)
 
+    def __init__(self, *args, **kwargs):
+        disable_enable_notifications = kwargs.pop('disable_enable_notifications', False)
+        super().__init__(*args, **kwargs)
+        if disable_enable_notifications:
+            self.fields['enable_notifications'].disabled = True
+
 
 class ProjectReviewForm(forms.Form):
-    reason = forms.CharField(label='Reason for not updating project information', widget=forms.Textarea(attrs={
-                             'placeholder': 'If you have no new information to provide, you are required to provide a statement explaining this in this box. Thank you!'}), required=False)
+    no_project_updates = forms.BooleanField(label='No new project updates', required=False)
+    project_updates = forms.CharField(
+        label='Project updates',
+        widget=forms.Textarea(),
+        required=False
+    )
     acknowledgement = forms.BooleanField(
         label='By checking this box I acknowledge that I have updated my project to the best of my knowledge', initial=False, required=True)
 
-    def __init__(self, project_pk, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        project_obj = get_object_or_404(Project, pk=project_pk)
-        now = datetime.datetime.now(datetime.timezone.utc)
-
-        if project_obj.grant_set.exists():
-            latest_grant = project_obj.grant_set.order_by('-modified')[0]
-            grant_updated_in_last_year = (
-                now - latest_grant.created).days < 365
-        else:
-            grant_updated_in_last_year = None
-
-        if project_obj.publication_set.exists():
-            latest_publication = project_obj.publication_set.order_by(
-                '-created')[0]
-            publication_updated_in_last_year = (
-                now - latest_publication.created).days < 365
-        else:
-            publication_updated_in_last_year = None
-
-        if grant_updated_in_last_year or publication_updated_in_last_year:
-            self.fields['reason'].widget = forms.HiddenInput()
-        else:
-            self.fields['reason'].required = True
+    def clean(self):
+        cleaned_data = super().clean()
+        project_updates = cleaned_data.get('project_updates')
+        no_project_updates = cleaned_data.get('no_project_updates')
+        if not no_project_updates and project_updates == '':
+            raise forms.ValidationError('Please fill out the project updates field.')
 
 
 class ProjectReviewEmailForm(forms.Form):
@@ -190,3 +192,143 @@ class ProjectAttributeUpdateForm(forms.Form):
             proj_attr = ProjectAttribute.objects.get(pk=cleaned_data.get('pk'))
             proj_attr.value = cleaned_data.get('new_value')
             proj_attr.clean()
+
+class ProjectRequestEmailForm(forms.Form):
+    cc = forms.CharField(
+        required=False
+    )
+    email_body = forms.CharField(
+        required=True,
+        widget=forms.Textarea
+    )
+
+    def __init__(self, pk, user, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        project_obj = get_object_or_404(Project, pk=int(pk))
+        self.fields['email_body'].initial = EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL.format(
+            first_name=user.first_name, project_name=project_obj.title
+        )
+        cc_list = [project_obj.pi.email, user.email]
+        if project_obj.pi == project_obj.requestor:
+            cc_list.remove(project_obj.pi.email)
+        self.fields['cc'].initial = ', '.join(cc_list)
+
+
+class ProjectReviewAllocationForm(forms.Form):
+    pk = forms.IntegerField(disabled=True)
+    resource = forms.CharField(max_length=100, disabled=True)
+    users = forms.CharField(max_length=1000, disabled=True, required=False)
+    status = forms.CharField(max_length=50, disabled=True)
+    expires_on = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'datepicker'}),
+        disabled=True
+    )
+    renew = forms.BooleanField(initial=True, required=False)
+
+
+class ProjectUpdateForm(forms.Form):
+    title = forms.CharField(max_length=255,)
+    description = forms.CharField(
+        validators=[
+            MinLengthValidator(
+                10,
+                'The project description must be > 10 characters',
+            )
+        ],
+        widget=forms.Textarea
+    )
+
+    def __init__(self, project_pk, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        project_obj = get_object_or_404(Project, pk=project_pk)
+
+        self.fields['title'].initial = project_obj.title
+        self.fields['description'].initial = project_obj.description
+
+
+class ProjectExportForm(forms.Form):
+    file_name = forms.CharField(max_length=64, initial='projects')
+    project_statuses = forms.ModelMultipleChoiceField(
+        queryset=ProjectStatusChoice.objects.all().order_by('name'),
+        help_text='Do not select any if you want all statuses',
+        required=False
+    )
+    project_creation_range_start = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'datepicker'}),
+        label='Start',
+        help_text='Includes start date',
+        required=False
+    )
+    project_creation_range_stop = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'datepicker'}),
+        label='End',
+        help_text='Does not include end date',
+        required=False
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            'file_name',
+            Row(
+                Column('project_statuses')
+            ),
+            Fieldset(
+                'Project Creation Range',
+                Row(
+                    Column('project_creation_range_start', css_class='col-md-6'),
+                    Column('project_creation_range_stop', css_class='col-md-6'),
+                )
+            ),
+            Submit('submit', 'Export', css_class='btn-success'),
+            Reset('reset', 'Reset', css_class='btn-secondary')
+        )
+
+
+class ProjectUserExportForm(forms.Form):
+    file_name = forms.CharField(max_length=64, initial='projectusers')
+    project_statuses = forms.ModelMultipleChoiceField(
+        queryset=ProjectStatusChoice.objects.all().order_by('name'),
+        help_text='Do not select any if you want all statuses',
+        required=False
+    )
+    project_user_roles = forms.ModelMultipleChoiceField(
+        queryset=ProjectUserRoleChoice.objects.all().order_by('name'),
+        help_text='Do not select any if you want all roles',
+        required=False
+    )
+    project_creation_range_start = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'datepicker'}),
+        label='Start',
+        help_text='Includes start date',
+        required=False
+    )
+    project_creation_range_stop = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'datepicker'}),
+        label='Stop',
+        help_text='Does not include end date',
+        required=False
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            'file_name',
+            Row(
+                Column('project_statuses', css_class='col-md-6'),
+                Column('project_user_roles', css_class='col-md-6'),
+            ),
+            Fieldset(
+                'Project Creation Range',
+                Row(
+                    Column('project_creation_range_start', css_class='col-md-6'),
+                    Column('project_creation_range_stop', css_class='col-md-6'),
+                )
+            ),
+            Submit('submit', 'Export', css_class='btn-success'),
+            Reset('reset', 'Reset', css_class='btn-secondary')
+        )

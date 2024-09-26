@@ -1,5 +1,4 @@
 import datetime
-import importlib
 import logging
 from ast import literal_eval
 from enum import Enum
@@ -14,9 +13,10 @@ from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
 from coldfront.core.project.models import Project, ProjectPermission
-from coldfront.core.resource.models import Resource
+from coldfront.core.resource.models import Resource, ResourceAttribute, ResourceAttributeType
 from coldfront.core.utils.common import import_from_settings
 import coldfront.core.attribute_expansion as attribute_expansion
+from coldfront.core.utils.groups import check_if_groups_in_review_groups
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +27,31 @@ ALLOCATION_FUNCS_ON_EXPIRE = import_from_settings(
 ALLOCATION_RESOURCE_ORDERING = import_from_settings(
     'ALLOCATION_RESOURCE_ORDERING',
     ['-is_allocatable', 'name'])
+ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING = import_from_settings(
+    'ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING', 30
+)
+ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING = import_from_settings(
+    'ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING', 60
+)
+ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
+    'ALLOCATION_ENABLE_ALLOCATION_RENEWAL', True
+)
+
+EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
+if EMAIL_ENABLED:
+    EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
+    EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings(
+        'EMAIL_TICKET_SYSTEM_ADDRESS')
+    EMAIL_OPT_OUT_INSTRUCTION_URL = import_from_settings(
+        'EMAIL_OPT_OUT_INSTRUCTION_URL')
+    EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
+    EMAIL_CENTER_NAME = import_from_settings('CENTER_NAME')
+
+class AllocationPermission(Enum):
+    """ A project permission stores the user and manager fields of a project. """
+
+    USER = 'USER'
+    MANAGER = 'MANAGER'
 
 class AllocationPermission(Enum):
     """ A project permission stores the user and manager fields of a project. """
@@ -85,7 +110,7 @@ class Allocation(TimeStampedModel):
     project = models.ForeignKey(Project, on_delete=models.CASCADE,)
     resources = models.ManyToManyField(Resource)
     status = models.ForeignKey(AllocationStatusChoice, on_delete=models.CASCADE, verbose_name='Status')
-    quantity = models.IntegerField(default=1)
+    quantity = models.IntegerField(blank=True, null=True)
     start_date = models.DateField(blank=True, null=True)
     end_date = models.DateField(blank=True, null=True)
     justification = models.TextField()
@@ -93,6 +118,17 @@ class Allocation(TimeStampedModel):
     is_locked = models.BooleanField(default=False)
     is_changeable = models.BooleanField(default=False)
     history = HistoricalRecords()
+
+    class Meta:
+        ordering = ['end_date', ]
+
+        permissions = (
+            ('can_view_all_allocations', 'Can view all allocations'),
+            ('can_review_allocation_requests',
+             'Can review allocation requests'),
+            ('can_manage_invoice', 'Can manage invoice'),
+            ('can_remove_allocation', 'Can remove allocation')
+        )
 
     def clean(self):
         """ Validates the allocation and raises errors if the allocation is invalid. """
@@ -133,6 +169,10 @@ class Allocation(TimeStampedModel):
         super().save(*args, **kwargs)
 
     @property
+    def get_allocation_attributes(self):
+        return self.allocationattribute_set.all()
+
+    @property
     def expires_in(self):
         """ 
         Returns:
@@ -140,6 +180,28 @@ class Allocation(TimeStampedModel):
         """
 
         return (self.end_date - datetime.date.today()).days
+    
+    @property
+    def can_be_renewed(self):
+        if not ALLOCATION_ENABLE_ALLOCATION_RENEWAL:
+            return False
+
+        if self.status.name not in ['Active', 'Expired']:
+            return False
+
+        if self.project.needs_review or self.project.can_be_reviewed or self.project.status.name not in ['Active']:
+            return False
+
+        if self.status.name == 'Active' and self.expires_in <= ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING  and self.expires_in >= 0:
+            return True
+        
+        if self.status.name == 'Expired' and ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING < 0:
+            return True
+
+        if self.status.name == 'Expired' and self.expires_in >= -ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING:
+            return True
+
+        return False
 
     @property
     def get_information(self):
@@ -286,6 +348,90 @@ class Allocation(TimeStampedModel):
                 return [a.typed_value() for a in attr]
             else:
                 return [a.value for a in attr]
+            
+    def get_attribute_set(self, user):
+        """
+        Params:
+            user (User): user for whom to return attributes
+
+        Returns:
+            list[AllocationAttribute]: returns the set of attributes the user is allowed to see (if superuser, then all allocation attributes; else, only non-private ones)
+        """
+
+        if user.is_superuser:
+            return self.allocationattribute_set.all().order_by('allocation_attribute_type__name')
+
+        return self.allocationattribute_set.filter(allocation_attribute_type__is_private=False).order_by('allocation_attribute_type__name')
+
+    def user_permissions(self, user, permission=''):
+        """
+        Params:
+            user (User): user for whom to return permissions
+
+        Returns:
+            list[AllocationPermission]: list of user permissions for the allocation
+        """
+
+        if user.is_superuser:
+            return list(AllocationPermission)
+
+        project_perms = self.project.user_permissions(user)
+
+        if ProjectPermission.USER not in project_perms:
+            group_exists = check_if_groups_in_review_groups(
+                self.get_parent_resource.review_groups.all(),
+                user.groups.all(),
+                permission
+            )
+            if group_exists:
+                return [AllocationPermission.USER, AllocationPermission.MANAGER]
+            return []
+
+        if ProjectPermission.PI in project_perms or ProjectPermission.MANAGER in project_perms:
+            return [AllocationPermission.USER, AllocationPermission.MANAGER]
+
+        if self.allocationuser_set.filter(user=user, status__name__in=['Active', 'New', 'Eligible']).exists():
+            return [AllocationPermission.USER]
+
+        return []
+    
+    def has_perm(self, user, perm, addtl_perm=''):
+        """
+        Params:
+            user (User): user to check permissions for
+            perm (AllocationPermission): permission to check for in user's list
+
+        Returns:
+            bool: whether or not the user has the specified permission
+        """
+
+        perms = self.user_permissions(user, addtl_perm)
+        return perm in perms
+
+    def create_user_request(self, requestor_user, allocation_user, allocation_user_status):
+        """
+        Check if the allocation's resource has the 'requires_user_request' attribute set to
+        'Yes'. If it is then create a new AllocationUserRequest.
+
+        :param request_user: User who requested the change. User object required.
+        :param allocation_user: User who had the requested change. AllocationUser object required.
+        :param allocation_user_status: Type of requested change. AllocationUserStatusChoice object
+        required.
+        :returns: A new AllocationUserRequest object or None if the 'requires_user_request' resource
+        attribute is not 'Yes'.
+        """
+        requires_user_request = self.get_parent_resource.get_attribute('requires_user_request')
+        if requires_user_request is not None and requires_user_request == 'Yes':
+            allocation_user_request_obj = AllocationUserRequest.objects.create(
+                requestor_user=requestor_user,
+                allocation_user=allocation_user,
+                allocation_user_status=allocation_user_status,
+                status=AllocationUserRequestStatusChoice.objects.get(name='Pending')
+            )
+
+            return allocation_user_request_obj
+
+        return None
 
     def get_attribute_set(self, user):
         """
@@ -406,6 +552,8 @@ class AllocationAttributeType(TimeStampedModel):
 
     attribute_type = models.ForeignKey(AttributeType, on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
+    linked_resource_attribute_type = models.ForeignKey(ResourceAttributeType, on_delete=models.CASCADE, blank=True, null=True)
+    linked_resources = models.ManyToManyField(Resource, blank=True)
     has_usage = models.BooleanField(default=False)
     is_required = models.BooleanField(default=False)
     is_unique = models.BooleanField(default=False)
@@ -414,7 +562,10 @@ class AllocationAttributeType(TimeStampedModel):
     history = HistoricalRecords()
 
     def __str__(self):
-        return '%s' % (self.name)
+        return '%s (%s)' % (self.name, self.attribute_type.name)
+    
+    def get_linked_resources(self):
+        return self.linked_resources.all()
 
     class Meta:
         ordering = ['name', ]
@@ -466,6 +617,18 @@ class AllocationAttribute(TimeStampedModel):
             except ValueError:
                 raise ValidationError(
                     'Invalid Value "%s" for "%s". Date must be in format YYYY-MM-DD' % (self.value, self.allocation_attribute_type.name))
+
+        linked_attribute_type_obj = self.allocation_attribute_type.linked_resource_attribute_type
+        if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
+            from coldfront.plugins.ldap_user_info.utils import check_if_user_exists
+            linked_attribute_obj = ResourceAttribute.objects.filter(
+                resource=self.allocation.get_parent_resource,
+                resource_attribute_type=linked_attribute_type_obj,
+                check_if_username_exists=True
+            )
+            if linked_attribute_obj.exists():
+                if not check_if_user_exists(self.value):
+                    raise ValidationError(f'{self.allocation_attribute_type.name} does not have a valid username')
 
     def __str__(self):
         return '%s' % (self.allocation_attribute_type.name)
@@ -526,7 +689,8 @@ class AllocationAttribute(TimeStampedModel):
             resources = resources,
             allocations = allocs)
         return expanded
-           
+
+
 class AllocationAttributeUsage(TimeStampedModel):
     """ Allocation attribute usage indicates the usage of an allocation attribute. 
     
@@ -565,6 +729,34 @@ class AllocationUserStatusChoice(TimeStampedModel):
     def natural_key(self):
         return (self.name,)
 
+class AllocationUserRoleChoice(TimeStampedModel):
+    name = models.CharField(max_length=64)
+    resources = models.ManyToManyField(Resource, blank=True)
+    is_user_default = models.BooleanField(default=False)
+    is_manager_default = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name', ]
+
+    def clean(self):
+        if self.is_user_default:
+            for role_choice in AllocationUserRoleChoice.objects.all().exclude(pk=self.pk):
+                for resource in role_choice.resources.all():
+                    if resource in self.resources.all() and role_choice.is_user_default:
+                        raise ValidationError(
+                            f'role {role_choice.name} is already set as the user default'
+                        )
+        if self.is_manager_default:
+            for role_choice in AllocationUserRoleChoice.objects.all().exclude(pk=self.pk):
+                for resource in role_choice.resources.all():
+                    if resource in self.resources.all() and role_choice.is_manager_default:
+                        raise ValidationError(
+                            f'role {role_choice.name} is already set as the manager default'
+                        )
+
 class AllocationUser(TimeStampedModel):
     """ An allocation user represents a user on the allocation.
     
@@ -576,6 +768,7 @@ class AllocationUser(TimeStampedModel):
 
     allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    role = models.ForeignKey(AllocationUserRoleChoice, null=True, on_delete=models.CASCADE)
     status = models.ForeignKey(AllocationUserStatusChoice, on_delete=models.CASCADE,
                                verbose_name='Allocation User Status')
     history = HistoricalRecords()
@@ -652,7 +845,7 @@ class AllocationChangeRequest(TimeStampedModel):
             return self.allocation.resources.filter(is_allocatable=True).first()
 
     def __str__(self):
-        return "%s (%s)" % (self.get_parent_resource.name, self.allocation.project.pi)
+        return "%s (%s) Change Request" % (self.get_parent_resource.name, self.allocation.project.pi)
 
 class AllocationAttributeChangeRequest(TimeStampedModel):
     """ An allocation attribute change request represents a request from a PI/ manager to change their allocation attribute.
@@ -670,3 +863,58 @@ class AllocationAttributeChangeRequest(TimeStampedModel):
 
     def __str__(self):
         return '%s' % (self.allocation_attribute.allocation_attribute_type.name)
+
+
+class AllocationAdminAction(TimeStampedModel):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE)
+    action = models.CharField(max_length=128)
+
+
+class AllocationRemovalStatusChoice(TimeStampedModel):
+    name = models.CharField(max_length=64)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name', ]
+
+
+class AllocationRemovalRequest(TimeStampedModel):
+    project_pi = models.ForeignKey(User, on_delete=models.CASCADE, related_name='%(class)s_project_pi')
+    requestor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='%(class)s_requestor')
+    allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE)
+    allocation_prior_status = models.ForeignKey(AllocationStatusChoice, on_delete=models.CASCADE)
+    status = models.ForeignKey(AllocationRemovalStatusChoice, on_delete=models.CASCADE)
+
+
+class AllocationInvoice(TimeStampedModel):
+    allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE)
+    account_number = models.CharField(max_length=9)
+    sub_account_number = models.CharField(max_length=20, blank=True, null=True)
+    status = models.ForeignKey(AllocationStatusChoice, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return "{} Invoice".format(self.allocation.get_parent_resource.name)
+
+
+class AllocationUserRequestStatusChoice(TimeStampedModel):
+    name = models.CharField(max_length=64)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['name', ]
+
+
+class AllocationUserRequest(TimeStampedModel):
+    requestor_user = models.ForeignKey(User, on_delete=models.CASCADE)
+    allocation_user = models.ForeignKey(AllocationUser, on_delete=models.CASCADE)
+    allocation_user_status = models.ForeignKey(AllocationUserStatusChoice, on_delete=models.CASCADE)
+    status = models.ForeignKey(AllocationUserRequestStatusChoice, on_delete=models.CASCADE)
+    history = HistoricalRecords()
+
+    def __str__(self):
+        return '{} ({})'.format(self.allocation_user.user.username, self.allocation_user_status)

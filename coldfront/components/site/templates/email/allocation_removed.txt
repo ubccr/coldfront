@@ -1,0 +1,8 @@
+Dear {{center_name}} user,
+
+Your allocation for {{resource}} has been removed. You no longer have access to this resource.
+
+To view your allocation's information, please go to {{url}}
+
+Thank you,
+{{signature}}

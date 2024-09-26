@@ -7,6 +7,7 @@ from coldfront.core.project.models import (ProjectAttributeType,
                                             ProjectStatusChoice,
                                             ProjectUserRoleChoice,
                                             ProjectUserStatusChoice,
+                                            ProjectTypeChoice,
                                             AttributeType)
 
 
@@ -14,13 +15,16 @@ class Command(BaseCommand):
     help = 'Add default project related choices'
 
     def handle(self, *args, **options):
-        for choice in ['New', 'Active', 'Archived', ]:
+        ProjectStatusChoice.objects.all().delete()
+        for choice in ['New', 'Active', 'Archived', 'Denied', 'Expired', 'Review Pending', 'Waiting For Admin Approval', 'Contacted By Admin', ]:
             ProjectStatusChoice.objects.get_or_create(name=choice)
 
-        for choice in ['Completed', 'Pending', ]:
+        ProjectReviewStatusChoice.objects.all().delete()
+        for choice in ['Approved', 'Pending', 'Denied', 'Completed', ]:
             ProjectReviewStatusChoice.objects.get_or_create(name=choice)
 
-        for choice in ['User', 'Manager', ]:
+        ProjectUserRoleChoice.objects.all().delete()
+        for choice in ['User', 'Manager', 'Group', ]:
             ProjectUserRoleChoice.objects.get_or_create(name=choice)
 
         for choice in ['Active', 'Pending - Add', 'Pending - Remove', 'Denied', 'Removed', ]:
@@ -35,3 +39,7 @@ class Command(BaseCommand):
         ):
             ProjectAttributeType.objects.get_or_create(name=name, attribute_type=AttributeType.objects.get(
                 name=attribute_type), has_usage=has_usage, is_private=is_private)
+
+        ProjectTypeChoice.objects.all().delete()
+        for choice in ['Research', 'Class', ]:
+            ProjectTypeChoice.objects.get_or_create(name=choice)

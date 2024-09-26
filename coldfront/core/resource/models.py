@@ -1,11 +1,22 @@
 from datetime import datetime
+import logging
 
+from django.conf import settings
 from django.contrib.auth.models import Group, User
 from django.core.exceptions import ValidationError
 from django.db import models
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
+from coldfront.core.utils.common import import_from_settings
 import coldfront.core.attribute_expansion as attribute_expansion
+
+logger = logging.getLogger(__name__)
+
+RESOURCE_ENABLE_ACCOUNT_CHECKING = import_from_settings(
+    'RESOURCE_ENABLE_ACCOUNT_CHECKING', True
+)
+RESOURCE_ACCOUNTS = import_from_settings('RESOURCE_ACCOUNTS', {})
+
 
 class AttributeType(TimeStampedModel):
     """ An attribute type indicates the data type of the attribute. Examples include Date, Float, Int, Text, and Yes/No. 
@@ -81,6 +92,7 @@ class ResourceAttributeType(TimeStampedModel):
 
     attribute_type = models.ForeignKey(AttributeType, on_delete=models.CASCADE)
     name = models.CharField(max_length=128)
+    description = models.TextField(blank=True, null=True)
     is_required = models.BooleanField(default=False)
     is_unique_per_resource = models.BooleanField(default=False)
     is_value_unique = models.BooleanField(default=False)
@@ -122,6 +134,10 @@ class Resource(TimeStampedModel):
     is_public = models.BooleanField(default=True)
     is_allocatable = models.BooleanField(default=True)
     requires_payment = models.BooleanField(default=False)
+    requires_user_roles = models.BooleanField(default=False)
+    review_groups = models.ManyToManyField(
+        Group, blank=True, related_name='review_groups_resource_set'
+    )
     allowed_groups = models.ManyToManyField(Group, blank=True)
     allowed_users = models.ManyToManyField(User, blank=True)
     linked_resources = models.ManyToManyField('self', blank=True)
@@ -221,7 +237,35 @@ class Resource(TimeStampedModel):
         if ondemand:
             return ondemand.value
         return None
-            
+
+    def check_user_account_exists(self, username, accounts=None):
+        if not RESOURCE_ENABLE_ACCOUNT_CHECKING:
+            return True
+        
+        if not 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS and accounts is None:
+            return True
+
+        resource = self.get_attribute('check_user_account')
+        if resource is None:
+            return True
+
+        resource_acc = RESOURCE_ACCOUNTS.get(resource)    
+        if not resource_acc:
+            logger.warning(
+                "A resource account does not exist for {}. Skipping user {}'s account"
+                .format(self.name, username)
+            )
+            return True
+
+        if accounts is None:
+            from coldfront.plugins.ldap_user_info.utils import get_user_info
+            accounts = get_user_info(username, ['memberOf']).get('memberOf')
+
+        if resource_acc in accounts:
+            return True
+
+        return False
+
     def __str__(self):
         return '%s (%s)' % (self.name, self.resource_type.name)
 
@@ -240,31 +284,45 @@ class ResourceAttribute(TimeStampedModel):
     resource_attribute_type = models.ForeignKey(
         ResourceAttributeType, on_delete=models.CASCADE)
     resource = models.ForeignKey(Resource, on_delete=models.CASCADE)
-    value = models.TextField()
+    value = models.TextField(blank=True)
+    is_required = models.BooleanField(default=False)
+    check_if_username_exists = models.BooleanField(default=False)
+    resource_account_is_required = models.BooleanField(default=False)
     history = HistoricalRecords()
 
     def clean(self):
         """ Validates the resource and raises errors if the resource is invalid. """
         expected_value_type = self.resource_attribute_type.attribute_type.name.strip()
-
-        if expected_value_type == "Int" and not self.value.isdigit():
+        if expected_value_type == "Int" and not self.value.isdigit() and self.value != "":
             raise ValidationError(
-                'Invalid Value "%s". Value must be an integer.' % (self.value))
-        elif expected_value_type == "Active/Inactive" and self.value not in ["Active", "Inactive"]:
+                'Invalid Value "%s". Value must be an integer.' % (self.value)
+            )
+        elif expected_value_type == "Active/Inactive" and self.value not in ["Active", "Inactive", ""]:
             raise ValidationError(
-                'Invalid Value "%s". Allowed inputs are "Active" or "Inactive".' % (self.value))
-        elif expected_value_type == "Public/Private" and self.value not in ["Public", "Private"]:
+                'Invalid Value "%s". Allowed inputs are "Active" or "Inactive".' % (self.value)
+            )
+        elif expected_value_type == "Public/Private" and self.value not in ["Public", "Private", ""]:
             raise ValidationError(
-                'Invalid Value "%s". Allowed inputs are "Public" or "Private".' % (self.value))
-        elif expected_value_type == "Date":
+                'Invalid Value "%s". Allowed inputs are "Public" or "Private".' % (self.value)
+            )
+        elif expected_value_type == "Yes/No" and self.value not in ["Yes", "No", ""]:
+            raise ValidationError(
+                'Invalid Value "%s". Allowed inputs are "Yes" or "No".' % (self.value)
+            )
+        elif expected_value_type == "True/False" and self.value not in ["True", "False", ""]:
+            raise ValidationError(
+                'Invalid Value "%s". Allowed inputs are "True" or "False".' % (self.value)
+            )
+        elif expected_value_type == "Date" and not self.value == "":
             try:
                 datetime.strptime(self.value.strip(), "%m/%d/%Y")
             except ValueError:
                 raise ValidationError(
-                    'Invalid Value "%s". Date must be in format MM/DD/YYYY' % (self.value))
+                    'Invalid Value "%s". Date must be in format MM/DD/YYYY' % (self.value)
+                )
 
     def __str__(self):
-        return '%s: %s (%s)' % (self.resource_attribute_type, self.value, self.resource)
+        return '%s (%s)' % (self.resource_attribute_type, self.resource_attribute_type.attribute_type.name)
 
     def typed_value(self):
         """

@@ -18,6 +18,9 @@ class PublicationSearchForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['search_id'].help_text = '<br/>Enter ID such as DOI or Bibliographic Code to search.'
+        self.fields['search_id'].widget.attrs.update({
+             'placeholder': '12.3456/1234567.8912345 OR YYYYJJJJJVVVVMPPPPA'
+        })
 
 
 class PublicationResultForm(forms.Form):
@@ -33,6 +36,7 @@ class PublicationResultForm(forms.Form):
 class PublicationDeleteForm(forms.Form):
     title = forms.CharField(max_length=255, disabled=True)
     year = forms.CharField(max_length=30, disabled=True)
+    unique_id = forms.CharField(max_length=255, disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
 
 

@@ -1,15 +1,28 @@
+import logging
+from datetime import date
+from coldfront.core.user.models import UserProfile
 from django import forms
 from django.db.models.functions import Lower
+from django.core.exceptions import ValidationError
+from django.forms.widgets import RadioSelect
 from django.shortcuts import get_object_or_404
+from django.conf import settings
 
-from coldfront.core.allocation.models import (Allocation, AllocationAccount,
+from coldfront.core.allocation.models import (AllocationAccount,
                                               AllocationAttributeType,
                                               AllocationAttribute,
-                                              AllocationStatusChoice)
+                                              AllocationStatusChoice,
+                                              AllocationUserRoleChoice)
 from coldfront.core.allocation.utils import get_user_resources
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource, ResourceType
 from coldfront.core.utils.common import import_from_settings
+
+from crispy_forms.helper import FormHelper
+from crispy_forms.layout import Field, Layout, Submit, HTML, Row, Column, Fieldset, Reset
+from crispy_forms.bootstrap import InlineRadios, FormActions, PrependedText
+
+logger = logging.getLogger(__name__)
 
 ALLOCATION_ACCOUNT_ENABLED = import_from_settings(
     'ALLOCATION_ACCOUNT_ENABLED', False)
@@ -92,7 +105,24 @@ class AllocationAddUserForm(forms.Form):
     first_name = forms.CharField(max_length=150, required=False, disabled=True)
     last_name = forms.CharField(max_length=150, required=False, disabled=True)
     email = forms.EmailField(max_length=100, required=False, disabled=True)
+    role = forms.ModelChoiceField(
+        queryset=AllocationUserRoleChoice.objects.none(), required=False, disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
+
+    def __init__(self, *args, **kwargs):
+        resource = kwargs.pop('resource', None)
+        super().__init__(*args, **kwargs)
+        if resource and resource.requires_user_roles:
+            self.fields['role'].disabled = False
+            self.fields['role'].queryset = AllocationUserRoleChoice.objects.filter(resources=resource)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get('selected'):
+            if not self.fields['role'].disabled and not cleaned_data.get('role'):
+                raise ValidationError('This resource requires user roles')
+
+        return cleaned_data
 
 
 class AllocationRemoveUserForm(forms.Form):
@@ -149,7 +179,56 @@ class AllocationSearchForm(forms.Form):
     show_all_allocations = forms.BooleanField(initial=False, required=False)
 
 
+class AllocationInvoiceSearchForm(forms.Form):
+    resource_type = forms.ModelChoiceField(
+        label='Resource Type',
+        queryset=ResourceType.objects.all().order_by('name'),
+        required=False
+    )
+    resource_name = forms.ModelMultipleChoiceField(
+        label='Resource Name',
+        queryset=Resource.objects.filter(is_allocatable=True).order_by('name'),
+        required=False
+    )
+    start_date = forms.DateField(
+        label='Start Date',
+        widget=forms.DateInput(attrs={'class': 'datepicker'}),
+        required=False
+    )
+    end_date = forms.DateField(
+        label='End Date',
+        widget=forms.DateInput(attrs={'class': 'datepicker'}),
+        required=False
+    )
+
+
+class AllocationInvoiceExportForm(forms.Form):
+    file_name = forms.CharField(max_length=64, initial='invoices')
+    resource = forms.ChoiceField(choices=())
+    allocation_status = forms.ModelMultipleChoiceField(
+        label='Allocation status',
+        queryset=AllocationStatusChoice.objects.filter(name__in=['Active', 'Billing Information Submitted', ]).order_by('name')
+    )
+    # start_date = forms.DateField(
+    #     widget=forms.DateInput(attrs={'class': 'datepicker'}),
+    #     required=False
+    # )
+    # end_date = forms.DateField(
+    #     widget=forms.DateInput(attrs={'class': 'datepicker'}),
+    #     required=False
+    # )
+
+    def __init__(self, *args, resources=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if resources is None:
+            self.fields['resource'].choices = ()
+        else:
+            self.fields['resource'].choices = resources
+
+
 class AllocationReviewUserForm(forms.Form):
+    # No relation to AllocationUserReview model.
     ALLOCATION_REVIEW_USER_CHOICES = (
         ('keep_in_allocation_and_project', 'Keep in allocation and project'),
         ('keep_in_project_only', 'Remove from this allocation only'),
@@ -221,6 +300,24 @@ class AllocationAttributeUpdateForm(forms.Form):
         allocation_attribute.clean()
 
 
+class AllocationAttributeEditForm(forms.Form):
+    attribute_pk = forms.IntegerField(required=False, disabled=True)
+    name = forms.CharField(max_length=150, required=False, disabled=True)
+    value = forms.CharField(max_length=150, required=False, disabled=True)
+    new_value = forms.CharField(max_length=150, required=False, disabled=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['attribute_pk'].widget = forms.HiddenInput()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get('new_value'):
+            allocation_attribute = AllocationAttribute.objects.get(pk=cleaned_data.get('attribute_pk'))
+            allocation_attribute.value = cleaned_data.get('new_value')
+            allocation_attribute.clean()
+
+
 class AllocationChangeForm(forms.Form):
     EXTENSION_CHOICES = [
         (0, "No Extension")
@@ -252,6 +349,7 @@ class AllocationChangeNoteForm(forms.Form):
             widget=forms.Textarea,
             help_text="Leave any feedback about the allocation change request.")
 
+
 class AllocationAttributeCreateForm(forms.ModelForm):
     class Meta:
         model = AllocationAttribute
@@ -259,3 +357,74 @@ class AllocationAttributeCreateForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(AllocationAttributeCreateForm, self).__init__(*args, **kwargs) 
         self.fields['allocation_attribute_type'].queryset = self.fields['allocation_attribute_type'].queryset.order_by(Lower('name'))
+
+
+class AllocationExportForm(forms.Form):
+    file_name = forms.CharField(max_length=64, initial='allocations')
+    allocation_statuses = forms.ModelMultipleChoiceField(
+        queryset=AllocationStatusChoice.objects.all().order_by('name'),
+        help_text='Do not select any if you want all statuses',
+        required=False
+    )
+    allocation_resources = forms.ModelMultipleChoiceField(
+        queryset=Resource.objects.all().order_by('name'),
+        help_text='Do not select any if you want all resources',
+        required=False
+    )
+    allocation_creation_range_start = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'datepicker'}),
+        label='Start',
+        help_text='Includes start date',
+        required=False
+    )
+    allocation_creation_range_stop = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'datepicker'}),
+        label='Stop',
+        help_text='Does not include end date',
+        required=False
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.helper = FormHelper()
+        self.helper.layout = Layout(
+            'file_name',
+            Row(
+                Column('allocation_statuses', css_class='col-md-6'),
+                Column('allocation_resources', css_class='col-md-6'),
+            ),
+            Fieldset(
+                'Allocation Creation Range',
+                Row(
+                    Column('allocation_creation_range_start', css_class='col-md-6'),
+                    Column('allocation_creation_range_stop', css_class='col-md-6'),
+                )
+            ),
+            Submit('submit', 'Export', css_class='btn-success'),
+            Reset('reset', 'Reset', css_class='btn-secondary')
+        )
+
+
+class AllocationUserUpdateForm(forms.Form):
+    role = forms.ModelChoiceField(
+        queryset=AllocationUserRoleChoice.objects.none(), required=False, disabled=True)
+    enable_notifications = forms.BooleanField(initial=False, required=False)
+
+    def __init__(self, *args, **kwargs):
+        disable_enable_notifications = kwargs.pop('disable_enable_notifications', False)
+        resource = kwargs.pop('resource', None)
+        super().__init__(*args, **kwargs)
+        if resource and resource.requires_user_roles:
+            self.fields['role'].disabled = False
+            self.fields['role'].queryset = AllocationUserRoleChoice.objects.filter(resources=resource)
+
+        if disable_enable_notifications:
+            self.fields['enable_notifications'].disabled = True
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if not self.fields['role'].disabled and not cleaned_data.get('role'):
+            raise ValidationError('This resource requires user roles')
+
+        return cleaned_data

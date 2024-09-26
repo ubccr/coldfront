@@ -1,0 +1,39 @@
+
+{% if matches %}
+  {% if number_of_usernames_found %}
+    <strong>Found {{number_of_usernames_found}} of {{number_of_usernames_searched}} usernames searched.</strong> 
+  {% endif %}
+  {% if usernames_not_found %}
+    The missing username{{usernames_not_found|length|pluralize}} {{usernames_not_found|length|pluralize:"is, are"}}: {{ usernames_not_found|join:", " }}.
+  {% endif %}
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">#</th>
+          <th scope="col">Username</th>
+          <th scope="col">First Name</th>
+          <th scope="col">Last Name</th>
+          <th scope="col">Email</th>
+          <th scope="col">Source</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in matches %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td><a href="{% url 'user-profile' user.username %}">{{ user.username }}</a></td>
+            <td>{{ user.first_name }}</td>
+            <td>{{ user.last_name }}</td>
+            <td>{{ user.email }}</td>
+            <td>{{ user.source }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="alert alert-info text-center">
+    No results!
+  </div>
+{% endif %}

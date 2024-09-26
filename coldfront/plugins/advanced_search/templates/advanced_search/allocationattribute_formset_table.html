@@ -1,0 +1,15 @@
+{% load crispy_forms_tags %}
+
+<div id="id_{{ label }}" class="formset" label="{{ label }}">
+	<div class="table-responsive">
+		<table class="table table-sm">
+			<thead>
+				<tr>
+					<th scope="col">Allocation Attribute Name</th>
+					<th scope="col">Allocation Attribute Value</th>
+				</tr>
+			</thead>
+		</table>
+		{% crispy formset helper %}
+	</div>
+</div>

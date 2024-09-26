@@ -1,0 +1,57 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}
+Update Allocation Attributes in Allocation
+{% endblock %}
+
+{% block content %}
+<h2>Update allocation attributes in allocation for project: {{allocation.project.title}}</h2>
+<hr>
+
+{% if formset %}
+  <div class="card border-light">
+    <div class="card-body">
+      <form action="{% url 'allocation-attribute-update' allocation.pk %}" method="post">
+        {% csrf_token %}
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th scope="col">Attribute</th>
+                <th scope="col">Current Value</th>
+                <th scope="col">New Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for form in formset %}
+                <tr>
+                  <td>{{ form.name.value }}</td>
+                  <td>{{ form.value.value }}</td>
+                  <td>{{ form.new_value }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {{ formset.management_form }}
+        <div>
+          <button type="submit" class="btn btn-primary"><i class="far fa-edit" aria-hidden="true"></i>
+            Update Selected Attributes from Allocation
+          </button>
+          <a class="btn btn-secondary" href="{% url 'allocation-detail' allocation.pk %}" role="button">
+            <i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Allocation
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+{% else %}
+  <a class="btn btn-secondary mb-3" href="{% url 'allocation-detail' allocation.pk %}" role="button"><i
+      class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Allocation</a>
+  <div class="alert alert-info">
+    No allocation attributes to Update!
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,134 @@
+{% load static %}
+<div class="row">
+  <div class="col">
+    <div id="userCount" style="min-height: 270px; max-width: 519px;"></div>
+  </div>
+  <div class="col">
+    <div id="userYearTimeline" style="min-height: 270px; max-width: 519px;"></div>
+    <!-- <div id="userMonthTimeline" style="min-height: 270px; max-width: 519px;"></div> -->
+  </div>
+</div>
+
+<script>
+  var user_counts = {{ user_counts | safe }}
+  var user_timeline = {{ user_timeline | safe }}
+  var years_to_months_labels = {{ years_to_months_labels | safe }}
+  var years_to_months_values = {{ years_to_months_values | safe }}
+
+  var userYearTimelineChart;
+  var userMonthTimelineChart;
+
+
+  $(document).ready(function () {
+    drawUserCount();
+    userYearTimelineChart = generateUserYearTimeline();
+    userMonthTimelineChart = generateUserMonthTimeline();
+  });
+
+  function drawUserCount() {
+    var chart = c3.generate({
+      bindto: '#userCount',
+      data: user_counts,
+      tooltip: {
+        show: false
+      },
+      axis: {
+        y: {
+          label: 'Total Unique Users'
+        },
+      }
+    })
+  }
+
+  function generateUserYearTimeline() {
+    xLabel = user_timeline['columns'][0][0];
+    data = {
+      columns: user_timeline['columns'],
+      x: user_timeline['x'],
+      types: {
+        xLabel: 'area-spline'
+      },
+      groups: [[xLabel]],
+      onclick: function(obj) {
+        year = obj.x.getFullYear()
+        if (!(year in years_to_months_labels)) {
+          return;
+        }
+
+        userMonthTimelineChart.load({
+          unload: true,
+          columns: [
+            years_to_months_labels[year],
+            years_to_months_values[year]
+          ]
+        });
+      }
+    }
+    var chart = c3.generate({
+      bindto: '#userYearTimeline',
+      data: data,
+      legend: {
+        hide: true
+      },
+      axis: {
+        x: {
+          type: 'timeseries',
+          padding: {
+            right: 1500000000 // Timeseries graph treats this as milliseconds in the future to show
+          },
+          tick: {
+            format: '%Y'
+          },
+          label: 'Year'
+        },
+        y: {
+          padding: {
+            bottom: 4
+          },
+          label: 'Total Unique Users'
+        }
+      }
+    })
+
+    return chart;
+  }
+
+  function generateUserMonthTimeline() {
+    var chart = c3.generate({
+      bindto: '#userMonthTimeline',
+      data: {
+        x: 'Months',
+        columns: [
+          years_to_months_labels[2022],
+          years_to_months_values[2022]
+        ]
+      },
+      legend: {
+        item: {
+          onclick: function (id) { }
+        }
+      },
+      axis: {
+        x: {
+          type: 'timeseries',
+          tick: {
+            format: '%m',
+            padding: {
+              right: 100000000
+            },
+            culling: false
+          },
+          label: 'Month'
+        },
+        y: {
+          padding: {
+            bottom: 4
+          },
+          label: 'Total Unique Users'
+        }
+      }
+    })
+
+    return chart;
+  }
+</script>

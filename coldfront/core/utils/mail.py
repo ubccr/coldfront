@@ -18,6 +18,8 @@ EMAIL_OPT_OUT_INSTRUCTION_URL = import_from_settings('EMAIL_OPT_OUT_INSTRUCTION_
 EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
 EMAIL_CENTER_NAME = import_from_settings('CENTER_NAME')
 CENTER_BASE_URL = import_from_settings('CENTER_BASE_URL')
+EMAIL_GROUP_TO_EMAIL_MAPPING = import_from_settings('EMAIL_GROUP_TO_EMAIL_MAPPING', {})
+
 
 def send_email(subject, body, sender, receiver_list, cc=[]):
     """Helper function for sending emails
@@ -27,11 +29,11 @@ def send_email(subject, body, sender, receiver_list, cc=[]):
         return
 
     if len(receiver_list) == 0:
-        logger.error('Failed to send email missing receiver_list')
+        logger.error(f'Failed to send email with subject {subject}, missing receiver_list')
         return
 
     if len(sender) == 0:
-        logger.error('Failed to send email missing sender address')
+        logger.error(f'Failed to send email with subject {subject}, missing sender address')
         return
 
     if len(EMAIL_SUBJECT_PREFIX) > 0:
@@ -110,7 +112,7 @@ def send_allocation_admin_email(allocation_obj, subject, template_name, url_path
         ctx,
     )
 
-def send_allocation_customer_email(allocation_obj, subject, template_name, url_path='', domain_url=''):
+def send_allocation_customer_email(allocation_obj, subject, template_name, url_path='', domain_url='', addtl_context=None):
     """Send allocation customer emails
     """
     if not url_path:
@@ -120,6 +122,9 @@ def send_allocation_customer_email(allocation_obj, subject, template_name, url_p
     ctx = email_template_context()
     ctx['resource'] = allocation_obj.get_parent_resource
     ctx['url'] = url
+
+    if addtl_context:
+        ctx.update(addtl_context)
 
     allocation_users = allocation_obj.allocationuser_set.exclude(status__name__in=['Removed', 'Error'])
     email_receiver_list = []
@@ -135,3 +140,18 @@ def send_allocation_customer_email(allocation_obj, subject, template_name, url_p
         EMAIL_SENDER,
         email_receiver_list
     )
+
+def get_email_recipient_from_groups(groups):
+    """
+    Returns a group's email if it exists in EMAIL_GROUP_TO_EMAIL_MAPPING. Only returns the first
+    email it finds, if no email is found then EMAIL_TICKET_SYSTEM_ADDRESS is returned.
+
+    :params groups: List/QuerySet of Groups
+    :return: Email address for a group if found, else EMAIL_TICKET_SYSTEM_ADDRESS
+    """
+    for group in groups:
+        email = EMAIL_GROUP_TO_EMAIL_MAPPING.get(group.name)
+        if email is not None:
+            return email
+
+    return EMAIL_TICKET_SYSTEM_ADDRESS

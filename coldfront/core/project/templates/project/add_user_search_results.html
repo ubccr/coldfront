@@ -76,6 +76,15 @@
 </form>
 
 <script>
+  var matches = {{ matches | length | safe }};
+  $(document).ready(function () {
+    for (var i = 0; i < matches; i++) {
+      if ($("#id_userform-" + i + "-role option:selected").val() == '3') {
+        $("#id_userform-" + i + "-role option:not(:selected)").prop('disabled', true);
+      }
+    }
+  });
+
   $("#selectAll").click(function () {
     $("input[name^='userform-']").prop('checked', $(this).prop('checked'));
   });

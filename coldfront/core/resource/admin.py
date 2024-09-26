@@ -22,7 +22,7 @@ class ResourceTypeAdmin(admin.ModelAdmin):
 @admin.register(ResourceAttributeType)
 class ResourceAttributeTypeAdmin(SimpleHistoryAdmin):
     list_display = ('pk', 'name', 'attribute_type_name', 'is_required', 'is_unique_per_resource', 'is_value_unique', 'created', 'modified', )
-    search_fields = ('name', 'attribute_type__name', 'resource_type__name',)
+    search_fields = ('name', 'attribute_type__name',)
     list_filter = ('attribute_type__name', 'name', 'is_required', 'is_unique_per_resource', 'is_value_unique')
 
     def attribute_type_name(self, obj):
@@ -31,8 +31,12 @@ class ResourceAttributeTypeAdmin(SimpleHistoryAdmin):
 
 class ResourceAttributeInline(admin.TabularInline):
     model = ResourceAttribute
-    fields_change = ('resource_attribute_type', 'value',)
+    readonly_fields = ('resource_attribute_type_description', )
+    fields_change = ('resource_attribute_type', 'value', 'is_required', 'check_if_username_exists', 'resource_account_is_required')
     extra = 0
+
+    def resource_attribute_type_description(self, obj):
+        return obj.resource_attribute_type.description
 
     def get_fields(self, request, obj):
         if obj is None:
@@ -46,13 +50,14 @@ class ResourceAttributeInline(admin.TabularInline):
 class ResourceAdmin(SimpleHistoryAdmin):
     # readonly_fields_change = ('resource_type', )
     fields_change = ('resource_type', 'parent_resource', 'is_allocatable', 'name', 'description', 'is_available',
-                     'is_public', 'requires_payment', 'allowed_groups', 'allowed_users', 'linked_resources')
+                     'is_public', 'requires_payment', 'requires_user_roles', 'review_groups', 'allowed_groups', 'allowed_users',
+                     'linked_resources')
     list_display = ('pk', 'name', 'description', 'parent_resource', 'is_allocatable', 'resource_type_name',
                     'is_available', 'is_public', 'created', 'modified', )
     search_fields = ('name', 'description', 'resource_type__name')
     list_filter = ('resource_type__name', 'is_allocatable', 'is_available', 'is_public', 'requires_payment' )
     inlines = [ResourceAttributeInline, ]
-    filter_horizontal = ['allowed_groups', 'allowed_users', 'linked_resources', ]
+    filter_horizontal = ['review_groups', 'allowed_groups', 'allowed_users', 'linked_resources', ]
     save_as = True
 
     def resource_type_name(self, obj):
@@ -67,7 +72,7 @@ class ResourceAdmin(SimpleHistoryAdmin):
 
 @admin.register(ResourceAttribute)
 class ResourceAttributeAdmin(SimpleHistoryAdmin):
-    list_display = ('pk', 'resource_name', 'value', 'resource_attribute_type_name', 'created', 'modified', )
+    list_display = ('pk', 'resource_name', 'value', 'is_required', 'check_if_username_exists', 'resource_account_is_required', 'resource_attribute_type_name', 'created', 'modified', )
     search_fields = ('resource__name', 'resource_attribute_type__name', 'value')
     list_filter = ('resource_attribute_type__name', )
 

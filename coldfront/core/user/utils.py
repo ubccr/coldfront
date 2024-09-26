@@ -9,6 +9,10 @@ from coldfront.core.utils.common import import_from_settings
 
 logger = logging.getLogger(__name__)
 
+SLATE_PROJECT_MAX_ALLOCATED_STORAGE = import_from_settings(
+    'SLATE_PROJECT_MAX_ALLOCATED_STORAGE', 60
+)
+
 class UserSearch(abc.ABC):
 
     def __init__(self, user_search_string, search_by):
@@ -75,17 +79,16 @@ class CombinedUserSearch:
 
     def __init__(self, user_search_string, search_by, usernames_names_to_exclude=[]):
         self.USER_SEARCH_CLASSES = import_from_settings('ADDITIONAL_USER_SEARCH_CLASSES', [])
-        self.USER_SEARCH_CLASSES.insert(0, 'coldfront.core.user.utils.LocalUserSearch')
+        if 'coldfront.core.user.utils.LocalUserSearch' not in self.USER_SEARCH_CLASSES:
+            self.USER_SEARCH_CLASSES.insert(0, 'coldfront.core.user.utils.LocalUserSearch')
         self.user_search_string = user_search_string
         self.search_by = search_by
         self.usernames_names_to_exclude = usernames_names_to_exclude
 
     def search(self):
-
         matches = []
         usernames_not_found = []
         usernames_found = []
-
 
         for search_class in self.USER_SEARCH_CLASSES:
             cls = import_string(search_class)
@@ -114,3 +117,33 @@ class CombinedUserSearch:
             'usernames_not_found': usernames_not_found
         }
         return context
+
+
+def generate_allocated_slate_storage_chart_data(user):
+    allocated_slate_storage_data_columns = []
+    allocated_slate_storage_data_names = {}
+    total_allocated_slate_storage = 0
+    projects = user.project_set.filter(pi=user, status__name='Active')
+    for project in projects:
+        allocations = project.allocation_set.filter(
+            status__name='Active'
+        )
+        for allocation in allocations:
+            if allocation.get_parent_resource.name == 'Slate-Project':
+                label = str(allocation.pk)
+                allocated_slate_storage_data_columns.append([label, allocation.storage_space])
+                allocated_slate_storage_data_names[label] = 'ID: {}'.format(label)
+                total_allocated_slate_storage += allocation.storage_space
+
+    allocated_slate_storage_data_columns.append(
+        ['Remaining', SLATE_PROJECT_MAX_ALLOCATED_STORAGE - total_allocated_slate_storage]
+    )
+    chart_data = {
+        "columns": allocated_slate_storage_data_columns,
+        "names": allocated_slate_storage_data_names,
+        "type": 'pie',
+        "colors": {
+            'Remaining': '#808080'
+        },
+    }
+    return chart_data

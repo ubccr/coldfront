@@ -1,0 +1,1 @@
+A new request for project "{{project_title}}" with id {{project_id}} has been submitted. You can view it here: {{ url }}

@@ -261,7 +261,7 @@ Allocation Detail
                   {% elif change_request.status.name == 'Denied' %}
                     <td class="text-danger">{{ change_request.status.name }}</td>
                   {% else %}
-                    <td class="text-info">{{ change_request.status.name }}</td>
+                    <td class="text-primary">{{ change_request.status.name }}</td>
                   {% endif %}
                   </td>
                   {% if change_request.notes %}
@@ -325,7 +325,7 @@ Allocation Detail
               {% elif user.status.name == 'Denied' or user.status.name == 'Error' %}
                 <td class="text-danger">{{ user.status.name }}</td>
               {% else %}
-                <td class="text-info">{{ user.status.name }}</td>
+                <td class="text-primary">{{ user.status.name }}</td>
               {% endif %}
               <td>{{ user.modified|date:"M. d, Y" }}</td>
             </tr>

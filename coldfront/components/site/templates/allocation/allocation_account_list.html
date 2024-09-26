@@ -1,0 +1,44 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Allocation Accounts
+{% endblock %}
+
+
+{% block content %}
+<h2>Allocation Accounts</h2>
+
+<div class="card mb-3 bg-light">
+  <div class="card-body">
+    <a class="btn btn-success" href="{% url 'add-allocation-account' %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add Allocation Account</a>
+  </div>
+</div>
+
+{% if allocationaccount_list %}
+  <div class="table-responsive">
+    <table class="table table-sm">
+      <thead>
+        <tr>
+          <th scope="col">Name</th>
+          <th scope="col">Created</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for account in allocationaccount_list %}
+          <tr>
+            <td>{{ account.name }}</td>
+            <td>{{ account.created }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="alert alert-info">
+    You have not added any allocation accounts!
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,27 @@
+Dear {{ center_name }} user,
+
+Your allocation request for {{ resource }} has been activated and it may take up to 2 hours for these changes to propagate through the system.
+
+To view your allocations information, please go to {{ allocation_url }}
+
+The Carbonate system consists of 72 compute nodes, each with 256 GB of RAM and two 12-core Intel Xeon E5-2680 v3 CPUs, and 8 large-memory compute nodes, each with 512 GB of RAM and two 12-core Intel Xeon E5-2680 v3 CPUs.
+The system also consists of 12 deep learning nodes, each with 192 GB of RAM, two Intel Xeon Gold 6126 12-core CPUs, and two NVIDIA GPU accelerators (eight with Tesla P100s; four with Tesla V100s), and 24 gpu-accelerated nodes, each with 768 GB of RAM, two Intel 6248 2.5 GHz 20-core CPUs, and 4 NVIDIA V100-PCIE-32GB GPUs.
+
+The system is managed via the Slurm scheduler. You can log into a Carbonate login node and submit jobs to one of the available partitions. The partitions are debug, interactive, general, largememory, gpu, gpu-debug, dl, and dl-debug.
+You will need to specify the required GPU resource for each job using the gpus tag. For example to request 2 GPUs per requested node: #SBATCH --gpus-per-node=2
+
+For information on Carbonate, you can refer to the Knowledge Base article https://kb.iu.edu/d/aolp.
+For information on the GPU nodes you can refer to the Knowledge Base article https://kb.iu.edu/d/avjk.
+
+Another article https://kb.iu.edu/d/awrz, contains more information on the Slurm scheduler. If you need help using the Slurm scheduler please don’t hesitate to contact us at {{ help_url }}.
+
+To use this new account you will need to add this line to your job script:
+#SBATCH -A {{ slurm_account_name }}
+
+Interactive jobs will require this:
+srun -A {{ slurm_account_name }} <commands>
+
+If you would like assistance with the development and optimization of your workflow, please contact us at {{ help_url }}. Thanks!
+
+Thank you,
+{{ signature }}

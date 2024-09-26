@@ -14,6 +14,10 @@ Center Summary
 <h2>{% settings_value 'CENTER_NAME' %} Scientific Impact</h2>
 <hr>
 
+<!-- Start Tableau Dashboards -->
+<script type='text/javascript' src='https://tableau.bi.iu.edu/javascripts/api/viz_v1.js'></script><div class='tableauPlaceholder' style='width: 80%; height: 1527px;'><object class='tableauViz' width='100%' height='1527' style='display:none;'><param name='host_url' value='https%3A%2F%2Ftableau.bi.iu.edu%2F' /> <param name='embed_code_version' value='3' /> <param name='site_root' value='&#47;t&#47;prd' /><param name='name' value='ColdFrontSheets&#47;Dashboard1' /><param name='tabs' value='no' /><param name='toolbar' value='yes' /><param name='showAppBanner' value='false' /></object></div>
+<!-- End Tableau Dashboards -->
+<br>
 <!-- Start  Publications -->
 <div class="card mb-3 border-primary">
   <div class="card-header bg-primary text-white">
@@ -24,7 +28,7 @@ Center Summary
     <strong>Total Publications:</strong> {{total_publications_count}}
   </div>
 </div>
-<!-- End Publications -->
+ <!-- End Publications -->
 
 <!-- Start  Research Outputs -->
 <div class="card mb-3 border-primary">
@@ -35,9 +39,10 @@ Center Summary
     <strong>Total Publications:</strong> {{total_research_outputs_count}}
   </div>
 </div>
-<!-- End Research Outputs -->
+ <!-- End Research Outputs -->
 
 <!-- Start  Grants -->
+<!-- Hiding, we aren't collecting this
 <div class="card mb-3 border-primary">
   <div class="card-header bg-primary text-white">
     <i class="fas fa-trophy" aria-hidden="true"></i> User Grants Summary
@@ -51,6 +56,8 @@ Center Summary
     <strong> Grants Total Senior Personnel Only:</strong> ${{grants_total_sp_only}}
   </div>
 </div>
+
+-->
 <!-- End Grants -->
 
 <!-- Start Allocation by Field of Science -->
@@ -67,7 +74,7 @@ Center Summary
 </div>
 <!-- End Allocation by Field of Science -->
 
-<!-- Start Allocation Charts -->
+<!-- Start Allocation Charts --> 
 <div class="card mb-3 border-primary">
   <div class="card-header bg-primary text-white">
     <i class="fas fa-trophy"></i> Resources and Allocations Summary
@@ -79,7 +86,7 @@ Center Summary
     </div>
   </div>
 </div>
-<!-- End Allocation Charts -->
+ <!-- End Allocation Charts -->
 
 <script>
   $("#navbar-main > ul > li.active").removeClass("active")

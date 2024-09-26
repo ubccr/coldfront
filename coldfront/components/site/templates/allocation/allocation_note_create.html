@@ -1,0 +1,23 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load common_tags %}
+{% load static %}
+
+
+{% block title %}
+Add Allocation Notification
+{% endblock %}
+
+
+{% block content %}
+<h2>Adding notification to {{allocation.get_parent_resource}} for PI {{ allocation.project.pi.first_name }}
+  {{ allocation.project.pi.last_name }} ({{ allocation.project.pi.username }})</h2>
+
+<form method="post">
+  {% csrf_token %}
+  {{form |crispy}}
+  <input class="btn btn-success" type="submit" value="Add" />
+  <a class="btn btn-secondary" href="{% url 'allocation-detail' allocation.pk %}" role="button">Back to
+    Allocation</a><br>
+</form>
+{% endblock %}

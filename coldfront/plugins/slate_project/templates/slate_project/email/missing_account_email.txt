@@ -1,0 +1,12 @@
+Dear {{center_name}} user,
+
+You have been added to an active slate project allocation but you do not have a slate project account.
+In order to access your new slate project's storage space you will need to visit https://access.iu.edu/Accounts/Create and create a Slate Project account.
+It can take up to an hour for your account to be created.
+
+If you are the PI of this project you are receiving this email as a courtesy.
+
+If you have any questions please contact {{help_email}}.
+
+Thank you,
+{{signature}}
