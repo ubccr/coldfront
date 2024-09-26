@@ -160,22 +160,12 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         allocation_users = allocation_obj.allocationuser_set.exclude(
             status__name__in=['Removed']).order_by('user__username')
 
-        if self.request.user.is_superuser or self.request.user.has_perm('allocation.view_allocationattribute'):
-            attributes_with_usage = [attribute for attribute in allocation_obj.allocationattribute_set.all(
-            ).order_by('allocation_attribute_type__name') if hasattr(attribute, 'allocationattributeusage')]
-
-            attributes = [attribute for attribute in allocation_obj.allocationattribute_set.all(
-            ).order_by('allocation_attribute_type__name')]
-
-        else:
-            attributes_with_usage = [attribute for attribute in allocation_obj.allocationattribute_set.filter(
-                allocation_attribute_type__is_private=False) if hasattr(attribute, 'allocationattributeusage')]
-
-            attributes = [attribute for attribute in allocation_obj.allocationattribute_set.filter(
-                allocation_attribute_type__is_private=False)]
+        # set visible usage attributes
+        alloc_attr_set = allocation_obj.get_attribute_set(self.request.user)
+        attributes_with_usage = [a for a in alloc_attr_set if hasattr(a, 'allocationattributeusage')]
+        attributes = alloc_attr_set
 
         allocation_changes = allocation_obj.allocationchangerequest_set.all().order_by('-pk')
-        allocation_changes_enabled = allocation_obj.is_changeable
 
         guage_data = []
         invalid_attributes = []

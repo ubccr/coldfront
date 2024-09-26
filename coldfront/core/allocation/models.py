@@ -284,6 +284,20 @@ class Allocation(TimeStampedModel):
                 return [a.typed_value() for a in attr]
             else:
                 return [a.value for a in attr]
+            
+    def get_attribute_set(self, user):
+        """
+        Params:
+            user (User): user for whom to return attributes
+
+        Returns:
+            list[AllocationAttribute]: returns the set of attributes the user is allowed to see (if superuser, then all allocation attributes; else, only non-private ones)
+        """
+
+        if user.is_superuser:
+            return self.allocationattribute_set.all().order_by('allocation_attribute_type__name')
+
+        return self.allocationattribute_set.filter(allocation_attribute_type__is_private=False).order_by('allocation_attribute_type__name')
 
     def user_permissions(self, user, permission=''):
         """
