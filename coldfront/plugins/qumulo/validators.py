@@ -156,13 +156,21 @@ def validate_storage_name(value: str):
     return
 
 
-def validate_storage_root(value: str):
-    is_absolute_path = PurePath(value).is_absolute()
-    storage_root = os.environ.get("STORAGE2_PATH").strip("/")
+# def validate_storage_root(value: str):
+#     is_absolute_path = PurePath(value).is_absolute()
+#     storage_root = os.environ.get("STORAGE2_PATH").strip("/")
+# 
+#     if is_absolute_path and not value.startswith(f"/{storage_root}"):
+#         raise ValidationError(
+#             message=f"{value} must start with '/{storage_root}'",
+#             code="invalid",
+#         )
 
-    if is_absolute_path and not value.startswith(f"/{storage_root}"):
+def validate_relative_path(value: str):
+    is_absolute_path = PurePath(value).is_absolute()
+    if is_absolute_path:
         raise ValidationError(
-            message=f"{value} must start with '/{storage_root}'",
+            message=gettext_lazy("Only relative paths are allowed"),
             code="invalid",
         )
 
