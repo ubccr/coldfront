@@ -81,41 +81,11 @@ class AcesManager(object):
                 "WRITE_EA",
             ],
         },
-    ]
-    readme_aces = [
         {
-            "flags": ["OBJECT_INHERIT"],
             "type": "ALLOWED",
-            "trustee": {
-                "name": "rw_groupname",
-                "domain": "README",
-            },
+            "trustee": {"name": "everyone", "domain": "README"},
             "rights": [
                 "READ",
-                "SYNCHRONIZE",
-                "READ_ACL",
-                "READ_ATTR",
-                "READ_EA",
-                "ADD_FILE",
-                "ADD_SUBDIR",
-                "DELETE_CHILD",
-                "WRITE_ATTR",
-                "WRITE_EA",
-            ],
-        },
-        {
-            "flags": ["OBJECT_INHERIT"],
-            "type": "ALLOWED",
-            "trustee": {
-                "name": "ro_groupname",
-                "domain": "README",
-            },
-            "rights": [
-                "READ",
-                "SYNCHRONIZE",
-                "READ_ACL",
-                "READ_ATTR",
-                "READ_EA",
             ],
         },
     ]
