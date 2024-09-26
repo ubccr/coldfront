@@ -62,7 +62,6 @@ from coldfront.core.project.models import (Project,
                                            ProjectUserStatusChoice,
                                            ProjectUserMessage,
                                            ProjectDescriptionRecord)
-from coldfront.core.project.signals import visit_project_detail
 from coldfront.core.publication.models import Publication
 from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.user.forms import UserSearchForm
