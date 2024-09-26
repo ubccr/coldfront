@@ -105,12 +105,3 @@ class AllocationViewTests(TestCase):
         )
 
         self.assertEqual(child_storage_name.value, "baz-general_store")
-
-    # def test_new_allocation_status_is_pending(
-    #     self,
-    #     mock_AclAllocations: MagicMock,
-    #     mock_ActiveDirectoryAPI: MagicMock,
-    # ):
-    #     AllocationView.create_new_allocation(self.form_data, self.user)
-    #     allocation = Allocation.objects.first()
-    #     self.assertEqual(allocation.status.name, "Pending")

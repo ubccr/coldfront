@@ -5,13 +5,10 @@ from coldfront.plugins.qumulo.validators import (
     validate_ad_users,
     validate_filesystem_path_unique,
     validate_parent_directory,
-    # validate_storage_root,
     validate_relative_path,
 )
 
 from coldfront.plugins.qumulo.widgets import MultiSelectLookupInput
-
-from pathlib import PurePath
 
 
 class ADUserField(forms.Field):
