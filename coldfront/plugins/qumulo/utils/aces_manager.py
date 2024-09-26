@@ -83,7 +83,7 @@ class AcesManager(object):
         },
         {
             "type": "ALLOWED",
-            "trustee": {"name": "everyone", "domain": "README.txt"},
+            "trustee": {"name": "Everyone"},
             "rights": [
                 "READ",
             ],
