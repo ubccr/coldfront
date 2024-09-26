@@ -76,12 +76,11 @@ from coldfront.core.allocation.signals import (allocation_new,
 from coldfront.core.allocation.utils import (generate_guauge_data_from_usage,
                                              get_user_resources,
                                              send_allocation_user_request_email,
-                                             send_added_user_email,
-                                             send_removed_user_email,
                                              create_admin_action,
                                              create_admin_action_for_deletion,
                                              create_admin_action_for_creation,
-                                             get_allocation_user_emails,
+                                             send_added_user_email,
+                                             send_removed_user_email,
                                              check_if_roles_are_enabled,
                                              get_default_allocation_user_role)
 from coldfront.core.project.models import (Project, ProjectUser, ProjectPermission,
@@ -908,13 +907,14 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                         f'(allocation pk={allocation_obj.pk})'
                     )
                 else:
-                    if allocation_obj.project.pi not in added_users_objs:
-                        added_users_objs.append(allocation_obj.project.pi)
-                        addtl_context = {
-                            'users': added_users_objs,
-                            'project_title': allocation_obj.project.title,
-                        }
-                        send_allocation_customer_email(allocation_obj, 'Added to Allocation', 'email/allocation_added_users.txt', addtl_context=addtl_context)
+                    allocation_added_users_emails = list(allocation_obj.project.projectuser_set.filter(
+                        user__in=added_users_objs,
+                        enable_notifications=True
+                    ).values_list('user__email', flat=True))
+                    if allocation_obj.project.pi.email not in allocation_added_users_emails:
+                        allocation_added_users_emails.append(allocation_obj.project.pi.email)
+
+                    send_added_user_email(request, allocation_obj, added_users, allocation_added_users_emails)
 
                     messages.success(
                         request,
@@ -1091,12 +1091,14 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
                         f'(allocation pk={allocation_obj.pk})'
                     )
                 else:
-                    removed_users_objs.append(allocation_obj.project.pi)
-                    addtl_context = {
-                        'users': removed_users_objs,
-                        'project_title': allocation_obj.project.title,
-                    }
-                    send_allocation_customer_email(allocation_obj, 'Removed From Allocation', 'email/allocation_removed_users.txt', addtl_context=addtl_context)
+                    allocation_removed_users_emails = list(allocation_obj.project.projectuser_set.filter(
+                        user__in=removed_users_objs,
+                        enable_notifications=True
+                    ).values_list('user__email', flat=True))
+                    if allocation_obj.project.pi.email not in allocation_removed_users_emails:
+                        allocation_removed_users_emails.append(allocation_obj.project.pi.email)
+
+                    send_removed_user_email(allocation_obj, removed_users, allocation_removed_users_emails)
                     messages.success(
                         request, 'Removed user(s) {} from allocation.'.format(', '.join(removed_users))
                     )
