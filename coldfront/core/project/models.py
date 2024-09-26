@@ -33,15 +33,6 @@ class ProjectPermission(Enum):
     PI = 'pi'
     UPDATE = 'update'
 
-
-class ProjectPermission(Enum):
-    """ A project permission stores the user, manager, pi, and update fields of a project. """
-
-    USER = 'user'
-    MANAGER = 'manager'
-    PI = 'pi'
-    UPDATE = 'update'
-
 class ProjectStatusChoice(TimeStampedModel):
     """ A project status choice indicates the status of the project. Examples include Active, Archived, and New. 
     
@@ -64,6 +55,17 @@ class ProjectStatusChoice(TimeStampedModel):
     def natural_key(self):
         return (self.name,)
 
+
+class ProjectTypeChoice(TimeStampedModel):
+    name = models.CharField(max_length=64)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ('name',)
+
+
 class Project(TimeStampedModel):
     """ A project is a container that includes users, allocations, publications, grants, and other research output. 
     
@@ -78,7 +80,7 @@ class Project(TimeStampedModel):
     """
     class Meta:
         ordering = ['title']
-        unique_together = ('title', 'pi')
+        # unique_together = ('title', 'pi')
 
         permissions = (
             ("can_view_all_projects", "Can view all projects"),
@@ -89,18 +91,6 @@ class Project(TimeStampedModel):
         def get_by_natural_key(self, title, pi_username):
             return self.get(title=title, pi__username=pi_username)
 
-
-class ProjectTypeChoice(TimeStampedModel):
-    name = models.CharField(max_length=64)
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        ordering = ('name',)
-
-
-class Project(TimeStampedModel):
     DEFAULT_DESCRIPTION = ''
     DESCRIPTION_HELP_TEXT = """
 Please provide a brief description or abstract about your project including any applications or

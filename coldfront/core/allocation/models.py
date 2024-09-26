@@ -53,11 +53,6 @@ class AllocationPermission(Enum):
     USER = 'USER'
     MANAGER = 'MANAGER'
 
-class AllocationPermission(Enum):
-    """ A project permission stores the user and manager fields of a project. """
-
-    USER = 'USER'
-    MANAGER = 'MANAGER'
 
 class AllocationStatusChoice(TimeStampedModel):
     """ A project status choice indicates the status of the project. Examples include Active, Archived, and New. 
@@ -433,58 +428,6 @@ class Allocation(TimeStampedModel):
 
         return None
 
-    def get_attribute_set(self, user):
-        """
-        Params:
-            user (User): user for whom to return attributes
-
-        Returns:
-            list[AllocationAttribute]: returns the set of attributes the user is allowed to see (if superuser, then all allocation attributes; else, only non-private ones)
-        """
-
-        if user.is_superuser:
-            return self.allocationattribute_set.all().order_by('allocation_attribute_type__name')
-
-        return self.allocationattribute_set.filter(allocation_attribute_type__is_private=False).order_by('allocation_attribute_type__name')
-
-    def user_permissions(self, user):
-        """
-        Params:
-            user (User): user for whom to return permissions
-
-        Returns:
-            list[AllocationPermission]: list of user permissions for the allocation
-        """
-
-        if user.is_superuser:
-            return list(AllocationPermission)
-
-        project_perms = self.project.user_permissions(user)
-
-        if ProjectPermission.USER not in project_perms:
-            return []
-
-        if ProjectPermission.PI in project_perms or ProjectPermission.MANAGER in project_perms:
-            return [AllocationPermission.USER, AllocationPermission.MANAGER]
-
-        if self.allocationuser_set.filter(user=user, status__name__in=['Active', 'New', ]).exists():
-            return [AllocationPermission.USER]
-
-        return []
-
-    def has_perm(self, user, perm):
-        """
-        Params:
-            user (User): user to check permissions for
-            perm (AllocationPermission): permission to check for in user's list
-
-        Returns:
-            bool: whether or not the user has the specified permission
-        """
-
-        perms = self.user_permissions(user)
-        return perm in perms
-
     def __str__(self):
         return "%s (%s)" % (self.get_parent_resource.name, self.project.pi)
 
@@ -772,6 +715,20 @@ class AllocationUser(TimeStampedModel):
     status = models.ForeignKey(AllocationUserStatusChoice, on_delete=models.CASCADE,
                                verbose_name='Allocation User Status')
     history = HistoricalRecords()
+
+    def is_active(self):
+        """Helper function returns True if allocation user status == Active and
+           allocation status is one of the accepted active states where users
+           should be considered active and have actions taken on them (i.e. 
+           groups added, accounts created in other systems, etc.)"""
+
+        active_allocation_statuses = [
+            'Active',
+            'Renewal Requested',
+        ]
+
+        return self.status.name == 'Active' and self.allocation.status.name in active_allocation_statuses
+
 
     def __str__(self):
         return '%s' % (self.user)

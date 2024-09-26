@@ -52,7 +52,7 @@ urlpatterns = [
          name="project-deny-request"),
     path('project-review-approve/<int:pk>/', project_views.ProjectReviewApproveView.as_view(),
          name='project-review-approve'),
-    ath('project-review-deny/<int:pk>/', project_views.ProjectReviewDenyView.as_view(),
+    path('project-review-deny/<int:pk>/', project_views.ProjectReviewDenyView.as_view(),
          name='project-review-deny'),
     path('project-review-info/<int:pk>/', project_views.ProjectReviewInfoView.as_view(),
          name='project-review-info'),

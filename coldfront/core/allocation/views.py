@@ -429,8 +429,7 @@ class AllocationListView(LoginRequiredMixin, ListView):
 
                     (Q(project__projectuser__role__name='Manager') |
                     Q(allocationuser__user=self.request.user) &
-                    Q(allocationuser__status__name='Active'))
-                    Q(allocationuser__status__name__in= ['Active', 'Pending - Remove', 'Eligible', 'Disabled', 'Retired'])
+                    Q(allocationuser__status__name__in= ['Active', 'Pending - Remove', 'Eligible', 'Disabled', 'Retired']))
                 ).distinct().order_by(order_by)
 
             # Project Title
