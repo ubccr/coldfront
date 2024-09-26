@@ -1130,21 +1130,16 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         return False
 
     def dispatch(self, request, *args, **kwargs):
-        allocation_obj = get_object_or_404(
-            Allocation, pk=self.kwargs.get('pk'))
+        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
 
+        message = None
         if allocation_obj.is_locked and not self.request.user.is_superuser:
-            messages.error(
-                request, 'You cannot modify this allocation because it is locked! Contact support for details.')
+            message = 'You cannot modify this allocation because it is locked! Contact support for details.'
+        elif allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', 'Payment Pending', 'Payment Requested', 'Paid']:
+            message = f'You cannot add users to an allocation with status {allocation_obj.status.name}.'
+        if message:
+            messages.error(request, message)
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
-
-        if allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', 'Payment Pending', 'Payment Requested', 'Paid', 'Billing Information Submitted']:
-            messages.error(
-                request,
-                'You cannot add users to an allocation with status "{}".'.format(allocation_obj.status.name)
-            )
-            return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
-
         return super().dispatch(request, *args, **kwargs)
 
     def get_users_to_add(self, allocation_obj):
@@ -1400,21 +1395,16 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
         return False
 
     def dispatch(self, request, *args, **kwargs):
-        allocation_obj = get_object_or_404(
-            Allocation, pk=self.kwargs.get('pk'))
+        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
 
+        message = None
         if allocation_obj.is_locked and not self.request.user.is_superuser:
-            messages.error(
-                request, 'You cannot modify this allocation because it is locked! Contact support for details.')
+            message = 'You cannot modify this allocation because it is locked! Contact support for details.'
+        elif allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', ]:
+            message = f'You cannot remove users from a allocation with status {allocation_obj.status.name}.'
+        if message:
+            messages.error(request, message)
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
-
-        if allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', 'Paid', 'Payment Pending', 'Payment Requested', 'Billing Information Submitted']:
-            messages.error(
-                request,
-                'You cannot remove users from an allocation with status "{}".'.format(allocation_obj.status.name)
-            )
-            return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
-
         return super().dispatch(request, *args, **kwargs)
 
     def get_users_to_remove(self, allocation_obj):
