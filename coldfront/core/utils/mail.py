@@ -86,12 +86,15 @@ def build_link(url_path, domain_url=''):
         domain_url = CENTER_BASE_URL
     return f'{domain_url}{url_path}'
 
-def send_admin_email_template(subject, template_name, template_context):
+def send_admin_email_template(allocation_obj, subject, template_name, template_context):
     """Helper function for sending admin emails using a template
     """
-    send_email_template(subject, template_name, template_context, EMAIL_SENDER, [EMAIL_TICKET_SYSTEM_ADDRESS, ])
+    email_recipient = get_email_recipient_from_groups(
+        allocation_obj.get_parent_resource.review_groups.all()
+    )
+    send_email_template(subject, template_name, template_context, EMAIL_SENDER, [email_recipient, ])
 
-def send_allocation_admin_email(allocation_obj, subject, template_name, url_path='', domain_url=''):
+def send_allocation_admin_email(allocation_obj, subject, template_name, url_path='', domain_url='', addtl_context = None):
     """Send allocation admin emails
     """
     if not url_path:
@@ -106,7 +109,11 @@ def send_allocation_admin_email(allocation_obj, subject, template_name, url_path
     ctx['resource'] = resource_name
     ctx['url'] = url
 
+    if addtl_context:
+        ctx.update(addtl_context)
+
     send_admin_email_template(
+        allocation_obj,
         f'{subject}: {pi_name} - {resource_name}',
         template_name,
         ctx,
