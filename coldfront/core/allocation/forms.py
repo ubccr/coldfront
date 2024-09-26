@@ -229,7 +229,7 @@ class AllocationForm(forms.Form):
             'url',
             'primary_contact',
             'secondary_contact',
-            'it_pros',
+            'it_pro',
             'department_full_name',
             'department_short_name',
             'campus_affiliation',
