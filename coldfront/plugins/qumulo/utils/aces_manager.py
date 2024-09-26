@@ -82,6 +82,7 @@ class AcesManager(object):
             ],
         },
         {
+            "flags": [],
             "type": "ALLOWED",
             "trustee": {"name": "Everyone"},
             "rights": [
