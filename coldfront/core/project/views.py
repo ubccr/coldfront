@@ -154,7 +154,6 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        visit_project_detail.send(sender=self.__class__, project_pk=self.object.pk)
         allocation_submitted = self.request.GET.get('allocation_submitted')
         after_project_creation_get = self.request.GET.get('after_project_creation')
         context['display_modal'] = 'false'
