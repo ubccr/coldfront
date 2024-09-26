@@ -29,9 +29,6 @@ class ADUserField(forms.Field):
 
 class StorageFileSystemPathField(forms.CharField):
     default_validators = [
-        # validate_relative_path,
-        # calling validate_relative_path directly rather than as part of default validators
-        # validate_storage_root,
         validate_parent_directory,
         validate_filesystem_path_unique,
     ]
