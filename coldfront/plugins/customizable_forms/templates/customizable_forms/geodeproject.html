@@ -248,20 +248,12 @@ Request New Allocation
   }
 
   $(document).ready(function () {
-    var date = new Date();
-    var currentYear = date.getFullYear();
     $(".datepicker")
-    .wrap('<div class="input-group">')
-    .datepicker({
-      changeMonth: true,
-      changeYear: true,
-      minDate: 0,
-      maxDate: "+5Y",
-      showOn: "button",
-      buttonText: "Select Date"
+    .flatpickr({
+      minDate: "today",
+      maxDate: new Date().fp_incr(356 * 5),
+      dateFormat: "m/d/Y",
     })
-    .next("button")
-    .addClass("btn btn-secondary")
 
     $(
       '<br>\
@@ -286,12 +278,10 @@ Request New Allocation
 
     $('#id_use_indefinitely').change(function (e) {
       if (e.target.checked) {
-        $('#id_end_date').prop('disabled', true);
-        $('#div_id_end_date button').prop('disabled', true);
+        $('#id_end_date').hide();
         $('#id_end_date').val('')
       } else {
-        $('#id_end_date').prop('disabled', false);
-        $('#div_id_end_date button').prop('disabled', false);
+        $('#id_end_date').show();
       }
     });
 

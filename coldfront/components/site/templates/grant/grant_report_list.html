@@ -46,13 +46,13 @@ Grants Report
                 <td class="text-nowrap"><a href="{% url 'project-detail' form.project_pk.value %}">{{ form.pi_first_name.value }} {{ form.pi_last_name.value }}</a></td>
                 <td class="text-nowrap">{{ form.role.value }}</td>
                 <td class="text-nowrap">{{ form.grant_pi.value }}</td>
-                <td class="text-nowrap">{{ form.total_amount_awarded.value|intcomma }}</td>
+                <td class="text-nowrap">{{ form.total_amount_awarded.value|floatformat:2|intcomma }}</td>
                 <td class="text-nowrap">{{ form.funding_agency.value }}</td>
                 <td class="text-nowrap">{{ form.grant_number.value }}</td>
                 <td class="text-nowrap">{{ form.grant_start.value|date:"M. d, Y" }}</td>
                 <td class="text-nowrap">{{ form.grant_end.value|date:"M. d, Y" }}</td>
-                <td>{{ form.percent_credit.value }}</td>
-                <td>{{ form.direct_funding.value|intcomma }}</td>
+                <td>{{ form.percent_credit.value|floatformat:2|intcomma }}</td>
+                <td>{{ form.direct_funding.value|floatformat:2|intcomma }}</td>
               </tr>
             {% endfor %}
           </tbody>
