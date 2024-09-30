@@ -55,10 +55,17 @@ Project User Detail
               <th scope="row">Role:</th>
               <td>{{project_user_update_form.role}}</td>
             </tr>
+            {% if project_user_obj.role.name == "Manager" %}
+            <tr>
+              <th scope="row">Enable Notifications:</th>
+              <td>Notifications cannot be disabled if the user is a Manager</td>
+            </tr>
+            {% else %}
             <tr>
               <th scope="row">Enable Notifications:</th>
               <td>{{project_user_update_form.enable_notifications}}</td>
             </tr>
+            {% endif %}
           {% endif %}
         </table>
       </div>

@@ -3,6 +3,7 @@ nav:
   - install.md
   - config.md
   - upgrading.md
-  - plugin.md
+  - Plugins: plugin
   - Deployment: deploy.md
-  - manual
+  - How To: howto
+  - API: apidocs

@@ -1,6 +1,8 @@
 from django import forms
 
+from coldfront.core.resource.models import ResourceAttribute
 
+from django.db.models.functions import Lower
 class ResourceSearchForm(forms.Form):
     """ Search form for the Resource list page.
     """
@@ -38,3 +40,12 @@ class ResourceAttributeDeleteForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['pk'].widget = forms.HiddenInput()
+
+
+class ResourceAttributeCreateForm(forms.ModelForm):
+    class Meta:
+        model = ResourceAttribute
+        fields = '__all__'
+    def __init__(self, *args, **kwargs):
+        super(ResourceAttributeCreateForm, self).__init__(*args, **kwargs) 
+        self.fields['resource_attribute_type'].queryset = self.fields['resource_attribute_type'].queryset.order_by(Lower('name'))

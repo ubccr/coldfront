@@ -17,7 +17,8 @@ from coldfront.core.grant.models import (Grant, GrantFundingAgency,
                                          GrantStatusChoice)
 from coldfront.core.project.models import (Project, ProjectStatusChoice,
                                            ProjectUser, ProjectUserRoleChoice,
-                                           ProjectUserStatusChoice,
+                                           ProjectUserStatusChoice, ProjectAttribute
+                                           , ProjectAttributeType, AttributeType,
                                            ProjectTypeChoice)
 from coldfront.core.publication.models import Publication, PublicationSource
 from coldfront.core.resource.models import (Resource, ResourceAttribute,
@@ -202,6 +203,34 @@ class Command(BaseCommand):
             end_date = datetime.date.today() + datetime.timedelta(days=365),
             max_managers=2,
             type=ProjectTypeChoice.objects.get(name='Research')
+        )
+
+        AttributeType.objects.get_or_create(
+            name='Int'
+        )
+
+        ProjectAttributeType.objects.get_or_create(
+            attribute_type=AttributeType.objects.get(name='Text'),
+            name='Project ID',
+            is_private=False,
+        )
+
+        ProjectAttributeType.objects.get_or_create(
+            attribute_type=AttributeType.objects.get(name='Int'),
+            name='Account Number',
+            is_private=True,
+        )
+
+        ProjectAttribute.objects.get_or_create(
+            proj_attr_type=ProjectAttributeType.objects.get(name='Project ID'),
+            project=project_obj,
+            value=1242021,
+        )
+
+        ProjectAttribute.objects.get_or_create(
+            proj_attr_type=ProjectAttributeType.objects.get(name='Account Number'),
+            project=project_obj,
+            value=1756522,
         )
 
         univ_hpc = Resource.objects.get(name='University HPC')

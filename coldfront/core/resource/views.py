@@ -13,7 +13,7 @@ from django.urls import reverse
 from django.views.generic import TemplateView, ListView
 from django.views.generic.edit import CreateView
 
-from coldfront.core.resource.forms import ResourceSearchForm, ResourceAttributeDeleteForm
+from coldfront.core.resource.forms import ResourceAttributeCreateForm, ResourceSearchForm, ResourceAttributeDeleteForm
 from coldfront.core.resource.models import Resource, ResourceAttribute
 from coldfront.core.utils.groups import check_if_groups_in_review_groups
 
@@ -49,7 +49,7 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
     def get_child_resources(self, resource_obj):
         child_resources = [resource for resource in resource_obj.resource_set.all(
-        ).order_by('name')]
+        ).order_by(Lower("name"))]
 
         child_resources = [
 
@@ -84,7 +84,8 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
 class ResourceAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = ResourceAttribute
-    fields = '__all__'
+    form_class = ResourceAttributeCreateForm
+    # fields = '__all__'
     template_name = 'resource_resourceattribute_create.html'
 
     def test_func(self):

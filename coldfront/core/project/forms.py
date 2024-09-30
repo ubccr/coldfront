@@ -1,12 +1,15 @@
 import datetime
 
 from django import forms
+from django.db.models.functions import Lower
 from django.shortcuts import get_object_or_404
-from django.core.validators import MinLengthValidator
+from ast import Constant
+from django.db.models.functions import Lower
+from cProfile import label
 
-from coldfront.core.project.models import (Project, ProjectReview,
-                                           ProjectUserRoleChoice,
-                                           ProjectStatusChoice,)
+from coldfront.core.project.models import (Project, ProjectAttribute, ProjectAttributeType, ProjectReview,
+                                           ProjectUserRoleChoice, ProjectStatusChoice)
+from django.core.validators import MinLengthValidator
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.field_of_science.models import FieldOfScience
 from django.core.validators import MinLengthValidator
@@ -42,7 +45,7 @@ class ProjectSearchForm(forms.Form):
 
 class ProjectAddUserForm(forms.Form):
     username = forms.CharField(max_length=150, disabled=True)
-    first_name = forms.CharField(max_length=30, required=False, disabled=True)
+    first_name = forms.CharField(max_length=150, required=False, disabled=True)
     last_name = forms.CharField(max_length=150, required=False, disabled=True)
     email = forms.EmailField(max_length=100, required=False, disabled=True)
     source = forms.CharField(max_length=16, disabled=True)
@@ -61,7 +64,7 @@ class ProjectAddUsersToAllocationForm(forms.Form):
 
 class ProjectRemoveUserForm(forms.Form):
     username = forms.CharField(max_length=150, disabled=True)
-    first_name = forms.CharField(max_length=30, required=False, disabled=True)
+    first_name = forms.CharField(max_length=150, required=False, disabled=True)
     last_name = forms.CharField(max_length=150, required=False, disabled=True)
     email = forms.EmailField(max_length=100, required=False, disabled=True)
     role = forms.CharField(max_length=30, disabled=True)
@@ -115,6 +118,66 @@ class ProjectReviewEmailForm(forms.Form):
         self.fields['cc'].initial = ', '.join(
             [EMAIL_DIRECTOR_EMAIL_ADDRESS] + EMAIL_ADMIN_LIST)
 
+class ProjectAttributeAddForm(forms.ModelForm):    
+    class Meta:
+        fields = '__all__'
+        model = ProjectAttribute
+        labels = {
+            'proj_attr_type' : "Project Attribute Type",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super(ProjectAttributeAddForm, self).__init__(*args, **kwargs) 
+        user =(kwargs.get('initial')).get('user')
+        self.fields['proj_attr_type'].queryset = self.fields['proj_attr_type'].queryset.order_by(Lower('name'))
+        if not user.is_superuser:
+            self.fields['proj_attr_type'].queryset = self.fields['proj_attr_type'].queryset.filter(is_private=False)
+
+class ProjectAttributeDeleteForm(forms.Form):
+    pk = forms.IntegerField(required=False, disabled=True)
+    name = forms.CharField(max_length=150, required=False, disabled=True)
+    attr_type = forms.CharField(max_length=150, required=False, disabled=True)
+    value = forms.CharField(max_length=150, required=False, disabled=True)
+    selected = forms.BooleanField(initial=False, required=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['pk'].widget = forms.HiddenInput()
+
+# class ProjectAttributeChangeForm(forms.Form):
+#     pk = forms.IntegerField(required=False, disabled=True)
+#     name = forms.CharField(max_length=150, required=False, disabled=True)
+#     value = forms.CharField(max_length=150, required=False, disabled=True)
+#     new_value = forms.CharField(max_length=150, required=False, disabled=False)
+
+#     def __init__(self, *args, **kwargs):
+#         super().__init__(*args, **kwargs)
+#         self.fields['pk'].widget = forms.HiddenInput()
+
+#     def clean(self):
+#         cleaned_data = super().clean()
+
+#         if cleaned_data.get('new_value') != "":
+#             proj_attr = ProjectAttribute.objects.get(pk=cleaned_data.get('pk'))
+#             proj_attr.value = cleaned_data.get('new_value')
+#             proj_attr.clean()
+
+
+class ProjectAttributeUpdateForm(forms.Form):
+    pk = forms.IntegerField(required=False, disabled=True)
+    new_value = forms.CharField(max_length=150, required=True, disabled=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['pk'].widget = forms.HiddenInput()
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        if cleaned_data.get('new_value') != "":
+            proj_attr = ProjectAttribute.objects.get(pk=cleaned_data.get('pk'))
+            proj_attr.value = cleaned_data.get('new_value')
+            proj_attr.clean()
 
 class ProjectRequestEmailForm(forms.Form):
     cc = forms.CharField(

@@ -105,7 +105,7 @@ Allocation List
           <tr>
             <td>{{ allocation.id }}</td>
             <td class="text-nowrap"><a 
-                href="/project/{{allocation.project.id}}/">{{ allocation.project.title|truncatechars:30 }}</a></td>
+                href="/project/{{allocation.project.id}}/">{{ allocation.project.title|truncatechars:50 }}</a></td>
             <td class="text-nowrap">{{allocation.project.pi.first_name}} {{allocation.project.pi.last_name}}
               ({{allocation.project.pi.username}})</td>
             <td class="text-nowrap">{{ allocation.get_parent_resource }}</td>
@@ -150,7 +150,7 @@ Allocation List
     resetForm($('#filter_form'));
   });
 
-  $(".datepicker").datepicker();
+  $(".datepicker").flatpickr();
 
   function resetForm($form) {
     $form.find('input:text, input:password, input:file, select, textarea').val('');
