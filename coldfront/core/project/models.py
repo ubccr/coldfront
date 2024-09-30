@@ -241,6 +241,7 @@ required to log onto the site at least once before they can be added.
         if user.is_superuser:
             return list(ProjectPermission)
 
+        permissions = [ProjectPermission.USER]
         user_conditions = (models.Q(status__name__in=('Active', 'New')) & models.Q(user=user))
         if not self.projectuser_set.filter(user_conditions).exists():
             group_exists = check_if_groups_in_review_groups(
@@ -248,12 +249,11 @@ required to log onto the site at least once before they can be added.
                 user.groups.all(),
                 permission
             )
+            permissions.append(ProjectPermission.MANAGER)
             if not group_exists:  
                 return []
 
-        permissions = [ProjectPermission.USER]
-
-        if self.projectuser_set.filter(user_conditions & models.Q(role__name='Manager')).exists() or group_exists:
+        if self.projectuser_set.filter(user_conditions & models.Q(role__name='Manager')).exists():
             permissions.append(ProjectPermission.MANAGER)
 
         if self.projectuser_set.filter(user_conditions & models.Q(project__pi_id=user.id)).exists():
