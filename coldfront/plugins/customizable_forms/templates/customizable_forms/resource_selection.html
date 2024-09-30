@@ -56,9 +56,7 @@ Choose a Resource for Your Allocation
       </div>
     </div>
   {% endfor %}
-  {% if after_project_creation == 'true' %}
-    <a class="btn btn-secondary" href="{% url 'project-add-users-search' project_obj.pk %}?after_project_creation=true" role="button">Skip this step</a><br>
-  {% else %}
+  {% if after_project_creation != 'true' %}
     <a class="btn btn-secondary" href="{% url 'project-detail' project_obj.pk %}" role="button">Back to Project</a><br>
   {% endif %}
 {% endblock %}
