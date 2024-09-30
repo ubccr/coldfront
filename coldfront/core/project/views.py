@@ -2923,9 +2923,9 @@ class ProjectAttributeUpdateView(LoginRequiredMixin, UserPassesTestMixin, Templa
             project_attribute_obj = project_obj.projectattribute_set.get(
                 pk=project_attribute_pk)
 
-            if project_obj.status.name not in ['Active', 'New', ]:
+            if project_obj.status.name not in ['Active', 'New', 'Waiting For Admin Approval', 'Contacted By Admin', 'Renewal Requested']:
                 messages.error(
-                    request, 'You cannot update an attribute in an archived project.')
+                    request, f'You cannot update an attribute in a project with status {project_obj.status.name}.')
                 return HttpResponseRedirect(reverse('project-attribute-update', kwargs={'pk': project_obj.pk, 'project_attribute_pk': project_attribute_obj.pk}))
 
             project_attribute_update_form = ProjectAttributeUpdateForm(request.POST, initial={'pk': self.kwargs.get('project_attribute_pk'),})
