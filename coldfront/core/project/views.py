@@ -1138,10 +1138,6 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
         initial_data = self.get_initial_data(request, allocations)
 
         help_text = 'Select allocations to add selected users to. If a user does not have an account on a resource in an allocation they will not be added.'
-        for allocation_info in initial_data:
-            if allocation_info['resource'] == 'Slate-Project':
-                help_text += ' Only Slate-Project allocations you are a data manager of can be selected.'
-                break
 
         allocation_formset = formset_factory(
             ProjectAddUsersToAllocationForm,
