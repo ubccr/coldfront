@@ -62,10 +62,13 @@ def get_new_end_date_from_list(expire_dates, check_date=None, buffer_days=0):
     return end_date
 
 
-def create_admin_action(user, fields_to_check, project):
-    Project_dict = model_to_dict(project)
+def create_admin_action(user, fields_to_check, project, base_model=None):
+    if base_model is None:
+        base_model = project
+    base_model_dict = model_to_dict(base_model)
+
     for key, value in fields_to_check.items():
-        project_value = Project_dict.get(key)
+        project_value = base_model_dict.get(key)
         if type(value) is not type(project_value):
             if key == 'status':
                 project_value = ProjectStatusChoice.objects.get(pk=project_value).name
@@ -108,3 +111,33 @@ def generate_slurm_account_name(project_obj):
         letter = 'c'
 
     return letter + string
+
+
+def create_admin_action_for_deletion(user, deleted_obj, project, base_model=None):
+    if base_model:
+        ProjectAdminAction.objects.create(
+            user=user,
+            project=project,
+            action=f'Deleted "{deleted_obj}" from "{base_model}" in "{project}"'
+        )
+    else:
+        ProjectAdminAction.objects.create(
+            user=user,
+            project=project,
+            action=f'Deleted "{deleted_obj}" from "{project}"'
+        )
+
+
+def create_admin_action_for_creation(user, created_obj, project, base_model=None):
+    if base_model:
+        ProjectAdminAction.objects.create(
+            user=user,
+            project=project,
+            action=f'Created "{created_obj}" in "{base_model}" in "{project}"'
+        )
+    else:
+        ProjectAdminAction.objects.create(
+            user=user,
+            project=project,
+            action=f'Created "{created_obj}" in "{project}"'
+        )
