@@ -73,7 +73,9 @@ from coldfront.core.utils.mail import send_email, send_email_template
 from coldfront.core.project.utils import (get_new_end_date_from_list,
                                           create_admin_action,
                                           get_project_user_emails,
-                                          generate_slurm_account_name)
+                                          generate_slurm_account_name,
+                                          create_admin_action_for_creation,
+                                          create_admin_action_for_deletion)
 from coldfront.core.allocation.utils import send_added_user_email, set_default_allocation_user_role
 from coldfront.core.utils.slack import send_message
 
@@ -2718,6 +2720,9 @@ class ProjectNoteCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView)
         return form
 
     def get_success_url(self):
+        logger.info(
+            f'Admin {self.request.user.username} created a project attribute (pk={self.kwargs.get("pk")})'
+        )
         return reverse('project-detail', kwargs={'pk': self.kwargs.get('pk')})
 
 class ProjectAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
@@ -2762,7 +2767,12 @@ class ProjectAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Create
 
     def get_success_url(self):
         logger.info(
-            f'Admin {self.request.user.username} created a project note (pk={self.kwargs.get("pk")})'
+            f'Admin {self.request.user.username} created a project attribute (project pk={self.object.project_id})'
+        )
+        create_admin_action_for_creation(
+            self.request.user,
+            self.object,
+            get_object_or_404(Project, pk=self.object.project_id)
         )
         return reverse('project-detail', kwargs={'pk': self.object.project_id})
 
@@ -2851,6 +2861,17 @@ class ProjectAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Templa
 
                     proj_attr.delete()
 
+                    create_admin_action_for_deletion(
+                        self.request.user,
+                        proj_attr,
+                        get_object_or_404(Project, pk=pk)
+                    )
+
+            logger.info(
+                f'Admin {self.request.user.username} deleted {attributes_deleted_count} project '
+                f'attributes (project pk={self.object.project_id})'
+            )
+
             messages.success(request, 'Deleted {} attributes from project.'.format(
                 attributes_deleted_count))
         else:
@@ -2911,6 +2932,15 @@ class ProjectAttributeUpdateView(LoginRequiredMixin, UserPassesTestMixin, Templa
 
             if project_attribute_update_form.is_valid():
                 form_data = project_attribute_update_form.cleaned_data
+                logger.info(
+                    f'Admin {request.user.username} updated a project attribute (project pk={project_obj.pk})'
+                )
+                create_admin_action(
+                    request.user,
+                    {'new_value': form_data.get('new_value')},
+                    project_obj,
+                    project_attribute_obj
+                )
                 project_attribute_obj.value = form_data.get(
                      'new_value')
                 project_attribute_obj.save()
