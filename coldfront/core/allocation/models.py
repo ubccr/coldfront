@@ -344,7 +344,7 @@ class Allocation(TimeStampedModel):
             else:
                 return [a.value for a in attr]
             
-    def get_attribute_set(self, user):
+    def get_attribute_set(self, user, permission=None):
         """
         Params:
             user (User): user for whom to return attributes
@@ -353,12 +353,17 @@ class Allocation(TimeStampedModel):
             list[AllocationAttribute]: returns the set of attributes the user is allowed to see (if superuser, then all allocation attributes; else, only non-private ones)
         """
 
-        if user.is_superuser:
+        group_exists = check_if_groups_in_review_groups(
+            self.get_parent_resource.review_groups.all(),
+            user.groups.all(),
+            permission
+        )
+        if user.is_superuser or group_exists:
             return self.allocationattribute_set.all().order_by('allocation_attribute_type__name')
 
         return self.allocationattribute_set.filter(allocation_attribute_type__is_private=False).order_by('allocation_attribute_type__name')
 
-    def user_permissions(self, user, permission=''):
+    def user_permissions(self, user, permission=None):
         """
         Params:
             user (User): user for whom to return permissions
@@ -390,7 +395,7 @@ class Allocation(TimeStampedModel):
 
         return []
     
-    def has_perm(self, user, perm, addtl_perm=''):
+    def has_perm(self, user, perm, addtl_perm=None):
         """
         Params:
             user (User): user to check permissions for

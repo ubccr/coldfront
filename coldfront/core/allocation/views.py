@@ -152,7 +152,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             status__name__in=['Removed']).order_by('user__username')
 
         # set visible usage attributes
-        alloc_attr_set = allocation_obj.get_attribute_set(self.request.user)
+        alloc_attr_set = allocation_obj.get_attribute_set(self.request.user, 'view_allocationattribute')
         attributes_with_usage = [a for a in alloc_attr_set if hasattr(a, 'allocationattributeusage')]
         attributes = alloc_attr_set
 
@@ -1811,7 +1811,7 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
         allocation_users = allocation_obj.allocationuser_set.exclude(
             status__name__in=['Removed']).order_by('user__username')
 
-        alloc_attr_set = allocation_obj.get_attribute_set(self.request.user)
+        alloc_attr_set = allocation_obj.get_attribute_set(self.request.user, 'view_allocationattribute')
 
         attributes_with_usage = [a for a in alloc_attr_set if hasattr(a, 'allocationattributeusage')]
         attributes = [a for a in alloc_attr_set]

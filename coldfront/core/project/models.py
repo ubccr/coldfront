@@ -229,7 +229,7 @@ required to log onto the site at least once before they can be added.
 
         return False
     
-    def user_permissions(self, user, permission=''):
+    def user_permissions(self, user, permission=None):
         """
         Params:
             user (User): represents the user whose permissions are to be retrieved
@@ -244,13 +244,9 @@ required to log onto the site at least once before they can be added.
         permissions = [ProjectPermission.USER]
         user_conditions = (models.Q(status__name__in=('Active', 'New')) & models.Q(user=user))
         if not self.projectuser_set.filter(user_conditions).exists():
-            group_exists = check_if_groups_in_review_groups(
-                self.get_parent_resource.review_groups.all(),
-                user.groups.all(),
-                permission
-            )
-            permissions.append(ProjectPermission.MANAGER)
-            if not group_exists:  
+            if permission and user.has_perm(permission):
+                permissions.append(ProjectPermission.MANAGER)
+            else:
                 return []
 
         if self.projectuser_set.filter(user_conditions & models.Q(role__name='Manager')).exists():
@@ -264,7 +260,7 @@ required to log onto the site at least once before they can be added.
 
         return permissions
 
-    def has_perm(self, user, perm, addtl_perm=''):
+    def has_perm(self, user, perm, addtl_perm=None):
         """
         Params:
             user (User): user to check permissions for
