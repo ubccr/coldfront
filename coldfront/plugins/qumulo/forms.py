@@ -251,7 +251,6 @@ class ProjectCreateForm(forms.Form):
 
 
 class AllocationTableSearchForm(forms.Form):
-    project_name = forms.CharField(label="Project Name", max_length=100, required=False)
     pi_last_name = forms.CharField(label="PI Surname", max_length=100, required=False)
 
     pi_first_name = forms.CharField(
