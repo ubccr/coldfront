@@ -13,6 +13,7 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationAttributeChangeRequest,
                                               AllocationStatusChoice,
                                               AllocationChangeStatusChoice,
+                                              AllocationLinkage,
                                               AllocationUser,
                                               AllocationUserNote,
                                               AllocationUserStatusChoice,
@@ -362,3 +363,6 @@ class AllocationChangeRequestAdmin(admin.ModelAdmin):
 class AllocationChangeStatusChoiceAdmin(admin.ModelAdmin):
     list_display = ('pk', 'allocation_change_request', 'allocation_attribute', 'new_value', )
 
+@admin.register(AllocationLinkage)
+class AllocationLinkageAdmin(admin.ModelAdmin):
+    list_display = ("pk", "parent")

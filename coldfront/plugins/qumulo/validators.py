@@ -156,13 +156,14 @@ def validate_storage_name(value: str):
     return
 
 
-def validate_storage_root(value: str):
-    is_absolute_path = PurePath(value).is_absolute()
-    storage_root = os.environ.get("STORAGE2_PATH").strip("/")
-
-    if is_absolute_path and not value.startswith(f"/{storage_root}"):
+def validate_relative_path(value: str):
+    path = PurePath(value)
+    if (
+        PurePath(value).is_absolute()
+        or len(path.parts) != 1
+    ):
         raise ValidationError(
-            message=f"{value} must start with '/{storage_root}'",
+            message=gettext_lazy("Only relative paths with no slashes are allowed"),
             code="invalid",
         )
 

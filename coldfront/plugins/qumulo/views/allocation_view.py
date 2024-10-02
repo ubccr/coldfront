@@ -3,7 +3,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic.edit import FormView
 from django.urls import reverse_lazy, reverse
 
-from typing import Union
+from typing import Optional
 
 import json
 import os
@@ -13,6 +13,7 @@ from coldfront.core.allocation.models import (
     AllocationAttribute,
     AllocationAttributeType,
     Project,
+    AllocationLinkage,
     AllocationStatusChoice,
     Resource,
     AllocationUserStatusChoice,
@@ -37,7 +38,7 @@ class AllocationView(LoginRequiredMixin, FormView):
         return kwargs
 
     def form_valid(
-        self, form: AllocationForm, parent_allocation: Union[Allocation, None] = None
+        self, form: AllocationForm, parent_allocation: Optional[Allocation] = None
     ):
         form_data = form.cleaned_data
         user = self.request.user
@@ -47,8 +48,18 @@ class AllocationView(LoginRequiredMixin, FormView):
         if is_absolute_path:
             absolute_path = storage_filesystem_path
         else:
-            storage_root = os.environ.get("STORAGE2_PATH").strip("/")
-            absolute_path = f"/{storage_root}/{storage_filesystem_path}"
+            # also need to retrieve the parent path if provided
+            if parent_allocation:
+                # should already contain storage_root path
+                root_val = parent_allocation.get_attribute(
+                    name="storage_filesystem_path"
+                ).strip("/")
+                prepend_val = f"{root_val}/Active"
+            else:
+                storage_root = os.environ.get("STORAGE2_PATH").strip("/")
+                prepend_val = storage_root
+
+            absolute_path = f"/{prepend_val}/{storage_filesystem_path}"
         validate_filesystem_path_unique(absolute_path)
 
         self.new_allocation = AllocationView.create_new_allocation(
@@ -66,9 +77,37 @@ class AllocationView(LoginRequiredMixin, FormView):
         )
 
     @staticmethod
-    def create_new_allocation(
-        form_data, user, parent_allocation: Union[Allocation, None] = None
+    def _handle_sub_allocation_scoping(
+        sub_allocation_name: str, parent_allocation_name: str
     ):
+        """
+        NOTE:
+          if sub_allocation_name is same as parent, or is completely different, then
+          prepend parent name to sub name
+          if sub-allocation name provided already *has* parent name prepended (but is not identical to parent name)
+          use it directly
+        EXAMPLE:
+          parent: foo + sub: bar => foo-bar
+          parent: foo + sub: foo => foo-foo
+          parent: foo + sub: foo-blah => foo-blah
+        """
+        if (
+            sub_allocation_name.startswith(parent_allocation_name)
+            and sub_allocation_name != parent_allocation_name
+        ):
+            return sub_allocation_name
+        return f"{parent_allocation_name}-{sub_allocation_name}"
+
+    @staticmethod
+    def create_new_allocation(
+        form_data, user, parent_allocation: Optional[Allocation] = None
+    ):
+        if parent_allocation:
+            form_data["storage_name"] = AllocationView._handle_sub_allocation_scoping(
+                form_data["storage_name"],
+                parent_allocation.get_attribute(name="storage_name"),
+            )
+
         project_pk = form_data.get("project_pk")
         project = get_object_or_404(Project, pk=project_pk)
 
@@ -173,8 +212,17 @@ class AllocationView(LoginRequiredMixin, FormView):
 
     @staticmethod
     def set_allocation_attributes(
-        form_data: dict, allocation, parent_allocation: Union[Allocation, None] = None
+        form_data: dict, allocation, parent_allocation: Optional[Allocation] = None
     ):
+        # NOTE - parent-child linkage handled separately as it is not an
+        # attribute like the other fields
+        if parent_allocation:
+            linkage, _ = AllocationLinkage.objects.get_or_create(
+                parent=parent_allocation
+            )
+            linkage.children.add(allocation)
+            linkage.save()
+
         allocation_attribute_names = [
             "storage_name",
             "storage_ticket",
@@ -205,7 +253,6 @@ class AllocationView(LoginRequiredMixin, FormView):
                     value=json.dumps(protocols),
                 )
             else:
-                # jprew - for now just skip over them
                 value = form_data.get(allocation_attribute_name)
                 if value is None:
                     continue

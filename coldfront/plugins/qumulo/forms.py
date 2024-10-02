@@ -199,6 +199,30 @@ class UpdateAllocationForm(AllocationForm):
         self.fields["storage_name"].validators = []
 
 
+class CreateSubAllocationForm(AllocationForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # hide the project field and show the parent allocation instead
+        self.fields["project_pk"].widget = forms.HiddenInput()
+        self.fields["parent_allocation"] = forms.CharField(
+            help_text="The parent of this sub-allocation",
+            label="Parent Allocation",
+            required=True,
+        )
+
+        # display the parent allocation name
+        self.fields["parent_allocation"].initial = kwargs["initial"].pop(
+            "parent_allocation_name"
+        )
+        self.fields["parent_allocation"].disabled = True
+
+        # re-order fields so parent allocation field appears at the top
+        self.fields = {
+            "parent_allocation": self.fields.pop("parent_allocation"),
+            **self.fields,
+        }
+
+
 class ProjectCreateForm(forms.Form):
     def __init__(self, *args, **kwargs):
         self.user_id = kwargs.pop("user_id")
@@ -227,7 +251,6 @@ class ProjectCreateForm(forms.Form):
 
 
 class AllocationTableSearchForm(forms.Form):
-    project_name = forms.CharField(label="Project Name", max_length=100, required=False)
     pi_last_name = forms.CharField(label="PI Surname", max_length=100, required=False)
 
     pi_first_name = forms.CharField(
@@ -245,3 +268,9 @@ class AllocationTableSearchForm(forms.Form):
     )
 
     itsd_ticket = forms.CharField(label="ITSD Ticket", max_length=100, required=False)
+
+    no_grouping = forms.BooleanField(
+        label="No Grouping",
+        initial=False,
+        required=False,
+    )

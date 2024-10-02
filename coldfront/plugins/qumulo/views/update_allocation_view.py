@@ -1,6 +1,6 @@
 from django.urls import reverse_lazy
 
-from typing import Union
+from typing import Union, Optional
 
 import json
 
@@ -75,7 +75,9 @@ class UpdateAllocationView(AllocationView):
         kwargs["initial"] = form_data
         return kwargs
 
-    def form_valid(self, form: UpdateAllocationForm):
+    def form_valid(
+        self, form: UpdateAllocationForm, parent_allocation: Optional[Allocation] = None
+    ):
         form_data = form.cleaned_data
 
         allocation = Allocation.objects.get(pk=self.kwargs.get("allocation_id"))
@@ -119,7 +121,7 @@ class UpdateAllocationView(AllocationView):
             access_users = form_data[key + "_users"]
             self.set_access_users(key, access_users, allocation)
 
-        return super(AllocationView, self).form_valid(form)
+        return super().form_valid(form=form, parent_allocation=parent_allocation)
 
     @staticmethod
     def _handle_attribute_change(
