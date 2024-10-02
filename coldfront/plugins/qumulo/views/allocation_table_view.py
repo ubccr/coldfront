@@ -189,25 +189,27 @@ class AllocationTableView(LoginRequiredMixin, ListView):
                             )
                         )
                         for child_id in parent_to_children_map[allocation.id]:
-                            child_allocation = all_allocations[child_id]
-                            view_list.append(
-                                AllocationListItem(
-                                    id=child_allocation.pk,
-                                    pi_last_name=child_allocation.project.pi.last_name,
-                                    pi_first_name=child_allocation.project.pi.first_name,
-                                    pi_user_name=child_allocation.project.pi.username,
-                                    project_id=child_allocation.project.pk,
-                                    project_name=child_allocation.project.title,
-                                    resource_name=resource.name,
-                                    allocation_status=child_allocation.status.name,
-                                    department_number=child_allocation.department_number,
-                                    itsd_ticket=child_allocation.itsd_ticket,
-                                    file_path=child_allocation.file_path,
-                                    service_rate=child_allocation.service_rate,
-                                    child_allocation_ids=[],
-                                    is_child=True,
+                            child_allocation = all_allocations.get(child_id, None)
+                            # if child doesn't match filter, then we won't have retrieved it
+                            if child_allocation:
+                                view_list.append(
+                                    AllocationListItem(
+                                        id=child_allocation.pk,
+                                        pi_last_name=child_allocation.project.pi.last_name,
+                                        pi_first_name=child_allocation.project.pi.first_name,
+                                        pi_user_name=child_allocation.project.pi.username,
+                                        project_id=child_allocation.project.pk,
+                                        project_name=child_allocation.project.title,
+                                        resource_name=resource.name,
+                                        allocation_status=child_allocation.status.name,
+                                        department_number=child_allocation.department_number,
+                                        itsd_ticket=child_allocation.itsd_ticket,
+                                        file_path=child_allocation.file_path,
+                                        service_rate=child_allocation.service_rate,
+                                        child_allocation_ids=[],
+                                        is_child=True,
+                                    )
                                 )
-                            )
                 else:
                     view_list.append(
                         AllocationListItem(
