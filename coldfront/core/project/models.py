@@ -13,17 +13,12 @@ from simple_history.models import HistoricalRecords
 
 from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.utils.common import import_from_settings
-from coldfront.core.utils.groups import check_if_groups_in_review_groups
 
 PROJECT_ENABLE_PROJECT_REVIEW = import_from_settings('PROJECT_ENABLE_PROJECT_REVIEW', False)
 PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING = import_from_settings(
-    'PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING',
-    60
-)
+    'PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING', 60)
 PROJECT_DAYS_TO_REVIEW_BEFORE_EXPIRING = import_from_settings(
-    'PROJECT_DAYS_TO_REVIEW_BEFORE_EXPIRING',
-    30
-)
+    'PROJECT_DAYS_TO_REVIEW_BEFORE_EXPIRING', 30)
 
 class ProjectPermission(Enum):
     """ A project permission stores the user, manager, pi, and update fields of a project. """
