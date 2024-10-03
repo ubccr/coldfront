@@ -120,8 +120,10 @@ class UpdateAllocationView(AllocationView):
         for key in access_keys:
             access_users = form_data[key + "_users"]
             self.set_access_users(key, access_users, allocation)
+        
+        self.success_id = str(allocation.id)
 
-        return super().form_valid(form=form, parent_allocation=parent_allocation)
+        return super(AllocationView, self).form_valid(form=form)
 
     @staticmethod
     def _handle_attribute_change(

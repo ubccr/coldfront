@@ -87,10 +87,10 @@ class TestValidateFilesystemPathUnique(TestCase):
 
         user_project_data = build_user_plus_project("foo", "bar")
 
-        path = "storage2-dev/fs1/foo/"
+        path = "foo/"
 
         form_data = {
-            "storage_filesystem_path": path,
+            "storage_filesystem_path": "/storage2-dev/fs1/foo/",
             "storage_export_path": "foo",
             "storage_name": "for_tester_foo",
             "storage_quota": 10,
@@ -114,10 +114,10 @@ class TestValidateFilesystemPathUnique(TestCase):
 
         user_project_data = build_user_plus_project("foo", "bar")
 
-        path = "storage2-dev/fs1/foo/"
+        relative_path = "foo/"
 
         form_data = {
-            "storage_filesystem_path": path,
+            "storage_filesystem_path": "/storage2-dev/fs1/foo/",
             "storage_export_path": "foo",
             "storage_name": "for_tester_foo",
             "storage_quota": 10,
@@ -129,6 +129,7 @@ class TestValidateFilesystemPathUnique(TestCase):
             "department_number": "Time Travel Services",
             "service_rate": "general",
         }
+
         existing_allocation = create_allocation(
             user_project_data["project"], user_project_data["user"], form_data
         )
@@ -142,7 +143,7 @@ class TestValidateFilesystemPathUnique(TestCase):
             existing_allocation.save()
 
             with self.assertRaises(ValidationError):
-                validate_filesystem_path_unique(path)
+                validate_filesystem_path_unique(relative_path)
 
         other_statuses = AllocationStatusChoice.objects.exclude(
             name__in=reserved_status_names
@@ -152,6 +153,6 @@ class TestValidateFilesystemPathUnique(TestCase):
             existing_allocation.save()
 
             try:
-                validate_filesystem_path_unique(path)
+                validate_filesystem_path_unique(relative_path)
             except ValidationError:
                 self.fail()
