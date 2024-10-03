@@ -52,6 +52,12 @@ class ProjectStatusChoice(TimeStampedModel):
 
 
 class ProjectTypeChoice(TimeStampedModel):
+    """ A project type choice indicates the type of project. Examples include Research and Class.
+    This can effect the projects end date.
+    
+    Attributes:
+        name (str): name of project type
+    """
     name = models.CharField(max_length=64)
 
     def __str__(self):
@@ -67,11 +73,18 @@ class Project(TimeStampedModel):
     Attributes:
         title (str): name of the project
         pi (User): represents the User object of the project's PI
+        pi_username (str): username of the PI if the requestor cannot be one
+        requestor (User): represents the User object of the project's requestor
         description (str): description of the project
+        slurm_account_name (str): slurm account assigned to the project
         field_of_science (FieldOfScience): represents the field of science for this project
+        type (ProjectTypeChoice): respresents the ProjectTypeChoice of this project
+        class_number (str): the class the project is for. Required for class projects
+        private (bool): indicates if the project should be found in the PI search function
         status (ProjectStatusChoice): represents the ProjectStatusChoice of this project
         force_review (bool): indicates whether or not to force a review for the project
         requires_review (bool): indicates whether or not the project requires review
+        max_managers (int): maximum managers allowed in the project
     """
     class Meta:
         ordering = ['title']
@@ -201,6 +214,10 @@ required to log onto the site at least once before they can be added.
 
     @property
     def can_be_reviewed(self):
+        """
+        Returns:
+            bool: whether or not the project can be reviewed
+        """
         if self.status.name in ['Archived', 'Denied', 'Review Pending']:
             return False
 
@@ -270,16 +287,28 @@ required to log onto the site at least once before they can be added.
 
     @property
     def expires_in(self):
+        """
+        Returns:
+            bool: number of days until the project expires
+        """
         return (self.end_date - datetime.date.today()).days
 
     @property
     def list_of_manager_usernames(self):
+        """
+        Returns:
+            bool: the list of managers in the project
+        """
         project_managers = self.projectuser_set.filter(
             role=ProjectUserRoleChoice.objects.get(name='Manager')
         )
         return [manager.user.username for manager in project_managers]
     
     def get_list_of_resources_with_slurm_accounts(self, user):
+        """
+        Returns:
+            bool: the list of resources in the project that require slurm accounts
+        """
         resources = set()
         allocations = self.allocation_set.filter(
             status__name__in=['Active', 'Renewal Requested', ],
@@ -297,6 +326,10 @@ required to log onto the site at least once before they can be added.
         return list(resources)
 
     def get_current_num_managers(self):
+        """
+        Returns:
+            bool: the current number of managers
+        """
         return self.projectuser_set.filter(
             role=ProjectUserRoleChoice.objects.get(name='Manager'),
             status=ProjectUserStatusChoice.objects.get(name='Active'),
@@ -304,7 +337,8 @@ required to log onto the site at least once before they can be added.
 
     def check_exceeds_max_managers(self, num_added_managers=0):
         """
-        Checks if the number of added managers exceeds the max allowed managers.
+        Returns:
+            bool: whether or not the number of added managers exceeds the max allowed managers
         """
         return (self.get_current_num_managers() + num_added_managers) > self.max_managers
 
@@ -369,7 +403,8 @@ class ProjectReview(TimeStampedModel):
     Attributes:
         project (Project): links the project to its review
         status (ProjectReviewStatusChoice): links the project review to its status
-        reason_for_not_updating_project (str): text input from the user indicating why the project was not updated
+        project_updates (str): text input from the user about what updates their project has
+        allocation_renewals (str): text that contains the IDs of the allocations that should be renewed 
     """
 
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
@@ -555,12 +590,26 @@ class ProjectAttributeUsage(TimeStampedModel):
         return '{}: {}'.format(self.project_attribute.proj_attr_type.name, self.value)
 
 class ProjectAdminAction(TimeStampedModel):
+    """ Project admin action tracks what an admin is doing on the site. 
+    
+    Attributes:
+        user (User): who the admin was
+        project (Project): the project the action was done on
+        action (str): what the admin did on the site
+    """
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     action = models.CharField(max_length=100)
 
 
 class ProjectDescriptionRecord(TimeStampedModel):
+    """ Project description record keeps a record of previous project descriptions after they are updated. 
+    
+    Attributes:
+        project (project): projetc that had its description updated
+        user (user): who updated the description
+        description (str): the previous description
+    """
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     description = models.TextField()
