@@ -855,9 +855,8 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                     allocation_activate_user.send(sender=self.__class__,
                                                   allocation_user_pk=allocation_user_obj.pk)
             if added_user_objs:
-
+                added_users = [added_users_obj.username for added_users_obj in added_user_objs]
                 if allocation_user_status_choice.name == 'Pending - Add':
-                    added_users = [added_users_obj.username for added_users_obj in added_user_objs]
                     email_recipient = get_email_recipient_from_groups(
                         allocation_obj.get_parent_resource.review_groups.all())
                     send_allocation_user_request_email(
