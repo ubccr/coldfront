@@ -28,14 +28,11 @@ ALLOCATION_RESOURCE_ORDERING = import_from_settings(
     'ALLOCATION_RESOURCE_ORDERING',
     ['-is_allocatable', 'name'])
 ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING = import_from_settings(
-    'ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING', 30
-)
+    'ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING', 30)
 ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING = import_from_settings(
-    'ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING', 60
-)
+    'ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING', 60)
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
-    'ALLOCATION_ENABLE_ALLOCATION_RENEWAL', True
-)
+    'ALLOCATION_ENABLE_ALLOCATION_RENEWAL', True)
 
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 if EMAIL_ENABLED:
@@ -354,10 +351,7 @@ class Allocation(TimeStampedModel):
         """
 
         group_exists = check_if_groups_in_review_groups(
-            self.get_parent_resource.review_groups.all(),
-            user.groups.all(),
-            permission
-        )
+            self.get_parent_resource.review_groups.all(), user.groups.all(), permission)
         if user.is_superuser or group_exists:
             return self.allocationattribute_set.all().order_by('allocation_attribute_type__name')
 
@@ -379,10 +373,7 @@ class Allocation(TimeStampedModel):
 
         if ProjectPermission.USER not in project_perms:
             group_exists = check_if_groups_in_review_groups(
-                self.get_parent_resource.review_groups.all(),
-                user.groups.all(),
-                permission
-            )
+                self.get_parent_resource.review_groups.all(), user.groups.all(), permission)
             if group_exists:
                 return [AllocationPermission.USER, AllocationPermission.MANAGER]
             return []
@@ -695,15 +686,13 @@ class AllocationUserRoleChoice(TimeStampedModel):
                 for resource in role_choice.resources.all():
                     if resource in self.resources.all() and role_choice.is_user_default:
                         raise ValidationError(
-                            f'role {role_choice.name} is already set as the user default'
-                        )
+                            f'role {role_choice.name} is already set as the user default')
         if self.is_manager_default:
             for role_choice in AllocationUserRoleChoice.objects.all().exclude(pk=self.pk):
                 for resource in role_choice.resources.all():
                     if resource in self.resources.all() and role_choice.is_manager_default:
                         raise ValidationError(
-                            f'role {role_choice.name} is already set as the manager default'
-                        )
+                            f'role {role_choice.name} is already set as the manager default')
 
 class AllocationUser(TimeStampedModel):
     """ An allocation user represents a user on the allocation.
