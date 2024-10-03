@@ -9,8 +9,8 @@ from cProfile import label
 
 from coldfront.core.project.models import (Project, ProjectAttribute, ProjectAttributeType, ProjectReview,
                                            ProjectUserRoleChoice, ProjectStatusChoice)
-from django.core.validators import MinLengthValidator
 from coldfront.core.utils.common import import_from_settings
+from django.core.validators import MinLengthValidator
 from coldfront.core.field_of_science.models import FieldOfScience
 from django.core.validators import MinLengthValidator
 from crispy_forms.helper import FormHelper
@@ -21,11 +21,6 @@ EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL = import_from_settings(
 EMAIL_ADMIN_LIST = import_from_settings('EMAIL_ADMIN_LIST', [])
 EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
     'EMAIL_DIRECTOR_EMAIL_ADDRESS', '')
-
-
-class ProjectPISearchForm(forms.Form):
-    PI_USERNAME = 'PI Username'
-    pi_username = forms.CharField(label=PI_USERNAME, max_length=100, required=False)
 
 
 class ProjectSearchForm(forms.Form):
@@ -76,20 +71,11 @@ class ProjectUserUpdateForm(forms.Form):
         queryset=ProjectUserRoleChoice.objects.all(), empty_label=None)
     enable_notifications = forms.BooleanField(initial=False, required=False)
 
-    def __init__(self, *args, **kwargs):
-        disable_enable_notifications = kwargs.pop('disable_enable_notifications', False)
-        super().__init__(*args, **kwargs)
-        if disable_enable_notifications:
-            self.fields['enable_notifications'].disabled = True
-
 
 class ProjectReviewForm(forms.Form):
     no_project_updates = forms.BooleanField(label='No new project updates', required=False)
     project_updates = forms.CharField(
-        label='Project updates',
-        widget=forms.Textarea(),
-        required=False
-    )
+        label='Project updates', widget=forms.Textarea(), required=False)
     acknowledgement = forms.BooleanField(
         label='By checking this box I acknowledge that I have updated my project to the best of my knowledge', initial=False, required=True)
 
@@ -318,3 +304,8 @@ class ProjectUserExportForm(forms.Form):
             Submit('submit', 'Export', css_class='btn-success'),
             Reset('reset', 'Reset', css_class='btn-secondary')
         )
+
+
+class ProjectPISearchForm(forms.Form):
+    PI_USERNAME = 'PI Username'
+    pi_username = forms.CharField(label=PI_USERNAME, max_length=100, required=False)
