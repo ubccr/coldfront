@@ -33,42 +33,6 @@ Project List
   </div>
 </div>
 
-<div class="modal fade" id="id_project_export_csv" tabindex="-1" role="dialog" aria-labelledby="id_project_export_csv_label" aria-hidden="true">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="id_project_export_csv_label">Export to CSV</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <form id="id_project_export_form" action="{% url 'project-export' %}" method="post">
-          {% crispy project_export_form %}
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="modal fade" id="id_project_user_export_csv" tabindex="-1" role="dialog" aria-labelledby="id_project_user_export_csv_label" aria-hidden="true">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="id_project_user_export_csv_label">Export to CSV</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <form id="id_project_user_export_form" action="{% url 'project-user-export' %}" method="post">
-          {% crispy project_user_export_form %}
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-
 <div>
   {% if user.is_superuser or user.userprofile.is_pi %}
     <p>
@@ -121,18 +85,6 @@ Project List
       <div class="col">
         <h3 style="margin-bottom: 0;"><strong>Projects: {{ projects_count }}</strong></h3>
       </div>
-      {% if show_export_button %}
-        <div class="col float-right">
-          <div class="float-right">
-            <button type="button" class="btn btn-success" data-toggle="modal" data-target="#id_project_export_csv">
-              Export Projects to CSV
-            </button>
-            <button type="button" class="btn btn-success" data-toggle="modal" data-target="#id_project_user_export_csv">
-              Export Project Users to CSV
-            </button>
-          </div>
-        </div>
-      {% endif %}
     </div>
   </div>
   <div class="card-body">

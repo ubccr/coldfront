@@ -202,31 +202,6 @@ class AllocationInvoiceSearchForm(forms.Form):
     )
 
 
-class AllocationInvoiceExportForm(forms.Form):
-    file_name = forms.CharField(max_length=64, initial='invoices')
-    resource = forms.ChoiceField(choices=())
-    allocation_status = forms.ModelMultipleChoiceField(
-        label='Allocation status',
-        queryset=AllocationStatusChoice.objects.filter(name__in=['Active', 'Billing Information Submitted', ]).order_by('name')
-    )
-    # start_date = forms.DateField(
-    #     widget=forms.DateInput(attrs={'class': 'datepicker'}),
-    #     required=False
-    # )
-    # end_date = forms.DateField(
-    #     widget=forms.DateInput(attrs={'class': 'datepicker'}),
-    #     required=False
-    # )
-
-    def __init__(self, *args, resources=None, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        if resources is None:
-            self.fields['resource'].choices = ()
-        else:
-            self.fields['resource'].choices = resources
-
-
 class AllocationReviewUserForm(forms.Form):
     # No relation to AllocationUserReview model.
     ALLOCATION_REVIEW_USER_CHOICES = (
@@ -357,53 +332,6 @@ class AllocationAttributeCreateForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(AllocationAttributeCreateForm, self).__init__(*args, **kwargs) 
         self.fields['allocation_attribute_type'].queryset = self.fields['allocation_attribute_type'].queryset.order_by(Lower('name'))
-
-
-class AllocationExportForm(forms.Form):
-    file_name = forms.CharField(max_length=64, initial='allocations')
-    allocation_statuses = forms.ModelMultipleChoiceField(
-        queryset=AllocationStatusChoice.objects.all().order_by('name'),
-        help_text='Do not select any if you want all statuses',
-        required=False
-    )
-    allocation_resources = forms.ModelMultipleChoiceField(
-        queryset=Resource.objects.all().order_by('name'),
-        help_text='Do not select any if you want all resources',
-        required=False
-    )
-    allocation_creation_range_start = forms.DateField(
-        widget=forms.DateInput(attrs={'class': 'datepicker'}),
-        label='Start',
-        help_text='Includes start date',
-        required=False
-    )
-    allocation_creation_range_stop = forms.DateField(
-        widget=forms.DateInput(attrs={'class': 'datepicker'}),
-        label='Stop',
-        help_text='Does not include end date',
-        required=False
-    )
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.helper = FormHelper()
-        self.helper.layout = Layout(
-            'file_name',
-            Row(
-                Column('allocation_statuses', css_class='col-md-6'),
-                Column('allocation_resources', css_class='col-md-6'),
-            ),
-            Fieldset(
-                'Allocation Creation Range',
-                Row(
-                    Column('allocation_creation_range_start', css_class='col-md-6'),
-                    Column('allocation_creation_range_stop', css_class='col-md-6'),
-                )
-            ),
-            Submit('submit', 'Export', css_class='btn-success'),
-            Reset('reset', 'Reset', css_class='btn-secondary')
-        )
 
 
 class AllocationUserUpdateForm(forms.Form):
