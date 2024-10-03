@@ -877,7 +877,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                     if allocation_obj.project.pi.email not in allocation_added_users_emails:
                         allocation_added_users_emails.append(allocation_obj.project.pi.email)
 
-                    send_added_user_email(request, allocation_obj, added_users, allocation_added_users_emails)
+                    send_added_user_email(request, allocation_obj, added_user_objs, allocation_added_users_emails)
 
                     messages.success(
                         request, 'Added user(s) {} to allocation.'.format(', '.join(added_users)))
@@ -1056,7 +1056,7 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
                     if allocation_obj.project.pi.email not in allocation_removed_users_emails:
                         allocation_removed_users_emails.append(allocation_obj.project.pi.email)
 
-                    send_removed_user_email(allocation_obj, removed_users, allocation_removed_users_emails)
+                    send_removed_user_email(allocation_obj, removed_user_objs, allocation_removed_users_emails)
                     messages.success(
                         request, 'Removed user(s) {} from allocation.'.format(', '.join(removed_users)))
 

@@ -1,7 +1,7 @@
 Dear {{ center_name }} user,
 
 These users have been added to an allocation for {{ resource }} in project "{{ project_title }}".
-{% for user in users %}{{ user }}
+{% for user in users %}{{ user.user.first_name }} {{ user.user.last_name}} ({{ user.user.username}})
 {% endfor %}
 They can view the allocation here:
 {{ url }}
