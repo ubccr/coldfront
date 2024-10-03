@@ -175,6 +175,10 @@ class Allocation(TimeStampedModel):
     
     @property
     def can_be_renewed(self):
+        """ 
+        Returns:
+            bool: whether the allocation can be renewed
+        """
         if not ALLOCATION_ENABLE_ALLOCATION_RENEWAL:
             return False
 
@@ -345,6 +349,7 @@ class Allocation(TimeStampedModel):
         """
         Params:
             user (User): user for whom to return attributes
+            permission (str): extra permission to check
 
         Returns:
             list[AllocationAttribute]: returns the set of attributes the user is allowed to see (if superuser, then all allocation attributes; else, only non-private ones)
@@ -361,6 +366,7 @@ class Allocation(TimeStampedModel):
         """
         Params:
             user (User): user for whom to return permissions
+            permission (str): extra permission to check
 
         Returns:
             list[AllocationPermission]: list of user permissions for the allocation
@@ -400,16 +406,15 @@ class Allocation(TimeStampedModel):
         return perm in perms
 
     def create_user_request(self, requestor_user, allocation_user, allocation_user_status):
-        """
-        Check if the allocation's resource has the 'requires_user_request' attribute set to
-        'Yes'. If it is then create a new AllocationUserRequest.
+        """ 
+        Params:
+            request_user (User): User who requested the change
+            allocation_user (AllocationUser): User who had the requested change
+            allocation_user_status (AllocationUserStatusChoice): Type of requested change
 
-        :param request_user: User who requested the change. User object required.
-        :param allocation_user: User who had the requested change. AllocationUser object required.
-        :param allocation_user_status: Type of requested change. AllocationUserStatusChoice object
-        required.
-        :returns: A new AllocationUserRequest object or None if the 'requires_user_request' resource
-        attribute is not 'Yes'.
+        Returns:
+            AllocationUserRequest or None: A new AllocationUserRequest object or None if the 'requires_user_request' resource
+            attribute is not 'Yes'
         """
         requires_user_request = self.get_parent_resource.get_attribute('requires_user_request')
         if requires_user_request is not None and requires_user_request == 'Yes':
@@ -669,6 +674,13 @@ class AllocationUserStatusChoice(TimeStampedModel):
         return (self.name,)
 
 class AllocationUserRoleChoice(TimeStampedModel):
+    """ An allocation role choice indicates the role a user has in an allocation.
+    
+    Attributes:
+        resources (Resource): the resources that have this role
+        is_user_default (bool): whether this role is the default for a user with project User status
+        is_manager_default (bool): whether this role is the default for a user with project Manager status
+    """
     name = models.CharField(max_length=64)
     resources = models.ManyToManyField(Resource, blank=True)
     is_user_default = models.BooleanField(default=False)
@@ -681,6 +693,8 @@ class AllocationUserRoleChoice(TimeStampedModel):
         ordering = ['name', ]
 
     def clean(self):
+        """ Validates the allocation user role defaults and raises errors if they are invalid. """
+
         if self.is_user_default:
             for role_choice in AllocationUserRoleChoice.objects.all().exclude(pk=self.pk):
                 for resource in role_choice.resources.all():
@@ -817,12 +831,24 @@ class AllocationAttributeChangeRequest(TimeStampedModel):
 
 
 class AllocationAdminAction(TimeStampedModel):
+    """ An allocation admin action tracks what an admin is doing on the site. 
+    
+    Attributes:
+        user (User): who the admin was
+        allocation (Allocation): the alocation the action was done on
+        action (str): what the admin did on the site
+    """
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE)
     action = models.CharField(max_length=128)
 
 
 class AllocationRemovalStatusChoice(TimeStampedModel):
+    """ An allocation removal status choice indicates the status of the allocation removal
+    
+    Attributes:
+        name (str): name of the allocation removal status choice
+    """
     name = models.CharField(max_length=64)
 
     def __str__(self):
@@ -833,6 +859,15 @@ class AllocationRemovalStatusChoice(TimeStampedModel):
 
 
 class AllocationRemovalRequest(TimeStampedModel):
+    """ An allocation removal request represents a request to remove an allocation fomr a project.
+    
+    Attributes:
+        project_pi (User): the user who is the PI of the project the allocation is in
+        requestor (User): the user who requested the removal
+        allocation (Allocation): the allocation being removed
+        allocation_prior_status (AllocationStatusChoice): prior status the allocation had
+        status (AllocationRemovalStatusChoice): current status of the removal request
+    """
     project_pi = models.ForeignKey(User, on_delete=models.CASCADE, related_name='%(class)s_project_pi')
     requestor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='%(class)s_requestor')
     allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE)
@@ -841,6 +876,14 @@ class AllocationRemovalRequest(TimeStampedModel):
 
 
 class AllocationInvoice(TimeStampedModel):
+    """ An allocation invoice that contains the financial info for an allocation
+    
+    Attributes:
+        allocation (Allocation): allocation this invoice belongs to
+        account_number (str): account number provided to bill
+        sub_account_number (str): sub account number provided to bill
+        status (AllocationStatusChoice): status of the invoice
+    """
     allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE)
     account_number = models.CharField(max_length=9)
     sub_account_number = models.CharField(max_length=20, blank=True, null=True)
@@ -851,6 +894,11 @@ class AllocationInvoice(TimeStampedModel):
 
 
 class AllocationUserRequestStatusChoice(TimeStampedModel):
+    """ An allocation user request choice indicates the status of an allocation user request.
+    
+    Attributes:
+        name (str): name of allocation user request status choice
+    """
     name = models.CharField(max_length=64)
 
     def __str__(self):
@@ -861,6 +909,14 @@ class AllocationUserRequestStatusChoice(TimeStampedModel):
 
 
 class AllocationUserRequest(TimeStampedModel):
+    """  An allocation user request represents a request to add/remove a user from an allocation.
+    
+    Attributes:
+        requestor_user (User): user who made the request
+        allocation_user (AllocationUser): allocation user who the request is about
+        allocation_user_status (AllocationUserStatusChoice): new status of the User in the allocation
+        status (AllocationUserRequestStatusChoice): status of the request
+    """
     requestor_user = models.ForeignKey(User, on_delete=models.CASCADE)
     allocation_user = models.ForeignKey(AllocationUser, on_delete=models.CASCADE)
     allocation_user_status = models.ForeignKey(AllocationUserStatusChoice, on_delete=models.CASCADE)
