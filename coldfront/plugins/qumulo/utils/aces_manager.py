@@ -7,7 +7,7 @@ class AcesManager(object):
             "aces": [],
         }
 
-    # readme access now in default aces
+    # readme access is now in default aces
     default_aces = [
         {
             "flags": ["CONTAINER_INHERIT"],
