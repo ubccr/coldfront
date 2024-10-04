@@ -1,3 +1,5 @@
+import os
+
 from django.test import TestCase
 from unittest.mock import patch, MagicMock
 
@@ -61,6 +63,7 @@ class TestValidateFilesystemPathUnique(TestCase):
         self.patcher = patch("coldfront.plugins.qumulo.validators.QumuloAPI")
         self.mock_qumulo_api = self.patcher.start()
         self.mock_get_file_attr = None
+        os.environ["STORAGE2_PATH"] = "/storage2-dev/fs1"
 
         return super().setUp()
 
