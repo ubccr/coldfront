@@ -11,6 +11,8 @@ from coldfront.core.allocation.models import (
     AllocationAttribute,
 )
 
+from coldfront.core.allocation.models import AllocationLinkage
+
 from coldfront.plugins.qumulo.utils.acl_allocations import AclAllocations
 from coldfront.plugins.qumulo.management.commands.qumulo_plugin_setup import (
     call_base_commands,
@@ -19,6 +21,8 @@ from coldfront.plugins.qumulo.management.commands.qumulo_plugin_setup import (
 import json
 
 from django.core.management import call_command
+
+from typing import Optional
 
 default_form_data = {
     "storage_filesystem_path": "foo",
@@ -53,7 +57,13 @@ def build_user_plus_project(
     username: str, project_name: str
 ) -> dict["project":Project, "user":User]:
     prev_users = list(User.objects.all())
-    user_id = prev_users[-1].id + 1 if prev_users else 1
+    max_id = 0
+    if prev_users:
+        for prev_user in prev_users:
+            if prev_user.id > max_id:
+                max_id = prev_user.id
+    max_id = max_id + 1
+    user_id = max_id
 
     user = User.objects.create(
         id=user_id, username=username, password="test", email=f"{username}@wustl.edu"
@@ -63,7 +73,15 @@ def build_user_plus_project(
     fieldOfScience = FieldOfScience.objects.get(description="Other")
 
     prev_projects = list(Project.objects.all())
-    project_id = prev_projects[-1].id + 1 if prev_projects else 1
+
+    max_id = 0
+    if prev_projects:
+        for prev_project in prev_projects:
+            if prev_project.id > max_id:
+                max_id = prev_project.id
+    max_id = max_id + 1
+    project_id = max_id
+
     project = Project.objects.create(
         id=project_id,
         title=project_name,
@@ -75,7 +93,9 @@ def build_user_plus_project(
     return {"project": project, "user": user}
 
 
-def create_allocation(project: Project, user: User, form_data: dict):
+def create_allocation(
+    project: Project, user: User, form_data: dict, parent: Optional[Allocation] = None
+):
     allocation = Allocation.objects.create(
         project=project,
         justification="",
@@ -91,7 +111,7 @@ def create_allocation(project: Project, user: User, form_data: dict):
     resource = Resource.objects.get(name="Storage2")
     allocation.resources.add(resource)
 
-    set_allocation_attributes(form_data, allocation)
+    set_allocation_attributes(form_data, allocation, parent)
 
     create_access_privileges(form_data, project, allocation)
 
@@ -158,7 +178,14 @@ def create_access_allocation(
     return access_allocation
 
 
-def set_allocation_attributes(form_data: dict, allocation):
+def set_allocation_attributes(
+    form_data: dict, allocation: Allocation, parent: Optional[Allocation] = None
+):
+    if parent:
+        linkage, _ = AllocationLinkage.objects.get_or_create(parent=parent)
+        linkage.children.add(allocation)
+        linkage.save()
+
     allocation_attribute_names = [
         "storage_name",
         "storage_quota",

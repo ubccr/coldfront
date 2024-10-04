@@ -48,7 +48,7 @@ Allocation View
             <a href="?order_by=id&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort ID desc</span></a>
           </th>
           <th scope="col" class="text-nowrap">
-            Project
+            Sub-Allocations
           </th>
           <th scope="col" class="text-nowrap">
             Principal Investigator
@@ -69,8 +69,8 @@ Allocation View
           </th>
           <th scope="col" class="text-nowrap">
             Department Number
-            <a href="?order_by=department_id&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Department ID asc</span></a>
-            <a href="?order_by=department_id&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort End Department ID desc</span></a>
+            <a href="?order_by=department_number&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Department ID asc</span></a>
+            <a href="?order_by=department_number&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort End Department ID desc</span></a>
           </th>
           <th scope="col" class="text-nowrap">
             ITSD Ticket
@@ -91,10 +91,13 @@ Allocation View
       </thead>
       <tbody>
         {% for allocation in allocation_list %}
-          <tr>
+          <tr class="{% if allocation.is_child %}table-secondary{% endif %} text-nowrap">
             <td><a href="/qumulo/allocation/{{allocation.id}}">{{ allocation.id }}</a></td>
-            <td class="text-nowrap"><a 
-                href="/project/{{allocation.project_id}}/">{{ allocation.project_name|truncatechars:50 }}</a></td>
+            <td class="text-nowrap">
+              {% if allocation.is_child is not True %}
+              <a href="/qumulo/allocation/{{allocation.id}}/sub_allocation">+</a>
+              {% endif %}
+            </td>
             <td class="text-nowrap">{{allocation.pi_first_name}} {{allocation.pi_last_name}}
               ({{allocation.pi_user_name}})</td>      
               <!-- Replace with new columns -->
