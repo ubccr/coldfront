@@ -42,7 +42,6 @@ class AllocationView(LoginRequiredMixin, FormView):
     ):
         form_data = form.cleaned_data
         user = self.request.user
-
         storage_filesystem_path = form_data.get("storage_filesystem_path")
         is_absolute_path = PurePath(storage_filesystem_path).is_absolute()
         if is_absolute_path:

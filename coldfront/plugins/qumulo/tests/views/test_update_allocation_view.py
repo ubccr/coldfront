@@ -1,9 +1,15 @@
-from django.test import TestCase, Client
+from django.contrib import messages
+from django.test import Client, RequestFactory, TestCase
 from unittest.mock import patch, call, MagicMock
 
-from coldfront.core.allocation.models import AllocationUser
+from coldfront.core.allocation.models import Allocation, AllocationUser
 
-from coldfront.plugins.qumulo.views.update_allocation_view import UpdateAllocationView
+from coldfront.plugins.qumulo.forms import UpdateAllocationForm
+from coldfront.plugins.qumulo.hooks import acl_reset_complete_hook
+from coldfront.plugins.qumulo.tasks import reset_allocation_acls
+from coldfront.plugins.qumulo.views.update_allocation_view import (
+    UpdateAllocationView
+)
 from coldfront.plugins.qumulo.tests.utils.mock_data import (
     create_allocation,
     build_models,
@@ -11,14 +17,13 @@ from coldfront.plugins.qumulo.tests.utils.mock_data import (
 from coldfront.plugins.qumulo.utils.acl_allocations import AclAllocations
 
 from coldfront.core.allocation.models import (
-    AllocationChangeRequest,
     AllocationAttribute,
     AllocationAttributeChangeRequest,
-    AllocationChangeStatusChoice,
     AllocationAttributeType,
+    AllocationChangeRequest,
+    AllocationChangeStatusChoice,
+    AllocationLinkage,
 )
-
-
 @patch("coldfront.plugins.qumulo.views.update_allocation_view.ActiveDirectoryAPI")
 class UpdateAllocationViewTests(TestCase):
     def setUp(self):
@@ -30,6 +35,9 @@ class UpdateAllocationViewTests(TestCase):
         self.user = build_data["user"]
 
         self.client.force_login(self.user)
+
+        self.request = RequestFactory().get('/request/path/does/not/matter/')
+        self.request.user = self.user
 
         self.form_data = {
             "storage_filesystem_path": "foo",
@@ -402,3 +410,125 @@ class UpdateAllocationViewTests(TestCase):
             )
 
             self.assertEqual(change_request.new_value, new_val)
+
+    def test_update_allocation_form_and_view_valid(
+        self, mock_ActiveDirectoryAPI: MagicMock
+    ):
+        response = UpdateAllocationView.as_view()(self.request, allocation_id=1)
+        self.assertEqual(response.status_code, 200)
+
+    def test_context_data_no_linkage(
+        self, mock_ActiveDirectoryAPI: MagicMock
+    ):
+        view = UpdateAllocationView(
+            form=UpdateAllocationForm(data=self.form_data, user_id=self.user.id)
+        )
+        view.setup(self.request, allocation_id=1)
+        self.assertFalse(
+            dict(view.get_context_data()).get('allocation_has_children', True)
+        )
+
+    def test_context_data_with_linked_sub(
+        self, mock_ActiveDirectoryAPI: MagicMock
+    ):
+        sub_form_data = {
+            "storage_filesystem_path": "foo",
+            "storage_export_path": "bar",
+            "storage_ticket": "ITSD-54321",
+            "storage_name": "baz",
+            "storage_quota": 7,
+            "protocols": ["nfs"],
+            "rw_users": ["test"],
+            "ro_users": [],
+            "cost_center": "Uncle Pennybags",
+            "department_number": "Time Travel Services",
+            "service_rate": "consumption",
+            "technical_contact": "it.guru",
+            "billing_contact": "finance.guru",
+        }
+        sub_allocation = create_allocation(
+            self.project, self.user, sub_form_data, self.storage_allocation
+        )
+        view = UpdateAllocationView(
+            form=UpdateAllocationForm(data=self.form_data, user_id=self.user.id)
+        )
+        view.setup(self.request, allocation_id=1)
+        self.assertTrue(
+            dict(view.get_context_data()).get('allocation_has_children', True)
+        )
+
+    def test_valid_form_with_reset_acls_calls_reset_acls(
+        self, mock_ActiveDirectoryAPI: MagicMock
+    ):
+        request = RequestFactory().post('/irrelevant', {'reset_acls': 'set'})
+        request.user = self.user
+        form=UpdateAllocationForm(data=self.form_data, user_id=self.user.id)
+        form.cleaned_data = {
+            'protocols': ['smb'],
+            'storage_export_path': 'bar',
+            'storage_ticket': 'ITSD-12345',
+            'storage_filesystem_path': '/storage2-dev/fs1/allocationName'
+        }
+        form.clean()
+        view = UpdateAllocationView(form=form, user_id=self.user.id)
+        view.setup(request, allocation_id=1)
+        view.success_id = 1
+        view._reset_acls = MagicMock()
+        view._updated_fields_handler = MagicMock()
+        self.assertTrue(view.form_valid(form))
+        view._reset_acls.assert_called_once()
+        view._updated_fields_handler.assert_not_called()
+
+    def test_reset_acls_runs_task_with_valid_args(
+        self, mock_ActiveDirectoryAPI: MagicMock
+    ):
+        for onOff, trueFalse in {'on': True, 'off': False}.items():
+            messages.add_message = MagicMock()
+            request = RequestFactory() \
+                .post(
+                    '/irrelevant',
+                    {
+                        'reset_acls': 'set',
+                        'reset_sub_acls': 'on' if onOff == 'on' else ''
+                    }
+                )
+            request.user = self.user
+            form=UpdateAllocationForm(data=self.form_data, user_id=self.user.id)
+            form.cleaned_data = {
+                'project_pk': self.project.id,
+                'protocols': ['smb'],
+                "rw_users": ["test"],
+                "ro_users": ["test2"],
+                'storage_export_path': 'bar',
+                'storage_filesystem_path': 'updatedFormPath',
+                'storage_name': 'foo',
+                'storage_ticket': 'ITSD-12345'
+            }
+            form.clean()
+            view = UpdateAllocationView(form=form, user_id=self.user.id)
+            view.setup(request, allocation_id=1)
+            view.success_id = 1
+    # /Users/brennanmulligan/repos/consolidate/coldfront-wustl-fork/coldfront/plugins/qumulo/utils/acl_allocations.py
+            with patch(
+                    (
+                        "coldfront.plugins.qumulo.views.update_allocation_view."
+                        "async_task"
+                    )
+                ) as mock_async_task, patch(
+                    (
+                        "coldfront.plugins.qumulo.utils.acl_allocations."
+                        "ActiveDirectoryAPI"
+                    )
+                ) as mock_ad_api:
+                    self.assertTrue(view.form_valid(form))
+                    mock_async_task.assert_called_once_with(
+                        reset_allocation_acls,
+                        self.user.email,
+                        self.storage_allocation,
+                        trueFalse,
+                        hook=acl_reset_complete_hook,
+                        q_options={
+                            'retry': 90000,
+                            'timeout': 86400
+                        }
+                    )
