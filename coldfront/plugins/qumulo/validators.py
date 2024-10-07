@@ -38,6 +38,9 @@ def validate_ad_users(ad_users: list[str]):
 
 
 def validate_filesystem_path_unique(value: str):
+
+    storage_root = os.environ.get("STORAGE2_PATH").strip("/")
+    full_path = f"/{storage_root}/{value}"
     qumulo_api = QumuloAPI()
 
     reserved_statuses = AllocationStatusChoice.objects.filter(
@@ -49,26 +52,26 @@ def validate_filesystem_path_unique(value: str):
     allocations = list(
         Allocation.objects.filter(
             allocationattribute__allocation_attribute_type=storage_filesystem_path_attribute_type,
-            allocationattribute__value=value,
+            allocationattribute__value=full_path,
             status__in=reserved_statuses,
         )
     )
 
     if allocations:
         raise ValidationError(
-            message=f"The entered path ({value}) already exists",
+            message=f"The entered path ({full_path}) already exists",
             code="invalid",
         )
 
     path_exists = True
     try:
-        attr = qumulo_api.rc.fs.get_file_attr(value)
+        attr = qumulo_api.rc.fs.get_file_attr(full_path)
     except request.RequestError:
         path_exists = False
 
     if path_exists is True:
         raise ValidationError(
-            message=f"The entered path ({value}) already exists",
+            message=f"The entered path ({full_path}) already exists",
             code="invalid",
         )
 
@@ -101,8 +104,11 @@ def validate_leading_forward_slash(value: str):
 
 
 def validate_parent_directory(value: str):
+
+    storage_root = os.environ.get("STORAGE2_PATH").strip("/")
+    full_path = f"/{storage_root}/{value}"
     qumulo_api = QumuloAPI()
-    sub_directories = value.strip("/").split("/")
+    sub_directories = full_path.strip("/").split("/")
 
     for depth in range(1, len(sub_directories), 1):
         path = "/" + "/".join(sub_directories[0:depth])

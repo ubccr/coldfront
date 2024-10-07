@@ -1,3 +1,5 @@
+import os
+
 from django.test import TestCase
 from unittest.mock import patch, MagicMock
 
@@ -15,8 +17,9 @@ from coldfront.plugins.qumulo.tests.utils.mock_data import (
     create_allocation,
 )
 
+TEST_STORAGE2_PATH = "/storage2-dev/fs1"
 existing_path_mocked_response = {
-    "path": "/storage2-dev/fs1/bobs_your_uncle/",
+    "path": f"{TEST_STORAGE2_PATH}/bobs_your_uncle/",
     "name": "bobs_your_uncle",
     "num_links": 2,
     "type": "FS_FILE_TYPE_DIRECTORY",
@@ -61,6 +64,7 @@ class TestValidateFilesystemPathUnique(TestCase):
         self.patcher = patch("coldfront.plugins.qumulo.validators.QumuloAPI")
         self.mock_qumulo_api = self.patcher.start()
         self.mock_get_file_attr = None
+        os.environ["STORAGE2_PATH"] = TEST_STORAGE2_PATH
 
         return super().setUp()
 
@@ -87,10 +91,10 @@ class TestValidateFilesystemPathUnique(TestCase):
 
         user_project_data = build_user_plus_project("foo", "bar")
 
-        path = "storage2-dev/fs1/foo/"
+        relative_path = "foo/"
 
         form_data = {
-            "storage_filesystem_path": path,
+            "storage_filesystem_path": f"{TEST_STORAGE2_PATH}/{relative_path}",
             "storage_export_path": "foo",
             "storage_name": "for_tester_foo",
             "storage_quota": 10,
@@ -107,17 +111,17 @@ class TestValidateFilesystemPathUnique(TestCase):
         )
 
         with self.assertRaises(ValidationError):
-            validate_filesystem_path_unique(path)
+            validate_filesystem_path_unique(relative_path)
 
     def test_only_raises_coldfront_error_for_select_statuses(self):
         self.mock_qumulo_api.return_value.rc.fs.get_file_attr = ValidFormPathMock()
 
         user_project_data = build_user_plus_project("foo", "bar")
 
-        path = "storage2-dev/fs1/foo/"
+        relative_path = "foo/"
 
         form_data = {
-            "storage_filesystem_path": path,
+            "storage_filesystem_path": f"{TEST_STORAGE2_PATH}/{relative_path}",
             "storage_export_path": "foo",
             "storage_name": "for_tester_foo",
             "storage_quota": 10,
@@ -129,6 +133,7 @@ class TestValidateFilesystemPathUnique(TestCase):
             "department_number": "Time Travel Services",
             "service_rate": "general",
         }
+
         existing_allocation = create_allocation(
             user_project_data["project"], user_project_data["user"], form_data
         )
@@ -142,7 +147,7 @@ class TestValidateFilesystemPathUnique(TestCase):
             existing_allocation.save()
 
             with self.assertRaises(ValidationError):
-                validate_filesystem_path_unique(path)
+                validate_filesystem_path_unique(relative_path)
 
         other_statuses = AllocationStatusChoice.objects.exclude(
             name__in=reserved_status_names
@@ -152,6 +157,6 @@ class TestValidateFilesystemPathUnique(TestCase):
             existing_allocation.save()
 
             try:
-                validate_filesystem_path_unique(path)
+                validate_filesystem_path_unique(relative_path)
             except ValidationError:
                 self.fail()
