@@ -74,6 +74,13 @@ class QumuloAPI:
         readme_meta = self.rc.fs.create_file(dir_path=path, name=file_name)
         with open("/etc/allocation-README.txt", "r") as arf:
             self.rc.fs.write_file(id_=readme_meta["id"], data_file=arf)
+        fs_path = f"{path}/{file_name}"
+        acl = AcesManager().get_base_acl()
+
+        aces = AcesManager.default_aces
+        acl["aces"] = aces
+
+        self.rc.fs.set_acl_v2(path=fs_path, acl=acl)
 
     def create_protocol(self, export_path: str, fs_path: str, name: str, protocol: str):
         if name == None:
