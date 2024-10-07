@@ -16,10 +16,24 @@ class Command(BaseCommand):
 
         date = timezone.now() + datetime.timedelta(days=1)
         date = date.replace(hour=0, minute=0, second=0, microsecond=0)
-        schedule('coldfront.core.allocation.tasks.update_statuses',
-                 schedule_type=Schedule.DAILY,
-                 next_run=date)
+        schedule(
+            "coldfront.core.allocation.tasks.update_statuses",
+            schedule_type=Schedule.DAILY,
+            next_run=date,
+        )
 
-        schedule('coldfront.core.allocation.tasks.send_expiry_emails',
-                 schedule_type=Schedule.DAILY,
-                 next_run=date)
+        schedule(
+            "coldfront.core.allocation.tasks.send_expiry_emails",
+            schedule_type=Schedule.DAILY,
+            next_run=date,
+        )
+
+        schedule(
+            "coldfront.core.group.tasks.grant_usersupport_global_project_manager",
+            name="Grant RIS-UserSupport Manager status over all Projects",
+            schedule_type=Schedule.MINUTES,
+            minutes=5,
+            next_run=(timezone.now() + datetime.timedelta(minutes=5)).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            ),
+        )

@@ -7,6 +7,7 @@ class AcesManager(object):
             "aces": [],
         }
 
+    # readme access perms are now in the default aces variable
     default_aces = [
         {
             "flags": ["CONTAINER_INHERIT"],
@@ -79,6 +80,14 @@ class AcesManager(object):
                 "DELETE_CHILD",
                 "WRITE_ATTR",
                 "WRITE_EA",
+            ],
+        },
+        {
+            "flags": [],
+            "type": "ALLOWED",
+            "trustee": {"name": "Everyone"},
+            "rights": [
+                "READ",
             ],
         },
     ]
