@@ -23,7 +23,6 @@ logger = logging.getLogger(__name__)
 SECONDS_IN_AN_HOUR = 60 * 60
 SECONDS_IN_A_DAY = 24 * SECONDS_IN_AN_HOUR
 
-
 def poll_ad_group(
     acl_allocation: Allocation,
     expiration_seconds: int = SECONDS_IN_A_DAY,
