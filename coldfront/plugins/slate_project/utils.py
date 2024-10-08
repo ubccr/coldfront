@@ -214,6 +214,17 @@ def sync_slate_project_users(allocation_obj, ldap_conn=None, ldap_search_conn=No
     ldap_read_write_usernames = ldap_conn.get_users(ldap_group_gid)
     ldap_read_only_usernames = ldap_conn.get_users(ldap_group_gid + 1)
 
+    duplicate_users = set(ldap_read_only_usernames).intersection(set(ldap_read_write_usernames))
+    for duplicate_user in duplicate_users:
+        if allocation_obj.project.pi.username == duplicate_user:
+            ldap_read_only_usernames.remove(duplicate_user)
+            logger.warning(f'Project PI {duplicate_user} exists in both Slate Project LDAP groups '
+                           f'(allocation pk={allocation_obj.pk}), placing in read/write')
+        else:
+            ldap_read_write_usernames.remove(duplicate_user)
+            logger.warning(f'User {duplicate_user} exists in both Slate Project LDAP groups '
+                           f'(allocation pk={allocation_obj.pk}), placing in read only')
+
     updated_read_write_usernames = []
     updated_read_only_usernames = []
 
