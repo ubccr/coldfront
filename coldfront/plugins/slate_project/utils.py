@@ -8,7 +8,7 @@ from decimal import Decimal
 from datetime import date
 
 import ldap.filter
-from ldap3 import Connection, Server, MODIFY_ADD, MODIFY_DELETE
+from ldap3 import Connection, Server, MODIFY_ADD, MODIFY_DELETE, Tls
 from django.urls import reverse
 from django.contrib.auth.models import User
 
@@ -1430,7 +1430,8 @@ class LDAPImportSearch():
         self.LDAP_BIND_PASSWORD = import_from_settings('LDAP_USER_SEARCH_BIND_PASSWORD', None)
         self.LDAP_CONNECT_TIMEOUT = import_from_settings('LDAP_USER_SEARCH_CONNECT_TIMEOUT', 2.5)
 
-        self.server = Server(self.LDAP_SERVER_URI, use_ssl=True, connect_timeout=self.LDAP_CONNECT_TIMEOUT)
+        tls = Tls(ciphers='ALL')
+        self.server = Server(self.LDAP_SERVER_URI, use_ssl=True, connect_timeout=self.LDAP_CONNECT_TIMEOUT, tls=tls)
         self.conn = Connection(self.server, self.LDAP_BIND_DN, self.LDAP_BIND_PASSWORD, auto_bind=True)
 
     def search_a_user(self, user_search_string, search_attributes_list=None):
