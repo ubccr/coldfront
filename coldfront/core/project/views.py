@@ -1979,7 +1979,7 @@ class ProjectAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Templa
 
             logger.info(
                 f'Admin {self.request.user.username} deleted {attributes_deleted_count} project '
-                f'attributes (project pk={self.object.project_id})'
+                f'attributes (project pk={pk})'
             )
 
             messages.success(request, 'Deleted {} attributes from project.'.format(
