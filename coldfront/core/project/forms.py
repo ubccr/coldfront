@@ -116,7 +116,7 @@ class ProjectAttributeAddForm(forms.ModelForm):
         super(ProjectAttributeAddForm, self).__init__(*args, **kwargs) 
         user =(kwargs.get('initial')).get('user')
         self.fields['proj_attr_type'].queryset = self.fields['proj_attr_type'].queryset.order_by(Lower('name'))
-        if not user.is_superuser:
+        if not user.is_superuser and not user.has_perm('project.delete_projectattribute'):
             self.fields['proj_attr_type'].queryset = self.fields['proj_attr_type'].queryset.filter(is_private=False)
 
 class ProjectAttributeDeleteForm(forms.Form):

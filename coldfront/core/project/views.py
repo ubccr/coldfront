@@ -162,7 +162,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         pk = self.kwargs.get('pk')
         project_obj = get_object_or_404(Project, pk=pk)
 
-        if self.request.user.is_superuser:
+        if self.request.user.is_superuser or self.request.user.has_perm('project.view_projectattribute'):
             attributes_with_usage = [attribute for attribute in project_obj.projectattribute_set.all(
             ).order_by('proj_attr_type__name') if hasattr(attribute, 'projectattributeusage')]
 
@@ -1856,15 +1856,9 @@ class ProjectAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Create
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
 
-        if self.request.user.is_superuser:
-            return True
-
-        if project_obj.pi == self.request.user:
-            return True
-
-        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        user = self.request.user
+        if user.is_superuser or user.has_perm('project.add_projectattribute'):
             return True
 
         messages.error(
@@ -1908,22 +1902,15 @@ class ProjectAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Templa
     def test_func(self):
         """ UserPassesTestMixin Tests"""
 
-        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-
-        if self.request.user.is_superuser:
-            return True
-
-        if project_obj.pi == self.request.user:
-            return True
-
-        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        user = self.request.user
+        if user.is_superuser or user.has_perm('project.delete_projectattribute'):
             return True
 
         messages.error(
             self.request, 'You do not have permission to add project attributes.')
 
     def get_avail_attrs(self, project_obj):
-        if not self.request.user.is_superuser:
+        if not self.request.user.is_superuser and not self.request.user.has_perm('project.delete_projectattribute'):
             avail_attrs = ProjectAttribute.objects.filter(project=project_obj, proj_attr_type__is_private=False)
         else:
             avail_attrs = ProjectAttribute.objects.filter(project=project_obj)
@@ -2008,15 +1995,8 @@ class ProjectAttributeUpdateView(LoginRequiredMixin, UserPassesTestMixin, Templa
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-        project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-
-        if self.request.user.is_superuser:
-            return True
-
-        if project_obj.pi == self.request.user:
-            return True
-
-        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        user = self.request.user
+        if user.is_superuser or user.has_perm('project.change_projectattribute'):
             return True
 
     def get(self, request, *args, **kwargs):

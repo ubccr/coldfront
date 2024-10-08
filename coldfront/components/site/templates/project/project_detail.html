@@ -380,9 +380,9 @@ Project Detail
   <div class="card-header">
     <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Attributes</h3> <span class="badge badge-secondary">{{attributes.count}}</span>
     <div class="float-right">
-      {% if project.status.name != 'Archived' and is_allowed_to_update_project %}
+      {% if project.status.name not in 'Archived, Expired' and perms.project.add_projectattribute %}
         <a class="btn btn-success" href="{% url 'project-attribute-create' project.pk %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Add Attribute</a>
-        {% if attributes %}
+        {% if attributes and perms.project.delete_projectattribute %}
           <a class="btn btn-danger" href="{% url 'project-attribute-delete' project.pk %}" role="button"><i class="fas fa-minus" aria-hidden="true"></i> Delete Attributes</a>
         {% endif %}
       {% endif %}
@@ -396,14 +396,14 @@ Project Detail
             <tr>
               <th scope="col">Attribute Type</th>
               <th scope="col">Attribute Value</th>
-              {% if is_allowed_to_update_project %}
+              {% if perms.project.change_projectattribute %}
               <th scope="col" class="nosort">Actions</th>
               {% endif %}
             </tr>
           </thead>
           <tbody>
             {% for attribute in attributes %}
-                {% if attribute.proj_attr_type.is_private and is_allowed_to_update_project %}
+                {% if attribute.proj_attr_type.is_private and perms.project.view_projectattribute %}
                   <tr style="background-color:#eee">
                     <td><i class="fas fa-lock" aria-hidden="true"></i> {{attribute}}</td>
                     <td>{{attribute.value}}</td>
@@ -415,7 +415,7 @@ Project Detail
                     <td>
                       {{attribute.value}}
                     </td>
-                    {% if is_allowed_to_update_project %}
+                    {% if perms.project.change_projectattribute %}
                     <td><a href="{% url 'project-attribute-update' project.pk attribute.pk %}"><i class="far fa-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a></td>
                     {% endif %}
                   </tr>                
