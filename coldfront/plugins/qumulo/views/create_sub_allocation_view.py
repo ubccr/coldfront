@@ -7,8 +7,6 @@ from coldfront.core.allocation.models import (
 )
 from coldfront.plugins.qumulo.forms import CreateSubAllocationForm
 from coldfront.plugins.qumulo.views.update_allocation_view import UpdateAllocationView
-from coldfront.plugins.qumulo.utils.acl_allocations import AclAllocations
-from coldfront.plugins.qumulo.utils.active_directory_api import ActiveDirectoryAPI
 
 
 class CreateSubAllocationView(UpdateAllocationView):
@@ -63,4 +61,11 @@ class CreateSubAllocationView(UpdateAllocationView):
     def form_valid(self, form: CreateSubAllocationForm):
         allocation_id = self.kwargs.get("allocation_id")
         parent_allocation = Allocation.objects.get(pk=allocation_id)
-        return super().form_valid(form, parent_allocation=parent_allocation)
+        # jprew - skipping update form_valid because *that* skips
+        # the base class form_valid
+
+        # TODO - remove this logic from form_valid; it doesn't belong
+        # in the view layer
+        return super(UpdateAllocationView, self).form_valid(
+            form, parent_allocation=parent_allocation
+        )
