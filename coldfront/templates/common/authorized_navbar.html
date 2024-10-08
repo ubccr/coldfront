@@ -35,7 +35,7 @@
           <a class="nav-link" href="{% url 'qumulo:allocation' %}">Create Allocation</a>
         </li>
         <li id="navbar-view-allocation" class="nav-item">
-          <a class="nav-link" href="{% url 'qumulo:allocation-table-list' %}">View All Allocations</a>
+          <a class="nav-link" href="{% url 'qumulo:allocation-table-list' %}">View All Allocation</a>
         </li>
         {% if request.user.is_superuser %}
           {% include 'common/navbar_admin.html' %}

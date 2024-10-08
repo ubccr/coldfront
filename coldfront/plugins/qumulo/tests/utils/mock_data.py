@@ -228,38 +228,3 @@ def set_allocation_attributes(
                 allocation=allocation,
                 value=form_data.get(allocation_attribute_name),
             )
-
-def enumerate_directory_contents(
-    ignored_path: str,
-    should_filter_path: str = '/this/path/should/filter'
-):
-    return [
-        {
-            'path': f'{should_filter_path}/directory_1/',
-            'type': 'FS_FILE_TYPE_DIRECTORY'
-        },
-        {
-            'path': f'{should_filter_path}/directory_2/',
-            'type': 'FS_FILE_TYPE_DIRECTORY'
-        },
-        {
-            'path': f'{should_filter_path}/directory_3/',
-            'type': 'FS_FILE_TYPE_DIRECTORY'
-        },
-        {
-            'path': '/storage2/fs1/test_allocation/directory_1/',
-            'type': 'FS_FILE_TYPE_DIRECTORY'
-        },
-        {
-            'path': '/storage2/fs1/test_allocation/file_1.txt',
-            'type': 'FS_FILE_TYPE_FILE'
-        },
-        {
-            'path': '/storage2/fs1/test_allocation/directory_2/',
-            'type': 'FS_FILE_TYPE_DIRECTORY'
-        },
-        {
-            'path': '/storage2/fs1/test_allocation/directory_3/',
-            'type': 'FS_FILE_TYPE_DIRECTORY'
-        },
-    ]
