@@ -202,17 +202,13 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 'resources').filter(project=self.object,).order_by('-end_date')
 
         else:
-            if self.object.status.name in ['Active', 'New', 'Waiting For Admin Approval', 'Contacted By Admin', ]:
-                allocations = Allocation.objects.filter(
-                    Q(project=self.object) &
-                    Q(project__projectuser__user=self.request.user) &
-                    Q(project__projectuser__status__name__in=['Active', ]) &
-                    Q(allocationuser__user=self.request.user) &
-                    Q(allocationuser__status__name__in=['Active', 'Eligible', 'Disabled', 'Retired'])
-                ).distinct().order_by('-end_date')
-            else:
-                allocations = Allocation.objects.prefetch_related(
-                    'resources').filter(project=self.object)
+            allocations = Allocation.objects.filter(
+                Q(project=self.object) &
+                Q(project__projectuser__user=self.request.user) &
+                Q(project__projectuser__status__name__in=['Active', ]) &
+                Q(allocationuser__user=self.request.user) &
+                Q(allocationuser__status__name__in=['Active', 'Eligible', 'Disabled', 'Retired'])
+            ).distinct().order_by('-end_date')
 
         allocation_submitted = self.request.GET.get('allocation_submitted')
         after_project_creation_get = self.request.GET.get('after_project_creation')
