@@ -11,6 +11,7 @@ from coldfront.plugins.slate_project.utils import (sync_slate_project_users,
                                                    get_new_user_status,
                                                    send_access_removed_email,
                                                    create_slate_project_data_file,
+                                                   send_slate_project_data_file,
                                                    download_files,
                                                    LDAPModify,
                                                    LDAPImportSearch)
@@ -61,4 +62,5 @@ def update_all_user_statuses():
 
 
 def create_slate_project_data():
-    create_slate_project_data_file()
+    slate_project_filename = create_slate_project_data_file()
+    send_slate_project_data_file(slate_project_filename)

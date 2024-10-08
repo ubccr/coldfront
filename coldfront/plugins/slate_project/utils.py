@@ -1146,6 +1146,12 @@ def create_slate_project_data_file():
 
     logger.info('Created a csv with Slate Project data')
 
+    return slate_project_filename
+
+
+def send_slate_project_data_file(slate_project_filename):
+    subprocess.run(['bash', os.path.join(SLATE_PROJECT_DIR, 'send_hpfs_data.sh', slate_project_filename)])
+
 
 def get_info(info, line, current_project):
     if f'"{info}"' in line:
