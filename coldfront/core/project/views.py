@@ -1036,8 +1036,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                         if cleaned_data['selected']:
                             allocation = allocations.get(pk=cleaned_data['pk'])
                             if allocations_added_to.get(allocation) is None:
-                                # First list is users added, second list is users added emails
-                                allocations_added_to[allocation] = [] # [[], []]
+                                allocations_added_to[allocation] = []
 
                             resource_name = allocation.get_parent_resource.name
                             # If the user does not have an account on the resource in the allocation then do not add them to it.
@@ -1115,12 +1114,13 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
                 if allocations_added_to:
                     for allocation, added_project_user_objs in allocations_added_to.items():
-                        emails = [project_user_obj.user.email for project_user_obj in added_project_user_objs if project_user_obj.enable_notifications]
+                        users = [project_user_obj.user for project_user_obj in added_project_user_objs if project_user_obj.enable_notifications]
+                        emails = [user.email for user in users]
                         if emails and project_obj.pi.email not in emails:
                             emails.append(project_obj.pi.email)
 
                             send_added_user_email(
-                                request, allocation, emails, emails)
+                                request, allocation, users, emails)
 
             if project_user_objs:
                 logger.info(
