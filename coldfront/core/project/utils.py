@@ -68,16 +68,17 @@ def create_admin_action(user, fields_to_check, project, base_model=None):
     base_model_dict = model_to_dict(base_model)
 
     for key, value in fields_to_check.items():
-        project_value = base_model_dict.get(key)
-        if type(value) is not type(project_value):
+        base_model_value = base_model_dict.get(key)
+        if type(value) is not type(base_model_value):
             if key == 'status':
-                project_value = ProjectStatusChoice.objects.get(pk=project_value).name
+                status_class = base_model._meta.get_field('status').remote_field.model
+                base_model_value = status_class.objects.get(pk=base_model_value).name
                 value = value.name
-        if value != project_value:
+        if value != base_model_value:
             ProjectAdminAction.objects.create(
                 user=user,
                 project=project,
-                action=f'Changed "{key}" from "{project_value}" to "{value}"'
+                action=f'Changed "{key}" from "{base_model_value}" to "{value}" for "{base_model}"'
             )
 
 
@@ -118,13 +119,13 @@ def create_admin_action_for_deletion(user, deleted_obj, project, base_model=None
         ProjectAdminAction.objects.create(
             user=user,
             project=project,
-            action=f'Deleted "{deleted_obj}" from "{base_model}" in "{project}"'
+            action=f'Deleted "{deleted_obj}" from "{base_model}"'
         )
     else:
         ProjectAdminAction.objects.create(
             user=user,
             project=project,
-            action=f'Deleted "{deleted_obj}" from "{project}"'
+            action=f'Deleted "{deleted_obj}"'
         )
 
 
@@ -133,11 +134,11 @@ def create_admin_action_for_creation(user, created_obj, project, base_model=None
         ProjectAdminAction.objects.create(
             user=user,
             project=project,
-            action=f'Created "{created_obj}" in "{base_model}" in "{project}"'
+            action=f'Created "{created_obj}" in "{base_model}" with value "{created_obj.value}"'
         )
     else:
         ProjectAdminAction.objects.create(
             user=user,
             project=project,
-            action=f'Created "{created_obj}" in "{project}"'
+            action=f'Created "{created_obj}" with value "{created_obj.value}"'
         )

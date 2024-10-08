@@ -2039,7 +2039,7 @@ class ProjectAttributeUpdateView(LoginRequiredMixin, UserPassesTestMixin, Templa
                     f'Admin {request.user.username} updated a project attribute (project pk={project_obj.pk})')
                 create_admin_action(
                     request.user,
-                    {'new_value': form_data.get('new_value')},
+                    {'value': form_data.get('new_value')},
                     project_obj,
                     project_attribute_obj
                 )

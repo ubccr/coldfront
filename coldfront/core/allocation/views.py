@@ -3261,7 +3261,7 @@ class AllocationAttributeUpdateView(LoginRequiredMixin, UserPassesTestMixin, Tem
                         f'allocation attribute (allocation pk={allocation_obj.pk})'
                     )
                     create_admin_action(
-                        request.user, {'new_value': new_value}, allocation_obj, allocation_attribute)
+                        request.user, {'value': new_value}, allocation_obj, allocation_attribute)
 
                     allocation_attribute.value = new_value
                     allocation_attribute.save()
