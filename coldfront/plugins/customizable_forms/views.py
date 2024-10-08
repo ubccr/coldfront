@@ -21,7 +21,8 @@ from coldfront.core.resource.models import Resource
 from coldfront.plugins.customizable_forms.forms import GenericForm
 from coldfront.core.allocation.utils import (set_default_allocation_user_role,
                                              send_allocation_user_request_email,
-                                             send_added_user_email)
+                                             send_added_user_email,
+                                             get_user_resources)
 from coldfront.core.resource.models import ResourceAttribute
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.slack import send_message
@@ -105,9 +106,8 @@ class AllocationResourceSelectionView(LoginRequiredMixin, UserPassesTestMixin, T
                 project_resource_count[resource_name] = 0
             project_resource_count[resource_name] += 1
 
-        resource_objs = Resource.objects.filter(
-            is_allocatable=True
-        ).prefetch_related('resource_type', 'resourceattribute_set').order_by('resource_type')
+        resource_objs = get_user_resources(self.request.user).prefetch_related(
+            'resource_type', 'resourceattribute_set').order_by('resource_type')
         accounts = get_user_info(self.request.user.username, ['memberOf']).get('memberOf')
         resource_categories = {}
         for resource_obj in resource_objs:
