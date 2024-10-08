@@ -795,7 +795,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         added_user_objs = []
         denied_users = []
         if formset.is_valid():
-            if allocation_user_limit is not None:
+            if allocation_user_limit:
                 # The users_to_add variable is not an actual list of users to add. The users listed
                 # are the remaining users in the project that are not in the allocation. We have to
                 # cycle through the formset and increment the total user count for each user that
