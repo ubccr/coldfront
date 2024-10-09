@@ -13,7 +13,7 @@ from django.urls import reverse
 from django.contrib.auth.models import User
 
 from coldfront.core.utils.common import import_from_settings
-from coldfront.core.utils.mail import send_email_template
+from coldfront.core.utils.mail import send_email_template, build_link
 from coldfront.core.allocation.models import (AllocationUserStatusChoice,
                                               AllocationUserRoleChoice,
                                               AllocationAttributeType,
@@ -1435,6 +1435,22 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
             create_allocation_attribute(
                 allocation_obj, 'Allocated Quantity', slate_project.get('allocated_quantity')
             )
+
+        template_context = {
+            'center_name': EMAIL_CENTER_NAME,
+            'slate_project': slate_project.get('namespace_entry'),
+            'slate_project_url': build_link(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk})),
+            'email_contact': SLATE_PROJECT_EMAIL,
+            'signature': EMAIL_SIGNATURE
+        }
+
+        send_email_template(
+            'Imported Slate Project',
+            'slate_project/email/imported_slate_project.txt',
+            template_context,
+            EMAIL_SENDER,
+            [project_obj.pi.email]
+        )
 
     if rejected_slate_projects:
         print(f'Slate projects not imported due to ineligible PI: {", ".join(rejected_slate_projects)}')
