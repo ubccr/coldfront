@@ -45,7 +45,6 @@ from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectUserUpdateForm,
                                           ProjectAttributeUpdateForm,
                                           ProjectRequestEmailForm,
-                                          ProjectPISearchForm,
                                           ProjectReviewAllocationForm)
 from coldfront.core.project.models import (Project,
                                            ProjectAttribute,
@@ -66,11 +65,8 @@ from coldfront.core.utils.mail import send_email, send_email_template
 
 from django import forms
 import urllib
-import csv
 from django.utils.html import format_html
-from django.http.response import StreamingHttpResponse
 from coldfront.core.user.models import UserProfile
-from coldfront.core.utils.common import Echo
 from coldfront.core.project.utils import (get_new_end_date_from_list,
                                           create_admin_action,
                                           get_project_user_emails,
@@ -306,8 +302,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
         projects_count = self.get_queryset().count()
         context['projects_count'] = projects_count
 
-        project_pi_search_form = ProjectPISearchForm()
-        context['project_pi_search_form'] = project_pi_search_form
+        context['enabled_pi_search'] = 'coldfront.plugins.pi_search' in settings.INSTALLED_APPS
 
         project_search_form = ProjectSearchForm(self.request.GET)
         if project_search_form.is_valid():
@@ -477,6 +472,14 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
         if self.request.user.userprofile.is_pi:
             return True
+        
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['pi_search_url'] = ''
+        if 'coldfront.plugins.pi_search' in settings.INSTALLED_APPS:
+            context['pi_search_url'] = reverse('pi-search-results')
+
+        return context
 
     def check_max_project_type_count_reached(self, project_type_obj, pi_obj):
         limit = PROJECT_TYPE_LIMIT_MAPPING.get(project_type_obj.name)
@@ -2049,36 +2052,6 @@ class ProjectAttributeUpdateView(LoginRequiredMixin, UserPassesTestMixin, Templa
                 for error in project_attribute_update_form.errors.values():
                     messages.error(request, error)
                 return HttpResponseRedirect(reverse('project-attribute-update', kwargs={'pk': project_obj.pk, 'project_attribute_pk': project_attribute_obj.pk}))
-
-
-class ProjectPISearchView(LoginRequiredMixin, ListView):
-    model = Project
-    template_name = 'project/project_pi_list.html'
-
-    def post(self, request, *args, **kwargs):
-        pi_username = request.POST.get('pi_username')
-        context = {}
-        context["pi_username"] = pi_username
-        projects = Project.objects.prefetch_related('pi', 'status',).filter(
-            pi__username=pi_username,
-            projectuser__status__name='Active',
-            status__name__in=['New', 'Active', ],
-            private=False
-        ).distinct()
-
-        new_project_list = []
-        for project in projects:
-            project_user = project.projectuser_set.filter(user=request.user)
-            if project_user.exists():
-                if project_user[0].status.name == 'Removed':
-                    new_project_list.append(project)
-            else:
-                new_project_list.append(project)
-
-        context["pi_projects"] = new_project_list
-        context['EMAIL_ENABLED'] = EMAIL_ENABLED
-        return render(request, self.template_name, context)
-
 
 class ProjectDeniedListView(LoginRequiredMixin, ListView):
 

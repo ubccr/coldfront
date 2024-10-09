@@ -56,16 +56,21 @@ Create Project
 </form>
 
 <script>
+  var pi_search_url = '{{ pi_search_url | safe }}';
   $("#navbar-main > ul > li.active").removeClass("active");
   $("#navbar-project-menu").addClass("active");
 
   function displayPIProjects(pi_username) {
+    if (pi_search_url.length === 0) {
+      return;
+    }
+
     data = {
       pi_username: pi_username,
       csrfmiddlewaretoken: "{{ csrf_token }}",
     }
     $.ajax({
-      url: "{% url 'project-pi-list' %}",
+      url: pi_search_url,
       type: "POST",
       data: data,
       success: function(data) {

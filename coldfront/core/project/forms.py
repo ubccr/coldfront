@@ -8,13 +8,10 @@ from django.db.models.functions import Lower
 from cProfile import label
 
 from coldfront.core.project.models import (Project, ProjectAttribute, ProjectAttributeType, ProjectReview,
-                                           ProjectUserRoleChoice, ProjectStatusChoice)
+                                           ProjectUserRoleChoice)
 from coldfront.core.utils.common import import_from_settings
+
 from django.core.validators import MinLengthValidator
-from coldfront.core.field_of_science.models import FieldOfScience
-from django.core.validators import MinLengthValidator
-from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Layout, Submit, Fieldset, Reset, Row, Column
 
 EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL = import_from_settings(
     'EMAIL_DIRECTOR_PENDING_PROJECT_REVIEW_EMAIL')
@@ -216,8 +213,3 @@ class ProjectUpdateForm(forms.Form):
 
         self.fields['title'].initial = project_obj.title
         self.fields['description'].initial = project_obj.description
-
-
-class ProjectPISearchForm(forms.Form):
-    PI_USERNAME = 'PI Username'
-    pi_username = forms.CharField(label=PI_USERNAME, max_length=100, required=False)
