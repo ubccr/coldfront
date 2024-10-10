@@ -1,11 +1,11 @@
 Dear {{ center_name }} user,
 
-Your slate project {{ slate_project }} has been imported into RT Projects. You can view its allocation at {{ slate_project_url }}. With your
+Your Slate Project {{ slate_project }} has been imported into RT Projects. You can view its allocation at {{ slate_project_url }}. With your
 Slate Project being a part of RT Projects you can now self manage your users and their roles from the url provided earlier. There are some new
 statuses to be aware about as they inform you if a user has access to your Slate Project space. These statuses do not indicate a change of
 how access is handled, they merely give information on someone's current access. These statuses are:
- - Active - This user has access to the Slate Project Space
- - Eligible - This user needs to create their slate project account at https://access.iu.edu/Accounts/Create to get access
+ - Active - This user has access to the Slate Project space
+ - Eligible - This user needs to create their Slate Project account at https://access.iu.edu/Accounts/Create to get access
  - Disabled - This user's access to this Slate Project space has been removed
  - Retired - This user is no longer active in this Slate Project and likely should be removed
 
