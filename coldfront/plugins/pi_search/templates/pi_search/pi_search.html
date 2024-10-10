@@ -1,32 +1,26 @@
 {% load crispy_forms_tags %}
 
-<div id="pi_search_header">
-  <h2>PI Search</h2>
-  <p>
-    You can use the PI Search function below to search for a project your PI is in and request to be added to it.
-  </p>
-</div>
-<div class="mb-3" id="pi_search_accordion">
+<div class="mb-3">
   <div class="card">
     <div class="card-header">
-      <a id="expand_pi_button" href="#collapse_pi" role="button" class="card-link" data-toggle="collapse">
-        Expand
-        <i id="plus_minus_1" class="fas fa-minus float-right"></i>
-      </a>
+      <h3>PI Search</h3>
     </div>
-    <div id="collapse_pi" class="collapse show" data-parent="#pi_search_accordion">
-      <div class="card-body">
-        <form id="pi_search_form" method="post">
-          {{ form|crispy }}
-          <input id="pi_search_submit" type="submit" class="btn btn-primary" value="Search">
-        </form>
-        <br>
-        <div class="row">
-          <div class="col" id="search_results">
-            <div class="card border-light">
-              <div class="card-body">
-                <div id="search_results_inner"></div>
-              </div>
+    <div class="card-body">
+      <p>
+        You can use the PI Search function to search for a project your PI is in and request to be added to it.
+      </p>
+      <form id="pi_search_form" method="post">
+        {{ form|crispy }}
+        <input id="pi_search_submit" type="submit" class="btn btn-primary" value="Search">
+        <input id="pi_search_reset" type="reset" class="btn btn-secondary" value="Clear">
+      </form>
+      <br>
+      <div class="row">
+        <div class="col" id="search_results">
+          <hr>
+          <div class="card border-light">
+            <div class="card-body">
+              <div id="search_results_inner"></div>
             </div>
           </div>
         </div>
@@ -41,11 +35,16 @@
   $(document).ready(function () {
     $('#search_results').hide()
 
+    $('#pi_search_form').on('reset', function() {
+      $('#search_results').hide()
+    })
+
     $('#pi_search_form').on('submit', function(event) {
       event.preventDefault();
       var pi_username = $('#id_pi_search').val();
 
       if (pi_last_searched === pi_username) {
+        $('#search_results').show();
         return;
       }
       pi_last_searched = pi_username
@@ -55,6 +54,12 @@
         return;
       }
 
+      $('#search_results').show();
+      $('#search_results_inner').html(
+        '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Searching...'
+      );
+      $('#search_results_inner').prop('disabled', true);
+      $('#search_results_inner').blur()
       data = {
         pi_username: pi_username,
         csrfmiddlewaretoken: "{{ csrf_token }}",
@@ -78,12 +83,5 @@
         }
       });
     });
-
-    $("#expand_pi_button").click(function() {
-      $('#collapse_pi').collapse();
-      icon = $("#plus_minus_1");
-      icon.toggleClass("fa-plus fa-minus");
-    });
-
   });
 </script>
