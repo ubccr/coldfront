@@ -1,6 +1,7 @@
 from django.urls import path, include
 from rest_framework import routers
 from ifxbilling.views import unauthorized as unauthorized_api
+from ifxbilling.views import get_orgs_with_billing
 from ifxuser.views import get_org_names
 from coldfront.plugins.ifx.viewsets import ColdfrontBillingRecordViewSet, ColdfrontReportRunViewSet, ColdfrontProductUsageViewSet
 from coldfront.plugins.ifx.views import update_user_accounts_view, get_billing_record_list, unauthorized, report_runs, run_report, calculate_billing_month, billing_month, get_product_usages, billing_records, send_billing_record_review_notification
@@ -13,6 +14,7 @@ router.register(r'product-usages', ColdfrontProductUsageViewSet, 'product-usage'
 urlpatterns = [
     path('api/unauthorized/', unauthorized_api),
     path('api/billing/get-billing-record-list/', get_billing_record_list),
+    path('api/billing/get-orgs-with-billing/<str:invoice_prefix>/<int:year>/<int:month>/', get_orgs_with_billing),
     path('api/calculate-billing-month/<int:year>/<int:month>/', calculate_billing_month),
     path('api/run-report/', run_report),
     path('api/get-org-names/', get_org_names, name='get-org-names'),
