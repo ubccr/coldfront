@@ -39,9 +39,34 @@ Project List
   {% endif %}
 </div>
 
-{% if enabled_pi_search %}
-  {% include "pi_search/pi_search_div.html" %}
-  <hr>
+{% if enabled_pi_search or enabled_slate_project_search %}
+  <div class="mb-3" id="search_functions_accordion">
+    <div class="card">
+      <div class="card-header">
+        <a id="expand_search_functions_button" href="#collapse_search_functions" role="button" class="card-link" data-toggle="collapse">
+          <i id="search_plus_minus_1" class="fas fa-search-minus"></i>
+          Search Functions
+          <i id="plus_minus_1" class="fas fa-minus float-right"></i>
+        </a>
+      </div>
+      <div id="collapse_search_functions" class="collapse show" data-parent="#search_functions_accordion">
+        <div class="card-body">
+          <div class="row">
+            {% if enabled_pi_search %}
+              <div class="col">
+                {% include "pi_search/pi_search_div.html" %}
+              </div>
+            {% endif %}
+            {% if enabled_slate_project_search %}
+              <div class="col">
+                {% include "slate_project/slate_project_search_div.html" %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 {% endif %}
 
 <div class="card">
@@ -223,6 +248,14 @@ Project List
   $("#expand_button").click(function() {
     $('#collapseOne').collapse();
     icon = $("#plus_minus");
+    icon.toggleClass("fa-plus fa-minus");
+  });
+
+  $("#expand_search_functions_button").click(function() {
+    $('#collapse_search_functions').collapse();
+    search_icon = $("#search_plus_minus_1");
+    search_icon.toggleClass("fa-search-plus fa-search-minus")
+    icon = $("#plus_minus_1");
     icon.toggleClass("fa-plus fa-minus");
   });
 </script>
