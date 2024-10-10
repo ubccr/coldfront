@@ -42,16 +42,12 @@ class PISearchResultsView(LoginRequiredMixin, ListView):
             private=False
         ).distinct()
 
-        new_project_list = []
+        context["pi_project_users"] = {}
         for project in projects:
-            project_user = project.projectuser_set.filter(user=request.user)
-            if project_user.exists():
-                if project_user[0].status.name == 'Removed':
-                    new_project_list.append(project)
-            else:
-                new_project_list.append(project)
+            context["pi_project_users"][project.pk] = project.projectuser_set.filter(
+                status__name='Active').values_list('user', flat=True)
 
-        context["pi_projects"] = new_project_list
+        context["pi_projects"] = projects
         context['EMAIL_ENABLED'] = EMAIL_ENABLED
         return render(request, self.template_name, context)
 

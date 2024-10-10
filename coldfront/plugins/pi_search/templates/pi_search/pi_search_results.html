@@ -1,4 +1,5 @@
 {% load crispy_forms_tags %}
+{% load common_tags %}
 
 <div>
   {% if not pi_projects and pi_username != '' %}
@@ -12,11 +13,15 @@
             <p>
               <strong>Principal Investigator:</strong> {{ project.pi.first_name }} {{ project.pi.last_name }} ({{ project.pi.username }})
             </p>
-            {% if EMAIL_ENABLED %}
-              <button id="{{project.pk}}" class="btn btn-primary" name="request_access" type="button">
-                <i class="far fa-envelope" aria-hidden="true"></i> Request Access
-              </button>
-              <p id="warning_{{project.pk}}" class="invalid invalid-feedback" style="display: none;">Failed to send email.</p>
+            {% if request.user.pk in pi_project_users|get_value_from_dict:project.pk %}
+              <p class="text-success">You are already in this</p>
+            {% else %}
+              {% if EMAIL_ENABLED %}
+                <button id="{{project.pk}}" class="btn btn-primary" name="request_access" type="button">
+                  <i class="far fa-envelope" aria-hidden="true"></i> Request Access
+                </button>
+                <p id="warning_{{project.pk}}" class="invalid invalid-feedback" style="display: none;">Failed to send email.</p>
+              {% endif %}
             {% endif %}
           </li>
         {% endfor %}
