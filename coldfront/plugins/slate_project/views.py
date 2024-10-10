@@ -65,6 +65,8 @@ class SlateProjectSearchResultsView(LoginRequiredMixin, ListView):
         if gid_obj.exists():
             gid_obj = gid_obj[0]
             context['allocation'] = gid_obj.allocation
+            context['allocation_users'] = gid_obj.allocation.allocationuser_set.filter(
+                status__name__in=['Active', 'Eligible']).values_list('user', flat=True)
 
             directory_obj = AllocationAttribute.objects.filter(
                 allocation_attribute_type__name='Slate Project Directory',

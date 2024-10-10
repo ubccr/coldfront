@@ -11,11 +11,15 @@
         <strong>Principal Investigator:</strong> 
         {{ allocation.project.pi.first_name }} {{ allocation.project.pi.last_name }} ({{ allocation.project.pi.username }})
       </p>
-      {% if EMAIL_ENABLED %}
-        <button id="{{allocation.pk}}" class="btn btn-primary" name="request_access" type="button">
-          <i class="far fa-envelope" aria-hidden="true"></i> Request Access
-        </button>
-        <p id="warning_{{allocation.pk}}" class="invalid invalid-feedback" style="display: none;">Failed to send email.</p>
+      {% if request.user.pk in allocation_users %}
+        <p class="text-success">You are already in this</p>
+      {% else %}
+        {% if EMAIL_ENABLED %}
+          <button id="{{allocation.pk}}" class="btn btn-primary" name="request_access" type="button">
+            <i class="far fa-envelope" aria-hidden="true"></i> Request Access
+          </button>
+          <p id="warning_{{allocation.pk}}" class="invalid invalid-feedback" style="display: none;">Failed to send email.</p>
+        {% endif %}
       {% endif %}
     </div>
   {% endif %}
