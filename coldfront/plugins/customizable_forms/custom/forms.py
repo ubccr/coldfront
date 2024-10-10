@@ -184,10 +184,10 @@ class GeodeProjectForm(BaseForm):
     account_number = forms.CharField(max_length=9, help_text='Format: xx-xxx-xx', validators=[ValidateAccountNumber()])
     sub_account_number = forms.CharField(max_length=20, required=False)
     terms_of_service = forms.BooleanField(
-        help_text='<a href="https://kb.iu.edu/d/aysw" target="_blank" rel="noopener noreferrer">Geode-Project Terms of Service</a>'
+        help_text='<a href="https://servicenow.iu.edu/kb?id=kb_article_view&sysparm_article=KB0023373" target="_blank" rel="noopener noreferrer">Geode-Project Terms of Service</a>'
     )
     data_management_responsibilities = forms.BooleanField(
-        help_text='<a href="https://kb.iu.edu/d/ayyz" target="_blank" rel="noopener noreferrer">Data management responsibilities</a>'
+        help_text='<a href="https://servicenow.iu.edu/kb?id=kb_article_view&sysparm_article=KB0023441" target="_blank" rel="noopener noreferrer">Data management responsibilities</a>'
     )
     confirm_best_practices = forms.BooleanField(
         help_text='<a href="#" data-toggle="modal" data-target="#id_data_best_practices_modal">Data Management Plan ideas and best practices</a>'
