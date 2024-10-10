@@ -1,0 +1,15 @@
+Dear {{ center_name }} user,
+
+User {{user.first_name}} {{user.last_name}} ({{user.username}}) has requested to join
+your Slate Project allocation in your project "{{project_title}}" at {{project_url}}.
+If you would like to add them then please visit your project's page, click on the add users button, 
+and type their username into the text box. You will then want to navigate to you Slate Project's
+allocation page at {{slate_project_url}} click on the add users button and add them from there.
+
+This user was able to send this request by searching for Slate Project allocations in projects you are a owner of
+via your username.
+
+If you have any questions please email us at {{help_email}}.
+
+Thank you,
+{{signature}}

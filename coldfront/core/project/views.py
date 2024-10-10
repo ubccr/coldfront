@@ -101,6 +101,8 @@ PROJECT_TYPE_LIMIT_MAPPING = import_from_settings(
     'PROJECT_TYPE_LIMIT_MAPPING', {})
 SLACK_MESSAGING_ENABLED = import_from_settings(
     'SLACK_MESSAGING_ENABLED', False)
+ENABLE_SLATE_PROJECT_SEARCH = import_from_settings(
+    'ENABLE_SLATE_PROJECT_SEARCH', False)
 
 if EMAIL_ENABLED:
     EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
@@ -303,6 +305,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
         context['projects_count'] = projects_count
 
         context['enabled_pi_search'] = 'coldfront.plugins.pi_search' in settings.INSTALLED_APPS
+        context['enabled_slate_project_search'] = ENABLE_SLATE_PROJECT_SEARCH
 
         project_search_form = ProjectSearchForm(self.request.GET)
         if project_search_form.is_valid():

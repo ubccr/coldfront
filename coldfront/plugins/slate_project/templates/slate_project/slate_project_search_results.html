@@ -1,0 +1,52 @@
+{% load crispy_forms_tags %}
+
+<div>
+  {% if not allocation %}
+    <p class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i> Not matches for this GID</p>
+  {% else %}
+    <div id="slate_project_results">
+      <p><strong>Project Title:</strong> {{ allocation.project.title }}</p>
+      <p><strong>Slate Project:</strong> {{slate_project}}</p>
+      <p>
+        <strong>Principal Investigator:</strong> 
+        {{ allocation.project.pi.first_name }} {{ allocation.project.pi.last_name }} ({{ allocation.project.pi.username }})
+      </p>
+      {% if EMAIL_ENABLED %}
+        <button id="{{allocation.pk}}" class="btn btn-primary" name="request_access" type="button">
+          <i class="far fa-envelope" aria-hidden="true"></i> Request Access
+        </button>
+        <p id="warning_{{allocation.pk}}" class="invalid invalid-feedback" style="display: none;">Failed to send email.</p>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+
+<script>
+  $('[name="request_access"]').on('click', function(event) {
+    var pk = event.target.id;
+    $('#' + pk).html(
+      '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Sending...'
+    );
+    $('#' + pk).prop('disabled', true);
+    $('#' + pk).blur()
+    $.ajax({
+      url: '{% url "send-slate-project-access-request" %}',
+      type: 'POST',
+      data: {
+        allocation_pk: pk,
+        csrfmiddlewaretoken: "{{ csrf_token }}"
+      },
+      success : function () {
+        $('#' + pk).text('Sent!');
+        $('#warning_' + event.target.id).hide();
+      },
+      error : function() {
+        $('#' + pk).text(
+          'Resend'
+        );
+        $('#warning_' + event.target.id).show();
+        $('#' + pk).prop('disabled', false);
+      }
+    })
+  })
+</script>
