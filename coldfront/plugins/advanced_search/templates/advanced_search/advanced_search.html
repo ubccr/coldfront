@@ -129,9 +129,8 @@ Project and Allocation Export List
     $(base_div_id + 'allocationattribute__usage_format').val('whole');
   }
 
-  function displayOptionIsSelected() {
-    console.log($('#full-search input[type=checkbox]').is(":checked"))
-    if ($('#full-search input[type=checkbox]').is(":checked")) {
+  function displayOptionIsSelected(form) {
+    if ($('#' + form + ' input[type=checkbox]').is(":checked")) {
       return true;
     }
     return false;
@@ -147,20 +146,34 @@ Project and Allocation Export List
         dateFormat: "m/d/Y",
       })
 
-    var is_checked = displayOptionIsSelected();
+    var is_checked = displayOptionIsSelected(active_tab);
     if (is_checked) {
       $('#no_display_alert').hide();
     } else {
       $('#no_display_alert').show();
     }
-    $('#full-search input[type="checkbox"]').change(function(){ 
-      var is_checked = displayOptionIsSelected();
-      if (is_checked) {
-        $('#no_display_alert').hide();
-        return;
-      }
-      $('#no_display_alert').show();
-    })
+    var forms = ['project-search', 'allocation-search', 'user-search']
+    for (var i = 0; i < forms.length; i++) {
+      let form = forms[i]
+
+      $('[href="#' + form + '"]').on('click', function() {
+        var is_checked = displayOptionIsSelected(form);
+        if (is_checked) {
+          $('#no_display_alert').hide();
+          return;
+        }
+        $('#no_display_alert').show();
+      })
+
+      $('#' + form + ' input[type="checkbox"]').change(function(){ 
+        var is_checked = displayOptionIsSelected(form);
+        if (is_checked) {
+          $('#no_display_alert').hide();
+          return;
+        }
+        $('#no_display_alert').show();
+      })
+    }
 
     if (active_tab === 'allocation-search') {
       $('#project-search').toggleClass('active');
