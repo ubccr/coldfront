@@ -2,11 +2,11 @@
 
 <div>
   {% if not allocation %}
-    <p class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i> Not matches for this GID</p>
+    <p class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i> Not matches for this Slate Project</p>
   {% else %}
     <div id="slate_project_results">
       <p><strong>Project Title:</strong> {{ allocation.project.title }}</p>
-      <p><strong>Slate Project:</strong> {{slate_project}}</p>
+      <p><strong>Slate Project:</strong> {{ slate_project }}</p>
       <p>
         <strong>Principal Investigator:</strong> 
         {{ allocation.project.pi.first_name }} {{ allocation.project.pi.last_name }} ({{ allocation.project.pi.username }})

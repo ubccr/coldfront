@@ -52,29 +52,22 @@ class SlateProjectSearchResultsView(LoginRequiredMixin, ListView):
     template_name = 'slate_project/slate_project_search_results.html'
 
     def post(self, request, *args, **kwargs):
-        gid = request.POST.get('gid')
+        slate_project = request.POST.get('slate_project')
         context = {}
-        context['gid'] = gid
-        gid_obj = AllocationAttribute.objects.filter(
-            allocation_attribute_type__name='GID',
+        slate_project_obj = AllocationAttribute.objects.filter(
+            allocation_attribute_type__name='Slate Project Directory',
             allocation__resources__name='Slate Project',
             allocation__status__name='Active',
             allocation__project__status__name='Active',
-            value=gid
+            value='/N/project/' + slate_project
         )
-        if gid_obj.exists():
-            gid_obj = gid_obj[0]
-            context['allocation'] = gid_obj.allocation
-            context['allocation_users'] = gid_obj.allocation.allocationuser_set.filter(
+        if slate_project_obj.exists():
+            slate_project_obj = slate_project_obj[0]
+            context['allocation'] = slate_project_obj.allocation
+            context['allocation_users'] = slate_project_obj.allocation.allocationuser_set.filter(
                 status__name__in=['Active', 'Eligible']).values_list('user', flat=True)
 
-            directory_obj = AllocationAttribute.objects.filter(
-                allocation_attribute_type__name='Slate Project Directory',
-                allocation=gid_obj.allocation
-            )
-            context['slate_project'] = ''
-            if directory_obj.exists():
-                context['slate_project'] = directory_obj[0].value.split('/')[-1]
+            context['slate_project'] = slate_project_obj.value.split('/')[-1]
 
         context['EMAIL_ENABLED'] = EMAIL_ENABLED
         return render(request, self.template_name, context)

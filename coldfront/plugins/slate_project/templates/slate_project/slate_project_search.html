@@ -30,7 +30,7 @@
 </div>
 
 <script>
-  var gid_last_searched = '';
+  var slate_project_last_searched = '';
 
   $(document).ready(function () {
     $('#slate_project_search_results').hide()
@@ -41,15 +41,15 @@
 
     $('#slate_project_search_form').on('submit', function(event) {
       event.preventDefault();
-      var gid = $('#id_gid').val();
+      var slate_project = $('#id_slate_project').val();
 
-      if (gid_last_searched === gid) {
+      if (slate_project_last_searched === slate_project) {
         $('#slate_project_search_results').show()
         return;
       }
-      gid_last_searched = gid
+      slate_project_last_searched = slate_project
       
-      if (gid === '') {
+      if (slate_project === '') {
         $('#slate_project_search_results').hide();
         return;
       }
@@ -61,7 +61,7 @@
       $('#slate_project_search_results_inner').prop('disabled', true);
       $('#slate_project_search_results_inner').blur()
       data = {
-        gid: gid,
+        slate_project: slate_project,
         csrfmiddlewaretoken: "{{ csrf_token }}",
       }
       $.ajax({
