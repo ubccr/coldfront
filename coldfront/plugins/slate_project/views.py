@@ -59,7 +59,7 @@ class SlateProjectSearchResultsView(LoginRequiredMixin, ListView):
             allocation__resources__name='Slate Project',
             allocation__status__name='Active',
             allocation__project__status__name='Active',
-            value='/N/project/' + slate_project
+            value__icontains='/N/project/' + slate_project
         )
         if slate_project_obj.exists():
             slate_project_obj = slate_project_obj[0]
