@@ -147,8 +147,8 @@ def sync_slate_project_ldap_group(allocation_obj, ldap_conn=None):
         ldap_conn = LDAPModify()
     if not ldap_conn.check_attribute_exists('gidNumber', ldap_group_gid):
         logger.error(
-            f'LDAP: Slate Project GID for allocation {allocation_obj.pk} does not exist. No sync '
-            f'was performed'
+            f'LDAP: Slate Project GID for allocation {allocation_obj.pk} does not exist. No LDAP group '
+            f'sync was performed'
         )
         return
     
@@ -203,6 +203,13 @@ def sync_slate_project_users(allocation_obj, ldap_conn=None, ldap_search_conn=No
         ldap_conn = LDAPModify()
     if ldap_search_conn is None:
         ldap_search_conn = LDAPImportSearch()
+
+    if not ldap_conn.check_attribute_exists('gidNumber', ldap_group_gid):
+        logger.error(
+            f'LDAP: Slate Project GID for allocation {allocation_obj.pk} does not exist. No Slate Project '
+            f'user sync was performed'
+        )
+        return
 
     read_write_user_objs = allocation_obj.allocationuser_set.filter(
         role__name='read/write', status__name__in=['Active', 'Eligible', 'Disabled', 'Retired']
