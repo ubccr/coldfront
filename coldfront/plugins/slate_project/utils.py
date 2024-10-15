@@ -465,7 +465,7 @@ def check_pi_total_allocated_quantity(pi_username):
 
 
 def download_files():
-    subprocess.run(['bash', os.path.join(SLATE_PROJECT_INCOMING_DIR, 'get_hpfs_data.sh')])
+    subprocess.run(['/usr/bin/bash', os.path.join(SLATE_PROJECT_INCOMING_DIR, 'get_hpfs_data.sh')])
 
 
 def send_expiry_email(allocation_obj):
@@ -1169,7 +1169,7 @@ def create_slate_project_data_file():
 
 
 def send_slate_project_data_file(slate_project_filename):
-    subprocess.run(['bash', os.path.join(SLATE_PROJECT_DIR, 'send_hpfs_data.sh', slate_project_filename)])
+    subprocess.run(['/usr/bin/bash', os.path.join(SLATE_PROJECT_DIR, 'send_hpfs_data.sh', slate_project_filename)])
 
 
 def get_info(info, line, current_project):
