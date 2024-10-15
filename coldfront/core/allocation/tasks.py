@@ -71,7 +71,7 @@ def send_expiry_emails():
                     if (allocation.status.name in ['Payment Pending', 'Payment Requested', 'Unpaid'] or allocation.is_locked):
                         allocation_renew_url = f'{CENTER_BASE_URL.strip("/")}/{"allocation"}/{allocation.pk}/'
                     else:
-                        allocation_renew_url = f'{CENTER_BASE_URL.strip("/")}/{"allocation"}/{allocation.pk}/{"renew"}/'
+                        allocation_renew_url = f'{CENTER_BASE_URL.strip("/")}/{"allocation"}/{allocation.pk}/{"renew"}'
 
                     resource_name = allocation.get_parent_resource.name
 
