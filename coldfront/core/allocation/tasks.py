@@ -63,10 +63,12 @@ def send_expiry_emails():
                 allocation = allocationuser.allocation
 
                 if (((allocation.status.name in ['Active', 'Payment Pending', 'Payment Requested', 'Unpaid']) and (allocation.end_date == expring_in_days))):
-                    
+                    if not allocation.project.requires_review:
+                        continue
+
                     project_url = f'{CENTER_BASE_URL.strip("/")}/{"project"}/{allocation.project.pk}/'
 
-                    if (allocation.status.name in ['Payment Pending', 'Payment Requested', 'Unpaid']):
+                    if (allocation.status.name in ['Payment Pending', 'Payment Requested', 'Unpaid'] or allocation.is_locked):
                         allocation_renew_url = f'{CENTER_BASE_URL.strip("/")}/{"allocation"}/{allocation.pk}/'
                     else:
                         allocation_renew_url = f'{CENTER_BASE_URL.strip("/")}/{"allocation"}/{allocation.pk}/{"renew"}/'
