@@ -701,7 +701,7 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
+        if project_obj.status.name in ['Archived', 'Denied', 'Expired', 'Renewal Denied', ]:
             messages.error(
                 request, 'You cannot update a project with status "{}".'.format(project_obj.status.name)
             )
@@ -763,7 +763,7 @@ class ProjectAddUsersSearchView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
+        if project_obj.status.name in ['Archived', 'Denied', 'Expired', 'Renewal Denied', ]:
             messages.error(
                 request, 'You cannot add users to a project with status "{}".'.format(project_obj.status.name)
             )
@@ -799,7 +799,7 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
+        if project_obj.status.name in ['Archived', 'Denied', 'Expired', 'Renewal Denied', ]:
             messages.error(
                 request, 'You cannot add users to a project with status "{}".'.format(project_obj.status.name)
             )
@@ -904,7 +904,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
+        if project_obj.status.name in ['Archived', 'Denied', 'Expired', 'Renewal Denied', ]:
             messages.error(
                 request, 'You cannot add users to a project with status "{}".'.format(project_obj.status.name))
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
@@ -1182,7 +1182,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.status.name in ['Archived', 'Denied', ]:
+        if project_obj.status.name in ['Archived', 'Denied', 'Renewal Denied', ]:
             messages.error(
                 request, 'You cannot remove users from a project with status "{}".'.format(project_obj.status.name))
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
@@ -1363,7 +1363,7 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
         project_user_pk = self.kwargs.get('project_user_pk')
 
-        if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
+        if project_obj.status.name in ['Archived', 'Denied', 'Expired', 'Renewal Denied', ]:
             messages.error(
                 request, 'You cannot update a user in a(n) {} project.'.format(project_obj.status.name))
             return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_user_pk}))
@@ -2083,11 +2083,11 @@ class ProjectDeniedListView(LoginRequiredMixin, ListView):
             data = project_search_form.cleaned_data
             if data.get('show_all_projects') and (self.request.user.is_superuser or self.request.user.has_perm('project.can_view_all_projects')):
                 projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
-                    status__name__in=['Denied', ]).order_by(order_by)
+                    status__name__in=['Denied', 'Renewal Denied', ]).order_by(order_by)
             else:
 
                 projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
-                    Q(status__name__in=['Denied', ]) &
+                    Q(status__name__in=['Denied', 'Renewal Denied', ]) &
                     Q(projectuser__user=self.request.user) &
                     Q(projectuser__status__name='Active')
                 ).order_by(order_by)
@@ -2109,7 +2109,7 @@ class ProjectDeniedListView(LoginRequiredMixin, ListView):
 
         else:
             projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
-                Q(status__name__in=['Denied', ]) &
+                Q(status__name__in=['Denied', 'Renewal Denied', ]) &
                 Q(projectuser__user=self.request.user) &
                 Q(projectuser__status__name='Active')
             ).order_by(order_by)
@@ -2187,7 +2187,7 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
-        if project_obj.status.name in ['Denied', 'Waiting For Admin Approval', 'Review Pending', 'Contacted By Admin', ]:
+        if project_obj.status.name in ['Denied', 'Waiting For Admin Approval', 'Review Pending', 'Contacted By Admin', 'Renewal Denied', ]:
             messages.error(
                 request,
                 'You cannot archive a project with status "{}".'.format(project_obj.status.name)
@@ -2501,7 +2501,7 @@ class ProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin, View):
         project_review_obj = get_object_or_404(ProjectReview, pk=pk)
         project_review_status_obj = ProjectReviewStatusChoice.objects.get(name="Denied")
         project_obj = project_review_obj.project
-        project_status_obj = ProjectStatusChoice.objects.get(name="Denied")
+        project_status_obj = ProjectStatusChoice.objects.get(name="Renewal Denied")
 
         create_admin_action(request.user, {'status': project_status_obj}, project_obj)
 

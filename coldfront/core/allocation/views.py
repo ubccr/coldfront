@@ -550,7 +550,7 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             messages.error(request, 'You cannot request a new allocation because you have to review your project first.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
-        if project_obj.status.name in ['Archived', 'Denied', 'Review Pending', 'Expired', ]:
+        if project_obj.status.name in ['Archived', 'Denied', 'Review Pending', 'Expired', 'Renewal Denied', ]:
             messages.error(
                 request, 'You cannot request a new allocation for a project with status "{}".'.format(project_obj.status.name)
             )

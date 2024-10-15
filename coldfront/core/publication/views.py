@@ -94,7 +94,7 @@ class PublicationSearchView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(
             Project, pk=self.kwargs.get('project_pk'))
-        if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
+        if project_obj.status.name in ['Archived', 'Denied', 'Expired', 'Renewal Denied', ]:
             messages.error(
                 request,
                 'You cannot add publications to a project with status "{}".'.format(project_obj.status.name)
@@ -135,7 +135,7 @@ class PublicationSearchResultView(LoginRequiredMixin, UserPassesTestMixin, Templ
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(
             Project, pk=self.kwargs.get('project_pk'))
-        if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
+        if project_obj.status.name in ['Archived', 'Denied', 'Expired', 'Renewal Denied', ]:
             messages.error(
                 request,
                 'You cannot add publications to a project with status "{}".'.format(project_obj.status.name)
@@ -245,7 +245,7 @@ class PublicationAddView(LoginRequiredMixin, UserPassesTestMixin, View):
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(
             Project, pk=self.kwargs.get('project_pk'))
-        if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
+        if project_obj.status.name in ['Archived', 'Denied', 'Expired', 'Renewal Denied', ]:
             messages.error(
                 request,
                 'You cannot add publications to a project with status "{}".'.format(project_obj.status.name)
@@ -325,7 +325,7 @@ class PublicationAddManuallyView(LoginRequiredMixin, UserPassesTestMixin, FormVi
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
-        if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
+        if project_obj.status.name in ['Archived', 'Denied', 'Expired', 'Renewal Denied', ]:
             messages.error(
                 request,
                 'You cannot add publications to a project with status "{}".'.format(project_obj.status.name)

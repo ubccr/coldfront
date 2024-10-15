@@ -62,7 +62,7 @@ Allocation Review New and Pending Requests
                 {% else %}
                   <td class="text-success"><strong>{{ allocation.project.status.name }}</strong></td>
                 {% endif %}
-              {% elif allocation.project.status.name in 'Archived, Denied, Expired' %}
+              {% elif allocation.project.status.name in 'Archived, Denied, Expired, Renewal Denied' %}
                 <td class="text-danger"><strong>{{ allocation.project.status.name }}</strong></td>
               {% else %}
                 <td class="text-primary"><strong>{{ allocation.project.status.name }}</strong></td>

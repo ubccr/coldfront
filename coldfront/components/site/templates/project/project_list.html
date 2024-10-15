@@ -175,7 +175,7 @@ Project List
                   {% else %}
                     <td class="text-success"><strong>{{ project.status.name }}</strong></td>
                   {% endif %}
-                {% elif project.status.name in 'Archived, Denied, Expired' %}
+                {% elif project.status.name in 'Archived, Denied, Expired, Renewal Denied' %}
                   <td class="text-danger">
                     <strong>{{ project.status.name }}</strong>
                       {% if user.username in project.list_of_manager_usernames %}
