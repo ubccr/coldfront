@@ -1,26 +1,32 @@
 {% load crispy_forms_tags %}
 
 <div>
-  {% if not allocation %}
+  {% if not slate_projects %}
     <p class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i> Not matches for this Slate Project</p>
   {% else %}
     <div id="slate_project_results">
-      <p><strong>Project Title:</strong> {{ allocation.project.title }}</p>
-      <p><strong>Slate Project:</strong> {{ slate_project }}</p>
-      <p>
-        <strong>Principal Investigator:</strong> 
-        {{ allocation.project.pi.first_name }} {{ allocation.project.pi.last_name }} ({{ allocation.project.pi.username }})
-      </p>
-      {% if request.user.pk in allocation_users %}
-        <p class="text-success">You are already in this</p>
-      {% else %}
-        {% if EMAIL_ENABLED %}
-          <button id="{{allocation.pk}}" class="btn btn-primary" name="request_access" type="button">
-            <i class="far fa-envelope" aria-hidden="true"></i> Request Access
-          </button>
-          <p id="warning_{{allocation.pk}}" class="invalid invalid-feedback" style="display: none;">Failed to send email.</p>
-        {% endif %}
-      {% endif %}
+      <ul class="list-group list-group-flush">
+        {% for slate_project in slate_projects %}
+          <li class="list-group-item">
+            <p><strong>Project Title:</strong> {{ slate_project.slate_project.allocation.project.title }}</p>
+            <p><strong>Slate Project:</strong> {{ slate_project.slate_project_name }}</p>
+            <p>
+              <strong>Principal Investigator:</strong> 
+              {{ slate_project.pi.first_name }} {{ slate_project.pi.last_name }} ({{ slate_project.pi.username }})
+            </p>
+            {% if request.user.pk in slate_project.allocation_users %}
+              <p class="text-success">You are already in this</p>
+            {% else %}
+              {% if EMAIL_ENABLED %}
+                <button id="{{slate_project.allocation_pk}}" class="btn btn-primary" name="request_access" type="button">
+                  <i class="far fa-envelope" aria-hidden="true"></i> Request Access
+                </button>
+                <p id="warning_{{slate_project.allocation_pk}}" class="invalid invalid-feedback" style="display: none;">Failed to send email.</p>
+              {% endif %}
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
     </div>
   {% endif %}
 </div>
