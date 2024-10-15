@@ -137,11 +137,14 @@ def send_expiry_emails():
         for allocationuser in user.allocationuser_set.all():
             allocation = allocationuser.allocation
 
-            if (allocation.end_date == expring_in_days):
+            if not allocation.project.requires_review:
+                continue
+
+            if (allocation.end_date == expring_in_days and not allocation.is_locked):
                 
                 project_url = f'{CENTER_BASE_URL.strip("/")}/{"project"}/{allocation.project.pk}/'
 
-                allocation_renew_url = f'{CENTER_BASE_URL.strip("/")}/{"allocation"}/{allocation.pk}/{"renew"}/'
+                allocation_renew_url = f'{CENTER_BASE_URL.strip("/")}/{"allocation"}/{allocation.pk}/{"renew"}'
 
                 allocation_url = f'{CENTER_BASE_URL.strip("/")}/{"allocation"}/{allocation.pk}/'
 
