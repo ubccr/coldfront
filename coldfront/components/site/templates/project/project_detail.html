@@ -257,7 +257,7 @@ Project Detail
               </td> -->
               <td>
                 {% if is_allowed_to_update_project %}
-                  <a title="Edit user" href="{% url 'project-user-detail' project.pk user.id %}"><i class="fas fa-user-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a>
+                  <a title="Edit user" data-toggle="tooltip" data-delay="250" href="{% url 'project-user-detail' project.pk user.id %}"><i class="fas fa-user-edit" aria-hidden="true"></i><span class="sr-only">Edit</span></a>
                 {% endif %}
               </td>
             </tr>
@@ -323,11 +323,11 @@ Project Detail
                 <td>{{allocation.end_date|date:"Y-m-d"}}</td>
               {% endif %}
               <td class="text-nowrap">
-                <a title="Details" href="{% url 'allocation-detail' allocation.pk %}">
+                <a title="Details" data-toggle="tooltip" data-delay="250" href="{% url 'allocation-detail' allocation.pk %}">
                   <i class="far fa-folder-open" aria-hidden="true"></i><span class="sr-only">Details</span>
                 </a>
                 {% if is_allowed_to_update_project and allocation.status.name in 'Active, New, Renewal Requested, Billing Information Submitted' and not allocation.is_locked %}
-                  <a title="Add Users" href="{% url 'allocation-add-users' allocation.pk %}">
+                  <a title="Add Users" data-toggle="tooltip" data-delay="250" href="{% url 'allocation-add-users' allocation.pk %}">
                     <i class="fas fa-user-plus" aria-hidden="true"></i><span class="sr-only">Add Users</span>
                   </a>
                 {% endif %}
@@ -661,6 +661,8 @@ Project Detail
 
   $(document).ready(function(){
     var guage_data = {{ guage_data | safe }};
+    $('[data-toggle="tooltip"]').tooltip()
+  
     drawGauges(guage_data);
 
     if (display_modal) {
