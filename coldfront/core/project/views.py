@@ -970,6 +970,12 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
             for match in matches:
                 match.update({'role': ProjectUserRoleChoice.objects.get(name='User')})
 
+        auto_disable_notifications = False
+        auto_disable_obj = project_obj.projectattribute_set.filter(
+            proj_attr_type__name='Auto Disable User Notifications')
+        if auto_disable_obj.exists() and auto_disable_obj[0].value == 'Yes':
+            auto_disable_notifications = True
+
         formset = formset_factory(ProjectAddUserForm, max_num=len(matches))
         formset = formset(request.POST, initial=matches, prefix='userform')
 
@@ -1031,7 +1037,12 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                             user=user_obj, project=project_obj, role=role_choice, status=project_user_active_status_choice)
 
                     # Notifications by default will be disabled for group accounts.
-                    project_user_obj.enable_notifications = not role_choice.name == 'Group'
+                    if role_choice.name == 'Group':
+                        project_user_obj.enable_notifications = False
+                    elif role_choice.name == 'User' and auto_disable_notifications:
+                        project_user_obj.enable_notifications = False
+                    else:
+                        project_user_obj.enable_notifications = True
                     project_user_obj.save()
                     project_user_objs.append(project_user_obj)
 
