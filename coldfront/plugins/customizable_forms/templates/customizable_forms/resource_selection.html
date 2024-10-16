@@ -59,4 +59,9 @@ Choose a Resource for Your Allocation
   {% if after_project_creation != 'true' %}
     <a class="btn btn-secondary" href="{% url 'project-detail' project_obj.pk %}" role="button">Back to Project</a><br>
   {% endif %}
+
+  <script>
+    $("#navbar-main > ul > li.active").removeClass("active");
+    $("#navbar-project-menu").addClass("active");
+  </script>
 {% endblock %}

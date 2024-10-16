@@ -204,6 +204,9 @@ Request New Allocation
 </div>
 
 <script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-project-menu").addClass("active");
+  
   function setUpUserSearch(username_field) {
     $('#id_' + username_field).change(function (e) {
       field_id = e.target.id;

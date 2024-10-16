@@ -44,6 +44,9 @@ Request New Allocation
 </form>
 
 <script>
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-project-menu").addClass("active");
+
   $(document).ready(function () {
     var radios = $("[type=radio]").parent();
     for (var i = 0; i < radios.length; i++) {

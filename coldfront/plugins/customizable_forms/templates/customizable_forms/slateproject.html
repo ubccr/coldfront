@@ -84,6 +84,9 @@ Request New Allocation
   var total_pi_allocated_quantity = {{ total_pi_allocated_quantity|safe }}
   var pi_allocated_quantity_threshold = {{ pi_allocated_quantity_threshold|safe }}
 
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-project-menu").addClass("active");
+
   $(document).ready(function () {
     if (total_pi_allocated_quantity > pi_allocated_quantity_threshold) {
       $("#id_account_number").val('');
