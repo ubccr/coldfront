@@ -660,8 +660,6 @@ Project Detail
   }
 
   $(document).ready(function(){
-    $('[data-toggle="popover"]').popover();
-
     var guage_data = {{ guage_data | safe }};
     drawGauges(guage_data);
 

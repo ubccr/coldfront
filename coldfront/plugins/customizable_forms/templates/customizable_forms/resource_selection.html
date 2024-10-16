@@ -29,6 +29,9 @@ Choose a Resource for Your Allocation
                       PI only
                     {% elif resource.limit_reached %}
                       Allocated, limit reached
+                      <a href="#" data-toggle="popover" data-trigger="hover" title="{{ resource.limit_title }}" data-content="{{ resource.limit_description }}">
+                        <i class="fas fa-info-circle" aria-hidden="true"></i>
+                      </a>
                     {% elif resource.has_account %}
                       {% if resource.resource.name in resources.allocated %}
                         Allocated

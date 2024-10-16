@@ -116,11 +116,18 @@ class AllocationResourceSelectionView(LoginRequiredMixin, UserPassesTestMixin, T
                 resource_categories[resource_type_name] = {'allocated': set(), 'resources': []}
 
             limit_reached = False
-            limit_objs = resource_obj.resourceattribute_set.filter(resource_attribute_type__name='allocation_limit')
+            limit_description = ''
+            limit_title = ''
+            allocation_limit_objs = resource_obj.resourceattribute_set.filter(
+                resource_attribute_type__name='allocation_limit'
+            )
             count = project_resource_count.get(resource_obj.name)
             if count is not None:
                 resource_categories[resource_type_name]['allocated'].add(resource_obj.name)
-                if limit_objs.exists() and count >= int(limit_objs[0].value):
+                if allocation_limit_objs.exists() and count >= int(allocation_limit_objs[0].value):
+                    limit_reached = True
+                    limit_title = 'Project Resource Limit'
+                    limit_description = 'Can only have one per project'
                     limit_reached = True
 
             help_url = resource_obj.resourceattribute_set.filter(resource_attribute_type__name='help_url')
@@ -147,7 +154,9 @@ class AllocationResourceSelectionView(LoginRequiredMixin, UserPassesTestMixin, T
                     'info_link': help_url,
                     'limit_reached': limit_reached,
                     'has_account': has_account,
-                    'can_request': can_request 
+                    'can_request': can_request,
+                    'limit_description': limit_description,
+                    'limit_title': limit_title
                 }
             )
 
