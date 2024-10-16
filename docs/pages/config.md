@@ -174,6 +174,11 @@ For more info on [ColdFront plugins](../../plugin/existing_plugins/) (Django app
     ```
     $ pip install mozilla_django_oidc
     ```
+!!! warning "SESSION\_COOKIE\_SAMESITE"
+
+    mozilla_django_oidc uses cookies to store state in an anonymous session during the
+    authentication process. You must use `SESSION_COOKIE_SAMESITE="Lax"` in your
+    settings for authentication to work correctly.
 
 | Name                           | Description                          |
 | :------------------------------|:-------------------------------------|
