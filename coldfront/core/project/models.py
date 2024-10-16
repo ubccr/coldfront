@@ -9,7 +9,7 @@ from coldfront.core.utils.validate import AttributeValidator
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
-from coldfront.core.department.models import Department
+from ifxuser.models import Organization
 from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.utils.common import import_from_settings
 
@@ -218,7 +218,7 @@ class Project(TimeStampedModel):
 
         # if the user is an approver in a department connected to the project,
         # give them user permissions
-        departments = Department.objects.filter(
+        departments = Organization.objects.filter(
             org_tree='Research Computing Storage Billing'
         )
         proj_departments = [d for d in departments if self in d.get_projects()]
