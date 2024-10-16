@@ -106,6 +106,25 @@ class AllocationResourceSelectionView(LoginRequiredMixin, UserPassesTestMixin, T
                 project_resource_count[resource_name] = 0
             project_resource_count[resource_name] += 1
 
+        pi_allocations = Allocation.objects.filter(
+            project__pi=project_obj.pi,
+            status__name__in=[
+                'Active',
+                'New',
+                'Renewal Requested',
+                'Billing Information Submitted',
+                'Paid',
+                'Payment Pending',
+                'Payment Requested'
+            ]
+        )
+        pi_resource_count = {}
+        for pi_allocation in pi_allocations:
+            resource_name = pi_allocation.get_parent_resource.name
+            if pi_resource_count.get(resource_name) is None:
+                pi_resource_count[resource_name] = 0
+            pi_resource_count[resource_name] += 1
+
         resource_objs = get_user_resources(self.request.user).prefetch_related(
             'resource_type', 'resourceattribute_set').order_by('resource_type')
         accounts = get_user_info(self.request.user.username, ['memberOf']).get('memberOf')
@@ -121,17 +140,20 @@ class AllocationResourceSelectionView(LoginRequiredMixin, UserPassesTestMixin, T
             allocation_limit_objs = resource_obj.resourceattribute_set.filter(
                 resource_attribute_type__name='allocation_limit'
             )
-            alloction_per_pi_limit_objs = resource_obj.resourceattribute_set.filter(
-                resource_attribute_type__name='allocation_limit_per_pi'
-            )
-            count = project_resource_count.get(resource_obj.name)
-            if count is not None:
+            current_resource_count = project_resource_count.get(resource_obj.name)
+            if current_resource_count is not None:
                 resource_categories[resource_type_name]['allocated'].add(resource_obj.name)
-                if allocation_limit_objs.exists() and count >= int(allocation_limit_objs[0].value):
+                if allocation_limit_objs.exists() and current_resource_count >= int(allocation_limit_objs[0].value):
                     limit_reached = True
                     limit_title = 'Project Resource Limit'
                     limit_description = 'Can only have one per project'
-                elif alloction_per_pi_limit_objs.exists() and count >= int(alloction_per_pi_limit_objs[0].value):
+
+            alloction_per_pi_limit_objs = resource_obj.resourceattribute_set.filter(
+                resource_attribute_type__name='allocation_limit_per_pi'
+            )
+            current_resource_count = pi_resource_count.get(resource_obj.name)
+            if current_resource_count is not None:
+                if alloction_per_pi_limit_objs.exists() and current_resource_count >= int(alloction_per_pi_limit_objs[0].value):
                     limit_reached = True
                     limit_title = 'PI Resource Limit'
                     limit_description = 'Can only have one per PI'
@@ -254,12 +276,12 @@ class GenericView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 )
                 return HttpResponseRedirect(reverse('custom-allocation-create', kwargs={'project_pk': project_obj.pk}))
             
-        allocation_limit_per_pi_objs = resource_obj.resourceattribute_set.filter(
+        resource_limit_per_pi_objs = resource_obj.resourceattribute_set.filter(
             resource_attribute_type__name='allocation_limit_per_pi'
         )
-        if allocation_limit_per_pi_objs.exists():
-            allocation_limit_per_pi = int(allocation_limit_per_pi_objs[0].value)
-            allocation_count = project_obj.allocation_set.filter(
+        if resource_limit_per_pi_objs.exists():
+            resource_limit_per_pi = int(resource_limit_per_pi_objs[0].value)
+            resource_count = Allocation.objects.filter(
                 resources=resource_obj,
                 status__name__in=[
                     'Active',
@@ -271,7 +293,7 @@ class GenericView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                     'Payment Requested'
                 ]
             ).count()
-            if allocation_count >= allocation_limit_per_pi:
+            if resource_count >= resource_limit_per_pi:
                 messages.error(
                     request, 'You are at the allocation limit per PI allowed for this resource.'
                 )
