@@ -286,6 +286,7 @@ class GenericView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         if resource_limit_per_pi_objs.exists():
             resource_limit_per_pi = int(resource_limit_per_pi_objs[0].value)
             resource_count = Allocation.objects.filter(
+                project__pi=request.user,
                 resources=resource_obj,
                 status__name__in=[
                     'Active',
