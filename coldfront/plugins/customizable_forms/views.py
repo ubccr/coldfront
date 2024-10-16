@@ -121,6 +121,9 @@ class AllocationResourceSelectionView(LoginRequiredMixin, UserPassesTestMixin, T
             allocation_limit_objs = resource_obj.resourceattribute_set.filter(
                 resource_attribute_type__name='allocation_limit'
             )
+            alloction_per_pi_limit_objs = resource_obj.resourceattribute_set.filter(
+                resource_attribute_type__name='allocation_limit_per_pi'
+            )
             count = project_resource_count.get(resource_obj.name)
             if count is not None:
                 resource_categories[resource_type_name]['allocated'].add(resource_obj.name)
@@ -128,7 +131,10 @@ class AllocationResourceSelectionView(LoginRequiredMixin, UserPassesTestMixin, T
                     limit_reached = True
                     limit_title = 'Project Resource Limit'
                     limit_description = 'Can only have one per project'
+                elif alloction_per_pi_limit_objs.exists() and count >= int(alloction_per_pi_limit_objs[0].value):
                     limit_reached = True
+                    limit_title = 'PI Resource Limit'
+                    limit_description = 'Can only have one per PI'
 
             help_url = resource_obj.resourceattribute_set.filter(resource_attribute_type__name='help_url')
             if help_url.exists():
@@ -244,8 +250,30 @@ class GenericView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             ).count()
             if allocation_count >= allocation_limit:
                 messages.error(
-                    request,
-                    'Your project is at the allocation limit allowed for this resource.'
+                    request, 'Your project is at the allocation limit allowed for this resource.'
+                )
+                return HttpResponseRedirect(reverse('custom-allocation-create', kwargs={'project_pk': project_obj.pk}))
+            
+        allocation_limit_per_pi_objs = resource_obj.resourceattribute_set.filter(
+            resource_attribute_type__name='allocation_limit_per_pi'
+        )
+        if allocation_limit_per_pi_objs.exists():
+            allocation_limit_per_pi = int(allocation_limit_per_pi_objs[0].value)
+            allocation_count = project_obj.allocation_set.filter(
+                resources=resource_obj,
+                status__name__in=[
+                    'Active',
+                    'New',
+                    'Renewal Requested',
+                    'Billing Information Submitted',
+                    'Paid',
+                    'Payment Pending',
+                    'Payment Requested'
+                ]
+            ).count()
+            if allocation_count >= allocation_limit_per_pi:
+                messages.error(
+                    request, 'You are at the allocation limit per PI allowed for this resource.'
                 )
                 return HttpResponseRedirect(reverse('custom-allocation-create', kwargs={'project_pk': project_obj.pk}))
             
@@ -258,8 +286,7 @@ class GenericView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 can_request = False
         if not can_request:
             messages.error(
-                request,
-                'Only the PI can request a new allocation for this resource.'
+                request, 'Only the PI can request a new allocation for this resource.'
             )
             return HttpResponseRedirect(reverse('custom-allocation-create', kwargs={'project_pk': project_obj.pk}))
 
