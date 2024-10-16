@@ -9,6 +9,7 @@ from coldfront.core.utils.validate import AttributeValidator
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
+from coldfront.core.department.models import DepartmentProject
 from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.utils.common import import_from_settings
 
@@ -214,6 +215,14 @@ class Project(TimeStampedModel):
 
         if self.pi.id == user.id:
             permissions.append(ProjectPermission.PI)
+
+        # if the user is an approver in a department connected to the project,
+        # give them user permissions
+        department = DepartmentProject.objects.get(project=self).department
+        for parent_department in department.parents.filter(org_tree='Research Computing Storage Billing'):
+            if user in parent_department.useraffiliation_set.filter(role='approver'):
+                permissions.append(ProjectPermission.USER)
+
         return permissions
 
     def has_perm(self, user, perm):
