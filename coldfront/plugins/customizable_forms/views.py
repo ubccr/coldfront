@@ -143,20 +143,24 @@ class AllocationResourceSelectionView(LoginRequiredMixin, UserPassesTestMixin, T
             current_resource_count = project_resource_count.get(resource_obj.name)
             if current_resource_count is not None:
                 resource_categories[resource_type_name]['allocated'].add(resource_obj.name)
-                if allocation_limit_objs.exists() and current_resource_count >= int(allocation_limit_objs[0].value):
-                    limit_reached = True
-                    limit_title = 'Project Resource Limit'
-                    limit_description = 'Can only have one per project'
+                if allocation_limit_objs.exists():
+                    allocation_limit = int(allocation_limit_objs[0].value)
+                    if current_resource_count >= allocation_limit:
+                        limit_reached = True
+                        limit_title = 'Project Resource Limit'
+                        limit_description = f'Can only have {allocation_limit} per project'
 
-            alloction_per_pi_limit_objs = resource_obj.resourceattribute_set.filter(
+            allocation_per_pi_limit_objs = resource_obj.resourceattribute_set.filter(
                 resource_attribute_type__name='allocation_limit_per_pi'
             )
             current_resource_count = pi_resource_count.get(resource_obj.name)
             if current_resource_count is not None:
-                if alloction_per_pi_limit_objs.exists() and current_resource_count >= int(alloction_per_pi_limit_objs[0].value):
-                    limit_reached = True
-                    limit_title = 'PI Resource Limit'
-                    limit_description = 'Can only have one per PI'
+                if allocation_per_pi_limit_objs.exists():
+                    allocation_per_pi_limit = int(allocation_per_pi_limit_objs[0].value)
+                    if current_resource_count >= allocation_per_pi_limit:
+                        limit_reached = True
+                        limit_title = 'PI Resource Limit'
+                        limit_description = f'Can only have {allocation_per_pi_limit} per PI'
 
             help_url = resource_obj.resourceattribute_set.filter(resource_attribute_type__name='help_url')
             if help_url.exists():
