@@ -1387,7 +1387,6 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                 messages.error(
                     request, 'PI role and email notification option cannot be changed.')
                 return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_user_pk}))
-
             project_user_update_form = ProjectUserUpdateForm(
                 request.POST,
                 initial={
@@ -1420,20 +1419,31 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                                 )
                             )
 
+                old_role = project_user_obj.role
                 project_user_obj.enable_notifications = enable_notifications
                 project_user_obj.role = ProjectUserRoleChoice.objects.get(
                     name=form_data.get('role'))
-                
-                if(project_user_obj.role.name=="Manager"):
+                if project_user_obj.role.name == 'Manager':
                     project_user_obj.enable_notifications = True
+                elif old_role.name == 'Manager' and form_data.get('role').name == 'User':
+                    auto_disable_obj = project_obj.projectattribute_set.filter(
+                        proj_attr_type__name='Auto Disable User Notifications')
+                    if auto_disable_obj.exists() and auto_disable_obj[0].value == 'Yes':
+                        project_user_obj.enable_notifications = False
+                    else:
+                        project_user_obj.enable_notifications = True
                 else:
                     project_user_obj.enable_notifications = form_data.get(
                         'enable_notifications')
+                    logger.info(
+                        f'Admin {request.user.username} set {project_user_obj.user.username}\'s '
+                        f'notifications to {form_data.get("enable_notifications")} (project pk={project_obj.pk})'
+                    )
                 project_user_obj.save()
 
                 logger.info(
-                    f'User {request.user.username} updated {project_user_obj.user.username}\'s '
-                    f'role (project pk={project_obj.pk})'
+                    f'User {request.user.username} changed {project_user_obj.user.username}\'s '
+                    f'role to {form_data.get("role")} (project pk={project_obj.pk})'
                 )
 
                 messages.success(request, 'User details updated.')
