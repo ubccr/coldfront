@@ -126,3 +126,95 @@ class Command(BaseCommand):
             is_changeable=True,
             is_unique=False,
         )
+
+        # jprew - here is where I'm adding ITDEV-35273-related attribute types
+        # for the allocation collection
+        AllocationAttributeType.objects.get_or_create(
+            attribute_type=AttributeType.objects.get(name="Yes/No"),
+            name="secure",
+            is_required=True,
+            is_private=False,
+            is_changeable=False,
+        )
+
+        # indicates whether the allocation is subject to being audited
+        AllocationAttributeType.objects.get_or_create(
+            attribute_type=AttributeType.objects.get(name="Yes/No"),
+            name="audit",
+            is_required=True,
+            is_private=False,
+            is_changeable=False,
+        )
+
+        AllocationAttributeType.objects.get_or_create(
+            attribute_type=AttributeType.objects.get(name="Yes/No"),
+            name="audit",
+            is_required=True,
+            is_private=False,
+            is_changeable=False,
+        )
+
+        AllocationAttributeType.objects.get_or_create(
+            attribute_type=AttributeType.objects.get(name="Date"),
+            name="billing_startdate",
+            is_required=True,
+            is_private=False,
+            is_changeable=False,
+        )
+
+        AllocationAttributeType.objects.get_or_create(
+            attribute_type=AttributeType.objects.get(name="Text"),
+            name="fileset_name",
+            is_required=False,
+            is_private=False,
+            is_changeable=False,
+        )
+
+        AllocationAttributeType.objects.get_or_create(
+            attribute_type=AttributeType.objects.get(name="Text"),
+            name="fileset_alias",
+            is_required=False,
+            is_private=False,
+            is_changeable=False,
+        )
+
+        AllocationAttributeType.objects.get_or_create(
+            attribute_type=AttributeType.objects.get(name="Yes/No"),
+            name="exempt",
+            is_required=True,
+            is_private=False,
+            is_changeable=False,
+        )
+
+        AllocationAttributeType.objects.get_or_create(
+            attribute_type=AttributeType.objects.get(name="JSON"),
+            name="itsm_comment",
+            is_required=False,
+            is_private=False,
+            is_changeable=False,
+        )
+
+        AllocationAttributeType.objects.get_or_create(
+            attribute_type=AttributeType.objects.get(name="Yes/No"),
+            name="subsidized",
+            is_required=True,
+            is_private=False,
+            is_changeable=False,
+        )
+
+        AllocationAttributeType.objects.get_or_create(
+            attribute_type=AttributeType.objects.get(name="BillingCycle"),
+            name="billing_cycle",
+            is_required=True,
+            is_private=False,
+            is_changeable=True,
+        )
+
+        AllocationAttributeType.objects.get_or_create(
+            attribute_type=AttributeType.objects.get(name="Text"),
+            name="sla_name",
+            is_required=False,
+            is_private=False,
+            is_unique=False,
+            is_changeable=True,
+        )
