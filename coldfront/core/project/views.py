@@ -75,6 +75,7 @@ from coldfront.core.project.utils import (get_new_end_date_from_list,
                                           create_admin_action_for_deletion)
 from coldfront.core.allocation.utils import send_added_user_email, set_default_allocation_user_role
 from coldfront.core.utils.slack import send_message
+from coldfront.core.project.signals import project_activate
 
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
@@ -2276,6 +2277,7 @@ class ProjectActivateRequestView(LoginRequiredMixin, UserPassesTestMixin, View):
         project_obj.status = project_status_obj
         project_obj.save()
 
+        project_activate.send(sender=self.__class__, project_pk=project_obj.pk)
         messages.success(request, 'Project request for {} has been APPROVED'.format(
             project_obj.title))
 
