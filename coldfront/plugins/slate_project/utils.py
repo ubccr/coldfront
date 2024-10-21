@@ -450,6 +450,31 @@ def sync_slate_project_allocated_quantities():
     logger.info('Done syncing Slate Project allocated quantities')
 
 
+def check_slate_project_owner_aginst_current_pi(allocation_obj, ldap_conn=None):
+    if ldap_conn == None:
+        ldap_conn = LDAPModify()
+
+    pi = allocation_obj.pi.username
+    gid_obj = allocation_obj.allocationattribute_set.filter(allocation_attribute_type='GID')
+
+    if not gid_obj.exists():
+        logger.warning(f'Slate Project allocation is missing a GID (allocation pk={allocation_obj.pk}). Skipping mismatch check...')
+        return
+    
+    gid = gid_obj[0]
+    description = ldap_conn.get_attribute('description', gid)
+
+    if not description:
+        logger.warning(f'Slate Project with GID={gid} does not have a description. Skipping mismatch check...')
+        return
+    
+    owner = description.split[-1].split[0]
+
+    if owner != pi:
+        logger.warning(f'Found mismatch between RT Project PI and Slate Project owner in '
+                        f'allocation {allocation_obj.pk}. PI={pi}, owner={owner}')
+
+
 def get_pi_total_allocated_quantity(pi_username):
     total_allocated_quantity = 0
     with open(os.path.join(SLATE_PROJECT_INCOMING_DIR, 'netid-total-allocation.csv'), 'r') as netid_total_allocation_csv:

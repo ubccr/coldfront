@@ -13,10 +13,20 @@ from coldfront.plugins.slate_project.utils import (sync_slate_project_users,
                                                    create_slate_project_data_file,
                                                    send_slate_project_data_file,
                                                    download_files,
+                                                   check_slate_project_owner_aginst_current_pi,
                                                    LDAPModify,
                                                    LDAPImportSearch)
 
 logger = logging.getLogger(__name__)
+
+
+def check_for_mismatch_owner_and_pi():
+    ldap_conn = LDAPModify()
+    allocation_objs = Allocation.objects.filter(
+        resource__name='Slate Project', status__name='Active')
+
+    for allocation_obj in allocation_objs:
+        check_slate_project_owner_aginst_current_pi(allocation_obj, ldap_conn)
 
 
 def sync_all_slate_project_allocations():
