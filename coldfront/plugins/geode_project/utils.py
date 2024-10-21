@@ -10,7 +10,6 @@ if EMAIL_ENABLED:
 
 def send_new_allocation_request_email(project_obj):
     allocation_objs = project_obj.allocation_set.filter(resources__name='Geode-Projects', status__name='New')
-    print(allocation_objs)
     for allocation_obj in allocation_objs:
         if EMAIL_ENABLED:
             template_context = email_template_context()
