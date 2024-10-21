@@ -454,8 +454,8 @@ def check_slate_project_owner_aginst_current_pi(allocation_obj, ldap_conn=None):
     if ldap_conn == None:
         ldap_conn = LDAPModify()
 
-    pi = allocation_obj.pi.username
-    gid_obj = allocation_obj.allocationattribute_set.filter(allocation_attribute_type='GID')
+    pi = allocation_obj.project.pi.username
+    gid_obj = allocation_obj.allocationattribute_set.filter(allocation_attribute_type__name='GID')
 
     if not gid_obj.exists():
         logger.warning(f'Slate Project allocation is missing a GID (allocation pk={allocation_obj.pk}). Skipping mismatch check...')
