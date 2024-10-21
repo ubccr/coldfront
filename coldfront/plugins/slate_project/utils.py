@@ -461,7 +461,7 @@ def check_slate_project_owner_aginst_current_pi(allocation_obj, ldap_conn=None):
         logger.warning(f'Slate Project allocation is missing a GID (allocation pk={allocation_obj.pk}). Skipping mismatch check...')
         return
     
-    gid = gid_obj[0]
+    gid = gid_obj[0].value
     description = ldap_conn.get_attribute('description', gid)
 
     if not description:
