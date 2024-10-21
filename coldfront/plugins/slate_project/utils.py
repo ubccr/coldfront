@@ -44,6 +44,8 @@ SLATE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD = import_from_settings('SLATE_PROJECT
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 CENTER_BASE_URL = import_from_settings('CENTER_BASE_URL')
 PROJECT_DEFAULT_MAX_MANAGERS = import_from_settings('PROJECT_DEFAULT_MAX_MANAGERS', 3)
+PROJECT_TYPE_LIMIT_MAPPING = import_from_settings(
+    'PROJECT_TYPE_LIMIT_MAPPING', {})
 if EMAIL_ENABLED:
     SLATE_PROJECT_EMAIL = import_from_settings('SLATE_PROJECT_EMAIL', '')
     EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
@@ -1269,12 +1271,17 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
         'Error': AllocationUserStatusChoice.objects.get(name='Error')
     }
     ldap_conn = LDAPImportSearch()
-    rejected_slate_projects = []
+    logger.info('Importing Slate Projects...')
+    imported = 0
     for slate_project in slate_projects:
-        exists = AllocationAttribute.objects.filter(
+        existing_gid = AllocationAttribute.objects.filter(
             allocation_attribute_type__name='GID', value=slate_project.get('gid_number')
-        ).exists()
-        if exists:
+        )
+        if existing_gid.exists():
+            logger.warning(f'Slate Project GID {slate_project.get("gid_number")} already exists in '
+                           f'allocation {existing_gid[0].allocation.pk}. Skipping import...')
+            print(f'Slate Project {slate_project.get("namespace_entry")} has already been imported: '
+                  f'{build_link(reverse("allocation-detail", kwargs={"pk": existing_gid[0].allocation.pk}))}')
             continue
         user_obj, created = User.objects.get_or_create(username=slate_project.get('owner_netid'))
         if not created:
@@ -1282,7 +1289,10 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
 
         owner_status = get_new_user_status(user_obj.username, ldap_conn)
         if owner_status in ['Retired', 'Disabled']:
-            rejected_slate_projects.append(slate_project.get('namespace_entry'))
+            logger.warning(f'Slate Project GID {slate_project.get("gid_number")} has a status of '
+                           f'{owner_status}. Skipping import...')
+            print(f'Slate Project {slate_project.get("namespace_entry")} has NOT been imported: '
+                  f'Owner has a status of {owner_status}')
             continue
         
         project_user_role_obj = ProjectUserRoleChoice.objects.get(name='Manager')
@@ -1290,9 +1300,33 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
         if slate_project.get('project_id'):
             project_obj = Project.objects.get(pk=slate_project.get('project_id'))
             if project_obj.status.name != 'Active':
-                print(f'Project {slate_project.get("project_id")} is not Active, skipping...')
+                logger.warning(f'Project {slate_project.get("project_id")} to add Slate Project, '
+                               f'GID={slate_project.get("gid_number")}, to is not active, '
+                               f'Skipping import...')
+                print(f'Slate Project {slate_project.get("namespace_entry")} has NOT been imported: '
+                      f'The RT Project is not active')
+                continue
+
+            if project_obj.pi.username != slate_project.get('owner_netid'):
+                logger.warning(f'Mismatch between Slate Project owner, GID={slate_project.get("gid_number")}'
+                               f', and RT Project PI, project pk={project_obj.pk}. Skipping import...')
+                print(f'Slate Project {slate_project.get("namespace_entry")} has NOT been imported: '
+                      f'Mismatch between Slate Project owner and RT Project PI')
                 continue
         else:
+            project_objs = Project.objects.filter(status__name='Active', pi=user_obj, type__name='Research')
+            user_profile_obj = UserProfile.objects.get(user=user_obj)
+            max_projects = int(PROJECT_TYPE_LIMIT_MAPPING.get('Research'))
+            if user_profile_obj.max_research_projects_override > -1:
+                max_projects = user_profile_obj.max_research_projects_override
+            if project_objs.count() >= max_projects:
+                logger.warning(f'Slate Project\'s, GID={slate_project.get("gid_number")}, owner '
+                               f'{user_obj.username} is at or above their max projects count.  '
+                               f'Skipping import...')
+                print(f'Slate Project {slate_project.get("namespace_entry")} has NOT been imported: '
+                      f'Owner is at or above the max projects they can have')
+                continue
+
             if user_obj.userprofile.title in ['Faculty', 'Staff', 'Academic (ACNP)', ]:
                 project_obj, _ = Project.objects.get_or_create(
                     title=slate_project.get('project_title'),
@@ -1308,26 +1342,12 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
                 project_obj.slurm_account_name = generate_slurm_account_name(project_obj)
                 project_obj.save()
             else:
-                project_obj, _ = Project.objects.get_or_create(
-                    title=slate_project.get('project_title'),
-                    description=slate_project.get('abstract'),
-                    pi=hpfs_pi_obj,
-                    max_managers=PROJECT_DEFAULT_MAX_MANAGERS,
-                    requestor=user_obj,
-                    type=ProjectTypeChoice.objects.get(name='Research'),
-                    status=ProjectStatusChoice.objects.get(name='Active'),
-                    end_date=project_end_date
-                )
-
-                project_obj.slurm_account_name = generate_slurm_account_name(project_obj)
-                project_obj.save()
-
-                ProjectUser.objects.get_or_create(
-                    user=hpfs_pi_obj,
-                    project=project_obj,
-                    role=project_user_role_obj,
-                    status=ProjectUserStatusChoice.objects.get(name='Active')
-                )
+                logger.warning(f'Slate Project\'s, GID={slate_project.get("gid_number")} owner '
+                               f'{user_obj.username} has a title of {user_obj.userprofile.title}. '
+                               f'Skipping import...')
+                print(f'Slate Project {slate_project.get("namespace_entry")} has NOT been imported: '
+                      f'Owner has an ineligible title')
+                continue
 
         read_write_users = slate_project.get('read_write_users')
         read_only_users = slate_project.get('read_only_users')
@@ -1443,24 +1463,31 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
                 allocation_obj, 'Allocated Quantity', slate_project.get('allocated_quantity')
             )
 
-        template_context = {
-            'center_name': EMAIL_CENTER_NAME,
-            'slate_project': slate_project.get('namespace_entry'),
-            'slate_project_url': build_link(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk})),
-            'email_contact': SLATE_PROJECT_EMAIL,
-            'signature': EMAIL_SIGNATURE
-        }
+        logger.info(f'Slate Project, GID={slate_project.get("gid_number")}, was successfully '
+                    f'imported into allocation {allocation_obj.pk}')
+        print(f'Slate Project {slate_project.get("namespace_entry")} has been imported: '
+              f'{build_link(reverse("allocation-detail", kwargs={"pk": allocation_obj.pk}))}')
+        imported += 1
 
-        send_email_template(
-            'Imported Slate Project',
-            'slate_project/email/imported_slate_project.txt',
-            template_context,
-            EMAIL_SENDER,
-            [project_obj.pi.email]
-        )
+        if EMAIL_ENABLED:
+            template_context = {
+                'center_name': EMAIL_CENTER_NAME,
+                'slate_project': slate_project.get('namespace_entry'),
+                'slate_project_url': build_link(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk})),
+                'email_contact': SLATE_PROJECT_EMAIL,
+                'signature': EMAIL_SIGNATURE
+            }
 
-    if rejected_slate_projects:
-        print(f'Slate projects not imported due to ineligible PI: {", ".join(rejected_slate_projects)}')
+            send_email_template(
+                'Imported Slate Project',
+                'slate_project/email/imported_slate_project.txt',
+                template_context,
+                EMAIL_SENDER,
+                [project_obj.pi.email]
+            )
+
+    not_imported = len(slate_projects) - imported
+    logger.info(f'Done importing Slate Projects, imported: {imported}, not imported: {not_imported}')
 
 
 class LDAPImportSearch():
