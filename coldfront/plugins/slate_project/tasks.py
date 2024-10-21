@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 def check_for_mismatch_owner_and_pi():
     ldap_conn = LDAPModify()
     allocation_objs = Allocation.objects.filter(
-        resource__name='Slate Project', status__name='Active')
+        resources__name='Slate Project', status__name='Active')
 
     for allocation_obj in allocation_objs:
         check_slate_project_owner_aginst_current_pi(allocation_obj, ldap_conn)
