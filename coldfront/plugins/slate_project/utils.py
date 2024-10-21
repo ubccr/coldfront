@@ -468,7 +468,7 @@ def check_slate_project_owner_aginst_current_pi(allocation_obj, ldap_conn=None):
         logger.warning(f'Slate Project with GID={gid} does not have a description. Skipping mismatch check...')
         return
     
-    owner = description.split[-1].split[0]
+    owner = description.split(',')[-1].split(' ')[0]
 
     if owner != pi:
         logger.warning(f'Found mismatch between RT Project PI and Slate Project owner in '
