@@ -33,6 +33,7 @@ from coldfront.plugins.ldap_user_info.utils import LDAPSearch
 from coldfront.core.project.utils import (get_new_end_date_from_list,
                                           generate_slurm_account_name,
                                           create_admin_action_for_project_creation)
+from coldfront.core.allocation.utils import create_admin_action_for_allocation_creation
 
 logger = logging.getLogger(__name__)
 
@@ -1496,6 +1497,8 @@ def import_slate_projects(json_file_name, out_file_name, importing_user, limit=N
         print(f'Slate Project {slate_project.get("namespace_entry")} has been imported: '
               f'{build_link(reverse("allocation-detail", kwargs={"pk": allocation_obj.pk}))}')
         imported += 1
+
+        create_admin_action_for_allocation_creation(importing_user_obj, allocation_obj)
 
         if EMAIL_ENABLED:
             template_context = {

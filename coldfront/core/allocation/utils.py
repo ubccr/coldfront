@@ -204,6 +204,14 @@ def create_admin_action_for_creation(user, created_obj, allocation, base_model=N
         )
 
 
+def create_admin_action_for_allocation_creation(user, allocation):
+    AllocationAdminAction.objects.create(
+        user=user,
+        allocation=allocation,
+        action=f'Created a {allocation.get_parent_resource.name} allocation with status "{allocation.status.name}"'
+    )
+
+
 def get_allocation_user_emails(allocation_obj, only_project_managers=False):
     """
     Returns a list of allocation user emails in the given allocation. Only emails from users with
