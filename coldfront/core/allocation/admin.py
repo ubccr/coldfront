@@ -496,11 +496,26 @@ class AllocationInvoice(SimpleHistoryAdmin):
 @admin.register(AllocationAdminAction)
 class AllocationAdminActionAdmin(admin.ModelAdmin):
     list_display = ('pk', 'user', 'allocation_pk', 'allocation', 'action', 'created', )
-    readonly_fields = ('user', 'allocation', 'action', 'created', )
+    fields_change = ('user', 'allocation', 'action', 'modified', 'created', )
+    readonly_fields_change = ('modified', 'created', )
+    raw_id_fields = ('user', 'allocation', )
     list_filter = ('allocation__resources', )
 
     def allocation_pk(self, obj):
         return obj.allocation.pk
+    
+    def get_fields(self, request, obj):
+        if obj is None:
+            return super().get_fields(request)
+        else:
+            return self.fields_change
+
+    def get_readonly_fields(self, request, obj):
+        if obj is None:
+            # We are adding an object
+            return super().get_readonly_fields(request)
+        else:
+            return self.readonly_fields_change
 
 
 @admin.register(AllocationRemovalRequest)
