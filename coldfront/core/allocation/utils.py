@@ -170,7 +170,7 @@ def create_admin_action(user, fields_to_check, allocation, base_model=None):
             AllocationAdminAction.objects.create(
                 user=user,
                 allocation=allocation,
-                action=f'Changed "{key}" from "{base_model_value}" to "{value}" for "{base_model}"'
+                action=f'For "{base_model}" changed "{key}" from "{base_model_value}" to "{value}"'
             )
 
 

@@ -18,10 +18,13 @@ class Command(BaseCommand):
         if not kwargs.get("out"):
             raise CommandError("Out file does not exist")
         
+        if not kwargs.get("out"):
+            raise CommandError("Please provide your username")
+        
         if kwargs.get("limit") is not None and kwargs.get("limit") <= 0:
             raise CommandError("The limit must be > 0")
 
         print('Importing Slate Projects...')
         start_time = time.time()
-        import_slate_projects(kwargs.get("limit"), kwargs.get("json"), kwargs.get("out"))
+        import_slate_projects(kwargs.get("limit"), kwargs.get("json"), kwargs.get("out"), kwargs.get("user"))
         print(f'Time elapsed: {time.time() - start_time}')

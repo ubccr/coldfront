@@ -78,7 +78,7 @@ def create_admin_action(user, fields_to_check, project, base_model=None):
             ProjectAdminAction.objects.create(
                 user=user,
                 project=project,
-                action=f'Changed "{key}" from "{base_model_value}" to "{value}" for "{base_model}"'
+                action=f'For "{base_model}" changed "{key}" from "{base_model_value}" to "{value}"'
             )
 
 
@@ -142,3 +142,11 @@ def create_admin_action_for_creation(user, created_obj, project, base_model=None
             project=project,
             action=f'Created "{created_obj}" with value "{created_obj.value}"'
         )
+
+
+def create_admin_action_for_project_creation(user, project):
+    ProjectAdminAction.objects.create(
+        user=user,
+        project=project,
+        action=f'Created a project with status "{project.status.name}"'
+    )

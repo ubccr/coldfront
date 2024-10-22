@@ -30,7 +30,9 @@ from coldfront.core.project.models import (ProjectUserStatusChoice,
 from coldfront.core.resource.models import Resource
 from coldfront.core.user.models import UserProfile
 from coldfront.plugins.ldap_user_info.utils import LDAPSearch
-from coldfront.core.project.utils import get_new_end_date_from_list, generate_slurm_account_name
+from coldfront.core.project.utils import (get_new_end_date_from_list,
+                                          generate_slurm_account_name,
+                                          create_admin_action_for_project_creation)
 
 logger = logging.getLogger(__name__)
 
@@ -1238,7 +1240,8 @@ def update_user_profile(user_obj, ldap_conn):
     user_obj.userprofile.save()
 
 
-def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
+def import_slate_projects(json_file_name, out_file_name, importing_user, limit=None):
+    importing_user_obj = User.objects.get(username=importing_user)
     todays_date = datetime.date.today()
     with open(json_file_name, 'r') as json_file:
         extra_information = json.load(json_file)
@@ -1278,8 +1281,6 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
                 pass
             slate_projects.append(slate_project)
 
-    # Non faculty, staff, and ACNP should be put in their own projects with a HPFS member as the PI.
-    hpfs_pi_obj =  User.objects.get(username="thcrowe")
     project_end_date = get_new_end_date_from_list(
         [datetime.datetime(datetime.datetime.today().year, 6, 30), ],
         datetime.datetime.today(),
@@ -1366,6 +1367,8 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
 
                 project_obj.slurm_account_name = generate_slurm_account_name(project_obj)
                 project_obj.save()
+                create_admin_action_for_project_creation(importing_user_obj, project_obj)
+
             else:
                 logger.warning(f'Slate Project\'s, GID={slate_project.get("gid_number")} owner '
                                f'{user_obj.username} has a title of {user_obj.userprofile.title}. '

@@ -58,8 +58,8 @@ def send_ineligible_pis_email_report():
     send_ineligible_pis_report()
 
 
-def import_new_slate_projects(json, out):
-    import_slate_projects(json_file_name = json, out_file_name = out)
+def import_new_slate_projects(json, out, user):
+    import_slate_projects(json, out, user)
 
 
 def update_all_user_statuses():
