@@ -10,10 +10,10 @@ The system also consists of 64 GPU nodes, each with 256 GB of memory, a single 6
 The system is managed via the Slurm scheduler. You can log into a Big Red 200 login node and submit jobs to one of the available partitions. The four partitions are general, debug, gpu, and gpu-debug.
 You will need to specify the required GPU resource for each job using the gpus tag. For example to request 2 GPUs per requested node: #SBATCH --gpus-per-node=2
 
-For information on Big Red 200, you can refer to the Knowledge Base article https://kb.iu.edu/d/brcc. 
-For more information on the GPU nodes themselves you can refer to the Knowledge Base article https://kb.iu.edu/d/avjk.
+For information on Big Red 200, you can refer to the Knowledge Base article https://servicenow.iu.edu/kb?id=kb_article_view&sysparm_article=KB0026317. 
+For more information on the GPU nodes themselves you can refer to the Knowledge Base article https://servicenow.iu.edu/kb?id=kb_article_view&sysparm_article=KB0022436.
 
-Another article https://kb.iu.edu/d/awrz, contains more information on the Slurm scheduler. If you need help using the Slurm scheduler please don’t hesitate to contact us at {{ help_url }}.
+Another article https://servicenow.iu.edu/kb?id=kb_article_view&sysparm_article=KB0023298, contains more information on the Slurm scheduler. If you need help using the Slurm scheduler please don’t hesitate to contact us at {{ help_url }}.
 
 To use this new account you will need to add this line to your job script:
 #SBATCH -A {{ slurm_account_name }}

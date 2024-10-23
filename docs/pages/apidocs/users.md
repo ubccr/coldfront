@@ -1,0 +1,1 @@
+::: coldfront.core.user.models

@@ -25,21 +25,24 @@ Choose a Resource for Your Allocation
                     <a href="{{ resource.info_link }}" target="_blank" title="More information"><i class="fas fa-external-link-alt" aria-hidden="true"></i></a>
                   {% endif %}
                   <div class="float-right">
+                    {% if resource.resource.name in resources.allocated %}
+                      Allocated,
+                    {% endif %}
                     {% if not resource.can_request %}
                       PI only
                     {% elif resource.limit_reached %}
-                      Allocated, limit reached
-                    {% elif resource.has_account %}
-                      {% if resource.resource.name in resources.allocated %}
-                        Allocated
-                      {% endif %}
-                      <a
-                       class="btn btn-primary"
-                       href="{% url 'resource-form-redirector' resource_pk=resource.resource.pk project_pk=project_obj.pk %}?after_project_creation={{after_project_creation}}"
-                       role="button"
-                      > Request Form</a>
+                      limit reached
+                      <a href="#" data-toggle="popover" data-trigger="hover" title="{{ resource.limit_title }}" data-content="{{ resource.limit_description }}">
+                        <i class="fas fa-info-circle" aria-hidden="true"></i>
+                      </a>
+                    {% elif not resource.has_account %}
+                      <a href="https://access.iu.edu/Accounts/Create">Account required</a>
                     {% else %}
-                      <p>Requires an account. <a href="https://access.iu.edu/Accounts/Create">Please create one</a></p>
+                      <a
+                        class="btn btn-primary"
+                        href="{% url 'resource-form-redirector' resource_pk=resource.resource.pk project_pk=project_obj.pk %}?after_project_creation={{after_project_creation}}"
+                        role="button"
+                      > Request Form</a>
                     {% endif %}
                   </div>
                 </div>
@@ -56,9 +59,12 @@ Choose a Resource for Your Allocation
       </div>
     </div>
   {% endfor %}
-  {% if after_project_creation == 'true' %}
-    <a class="btn btn-secondary" href="{% url 'project-add-users-search' project_obj.pk %}?after_project_creation=true" role="button">Skip this step</a><br>
-  {% else %}
+  {% if after_project_creation != 'true' %}
     <a class="btn btn-secondary" href="{% url 'project-detail' project_obj.pk %}" role="button">Back to Project</a><br>
   {% endif %}
+
+  <script>
+    $("#navbar-main > ul > li.active").removeClass("active");
+    $("#navbar-project-menu").addClass("active");
+  </script>
 {% endblock %}

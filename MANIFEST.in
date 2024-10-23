@@ -20,3 +20,4 @@ recursive-include coldfront/plugins/advanced_search/templates *
 recursive-include coldfront/plugins/update_user_profiles/management/commands *
 recursive-include coldfront/plugins/customizable_forms/templates *
 recursive-include coldfront/plugins/ldap_user_info/templates *
+recursive-include coldfront/plugins/pi_search/templates *

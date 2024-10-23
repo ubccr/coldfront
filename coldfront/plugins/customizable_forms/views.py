@@ -21,7 +21,8 @@ from coldfront.core.resource.models import Resource
 from coldfront.plugins.customizable_forms.forms import GenericForm
 from coldfront.core.allocation.utils import (set_default_allocation_user_role,
                                              send_allocation_user_request_email,
-                                             send_added_user_email)
+                                             send_added_user_email,
+                                             get_user_resources)
 from coldfront.core.resource.models import ResourceAttribute
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.slack import send_message
@@ -73,7 +74,7 @@ class AllocationResourceSelectionView(LoginRequiredMixin, UserPassesTestMixin, T
             )
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
-        if project_obj.status.name in ['Archived', 'Denied', 'Review Pending', 'Expired', ]:
+        if project_obj.status.name in ['Archived', 'Denied', 'Review Pending', 'Expired', 'Renewal Denied', ]:
             messages.error(
                 request,
                 'You cannot request a new allocation for a project with status "{}".'.format(project_obj.status.name)
@@ -105,9 +106,27 @@ class AllocationResourceSelectionView(LoginRequiredMixin, UserPassesTestMixin, T
                 project_resource_count[resource_name] = 0
             project_resource_count[resource_name] += 1
 
-        resource_objs = Resource.objects.filter(
-            is_allocatable=True
-        ).prefetch_related('resource_type', 'resourceattribute_set').order_by('resource_type')
+        pi_allocations = Allocation.objects.filter(
+            project__pi=project_obj.pi,
+            status__name__in=[
+                'Active',
+                'New',
+                'Renewal Requested',
+                'Billing Information Submitted',
+                'Paid',
+                'Payment Pending',
+                'Payment Requested'
+            ]
+        )
+        pi_resource_count = {}
+        for pi_allocation in pi_allocations:
+            resource_name = pi_allocation.get_parent_resource.name
+            if pi_resource_count.get(resource_name) is None:
+                pi_resource_count[resource_name] = 0
+            pi_resource_count[resource_name] += 1
+
+        resource_objs = get_user_resources(self.request.user).prefetch_related(
+            'resource_type', 'resourceattribute_set').order_by('resource_type')
         accounts = get_user_info(self.request.user.username, ['memberOf']).get('memberOf')
         resource_categories = {}
         for resource_obj in resource_objs:
@@ -116,12 +135,32 @@ class AllocationResourceSelectionView(LoginRequiredMixin, UserPassesTestMixin, T
                 resource_categories[resource_type_name] = {'allocated': set(), 'resources': []}
 
             limit_reached = False
-            limit_objs = resource_obj.resourceattribute_set.filter(resource_attribute_type__name='allocation_limit')
-            count = project_resource_count.get(resource_obj.name)
-            if count is not None:
+            limit_description = ''
+            limit_title = ''
+            allocation_limit_objs = resource_obj.resourceattribute_set.filter(
+                resource_attribute_type__name='allocation_limit'
+            )
+            current_resource_count = project_resource_count.get(resource_obj.name)
+            if current_resource_count is not None:
                 resource_categories[resource_type_name]['allocated'].add(resource_obj.name)
-                if limit_objs.exists() and count >= int(limit_objs[0].value):
-                    limit_reached = True
+                if allocation_limit_objs.exists():
+                    allocation_limit = int(allocation_limit_objs[0].value)
+                    if current_resource_count >= allocation_limit:
+                        limit_reached = True
+                        limit_title = 'Project Resource Limit'
+                        limit_description = f'Can only have {allocation_limit} per project'
+
+            allocation_per_pi_limit_objs = resource_obj.resourceattribute_set.filter(
+                resource_attribute_type__name='allocation_limit_per_pi'
+            )
+            current_resource_count = pi_resource_count.get(resource_obj.name)
+            if current_resource_count is not None:
+                if allocation_per_pi_limit_objs.exists():
+                    allocation_per_pi_limit = int(allocation_per_pi_limit_objs[0].value)
+                    if current_resource_count >= allocation_per_pi_limit:
+                        limit_reached = True
+                        limit_title = 'PI Resource Limit'
+                        limit_description = f'Can only have {allocation_per_pi_limit} per PI'
 
             help_url = resource_obj.resourceattribute_set.filter(resource_attribute_type__name='help_url')
             if help_url.exists():
@@ -147,7 +186,9 @@ class AllocationResourceSelectionView(LoginRequiredMixin, UserPassesTestMixin, T
                     'info_link': help_url,
                     'limit_reached': limit_reached,
                     'has_account': has_account,
-                    'can_request': can_request 
+                    'can_request': can_request,
+                    'limit_description': limit_description,
+                    'limit_title': limit_title
                 }
             )
 
@@ -208,7 +249,7 @@ class GenericView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             )
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
-        if project_obj.status.name in ['Archived', 'Denied', 'Review Pending', 'Expired', ]:
+        if project_obj.status.name in ['Archived', 'Denied', 'Review Pending', 'Expired', 'Renewal Denied', ]:
             messages.error(
                 request,
                 'You cannot request a new allocation for a project with status "{}".'.format(project_obj.status.name)
@@ -235,8 +276,31 @@ class GenericView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             ).count()
             if allocation_count >= allocation_limit:
                 messages.error(
-                    request,
-                    'Your project is at the allocation limit allowed for this resource.'
+                    request, 'Your project is at the allocation limit allowed for this resource.'
+                )
+                return HttpResponseRedirect(reverse('custom-allocation-create', kwargs={'project_pk': project_obj.pk}))
+            
+        resource_limit_per_pi_objs = resource_obj.resourceattribute_set.filter(
+            resource_attribute_type__name='allocation_limit_per_pi'
+        )
+        if resource_limit_per_pi_objs.exists():
+            resource_limit_per_pi = int(resource_limit_per_pi_objs[0].value)
+            resource_count = Allocation.objects.filter(
+                project__pi=request.user,
+                resources=resource_obj,
+                status__name__in=[
+                    'Active',
+                    'New',
+                    'Renewal Requested',
+                    'Billing Information Submitted',
+                    'Paid',
+                    'Payment Pending',
+                    'Payment Requested'
+                ]
+            ).count()
+            if resource_count >= resource_limit_per_pi:
+                messages.error(
+                    request, 'You are at the allocation limit per PI allowed for this resource.'
                 )
                 return HttpResponseRedirect(reverse('custom-allocation-create', kwargs={'project_pk': project_obj.pk}))
             
@@ -249,8 +313,7 @@ class GenericView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 can_request = False
         if not can_request:
             messages.error(
-                request,
-                'Only the PI can request a new allocation for this resource.'
+                request, 'Only the PI can request a new allocation for this resource.'
             )
             return HttpResponseRedirect(reverse('custom-allocation-create', kwargs={'project_pk': project_obj.pk}))
 

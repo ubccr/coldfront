@@ -25,7 +25,7 @@ Project and Allocation Export List
             <li class="nav-item"><a class="nav-link" href="#allocation-search" data-toggle="tab">Allocation Search</a></li>
             <li class="nav-item"><a class="nav-link" href="#user-search" data-toggle="tab">User Search</a></li>
           </ul>
-          <div class="tab-content card-body">
+          <div id="full-search" class="tab-content card-body">
             <div id="project-search" class="tab-pane active">
               <form method="GET" action="{% url 'advanced-search' %}" autocomplete="off">
                 {% crispy project_form %}
@@ -46,6 +46,10 @@ Project and Allocation Export List
       </div>
     </div>
   </div>
+
+<div id="no_display_alert" class="alert alert-warning" role="alert">
+  <i class="fas fa-info-circle" aria-hidden="true"></i> No display option selected so no results will appear
+</div>
 
 <div class="card">
   <div class="card-header">
@@ -125,20 +129,51 @@ Project and Allocation Export List
     $(base_div_id + 'allocationattribute__usage_format').val('whole');
   }
 
+  function displayOptionIsSelected(form) {
+    if ($('#' + form + ' input[type=checkbox]').is(":checked")) {
+      return true;
+    }
+    return false;
+  }
+
   $(document).ready(function () {
     var date = new Date();
     var currentYear = date.getFullYear();
     $(".datepicker")
-      .wrap('<div class="input-group">')
-      .datepicker({
-        changeMonth: true,
-        changeYear: true,
-        yearRange: (currentYear - 5) + ':' + (currentYear),
-        showOn: "button",
-        buttonText: "Select Date"
+      .flatpickr({
+        minDate: "today",
+        maxDate: new Date().fp_incr(356 * 5),
+        dateFormat: "m/d/Y",
       })
-      .next("button")
-      .addClass("btn btn-secondary")
+
+    var is_checked = displayOptionIsSelected(active_tab);
+    if (is_checked) {
+      $('#no_display_alert').hide();
+    } else {
+      $('#no_display_alert').show();
+    }
+    var forms = ['project-search', 'allocation-search', 'user-search']
+    for (var i = 0; i < forms.length; i++) {
+      let form = forms[i]
+
+      $('[href="#' + form + '"]').on('click', function() {
+        var is_checked = displayOptionIsSelected(form);
+        if (is_checked) {
+          $('#no_display_alert').hide();
+          return;
+        }
+        $('#no_display_alert').show();
+      })
+
+      $('#' + form + ' input[type="checkbox"]').change(function(){ 
+        var is_checked = displayOptionIsSelected(form);
+        if (is_checked) {
+          $('#no_display_alert').hide();
+          return;
+        }
+        $('#no_display_alert').show();
+      })
+    }
 
     if (active_tab === 'allocation-search') {
       $('#project-search').toggleClass('active');

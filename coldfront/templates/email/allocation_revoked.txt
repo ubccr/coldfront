@@ -1,0 +1,14 @@
+Dear {{center_name}} user,
+
+Your allocation for {{resource}} has been revoked.
+
+Please login to view a message from the system administrators: 
+
+{{url}}
+
+If you are a student or collaborator under this project, you are receiving this
+notice as a courtesy. If you would like to opt out of future notifications,
+instructions can be found here: {{opt_out_instruction_url}}
+
+Thank you,
+{{signature}}

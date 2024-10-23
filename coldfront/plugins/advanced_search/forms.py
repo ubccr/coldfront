@@ -503,7 +503,7 @@ class Formset(LayoutObject):
         if template:
             self.template = template
 
-    def render(self, form, form_style, context, **kwargs):
+    def render(self, form, context, **kwargs):
         formset = context.get(self.formset_context_name)
         helper = context.get(self.helper_context_name)
         # closes form prematurely if this isn't explicitly stated

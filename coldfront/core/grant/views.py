@@ -38,7 +38,7 @@ class GrantCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
-        if project_obj.status.name in ['Archived', 'Denied', 'Expired', ]:
+        if project_obj.status.name in ['Archived', 'Denied', 'Expired', 'Renewal Denied', ]:
             messages.error(
                 request,
                 'You cannot add grants to a project with status "{}".'.format(project_obj.status.name)

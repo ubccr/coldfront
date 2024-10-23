@@ -8,12 +8,12 @@ from decimal import Decimal
 from datetime import date
 
 import ldap.filter
-from ldap3 import Connection, Server, MODIFY_ADD, MODIFY_DELETE
+from ldap3 import Connection, Server, MODIFY_ADD, MODIFY_DELETE, Tls
 from django.urls import reverse
 from django.contrib.auth.models import User
 
 from coldfront.core.utils.common import import_from_settings
-from coldfront.core.utils.mail import send_email_template
+from coldfront.core.utils.mail import send_email_template, build_link
 from coldfront.core.allocation.models import (AllocationUserStatusChoice,
                                               AllocationUserRoleChoice,
                                               AllocationAttributeType,
@@ -30,7 +30,10 @@ from coldfront.core.project.models import (ProjectUserStatusChoice,
 from coldfront.core.resource.models import Resource
 from coldfront.core.user.models import UserProfile
 from coldfront.plugins.ldap_user_info.utils import LDAPSearch
-from coldfront.core.project.utils import get_new_end_date_from_list, generate_slurm_account_name
+from coldfront.core.project.utils import (get_new_end_date_from_list,
+                                          generate_slurm_account_name,
+                                          create_admin_action_for_project_creation)
+from coldfront.core.allocation.utils import create_admin_action_for_allocation_creation
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +47,8 @@ SLATE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD = import_from_settings('SLATE_PROJECT
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 CENTER_BASE_URL = import_from_settings('CENTER_BASE_URL')
 PROJECT_DEFAULT_MAX_MANAGERS = import_from_settings('PROJECT_DEFAULT_MAX_MANAGERS', 3)
+PROJECT_TYPE_LIMIT_MAPPING = import_from_settings(
+    'PROJECT_TYPE_LIMIT_MAPPING', {})
 if EMAIL_ENABLED:
     SLATE_PROJECT_EMAIL = import_from_settings('SLATE_PROJECT_EMAIL', '')
     EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
@@ -147,8 +152,8 @@ def sync_slate_project_ldap_group(allocation_obj, ldap_conn=None):
         ldap_conn = LDAPModify()
     if not ldap_conn.check_attribute_exists('gidNumber', ldap_group_gid):
         logger.error(
-            f'LDAP: Slate Project GID for allocation {allocation_obj.pk} does not exist. No sync '
-            f'was performed'
+            f'LDAP: Slate Project GID for allocation {allocation_obj.pk} does not exist. No LDAP group '
+            f'sync was performed'
         )
         return
     
@@ -204,6 +209,13 @@ def sync_slate_project_users(allocation_obj, ldap_conn=None, ldap_search_conn=No
     if ldap_search_conn is None:
         ldap_search_conn = LDAPImportSearch()
 
+    if not ldap_conn.check_attribute_exists('gidNumber', ldap_group_gid):
+        logger.error(
+            f'LDAP: Slate Project GID for allocation {allocation_obj.pk} does not exist. No Slate Project '
+            f'user sync was performed'
+        )
+        return
+
     read_write_user_objs = allocation_obj.allocationuser_set.filter(
         role__name='read/write', status__name__in=['Active', 'Eligible', 'Disabled', 'Retired']
     )
@@ -213,6 +225,17 @@ def sync_slate_project_users(allocation_obj, ldap_conn=None, ldap_search_conn=No
 
     ldap_read_write_usernames = ldap_conn.get_users(ldap_group_gid)
     ldap_read_only_usernames = ldap_conn.get_users(ldap_group_gid + 1)
+
+    duplicate_users = set(ldap_read_only_usernames).intersection(set(ldap_read_write_usernames))
+    for duplicate_user in duplicate_users:
+        if allocation_obj.project.pi.username == duplicate_user:
+            ldap_read_only_usernames.remove(duplicate_user)
+            logger.warning(f'Project PI {duplicate_user} exists in both Slate Project LDAP groups '
+                           f'(allocation pk={allocation_obj.pk}), placing in read/write')
+        else:
+            ldap_read_write_usernames.remove(duplicate_user)
+            logger.warning(f'User {duplicate_user} exists in both Slate Project LDAP groups '
+                           f'(allocation pk={allocation_obj.pk}), placing in read only')
 
     updated_read_write_usernames = []
     updated_read_only_usernames = []
@@ -430,6 +453,31 @@ def sync_slate_project_allocated_quantities():
     logger.info('Done syncing Slate Project allocated quantities')
 
 
+def check_slate_project_owner_aginst_current_pi(allocation_obj, ldap_conn=None):
+    if ldap_conn == None:
+        ldap_conn = LDAPModify()
+
+    pi = allocation_obj.project.pi.username
+    gid_obj = allocation_obj.allocationattribute_set.filter(allocation_attribute_type__name='GID')
+
+    if not gid_obj.exists():
+        logger.warning(f'Slate Project allocation is missing a GID (allocation pk={allocation_obj.pk}). Skipping mismatch check...')
+        return
+    
+    gid = gid_obj[0].value
+    description = ldap_conn.get_attribute('description', gid)
+
+    if not description:
+        logger.warning(f'Slate Project with GID={gid} does not have a description. Skipping mismatch check...')
+        return
+    
+    owner = description.split(',')[-1].split(' ')[1]
+
+    if owner != pi:
+        logger.warning(f'Found mismatch between RT Project PI and Slate Project owner in '
+                        f'allocation {allocation_obj.pk}. PI={pi}, owner={owner}')
+
+
 def get_pi_total_allocated_quantity(pi_username):
     total_allocated_quantity = 0
     with open(os.path.join(SLATE_PROJECT_INCOMING_DIR, 'netid-total-allocation.csv'), 'r') as netid_total_allocation_csv:
@@ -447,7 +495,7 @@ def check_pi_total_allocated_quantity(pi_username):
 
 
 def download_files():
-    subprocess.run(['bash', os.path.join(SLATE_PROJECT_INCOMING_DIR, 'get_hpfs_data.sh')])
+    subprocess.run(['/usr/bin/bash', os.path.join(SLATE_PROJECT_INCOMING_DIR, 'get_hpfs_data.sh')])
 
 
 def send_expiry_email(allocation_obj):
@@ -1132,7 +1180,8 @@ def create_slate_project_data_file():
         )
 
     current_date = date.today().isoformat()
-    with open(os.path.join(SLATE_PROJECT_DIR, f'slate_project_data_{current_date}.csv'), 'w') as slate_project_csv:
+    slate_project_filename = f'slate_project_data_{current_date}.csv'
+    with open(os.path.join(SLATE_PROJECT_DIR, slate_project_filename), 'w') as slate_project_csv:
         csv_writer = csv.writer(slate_project_csv)
         csv_writer.writerow(['Allocation Created', *allocation_attribute_types])
         for _, allocation_attributes in allocations.items():
@@ -1145,6 +1194,12 @@ def create_slate_project_data_file():
             ])
 
     logger.info('Created a csv with Slate Project data')
+
+    return slate_project_filename
+
+
+def send_slate_project_data_file(slate_project_filename):
+    subprocess.run(['/usr/bin/bash', os.path.join(SLATE_PROJECT_DIR, 'send_hpfs_data.sh', slate_project_filename)])
 
 
 def get_info(info, line, current_project):
@@ -1186,7 +1241,8 @@ def update_user_profile(user_obj, ldap_conn):
     user_obj.userprofile.save()
 
 
-def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
+def import_slate_projects(json_file_name, out_file_name, importing_user, limit=None):
+    importing_user_obj = User.objects.get(username=importing_user)
     todays_date = datetime.date.today()
     with open(json_file_name, 'r') as json_file:
         extra_information = json.load(json_file)
@@ -1226,8 +1282,6 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
                 pass
             slate_projects.append(slate_project)
 
-    # Non faculty, staff, and ACNP should be put in their own projects with a HPFS member as the PI.
-    hpfs_pi_obj =  User.objects.get(username="thcrowe")
     project_end_date = get_new_end_date_from_list(
         [datetime.datetime(datetime.datetime.today().year, 6, 30), ],
         datetime.datetime.today(),
@@ -1244,12 +1298,17 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
         'Error': AllocationUserStatusChoice.objects.get(name='Error')
     }
     ldap_conn = LDAPImportSearch()
-    rejected_slate_projects = []
+    logger.info('Importing Slate Projects...')
+    imported = 0
     for slate_project in slate_projects:
-        exists = AllocationAttribute.objects.filter(
+        existing_gid = AllocationAttribute.objects.filter(
             allocation_attribute_type__name='GID', value=slate_project.get('gid_number')
-        ).exists()
-        if exists:
+        )
+        if existing_gid.exists():
+            logger.warning(f'Slate Project GID {slate_project.get("gid_number")} already exists in '
+                           f'allocation {existing_gid[0].allocation.pk}. Skipping import...')
+            print(f'Slate Project {slate_project.get("namespace_entry")} has already been imported: '
+                  f'{build_link(reverse("allocation-detail", kwargs={"pk": existing_gid[0].allocation.pk}))}')
             continue
         user_obj, created = User.objects.get_or_create(username=slate_project.get('owner_netid'))
         if not created:
@@ -1257,7 +1316,10 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
 
         owner_status = get_new_user_status(user_obj.username, ldap_conn)
         if owner_status in ['Retired', 'Disabled']:
-            rejected_slate_projects.append(slate_project.get('namespace_entry'))
+            logger.warning(f'Slate Project GID {slate_project.get("gid_number")} has a status of '
+                           f'{owner_status}. Skipping import...')
+            print(f'Slate Project {slate_project.get("namespace_entry")} has NOT been imported: '
+                  f'Owner has a status of {owner_status}')
             continue
         
         project_user_role_obj = ProjectUserRoleChoice.objects.get(name='Manager')
@@ -1265,9 +1327,33 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
         if slate_project.get('project_id'):
             project_obj = Project.objects.get(pk=slate_project.get('project_id'))
             if project_obj.status.name != 'Active':
-                print(f'Project {slate_project.get("project_id")} is not Active, skipping...')
+                logger.warning(f'Project {slate_project.get("project_id")} to add Slate Project, '
+                               f'GID={slate_project.get("gid_number")}, to is not active, '
+                               f'Skipping import...')
+                print(f'Slate Project {slate_project.get("namespace_entry")} has NOT been imported: '
+                      f'The RT Project is not active')
+                continue
+
+            if project_obj.pi.username != slate_project.get('owner_netid'):
+                logger.warning(f'Mismatch between Slate Project owner, GID={slate_project.get("gid_number")}'
+                               f', and RT Project PI, project pk={project_obj.pk}. Skipping import...')
+                print(f'Slate Project {slate_project.get("namespace_entry")} has NOT been imported: '
+                      f'Mismatch between Slate Project owner and RT Project PI')
                 continue
         else:
+            project_objs = Project.objects.filter(status__name='Active', pi=user_obj, type__name='Research')
+            user_profile_obj = UserProfile.objects.get(user=user_obj)
+            max_projects = int(PROJECT_TYPE_LIMIT_MAPPING.get('Research'))
+            if user_profile_obj.max_research_projects_override > -1:
+                max_projects = user_profile_obj.max_research_projects_override
+            if project_objs.count() >= max_projects:
+                logger.warning(f'Slate Project\'s, GID={slate_project.get("gid_number")}, owner '
+                               f'{user_obj.username} is at or above their max projects count.  '
+                               f'Skipping import...')
+                print(f'Slate Project {slate_project.get("namespace_entry")} has NOT been imported: '
+                      f'Owner is at or above the max projects they can have')
+                continue
+
             if user_obj.userprofile.title in ['Faculty', 'Staff', 'Academic (ACNP)', ]:
                 project_obj, _ = Project.objects.get_or_create(
                     title=slate_project.get('project_title'),
@@ -1282,27 +1368,15 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
 
                 project_obj.slurm_account_name = generate_slurm_account_name(project_obj)
                 project_obj.save()
+                create_admin_action_for_project_creation(importing_user_obj, project_obj)
+
             else:
-                project_obj, _ = Project.objects.get_or_create(
-                    title=slate_project.get('project_title'),
-                    description=slate_project.get('abstract'),
-                    pi=hpfs_pi_obj,
-                    max_managers=PROJECT_DEFAULT_MAX_MANAGERS,
-                    requestor=user_obj,
-                    type=ProjectTypeChoice.objects.get(name='Research'),
-                    status=ProjectStatusChoice.objects.get(name='Active'),
-                    end_date=project_end_date
-                )
-
-                project_obj.slurm_account_name = generate_slurm_account_name(project_obj)
-                project_obj.save()
-
-                ProjectUser.objects.get_or_create(
-                    user=hpfs_pi_obj,
-                    project=project_obj,
-                    role=project_user_role_obj,
-                    status=ProjectUserStatusChoice.objects.get(name='Active')
-                )
+                logger.warning(f'Slate Project\'s, GID={slate_project.get("gid_number")} owner '
+                               f'{user_obj.username} has a title of {user_obj.userprofile.title}. '
+                               f'Skipping import...')
+                print(f'Slate Project {slate_project.get("namespace_entry")} has NOT been imported: '
+                      f'Owner has an ineligible title')
+                continue
 
         read_write_users = slate_project.get('read_write_users')
         read_only_users = slate_project.get('read_only_users')
@@ -1418,8 +1492,33 @@ def import_slate_projects(limit=None, json_file_name=None, out_file_name=None):
                 allocation_obj, 'Allocated Quantity', slate_project.get('allocated_quantity')
             )
 
-    if rejected_slate_projects:
-        print(f'Slate projects not imported due to ineligible PI: {", ".join(rejected_slate_projects)}')
+        logger.info(f'Slate Project, GID={slate_project.get("gid_number")}, was successfully '
+                    f'imported into allocation {allocation_obj.pk}')
+        print(f'Slate Project {slate_project.get("namespace_entry")} has been imported: '
+              f'{build_link(reverse("allocation-detail", kwargs={"pk": allocation_obj.pk}))}')
+        imported += 1
+
+        create_admin_action_for_allocation_creation(importing_user_obj, allocation_obj)
+
+        if EMAIL_ENABLED:
+            template_context = {
+                'center_name': EMAIL_CENTER_NAME,
+                'slate_project': slate_project.get('namespace_entry'),
+                'slate_project_url': build_link(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk})),
+                'email_contact': SLATE_PROJECT_EMAIL,
+                'signature': EMAIL_SIGNATURE
+            }
+
+            send_email_template(
+                'Imported Slate Project',
+                'slate_project/email/imported_slate_project.txt',
+                template_context,
+                EMAIL_SENDER,
+                [project_obj.pi.email]
+            )
+
+    not_imported = len(slate_projects) - imported
+    logger.info(f'Done importing Slate Projects, imported: {imported}, not imported: {not_imported}')
 
 
 class LDAPImportSearch():
@@ -1458,7 +1557,8 @@ class LDAPModify:
         self.LDAP_BIND_PASSWORD = import_from_settings('LDAP_SLATE_PROJECT_BIND_PASSWORD')
         self.LDAP_CONNECT_TIMEOUT = import_from_settings('LDAP_SLATE_PROJECT_CONNECT_TIMEOUT', 2.5)
 
-        self.server = Server(self.LDAP_SERVER_URI, use_ssl=True, connect_timeout=self.LDAP_CONNECT_TIMEOUT)
+        tls = Tls(ciphers='ALL')
+        self.server = Server(self.LDAP_SERVER_URI, use_ssl=True, connect_timeout=self.LDAP_CONNECT_TIMEOUT, tls=tls)
         self.conn = Connection(self.server, self.LDAP_BIND_DN, self.LDAP_BIND_PASSWORD, auto_bind=True)
 
         if not self.conn.bind():

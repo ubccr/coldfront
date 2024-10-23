@@ -11,11 +11,22 @@ from coldfront.plugins.slate_project.utils import (sync_slate_project_users,
                                                    get_new_user_status,
                                                    send_access_removed_email,
                                                    create_slate_project_data_file,
+                                                   send_slate_project_data_file,
                                                    download_files,
+                                                   check_slate_project_owner_aginst_current_pi,
                                                    LDAPModify,
                                                    LDAPImportSearch)
 
 logger = logging.getLogger(__name__)
+
+
+def check_for_mismatch_owner_and_pi():
+    ldap_conn = LDAPModify()
+    allocation_objs = Allocation.objects.filter(
+        resources__name='Slate Project', status__name='Active')
+
+    for allocation_obj in allocation_objs:
+        check_slate_project_owner_aginst_current_pi(allocation_obj, ldap_conn)
 
 
 def sync_all_slate_project_allocations():
@@ -47,8 +58,8 @@ def send_ineligible_pis_email_report():
     send_ineligible_pis_report()
 
 
-def import_new_slate_projects(json, out):
-    import_slate_projects(json_file_name = json, out_file_name = out)
+def import_new_slate_projects(json, out, user):
+    import_slate_projects(json, out, user)
 
 
 def update_all_user_statuses():
@@ -61,4 +72,5 @@ def update_all_user_statuses():
 
 
 def create_slate_project_data():
-    create_slate_project_data_file()
+    slate_project_filename = create_slate_project_data_file()
+    send_slate_project_data_file(slate_project_filename)

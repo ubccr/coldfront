@@ -6,9 +6,9 @@ try:
 except ImportError:
     raise ImproperlyConfigured('Please run: pip install ldap3')
 
-#------------------------------------------------------------------------------
-# This enables searching for users via LDAP
-#------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
+#  This enables searching for users via LDAP
+# ----------------------------------------------------------------------------
 
 LDAP_USER_SEARCH_SERVER_URI = ENV.str('LDAP_USER_SEARCH_SERVER_URI')
 LDAP_USER_SEARCH_BASE = ENV.str('LDAP_USER_SEARCH_BASE')

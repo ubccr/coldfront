@@ -10,33 +10,8 @@ Allocation List
 
 
 {% block content %}
-<div>
-  <h2 class="d-inline">Allocations</h2>
-  {% if show_export_button %}
-    <button type="button" class="btn btn-success float-right" data-toggle="modal" data-target="#id_export_csv">
-      Export Allocations to CSV
-    </button>
-  {% endif %}
-</div>
+<h2>Allocations</h2>
 <hr>
-
-<div class="modal fade" id="id_export_csv" tabindex="-1" role="dialog" aria-labelledby="id_export_csv_label" aria-hidden="true">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="id_export_csv_label">Export to CSV</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <form id="id_export_form" action="{% url 'allocation-export' %}" method="post">
-          {% crispy allocation_export_form %}
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
 
 {% if expand_accordion == "show" or allocation_list %}
   <div class="mb-3" id="accordion">
@@ -105,7 +80,7 @@ Allocation List
           <tr>
             <td>{{ allocation.id }}</td>
             <td class="text-nowrap"><a 
-                href="/project/{{allocation.project.id}}/">{{ allocation.project.title|truncatechars:30 }}</a></td>
+                href="/project/{{allocation.project.id}}/">{{ allocation.project.title|truncatechars:50 }}</a></td>
             <td class="text-nowrap">{{allocation.project.pi.first_name}} {{allocation.project.pi.last_name}}
               ({{allocation.project.pi.username}})</td>
             <td class="text-nowrap">{{ allocation.get_parent_resource }}</td>
@@ -150,7 +125,7 @@ Allocation List
     resetForm($('#filter_form'));
   });
 
-  $(".datepicker").datepicker();
+  $(".datepicker").flatpickr();
 
   function resetForm($form) {
     $form.find('input:text, input:password, input:file, select, textarea').val('');

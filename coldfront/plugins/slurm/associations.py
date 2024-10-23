@@ -111,7 +111,7 @@ class SlurmCluster(SlurmBase):
         cluster = SlurmCluster(name, specs)
 
         # Process allocations
-        for allocation in resource.allocation_set.filter(status__name='Active'):
+        for allocation in resource.allocation_set.filter(status__name__in=['Active', 'Renewal Requested']):
             cluster.add_allocation(allocation, user_specs=user_specs)
 
         # Process child resources
@@ -119,7 +119,7 @@ class SlurmCluster(SlurmBase):
         for r in children:
             partition_specs = r.get_attribute_list(SLURM_SPECS_ATTRIBUTE_NAME)
             partition_user_specs = r.get_attribute_list(SLURM_USER_SPECS_ATTRIBUTE_NAME)
-            for allocation in r.allocation_set.filter(status__name='Active'):
+            for allocation in r.allocation_set.filter(status__name__in=['Active', 'Renewal Requested']):
                 cluster.add_allocation(allocation, specs=partition_specs, user_specs=partition_user_specs)
 
         return cluster

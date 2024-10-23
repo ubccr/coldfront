@@ -3,8 +3,7 @@ from django_q.tasks import async_task
 
 from coldfront.core.allocation.signals import (allocation_activate_user,
                                                allocation_remove_user)
-from coldfront.core.allocation.views import (AllocationActivateRequestView,
-                                             AllocationAddUsersView,
+from coldfront.core.allocation.views import (AllocationAddUsersView,
                                              AllocationRemoveUsersView,
                                              AllocationRenewView)
 from coldfront.core.project.views import (ProjectAddUsersView,
@@ -13,7 +12,6 @@ from coldfront.core.utils.common import import_from_settings
 
 
 @receiver(allocation_activate_user, sender=ProjectAddUsersView)
-@receiver(allocation_activate_user, sender=AllocationActivateRequestView)
 @receiver(allocation_activate_user, sender=AllocationAddUsersView)
 def activate_user(sender, **kwargs):
     allocation_user_pk = kwargs.get('allocation_user_pk')

@@ -47,7 +47,28 @@ Renew Allocation
           </table>
         </div>
       {% else %}
-        <p>There are no users that can be removed on this allocation. To add new users, click submit to complete the renewal and and
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th scope="col">Username</th>
+                <th scope="col">First Name</th>
+                <th scope="col">Last Name</th>
+                <th scope="col">Email</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>{{ allocation.project.pi.username }}</td>
+                <td>{{ allocation.project.pi.first_name }}</td>
+                <td>{{ allocation.project.pi.last_name }}</td>
+                <td>{{ allocation.project.pi.email }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>There are no additional users on this allocation. To add new users, click submit to complete the renewal and and
         return to the project page.</p>
         <hr>
       {% endif %}

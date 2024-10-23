@@ -33,87 +33,41 @@ Project List
   </div>
 </div>
 
-<div class="modal fade" id="id_project_export_csv" tabindex="-1" role="dialog" aria-labelledby="id_project_export_csv_label" aria-hidden="true">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="id_project_export_csv_label">Export to CSV</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <form id="id_project_export_form" action="{% url 'project-export' %}" method="post">
-          {% crispy project_export_form %}
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="modal fade" id="id_project_user_export_csv" tabindex="-1" role="dialog" aria-labelledby="id_project_user_export_csv_label" aria-hidden="true">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="id_project_user_export_csv_label">Export to CSV</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        <form id="id_project_user_export_form" action="{% url 'project-user-export' %}" method="post">
-          {% crispy project_user_export_form %}
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-
 <div>
-  {% if user.is_superuser or user.userprofile.is_pi %}
-    <p>
-      You can use the PI Search function below to search for a project your PI is in and request to be added to it.
-    </p>
-  {% else %}
-    <p>
-      You do not have permission to make a project request. You can use the PI Search function below to search for
-      a project your PI is in and request to be added to it.
-    </p>
+  {% if not user.is_superuser and not user.userprofile.is_pi %}
+    <p>You do not have permission to make a project request.</p>
   {% endif %}
 </div>
 
-<h2>PI Search</h2>
-<hr>
-<div class="mb-3" id="pi_search_accordion">
-  <div class="card">
-    <div class="card-header">
-      <a id="expand_pi_button" href="#collapse_pi" role="button" class="card-link" data-toggle="collapse">
-        Expand
-        <i id="plus_minus_1" class="fas fa-minus float-right"></i>
-      </a>
-    </div>
-    <div id="collapse_pi" class="collapse show" data-parent="#pi_search_accordion">
-      <div class="card-body">
-        <form id="pi_search_form" method="post">
-          {{ project_pi_search_form|crispy }}
-          <input type="submit" class="btn btn-primary" value="Search">
-        </form>
-        <br>
-        <div class="row">
-          <div class="col" id="search_results">
-            <div class="card border-light">
-              <div class="card-body">
-                <div id="search_results_inner"></div>
+{% if enabled_pi_search or enabled_slate_project_search %}
+  <div class="mb-3" id="search_functions_accordion">
+    <div class="card">
+      <div class="card-header">
+        <a id="expand_search_functions_button" href="#collapse_search_functions" role="button" class="card-link" data-toggle="collapse">
+          <i id="search_plus_minus_1" class="fas fa-search-minus"></i>
+          Search Functions
+          <i id="plus_minus_1" class="fas fa-minus float-right"></i>
+        </a>
+      </div>
+      <div id="collapse_search_functions" class="collapse show" data-parent="#search_functions_accordion">
+        <div class="card-body">
+          <div class="row">
+            {% if enabled_pi_search %}
+              <div class="col">
+                {% include "pi_search/pi_search_div.html" %}
               </div>
-            </div>
+            {% endif %}
+            {% if enabled_slate_project_search %}
+              <div class="col">
+                {% include "slate_project/slate_project_search_div.html" %}
+              </div>
+            {% endif %}
           </div>
         </div>
       </div>
     </div>
   </div>
-</div>
-<hr>
-
+{% endif %}
 
 <div class="card">
   <div class="card-header">
@@ -121,18 +75,6 @@ Project List
       <div class="col">
         <h3 style="margin-bottom: 0;"><strong>Projects: {{ projects_count }}</strong></h3>
       </div>
-      {% if show_export_button %}
-        <div class="col float-right">
-          <div class="float-right">
-            <button type="button" class="btn btn-success" data-toggle="modal" data-target="#id_project_export_csv">
-              Export Projects to CSV
-            </button>
-            <button type="button" class="btn btn-success" data-toggle="modal" data-target="#id_project_user_export_csv">
-              Export Project Users to CSV
-            </button>
-          </div>
-        </div>
-      {% endif %}
     </div>
   </div>
   <div class="card-body">
@@ -233,7 +175,7 @@ Project List
                   {% else %}
                     <td class="text-success"><strong>{{ project.status.name }}</strong></td>
                   {% endif %}
-                {% elif project.status.name in 'Archived, Denied, Expired' %}
+                {% elif project.status.name in 'Archived, Denied, Expired, Renewal Denied' %}
                   <td class="text-danger">
                     <strong>{{ project.status.name }}</strong>
                       {% if user.username in project.list_of_manager_usernames %}
@@ -291,58 +233,12 @@ Project List
 <br>
 
 <script>
-  var pi_last_searched = '';
-
   $("#navbar-main > ul > li.active").removeClass("active");
   $("#navbar-project-menu").addClass("active");
   $("#navbar-project").addClass("active");
 
-  $(".datepicker").datepicker();
-
-  $(document).ready(function () {
-    $('#search_results').hide()
-  });
-
   $(document).on('click', '#form_reset_button', function() {
     resetForm($('#filter_form'));
-  });
-
-  $('#pi_search_form').on('submit', function(event) {
-    event.preventDefault();
-    var pi_username = $('#id_pi_username').val();
-
-    if (pi_last_searched === pi_username) {
-      return;
-    }
-    pi_last_searched = pi_username
-    
-    if (pi_username === '') {
-      $('#search_results').hide();
-      return;
-    }
-
-    data = {
-      pi_username: pi_username,
-      csrfmiddlewaretoken: "{{ csrf_token }}",
-    }
-    $.ajax({
-      url: "{% url 'project-pi-list' %}",
-      type: "POST",
-      data: data,
-      success: function(data) {
-        $('#search_results').show();
-        $('#search_results_inner').html(data);
-      },
-      error: function(xhr, errmsg, err) {
-        if (xhr.status == 403 || xhr.status == 401) {
-          $('#search_results_inner').html("<div class='alert alert-danger'>Your session expired. Please login again. <a href='#' class='close'>&times;</a></div>");
-        } else {
-          $('#search_results_inner').html("<div class='alert alert-danger'>Oops! We have encountered an error: " + errmsg +
-            " <a href='#' class='close'>&times;</a></div>");
-        }
-        console.log(xhr.status + ": " + xhr.responseText);
-      }
-    });
   });
 
   function resetForm($form) {
@@ -355,8 +251,10 @@ Project List
     icon.toggleClass("fa-plus fa-minus");
   });
 
-  $("#expand_pi_button").click(function() {
-    $('#collapse_pi').collapse();
+  $("#expand_search_functions_button").click(function() {
+    $('#collapse_search_functions').collapse();
+    search_icon = $("#search_plus_minus_1");
+    search_icon.toggleClass("fa-search-plus fa-search-minus")
     icon = $("#plus_minus_1");
     icon.toggleClass("fa-plus fa-minus");
   });

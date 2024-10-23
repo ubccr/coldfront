@@ -59,7 +59,7 @@
                 {% else %}
                   <td class="text-success"><strong>{{ project.status.name }}</strong></td>
                 {% endif %}
-              {% elif project.status.name in 'Archived, Denied, Expired' %}
+              {% elif project.status.name in 'Archived, Denied, Expired, Renewal Denied' %}
                 <td class="text-danger">
                   <strong>{{ project.status.name }}</strong>
                   {% if user.username in project.list_of_manager_usernames %}
@@ -187,7 +187,7 @@
       </ul>
     </div>
     <div class="card-footer">
-      Additional information on <a target="_blank" href="https://kb.iu.edu/d/awrz">submitting jobs</a> is also available.
+      Additional information on <a target="_blank" href="https://servicenow.iu.edu/kb?id=kb_article_view&sysparm_article=KB0022436">submitting jobs</a> is also available.
     </div>
   </div>
 {% endif %}

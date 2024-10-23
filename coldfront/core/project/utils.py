@@ -62,19 +62,23 @@ def get_new_end_date_from_list(expire_dates, check_date=None, buffer_days=0):
     return end_date
 
 
-def create_admin_action(user, fields_to_check, project):
-    Project_dict = model_to_dict(project)
+def create_admin_action(user, fields_to_check, project, base_model=None):
+    if base_model is None:
+        base_model = project
+    base_model_dict = model_to_dict(base_model)
+
     for key, value in fields_to_check.items():
-        project_value = Project_dict.get(key)
-        if type(value) is not type(project_value):
+        base_model_value = base_model_dict.get(key)
+        if type(value) is not type(base_model_value):
             if key == 'status':
-                project_value = ProjectStatusChoice.objects.get(pk=project_value).name
+                status_class = base_model._meta.get_field('status').remote_field.model
+                base_model_value = status_class.objects.get(pk=base_model_value).name
                 value = value.name
-        if value != project_value:
+        if value != base_model_value:
             ProjectAdminAction.objects.create(
                 user=user,
                 project=project,
-                action=f'Changed "{key}" from "{project_value}" to "{value}"'
+                action=f'For "{base_model}" changed "{key}" from "{base_model_value}" to "{value}"'
             )
 
 
@@ -108,3 +112,41 @@ def generate_slurm_account_name(project_obj):
         letter = 'c'
 
     return letter + string
+
+
+def create_admin_action_for_deletion(user, deleted_obj, project, base_model=None):
+    if base_model:
+        ProjectAdminAction.objects.create(
+            user=user,
+            project=project,
+            action=f'Deleted "{deleted_obj}" from "{base_model}"'
+        )
+    else:
+        ProjectAdminAction.objects.create(
+            user=user,
+            project=project,
+            action=f'Deleted "{deleted_obj}"'
+        )
+
+
+def create_admin_action_for_creation(user, created_obj, project, base_model=None):
+    if base_model:
+        ProjectAdminAction.objects.create(
+            user=user,
+            project=project,
+            action=f'Created "{created_obj}" in "{base_model}" with value "{created_obj.value}"'
+        )
+    else:
+        ProjectAdminAction.objects.create(
+            user=user,
+            project=project,
+            action=f'Created "{created_obj}" with value "{created_obj.value}"'
+        )
+
+
+def create_admin_action_for_project_creation(user, project):
+    ProjectAdminAction.objects.create(
+        user=user,
+        project=project,
+        action=f'Created a project with status "{project.status.name}"'
+    )

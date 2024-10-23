@@ -10,11 +10,9 @@ coldfront_configs = [
     'auth.py',
     'logging.py',
     'core.py',
+    'email.py',
     'plugins/cas_login.py',
 ]
-
-if ENV.bool('EMAIL_ENABLED', default=False):
-    coldfront_configs.append('email.py')
 
 # ColdFront plugin settings
 plugin_configs = {
@@ -33,7 +31,9 @@ plugin_configs = {
     'PLUGIN_MAINTENANCE_MODE': 'plugins/maintenance_mode.py',
     'PLUGIN_SLATE_PROJECT': 'plugins/slate_project.py',
     'PLUGIN_UPDATE_USER_PROFILES': 'plugins/update_user_profiles.py',
-    'PLUGIN_CUSTOMIZABLE_FORMS': 'plugins/customizable_forms.py'
+    'PLUGIN_CUSTOMIZABLE_FORMS': 'plugins/customizable_forms.py',
+    'PLUGIN_PI_SEARCH': 'plugins/pi_search.py',
+    'PLUGIN_GEODE_PROJECT': 'plugins/geode_project.py'
 }
 
 # This allows plugins to be enabled via environment variables. Can alternatively

@@ -170,7 +170,7 @@ def create_admin_action(user, fields_to_check, allocation, base_model=None):
             AllocationAdminAction.objects.create(
                 user=user,
                 allocation=allocation,
-                action=f'Changed "{key}" from "{base_model_value}" to "{value}" for "{base_model}"'
+                action=f'For "{base_model}" changed "{key}" from "{base_model_value}" to "{value}"'
             )
 
 
@@ -179,13 +179,13 @@ def create_admin_action_for_deletion(user, deleted_obj, allocation, base_model=N
         AllocationAdminAction.objects.create(
             user=user,
             allocation=allocation,
-            action=f'Deleted "{deleted_obj}" from "{base_model}" in "{allocation}"'
+            action=f'Deleted "{deleted_obj}" from "{base_model}"'
         )
     else:
         AllocationAdminAction.objects.create(
             user=user,
             allocation=allocation,
-            action=f'Deleted "{deleted_obj}" from "{allocation}"'
+            action=f'Deleted "{deleted_obj}"'
         )
 
 
@@ -194,14 +194,22 @@ def create_admin_action_for_creation(user, created_obj, allocation, base_model=N
         AllocationAdminAction.objects.create(
             user=user,
             allocation=allocation,
-            action=f'Created "{created_obj}" in "{base_model}" in "{allocation}"'
+            action=f'Created "{created_obj}" in "{base_model}" in "{allocation}" with value "{created_obj.value}"'
         )
     else:
         AllocationAdminAction.objects.create(
             user=user,
             allocation=allocation,
-            action=f'Created "{created_obj}" in "{allocation}"'
+            action=f'Created "{created_obj}" in "{allocation}" with value "{created_obj.value}"'
         )
+
+
+def create_admin_action_for_allocation_creation(user, allocation):
+    AllocationAdminAction.objects.create(
+        user=user,
+        allocation=allocation,
+        action=f'Created a {allocation.get_parent_resource.name} allocation with status "{allocation.status.name}"'
+    )
 
 
 def get_allocation_user_emails(allocation_obj, only_project_managers=False):

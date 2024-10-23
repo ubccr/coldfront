@@ -90,7 +90,7 @@ Allocation Change Detail
             {% endif %}
             <tr>
               <th scope="row" class="text-nowrap">Description:</th>
-              <td>{{ allocation_change.allocation.description }}</td>
+              <td>{{ allocation_change.allocation.description|default_if_none:"" }}</td>
             </tr>
             <tr>
               <th scope="row" class="text-nowrap">Change Requested:</th>

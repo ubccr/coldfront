@@ -1,10 +1,14 @@
+import os
+from inspect import Attribute
 from django.core.management.base import BaseCommand
 
-from coldfront.core.project.models import (ProjectReviewStatusChoice,
-                                           ProjectStatusChoice,
-                                           ProjectUserRoleChoice,
-                                           ProjectUserStatusChoice,
-                                           ProjectTypeChoice)
+from coldfront.core.project.models import (ProjectAttributeType,
+                                            ProjectReviewStatusChoice,
+                                            ProjectStatusChoice,
+                                            ProjectUserRoleChoice,
+                                            ProjectUserStatusChoice,
+                                            ProjectTypeChoice,
+                                            AttributeType)
 
 
 class Command(BaseCommand):
@@ -23,9 +27,18 @@ class Command(BaseCommand):
         for choice in ['User', 'Manager', 'Group', ]:
             ProjectUserRoleChoice.objects.get_or_create(name=choice)
 
-        ProjectUserStatusChoice.objects.all().delete()
         for choice in ['Active', 'Pending - Add', 'Pending - Remove', 'Denied', 'Removed', ]:
             ProjectUserStatusChoice.objects.get_or_create(name=choice)
+
+        for attribute_type in ('Date', 'Float', 'Int', 'Text', 'Yes/No'):
+            AttributeType.objects.get_or_create(name=attribute_type)
+
+        for name, attribute_type, has_usage, is_private in (
+            ('Project ID', 'Text', False, False),
+            ('Account Number', 'Int', False, True),
+        ):
+            ProjectAttributeType.objects.get_or_create(name=name, attribute_type=AttributeType.objects.get(
+                name=attribute_type), has_usage=has_usage, is_private=is_private)
 
         ProjectTypeChoice.objects.all().delete()
         for choice in ['Research', 'Class', ]:

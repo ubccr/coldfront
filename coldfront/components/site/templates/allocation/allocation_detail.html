@@ -68,7 +68,15 @@ Allocation Detail
           </tr>
           <tr>
             <th scope="row" class="text-nowrap">Resource{{ allocation.resources.all|pluralize }} in allocation:</th>
-            <td>{{ allocation.get_resources_as_string }}</td>
+            <td>
+              {% if allocation.get_resources_as_list %}
+                {% for resource in allocation.get_resources_as_list %}
+                  <a href="{% url 'resource-detail' resource.pk %}">{{ resource }}</a> <br>
+                {% endfor %}
+              {% else %}
+                None
+              {% endif %}
+            </td>
           </tr>
           <!-- <tr>
             <th scope="row" class="text-nowrap">Justification:</th>
@@ -487,23 +495,22 @@ Allocation Detail
   $(document).ready(function () {
     var guage_data = {{ guage_data | safe }};
     drawGauges(guage_data);
-  });
 
-  $('#user_table').DataTable({
-    'aoColumnDefs': [{
-      'bSortable': false,
-      'aTargets': ['nosort']
-    }]
-  });
-
-  $('#allocation_change_table').DataTable({
-    lengthMenu: [5, 10, 20, 50, 100],
-    "pageLength": 5,
-    "ordering": false,
-    'aoColumnDefs': [{
-      'bSortable': false,
-      'aTargets': ['nosort']
-    }]
+    $('#allocation_change_table').DataTable({
+      lengthMenu: [5, 10, 20, 50, 100],
+      "pageLength": 5,
+      "ordering": false,
+      'aoColumnDefs': [{
+        'bSortable': false,
+        'aTargets': ['nosort']
+      }]
+    });
+    $('#allocationuser_table').DataTable({
+      'aoColumnDefs': [{
+        'bSortable': false,
+        'aTargets': ['nosort']
+      }]
+    });
   });
 
   function drawGauges(guage_data) {
@@ -520,19 +527,18 @@ Allocation Detail
       });
     }
   }
-  $(".datepicker").datepicker({ dateFormat: 'yy-mm-dd' });
-
+  $(".datepicker").flatpickr();
   $(document).on('click', '.confirm-activate', function(){
     var attributes_num = {{ attributes | length }};
     if (attributes_num == 0) {
       return confirm('Are you sure you want to activate this allocation request without setting any allocation attributes?');
     }
-  });
+  })
   $(document).on('click', '.confirm-deny', function(){
     var notes_num = {{ notes | length }};
     if (notes_num == 0) {
       return confirm('Are you sure you want to deny this allocation request without setting a notification?');
     }
-  });
+  })
 </script>
 {% endblock %}

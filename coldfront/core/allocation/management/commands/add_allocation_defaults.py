@@ -13,7 +13,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
 
-        for attribute_type in ('Date', 'Float', 'Int', 'Text', 'Yes/No',
+        for attribute_type in ('Date', 'Float', 'Int', 'Text', 'Yes/No', 'No',
             'Attribute Expanded Text'):
             AttributeType.objects.get_or_create(name=attribute_type)
 
@@ -38,6 +38,7 @@ class Command(BaseCommand):
             ('Cloud Account Name', 'Text', False, False),
             ('CLOUD_USAGE_NOTIFICATION', 'Yes/No', False, True),
             ('Core Usage (Hours)', 'Int', True, False),
+            ('Accelerator Usage (Hours)', 'Int', True, False),            
             ('Cloud Storage Quota (TB)', 'Float', True, False),
             ('EXPIRE NOTIFICATION', 'Yes/No', False, True),
             ('freeipa_group', 'Text', False, False),
