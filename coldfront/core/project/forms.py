@@ -7,7 +7,7 @@ from ast import Constant
 from django.db.models.functions import Lower
 from cProfile import label
 
-from coldfront.core.project.models import (Project, ProjectAttribute, ProjectAttributeType, ProjectReview,
+from coldfront.core.project.models import (Project, ProjectAttribute, ProjectAttributeType, ProjectReview, ProjectStatusChoice,
                                            ProjectUserRoleChoice)
 from coldfront.core.utils.common import import_from_settings
 
@@ -25,11 +25,17 @@ class ProjectSearchForm(forms.Form):
     USERNAME = 'Username'
     FIELD_OF_SCIENCE = 'Field of Science'
 
+    title = forms.CharField(label='Title',
+                              max_length=100, required=False)
     last_name = forms.CharField(
         label=LAST_NAME, max_length=100, required=False)
     username = forms.CharField(label=USERNAME, max_length=100, required=False)
     field_of_science = forms.CharField(
         label=FIELD_OF_SCIENCE, max_length=100, required=False)
+    status = forms.ModelMultipleChoiceField(
+        widget=forms.CheckboxSelectMultiple,
+        queryset=ProjectStatusChoice.objects.all().order_by(Lower("name")),
+        required=False)
     show_all_projects = forms.BooleanField(initial=False, required=False)
 
 
