@@ -89,6 +89,7 @@ def conditionally_update_storage_allocation_statuses() -> None:
         conditionally_update_storage_allocation_status(allocation)
 
 
+# TODO: refactor the following methods to a service class
 def ingest_quotas_with_daily_usage() -> None:
     logger = logging.getLogger("task_qumulo_daily_quota_usages")
 
@@ -153,13 +154,12 @@ def __validate_results(quota_usages, logger) -> bool:
     ).count()
     usage_pulled_from_qumulo = len(quota_usages["quotas"])
 
-    logger.info("Usages ingested for today: ", daily_usage_ingested)
-    logger.info("Usages pulled from QUMULO: ", usage_pulled_from_qumulo)
-
     success = usage_pulled_from_qumulo == daily_usage_ingested
     if success:
         logger.warn("Successful ingestion of quota daily usage.")
     else:
-        logger.warn("Unsuccessful ingestion of quota daily usage. Check the results.")
+        logger.warn("Unsuccessful ingestion of quota daily usage. Not all the QUMULO usage data was stored in Coldfront.")
+        logger.warn(f"Usages pulled from QUMULO: {usage_pulled_from_qumulo}")
+        logger.warn(f"Usages ingested for today: {daily_usage_ingested}")
 
     return success
