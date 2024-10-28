@@ -1247,6 +1247,7 @@ def import_slate_projects(json_file_name, out_file_name, importing_user, limit=N
     with open(json_file_name, 'r') as json_file:
         extra_information = json.load(json_file)
     slate_projects = []
+    pi_import_project_counts = {}
     with open(out_file_name, 'r') as import_file:
         next(import_file)
         for line in import_file:
@@ -1282,6 +1283,11 @@ def import_slate_projects(json_file_name, out_file_name, importing_user, limit=N
                 pass
             slate_projects.append(slate_project)
 
+            if not pi_import_project_counts.get(slate_project.get('owner_netid')):
+                pi_import_project_counts[slate_project.get('owner_netid')] = 0
+            if not slate_project.get('project_id'):
+                pi_import_project_counts[slate_project.get('owner_netid')] += 1
+
     project_end_date = get_new_end_date_from_list(
         [datetime.datetime(datetime.datetime.today().year, 6, 30), ],
         datetime.datetime.today(),
@@ -1309,6 +1315,8 @@ def import_slate_projects(json_file_name, out_file_name, importing_user, limit=N
                            f'allocation {existing_gid[0].allocation.pk}. Skipping import...')
             print(f'Slate Project {slate_project.get("namespace_entry")} has already been imported: '
                   f'{build_link(reverse("allocation-detail", kwargs={"pk": existing_gid[0].allocation.pk}))}')
+
+            pi_import_project_counts[slate_project.get('owner_netid')] -= 1
             continue
         user_obj, created = User.objects.get_or_create(username=slate_project.get('owner_netid'))
         if not created:
@@ -1346,16 +1354,16 @@ def import_slate_projects(json_file_name, out_file_name, importing_user, limit=N
             max_projects = int(PROJECT_TYPE_LIMIT_MAPPING.get('Research'))
             if user_profile_obj.max_research_projects_override > -1:
                 max_projects = user_profile_obj.max_research_projects_override
-            if project_objs.count() >= max_projects:
+            if project_objs.count() + pi_import_project_counts.get(slate_project.get('owner_netid')) > max_projects:
                 logger.warning(f'Slate Project\'s, GID={slate_project.get("gid_number")}, owner '
-                               f'{user_obj.username} is at or above their max projects count.  '
-                               f'Skipping import...')
+                               f'{user_obj.username} will be above their max allowed projects after '
+                               f'the full import. Skipping import...')
                 print(f'Slate Project {slate_project.get("namespace_entry")} has NOT been imported: '
-                      f'Owner is at or above the max projects they can have')
+                      f'Owner will be above their max allowed projects after the full import ')
                 continue
 
             if user_obj.userprofile.title in ['Faculty', 'Staff', 'Academic (ACNP)', ]:
-                project_obj, _ = Project.objects.get_or_create(
+                project_obj = Project.objects.create(
                     title=slate_project.get('project_title'),
                     description=slate_project.get('abstract'),
                     pi=user_obj,
@@ -1368,6 +1376,7 @@ def import_slate_projects(json_file_name, out_file_name, importing_user, limit=N
 
                 project_obj.slurm_account_name = generate_slurm_account_name(project_obj)
                 project_obj.save()
+                pi_import_project_counts[slate_project.get('owner_netid')] -= 1
                 create_admin_action_for_project_creation(importing_user_obj, project_obj)
 
             else:
