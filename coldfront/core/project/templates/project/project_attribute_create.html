@@ -12,11 +12,41 @@ Add Project Attribute
 {% block content %}
 <h2>Adding project attribute to {{ project }}</h2>
 
-<form method="post">
+<form method="post" enctype="multipart/form-data">
 	{% csrf_token %}
 	{{ form | crispy }}
+
 	<input class="btn btn-success" type="submit" value="Add" />
 	<a class="btn btn-secondary" href="{% url 'project-detail' project.pk %}" role="button">Back to
 		Project</a><br>
+
 </form>
+<script>  
+$('#div_id_doc').hide();
+$('#div_id_value').hide();
+var text_based_input_attributes = {{ text_based_input_attributes | safe }};
+console.log(text_based_input_attributes);
+
+$("#id_proj_attr_type").trigger('change');
+$("#id_proj_attr_type").change(function () {	console.log("resource_id");
+    var resource_id = $("#id_proj_attr_type option:selected").val();
+    if (resource_id in text_based_input_attributes) {
+      var label = $('label[for="id_value"]');
+
+        label.html('Quantity')
+	$('#div_id_doc').hide();
+	$('#div_id_value').show();
+    } else {
+		var label = $('label[for="id_doc"]');
+        label.html('Document')
+
+		console.log("moefnsr")
+      $('#div_id_doc').show();
+	  $('#div_id_value').hide();
+
+    }
+});
+
+</script>
+
 {% endblock %}
