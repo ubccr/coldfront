@@ -3133,13 +3133,13 @@ class AllocationUserDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
         #             email_receiver_list
         #         )
 
-        # logger.info(
-        #     f'Admin {request.user.username} denied a {allocation_user.allocation.get_parent_resource.name} '
-        #     f'allocation user request (allocation pk={allocation_user.allocation.pk})'
-        # )
-        # messages.success(request, 'User {}\'s status has been DENIED'.format(allocation_user.user.username))
+        logger.info(
+            f'Admin {request.user.username} denied a {allocation_user.allocation.get_parent_resource.name} '
+            f'allocation user request (allocation pk={allocation_user.allocation.pk})'
+        )
+        messages.success(request, 'User {}\'s status has been DENIED'.format(allocation_user.user.username))
 
-        # return HttpResponseRedirect(reverse('allocation-user-request-list'))
+        return HttpResponseRedirect(reverse('allocation-user-request-list'))
 
 
 class AllocationUserRequestInfoView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
