@@ -1,4 +1,6 @@
 import logging
+import requests
+from urllib import parse
 
 from django.contrib import messages
 from django.shortcuts import get_object_or_404
@@ -19,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 SLATE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD = import_from_settings('SLATE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD', 120)
+SLATE_PROJECT_MOU_SERVER = import_from_settings('SLATE_PROJECT_MOU_SERVER', '')
 
 
 class PositConnectView(GenericView):
@@ -105,9 +108,51 @@ class SlateProjectView(GenericView):
         return context
 
     def form_valid(self, form):
-        http_response = super().form_valid(form)
+        form_data = form.cleaned_data
 
-        return http_response
+        start_date = form_data.get('start_date', '')
+        if start_date:
+            start_date = start_date.strftime('%m/%d/%Y')
+
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
+        data = {
+            "abstract": project_obj.description,
+            "campus_affiliation": form_data.get('campus_affiliation', ''),
+            "directory_name": form_data.get('project_directory_name', ''),
+            "project_title": project_obj.title,
+            "project_url": form_data.get('url', ''),
+            "requested_size_tb": form_data.get('storage_space', ''),
+            "requester_email": self.request.user.email,
+            "requester_firstname": self.request.user.first_name,
+            "requester_lastname": self.request.user.last_name,
+            "start_date": start_date,
+            "submit_by": self.request.user.username,
+            "si": form_data.get('store_ephi', ''),
+            "service_type": "Slate-Project",
+            "account": form_data.get('account_number', ''),
+            "sub_account": '',
+            "fiscal_officer": '',
+            "faculty_advisor": ''
+        }
+        data = parse.urlencode(data)
+        try:
+            response = requests.post(
+                url=SLATE_PROJECT_MOU_SERVER,
+                headers={'Content-Type': 'application/x-www-form-urlencoded'},
+                data=data,
+                timeout=5
+            )
+            response.raise_for_status()
+        except requests.exceptions.Timeout:
+            logger.error(f'HTTP error: failed to send data to Slate Project MOU server: Request timed out')
+            form.add_error(None, 'Something went wrong processing your request. Please try again later')
+            return self.form_invalid(form)
+        except requests.HTTPError as http_error:
+            logger.error(f'HTTP error: failed to send data to Slate Project MOU server: {http_error}')
+            form.add_error(None, 'Something went wrong processing your request. Please try again later')
+            return self.form_invalid(form)
+
+        return super().form_valid(form)
 
 
 class GeodeProjectView(GenericView):
