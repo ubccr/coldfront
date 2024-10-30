@@ -1,9 +1,12 @@
 import re
 import os
+import logging
 from django.core.exceptions import ValidationError
 from coldfront.plugins.ldap_user_info.utils import get_user_info
 from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.utils.common import import_from_settings
+
+logger = logging.getLogger(__name__)
 
 
 SLATE_PROJECT_INCOMING_DIR = import_from_settings('SLATE_PROJECT_INCOMING_DIR', '')
@@ -60,6 +63,10 @@ class ValidateDupDirectoryName():
         for directory_name in directory_names:
             if directory_name == directory_value:
                 raise ValidationError('This Slate Project directory name already exists')
+
+        if not os.path.isfile(os.path.join(SLATE_PROJECT_INCOMING_DIR, 'slate_projects.txt')):
+            logger.warning('slate_project.txt is missing. Skipping additional directory name checking')
+            return
 
         with open(os.path.join(SLATE_PROJECT_INCOMING_DIR, 'slate_projects.txt'), 'r') as slate_projects:
             for line in slate_projects:
