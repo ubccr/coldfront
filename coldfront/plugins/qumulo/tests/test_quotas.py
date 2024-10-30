@@ -10,7 +10,10 @@ from unittest.mock import patch, MagicMock
 from coldfront.core.allocation.models import (
     AllocationAttribute,
     AllocationAttributeType,
+    AllocationStatusChoice,
 )
+
+from coldfront.core.test_helpers.factories import AllocationStatusChoiceFactory
 
 from coldfront.plugins.qumulo.utils import qumulo_api
 from coldfront.plugins.qumulo.tasks import ingest_quotas_with_daily_usage
@@ -24,91 +27,102 @@ from qumulo.lib.request import RequestError
 
 def coldfront_allocations() -> str:
     return {
-      "/storage2/fs1/sleong": {"limit": "100000000000000"},
-      "/storage2/fs1/prewitt_test": {"limit": "1099511627776"},
-      "/storage2/fs1/tychele_test": {"limit": "109951162777600"},
-      "/storage2/fs1/tychele_test/Active/tychele_suballoc_test": {"limit": "109951162777600"},
-      "/storage2/fs1/prewitt_test/Active/prewitt_test_2_a": {"limit": "1099511627776"},
-      "/storage2/fs1/prewitt_test_2": {"limit": "1099511627776"},
-      "/storage2/fs1/jian_test": {"limit": "10995116277760"},
-      "/storage2/fs1/hong.chen_test": {"limit": "5497558138880"},
-      "/storage2/fs1/i2_test": {"limit": "109951162777600"},
-      "/storage2/fs1/swamidass_test": {"limit": "24189255811072"},
-      "/storage2/fs1/prewitt_test_3": {"limit": "5497558138880"},
-      "/storage2/fs1/hong.chen_test/Active/hong.chen_suballocation": {"limit": "5497558138880"},
-      "/storage2/fs1/engineering_test": {"limit": "5497558138880"},
-      "/storage2/fs1/sleong_summer": {"limit": "5497558138880"},
-      "/storage2/fs1/wexler_test": {"limit": "5497558138880"},
-      "/storage2/fs1/alex.holehouse_test": {"limit": "38482906972160"},
-      "/storage2/fs1/wucci": {"limit": "5497558138880"},
-      "/storage2/fs1/amlai": {"limit": "5497558138880"},
-      "/storage2/fs1/jin810_test": {"limit": "109951162777600"},
-      "/storage2/fs1/dinglab_test": {"limit": "109951162777600"},
-      "/storage2/fs1/wucci_test": {"limit": "109951162777600"},
-      "/storage2/fs1/gtac-mgi_test2": {"limit": "5497558138880"},
-      "/storage2/fs1/mweil_test": {"limit": "5497558138880"},
-      "/storage2/fs1/amlai_test2": {"limit": "16492674416640"},
-      "/storage2/fs1/tychele_test2": {"limit": "109951162777600"},
-      "/SYSTEMS/c2_headnodes": {"limit": "100000000000"},
-      "/storage2/fs1/btc": {"limit": "549755813888000"},
-      "/storage2/fs1/daryls2_test": {"limit": "5497558138880"},
-      "/storage2/fs1/lima": {"limit": "5497558138880"},
-      "/storage2/fs1/epigenome": {"limit": "549755813888000"},
-      "/storage2/fs1/slenze": {"limit": "5497558138880"},
-      "/storage2/fs1/cmasteller": {"limit": "5497558138880"},
-      "/storage2/fs1/maihe": {"limit": "5497558138880"},
-      "/storage2/fs1/rvmartin": {"limit": "549755813888000"},
-      "/storage2/fs1/englands": {"limit": "5497558138880"},
-      "/storage2/fs1/shao.j": {"limit": "5497558138880"},
-      "/storage2/fs1/molly.schroeder": {"limit": "5497558138880"},
-      "/storage2/fs1/debabratapatra": {"limit": "5497558138880"},
-      "/storage2/fs1/cifarelli": {"limit": "5497558138880"},
-      "/storage2/fs1/engineering": {"limit": "5497558138880"},
-      "/storage2/fs1/likai.chen": {"limit": "5497558138880"},
-      "/storage2/fs1/mmahjoub": {"limit": "5497558138880"},
-      "/storage2/fs1/btc/Active/zipfelg": {"limit": "549755813888000"},
-      "/storage2/fs1/sinclair.deborah": {"limit": "5497558138880"},
-      "/storage2/fs1/meers": {"limit": "5497558138880"},
-      "/storage2/fs1/shawp": {"limit": "5497558138880"},
-      "/storage2/fs1/cao.yang": {"limit": "5497558138880"},
-      "/storage2/fs1/vtieppofrancio": {"limit": "5497558138880"},
-      "/storage2/fs1/elyn": {"limit": "5497558138880"},
-      "/storage2/fs1/chsieh": {"limit": "5497558138880"},
-      "/storage2/fs1/rfugina": {"limit": "5497558138880"},
-      "/storage2/fs1/xmartin": {"limit": "5497558138880"},
-      "/storage2/fs1/yixin.chen": {"limit": "5497558138880"},
-      "/storage2/fs1/ger": {"limit": "5497558138880"},
-      "/storage2/fs1/prewitt_test/Active/john.prewitt.third": {"limit": "1099511627776"},
-      "/storage2/fs1/rouse": {"limit": "5497558138880"},
-      "/storage2/fs1/w.qian": {"limit": "5497558138880"},
-      "/storage2/fs1/epigenome/Active/hprc": {"limit": "549755813888000"},
-      "/storage2/fs1/btc/Active/alberthkim": {"limit": "549755813888000"},
-      "/storage2/fs1/btc/Active/yeli": {"limit": "549755813888000"},
-      "/storage2/fs1/btc/Active/btc-strahlej": {"limit": "549755813888000"},
-      "/storage2/fs1/btc/Active/stegh": {"limit": "549755813888000"},
-      "/storage2/fs1/btc/Active/rubin_j": {"limit": "549755813888000"},
-      "/storage2/fs1/btc/Active/mathios": {"limit": "549755813888000"},
-      "/storage2/fs1/btc/Active/bhuvic.patel": {"limit": "549755813888000"},
-      "/storage2/fs1/btc/Active/yanoh": {"limit": "549755813888000"},
-      "/storage2/fs1/btc/Active/ruit": {"limit": "549755813888000"},
-      "/storage2/fs1/btc/Active/t.eric": {"limit": "549755813888000"},
-      "/storage2/fs1/prewitt_test/Active/john.prewitt4": {"limit": "1099511627776"},
-      "/storage2/fs1/btc/Active/hongchen": {"limit": "549755813888000"},
-      "/storage2/fs1/btc/Active/dang": {"limit": "549755813888000"},
-      "/storage2/fs1/dspencer": {"limit": "54975581388800"},
-      "/storage2/fs1/ris_snowflake_backup": {"limit": "5497558138880"},
-      "/storage2/fs1/jmding": {"limit": "5497558138880"},
-      "/storage2/fs1/jmding/Active/x.zhichen": {"limit": "5497558138880"},
-      "/storage2/fs1/jmding/Active/j.shiyu": {"limit": "5497558138880"},
-      "/storage2/fs1/abrummett": {"limit": "5497558138880"},
-      "/storage2/fs1/daryls3": {"limit": "6597069766656"},
-      "/storage2/fs1/daryls3/Active/teamfolder": {"limit": "6597069766656"},
-      "/storage2/fs1/kdandurand": {"limit": "5497558138880"},
-      "/storage2/fs1/vtieppofrancio/Active/Human Subjects Research": {"limit": "5497558138880"},
-      "/storage2/fs1/kirilloff": {"limit": "5497558138880"}
+        "/storage2/fs1/sleong": {"limit": "100000000000000"},
+        "/storage2/fs1/prewitt_test": {"limit": "1099511627776"},
+        "/storage2/fs1/tychele_test": {"limit": "109951162777600"},
+        "/storage2/fs1/tychele_test/Active/tychele_suballoc_test": {
+            "limit": "109951162777600"
+        },
+        "/storage2/fs1/prewitt_test/Active/prewitt_test_2_a": {
+            "limit": "1099511627776"
+        },
+        "/storage2/fs1/prewitt_test_2": {"limit": "1099511627776"},
+        "/storage2/fs1/jian_test": {"limit": "10995116277760"},
+        "/storage2/fs1/hong.chen_test": {"limit": "5497558138880"},
+        "/storage2/fs1/i2_test": {"limit": "109951162777600"},
+        "/storage2/fs1/swamidass_test": {"limit": "24189255811072"},
+        "/storage2/fs1/prewitt_test_3": {"limit": "5497558138880"},
+        "/storage2/fs1/hong.chen_test/Active/hong.chen_suballocation": {
+            "limit": "5497558138880"
+        },
+        "/storage2/fs1/engineering_test": {"limit": "5497558138880"},
+        "/storage2/fs1/sleong_summer": {"limit": "5497558138880"},
+        "/storage2/fs1/wexler_test": {"limit": "5497558138880"},
+        "/storage2/fs1/alex.holehouse_test": {"limit": "38482906972160"},
+        "/storage2/fs1/wucci": {"limit": "5497558138880"},
+        "/storage2/fs1/amlai": {"limit": "5497558138880"},
+        "/storage2/fs1/jin810_test": {"limit": "109951162777600"},
+        "/storage2/fs1/dinglab_test": {"limit": "109951162777600"},
+        "/storage2/fs1/wucci_test": {"limit": "109951162777600"},
+        "/storage2/fs1/gtac-mgi_test2": {"limit": "5497558138880"},
+        "/storage2/fs1/mweil_test": {"limit": "5497558138880"},
+        "/storage2/fs1/amlai_test2": {"limit": "16492674416640"},
+        "/storage2/fs1/tychele_test2": {"limit": "109951162777600"},
+        "/SYSTEMS/c2_headnodes": {"limit": "100000000000"},
+        "/storage2/fs1/btc": {"limit": "549755813888000"},
+        "/storage2/fs1/daryls2_test": {"limit": "5497558138880"},
+        "/storage2/fs1/lima": {"limit": "5497558138880"},
+        "/storage2/fs1/epigenome": {"limit": "549755813888000"},
+        "/storage2/fs1/slenze": {"limit": "5497558138880"},
+        "/storage2/fs1/cmasteller": {"limit": "5497558138880"},
+        "/storage2/fs1/maihe": {"limit": "5497558138880"},
+        "/storage2/fs1/rvmartin": {"limit": "549755813888000"},
+        "/storage2/fs1/englands": {"limit": "5497558138880"},
+        "/storage2/fs1/shao.j": {"limit": "5497558138880"},
+        "/storage2/fs1/molly.schroeder": {"limit": "5497558138880"},
+        "/storage2/fs1/debabratapatra": {"limit": "5497558138880"},
+        "/storage2/fs1/cifarelli": {"limit": "5497558138880"},
+        "/storage2/fs1/engineering": {"limit": "5497558138880"},
+        "/storage2/fs1/likai.chen": {"limit": "5497558138880"},
+        "/storage2/fs1/mmahjoub": {"limit": "5497558138880"},
+        "/storage2/fs1/btc/Active/zipfelg": {"limit": "549755813888000"},
+        "/storage2/fs1/sinclair.deborah": {"limit": "5497558138880"},
+        "/storage2/fs1/meers": {"limit": "5497558138880"},
+        "/storage2/fs1/shawp": {"limit": "5497558138880"},
+        "/storage2/fs1/cao.yang": {"limit": "5497558138880"},
+        "/storage2/fs1/vtieppofrancio": {"limit": "5497558138880"},
+        "/storage2/fs1/elyn": {"limit": "5497558138880"},
+        "/storage2/fs1/chsieh": {"limit": "5497558138880"},
+        "/storage2/fs1/rfugina": {"limit": "5497558138880"},
+        "/storage2/fs1/xmartin": {"limit": "5497558138880"},
+        "/storage2/fs1/yixin.chen": {"limit": "5497558138880"},
+        "/storage2/fs1/ger": {"limit": "5497558138880"},
+        "/storage2/fs1/prewitt_test/Active/john.prewitt.third": {
+            "limit": "1099511627776"
+        },
+        "/storage2/fs1/rouse": {"limit": "5497558138880"},
+        "/storage2/fs1/w.qian": {"limit": "5497558138880"},
+        "/storage2/fs1/epigenome/Active/hprc": {"limit": "549755813888000"},
+        "/storage2/fs1/btc/Active/alberthkim": {"limit": "549755813888000"},
+        "/storage2/fs1/btc/Active/yeli": {"limit": "549755813888000"},
+        "/storage2/fs1/btc/Active/btc-strahlej": {"limit": "549755813888000"},
+        "/storage2/fs1/btc/Active/stegh": {"limit": "549755813888000"},
+        "/storage2/fs1/btc/Active/rubin_j": {"limit": "549755813888000"},
+        "/storage2/fs1/btc/Active/mathios": {"limit": "549755813888000"},
+        "/storage2/fs1/btc/Active/bhuvic.patel": {"limit": "549755813888000"},
+        "/storage2/fs1/btc/Active/yanoh": {"limit": "549755813888000"},
+        "/storage2/fs1/btc/Active/ruit": {"limit": "549755813888000"},
+        "/storage2/fs1/btc/Active/t.eric": {"limit": "549755813888000"},
+        "/storage2/fs1/prewitt_test/Active/john.prewitt4": {"limit": "1099511627776"},
+        "/storage2/fs1/btc/Active/hongchen": {"limit": "549755813888000"},
+        "/storage2/fs1/btc/Active/dang": {"limit": "549755813888000"},
+        "/storage2/fs1/dspencer": {"limit": "54975581388800"},
+        "/storage2/fs1/ris_snowflake_backup": {"limit": "5497558138880"},
+        "/storage2/fs1/jmding": {"limit": "5497558138880"},
+        "/storage2/fs1/jmding/Active/x.zhichen": {"limit": "5497558138880"},
+        "/storage2/fs1/jmding/Active/j.shiyu": {"limit": "5497558138880"},
+        "/storage2/fs1/abrummett": {"limit": "5497558138880"},
+        "/storage2/fs1/daryls3": {"limit": "6597069766656"},
+        "/storage2/fs1/daryls3/Active/teamfolder": {"limit": "6597069766656"},
+        "/storage2/fs1/kdandurand": {"limit": "5497558138880"},
+        "/storage2/fs1/vtieppofrancio/Active/Human Subjects Research": {
+            "limit": "5497558138880"
+        },
+        "/storage2/fs1/kirilloff": {"limit": "5497558138880"},
     }
 
 
+# fmt: off
 def mock_get_quotas() -> str:
     return {
         "quotas": [
@@ -615,6 +629,7 @@ def mock_get_quotas() -> str:
             "next": ""
         },
     }
+# fmt: on
 
 
 class TestIngestAllocationDailyUsages(TestCase):
@@ -625,6 +640,8 @@ class TestIngestAllocationDailyUsages(TestCase):
         self.project = build_data["project"]
         self.user = build_data["user"]
         self.quotas = mock_get_quotas()
+        self.status_active = AllocationStatusChoiceFactory(name="Active")
+        self.status_ready_for_deletion = AllocationStatusChoiceFactory(name="Ready for Deletion")
 
         for index, (path, details) in enumerate(coldfront_allocations().items()):
 
@@ -641,7 +658,11 @@ class TestIngestAllocationDailyUsages(TestCase):
                 "department_number": "Time Travel Services",
                 "service_rate": "general",
             }
-            create_allocation(project=self.project, user=self.user, form_data=form_data)
+            allocation = create_allocation(
+                project=self.project, user=self.user, form_data=form_data
+            )
+            allocation.status = self.status_active
+            allocation.save()
 
         self.storage_filesystem_path_attribute_type = (
             AllocationAttributeType.objects.get(name="storage_filesystem_path")
@@ -658,7 +679,9 @@ class TestIngestAllocationDailyUsages(TestCase):
 
     @unittest.skip("Until we have a chance to propagte the ENV variable.")
     @mock.patch.dict(os.environ, {"QUMULO_RESULT_SET_PAGE_LIMIT": ""})
-    def test_qumulo_result_set_page_limit_should_raise_an_exception_if_not_set(self) -> None:
+    def test_qumulo_result_set_page_limit_should_raise_an_exception_if_not_set(
+        self,
+    ) -> None:
         with self.assertRaises(TypeError):
             qumulo_api.QumuloAPI.get_result_set_page_limit()
 
@@ -668,15 +691,20 @@ class TestIngestAllocationDailyUsages(TestCase):
         for path in coldfront_allocations():
             allocation_attribute_usage = None
             try:
-                storage_filesystem_path_attribute = AllocationAttribute.objects.get(
+                storage_filesystem_path_attribute = AllocationAttribute.objects.select_related(
+                    "allocation"
+                ).get(
                     value=path,
                     allocation_attribute_type=self.storage_filesystem_path_attribute_type,
+                    allocation__status=self.status_active,
                 )
+
                 allocation = storage_filesystem_path_attribute.allocation
                 storage_quota_attribute_type = AllocationAttribute.objects.get(
                     allocation=allocation,
                     allocation_attribute_type=self.storage_quota_attribute_type,
                 )
+
                 allocation_attribute_usage = (
                     storage_quota_attribute_type.allocationattributeusage
                 )
@@ -711,16 +739,21 @@ class TestIngestAllocationDailyUsages(TestCase):
             allocation_attribute_usage = None
             try:
                 try:
-                    storage_filesystem_path_attribute = AllocationAttribute.objects.get(
+                    storage_filesystem_path_attribute = AllocationAttribute.objects.select_related(
+                        "allocation"
+                    ).get(
                         value=qumulo_quota.get("path"),
                         allocation_attribute_type=self.storage_filesystem_path_attribute_type,
+                        allocation__status=self.status_active,
                     )
                 except AllocationAttribute.DoesNotExist:
                     path = qumulo_quota.get("path")
                     if path[-1] != "/":
                         continue
 
-                    storage_filesystem_path_attribute = AllocationAttribute.objects.get(
+                    storage_filesystem_path_attribute = AllocationAttribute.objects.select_related(
+                        "allocation"
+                    ).get(
                         value=path[:-1],
                         allocation_attribute_type=self.storage_filesystem_path_attribute_type,
                     )
@@ -744,3 +777,81 @@ class TestIngestAllocationDailyUsages(TestCase):
             self.assertEqual(allocation_attribute_usage.value, usage)
             self.assertEqual(allocation_attribute_usage.history.first().value, usage)
             self.assertGreater(allocation_attribute_usage.history.count(), 1)
+
+    @patch("coldfront.plugins.qumulo.tasks.QumuloAPI")
+    def test_filtering_out_not_active_allocations(
+        self, qumulo_api_mock: MagicMock
+    ) -> None:
+        index = 1
+        path = ("/storage2/fs1/status_test",)
+        limit = ("100000000000000",)
+        capacity_usage = "37089837494272"
+
+        mock_quota = {
+            "quotas": [
+                {
+                    "id": index,
+                    "path": path,
+                    "limit": limit,
+                    "capacity_usage": capacity_usage,
+                }
+            ],
+            "paging": {"next": ""},
+        }
+
+        qumulo_api = MagicMock()
+        qumulo_api.get_all_quotas_with_usage.return_value = mock_quota
+        qumulo_api_mock.return_value = qumulo_api
+
+        form_data = {
+            "storage_filesystem_path": path,
+            "storage_export_path": path,
+            "storage_name": f"for_tester_{index}",
+            "storage_quota": limit,
+            "protocols": ["nfs"],
+            "rw_users": [f"user_{index}_rw"],
+            "ro_users": [f"user_{index}_ro"],
+            "storage_ticket": f"ITSD-{index}",
+            "cost_center": "Uncle Pennybags",
+            "department_number": "Time Travel Services",
+            "service_rate": "general",
+        }
+        allocation_active = create_allocation(
+            project=self.project, user=self.user, form_data=form_data
+        )
+        allocation_active.status = self.status_active
+        allocation_active.save()
+
+        allocation_ready_for_deletion = create_allocation(
+            project=self.project, user=self.user, form_data=form_data
+        )
+        allocation_ready_for_deletion.status = self.status_ready_for_deletion
+        allocation_ready_for_deletion.save()
+
+        try:
+            ingest_quotas_with_daily_usage()
+        except:
+            self.fail("ingest_quotas failed")
+
+        storage_filesystem_path_attribute = AllocationAttribute.objects.select_related(
+            "allocation"
+        ).get(
+            value=path,
+            allocation_attribute_type=self.storage_filesystem_path_attribute_type,
+            allocation__status=self.status_active,
+        )
+
+        active_allocation = storage_filesystem_path_attribute.allocation
+        self.assertEqual(active_allocation.status, self.status_active)
+
+        storage_quota_attribute = AllocationAttribute.objects.get(
+            allocation=active_allocation,
+            allocation_attribute_type=self.storage_quota_attribute_type,
+        )
+
+        allocation_attribute_usage = storage_quota_attribute.allocationattributeusage
+
+        usage = int(capacity_usage)
+        self.assertEqual(allocation_attribute_usage.value, usage)
+        self.assertEqual(allocation_attribute_usage.history.first().value, usage)
+        self.assertGreater(allocation_attribute_usage.history.count(), 1)

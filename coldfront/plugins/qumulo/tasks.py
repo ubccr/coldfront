@@ -109,11 +109,13 @@ def __set_daily_quota_usages(all_quotas, logger) -> None:
     storage_filesystem_path_attribute_type = AllocationAttributeType.objects.get(
         name="storage_filesystem_path"
     )
+    active_status = AllocationStatusChoice.objects.get(name="Active")
+
     for quota in all_quotas["quotas"]:
         path = quota.get("path")
 
         allocation = __get_allocation_by_attribute(
-            storage_filesystem_path_attribute_type, path
+            storage_filesystem_path_attribute_type, path, active_status
         )
         if allocation is None:
             if path[-1] != "/":
@@ -122,7 +124,7 @@ def __set_daily_quota_usages(all_quotas, logger) -> None:
             value = path[:-1]
             logger.warn(f"Attempting to find allocation without the trailing slash...")
             allocation = __get_allocation_by_attribute(
-                storage_filesystem_path_attribute_type, value
+                storage_filesystem_path_attribute_type, value, active_status
             )
             if allocation is None:
                 continue
@@ -130,10 +132,12 @@ def __set_daily_quota_usages(all_quotas, logger) -> None:
         allocation.set_usage("storage_quota", quota.get("capacity_usage"))
 
 
-def __get_allocation_by_attribute(attribute_type, value):
+def __get_allocation_by_attribute(attribute_type, value, for_status):
     try:
-        attribute = AllocationAttribute.objects.get(
-            value=value, allocation_attribute_type=attribute_type
+        attribute = AllocationAttribute.objects.select_related("allocation").get(
+            value=value,
+            allocation_attribute_type=attribute_type,
+            allocation__status=for_status,
         )
     except AllocationAttribute.DoesNotExist:
         logger.warn(f"Allocation record for {value} path was not found")
@@ -158,7 +162,9 @@ def __validate_results(quota_usages, logger) -> bool:
     if success:
         logger.warn("Successful ingestion of quota daily usage.")
     else:
-        logger.warn("Unsuccessful ingestion of quota daily usage. Not all the QUMULO usage data was stored in Coldfront.")
+        logger.warn(
+            "Unsuccessful ingestion of quota daily usage. Not all the QUMULO usage data was stored in Coldfront."
+        )
         logger.warn(f"Usages pulled from QUMULO: {usage_pulled_from_qumulo}")
         logger.warn(f"Usages ingested for today: {daily_usage_ingested}")
 
