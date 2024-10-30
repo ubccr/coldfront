@@ -27,9 +27,6 @@ class ValidateAccountNumber():
 
 
 class ValidateDirectoryName():
-    def is_underscore(self, char):
-        return char == '_'
-
     def __call__(self, value):
         if re.search('^[0-9a-zA-Z_-]+$', value) is None:
             raise ValidationError(f'Contains invalid character(s)', code='invalid')
@@ -50,6 +47,7 @@ class ValidateDupDirectoryName():
         if not value:
             return
         
+        value = '/N/project/' + value
         directory_names = AllocationAttribute.objects.filter(
             allocation_attribute_type__name='Slate Project Directory'
         ).values_list('value', flat=True)
