@@ -72,12 +72,11 @@ class SlateProjectForm(BaseForm):
     last_name = forms.CharField(max_length=40, disabled=True)
     campus_affiliation = forms.ChoiceField(choices=CAMPUS_CHOICES)
     email = forms.EmailField(max_length=40, disabled=True)
-    url = forms.CharField(max_length=50, required=False)
     project_directory_name = forms.CharField(
         max_length=23, validators=[ValidateDirectoryName(), ValidateDupDirectoryName()]
     )
     storage_space = forms.IntegerField(min_value=1, max_value=30)
-    start_date = forms.DateField(widget=forms.TextInput(attrs={'class': 'datepicker'}))
+    start_date = forms.DateField(disabled=True)
     account_number = forms.CharField(max_length=9, initial='00-000-00', validators=[ValidateAccountNumber()])
     store_ephi = forms.ChoiceField(choices=YES_NO_CHOICES, widget=RadioSelect)
 
@@ -87,21 +86,13 @@ class SlateProjectForm(BaseForm):
         self.fields['first_name'].initial = request_user.first_name
         self.fields['last_name'].initial = request_user.last_name
         self.fields['email'].initial = request_user.email
+        self.fields['start_date'].initial = date.today()
 
-        self.fields['start_date'].widget.attrs.update({'placeholder': 'MM/DD/YYYY'})
         self.fields['project_directory_name'].widget.attrs.update({'placeholder': 'example_A-Za-z0-9'})
 
         for field in self.errors:
             self.fields[field].widget.attrs.update({'autofocus': ''})
             break
-
-    def clean(self):
-        cleaned_data = super().clean()
-        start_date = cleaned_data.get('start_date')
-
-        if start_date and start_date <= date.today():
-            self.add_error('start_date', 'Must be later than today')
-            raise ValidationError('Please correct the error below')
 
 
 class GeodeProjectForm(BaseForm):

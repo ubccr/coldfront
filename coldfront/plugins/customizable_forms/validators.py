@@ -1,3 +1,4 @@
+import re
 from django.core.exceptions import ValidationError
 from coldfront.plugins.ldap_user_info.utils import get_user_info
 from coldfront.core.allocation.models import AllocationAttribute
@@ -30,7 +31,7 @@ class ValidateDirectoryName():
         return char == '_'
 
     def __call__(self, value):
-        if not all(char.isalnum() or self.is_underscore(char) for char in value):
+        if re.search('^[0-9a-zA-Z_-]+$', value) is None:
             raise ValidationError(f'Contains invalid character(s)', code='invalid')
 
 
