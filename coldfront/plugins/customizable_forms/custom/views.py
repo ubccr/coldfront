@@ -151,7 +151,22 @@ class SlateProjectView(GenericView):
             form.add_error(None, 'Something went wrong processing your request. Please try again later')
             return self.form_invalid(form)
 
-        return super().form_valid(form)
+        ldap_group = 'condo_' + form_data.get('project_directory_name', '')
+        form.cleaned_data['project_directory_name'] = '/N/project/' + form_data.get('project_directory_name', '')
+
+        http_response = super().form_valid(form)
+
+        ldap_group_type = AllocationAttributeType.objects.filter(name='LDAP Group')
+        if not ldap_group_type.exists():
+            logger.warning('LDAP Group allocation attribute type is missing')
+            return http_response
+
+        AllocationAttribute.objects.create(
+            allocation=self.allocation_obj,
+            allocation_attribute_type=ldap_group_type[0],
+            value=ldap_group)
+
+        return http_response
 
 
 class GeodeProjectView(GenericView):
