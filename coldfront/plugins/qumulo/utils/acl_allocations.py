@@ -1,4 +1,3 @@
-from coldfront.plugins.qumulo.utils.active_directory_api import ActiveDirectoryAPI
 from typing import Optional
 
 from coldfront.core.allocation.models import (
@@ -12,8 +11,9 @@ from coldfront.core.allocation.models import (
     User,
 )
 
-from coldfront.plugins.qumulo.utils.qumulo_api import QumuloAPI
 from coldfront.plugins.qumulo.utils.aces_manager import AcesManager
+from coldfront.plugins.qumulo.utils.active_directory_api import ActiveDirectoryAPI
+from coldfront.plugins.qumulo.utils.qumulo_api import QumuloAPI
 
 from ldap3.core.exceptions import LDAPException
 
@@ -23,6 +23,7 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv(override=True)
+
 
 class AclAllocations:
     def __init__(self, project_pk):
@@ -143,6 +144,14 @@ class AclAllocations:
         return list(access_allocations)
 
     @staticmethod
+    def is_base_allocation(path: str):
+        STORAGE2_PATH = os.environ.get("STORAGE2_PATH").rstrip("/")
+
+        purePath = PurePath(path)
+
+        return purePath.match(f"{STORAGE2_PATH}/*/")
+
+    @staticmethod
     def remove_acl_access(allocation: Allocation):
         qumulo_api = QumuloAPI()
         acl_allocations = AclAllocations.get_access_allocations(allocation)
@@ -233,15 +242,9 @@ class AclAllocations:
         if is_base_allocation:
             fs_path = f"{fs_path}/Active"
 
-        path_parents = list(
-            map(
-                lambda parent: str(parent),
-                PurePath(fs_path).parents
-            )
-        )
+        path_parents = list(map(lambda parent: str(parent), PurePath(fs_path).parents))
         storage_env_path = (
-            f'{os.environ.get("STORAGE2_PATH", "").rstrip().rstrip("/")}'
-            '/'
+            f'{os.environ.get("STORAGE2_PATH", "").rstrip().rstrip("/")}' "/"
         )
 
         for path in path_parents:

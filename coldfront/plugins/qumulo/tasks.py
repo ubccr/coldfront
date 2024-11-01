@@ -93,25 +93,27 @@ def conditionally_update_storage_allocation_statuses() -> None:
 def ingest_quotas_with_daily_usage() -> None:
     logger = logging.getLogger("task_qumulo_daily_quota_usages")
 
-    quota_usages = __get_quota_usages_from_qumulo(logger)
-    __set_daily_quota_usages(quota_usages, logger)
-    __validate_results(quota_usages, logger)
-
-
-def __get_quota_usages_from_qumulo(logger):
     qumulo_api = QumuloAPI()
-    quota_usages = qumulo_api.get_all_quotas_with_usage()
-    return quota_usages
+    quota_usages = qumulo_api.get_all_quotas_with_usage()["quotas"]
+    base_allocation_quota_usages = list(
+        filter(
+            lambda quota_usage: AclAllocations.is_base_allocation(quota_usage["path"]),
+            quota_usages,
+        )
+    )
+
+    __set_daily_quota_usages(base_allocation_quota_usages, logger)
+    __validate_results(base_allocation_quota_usages, logger)
 
 
-def __set_daily_quota_usages(all_quotas, logger) -> None:
+def __set_daily_quota_usages(quotas, logger) -> None:
     # Iterate and populate allocation_attribute_usage records
     storage_filesystem_path_attribute_type = AllocationAttributeType.objects.get(
         name="storage_filesystem_path"
     )
     active_status = AllocationStatusChoice.objects.get(name="Active")
 
-    for quota in all_quotas["quotas"]:
+    for quota in quotas:
         path = quota.get("path")
 
         allocation = __get_allocation_by_attribute(
@@ -156,7 +158,7 @@ def __validate_results(quota_usages, logger) -> bool:
     daily_usage_ingested = AllocationAttributeUsage.objects.filter(
         modified__year=year, modified__month=month, modified__day=day
     ).count()
-    usage_pulled_from_qumulo = len(quota_usages["quotas"])
+    usage_pulled_from_qumulo = len(quota_usages)
 
     success = usage_pulled_from_qumulo == daily_usage_ingested
     if success:

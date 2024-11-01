@@ -169,7 +169,6 @@ class QumuloAPI:
         except RequestError:
             pass
 
-        # return self.rc.quota.delete_quota(file_attr["id"])
         return z
 
     def delete_nfs_export(self, export_id):
@@ -273,25 +272,23 @@ class QumuloAPI:
         # /<storage-cluster-name>/<filesystem>/<allocation_name>
         return re.fullmatch(r"^/[^/]+/[^/]+/[^/]+$", fs_path.rstrip("/")) is not None
 
-
     @staticmethod
     def get_result_set_page_limit() -> int:
         page_limit = os.environ.get("QUMULO_RESULT_SET_PAGE_LIMIT")
 
         if page_limit is None or not bool(page_limit.strip()):
-            # Uncomment below once we have a chance to propagate 
+            # Uncomment below once we have a chance to propagate
             # the QUMULO_RESULT_SET_PAGE_LIMIT variable.
             # raise TypeError("The QUMULO_RESULT_SET_PAGE_LIMIT should be set.")
             return 2000
 
         return int(page_limit)
 
-
     def get_all_quotas_with_usage(self, page_limit=None, if_match=None) -> str:
         tries = 0
         MAX_TRIES = 3  # move to configurable constant
         SNOOZE = 15
-        page_limit = (page_limit or QumuloAPI.get_result_set_page_limit())
+        page_limit = page_limit or QumuloAPI.get_result_set_page_limit()
 
         all_quotas_with_usage = None
 
