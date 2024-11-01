@@ -230,6 +230,10 @@ class AllocationTable:
                 projectuser__user__username__icontains=data.get('project__user_username'),
                 projectuser__status__name='Active'
             )
+        if data.get('project__created_after_date'):
+            projects = projects.filter(created__gt=data.get('project__created_after_date'))
+        if data.get('project__created_before_date'):
+            projects = projects.filter(created__lt=data.get('project__created_before_date'))
 
         return projects
 
