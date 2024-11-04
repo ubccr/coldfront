@@ -33,3 +33,4 @@ django-q.log
 media/reports*
 .devcontainer/*
 .bin/*
+test.http
