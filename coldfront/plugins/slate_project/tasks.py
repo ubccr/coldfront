@@ -32,7 +32,7 @@ def sync_all_slate_project_allocations():
     slate_project_allocation_objs = Allocation.objects.filter(
         resources__name='Slate Project', status__name__in=['Active', 'Renewal Requested']
     )
-    allocation_attribute_type_obj = AllocationAttributeType.objects.get('SMB Enabled')
+    allocation_attribute_type_obj = AllocationAttributeType.objects.get(name='SMB Enabled')
     ldap_conn = LDAPModify()
     ldap_search_conn = LDAPImportSearch()
     logger.info('Running sync...')
