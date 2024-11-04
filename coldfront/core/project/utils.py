@@ -2,7 +2,7 @@ import datetime
 
 from django.forms.models import model_to_dict
 
-from coldfront.core.project.models import ProjectAdminAction, ProjectStatusChoice
+from coldfront.core.project.models import ProjectAdminAction, Project
 
 
 def add_project_status_choices(apps, schema_editor):
@@ -75,10 +75,14 @@ def create_admin_action(user, fields_to_check, project, base_model=None):
                 base_model_value = status_class.objects.get(pk=base_model_value).name
                 value = value.name
         if value != base_model_value:
+            if type(base_model) == Project:
+                action = f'Changed "{key}" from "{base_model_value}" to "{value}"'
+            else:
+                action = f'For "{base_model}" changed "{key}" from "{base_model_value}" to "{value}"'
             ProjectAdminAction.objects.create(
                 user=user,
                 project=project,
-                action=f'For "{base_model}" changed "{key}" from "{base_model_value}" to "{value}"'
+                action=action
             )
 
 
