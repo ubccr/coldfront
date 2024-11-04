@@ -47,6 +47,15 @@
                   <td>{{ form.status.value }}</td>
                 </tr>
               {% endfor %}
+              {% for allocation in allocations_requiring_user_roles %}
+                <tr>
+                  <td><input type="checkbox" disabled="true"></td>
+                  <td><a href="{% url 'allocation-detail' allocation.pk %}" target="_blank">{{ allocation.pk }}</a></td>
+                  <td>{{ allocation.get_parent_resource.name }}</td>
+                  <td>{{ allocation.get_parent_resource.resource_type.name }}</td>
+                  <td>{{ allocation.status.name }}</td>
+                </tr>
+              {% endfor %}
             </tbody>
           </table>
         </div>      
@@ -54,6 +63,7 @@
       <div class="card-footer">
         <i class="fa fa-info-circle" aria-hidden="true"></i>
         Select allocations to add selected users to. If a user does not have an account on a resource in an allocation they will not be added.
+        Allocations with their checkbox disabled must have their users added from the allocation's add user page.
       </div>
       {{ allocation_form.management_form }}
     </div>

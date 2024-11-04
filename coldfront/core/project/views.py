@@ -868,7 +868,7 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
             context['users_already_in_project'] = users_already_in_project
 
         status_list = ['Active', 'New', 'Renewal Requested', 'Billing Information Submitted']
-        allocations = project_obj.allocation_set.filter(status__name__in=status_list, is_locked=False)
+        allocations = project_obj.allocation_set.filter(status__name__in=status_list, resources__requires_user_roles=False, is_locked=False)
         initial_data = self.get_initial_data(request, allocations)
         allocation_formset = formset_factory(ProjectAddUsersToAllocationForm, max_num=len(initial_data))
         allocation_formset = allocation_formset(initial=initial_data, prefix="allocationform")
@@ -883,6 +883,8 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
 
         context['pk'] = pk
         context['allocation_form'] = allocation_formset
+        context['allocations_requiring_user_roles'] = project_obj.allocation_set.filter(
+            status__name__in=status_list, resources__requires_user_roles=True, is_locked=False)
         context['current_num_managers'] = project_obj.get_current_num_managers()
         context['max_managers'] = project_obj.max_managers
         return render(request, self.template_name, context)
