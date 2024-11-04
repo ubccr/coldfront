@@ -327,3 +327,13 @@ def update_user_accounts_view(request):
     )
 
     return Response('OK')
+
+@login_required
+def lab_billing_summary(request):
+    '''
+    Show lab billing summary
+    '''
+    if not request.user.is_superuser:
+        raise PermissionDenied
+    token = request.user.auth_token.key
+    return render(request, 'plugins/ifx/lab_billing_summary.html', { 'auth_token': token })
