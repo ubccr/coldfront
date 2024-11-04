@@ -58,6 +58,41 @@ if EMAIL_ENABLED:
     EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
 
 
+def sync_smb_status(allocation_obj, allocation_attribute_type_obj=None, ldap_conn=None):
+    gid_obj = allocation_obj.allocationattribute_set.filter(
+        allocation_attribute_type__name='GID'
+    )
+    if not gid_obj.exists():
+        logger.error(
+            f'Failed to sync smb status in a Slate Project allocation. The allocation '
+            f'(pk={allocation_obj.pk}) is missing the allocation attribute "GID"'
+        )
+        return
+    gid = int(gid_obj[0].value)
+
+    if allocation_attribute_type_obj is None:
+        allocation_attribute_type_obj = AllocationAttributeType.objects.get(name='SMB Enabled')
+
+    if ldap_conn is None:
+        ldap_conn = LDAPModify()
+
+    smb_enabled = ldap_conn.get_attribute('userPassword', gid)
+    if not smb_enabled:
+        allocation_attribute_obj = AllocationAttribute.objects.filter(
+            allocation=allocation_obj,
+            allocation_attribute_type=allocation_attribute_type_obj
+        )
+        if allocation_attribute_obj.exists():
+            allocation_attribute_obj[0].delete()
+        return
+
+    AllocationAttribute.objects.get_or_create(
+        allocation=allocation_obj,
+        allocation_attribute_type=allocation_attribute_type_obj,
+        value='Yes'
+    )
+
+
 def sync_slate_project_user_statuses(slate_project_user_objs):
     """
     Updates the statuses of Slate Project allocation users.
