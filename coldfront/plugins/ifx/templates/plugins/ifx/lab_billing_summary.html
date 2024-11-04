@@ -1,0 +1,215 @@
+{% extends "common/base.html" %}
+{% load common_tags %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block ifx_head %}
+<link rel="stylesheet" href="https://cdn.datatables.net/2.1.5/css/dataTables.dataTables.min.css"></style>
+<script src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js"></script>
+<script src="https://cdn.datatables.net/2.1.5/js/dataTables.js"></script>
+<script src="https://cdn.datatables.net/select/2.0.5/js/dataTables.select.js"></script>
+<script src="https://cdn.datatables.net/select/2.0.5/js/select.dataTables.js"></script>
+<style>
+  #loading {
+    display: none;
+  }
+  .parent-box {
+    display: flex;
+  }
+  .control-box {
+    position: relative;
+    float: left;
+    margin: 0 0.5em 0.5em 0;
+    display: inline-block;
+    align-self: flex-end;
+  }
+  .clear {
+    clear: both;
+  }
+  #startYear, #startMonth {
+    margin-right: 0.5em;
+  }
+  #toggleEmptyCellsFilter {
+    margin-right: 0.5em;
+    margin-left: 0.5em;
+  }
+</style>
+{% endblock %}
+
+{% block title %}
+Lab Billing Summary
+{% endblock %}
+
+{% block content %}
+<script>
+  (function($){
+      $(document).ready(function(){
+        var dialog = $('#loading').dialog(
+          {
+            autoOpen: false,
+            height: 200,
+            width: 300,
+            modal: true,
+            title: 'Working...'
+          }
+        )
+        // Make sure the wait dialog opens for every ajax call
+        $(document)
+          .ajaxStart(function () {
+            dialog.dialog("open")
+          })
+          .ajaxStop(function () {
+            dialog.dialog("close")
+          });
+
+        $( "#progressbar" ).progressbar({
+          value: false
+        });
+
+        DataTable.defaults.layout = {
+          topStart: null,
+          topEnd: null,
+          bottomStart: null,
+          bottomEnd: null,
+        };
+
+        var labSummaryTable;
+
+        // Set start year and month to 6 months ago
+        const getDaysInMonth = (year, month) => new Date(year, month, 0).getDate()
+        const addMonths = (input, months) => {
+          const date = new Date(input)
+          date.setDate(1)
+          date.setMonth(date.getMonth() + months)
+          date.setDate(Math.min(input.getDate(), getDaysInMonth(date.getFullYear(), date.getMonth()+1)))
+          return date
+        }
+        function setStartYearMonth() {
+          const startDate = addMonths(new Date(), -6)
+          $("#startYear").val(startDate.getFullYear());
+          $("#startMonth").val(startDate.getMonth() + 1);
+        }
+
+        function loadTable() {
+          $.ajax({
+            url: '/ifx/api/billing/get-charge-history/',
+            type: 'GET',
+            data: {
+              start_year: $("#startYear").val(),
+              start_month: $("#startMonth").val(),
+              invoice_prefix: 'RC',
+            },
+            success: function(data) {
+              const dataObj = data
+
+              // Get the colunm names in sorted order
+              const columns = new Set()
+              Object.keys(dataObj).forEach(key => {
+                Object.keys(dataObj[key]).forEach(col => {
+                  columns.add(col)
+                })
+              })
+              const sortedColumns = Array.from(columns).sort()
+              const result = []
+              Object.keys(dataObj).forEach(key => {
+                const row = [key]
+                sortedColumns.forEach(col => {
+                  row.push(dataObj[key][col] || '')
+                })
+                result.push(row)
+              })
+              sortedColumns.unshift('Lab')
+              labSummaryTable = $("#labBillingSummary").DataTable({
+                layout: {
+                  topStart: 'search',
+                },
+                paging: false,
+                select: {
+                  style: 'os',
+                  selector: 'td:first-child'
+                },
+                order: [[ 0, "asc" ]],
+                data: result,
+                columns: sortedColumns.map(col => ({title: col})),
+              })
+            },
+          })
+        }
+
+      function filterRowsWithEmptyCells(settings, data, dataIndex) {
+        var row = labSummaryTable.row(dataIndex).node();
+        var cells = $('td', row);
+
+        if (row === null) {
+          return false;
+        }
+        // Check if any cell in the row is empty
+        for (var i = 0; i < cells.length; i++) {
+          if ($(cells[i]).text().trim() === '') {
+            return true; // Return true to display this row
+          }
+        }
+
+        return false; // Return false to hide this row
+      }
+
+      // Initialize the checkbox filter toggle
+      $('#toggleEmptyCellsFilter').on('change', function() {
+        if (this.checked) {
+          // Add the filter when the checkbox is checked
+          $.fn.dataTable.ext.search.push(filterRowsWithEmptyCells);
+        } else {
+          // Remove the filter when the checkbox is unchecked
+          $.fn.dataTable.ext.search = $.fn.dataTable.ext.search.filter(function(value) {
+            return value !== filterRowsWithEmptyCells;
+          });
+        }
+
+        // Redraw the table after toggling the filter
+        labSummaryTable.draw();
+      });
+
+      $('#refresh').on('click', function() {
+        labSummaryTable.destroy();
+        $('#labBillingSummary').empty();
+        loadTable();
+      })
+      setStartYearMonth();
+      loadTable();
+    })
+  })(jQuery)
+</script>
+<div style="font-size: 10pt;">
+  <h2>Lab Billing Summary</h2>
+  <div id="loading">
+      <p>
+          <div id="progressbar"></div>
+      </p>
+  </div>
+  <div class="parent-box">
+    <div class="control-box">
+      <label for="startYear">Start Year</label>
+      <input type="text" id="startYear" value="2024"></input>
+    </div>
+    <div class="control-box">
+      <label for="startYear">Start Month</label>
+      <input type="text" id="startMonth" value="1"></input>
+    </div>
+    <div class="control-box">
+      <label for="toggleEmptyCellsFilter">Only rows with empty cells</label><input type="checkbox" id="toggleEmptyCellsFilter"></input>
+    </div>
+    <div class="control-box">
+      <button id="refresh">Refresh</button>
+    </div>
+    <div class="clear"></div>
+  </div>
+  <div>
+    <table id="labBillingSummary" class="display" style="width:100%">
+      <thead>
+      </thead>
+      <tbody>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

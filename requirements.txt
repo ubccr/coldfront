@@ -51,7 +51,7 @@ django-tables2==2.3.4
 djangorestframework==3.15.2
 djangorestframework-datatables==0.7.0
 ipython==7.16.3
-isilon-sdk
+isilon-sdk==0.3.0.1
 ldap3
 logging_tree==1.9
 mysqlclient==2.2.0
