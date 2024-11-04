@@ -1703,7 +1703,11 @@ class LDAPModify:
         else:
             attributes = {attribute: ['']}
 
-        return attributes.get(attribute)[0]
+        attribute = attributes.get(attribute)
+        if not attribute:
+            return ''
+
+        return attribute[0]
     
     def check_attribute_exists(self, attribute, gid_number):
         search_parameters = {
