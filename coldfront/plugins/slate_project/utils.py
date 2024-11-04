@@ -84,13 +84,23 @@ def sync_smb_status(allocation_obj, allocation_attribute_type_obj=None, ldap_con
         )
         if allocation_attribute_obj.exists():
             allocation_attribute_obj[0].delete()
+            logger.info(
+                f'The allocation attribute {allocation_attribute_type_obj.name} was deleted in '
+                f'Slate Project allocation {allocation_obj.pk}' 
+            )
         return
 
-    AllocationAttribute.objects.get_or_create(
+    _, created = AllocationAttribute.objects.get_or_create(
         allocation=allocation_obj,
         allocation_attribute_type=allocation_attribute_type_obj,
         value='Yes'
     )
+
+    if created:
+        logger.info(
+            f'The allocation attribute {allocation_attribute_type_obj.name} was created in Slate '
+            f'Project allocation {allocation_obj.pk}' 
+        )
 
 
 def sync_slate_project_user_statuses(slate_project_user_objs):
