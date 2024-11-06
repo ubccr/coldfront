@@ -1,0 +1,107 @@
+{% extends "user/user_profile.html" %}
+{% block profile_contents %}
+  {% csrf_token %}
+  {{ block.super }}
+  {% if viewed_user == request.user %}
+    <tr>
+      <th scope="row">API Token:</th>
+      <td>
+          <div class="position-relative">
+            {% if request.user.auth_token.key %}
+              <code class="user-token" data-full-token="{{ request.user.auth_token.key }}">
+                •••••••{{ request.user.auth_token.key|slice:"-6:" }}
+              </code>
+            {% else %}
+              <code class="user-token">None</code>
+            {% endif %}
+          </div>
+          <br>
+          <button class="btn btn-secondary btn-sm copy-token" {% if not request.user.auth_token.key %}disabled{% endif %}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-clipboard" viewBox="0 0 16 16">
+              <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1z"/>
+              <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0z"/>
+            </svg>
+            Copy
+          </button>
+          <button class="btn btn-danger">Regenerate Token</button>
+      </td>
+    </tr>
+  {% endif %}
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const regenerateBtn = document.querySelector('.btn-danger');
+      const copyBtn = document.querySelector('.copy-token');
+      
+      if (copyBtn) {
+        copyBtn.addEventListener('click', async function() {
+          const tokenElement = document.querySelector('.user-token');
+          const fullToken = tokenElement.dataset.fullToken;
+          
+          try {
+            await navigator.clipboard.writeText(fullToken);
+            
+            // Visual feedback
+            const originalText = copyBtn.innerHTML;
+            copyBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check" viewBox="0 0 16 16"><path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425z"/></svg> Copied!';
+            copyBtn.classList.replace('btn-secondary', 'btn-success');
+            
+            setTimeout(() => {
+              copyBtn.innerHTML = originalText;
+              copyBtn.classList.replace('btn-success', 'btn-secondary');
+            }, 2000);
+          } catch (err) {
+            console.error('Failed to copy token:', err);
+            alert('Failed to copy token to clipboard');
+          }
+        });
+      }
+
+      if (regenerateBtn) {
+        regenerateBtn.addEventListener('click', async function() {
+          const confirmed = confirm(
+            "Warning: Regenerating your token will immediately invalidate your existing token. " +
+            "Any applications or scripts using the current token will stop working and will need to be updated. " +
+            "The old token cannot be retrieved. Are you sure you want to continue?"
+          );
+
+          if (!confirmed) {
+            return;
+          }
+
+          try {
+            regenerateBtn.disabled = true;
+            
+            const response = await fetch('{% url "regenerate_token" %}', {
+              method: 'POST',
+              headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json'
+              },
+              credentials: 'same-origin'
+            });
+
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            // Update token display with masked version
+            const tokenCode = document.querySelector('.user-token');
+            tokenCode.dataset.fullToken = data.token;
+            tokenCode.textContent = '•••••••' + data.token.slice(-6);
+            
+            // Enable copy button if it was disabled
+            copyBtn.disabled = false;
+            
+          } catch (error) {
+            console.error('Error:', error);
+            alert('Failed to regenerate token. Please try again.');
+          } finally {
+            regenerateBtn.disabled = false;
+          }
+        });
+      }
+    });
+  </script>
+{% endblock %}
