@@ -15,21 +15,23 @@ Cloud core time.
 
 ## Setup
 
-In order to use this plugin, you will need to (within django admin):
+In order to use this plugin, you will need to (within Coldfront's django admin):
 
 - Create a Resource Attribute Type
 - Add this new Resource Attribute Type to your cluster resource (slurm cluster resource)
 
-For example:
+You may also need to check your xdmod instance's resources.json has ``"pi_column": "account_name"`` as per xdmod documentation.
 
-### Create the new Resourece Attribute type
+### Coldfront django admin steps
+
+#### Create the new Resourece Attribute type
 
 ```
 Resource Attribute Type: xdmod_resource
 Attribute type name: text
 ```
 
-### Edit the existing Resource (slurm cluster)
+#### Edit the existing Resource (slurm cluster)
 
 ```
 Resource attribute type: xdmod_resource
