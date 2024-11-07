@@ -2,6 +2,8 @@
 
 # to build for a development environment, run the following command:
 # docker build --build-arg build_env=dev -t coldfront --ssh default . --network=host
+LABEL org.opencontainers.image.source=https://github.com/fasrc/coldfront
+LABEL org.opencontainers.image.description="fasrc coldfront application"
 
 FROM python:3.10
 
