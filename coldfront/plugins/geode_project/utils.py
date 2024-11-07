@@ -10,10 +10,12 @@ from coldfront.core.user.models import UserProfile
 logger = logging.getLogger(__name__)
 
 
-LDAP_GEODE_PROJECT_BASE_DN = import_from_settings('LDAP_GEODE_PROJECT_BASE_DN')
-LDAP_GEODE_ALL_USERS_GROUP = import_from_settings('LDAP_GEODE_ALL_USERS_GROUP')
-LDAP_GEODE_PROJECT_USER_ACCOUNT_TEMPLATE = import_from_settings('LDAP_GEODE_PROJECT_USER_ACCOUNT_TEMPLATE')
-LDAP_GEODE_PROJECT_GROUP_TEMPLATE = import_from_settings('LDAP_GEODE_PROJECT_GROUP_TEMPLATE')
+ENABLE_GEODE_PROJECT_LDAP_INTEGRATION = import_from_settings('ENABLE_GEODE_PROJECT_LDAP_INTEGRATION', False)
+if ENABLE_GEODE_PROJECT_LDAP_INTEGRATION:
+    LDAP_GEODE_PROJECT_BASE_DN = import_from_settings('LDAP_GEODE_PROJECT_BASE_DN')
+    LDAP_GEODE_ALL_USERS_GROUP = import_from_settings('LDAP_GEODE_ALL_USERS_GROUP')
+    LDAP_GEODE_PROJECT_USER_ACCOUNT_TEMPLATE = import_from_settings('LDAP_GEODE_PROJECT_USER_ACCOUNT_TEMPLATE')
+    LDAP_GEODE_PROJECT_GROUP_TEMPLATE = import_from_settings('LDAP_GEODE_PROJECT_GROUP_TEMPLATE')
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED')
 if EMAIL_ENABLED:
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
@@ -81,8 +83,10 @@ def add_group(allocation_obj, allocation_attribute_type, group, usernames, role,
             )
 
 
-
 def add_groups(allocation_obj, ldap_conn=None):
+    if not ENABLE_GEODE_PROJECT_LDAP_INTEGRATION:
+        return
+
     group = allocation_obj.allocationattribute_set.filter(allocation_attribute_type__name='Department: Group Name')
     if not group.exists:
         logger.error(
@@ -131,6 +135,9 @@ def remove_group(allocation_obj, allocation_attribute_type, ldap_conn):
 
 
 def remove_groups(allocation_obj, ldap_conn=None):
+    if not ENABLE_GEODE_PROJECT_LDAP_INTEGRATION:
+        return
+
     if ldap_conn is None:
         ldap_conn = LDAPModify()
 
@@ -139,6 +146,9 @@ def remove_groups(allocation_obj, ldap_conn=None):
 
 
 def add_user(allocation_user_obj, ldap_conn=None):
+    if not ENABLE_GEODE_PROJECT_LDAP_INTEGRATION:
+        return
+
     if ldap_conn is None:
         ldap_conn = LDAPModify()
     allocation_obj = allocation_user_obj.allocation
@@ -171,6 +181,9 @@ def add_user(allocation_user_obj, ldap_conn=None):
 
 
 def remove_user(allocation_user_obj):
+    if not ENABLE_GEODE_PROJECT_LDAP_INTEGRATION:
+        return
+
     ldap_conn = LDAPModify()
     allocation_obj = allocation_user_obj.allocation
     is_manager = allocation_obj.project.projectuser_set.filter(role__name='Manager', user=allocation_user_obj.user)
@@ -202,6 +215,9 @@ def remove_user(allocation_user_obj):
 
 
 def update_user_groups(allocation_user_obj):
+    if not ENABLE_GEODE_PROJECT_LDAP_INTEGRATION:
+        return
+
     ldap_conn = LDAPModify()
     add_user(allocation_user_obj, ldap_conn)
 
