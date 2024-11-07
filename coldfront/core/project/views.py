@@ -31,7 +31,8 @@ from coldfront.core.allocation.models import (Allocation,
                                               AllocationUser,
                                               AllocationUserStatusChoice)
 from coldfront.core.allocation.signals import (allocation_activate_user,
-                                               allocation_remove_user)
+                                               allocation_remove_user,
+                                               allocation_expire)
 from coldfront.core.grant.models import Grant
 from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectUpdateForm,
@@ -2247,6 +2248,8 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
             allocation.status = allocation_status_expired
             allocation.end_date = end_date
             allocation.save()
+
+            allocation_expire.send(sender=ProjectArchiveProjectView, allocation_pk=allocation.pk)
 
         logger.info(
             f'User {request.user.username} archived a project (project pk={project.pk})'
