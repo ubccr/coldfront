@@ -75,7 +75,7 @@ from coldfront.core.project.utils import (get_new_end_date_from_list,
                                           create_admin_action_for_deletion)
 from coldfront.core.allocation.utils import send_added_user_email, set_default_allocation_user_role
 from coldfront.core.utils.slack import send_message
-from coldfront.core.project.signals import project_activate
+from coldfront.core.project.signals import project_activate, project_user_role_changed
 
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 ALLOCATION_ENABLE_ALLOCATION_RENEWAL = import_from_settings(
@@ -1401,6 +1401,7 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             if project_user_update_form.is_valid():
                 form_data = project_user_update_form.cleaned_data
                 enable_notifications = form_data.get('enable_notifications')
+                old_role = form_data.get('role')
                 if form_data.get('role').name == 'Manager':
                     enable_notifications = True
                     if project_user_obj.role.name != 'Manager':
@@ -1444,10 +1445,12 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                     )
                 project_user_obj.save()
 
-                logger.info(
-                    f'User {request.user.username} changed {project_user_obj.user.username}\'s '
-                    f'role to {form_data.get("role")} (project pk={project_obj.pk})'
-                )
+                if project_user_obj.role != old_role:
+                    project_user_role_changed.send(sender=self.__class__, project_user_pk=project_user_obj.pk)
+                    logger.info(
+                        f'User {request.user.username} changed {project_user_obj.user.username}\'s '
+                        f'role to {form_data.get("role")} (project pk={project_obj.pk})'
+                    )
 
                 messages.success(request, 'User details updated.')
                 return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_obj.pk, 'project_user_pk': project_user_obj.pk}))
