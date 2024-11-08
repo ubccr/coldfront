@@ -54,7 +54,6 @@ class SlateProjectSearchResultsView(LoginRequiredMixin, ListView):
     def post(self, request, *args, **kwargs):
         slate_project = request.POST.get('slate_project')
         context = {}
-        # icontains does not work with our database implementation
         slate_project_objs = AllocationAttribute.objects.filter(
             allocation_attribute_type__name='Slate Project Directory',
             allocation__resources__name='Slate Project',
