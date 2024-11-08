@@ -60,12 +60,10 @@ class SlateProjectSearchResultsView(LoginRequiredMixin, ListView):
             allocation__resources__name='Slate Project',
             allocation__status__name='Active',
             allocation__project__status__name='Active',
-            # value__icontains='/N/project/' + slate_project
+            value__icontains='/N/project/' + slate_project
         )
         slate_projects = []
         for slate_project_obj in slate_project_objs:
-            if not slate_project.lower() in slate_project_obj.value.lower():
-                continue
             allocation_users = slate_project_obj.allocation.allocationuser_set.filter(
                 status__name__in=['Active', 'Eligible']).values_list('user', flat=True)
 
