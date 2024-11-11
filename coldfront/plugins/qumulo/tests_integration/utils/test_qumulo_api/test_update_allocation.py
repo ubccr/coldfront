@@ -6,7 +6,7 @@ from coldfront.plugins.qumulo.tests_integration.utils.test_qumulo_api.utils impo
 
 
 class TestUpdateAllocation(TestCase):
-    @tag('integration')
+    @tag("integration")
     def test_update_allocation_logs_error(self):
         qumulo_api = QumuloAPI()
         export_fs_path = "/test-project/update-allocation"

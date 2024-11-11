@@ -1,0 +1,19 @@
+Dear {{center_name}} user,
+
+Your request to perform an ACL Reset (task "{{task_name}}")
+on allocation "{{allocation_name}}" failed after 0.02 seconds.  The error
+returned was:
+
+  {{task_error_message}}
+
+If you are a student or collaborator under this project, you are receiving this
+notice as a courtesy. If you would like to opt out of future notifications,
+instructions can be found here:
+
+  {{opt_out_instruction_url}}
+
+If you need anything further, then please contact User Support.
+
+Thank you,
+
+{{signature}}

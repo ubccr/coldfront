@@ -3,7 +3,7 @@ from coldfront.plugins.qumulo.utils.qumulo_api import QumuloAPI
 
 
 class TestCreateAllocation(TestCase):
-    @tag('integration')
+    @tag("integration")
     def test_creates_nfs_export(self):
         qumulo_api = QumuloAPI()
 

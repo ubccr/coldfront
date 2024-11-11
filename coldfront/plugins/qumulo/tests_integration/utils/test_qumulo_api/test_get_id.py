@@ -4,7 +4,7 @@ from qumulo.commands.nfs import parse_nfs_export_restrictions
 
 
 class TestGetId(TestCase):
-    @tag('integration')
+    @tag("integration")
     def test_gets_id(self):
         qumulo_api = QumuloAPI()
         export_path = "/test-project"

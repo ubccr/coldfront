@@ -310,8 +310,11 @@ class TestAclAllocations(TestCase):
         form_data["storage_filesystem_path"] = f"{os.environ.get('STORAGE2_PATH')}/foo"
 
         group_name_base = f"storage-{form_data['storage_name']}"
-        expected_aces = AcesManager.get_allocation_aces(
-            f"{group_name_base}-rw", f"{group_name_base}-ro"
+        expected_aces = AcesManager.default_copy()
+        expected_aces.extend(
+            AcesManager.get_allocation_aces(
+                f"{group_name_base}-rw", f"{group_name_base}-ro"
+            )
         )
 
         allocation = create_allocation(self.project, self.user, form_data)
@@ -323,7 +326,7 @@ class TestAclAllocations(TestCase):
         ) as mock_set_traverse_acl:
             AclAllocations.set_allocation_acls(allocation, mock_qumulo_api)
 
-            mock_set_acl_v2.assert_called_once()
+            self.assertEqual(mock_set_acl_v2.call_count, 2)
             call_args = mock_set_acl_v2.call_args
 
             self.assertEqual(
@@ -366,7 +369,7 @@ class TestAclAllocations(TestCase):
         ) as mock_set_traverse_acl:
             AclAllocations.set_allocation_acls(allocation, mock_qumulo_api)
 
-            mock_set_acl_v2.assert_called_once()
+            self.assertEqual(mock_set_acl_v2.call_count, 2)
             call_args = mock_set_acl_v2.call_args
 
             self.assertEqual(
@@ -396,7 +399,7 @@ class TestAclAllocations(TestCase):
         ) as mock_set_traverse_acl:
             AclAllocations.set_allocation_acls(allocation, mock_qumulo_api)
 
-            mock_set_acl_v2.assert_called_once()
+            self.assertEqual(mock_set_acl_v2.call_count, 2)
 
             group_name_base = f"storage-{form_data['storage_name']}"
             mock_set_traverse_acl.assert_called_once_with(
@@ -421,8 +424,11 @@ class TestAclAllocations(TestCase):
 
         group_name_base = f"storage-{form_data['storage_name']}"
 
-        expected_aces = AcesManager.get_allocation_aces(
-            f"{group_name_base}-rw", f"{group_name_base}-ro"
+        expected_aces = AcesManager.default_copy()
+        expected_aces.extend(
+            AcesManager.get_allocation_aces(
+                f"{group_name_base}-rw", f"{group_name_base}-ro"
+            )
         )
 
         allocation = create_allocation(self.project, self.user, form_data)

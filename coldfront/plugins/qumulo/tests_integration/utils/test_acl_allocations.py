@@ -30,7 +30,7 @@ class TestAclAllocations(TestCase):
 
         return super().setUp()
 
-    @tag('integration')
+    @tag("integration")
     def test_create_acl_allocation(self):
         acl_type = "ro"
         test_users = ["test"]

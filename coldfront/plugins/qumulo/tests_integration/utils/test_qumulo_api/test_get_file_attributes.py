@@ -6,7 +6,7 @@ from coldfront.plugins.qumulo.tests_integration.utils.test_qumulo_api.utils impo
 
 
 class TestGetFileAttributes(TestCase):
-    @tag('integration')
+    @tag("integration")
     def test_gets_file_attributes(self):
         qumulo_api = QumuloAPI()
         export_fs_path = "/test/test-get-file-attr"

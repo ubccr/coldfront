@@ -4,7 +4,7 @@ import os
 
 
 class TestQumuloApiInit(TestCase):
-    @tag('integration')
+    @tag("integration")
     def test_logs_in_without_throwing_error(self):
         try:
             qumulo_api = QumuloAPI()

@@ -4,7 +4,7 @@ from qumulo.commands.nfs import parse_nfs_export_restrictions
 
 
 class TestCreateQuota(TestCase):
-    @tag('integration')
+    @tag("integration")
     def test_creates_quota(self):
         qumulo_api = QumuloAPI()
 

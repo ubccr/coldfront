@@ -6,7 +6,7 @@ from coldfront.plugins.qumulo.tests_integration.utils.test_qumulo_api.utils impo
 
 
 class TestUpdateNFSExport(TestCase):
-    @tag('integration')
+    @tag("integration")
     def test_updates_an_export_description(self):
         qumulo_api = QumuloAPI()
         description = "test-test_update_project-active"
@@ -32,7 +32,7 @@ class TestUpdateNFSExport(TestCase):
 
         self.assertEqual(update_response["description"], update_description)
 
-    @tag('integration')
+    @tag("integration")
     def test_updates_paths(self):
         qumulo_api = QumuloAPI()
 

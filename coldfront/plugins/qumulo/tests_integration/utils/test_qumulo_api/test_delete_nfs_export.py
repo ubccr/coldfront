@@ -6,7 +6,7 @@ from coldfront.plugins.qumulo.tests_integration.utils.test_qumulo_api.utils impo
 
 
 class TestDeleteNFSExport(TestCase):
-    @tag('integration')
+    @tag("integration")
     def test_deletes_nfs_export(self):
         qumulo_api = QumuloAPI()
 

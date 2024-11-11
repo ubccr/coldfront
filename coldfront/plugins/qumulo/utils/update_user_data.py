@@ -6,7 +6,9 @@ from coldfront.plugins.qumulo.utils.active_directory_api import ActiveDirectoryA
 import sys
 
 
-def update_user_with_additional_data(username: str, test_override=False) -> Optional[User]:
+def update_user_with_additional_data(
+    username: str, test_override=False
+) -> Optional[User]:
     # jprew - NOTE - adding this to avoid this running during tests
     # as it does not work locally
     if "test" in sys.argv and not test_override:

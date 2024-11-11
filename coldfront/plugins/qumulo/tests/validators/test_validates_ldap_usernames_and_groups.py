@@ -45,7 +45,7 @@ class TestValidatesLdapUsernamesAndGroups(TestCase):
             self.assertRaisesMessage(ValidationError, self.expect_error_message)
 
     def test_validates_when_name_escapes_special_characters(self):
-        name = 'name+;,\"test"<test>#'
+        name = 'name+;,"test"<test>#'
         escaped_name = name.translate(self.translate_table)
         is_valid = validate_ldap_usernames_and_groups(escaped_name)
         self.assertTrue(is_valid)

@@ -15,8 +15,11 @@ def create_test_export(
     )
 
 
-def print_all_quotas_with_usage(qumulo_api: QumuloAPI)-> None:
+def print_all_quotas_with_usage(qumulo_api: QumuloAPI) -> None:
     response_quotas = qumulo_api.rc.quota.get_all_quotas_with_status(page_size=None)
     for all_quotas in response_quotas:
-        for quota in all_quotas['quotas']:
-            print("%(path)s - id: %(id)s - %(capacity_usage)s bytes used of %(limit)s" % quota)
+        for quota in all_quotas["quotas"]:
+            print(
+                "%(path)s - id: %(id)s - %(capacity_usage)s bytes used of %(limit)s"
+                % quota
+            )

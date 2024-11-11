@@ -62,7 +62,9 @@ class TestValidateAdUsers(TestCase):
         with self.assertRaises(ValidationError) as context_manager:
             validate_single_ad_user(user)
 
-        self.assertEquals(context_manager.exception.message, "This WUSTL Key could not be validated")
+        self.assertEquals(
+            context_manager.exception.message, "This WUSTL Key could not be validated"
+        )
         self.assertEquals(context_manager.exception.code, "invalid")
 
     def test_validates_multiple_users(self):

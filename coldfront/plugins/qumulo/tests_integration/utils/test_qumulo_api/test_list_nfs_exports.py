@@ -3,7 +3,7 @@ from coldfront.plugins.qumulo.utils.qumulo_api import QumuloAPI
 
 
 class TestListNFSExports(TestCase):
-    @tag('integration')
+    @tag("integration")
     def test_lists_all_exports(self):
         qumulo_api = QumuloAPI()
 
