@@ -1,6 +1,4 @@
 import logging
-import requests
-from urllib import parse
 
 from django.contrib import messages
 from django.shortcuts import get_object_or_404
@@ -11,7 +9,7 @@ from django.utils.html import format_html
 from coldfront.core.allocation.models import AllocationAttributeType, AllocationAttribute
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
-from coldfront.plugins.customizable_forms.custom.forms import PositConnectForm, GeodeProjectForm, ComputeForm
+from coldfront.plugins.customizable_forms.custom.forms import PositConnectForm, ComputeForm
 from coldfront.plugins.customizable_forms.views import GenericView
 from coldfront.plugins.ldap_user_info.utils import get_users_info
 
@@ -83,17 +81,5 @@ class ComputeView(GenericView):
                 allocation=self.allocation_obj,
                 value=project_obj.slurm_account_name
             )
-
-        return http_response
-
-
-class GeodeProjectView(GenericView):
-    form_class = GeodeProjectForm
-    template_name = 'customizable_forms/geodeproject.html'
-
-    def form_valid(self, form):
-        http_response = super().form_valid(form)
-        self.allocation_obj.end_date = None
-        self.allocation_obj.save()
 
         return http_response
