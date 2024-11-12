@@ -15,7 +15,11 @@ from coldfront.plugins.qumulo.validators import (
     validate_storage_name,
 )
 
-from coldfront.plugins.qumulo.constants import STORAGE_SERVICE_RATES, PROTOCOL_OPTIONS
+from coldfront.plugins.qumulo.constants import (
+    STORAGE_SERVICE_RATES,
+    PROTOCOL_OPTIONS,
+    BILLING_CYCLE_OPTIONS,
+)
 
 
 from coldfront.core.allocation.models import (
@@ -59,6 +63,12 @@ class AllocationForm(forms.Form):
         label="Billing Contact",
         validators=[validate_single_ad_user],
         required=False,
+    )
+    billing_cycle = forms.ChoiceField(
+        help_text="The billing cycle of the allocation",
+        label="Billing Cycle",
+        choices=BILLING_CYCLE_OPTIONS,
+        required=True,
     )
     service_rate = forms.ChoiceField(
         help_text="Service rate option for the Storage2 allocation",
