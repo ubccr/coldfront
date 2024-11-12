@@ -1,3 +1,4 @@
+import re
 import logging
 import urllib
 
@@ -206,7 +207,7 @@ class DispatchView(LoginRequiredMixin, View):
     def dispatch(self, request, project_pk, resource_pk, *args, **kwargs):
         resource_obj = get_object_or_404(Resource, pk=resource_pk)
         resource_name = resource_obj.name
-        resource_name = ''.join(resource_name.lower().split(' '))
+        resource_name = re.sub('[^A-Za-z0-9]+', '', resource_name)
         return HttpResponseRedirect(
             self.reverse_with_params(
                 reverse(

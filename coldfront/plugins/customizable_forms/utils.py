@@ -1,3 +1,4 @@
+import re
 import importlib
 
 from django.urls import path
@@ -29,6 +30,7 @@ def add_additional_forms():
 
         setattr(custom_view, 'form_class', custom_form)
 
+        resource_name = re.sub('[^A-Za-z0-9]+', '', resource_name)
         urlpatterns.append(
             path(
                 f'<int:project_pk>/create/<int:resource_pk>/{resource_name}',
