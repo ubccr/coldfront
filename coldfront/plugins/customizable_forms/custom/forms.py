@@ -5,9 +5,7 @@ from django.forms.widgets import RadioSelect
 from django.core.exceptions import ValidationError
 
 from coldfront.plugins.customizable_forms.validators import (ValidateNumberOfUsers,
-                                                             ValidateAccountNumber,
-                                                             ValidateDirectoryName,
-                                                             ValidateDupDirectoryName)
+                                                             ValidateAccountNumber)
 from coldfront.plugins.customizable_forms.forms import BaseForm
 from coldfront.plugins.ldap_user_info.utils import LDAPSearch, check_if_user_exists
 
@@ -48,51 +46,6 @@ class PositConnectForm(BaseForm):
             if request_user != project_obj.pi:
                 count_start += 1
             self.fields['users'].validators = [ValidateNumberOfUsers(limit, count_start)]
-
-
-class SlateProjectForm(BaseForm):
-    YES_NO_CHOICES = (
-        ('Yes', 'Yes'),
-        ('No', 'No')
-    )
-    CAMPUS_CHOICES = (
-        ('', ''),
-        ('BL', 'BL'),
-        ('IN', 'IN'),
-        ('CO', 'CO'),
-        ('EA', 'EA'),
-        ('FW', 'FW'),
-        ('KO', 'KO'),
-        ('NW', 'NW'),
-        ('SB', 'SB'),
-        ('SE', 'SE'),
-    )
-
-    first_name = forms.CharField(max_length=40, disabled=True)
-    last_name = forms.CharField(max_length=40, disabled=True)
-    campus_affiliation = forms.ChoiceField(choices=CAMPUS_CHOICES)
-    email = forms.EmailField(max_length=40, disabled=True)
-    project_directory_name = forms.CharField(
-        max_length=23, validators=[ValidateDirectoryName(), ValidateDupDirectoryName()]
-    )
-    storage_space = forms.IntegerField(min_value=1, max_value=30)
-    start_date = forms.DateField(disabled=True)
-    account_number = forms.CharField(max_length=9, initial='00-000-00', validators=[ValidateAccountNumber()])
-    store_ephi = forms.ChoiceField(choices=YES_NO_CHOICES, widget=RadioSelect)
-
-    def __init__(self, request_user, resource_attributes, project_obj, resource_obj, *args, **kwargs):
-        super().__init__(request_user, resource_attributes, project_obj, resource_obj, *args, **kwargs)
-
-        self.fields['first_name'].initial = request_user.first_name
-        self.fields['last_name'].initial = request_user.last_name
-        self.fields['email'].initial = request_user.email
-        self.fields['start_date'].initial = date.today()
-
-        self.fields['project_directory_name'].widget.attrs.update({'placeholder': 'example_A-Za-z0-9'})
-
-        for field in self.errors:
-            self.fields[field].widget.attrs.update({'autofocus': ''})
-            break
 
 
 class GeodeProjectForm(BaseForm):
