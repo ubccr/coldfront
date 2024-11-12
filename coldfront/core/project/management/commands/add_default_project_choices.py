@@ -16,7 +16,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         ProjectStatusChoice.objects.all().delete()
-        for choice in ['New', 'Active', 'Archived', 'Denied', 'Expired', 'Review Pending', 'Waiting For Admin Approval', 'Contacted By Admin', ]:
+        for choice in ['New', 'Active', 'Archived', 'Denied', 'Expired', 'Renewal Denied',
+                       'Review Pending', 'Waiting For Admin Approval', 'Contacted By Admin', ]:
             ProjectStatusChoice.objects.get_or_create(name=choice)
 
         ProjectReviewStatusChoice.objects.all().delete()
@@ -36,6 +37,7 @@ class Command(BaseCommand):
         for name, attribute_type, has_usage, is_private in (
             ('Project ID', 'Text', False, False),
             ('Account Number', 'Int', False, True),
+            ('Auto Disable User Notifications', 'Yes/No', False, True),
         ):
             ProjectAttributeType.objects.get_or_create(name=name, attribute_type=AttributeType.objects.get(
                 name=attribute_type), has_usage=has_usage, is_private=is_private)

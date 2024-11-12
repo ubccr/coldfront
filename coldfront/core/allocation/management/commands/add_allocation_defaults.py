@@ -5,7 +5,9 @@ from coldfront.core.allocation.models import (AttributeType,
                                               AllocationStatusChoice,
                                               AllocationUserStatusChoice,
                                               AllocationUserRequestStatusChoice,
-                                              AllocationChangeStatusChoice)
+                                              AllocationChangeStatusChoice,
+                                              AllocationRemovalStatusChoice,
+                                              AllocationUserRoleChoice)
 
 
 class Command(BaseCommand):
@@ -13,8 +15,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
 
-        for attribute_type in ('Date', 'Float', 'Int', 'Text', 'Yes/No', 'No',
-            'Attribute Expanded Text'):
+        for attribute_type in ('Date', 'Float', 'Int', 'Text', 'Yes/No',
+            'Attribute Expanded Text', 'True/False'):
             AttributeType.objects.get_or_create(name=attribute_type)
 
         for choice in ('Active', 'Denied', 'Expired',
@@ -28,11 +30,22 @@ class Command(BaseCommand):
         for choice in ('Pending', 'Approved', 'Denied',):
             AllocationChangeStatusChoice.objects.get_or_create(name=choice)
 
-        for choice in ('Active', 'Error', 'Removed', 'Pending - Add', 'Pending - Remove'):
+        for choice in ('Active', 'Error', 'Removed', 'Pending - Add', 'Pending - Remove',
+                       'Eligible', 'Disabled', 'Retired'):
             AllocationUserStatusChoice.objects.get_or_create(name=choice)
 
         for choice in ('Approved', 'Pending', 'Denied', ):
             AllocationUserRequestStatusChoice.objects.get_or_create(name=choice)
+
+        for choice in ('Approved', 'Pending', 'Denied', ):
+            AllocationRemovalStatusChoice.objects.get_or_create(name=choice)
+
+        for choice, is_user_default, is_admin_default in (
+            ('read/write', True, True),
+            ('read only', False, False)
+        ):
+            AllocationUserRoleChoice.objects.get_or_create(
+                name=choice, is_user_default=is_user_default, is_admin_default=is_admin_default)
 
         for name, attribute_type, has_usage, is_private in (
             ('Cloud Account Name', 'Text', False, False),
@@ -60,7 +73,40 @@ class Command(BaseCommand):
             ('SupportersQOS', 'Yes/No', False, False),
             ('SupportersQOSExpireDate', 'Date', False, False),
             ('Account Number', 'Text', False, False),
-            ('Sub-Account Number', 'Text', False, False)
+            ('Sub-Account Number', 'Text', False, False),
+            ('Applications', 'Text', False, True),
+            ('Has DL Workflow', 'Yes/No', False, True),
+            ('Has GPU Workflow', 'Yes/No', False, True),
+            ('Billing: Account Number', 'Text', False, True),
+            ('Billing: Fiscal Office', 'Text', False, True),
+            ('Billing: Sub-Account Number', 'Text', False, True),
+            ('Contact: IT Pro Contact', 'Text', False, True),
+            ('Contact: Phone Number', 'Text', False, True),
+            ('Contact: Primary Contact', 'Text', False, True),
+            ('Contact: Requestor', 'Text', False, True),
+            ('Contact: Secondary Contact', 'Text', False, True),
+            ('Department: Department Full Name', 'Text', False, True),
+            ('Department: Department Primary Campus', 'Text', False, True),
+            ('Department: Department Short Name', 'Text', False, True),
+            ('Department: Group Name', 'Text', False, True),
+            ('Policies: Accepted Best Practices', 'True/False', False, True),
+            ('Policies: Accepted Terms of Service', 'True/False', False, True),
+            ('Policies:Accepted Data Management Responsibilities', 'True/False', False, True),
+            ('Storage: Admin Group', 'Text', False, True),
+            ('Storage: Data Domains', 'Text', False, True),
+            ('Storage: Data Management Plan', 'Text', False, True),
+            ('Storage: Official End Date', 'Date', False, True),
+            ('Storage: Storage Quota (GB)', 'Int', False, False),
+            ('Storage: Use Indefinitely', 'True/False', False, True),
+            ('Storage: Users Group', 'Text', False, True),
+            ('Use Type', 'Text', False, True),
+            ('Will Exceed Limits', 'Yes/No', False, True),
+            ('Allocated Quantity', 'Int', False, False),
+            ('Center Identifier', 'Text', False, True),
+            ('GID', 'Int', False, True),
+            ('LDAP Group', 'Text', False, True),
+            ('SMB Enabled', 'Yes/No', False, False),
+            ('Slate Project Directory', 'Text', False, False),
         ):
             AllocationAttributeType.objects.get_or_create(name=name, attribute_type=AttributeType.objects.get(
                 name=attribute_type), has_usage=has_usage, is_private=is_private)

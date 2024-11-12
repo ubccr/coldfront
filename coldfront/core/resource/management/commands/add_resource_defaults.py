@@ -72,8 +72,8 @@ class Command(BaseCommand):
             ('fiscal_officer_label', 'Text'),
             ('for_coursework', 'Yes/No'),
             ('for_coursework_label', 'Text'),
-            ('it_pros', 'Text'),
-            ('it_pros_label', 'Text'),
+            ('it_pro', 'Text'),
+            ('it_pro_label', 'Text'),
             ('last_name', 'Text'),
             ('last_name_label', 'Text'),
             ('leverage_multiple_gpus', 'Yes/No'),
@@ -122,7 +122,15 @@ class Command(BaseCommand):
             ('gpu_workflow', 'True/False'),
             ('gpu_workflow_label', 'Text'),
             ('will_exceed_limit', 'Yes/No'),
-            ('will_exceed_limit_label', 'Text')
+            ('will_exceed_limit_label', 'Text'),
+            ('department_primary_campus', 'Text'),
+            ('department_primary_campus_label', 'Text'),
+            ('use_indefinitely', 'True/False'),
+            ('use_indefinitely_labek', 'Text'),
+            ('group_name', 'Text'),
+            ('group_name_label', 'Text'),
+            ('help_url', 'Text'),
+            ('allocation_limit_per_pi', 'Int'),
         ):
             ResourceAttributeType.objects.get_or_create(
                 name=resource_attribute_type, attribute_type=AttributeType.objects.get(name=attribute_type))
@@ -135,6 +143,7 @@ class Command(BaseCommand):
             ('Server', 'Extra servers providing various services'),
             ('Software License', 'Software license purchased by users'),
             ('Storage', 'NAS storage'),
+            ('Service', 'Services'),
         ):
             ResourceType.objects.get_or_create(
                 name=resource_type, description=description)
