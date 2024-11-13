@@ -27,6 +27,7 @@ PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING = ENV.int('PROJECT_DAYS_TO_REVIEW_AFTER_EX
 PROJECT_DAYS_TO_REVIEW_BEFORE_EXPIRING = ENV.int('PROJECT_DAYS_TO_REVIEW_BEFORE_EXPIRING', default=30)
 PROJECT_END_DATE_CARRYOVER_DAYS = ENV.int('PROJECT_END_DATE_CARRYOVER_DAYS', default=90)
 PROJECT_TYPE_LIMIT_MAPPING = ENV.dict('PROJECT_TYPE_LIMIT_MAPPING', default={})
+PROJECT_PI_ELIGIBLE_ADS_GROUPS = ENV.str('PROJECT_PI_ELIGIBLE_ADS_GROUPS', default=[])
 
 #------------------------------------------------------------------------------
 # Allocation related
@@ -41,8 +42,8 @@ ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING = ENV.int('ALLOCATION_DAYS_TO_REVIEW_B
 # Resource related
 #------------------------------------------------------------------------------
 RESOURCE_ENABLE_ACCOUNT_CHECKING = ENV.bool('RESOURCE_ENABLE_ACCOUNT_CHECKING', default=True)
-RESOURCE_ACCOUNTS = ENV.str('RESOURCE_ACCOUNTS', default='')
-RESOURCE_ACCOUNTS = dict([val.split('=', 1) for val in RESOURCE_ACCOUNTS.split(';') if val])
+RESOURCE_ACCOUNTS = ENV.dict('RESOURCE_ACCOUNTS', default={})
+# RESOURCE_ACCOUNTS = dict([val.split('=', 1) for val in RESOURCE_ACCOUNTS.split(';') if val])
 
 # This is in days
 ALLOCATION_DEFAULT_ALLOCATION_LENGTH = ENV.int('ALLOCATION_DEFAULT_ALLOCATION_LENGTH', default=365)
