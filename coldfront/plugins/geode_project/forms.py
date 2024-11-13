@@ -1,6 +1,7 @@
 from datetime import date
 from django import forms
 
+from coldfront.core.user.models import UserProfile
 from coldfront.plugins.geode_project.validators import ValidateAccountNumber
 from coldfront.plugins.ldap_user_info.utils import LDAPSearch, check_if_user_exists
 
@@ -42,7 +43,7 @@ class GeodeProjectForm:
     secondary_contact = forms.CharField(max_length=20, required=False)
     it_pro = forms.CharField(max_length=100, required=False)
     department_full_name = forms.CharField(max_length=30)
-    department_short_name = forms.CharField(max_length=15, required=False, help_text='ex. UA-VPIT')
+    department_short_name = forms.CharField(max_length=15, required=False, disabled=True)
     department_primary_campus = forms.ChoiceField(choices=CAMPUS_CHOICES, required=False)
     group_name = forms.CharField(
         max_length=30, required=False, help_text='If applicable, enter the lab or group name of who will be primarily using this storage.'
@@ -101,6 +102,9 @@ class GeodeProjectForm:
         self.fields['last_name'].initial = request_user.last_name
         self.fields['username'].initial = request_user.username
         self.fields['email'].initial = request_user.email
+
+        user_profile = UserProfile.objects.get(user=request_user)
+        self.fields['department_short_name'].initial = user_profile.division
 
         self.fields['start_date'].widget.attrs.update({'placeholder': 'MM/DD/YYYY'})
         self.fields['end_date'].widget.attrs.update({'placeholder': 'MM/DD/YYYY'})
