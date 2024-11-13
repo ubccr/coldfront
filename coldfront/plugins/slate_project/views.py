@@ -20,7 +20,9 @@ from coldfront.plugins.slate_project.forms import SlateProjectForm
 
 
 SLATE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD = import_from_settings('SLATE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD', 120)
-SLATE_PROJECT_MOU_SERVER = import_from_settings('SLATE_PROJECT_MOU_SERVER', '')
+SLATE_PROJECT_ENABLE_MOU_SERVER = import_from_settings('SLATE_PROJECT_ENABLE_MOU_SERVER', False)
+if SLATE_PROJECT_ENABLE_MOU_SERVER:
+    SLATE_PROJECT_MOU_SERVER = import_from_settings('SLATE_PROJECT_MOU_SERVER')
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 if EMAIL_ENABLED:
     SLATE_PROJECT_EMAIL = import_from_settings('SLATE_PROJECT_EMAIL', '')
@@ -146,46 +148,47 @@ class SlateProjectView:
     def form_valid(self, form):
         form_data = form.cleaned_data
 
-        start_date = form_data.get('start_date', '')
-        start_date = start_date.strftime('%m/%d/%Y')
+        if SLATE_PROJECT_ENABLE_MOU_SERVER:
+            start_date = form_data.get('start_date', '')
+            start_date = start_date.strftime('%m/%d/%Y')
 
-        project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
-        data = {
-            "abstract": project_obj.description[:500],
-            "campus_affiliation": form_data.get('campus_affiliation', ''),
-            "directory_name": form_data.get('project_directory_name', ''),
-            "project_title": project_obj.title[:100],
-            "project_url": '',
-            "requested_size_tb": form_data.get('storage_space', ''),
-            "requester_email": self.request.user.email,
-            "requester_firstname": self.request.user.first_name,
-            "requester_lastname": self.request.user.last_name,
-            "start_date": start_date,
-            "submit_by": self.request.user.username,
-            "si": form_data.get('store_ephi', ''),
-            "service_type": "Slate-Project",
-            "account": form_data.get('account_number', ''),
-            "sub_account": '',
-            "fiscal_officer": '',
-            "faculty_advisor": ''
-        }
-        data = parse.urlencode(data)
-        try:
-            response = requests.post(
-                url=SLATE_PROJECT_MOU_SERVER,
-                headers={'Content-Type': 'application/x-www-form-urlencoded'},
-                data=data,
-                timeout=5
-            )
-            response.raise_for_status()
-        except requests.exceptions.Timeout:
-            logger.error(f'HTTP error: failed to send data to Slate Project MOU server: Request timed out')
-            form.add_error(None, 'Something went wrong processing your request. Please try again later')
-            return self.form_invalid(form)
-        except requests.HTTPError as http_error:
-            logger.error(f'HTTP error: failed to send data to Slate Project MOU server: {http_error}')
-            form.add_error(None, 'Something went wrong processing your request. Please try again later')
-            return self.form_invalid(form)
+            project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
+            data = {
+                "abstract": project_obj.description[:500],
+                "campus_affiliation": form_data.get('campus_affiliation', ''),
+                "directory_name": form_data.get('project_directory_name', ''),
+                "project_title": project_obj.title[:100],
+                "project_url": '',
+                "requested_size_tb": form_data.get('storage_space', ''),
+                "requester_email": self.request.user.email,
+                "requester_firstname": self.request.user.first_name,
+                "requester_lastname": self.request.user.last_name,
+                "start_date": start_date,
+                "submit_by": self.request.user.username,
+                "si": form_data.get('store_ephi', ''),
+                "service_type": "Slate-Project",
+                "account": form_data.get('account_number', ''),
+                "sub_account": '',
+                "fiscal_officer": '',
+                "faculty_advisor": ''
+            }
+            data = parse.urlencode(data)
+            try:
+                response = requests.post(
+                    url=SLATE_PROJECT_MOU_SERVER,
+                    headers={'Content-Type': 'application/x-www-form-urlencoded'},
+                    data=data,
+                    timeout=5
+                )
+                response.raise_for_status()
+            except requests.exceptions.Timeout:
+                logger.error(f'HTTP error: failed to send data to Slate Project MOU server: Request timed out')
+                form.add_error(None, 'Something went wrong processing your request. Please try again later')
+                return self.form_invalid(form)
+            except requests.HTTPError as http_error:
+                logger.error(f'HTTP error: failed to send data to Slate Project MOU server: {http_error}')
+                form.add_error(None, 'Something went wrong processing your request. Please try again later')
+                return self.form_invalid(form)
 
         ldap_group = 'condo_' + form_data.get('project_directory_name', '')
         form.cleaned_data['project_directory_name'] = '/N/project/' + form_data.get('project_directory_name', '')
