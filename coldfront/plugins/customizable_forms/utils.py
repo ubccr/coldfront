@@ -35,6 +35,6 @@ def add_additional_forms():
             path(
                 f'<int:project_pk>/create/<int:resource_pk>/{resource_name}',
                 custom_view.as_view(),
-                name=f'{resource_name}-form'
+                name=f'{resource_name.lower()}-form'
             ),
         )
