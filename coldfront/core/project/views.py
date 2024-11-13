@@ -73,7 +73,8 @@ from coldfront.core.project.utils import (get_new_end_date_from_list,
                                           get_project_user_emails,
                                           generate_slurm_account_name,
                                           create_admin_action_for_creation,
-                                          create_admin_action_for_deletion)
+                                          create_admin_action_for_deletion,
+                                          check_if_pi_eligible)
 from coldfront.core.allocation.utils import send_added_user_email, set_default_allocation_user_role
 from coldfront.core.utils.slack import send_message
 from coldfront.core.project.signals import project_activate, project_user_role_changed
@@ -511,8 +512,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     def form_valid(self, form):
         project_obj = form.save(commit=False)
         if not form.instance.pi_username:
-            user_profile = UserProfile.objects.get(user=self.request.user)
-            if user_profile.title not in ['Faculty', 'Staff', 'Academic (ACNP)',]:
+            if not check_if_pi_eligible(self.request.user):
                 messages.error(self.request, 'Only faculty and staff can be the PI')
                 return super().form_invalid(form)
             if self.check_max_project_type_count_reached(form.instance.type, self.request.user):
@@ -539,8 +539,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
                     f'project.'
                 )
                 return super().form_invalid(form)
-            user_profile = UserProfile.objects.get(user=user)
-            if user_profile.title not in ['Faculty', 'Staff', 'Academic (ACNP)',]:
+            if not check_if_pi_eligible(user):
                 messages.error(self.request, 'Only faculty and staff can be the PI')
                 return super().form_invalid(form)
             if self.check_max_project_type_count_reached(form.instance.type, user):
