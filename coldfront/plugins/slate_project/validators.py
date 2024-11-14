@@ -1,5 +1,6 @@
 import re
 import os
+import csv
 import logging
 from django.core.exceptions import ValidationError
 from coldfront.core.allocation.models import AllocationAttribute
@@ -46,7 +47,8 @@ class ValidateDupDirectoryName():
             logger.warning('slate_project.txt is missing. Skipping additional directory name checking')
             return
 
-        with open(os.path.join(SLATE_PROJECT_INCOMING_DIR, 'slate_projects.txt'), 'r') as slate_projects:
-            for line in slate_projects:
-                if line.strip('\n') == value:
+        with open(os.path.join(SLATE_PROJECT_INCOMING_DIR, 'allocated_quantity.csv'), 'r') as slate_projects:
+            csv_reader = csv.reader(slate_projects)
+            for line in csv_reader:
+                if line[0] == value:
                     raise ValidationError('This Slate Project directory name already exists')
