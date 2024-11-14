@@ -35,6 +35,7 @@ class SlateProjectForm:
     project_directory_name = forms.CharField(
         max_length=23, validators=[ValidateDirectoryName(), ValidateDupDirectoryName()]
     )
+    description = forms.CharField(widget=forms.Textarea)
     storage_space = forms.IntegerField(min_value=1, max_value=30)
     start_date = forms.DateField(disabled=True)
     account_number = forms.CharField(max_length=9, initial='00-000-00', validators=[ValidateAccountNumber()])

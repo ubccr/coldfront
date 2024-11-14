@@ -49,6 +49,9 @@ Request New Allocation
       </div>
     </div>
     <div>
+      {{ form.description|as_crispy_field }}
+    </div>
+    <div>
       {{ form.account_number|as_crispy_field }}
     </div>
   </fieldset>

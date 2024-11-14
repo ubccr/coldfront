@@ -78,10 +78,12 @@ Allocation Detail
               {% endif %}
             </td>
           </tr>
-          <!-- <tr>
-            <th scope="row" class="text-nowrap">Justification:</th>
-            <td>{{ allocation.justification }}</td>
-          </tr> -->
+          {% if allocation.justification %}
+            <tr>
+              <th scope="row" class="text-nowrap">Justification:</th>
+              <td>{{ allocation.justification }}</td>
+            </tr>
+          {% endif %}
           <tr>
             <th scope="row" class="text-nowrap">Status:</th>
             <td>

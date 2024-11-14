@@ -154,7 +154,7 @@ class SlateProjectView:
 
             project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
             data = {
-                "abstract": project_obj.description[:500],
+                "abstract": form_data.get('description')[:500],
                 "campus_affiliation": form_data.get('campus_affiliation', ''),
                 "directory_name": form_data.get('project_directory_name', ''),
                 "project_title": project_obj.title[:100],
@@ -204,5 +204,8 @@ class SlateProjectView:
             allocation=self.allocation_obj,
             allocation_attribute_type=ldap_group_type[0],
             value=ldap_group)
+        
+        self.allocation_obj.justification = form_data.get('description')
+        self.allocation_obj.save()
 
         return http_response
