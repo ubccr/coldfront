@@ -21,6 +21,7 @@ from coldfront.core.project.views import (ProjectAddUsersView,
                                           ProjectRemoveUsersView,
                                           ProjectArchiveProjectView)
 from coldfront.plugins.slate_project.utils import (add_user_to_slate_project_group,
+                                                   add_gid_allocation_attribute,
                                                    remove_user_from_slate_project_group,
                                                    change_users_slate_project_groups,
                                                    add_slate_project_groups,
@@ -37,9 +38,8 @@ def add_group(sender, **kwargs):
         return
     if not allocation_obj.status.name == 'Active':
         return
-    
-    return
-    add_slate_project_groups(allocation_obj)
+
+    add_gid_allocation_attribute(allocation_obj)
 
 @receiver(allocation_activate_user, sender=ProjectAddUsersView)
 @receiver(allocation_activate_user, sender=AllocationAddUsersView)

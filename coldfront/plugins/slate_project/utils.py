@@ -58,6 +58,35 @@ if EMAIL_ENABLED:
     EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
 
 
+def add_gid_allocation_attribute(allocation_obj):
+    ldap_conn = LDAPModify()
+
+    ldap_group = AllocationAttribute.objects.filter(allocation_attribute_type__name='LDAP Group')
+    if not ldap_group.exists():
+        logger.warning(
+            f'Failed to create a Slate Project GID allocation attribute after allocation approval. The '
+            f'allocation (pk={allocation_obj.pk}) is missing the allocation attribute "LDAP Group"'
+        )
+        return
+    ldap_group = ldap_group[0].value
+
+    gid = ldap_conn.get_attribute(ldap_group, 'cn')
+    if not gid:
+        logger.warning(
+            f'Slate Project allocation (pk={allocation_obj.pk}) with LDAP group {ldap_group} does '
+            f'not have a GID. Skipping allocation attribute creation'
+        )
+        return
+
+    _, created = AllocationAttribute.objects.get_or_create(
+        allocation=allocation_obj, allocation_attribute_type__name='GID', value=gid
+    )
+    if created:
+        logger.info(
+            f'Created a Slate Project GID allocation attribute after allocation approval (pk={allocation_obj.pk})'
+        )
+
+
 def sync_smb_status(allocation_obj, allocation_attribute_type_obj=None, ldap_conn=None):
     gid_obj = allocation_obj.allocationattribute_set.filter(
         allocation_attribute_type__name='GID'
@@ -1699,10 +1728,10 @@ class LDAPModify:
             
         return attributes.get('memberUid')
 
-    def get_attribute(self, attribute, gid_number):
+    def get_attribute(self, attribute, filter_value, default_filter='gidNumber'):
         search_parameters = {
             'search_base': self.LDAP_BASE_DN,
-            'search_filter': ldap.filter.filter_format('(gidNumber=%s)', [str(gid_number)]),
+            'search_filter': ldap.filter.filter_format(f'({default_filter}=%s)', [str(filter_value)]),
             'attributes': [attribute],
             'size_limit': 1
         }
