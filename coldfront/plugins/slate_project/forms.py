@@ -36,6 +36,9 @@ class SlateProjectForm:
         max_length=23, validators=[ValidateDirectoryName(), ValidateDupDirectoryName()]
     )
     description = forms.CharField(widget=forms.Textarea)
+    placeholder1 = forms.CharField(max_length=100, initial='placeholder1')
+    placeholder2 = forms.CharField(max_length=100, initial='placeholder2')
+    placeholder3 = forms.CharField(max_length=100, initial='placeholder3')
     storage_space = forms.IntegerField(min_value=1, max_value=30)
     start_date = forms.DateField(disabled=True)
     account_number = forms.CharField(max_length=9, initial='00-000-00', validators=[ValidateAccountNumber()])
