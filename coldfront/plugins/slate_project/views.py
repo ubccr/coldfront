@@ -158,7 +158,7 @@ class SlateProjectView:
                 "campus_affiliation": form_data.get('campus_affiliation', ''),
                 "directory_name": form_data.get('project_directory_name', ''),
                 "project_title": project_obj.title[:100],
-                "project_url": '',
+                "project_url": build_link(reverse('project-detail', kwargs={'pk': project_obj.pk})),
                 "requested_size_tb": form_data.get('storage_space', ''),
                 "requester_email": self.request.user.email,
                 "requester_firstname": self.request.user.first_name,
