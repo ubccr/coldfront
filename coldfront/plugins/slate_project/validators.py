@@ -43,7 +43,7 @@ class ValidateDupDirectoryName():
             if directory_name == directory_value:
                 raise ValidationError('This Slate Project directory name already exists')
 
-        if not os.path.isfile(os.path.join(SLATE_PROJECT_INCOMING_DIR, 'slate_projects.txt')):
+        if not os.path.isfile(os.path.join(SLATE_PROJECT_INCOMING_DIR, 'allocated_quantity.csv')):
             logger.warning('allocated_quantity.csv is missing. Skipping additional directory name checking')
             return
 
