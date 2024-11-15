@@ -137,6 +137,9 @@ def send_expiry_emails():
         for allocationuser in user.allocationuser_set.all():
             allocation = allocationuser.allocation
 
+            if allocation.status.name != 'Active':
+                continue
+
             if not allocation.project.requires_review:
                 continue
 
