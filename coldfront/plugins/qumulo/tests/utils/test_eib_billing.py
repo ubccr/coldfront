@@ -12,6 +12,7 @@ from coldfront.core.allocation.models import (
     Allocation,
     AllocationStatusChoice,
     AllocationAttributeType,
+    AllocationLinkage,
 )
 from coldfront.plugins.qumulo.tasks import ingest_quotas_with_daily_usage
 from coldfront.plugins.qumulo.tests.utils.mock_data import (
@@ -76,6 +77,25 @@ def construct_allocation_form_data(quota_tb: int, service_rate_category: str):
     return form_data
 
 
+def construct_suballocation_form_data(quota_tb: int, parent_allocation: Allocation):
+    form_data = {
+        "parent_allocation_name": parent_allocation.get_attribute("storage_name"),
+        "storage_name": f"{quota_tb}tb-suballocation",
+        "storage_quota": str(quota_tb),
+        "protocols": ["smb"],
+        "storage_filesystem_path": f"{parent_allocation.get_attribute('storage_filesystem_path')}/Active/{quota_tb}tb-suballocation",
+        "storage_export_path": f"{parent_allocation.get_attribute('storage_export_path')}/Active/{quota_tb}tb-suballocation",
+        "rw_users": ["test"],
+        "ro_users": ["test1"],
+        "storage_ticket": "ITSD-1234",
+        "cost_center": parent_allocation.get_attribute("cost_center"),
+        "department_number": parent_allocation.get_attribute("department_number"),
+        "billing_cycle": parent_allocation.get_attribute("billing_cycle"),
+        "service_rate": parent_allocation.get_attribute("service_rate"),
+    }
+    return form_data
+
+
 def construct_usage_data_in_json(filesystem_path: str, quota: str, usage: str):
     quota_in_json = {
         "id": "100",
@@ -134,13 +154,22 @@ def mock_get_quota() -> str:
     name = "15tb-consumption"
     quota = "15000000000000"
     usage = "10995116277760"
+    suballocation_name = "5tb-suballocation"
+    suballocation_quota = "5000000000000"
+    suballocation_usage = "5497558138880"
     usage_in_json = [
         {
             "id": "101",
             "path": f"{STORAGE2_PATH}/{name}/",
             "limit": f"{quota}",
             "capacity_usage": f"{usage}",
-        }
+        },
+        {
+            "id": "102",
+            "path": f"{STORAGE2_PATH}/{name}/Active/{suballocation_name}",
+            "limit": f"{suballocation_quota}",
+            "capacity_usage": f"{suballocation_usage}",
+        },
     ]
 
     return {
@@ -371,15 +400,16 @@ class TestEIBBilling(TestCase):
         for index in range(num_lines_header, len(data)):
             billing_entries.append(data[index])
 
+        row_num_index = REPORT_COLUMNS.index("spreadsheet_key")
+        billing_amount_index = REPORT_COLUMNS.index("extended_amount")
+        fileset_memo_index = REPORT_COLUMNS.index("memo_filesets")
         for index in range(0, len(billing_entries)):
-            row_num = billing_entries[index][REPORT_COLUMNS.index("spreadsheet_key")]
+            row_num = billing_entries[index][row_num_index]
             self.assertEqual(str(index + 1), row_num)
-            billing_amount = billing_entries[index][
-                REPORT_COLUMNS.index("extended_amount")
-            ].replace('"', "")
-            fileset_memo = billing_entries[index][
-                REPORT_COLUMNS.index("memo_filesets")
-            ].replace('"', "")
+            billing_amount = billing_entries[index][billing_amount_index].replace(
+                '"', ""
+            )
+            fileset_memo = billing_entries[index][fileset_memo_index].replace('"', "")
 
             # Confirm the billing amounts of each test cases
             # hardcoded
@@ -402,5 +432,92 @@ class TestEIBBilling(TestCase):
             else:
                 print(fileset_memo, billing_amount)
                 self.assertFalse(True)
+
+        os.remove(filename)
+
+    @patch("coldfront.plugins.qumulo.tasks.QumuloAPI")
+    def test_create_a_suballocation_ingest_usage_and_generate_billing_report(
+        self, qumulo_api_mock: MagicMock
+    ) -> None:
+        qumulo_api = MagicMock()
+        qumulo_api.get_all_quotas_with_usage.return_value = mock_get_quota()
+        qumulo_api_mock.return_value = qumulo_api
+
+        allocation = create_allocation(
+            project=self.project,
+            user=self.user,
+            form_data=construct_allocation_form_data(100, "subscription"),
+        )
+
+        allocation.status = AllocationStatusChoice.objects.get(name="Active")
+        allocation.save()
+
+        suballocation = create_allocation(
+            project=self.project,
+            user=self.user,
+            form_data=construct_suballocation_form_data(10, allocation),
+            parent=allocation,
+        )
+
+        suballocation.status = AllocationStatusChoice.objects.get(name="Active")
+        suballocation.save()
+
+        # Confirm creating 2 Storage2 allocations, 1 parent and 1 child
+        num_storage2_allocations = len(
+            Allocation.objects.filter(resources__name="Storage2")
+        )
+        self.assertEqual(2, num_storage2_allocations)
+
+        # Confirm the existence of the sub allocation
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT count(*)
+                FROM allocation_allocationlinkage_children alc
+                JOIN allocation_allocation a
+                    ON alc.allocation_id = a.id
+            """
+            )
+            rows = cursor.fetchall()
+
+        self.assertEqual(1, rows[0][0])
+
+        allocation_linkages = AllocationLinkage.objects.all()
+        num_linkages = len(allocation_linkages)
+        self.assertEqual(1, num_linkages)
+
+        num_suballocations = 0
+        for linkage in allocation_linkages:
+            num_suballocations += len(linkage.children.all())
+
+        self.assertEqual(1, num_suballocations)
+
+        ingest_quotas_with_daily_usage()
+        eib_billing = EIBBilling(datetime.now(timezone.utc).strftime("%Y-%m-%d"))
+        eib_billing.generate_monthly_billing_report()
+
+        filename = eib_billing.get_filename()
+        with open(filename) as csvreport:
+            data = list(csv.reader(csvreport))
+
+        num_lines_header = len(eib_billing.get_report_header().splitlines())
+
+        billing_entries = []
+        for index in range(num_lines_header, len(data)):
+            billing_entries.append(data[index])
+
+        row_num_index = REPORT_COLUMNS.index("spreadsheet_key")
+        billing_amount_index = REPORT_COLUMNS.index("extended_amount")
+        fileset_memo_index = REPORT_COLUMNS.index("memo_filesets")
+        for index in range(0, len(billing_entries)):
+            row_num = billing_entries[index][row_num_index]
+            self.assertEqual(str(index + 1), row_num)
+            billing_amount = billing_entries[index][billing_amount_index].replace(
+                '"', ""
+            )
+            fileset_memo = billing_entries[index][fileset_memo_index].replace('"', "")
+
+            # Confirm no billing entry for the sub allocation
+            self.assertEqual(fileset_memo, "100tb-subscription")
 
         os.remove(filename)
