@@ -97,7 +97,7 @@ def add_gid_allocation_attribute(allocation_obj):
         return
     ldap_group = ldap_group[0].value
 
-    gid = ldap_conn.get_attribute(ldap_group, 'cn')
+    gid = ldap_conn.get_attribute('gidNumber', ldap_group, 'cn')
     if not gid:
         logger.warning(
             f'Slate Project allocation (pk={allocation_obj.pk}) with LDAP group {ldap_group} does '
