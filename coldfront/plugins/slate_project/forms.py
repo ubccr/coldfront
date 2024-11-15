@@ -27,6 +27,9 @@ class SlateProjectForm:
         ('SB', 'SB'),
         ('SE', 'SE'),
     )
+    STORAGE_QUANTITY_CHOICES = (
+        (num, num) for num in range(31)
+    )
 
     first_name = forms.CharField(max_length=40, disabled=True)
     last_name = forms.CharField(max_length=40, disabled=True)
@@ -39,7 +42,7 @@ class SlateProjectForm:
     placeholder1 = forms.CharField(max_length=100, initial='placeholder1')
     placeholder2 = forms.CharField(max_length=100, initial='placeholder2')
     placeholder3 = forms.CharField(max_length=100, initial='placeholder3')
-    storage_space = forms.IntegerField(min_value=1, max_value=30)
+    storage_space = forms.IntegerField(min_value=1, max_value=30, widget=forms.Select(choices=STORAGE_QUANTITY_CHOICES))
     start_date = forms.DateField(disabled=True)
     account_number = forms.CharField(max_length=9, initial='00-000-00', validators=[ValidateAccountNumber()])
     store_ephi = forms.ChoiceField(choices=YES_NO_CHOICES, widget=RadioSelect)
