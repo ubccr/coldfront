@@ -106,7 +106,9 @@ def add_gid_allocation_attribute(allocation_obj):
         return
 
     _, created = AllocationAttribute.objects.get_or_create(
-        allocation=allocation_obj, allocation_attribute_type__name='GID', value=gid
+        allocation=allocation_obj,
+        allocation_attribute_type=AllocationAttributeType.objects.get(name='GID'),
+        value=gid
     )
     if created:
         logger.info(
