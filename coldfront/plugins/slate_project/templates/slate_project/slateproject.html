@@ -11,6 +11,13 @@ Request New Allocation
   label:not(.custom-control-label) {
     font-weight: bold;
   }
+
+  .validating-feedback {
+    width: 100%;
+    margin-top: .25rem;
+    font-size: 80%;
+    color: #006298;
+  }
 </style>
 
 <h2>Request New {{ resource_obj.name }} Allocation <br><small>Project: {{ project_obj.title }}</small></h2>
@@ -95,7 +102,60 @@ Request New Allocation
   $("#navbar-main > ul > li.active").removeClass("active");
   $("#navbar-project-menu").addClass("active");
 
+  function runDirectoryNameValidation(value) {
+    $('#id_project_directory_name').removeClass(['is-invalid', 'is-valid']);
+    $('#directory_name_validation_result').remove();
+    if (!value.length) {
+      return;
+    }
+
+    $('#id_project_directory_name').after(
+      '<span id="validating_project_directory_name" class="validating-feedback">\
+        <i class="fas fa-sync fa-spin fa-fw" aria-hidden="true"></i>\
+        <strong>Validating Slate Project directory name</strong>\
+      </span>'
+    );
+
+    $.ajax({
+      url : "{% url 'validate-directory-name' %}",
+      type : "POST",
+      data : {
+        directory_name: value,
+        csrfmiddlewaretoken: "{{ csrf_token }}"
+      },
+      success : function (data) {
+        $('#validating_project_directory_name').remove();
+        $('#id_project_directory_name').after(data);
+        var is_invalid = $('#directory_name_validation_result').hasClass('invalid-feedback')
+        if (is_invalid) {
+          $('#id_project_directory_name').addClass('is-invalid');
+        } else {
+          $('#id_project_directory_name').addClass('is-valid');
+        }
+      },
+      error : function() {
+        $('#validating_project_directory_name').remove();
+        $('#id_project_directory_name').after(
+          '<span id="directory_name_validation_result" class="invalid-feedback">\
+            <strong>An error occured while validating this Slate Project directory name</strong>\
+          </span>'
+        );
+        $('#id_project_directory_name').addClass('is-invalid');
+      }
+    })
+  }
+
+  function setUpDirectoryNameValidation() {
+    $('#error_1_id_project_directory_name').remove();
+    runDirectoryNameValidation($('#id_project_directory_name').val())
+    $('#id_project_directory_name').change(function (e) {
+      runDirectoryNameValidation(e.target.value)
+    });
+  }
+
   $(document).ready(function () {
+    setUpDirectoryNameValidation()
+
     if (total_pi_allocated_quantity > pi_allocated_quantity_threshold) {
       $("#id_account_number").val('');
       $("#id_placeholder3").val('');

@@ -17,6 +17,7 @@ from coldfront.core.project.models import Project
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.mail import send_email_template
 from coldfront.plugins.slate_project.forms import SlateProjectForm
+from coldfront.plugins.slate_project.utils import check_directory_name_duplicates, check_directory_name_format
 
 
 SLATE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD = import_from_settings('SLATE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD', 120)
@@ -31,6 +32,27 @@ if EMAIL_ENABLED:
     EMAIL_CENTER_NAME = import_from_settings('CENTER_NAME')
 
 logger = logging.getLogger(__name__)
+
+
+@login_required
+def validate_project_directory_name(request):
+    is_valid_format = check_directory_name_format(request.POST.get('directory_name'))
+    is_duplicate = check_directory_name_duplicates(request.POST.get('directory_name'))
+    message = 'This is a valid Slate Project directory name'
+    is_valid = True
+    if not is_valid_format:
+        message = 'Contains invalid character(s)'
+        is_valid = False
+    elif is_duplicate:
+        message = 'This Slate Project directory name already exists'
+        is_valid = False
+
+    context = {
+        'is_valid': is_valid,
+        'message': message
+    }
+    
+    return render(request, 'slate_project/slate_project_directory_name_validation_results.html', context)
 
 
 @login_required

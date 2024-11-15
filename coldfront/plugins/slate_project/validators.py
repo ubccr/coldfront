@@ -1,10 +1,8 @@
 import re
-import os
-import csv
 import logging
 from django.core.exceptions import ValidationError
-from coldfront.core.allocation.models import AllocationAttribute
 from coldfront.core.utils.common import import_from_settings
+from coldfront.plugins.slate_project.utils import check_directory_name_duplicates, check_directory_name_format
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +24,11 @@ class ValidateAccountNumber():
 
 class ValidateDirectoryName():
     def __call__(self, value):
-        if re.search('^[0-9a-zA-Z_-]+$', value) is None:
+        if not value:
+            return
+
+        is_valid_format = check_directory_name_format(value)
+        if not is_valid_format:
             raise ValidationError(f'Contains invalid character(s)', code='invalid')
 
 
@@ -35,20 +37,6 @@ class ValidateDupDirectoryName():
         if not value:
             return
 
-        directory_value = '/N/project/' + value
-        directory_names = AllocationAttribute.objects.filter(
-            allocation_attribute_type__name='Slate Project Directory'
-        ).values_list('value', flat=True)
-        for directory_name in directory_names:
-            if directory_name == directory_value:
-                raise ValidationError('This Slate Project directory name already exists')
-
-        if not os.path.isfile(os.path.join(SLATE_PROJECT_INCOMING_DIR, 'allocated_quantity.csv')):
-            logger.warning('allocated_quantity.csv is missing. Skipping additional directory name checking')
-            return
-
-        with open(os.path.join(SLATE_PROJECT_INCOMING_DIR, 'allocated_quantity.csv'), 'r') as slate_projects:
-            csv_reader = csv.reader(slate_projects)
-            for line in csv_reader:
-                if line[0] == value:
-                    raise ValidationError('This Slate Project directory name already exists')
+        is_duplicate = check_directory_name_duplicates(value)
+        if is_duplicate:
+            raise ValidationError('This Slate Project directory name already exists', code='invalid')

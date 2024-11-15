@@ -1,4 +1,5 @@
 import os
+import re
 import csv
 import logging
 import json
@@ -56,6 +57,32 @@ if EMAIL_ENABLED:
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
     EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
     EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
+
+
+def check_directory_name_format(slate_project_name):
+    return not re.search('^[0-9a-zA-Z_-]+$', slate_project_name) is None
+
+
+def check_directory_name_duplicates(slate_project_name):
+    directory_value = '/N/project/' + slate_project_name
+    directory_names = AllocationAttribute.objects.filter(
+        allocation_attribute_type__name='Slate Project Directory'
+    ).values_list('value', flat=True)
+    for directory_name in directory_names:
+        if directory_name == directory_value:
+            return True
+
+    if not os.path.isfile(os.path.join(SLATE_PROJECT_INCOMING_DIR, 'allocated_quantity.csv')):
+        logger.warning('allocated_quantity.csv is missing. Skipping additional directory name checking')
+        return False
+
+    with open(os.path.join(SLATE_PROJECT_INCOMING_DIR, 'allocated_quantity.csv'), 'r') as slate_projects:
+        csv_reader = csv.reader(slate_projects)
+        for line in csv_reader:
+            if line[0] == slate_project_name:
+                return True
+
+    return False
 
 
 def add_gid_allocation_attribute(allocation_obj):
