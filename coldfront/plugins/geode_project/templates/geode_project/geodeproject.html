@@ -11,6 +11,13 @@ Request New Allocation
   label:not(.custom-control-label) {
     font-weight: bold;
   }
+
+  .validating-feedback {
+    width: 100%;
+    margin-top: .25rem;
+    font-size: 80%;
+    color: #006298;
+  }
 </style>
 
 <h2>Request New {{ resource_obj.name }} Allocation <br><small>Project: {{ project_obj.title }}</small></h2>
@@ -206,47 +213,53 @@ Request New Allocation
 <script>
   $("#navbar-main > ul > li.active").removeClass("active");
   $("#navbar-project-menu").addClass("active");
-  
-  function setUpUserSearch(username_field) {
-    $('#id_' + username_field).change(function (e) {
-      field_id = e.target.id;
-      if ($('#' + field_id + '_results').length) {
-        $('#' + field_id + '_results').remove();
-      }
 
-      if (!e.target.value.length) {
-        return;
-      }
+  function runUsernameValidation(id, value) {
+    field_id = id;
+    $('#' + field_id + '_username_validation_results').remove()
+    $('#' + field_id).removeClass(['is-invalid', 'is-valid']);
+    $('#' + field_id + '_results').remove();
 
-      $('#' + field_id).after(
-        '\
-        <div id="' + field_id + '_results">\
-          <br>\
-          <button type="button" class="btn btn-primary">\
-            <i class="fas fa-sync fa-spin fa-fw" aria-hidden="true"></i> Searching for user <span class="sr-only">...</span>\
-          </button>\
-        <\div>\
-        '
-      );
+    if (!value.length) {
+      return;
+    }
 
-      $.ajax({
-        url : "{% url 'ldap-user-search' %}",
-        type : "POST",
-        data : {
-          username: e.target.value,
-          id: field_id,
-          csrfmiddlewaretoken: "{{ csrf_token }}"
-        },
-        success : function (data) {
-          if ($('#' + field_id + '_results').length) {
-            $('#' + field_id + '_results').remove();
-          }
-          $('#' + field_id).after(data);
-          if ($('#error_1_' + field_id).length) {
-            $('#error_1_' + field_id).remove();
-          }
+    $('#' + field_id).after(
+      '<span id="' + field_id + '_username_validation_results" class="validating-feedback">\
+      <i class="fas fa-sync fa-spin fa-fw" aria-hidden="true"></i>\
+      <strong>Validating username</strong>\
+      </span>'
+    );
+
+    $.ajax({
+      url : "{% url 'ldap-user-search' %}",
+      type : "POST",
+      data : {
+        username: value,
+        id: field_id,
+        csrfmiddlewaretoken: "{{ csrf_token }}"
+      },
+      fieldID: field_id,
+      success : function (data) {
+        field_id = this.fieldID
+        $('#' + field_id + '_username_validation_results').remove();
+        $('#' + field_id).after(data);
+        var is_invalid = $('#' + field_id + '_username_validation_results').hasClass('invalid-feedback')
+        if (is_invalid) {
+          $('#' + field_id).addClass('is-invalid');
+        } else {
+          $('#' + field_id).addClass('is-valid');
         }
-      })
+      }
+    })
+  }
+
+  function setUpUsernameValidation(username_field) {
+    field = $('#id_' + username_field)
+    $('#error_1_id_' + username_field).remove() 
+    runUsernameValidation(field.attr('id'), field.val());
+    $('#id_' + username_field).change(function (e) {
+      runUsernameValidation(e.target.id, e.target.value);
     });
   }
 
@@ -291,7 +304,7 @@ Request New Allocation
     var username_fields = ['primary_contact', 'secondary_contact', 'it_pro', 'fiscal_officer'];
     for (var i=0; i < username_fields.length; i++) {
       var username_field = username_fields[i];
-      setUpUserSearch(username_field);
+      setUpUsernameValidation(username_field);
     }
   })
 </script>
