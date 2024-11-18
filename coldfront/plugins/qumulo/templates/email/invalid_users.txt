@@ -1,0 +1,9 @@
+Notice for the following allocation:
+{{allocation_url}}
+
+The following users were not found and could not be granted {{ access_type }} access:
+{% for user in invalid_users %}
+{{ user }}
+{% endfor %}
+
+Please inspect and correct as needed.  The allocation will still be created or updated as normal, including all valid users.

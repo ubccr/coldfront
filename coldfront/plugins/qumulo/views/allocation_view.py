@@ -3,7 +3,9 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic.edit import FormView
 from django.urls import reverse
 
-from typing import Optional
+from django_q.tasks import async_task
+
+from typing import Optional, Dict, Any
 
 import json
 import os
@@ -23,6 +25,8 @@ from coldfront.core.allocation.models import (
 from coldfront.plugins.qumulo.forms import AllocationForm
 from coldfront.plugins.qumulo.utils.acl_allocations import AclAllocations
 from coldfront.plugins.qumulo.validators import validate_filesystem_path_unique
+from coldfront.plugins.qumulo.tasks import addUsersToADGroup
+from coldfront.plugins.qumulo.utils.active_directory_api import ActiveDirectoryAPI
 
 from pathlib import PurePath
 
@@ -101,7 +105,7 @@ class AllocationView(LoginRequiredMixin, FormView):
 
     @staticmethod
     def create_new_allocation(
-        form_data, user, parent_allocation: Optional[Allocation] = None
+        form_data: Dict[str, Any], user, parent_allocation: Optional[Allocation] = None
     ):
         if parent_allocation:
             form_data["storage_name"] = AllocationView._handle_sub_allocation_scoping(
@@ -135,17 +139,26 @@ class AllocationView(LoginRequiredMixin, FormView):
             form_data, project, allocation
         )
 
+        active_directory_api = ActiveDirectoryAPI()
         for access_allocation in access_allocations:
-            access_users = AllocationUser.objects.filter(allocation=access_allocation)
-            AclAllocations.create_ad_group_and_add_users(
-                access_users, access_allocation
+            access_users = list(
+                AllocationUser.objects.filter(allocation=access_allocation)
             )
+
+            resource = access_allocation.resources.first()
+            form_key = f"{resource.name.lower()}_users"
+            access_users = form_data[form_key]
+
+            active_directory_api.create_ad_group(
+                group_name=access_allocation.get_attribute(name="storage_acl_name")
+            )
+            async_task(addUsersToADGroup, access_users, access_allocation)
 
         return {"allocation": allocation, "access_allocations": access_allocations}
 
     @staticmethod
     def create_access_privileges(
-        form_data: dict, project: Project, storage_allocation: Allocation
+        form_data: Dict[str, Any], project: Project, storage_allocation: Allocation
     ) -> list[Allocation]:
         rw_users = {
             "name": "RW Users",
@@ -164,11 +177,6 @@ class AllocationView(LoginRequiredMixin, FormView):
             access_allocation = AllocationView.create_access_allocation(
                 value, project, form_data["storage_name"], storage_allocation
             )
-
-            for username in value["users"]:
-                AclAllocations.add_user_to_access_allocation(
-                    username, access_allocation
-                )
 
             access_allocations.append(access_allocation)
 
@@ -213,7 +221,9 @@ class AllocationView(LoginRequiredMixin, FormView):
 
     @staticmethod
     def set_allocation_attributes(
-        form_data: dict, allocation, parent_allocation: Optional[Allocation] = None
+        form_data: Dict[str, Any],
+        allocation,
+        parent_allocation: Optional[Allocation] = None,
     ):
         # NOTE - parent-child linkage handled separately as it is not an
         # attribute like the other fields

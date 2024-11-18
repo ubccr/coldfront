@@ -17,11 +17,12 @@ from coldfront.core.allocation.models import (
     AllocationLinkage,
     AllocationUser,
 )
+
 from coldfront.core.user.models import User
 
 from coldfront.plugins.qumulo.forms import UpdateAllocationForm
 from coldfront.plugins.qumulo.hooks import acl_reset_complete_hook
-from coldfront.plugins.qumulo.tasks import reset_allocation_acls
+from coldfront.plugins.qumulo.tasks import addUsersToADGroup, reset_allocation_acls
 from coldfront.plugins.qumulo.views.allocation_view import AllocationView
 from coldfront.plugins.qumulo.utils.acl_allocations import AclAllocations
 from coldfront.plugins.qumulo.utils.active_directory_api import ActiveDirectoryAPI
@@ -220,22 +221,16 @@ class UpdateAllocationView(AllocationView):
             allocation_user.user.username for allocation_user in allocation_users
         ]
 
-        for access_user in access_users:
-            if access_user not in allocation_usernames:
-                AclAllocations.add_user_to_access_allocation(
-                    access_user, access_allocation
-                )
-                active_directory_api.add_user_to_ad_group(
-                    access_user, access_allocation.get_attribute("storage_acl_name")
-                )
+        users_to_add = list(set(access_users) - set(allocation_usernames))
+        async_task(addUsersToADGroup, users_to_add, access_allocation)
 
-        for allocation_username in allocation_usernames:
-            if allocation_username not in access_users:
-                allocation_users.get(user__username=allocation_username).delete()
-                active_directory_api.remove_user_from_group(
-                    allocation_username,
-                    access_allocation.get_attribute("storage_acl_name"),
-                )
+        users_to_remove = set(allocation_usernames) - set(access_users)
+        for allocation_username in users_to_remove:
+            allocation_users.get(user__username=allocation_username).delete()
+            active_directory_api.remove_user_from_group(
+                allocation_username,
+                access_allocation.get_attribute("storage_acl_name"),
+            )
 
     def get_allocation_attribute(self, allocation_attributes: list, attribute_key: str):
         for allocation_attribute in allocation_attributes:

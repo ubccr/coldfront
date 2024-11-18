@@ -1,0 +1,10 @@
+Notice for the following allocation:
+{{allocation_url}}
+
+There was an error in adding users for the {{ access_type }} access level.
+The following users were not added:
+{% for user in wustlkeys %}
+{{ user }}
+{% endfor %}
+
+Please try again or contact RIS Support.  The allocation will still be created or updated as normal, but no user access has been configured or updated.

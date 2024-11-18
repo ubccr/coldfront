@@ -1,7 +1,9 @@
 from django.db.models import Q
+from django.contrib.auth.models import User
+from django_q.tasks import async_task
+
 import json
 import logging
-import os
 
 from coldfront.config.env import ENV
 from coldfront.core.allocation.models import (
@@ -13,6 +15,8 @@ from coldfront.core.allocation.models import (
     AllocationLinkage,
 )
 from coldfront.core.resource.models import Resource
+from coldfront.core.utils.mail import send_email_template, email_template_context
+from coldfront.core.utils.common import import_from_settings
 
 from coldfront.plugins.qumulo.utils.aces_manager import AcesManager
 from coldfront.plugins.qumulo.utils.qumulo_api import QumuloAPI
@@ -23,6 +27,8 @@ from qumulo.lib.request import RequestError
 
 import time
 from datetime import datetime
+
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 SECONDS_IN_AN_HOUR = 60 * 60
@@ -109,6 +115,108 @@ def ingest_quotas_with_daily_usage() -> None:
 
     __set_daily_quota_usages(base_allocation_quota_usages, logger)
     __validate_results(base_allocation_quota_usages, logger)
+
+
+def addUsersToADGroup(
+    wustlkeys: list[str],
+    acl_allocation: Allocation,
+    bad_keys: Optional[list[str]] = None,
+    good_keys: Optional[list[dict]] = None,
+) -> None:
+    if bad_keys is None:
+        bad_keys = []
+    if good_keys is None:
+        good_keys = []
+
+    if len(wustlkeys) == 0:
+        return __ad_users_and_handle_errors(
+            wustlkeys, acl_allocation, good_keys, bad_keys
+        )
+
+    active_directory_api = ActiveDirectoryAPI()
+    wustlkey = wustlkeys[0]
+
+    user = None
+    try:
+        user = active_directory_api.get_user(wustlkey)
+        good_keys.append({"wustlkey": wustlkey, "dn": user["dn"]})
+    except ValueError:
+        bad_keys.append(wustlkey)
+
+    async_task(addUsersToADGroup, wustlkeys[1:], acl_allocation, bad_keys, good_keys)
+
+
+def __ad_users_and_handle_errors(
+    wustlkeys: list[str],
+    acl_allocation: Allocation,
+    good_keys: list[dict],
+    bad_keys: list[str],
+) -> None:
+    active_directory_api = ActiveDirectoryAPI()
+    group_name = acl_allocation.get_attribute("storage_acl_name")
+
+    if len(good_keys) > 0:
+        user_dns = [user["dn"] for user in good_keys]
+        try:
+            active_directory_api.add_user_dns_to_ad_group(user_dns, group_name)
+        except Exception as e:
+            logger.error(f"Error adding users to AD group: {e}")
+            __send_error_adding_users_email(acl_allocation, wustlkeys)
+            return
+
+        for user in good_keys:
+            AclAllocations.add_user_to_access_allocation(
+                user["wustlkey"], acl_allocation
+            )
+    if len(bad_keys) > 0:
+        __send_invalid_users_email(acl_allocation, bad_keys)
+    return
+
+
+def __send_error_adding_users_email(
+    acl_allocation: Allocation, wustlkeys: list[str]
+) -> None:
+    ctx = email_template_context()
+
+    CENTER_BASE_URL = import_from_settings("CENTER_BASE_URL")
+    ctx["allocation_url"] = f"{CENTER_BASE_URL}/allocation/{acl_allocation.id}"
+    ctx["access_type"] = (
+        "Read Only" if acl_allocation.resources.first().name == "ro" else "Read Write"
+    )
+    ctx["wustlkeys"] = wustlkeys
+
+    user_support_users = User.objects.filter(groups__name="RIS_UserSupport")
+    user_support_emails = [user.email for user in user_support_users if user.email]
+
+    send_email_template(
+        subject="Error adding users to Storage Allocation",
+        template_name="email/error_adding_users.txt",
+        template_context=ctx,
+        sender=import_from_settings("DEFAULT_FROM_EMAIL"),
+        receiver_list=user_support_emails,
+    )
+
+
+def __send_invalid_users_email(acl_allocation: Allocation, bad_keys: list[str]) -> None:
+    ctx = email_template_context()
+
+    CENTER_BASE_URL = import_from_settings("CENTER_BASE_URL")
+    ctx["allocation_url"] = f"{CENTER_BASE_URL}/allocation/{acl_allocation.id}"
+    ctx["access_type"] = (
+        "Read Only" if acl_allocation.resources.first().name == "ro" else "Read Write"
+    )
+    ctx["invalid_users"] = bad_keys
+
+    user_support_users = User.objects.filter(groups__name="RIS_UserSupport")
+    user_support_emails = [user.email for user in user_support_users if user.email]
+
+    send_email_template(
+        subject="Users not found in Storage Allocation",
+        template_name="email/invalid_users.txt",
+        template_context=ctx,
+        sender=import_from_settings("DEFAULT_FROM_EMAIL"),
+        receiver_list=user_support_emails,
+    )
 
 
 def __set_daily_quota_usages(quotas, logger) -> None:

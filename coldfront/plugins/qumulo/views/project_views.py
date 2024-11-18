@@ -44,7 +44,7 @@ class PluginProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView)
             force_review=False,
             requires_review=False,
         )
-        project_user = ProjectUser.objects.create(
+        _ = ProjectUser.objects.create(
             user=user,
             project=self.project,
             role=ProjectUserRoleChoice.objects.get(name="Manager"),
