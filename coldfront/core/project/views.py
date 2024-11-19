@@ -991,7 +991,6 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
         project_user_objs = []
         allocations_added_to = {}
-        display_warning = False
         if formset.is_valid() and allocation_formset.is_valid():
             project_user_active_status_choice = ProjectUserStatusChoice.objects.get(
                 name='Active')
@@ -999,6 +998,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                 name='Active')
 
             no_accounts = {}
+            added_users = {}
             managers_rejected = []
             resources_requiring_user_request = {}
             requestor_user = User.objects.get(username=request.user)
@@ -1051,6 +1051,7 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
                     username = user_form_data.get('username')
                     no_accounts[username] = []
+                    added_users[username] = []
                     for allocation in allocation_formset:
                         cleaned_data = allocation.cleaned_data
                         if cleaned_data['selected']:
@@ -1061,11 +1062,15 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                             resource_name = allocation.get_parent_resource.name
                             # If the user does not have an account on the resource in the allocation then do not add them to it.
                             accounts = selected_users_accounts.get(username)
-                            if not allocation.get_parent_resource.check_user_account_exists(username, accounts):
-                                display_warning = True
+                            account_exists, reason = allocation.get_parent_resource.check_accounts(accounts).values()
+                            if not account_exists:
                                 # Make sure there are no duplicates for a user if there's more than one instance of a resource.
-                                if allocation.get_parent_resource.name not in no_accounts[username]:
-                                    no_accounts[username].append(allocation.get_parent_resource.name)
+                                if reason == 'no_account':
+                                    if 'IU' not in no_accounts[username]:
+                                        no_accounts[username].append('IU')
+                                elif reason == 'no_resource_account':
+                                    if allocation.get_parent_resource.name not in no_accounts[username]:
+                                        no_accounts[username].append(allocation.get_parent_resource.name)
                                 continue
 
                             requires_user_request = allocation.get_parent_resource.get_attribute('requires_user_request')
@@ -1104,16 +1109,30 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                             if allocation_user_request_obj is None:
                                 allocations_added_to[allocation].append(project_user_obj)
 
-            if display_warning:
-                warning_message = 'The following users were not added to the selected resources due to missing accounts:<ul>'
+                            if allocation.get_parent_resource.name not in added_users[username]:
+                                added_users[username].append(allocation.get_parent_resource.name)
+
+            if any(no_accounts.values()):
+                warning_message = 'The following users were not added to the selected resource allocations due to missing accounts:<ul>'
                 for username, no_account_list in no_accounts.items():
                     if no_account_list:
-                        warning_message += '<li>{} is missing an account for {}</li>'.format(
-                            username, ', '.join(no_account_list))
+                        if 'IU' in no_account_list:
+                            warning_message += f'<li>{username} is missing an IU account</li>'
+                        else:
+                            warning_message += f'<li>{username} is missing an account for {", ".join(no_account_list)}</li>'
                 warning_message += '</ul>'
                 if warning_message != '':
-                    warning_message += 'They cannot be added until they create one. Please direct them to <a href="https://access.iu.edu/Accounts/Create">https://access.iu.edu/Accounts/Create</a> to create one.'
+                    url = 'https://access.iu.edu/Accounts/Create'
+                    warning_message += f'They cannot be added until they create one. Please direct them to <a href="{url}">{url}</a> to create one.'
                     messages.warning(request, format_html(warning_message))
+
+            if any(added_users.values()):
+                message = 'The following users were added to the selected resource allocations:<ul>'
+                for username, resource_list in added_users.items():
+                    if resource_list:
+                        message += f'<li>{username} was added to these resource allocations: {", ".join(resource_list)}</li>'
+                message += '</ul>'
+                messages.success(request, format_html(message))
 
             if EMAIL_ENABLED and project_user_objs:
                 domain_url = get_domain_url(self.request)

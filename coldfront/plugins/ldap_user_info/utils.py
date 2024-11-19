@@ -2,39 +2,44 @@ import logging
 import json
 
 import ldap.filter
-from coldfront.core.utils.common import import_from_settings
 from ldap3 import Connection, Server
+from coldfront.core.utils.common import import_from_settings
 
 logger = logging.getLogger(__name__)
+
+
+def get_user_info(username, attributes, ldap_search=None):
+    if ldap_search is None:
+        ldap_search = LDAPSearch()
+
+    return ldap_search.search_a_user(username, attributes)
+
 
 def get_users_info(usernames, attributes):
     ldap_search = LDAPSearch()
     results = {}
     for username in usernames:
-        results[username] = ldap_search.search_a_user(username, attributes)
+        results[username] = get_user_info(username, attributes, ldap_search)
 
     return results
 
-def get_user_info(username, attributes):
-    ldap_search = LDAPSearch()
-    return ldap_search.search_a_user(
-        username,
-        attributes
-    )
-
-def get_users_to_check():
-    return ['primary_contact', 'secondary_contact', 'fiscal_officer', 'it_pro']
 
 def check_if_user_exists(username, ldap_search=None):
-    if ldap_search is None:
-        ldap_search = LDAPSearch()
-
-    attributes = ldap_search.search_a_user(
-        username,
-        ['memberOf']
-    )
-
+    attributes = get_user_info(username, ['memberOf'], ldap_search)
     return not attributes['memberOf'][0] == ''
+
+
+def check_if_users_exist(usernames):
+    ldap_search = LDAPSearch()
+    not_found_users = []
+    found_users = []
+    for username in usernames:
+        if check_if_user_exists(username, ldap_search):
+            found_users.append(username)
+        else:
+            not_found_users.append(username)
+
+    return found_users, not_found_users
 
 
 class LDAPSearch:
