@@ -1,7 +1,7 @@
 const protocols = Array.from(
   document.querySelectorAll(
-    "#div_id_protocols div div.form-check input.form-check-input"
-  )
+    "#div_id_protocols div div.form-check input.form-check-input",
+  ),
 );
 
 const nfsCheckBox = protocols.find((protocol) => protocol.value === "nfs");
@@ -22,12 +22,23 @@ let confirmed = false;
 
 const submitButton = document.getElementById("allocation_form_submit");
 submitButton.addEventListener("click", (event) => {
-  const id_project_pk_elem = document.getElementById("div_id_project_pk");
-  const smb = protocols.find((protocol) => protocol.value === "smb");
+  const smb = protocols.find((protocol) => protocol.value === "smb"),
+    modalShouldDisplay = () => {
+      /*
+       * bmulligan (20241114): we are now using the document title to
+       * determine whether we are on the "Create Allocation" form.
+       *
+       * NOTE: we're using id_project_pk to determine whether we are
+       * on a parent or sub-allocation creation page
+       */
+      if (document.title.trim() !== "Create Allocation") return false;
+      else if (document.getElementById("div_id_project_pk") === null)
+        return false;
 
-  // NOTE: we're using id_project_pk to determine whether we are on a
-  // parent or sub-allocation creation page
-  if (id_project_pk_elem && !smb.checked && !confirmed) {
+      return !smb.checked && !confirmed;
+    };
+
+  if (modalShouldDisplay()) {
     const modal = $("#smb_warning_modal");
     modal.modal("show");
 
@@ -35,17 +46,18 @@ submitButton.addEventListener("click", (event) => {
   }
 });
 
-
 const dialogSubmitButton = document.getElementById("smb_warning_button_submit");
-dialogSubmitButton.addEventListener("click", (event) => {
-  confirmed = true;
+if (dialogSubmitButton !== null) {
+  dialogSubmitButton.addEventListener("click", (event) => {
+    confirmed = true;
 
-  const modal = $("#smb_warning_modal");
-  modal.modal("hide");
+    const modal = $("#smb_warning_modal");
+    modal.modal("hide");
 
-  submitButton.click();
-  confirmed = false;
-});
+    submitButton.click();
+    confirmed = false;
+  });
+}
 
 function handleExportPathInput(event) {
   const isChecked = event.target.checked;
