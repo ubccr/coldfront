@@ -1,4 +1,7 @@
+from pathlib import Path
+
 import environ
+from importlib.metadata import entry_points
 from split_settings.tools import optional, include
 from coldfront.config.env import ENV, PROJECT_ROOT
 
@@ -49,4 +52,21 @@ if ENV.str('COLDFRONT_CONFIG', default='') != '':
 for lc in local_configs:
     coldfront_configs.append(optional(lc))
 
+
+# add settings from plugins in source tree
+plugin_configs = list((Path(PROJECT_ROOT) / "coldfront/plugins").glob("*/settings.py"))
+coldfront_configs.extend(plugin_configs)
+
 include(*coldfront_configs)
+
+from importlib import import_module
+
+# import settings from pip installed
+for entry_point in entry_points(group="coldfront_plugins").select(name="app"):
+    try:
+        plugin_settings = import_module(".settings", package=entry_point.value)
+        globals().update(
+            {attr: obj for attr, obj in vars(plugin_settings).items() if not attr.startswith('_')}
+        )
+    except ModuleNotFoundError:
+        pass
