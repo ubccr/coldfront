@@ -74,6 +74,11 @@
           <tr>
             <th><input type="checkbox" class="check" id="selectAll"></th>
             <th scope="col">#</th>
+            <th scope="col">
+              <a href="#" data-toggle="popover" title="Info" data-trigger="hover" data-content="Hover over an icon to see a user's account status for each selected resource">
+                <span class="badge badge-info"><i class="fas fa-question-circle"></i></span><span class="sr-only">Hover over an icon to see a user's account status for each selected resource</span>
+              </a>
+            </th>
             <th scope="col">Username</th>
             <th scope="col">First Name</th>
             <th scope="col">Last Name</th>
@@ -86,6 +91,11 @@
             <tr>
               <td>{{ form.selected }}</td>
               <td>{{ forloop.counter }}</td>
+              <td>
+                <a id="status-{{ forloop.counter }}" href="#" data-toggle="popover" title="No Allocations Selected" data-trigger="hover" data-content="No allocations to check accounts on">
+                  <span class="badge badge-secondary"><i class="fas fa-minus-circle"></i></span><span class="sr-only">No allocations to check accounts on</span>
+                </a>
+              </td>
               <td>{{ form.username.value }}</td>
               <td>{{ form.first_name.value }}</td>
               <td>{{ form.last_name.value }}</td>
@@ -100,6 +110,11 @@
       <p id="id_manager_warning" class="alert alert-danger">You have too many managers selected. The max allowed managers on this project is {{ max_managers }}.</p>
     </div>
     {{ formset.management_form }}
+
+    <div class="alert alert-info">
+      <i class="fas fa-question-circle" aria-hidden="true"></i>
+      Hover over an icon to see a user's account status for each selected resource.
+    </div>
 
     <input id="q" type="hidden" name="q" value="{{user_search_string}}">
     <input id="search_by" type="hidden" name="search_by" value="{{search_by}}">
@@ -121,10 +136,105 @@
 </form>
 
 <script>
-  var current_num_managers = {{ current_num_managers | safe}}
-  var max_managers = {{ max_managers | safe }}
+  var current_num_managers = {{ current_num_managers | safe}};
+  var max_managers = {{ max_managers | safe }};
   var matches = {{ matches | length | safe }};
-  var after_project_creation = {{ after_project_creation | safe }}
+  var after_project_creation = {{ after_project_creation | safe }};
+  var user_accounts = {{ user_accounts | safe }};
+  var resource_accounts = {{ resource_accounts | safe }};
+  var all_accounts = {};
+
+  function updateIcon(id_num, checked) {
+    resources = $("input[name^='allocationform-']:checked");
+    var id = parseInt(id_num) + 1;
+    icon = $("#status-" + id);
+    if (!checked) {
+      icon.attr('data-original-title', 'Not Selected');
+      icon.attr('data-content', 'Not selected to be added to the project');
+      icon.html('<span class="badge badge-secondary"><i class="fas fa-minus-circle"></i></span><span class="sr-only">Not selected to be added to the project</span>');
+      return;
+    }
+
+    if (!resources.length) {
+      icon.attr('data-original-title', 'No Allocations Selected');
+      icon.attr('data-content', 'No allocations to check accounts on');
+      icon.html('<span class="badge badge-secondary"><i class="fas fa-minus-circle"></i></span><span class="sr-only">No allocations to check accounts on</span>');
+      return;
+    }
+
+    var username = user_accounts[id_num][0];
+    var accounts = user_accounts[id_num][1];
+    missing_accounts = all_accounts[username];
+
+    var new_title = 'Missing Resource Accounts';
+    if (!accounts.length || accounts[0] == '') {
+      new_title = 'No IU Account';
+    }
+    
+    var new_content = `Will not be added to these resources: ${Array.from(missing_accounts).join(', ')}`;
+    var new_html = `<span class="badge badge-warning"><i class="fas fa-exclamation-circle"></i></span><span class="sr-only">${new_content}</span>`;
+    if (!missing_accounts.size) {
+      new_title = 'Has Accounts';
+      new_content = 'Can be added to all selected allocations';
+      new_html = '<span class="badge badge-success"><i class="fas fa-check-circle"></i></span><span class="sr-only"></span>';
+    } 
+
+    icon.attr('data-original-title', new_title);
+    icon.attr('data-content', new_content);
+    icon.html(new_html);
+  }
+
+  function checkUserAccounts(id_num, is_checked) {
+    if (isNaN(id_num)) {
+      return;
+    }
+    resources_selected = $("input[name^='allocationform-']:checked");
+    resources_not_selected = $("input[name^='allocationform-']:not(:checked)");
+    var username = user_accounts[id_num][0];
+    for (var i = 0; i < resources_not_selected.length; i++) {
+      var id = resources_not_selected[i].id;
+      resource_idx = id.split('-')[1];
+      if (isNaN(resource_idx)) {
+        continue;
+      }
+      resource_name = resource_accounts[resource_idx][0];
+      all_accounts[username].delete(resource_name);
+    }
+
+    if (!resources_selected.length) {
+      updateIcon(id_num, is_checked);
+      return;
+    }
+
+    var accounts = user_accounts[id_num][1]
+    if (!is_checked) {
+      all_accounts[username] = new Set();
+      updateIcon(id_num, is_checked);
+      return;
+    }
+    
+    for (var i = 0; i < resources_selected.length; i++) {
+      var id = resources_selected[i].id;
+      resource_idx = id.split('-')[1];
+      resource_account = resource_accounts[resource_idx][1];
+      resource_name = resource_accounts[resource_idx][0];
+      if (resource_account === 'not_required') {
+        continue;
+      }
+
+      if (resource_account === '') {
+        if (!accounts.length || accounts[0] == '') {
+          all_accounts[username].add(resource_name);
+        }
+        continue;
+      }
+
+      if (!(accounts.includes(resource_account))) {
+        all_accounts[username].add(resource_name);
+      }
+    }
+    updateIcon(id_num, is_checked);
+  }
 
   function checkNumManagers() {
     var checked_users = $("input[name^='userform-']:checked");
@@ -147,8 +257,11 @@
   }
 
   $('document').ready(function () {
-    //$("select option[value*='3']").prop('disabled', true)
+    $('[data-toggle="popover"]').popover();  
     for (var i = 0; i < matches; i++) {
+      var username = user_accounts[i][0];
+      all_accounts[username] = new Set();
+      
       if ($("#id_userform-" + i + "-role option:selected").text() == 'Group') {
         $("#id_userform-" + i + "-role option:not(:selected)").prop('disabled', true);
       }
@@ -174,8 +287,15 @@
   });
 
   $("#selectAll").click(function () {
-    $("input[name^='userform-']").prop('checked', $(this).prop('checked'));
+    select_all = $("input[name^='userform-']");
+    select_all.prop('checked', $(this).prop('checked'));
     checkNumManagers();
+
+    for (var i = 0; i < select_all.length; i++) {
+      entry = select_all[i];
+      id = $(entry).attr('id').split('-')[1];
+      checkUserAccounts(id, $(entry).is(':checked'));
+    }
   });
 
   $("input[name^='userform-']").click(function (ele) {
@@ -184,16 +304,27 @@
       $("#selectAll").prop('checked', false);
     }
     checkNumManagers();
+    checkUserAccounts(id.split('-')[1], $(this).is(':checked'));
   });
 
   $("#selectAllAllocations").click(function () {
     $("input[name^='allocationform-']").not(":disabled").prop('checked', $(this).prop('checked'));
+    var users = $("input[name^='userform-']");
+    for (var i = 0; i < users.length; i++) {
+      entry = $(users[i]);
+      checkUserAccounts(entry.attr('id').split('-')[1], entry.is(':checked'));
+    }
   });
 
   $("input[name^='allocationform-']").click(function (ele) {
     var id = $(this).attr('id');
     if ( id != "selectAllAllocations") {
       $("#selectAllAllocations").prop('checked', false);
+    }
+    var users = $("input[name^='userform-']");
+    for (var i = 0; i < users.length; i++) {
+      entry = $(users[i]);
+      checkUserAccounts(entry.attr('id').split('-')[1], entry.is(':checked'));
     }
   });
 </script>

@@ -40,6 +40,7 @@ from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationUpdateForm,
                                              AllocationInvoiceSearchForm,
                                              AllocationUserUpdateForm,
+                                             AllocationAddUserFormset
                                              )
 from coldfront.core.allocation.models import (Allocation,
                                               AllocationPermission,
@@ -744,6 +745,14 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         total_users += len(selected_users)
 
         return total_users
+    
+    def get_disable_select_list(self, allocation_obj, usernames):
+        disable_select_list = [False] * len(usernames)
+        results = allocation_obj.get_parent_resource.check_users_accounts(usernames)
+        for i, result in enumerate(results.values()):
+            if not result.get('exists'):
+                disable_select_list[i] = True
+        return disable_select_list
 
     def get(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
@@ -752,15 +761,29 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         users_to_add = self.get_users_to_add(allocation_obj)
         context = {}
 
+        results = {}
         if users_to_add:
             formset = formset_factory(
-                AllocationAddUserForm, max_num=len(users_to_add))
-            formset = formset(initial=users_to_add, prefix='userform',
-                form_kwargs={'resource': allocation_obj.get_parent_resource})
+                AllocationAddUserForm,
+                max_num=len(users_to_add),
+                formset=AllocationAddUserFormset    
+            )
+            results = allocation_obj.get_parent_resource.check_users_accounts([user.get('username') for user in users_to_add])
+            formset = formset(
+                initial=users_to_add,
+                prefix='userform',
+                form_kwargs={
+                    'resource': allocation_obj.get_parent_resource,
+                    'disable_selected': [not result.get('exists') for result in results.values()]
+                })
             context['formset'] = formset
 
         context['allocation_user_roles_enabled'] = check_if_roles_are_enabled(allocation_obj)
         context['allocation'] = allocation_obj
+        account_results = {}
+        for username, result in results.items():
+            account_results[username] = result.get('reason')
+        context['account_results'] = account_results
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):

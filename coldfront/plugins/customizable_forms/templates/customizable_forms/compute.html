@@ -66,7 +66,7 @@ Request New Allocation
     ).insertAfter($("#div_id_users > label"))
 
     $("#selectAll").click(function () {
-      $("input[name^='users']").prop('checked', $(this).prop('checked'));
+      $("input[name^='users']").not(':disabled').prop('checked', $(this).prop('checked'));
     });
 
     $("input[name^='users']").click(function (ele) {

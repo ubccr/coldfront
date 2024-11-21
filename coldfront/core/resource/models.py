@@ -308,7 +308,7 @@ class Resource(TimeStampedModel):
 
         resource_acc = RESOURCE_ACCOUNTS.get(resource)    
         if not resource_acc:
-            return {'exists': True, 'reason': 'not_required'}
+            return {'exists': True, 'reason': 'has_account'}
 
         accounts = get_user_info(username, ['memberOf'], ldap_conn).get('memberOf')
 
@@ -316,6 +316,13 @@ class Resource(TimeStampedModel):
             return {'exists': True, 'reason': 'has_resource_account'}
 
         return {'exists': False, 'reason': 'no_resource_account'}
+    
+    def get_assigned_account(self):
+        resource = self.get_attribute('check_user_account')
+        if resource is None:
+            return 'not_required'
+
+        return RESOURCE_ACCOUNTS.get(resource, '')
 
     def __str__(self):
         return '%s (%s)' % (self.name, self.resource_type.name)

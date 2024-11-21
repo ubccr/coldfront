@@ -839,12 +839,17 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
 
         # Initial data for ProjectAddUserForm
         matches = context.get('matches')
+        
+        user_accounts = []
         if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
             from coldfront.plugins.ldap_user_info.utils import get_users_info
             users = [match.get('username') for match in matches]
-            results = get_users_info(users, ['title'])
+            results = get_users_info(users, ['title', 'memberOf'])
             for match in matches:
-                title = results.get(match.get('username')).get('title')
+                username = match.get('username')
+                user_accounts.append([username, results.get(username).get('memberOf')])
+
+                title = results.get(username).get('title')
                 if title and title[0] == 'group':
                     match.update({'role': ProjectUserRoleChoice.objects.get(name='Group')})
                 else:
@@ -852,6 +857,9 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
         else:
             for match in matches:
                 match.update({'role': ProjectUserRoleChoice.objects.get(name='User')})
+
+        context['user_accounts'] = user_accounts
+        context['all_accounts'] = {}
 
         if matches:
             formset = formset_factory(ProjectAddUserForm, max_num=len(matches))
@@ -872,6 +880,13 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
         initial_data = self.get_initial_data(request, allocations)
         allocation_formset = formset_factory(ProjectAddUsersToAllocationForm, max_num=len(initial_data))
         allocation_formset = allocation_formset(initial=initial_data, prefix="allocationform")
+
+        resource_accounts = []
+        for allocation in allocations:
+            resource_obj = allocation.get_parent_resource
+            resource_accounts.append([resource_obj.name, resource_obj.get_assigned_account()])
+
+        context['resource_accounts'] = resource_accounts
 
         # The following block of code is used to hide/show the allocation div in the form.
         if initial_data:
