@@ -587,7 +587,7 @@ def get_pi_total_allocated_quantity(pi_username):
         csv_reader = csv.reader(netid_total_allocation_csv)
         for line in csv_reader:
             if line[0] == pi_username:
-                total_allocated_quantity = line[1]
+                total_allocated_quantity = int(line[1])
                 break
 
     return total_allocated_quantity

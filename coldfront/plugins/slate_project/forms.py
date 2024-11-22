@@ -30,6 +30,13 @@ class SlateProjectForm:
     STORAGE_QUANTITY_CHOICES = (
         (num, num) for num in range(31)
     )
+    DATE_RANGES = (
+        ('', ''),
+        ('<1 year', '<1 year'),
+        ('1-3 years', '1-3 years'),
+        ('3-5 years', '3-5 years'),
+        ('+5 years', '+5 years')
+    )
 
     first_name = forms.CharField(max_length=40, disabled=True)
     last_name = forms.CharField(max_length=40, disabled=True)
@@ -39,9 +46,10 @@ class SlateProjectForm:
         max_length=23, validators=[ValidateDirectoryName(), ValidateDupDirectoryName()]
     )
     description = forms.CharField(widget=forms.Textarea)
-    placeholder1 = forms.CharField(max_length=100, initial='placeholder1')
-    placeholder2 = forms.CharField(max_length=100, initial='placeholder2')
-    placeholder3 = forms.CharField(max_length=100, initial='placeholder3')
+    data_generation = forms.CharField(max_length=128, initial='N/A')
+    data_protection = forms.CharField(max_length=128, initial='N/A')
+    data_computational_lifetime = forms.ChoiceField(initial='<1 year', choices=DATE_RANGES)
+    expected_project_lifetime = forms.ChoiceField(initial='<1 year', choices=DATE_RANGES)
     storage_space = forms.IntegerField(min_value=1, max_value=30, widget=forms.Select(choices=STORAGE_QUANTITY_CHOICES))
     start_date = forms.DateField(disabled=True)
     account_number = forms.CharField(max_length=9, initial='00-000-00', validators=[ValidateAccountNumber()])

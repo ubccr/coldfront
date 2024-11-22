@@ -17,7 +17,7 @@ from coldfront.core.project.models import Project
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.mail import send_email_template
 from coldfront.plugins.slate_project.forms import SlateProjectForm
-from coldfront.plugins.slate_project.utils import check_directory_name_duplicates, check_directory_name_format
+from coldfront.plugins.slate_project.utils import check_directory_name_duplicates, check_directory_name_format, get_pi_total_allocated_quantity
 
 
 SLATE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD = import_from_settings('SLATE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD', 120)
@@ -170,11 +170,17 @@ class SlateProjectView:
     def form_valid(self, form):
         form_data = form.cleaned_data
 
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
+        if SLATE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD / 2 <= utils.get_pi_total_allocated_quantity(project_obj.pi.username):
+            form.cleaned_data['data_generation'] = ''
+            form.cleaned_data['data_protection'] = ''
+            form.cleaned_data['data_computational_lifetime'] = ''
+            form.cleaned_data['expected_project_lifetime'] = ''
+
         if SLATE_PROJECT_ENABLE_MOU_SERVER:
             start_date = form_data.get('start_date', '')
             start_date = start_date.strftime('%m/%d/%Y')
 
-            project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
             data = {
                 "abstract": form_data.get('description')[:500],
                 "campus_affiliation": form_data.get('campus_affiliation', ''),

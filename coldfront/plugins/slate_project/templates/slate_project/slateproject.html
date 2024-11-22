@@ -55,24 +55,27 @@ Request New Allocation
         {{ form.storage_space|as_crispy_field }}
       </div>
     </div>
+    <div id="div_amount_warning" class="alert alert-warning" role="alert">
+      <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+      This request exceeds the 120TB limit and will require additional review that may take up to 4 weeks.
+    </div>
     <div>
       {{ form.description|as_crispy_field }}
     </div>
     <div>
-      {{ form.placeholder1|as_crispy_field }}
+      {{ form.data_generation|as_crispy_field }}
     </div>
     <div>
-      {{ form.placeholder2|as_crispy_field }}
+      {{ form.data_protection|as_crispy_field }}
+    </div>
+    <div>
+      {{ form.data_computational_lifetime|as_crispy_field }}
+    </div>
+    <div>
+      {{ form.expected_project_lifetime|as_crispy_field }}
     </div>
     <div>
       {{ form.account_number|as_crispy_field }}
-    </div>
-    <div id="div_amount_warning" class="alert alert-warning" role="alert">
-      <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
-      Over 120!
-    </div>
-    <div>
-      {{ form.placeholder3|as_crispy_field }}
     </div>
   </fieldset>
   <fieldset>
@@ -98,6 +101,9 @@ Request New Allocation
 <script>
   var total_pi_allocated_quantity = {{ total_pi_allocated_quantity|safe }}
   var pi_allocated_quantity_threshold = {{ pi_allocated_quantity_threshold|safe }}
+  var default_na = ['data_generation', 'data_protection'] 
+  var mid_range = ['data_computational_lifetime', 'expected_project_lifetime']
+  var beyond_120 = ['account_number']
 
   $("#navbar-main > ul > li.active").removeClass("active");
   $("#navbar-project-menu").addClass("active");
@@ -158,19 +164,25 @@ Request New Allocation
 
     if (total_pi_allocated_quantity > pi_allocated_quantity_threshold) {
       $("#id_account_number").val('');
-      $("#id_placeholder3").val('');
     } else {
       $("#div_id_account_number").hide();
-      $("#div_id_placeholder3").hide();
       $("#div_amount_warning").hide();
     }
 
     if (total_pi_allocated_quantity > pi_allocated_quantity_threshold / 2 ) {
-      $("#id_placeholder1").val('');
-      $("#id_placeholder2").val('');
+      mid_range.forEach(element => {
+        $('#id_' + element).val('');
+      });
+      default_na.forEach(element => {
+        $('#id_' + element).val('');
+      });
     } else {
-      $("#div_id_placeholder1").hide();
-      $("#div_id_placeholder2").hide();
+      mid_range.forEach(element => {
+        $('#div_id_' + element).hide();
+      });
+      default_na.forEach(element => {
+        $('#div_id_' + element).hide('');
+      });
     }
 
     $("#id_storage_space").change(function(e) {
@@ -178,27 +190,39 @@ Request New Allocation
       if (current_value > pi_allocated_quantity_threshold) {
         $("#div_id_account_number").show();
         $("#id_account_number").val('');
-        $("#div_id_placeholder3").show();
-        $("#id_placeholder3").val('');
         $("#div_amount_warning").show();
       } else {
         $("#div_id_account_number").hide();
         $("#id_account_number").val('00-000-00');
-        $("#div_id_placeholder3").hide();
-        $("#id_placeholder3").val('placeholder3');
         $("#div_amount_warning").hide();
       }
 
       if (current_value > pi_allocated_quantity_threshold / 2 ) {
-        $("#div_id_placeholder1").show();
-        $("#div_id_placeholder2").show();
-        $("#id_placeholder1").val('');
-        $("#id_placeholder2").val('');
+        mid_range.forEach(element => {
+          $('#id_' + element).val('');
+        });
+        mid_range.forEach(element => {
+          $('#div_id_' + element).show();
+        });
+        default_na.forEach(element => {
+          $('#id_' + element).val('');
+        });
+        default_na.forEach(element => {
+          $('#div_id_' + element).show();
+        });
       } else {
-        $("#div_id_placeholder1").hide();
-        $("#div_id_placeholder2").hide();
-        $("#id_placeholder1").val('placeholder1');
-        $("#id_placeholder2").val('placeholder2');
+        mid_range.forEach(element => {
+          $('#id_' + element).val('<1 year');
+        });
+        mid_range.forEach(element => {
+          $('#div_id_' + element).hide();
+        });
+        default_na.forEach(element => {
+          $('#id_' + element).val('N/A');
+        });
+        default_na.forEach(element => {
+          $('#div_id_' + element).hide();
+        });
       }
     })
 
