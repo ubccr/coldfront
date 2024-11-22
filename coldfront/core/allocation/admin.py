@@ -520,7 +520,7 @@ class AllocationChangeRequestAdmin(ReviewGroupFilteredResourceQueryset):
 
 @admin.register(AllocationAttributeChangeRequest)
 class AllocationChangeStatusChoiceAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'allocation_change_request', 'allocation_attribute', 'new_value', )
+    list_display = ('pk', 'allocation_change_request', 'allocation_attribute', 'old_value', 'new_value', )
 
 
 @admin.register(AllocationInvoice)

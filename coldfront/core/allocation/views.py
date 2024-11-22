@@ -1919,6 +1919,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
              'attribute_pk': attribute_change.allocation_attribute.pk,
              'name': attribute_change.allocation_attribute.allocation_attribute_type.name,
              'value': attribute_change.allocation_attribute.value,
+             'old_value': attribute_change.old_value,
              'new_value': attribute_change.new_value,
              }
 
@@ -2250,6 +2251,7 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 'pk': attribute.pk,
                 'name': attribute.allocation_attribute_type.name,
                 'value': attribute.value,
+                'old_value': attribute.value
              }
             for attribute in attributes_to_change
         ]
@@ -2331,6 +2333,7 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                         attribute_change_request_obj = AllocationAttributeChangeRequest.objects.create(
                             allocation_change_request=allocation_change_request_obj,
                             allocation_attribute=attribute[0],
+                            old_value=attribute[0].value,
                             new_value=attribute[1]
                             )
                     messages.success(

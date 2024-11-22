@@ -128,6 +128,8 @@ Allocation Change Detail
                 <th scope="col">Attribute</th>
                 {% if allocation_change.status.name == 'Pending' %}
                   <th scope="col">Current Value</th>
+                {% else %}
+                  <th scope="col">Previous Value</th>
                 {% endif %}
                 <th scope="col">Requested New Value</th>
               </tr>
@@ -149,6 +151,7 @@ Allocation Change Detail
                       <td>{{form.new_value.value}}</td>
                     {% endif %}
                   {% else %}
+                    <td>{{form.old_value.value}}</td>
                     {% if form.new_value.value == '' %}
                       <td>None</td>
                     {% else %}
