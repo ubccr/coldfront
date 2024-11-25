@@ -1,0 +1,16 @@
+PARSE_START
+U_incident_type:Request
+Category:{{ category }}
+Subcategory:{{ subcategory }}
+U_business_service:{{ service_name }}
+Source:Email
+caller_id:{{ affected_client }}
+u_contact_person:{{ contact_email }}
+assignment_group:{{ assignment_group }}
+Short_Description:{{ subject }}
+work_notes:{{ work_notes }}
+u_itil_watch_list:{{ work_notes_watch_list }}
+PARSE_END
+
+{{ body }}
+

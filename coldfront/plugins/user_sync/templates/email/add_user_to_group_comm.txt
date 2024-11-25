@@ -1,0 +1,9 @@
+This request has been fulfilled.
+
+You are now added to the '{{group_name}}' group on the HPC cluster.
+
+If you have any HPC cluster related questions in the future, please contact us at tts-research@tufts.edu"
+
+Thank you,
+
+{{ staff_display_name }}

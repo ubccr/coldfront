@@ -1,0 +1,27 @@
+WELCOME
+to the Tufts HPC cluster provided by Tufts Technology Services.
+Please review IMPORTANT Research Computing policy:
+https://it.tufts.edu/research-technology/announcements
+ 
+Tufts Network -- 2FA
+Tufts 2FA via DUO (https://access.tufts.edu/2fa) is required before you can utilize the Tufts HPC Cluster when work on Tufts network.
+If assistance is needed with Tufts 2FA, please contact TTS Service Desk at 617-627-3376.
+ 
+Outside Tufts Network -- VPN
+Tufts VPN (https://access.tufts.edu/vpn) is required before you can utilize the Tufts HPC Cluster and OnDemand web interface when work outside Tufts network.
+If assistance is needed with Tufts VPN, please contact TTS Service Desk at 617-627-3376.
+ 
+Tufts HPC Cluster New User Guides
+New users of the Tufts HPC cluster should utilize the support documents within the links below.
+The contents are comprised of the following information: login, file transfer, job submission, using applications/software, updated workshop information, etc.
+Research Technology Guides (update_link)
+Most Recent HPC Workshop (update_link)
+
+ 
+ADDITIONAL REQUEST AFTER CLUSTER ACCOUNT CREATION:
+If this section was filled out on the Cluster account request, then a child ticket is now in TTS Research Technology Team's queue.
+They will follow-up with you on the additional request very soon.
+ 
+Sincerely,
+ 
+TTS Research Technology
