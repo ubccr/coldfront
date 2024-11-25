@@ -100,6 +100,14 @@ class ProjectTable:
                             filtered_project_users.append(project_user.user.username)
                     current_attribute = ', '.join(filtered_project_users)
 
+                elif 'project__resources' in column.get('field_name'):
+                    all_project_allocations = project_obj.allocation_set.filter(
+                        status__name__in=['Active', 'Renewal Requested'])
+                    resource_list = []
+                    for project_allocation in all_project_allocations:
+                        resource_list.append(f'{project_allocation.get_parent_resource.name} ({project_allocation.pk})')
+                    current_attribute = ', '.join(resource_list)
+
             if current_attribute is None:
                 current_attribute = ''
 

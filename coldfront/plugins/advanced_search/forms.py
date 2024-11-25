@@ -160,6 +160,7 @@ class ProjectSearchForm(forms.Form):
     display__project__created = forms.BooleanField(required=False)
 
     projects_using_ai = forms.BooleanField(label='Only AI', required=False)
+    display__project__resources = forms.BooleanField(required=False)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -204,6 +205,7 @@ class ProjectSearchForm(forms.Form):
                     'display__project__users',
                     'display__project__total_users',
                     'display__project__created',
+                    'display__project__resources',
                     active=False,
                 ),
             ),
