@@ -46,6 +46,7 @@ class AcesManager(object):
                 "READ_ATTR",
                 "READ_EA",
                 "CHANGE_OWNER",
+                "EXECUTE",
                 "WRITE_ACL",
                 "WRITE_ATTR",
                 "WRITE_EA",
@@ -81,6 +82,7 @@ class AcesManager(object):
                 "READ_ACL",
                 "READ_ATTR",
                 "READ_EA",
+                "EXECUTE",
                 "DELETE_CHILD",
                 "WRITE_ATTR",
                 "WRITE_EA",
@@ -146,6 +148,7 @@ class AcesManager(object):
                     "READ_ACL",
                     "READ_ATTR",
                     "READ_EA",
+                    "EXECUTE",
                     "ADD_FILE",
                     "ADD_SUBDIR",
                     "DELETE_CHILD",
@@ -171,6 +174,47 @@ class AcesManager(object):
             },
             {
                 "flags": ["OBJECT_INHERIT"],
+                "type": "ALLOWED",
+                "trustee": {
+                    "name": ro_groupname,
+                    "domain": "ACTIVE_DIRECTORY",
+                },
+                "rights": [
+                    "READ",
+                    "SYNCHRONIZE",
+                    "READ_ACL",
+                    "READ_ATTR",
+                    "READ_EA",
+                ],
+            },
+        ]
+
+    @staticmethod
+    def get_allocation_file_aces(rw_groupname: str, ro_groupname: str):
+        return [
+            {
+                "flags": [],
+                "type": "ALLOWED",
+                "trustee": {
+                    "name": rw_groupname,
+                    "domain": "ACTIVE_DIRECTORY",
+                },
+                "rights": [
+                    "READ",
+                    "SYNCHRONIZE",
+                    "READ_ACL",
+                    "READ_ATTR",
+                    "READ_EA",
+                    "ADD_FILE",
+                    "ADD_SUBDIR",
+                    "DELETE_CHILD",
+                    "WRITE_ATTR",
+                    "WRITE_EA",
+                    "EXECUTE",
+                ],
+            },
+            {
+                "flags": [],
                 "type": "ALLOWED",
                 "trustee": {
                     "name": ro_groupname,
@@ -311,7 +355,12 @@ class AcesManager(object):
                     "WRITE_ATTR",
                     "MODIFY",
                     "EXTEND",
+                    "EXECUTE",
                     "DELETE_CHILD",
+                    # "WRITE_OWNER",
+                    "CHANGE_OWNER",
+                    # jprew - NOTE: CHANGE_OWNER MIGHT HAVE ODD CONSEQUENCES
+                    # double check this
                     "SYNCHRONIZE",
                 ],
             },
@@ -331,6 +380,7 @@ class AcesManager(object):
                     "WRITE_ATTR",
                     "MODIFY",
                     "EXTEND",
+                    "EXECUTE",
                     "DELETE_CHILD",
                     "SYNCHRONIZE",
                 ],
@@ -348,6 +398,7 @@ class AcesManager(object):
                     "WRITE_ATTR",
                     "MODIFY",
                     "EXTEND",
+                    "EXECUTE",
                     "DELETE_CHILD",
                     "SYNCHRONIZE",
                 ],
@@ -421,6 +472,7 @@ class AcesManager(object):
                     "READ_ACL",
                     "WRITE_EA",
                     "WRITE_ATTR",
+                    "EXECUTE",
                     "MODIFY",
                     "EXTEND",
                     "DELETE_CHILD",
@@ -458,6 +510,7 @@ class AcesManager(object):
                     "WRITE_ATTR",
                     "MODIFY",
                     "EXTEND",
+                    "EXECUTE",
                     "DELETE_CHILD",
                     "SYNCHRONIZE",
                 ],

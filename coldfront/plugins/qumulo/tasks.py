@@ -319,7 +319,12 @@ class ResetAcl:
                     self.sub_allocations.append(child)
         else:
             self._setup_qumulo_api()
-            self.parent_aces = AclAllocations.get_sub_allocation_parent_aces(
+            self.parent_directory_aces = (
+                AclAllocations.get_sub_allocation_parent_directory_aces(
+                    allocation, self.qumulo_api
+                )
+            )
+            self.parent_file_aces = AclAllocations.get_sub_allocation_parent_file_aces(
                 allocation, self.qumulo_api
             )
 
@@ -357,12 +362,14 @@ class ResetAcl:
                 acl["aces"] = AcesManager.get_allocation_existing_file_aces(
                     self.rw_group, self.ro_group
                 )
+                if not self.is_allocation_root:
+                    acl["aces"].extend(self.parent_file_aces)
             elif item_type == "FS_FILE_TYPE_DIRECTORY":
                 acl["aces"] = AcesManager.get_allocation_existing_directory_aces(
                     self.rw_group, self.ro_group
                 )
                 if not self.is_allocation_root:
-                    acl["aces"].extend(self.parent_aces)
+                    acl["aces"].extend(self.parent_directory_aces)
 
             self.qumulo_api.rc.fs.set_acl_v2(path=item_path, acl=acl)
 
