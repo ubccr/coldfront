@@ -231,13 +231,10 @@ class AclAllocations:
 
         if is_base_allocation:
             aces.extend(AcesManager.default_copy())
-            aces.extend(AcesManager.everyone_ace)
             acl["aces"] = AcesManager.filter_duplicates(aces)
             qumulo_api.rc.fs.set_acl_v2(acl=acl, path=fs_path)
             aces.extend(AcesManager.get_allocation_aces(rw_groupname, ro_groupname))
-            acl["aces"] = AcesManager.filter_duplicates(
-                AcesManager.remove_everyone_aces(aces)
-            )
+            acl["aces"] = AcesManager.filter_duplicates(aces)
             qumulo_api.rc.fs.set_acl_v2(acl=acl, path=f"{fs_path}/Active")
         else:
             for extension in [
