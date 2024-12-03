@@ -35,6 +35,7 @@
                 <th scope="col">Resource</th>
                 <th scope="col">Resource Type</th>
                 <th scope="col">Status</th>
+                <th scope="col">Role</th>
               </tr>
             </thead>
             <tbody>
@@ -45,6 +46,7 @@
                   <td>{{ form.resource.value }}</td>
                   <td>{{ form.resource_type.value }}</td>
                   <td>{{ form.status.value }}</td>
+                  <td>{{ form.role }}</td>
                 </tr>
               {% endfor %}
               {% for allocation in allocations_requiring_user_roles %}
