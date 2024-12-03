@@ -29,6 +29,7 @@ from django.views.generic.edit import FormView
 from coldfront.core.allocation.models import (Allocation,
                                               AllocationStatusChoice,
                                               AllocationUser,
+                                              AllocationUserRoleChoice,
                                               AllocationUserStatusChoice)
 from coldfront.core.allocation.signals import (allocation_activate_user,
                                                allocation_remove_user,
@@ -46,7 +47,8 @@ from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectUserUpdateForm,
                                           ProjectAttributeUpdateForm,
                                           ProjectRequestEmailForm,
-                                          ProjectReviewAllocationForm)
+                                          ProjectReviewAllocationForm,
+                                          ProjectAddUsersToAllocationFormSet)
 from coldfront.core.project.models import (Project,
                                            ProjectAttribute,
                                            ProjectReview,
@@ -75,7 +77,7 @@ from coldfront.core.project.utils import (get_new_end_date_from_list,
                                           create_admin_action_for_creation,
                                           create_admin_action_for_deletion,
                                           check_if_pi_eligible)
-from coldfront.core.allocation.utils import send_added_user_email, set_default_allocation_user_role
+from coldfront.core.allocation.utils import send_added_user_email
 from coldfront.core.utils.slack import send_message
 from coldfront.core.project.signals import project_activate, project_user_role_changed
 
@@ -820,6 +822,9 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
 
         return initial_data
 
+    def get_allocation_user_roles(self, allocations):
+        return [allocation.get_user_roles().values_list('name', flat=True) for allocation in allocations]
+
     def post(self, request, *args, **kwargs):
         user_search_string = request.POST.get('q')
         search_by = request.POST.get('search_by')
@@ -878,8 +883,17 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
         status_list = ['Active', 'New', 'Renewal Requested', 'Billing Information Submitted']
         allocations = project_obj.allocation_set.filter(status__name__in=status_list, resources__requires_user_roles=False, is_locked=False)
         initial_data = self.get_initial_data(request, allocations)
-        allocation_formset = formset_factory(ProjectAddUsersToAllocationForm, max_num=len(initial_data))
-        allocation_formset = allocation_formset(initial=initial_data, prefix="allocationform")
+        allocation_formset = formset_factory(
+            ProjectAddUsersToAllocationForm,
+            max_num=len(initial_data),
+            formset=ProjectAddUsersToAllocationFormSet
+        )
+        roles = self.get_allocation_user_roles(allocations)
+        allocation_formset = allocation_formset(
+            initial=initial_data,
+            prefix="allocationform",
+            form_kwargs={'roles': roles}
+        )
 
         resource_accounts = []
         for allocation in allocations:
@@ -958,6 +972,9 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
         return selected_users_accounts
 
+    def get_allocation_user_roles(self, allocations):
+        return [allocation.get_user_roles().values_list('name', flat=True) for allocation in allocations]
+
     def post(self, request, *args, **kwargs):
         user_search_string = request.POST.get('q')
         search_by = request.POST.get('search_by')
@@ -1001,8 +1018,18 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
         allocations = project_obj.allocation_set.filter(status__name__in=status_list, is_locked=False)
         initial_data = self.get_initial_data(request, allocations)
 
-        allocation_formset = formset_factory(ProjectAddUsersToAllocationForm, max_num=len(initial_data))
-        allocation_formset = allocation_formset(request.POST, initial=initial_data, prefix="allocationform")
+        allocation_formset = formset_factory(
+            ProjectAddUsersToAllocationForm,
+            max_num=len(initial_data),
+            formset=ProjectAddUsersToAllocationFormSet
+        )
+        roles = self.get_allocation_user_roles(allocations)
+        allocation_formset = allocation_formset(
+            request.POST,
+            initial=initial_data,
+            prefix="allocationform",
+            form_kwargs={'roles': roles}
+        )
 
         project_user_objs = []
         allocations_added_to = {}
@@ -1106,8 +1133,12 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                                     user=user_obj,
                                     status=allocation_user_status_choice)
 
-                            set_default_allocation_user_role(
-                                allocation.get_parent_resource, allocation_user_obj)
+                            allocation_user_role_obj = AllocationUserRoleChoice.objects.filter(
+                                resources=allocation.get_parent_resource, name=cleaned_data['role'])
+                            if allocation_user_role_obj.exists():
+                                allocation_user_obj.role = allocation_user_role_obj[0]
+                                allocation_user_obj.save()
+
                             allocation_activate_user.send(sender=self.__class__,
                                                         allocation_user_pk=allocation_user_obj.pk)
 

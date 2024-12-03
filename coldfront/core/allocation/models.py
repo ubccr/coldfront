@@ -429,6 +429,9 @@ class Allocation(TimeStampedModel):
 
         return None
 
+    def get_user_roles(self):
+        return AllocationUserRoleChoice.objects.filter(resources=self.get_parent_resource)
+
     def __str__(self):
         return "%s (%s)" % (self.get_parent_resource.name, self.project.pi)
 
