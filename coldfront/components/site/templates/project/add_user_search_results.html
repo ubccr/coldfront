@@ -49,15 +49,6 @@
                   <td>{{ form.role }}</td>
                 </tr>
               {% endfor %}
-              {% for allocation in allocations_requiring_user_roles %}
-                <tr>
-                  <td><input type="checkbox" disabled="true"></td>
-                  <td><a href="{% url 'allocation-detail' allocation.pk %}" target="_blank">{{ allocation.pk }}</a></td>
-                  <td>{{ allocation.get_parent_resource.name }}</td>
-                  <td>{{ allocation.get_parent_resource.resource_type.name }}</td>
-                  <td>{{ allocation.status.name }}</td>
-                </tr>
-              {% endfor %}
             </tbody>
           </table>
         </div>      
