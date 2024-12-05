@@ -103,10 +103,12 @@ def calculate_billing_month(request, year, month):
     '''
     logger.error('Calculating billing records for month %d of year %d', month, year)
     recalculate = False
+    user_ifxorg = None
     try:
         data = request.data
-        logger.error('Request data: %s', data)
         recalculate = data.get('recalculate') and data['recalculate'].lower() == 'true'
+        if data and 'user_ifxorg' in data:
+            user_ifxorg = data['user_ifxorg']
     except Exception as e:
         logger.exception(e)
         return Response(data={'error': 'Cannot parse request body'}, status=status.HTTP_400_BAD_REQUEST)
@@ -114,11 +116,15 @@ def calculate_billing_month(request, year, month):
     logger.debug('Calculating billing records for month %d of year %d, with recalculate flag %s', month, year, str(recalculate))
 
     try:
+        organizations = ifxuser_models.Organization.objects.filter(org_tree='Harvard')
+        if user_ifxorg:
+            organizations = [ifxuser_models.Organization.objects.get(ifxorg=user_ifxorg)]
         if recalculate:
-            ifxbilling_models.BillingRecord.objects.filter(year=year, month=month).delete()
+            for br in ifxbilling_models.BillingRecord.objects.filter(year=year, month=month):
+                br.delete()
             ifxbilling_models.ProductUsageProcessing.objects.filter(product_usage__year=year, product_usage__month=month).delete()
         calculator = NewColdfrontBillingCalculator()
-        calculator.calculate_billing_month(year, month, recalculate=recalculate)
+        calculator.calculate_billing_month(year, month, organizations=organizations, recalculate=recalculate)
         return Response('OK', status=status.HTTP_200_OK)
     # pylint: disable=broad-exception-caught
     except Exception as e:
