@@ -823,7 +823,7 @@ class ColdfrontRebalance(Rebalance):
         if not organization:
             raise Exception(f'Organization not found for account {account_data[0]["account"]}')
 
-        # Remove the billing records for the user
+        # Remove the billing records for the organization
         billing_records = BillingRecord.objects.filter(
             product_usage__product__facility=self.facility,
             account__organization=organization,
