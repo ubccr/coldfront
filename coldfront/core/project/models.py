@@ -219,6 +219,9 @@ required to log onto the site at least once before they can be added.
         Returns:
             bool: whether or not the project can be reviewed
         """
+        if self.type.name in ['Class', ]:
+            return False
+
         if self.status.name in ['Archived', 'Denied', 'Review Pending', 'Renewal Denied', ]:
             return False
 

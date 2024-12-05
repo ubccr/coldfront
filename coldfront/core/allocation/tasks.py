@@ -66,6 +66,9 @@ def send_expiry_emails():
                     if not allocation.project.requires_review:
                         continue
 
+                    if allocation.project.type.name == 'Class':
+                        continue
+
                     project_url = f'{CENTER_BASE_URL.strip("/")}/{"project"}/{allocation.project.pk}/'
 
                     if (allocation.status.name in ['Payment Pending', 'Payment Requested', 'Unpaid'] or allocation.is_locked):
@@ -141,6 +144,9 @@ def send_expiry_emails():
                 continue
 
             if not allocation.project.requires_review:
+                continue
+
+            if allocation.project.type.name == 'Class':
                 continue
 
             if (allocation.end_date == expring_in_days and not allocation.is_locked):

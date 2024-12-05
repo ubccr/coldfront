@@ -41,26 +41,21 @@ def update_statuses():
 
 def send_expiry_emails():
     if EMAIL_ENABLED:
-        # Projects expiring
+        # Class projects expiring
         for days_remaining in sorted(set(EMAIL_PROJECT_EXPIRING_NOTIFICATION_DAYS)):
             expiring_in_days = datetime.datetime.today() + datetime.timedelta(days=days_remaining)
 
             projects_expiring_soon = Project.objects.filter(
                 status__name='Active',
                 end_date=expiring_in_days,
-                requires_review=True
+                requires_review=True,
+                type__name='Class'
             )
             for project_obj in projects_expiring_soon:
-                project_review_url = '{}/{}/{}/{}'.format(
-                    CENTER_BASE_URL.strip('/'), 'project', project_obj.pk, 'review'
-                )
-
                 template_context = {
                     'center_name': CENTER_NAME,
                     'project_title': project_obj.title,
                     'expiring_in_days': days_remaining,
-                    'project_review_url': project_review_url,
-                    'project_renewal_help_url': CENTER_PROJECT_RENEWAL_HELP_URL,
                     'help_email': EMAIL_TICKET_SYSTEM_ADDRESS,
                     'signature': EMAIL_SIGNATURE
                 }
@@ -79,18 +74,12 @@ def send_expiry_emails():
                     f'project users (project pk={project_obj.pk})'
                 )
 
-        # Projects expiring today
+        # Class projects expiring today
         today = datetime.datetime.today()
-        for project_obj in Project.objects.filter(status__name='Active', end_date=today, requires_review=True):
-            project_review_url = '{}/{}/{}/{}'.format(
-                CENTER_BASE_URL.strip('/'), 'project', project_obj.pk, 'review'
-            )
-
+        for project_obj in Project.objects.filter(status__name='Active', end_date=today, requires_review=True, type__name='Class'):
             template_context = {
                 'center_name': CENTER_NAME,
                 'project_title': project_obj.title,
-                'project_renewal_help_url': CENTER_PROJECT_RENEWAL_HELP_URL,
-                'project_review_url': project_review_url,
                 'help_email': EMAIL_TICKET_SYSTEM_ADDRESS,
                 'signature': EMAIL_SIGNATURE
             }

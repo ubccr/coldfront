@@ -113,7 +113,7 @@ Allocation Detail
                 {% else %}
                   {{ allocation.end_date }}
                 {% endif %}
-                {% if allocation.project.requires_review %}
+                {% if allocation.project.requires_review and not allocation.project.type.name == 'Class' %}
                   {% if allocation.is_locked and allocation.status.name == 'Active' and allocation.expires_in <= ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING and allocation.expires_in >= 0 %}
                     <span class="badge badge-warning"><i class="far fa-clock" aria-hidden="true"></i>
                       Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} - Not renewable
