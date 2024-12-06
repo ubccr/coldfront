@@ -163,6 +163,17 @@ class AllocationResourceSelectionView(LoginRequiredMixin, UserPassesTestMixin, T
                         limit_title = 'PI Resource Limit'
                         limit_description = f'Can only have {allocation_per_pi_limit} per PI'
 
+            allocation_pending_request_limit_per_pi_obj = resource_obj.resourceattribute_set.filter(
+                resource_attribute_type__name='allocation_pending_request_limit_per_pi'
+            )
+            if allocation_pending_request_limit_per_pi_obj.exists():
+                allocation_pending_request_limit_per_pi_limit = int(allocation_pending_request_limit_per_pi_obj[0].value)
+                pending_requests = Allocation.objects.filter(resources=resource_obj, status__name='New')
+                if pending_requests.exists() and len(pending_requests) >= allocation_pending_request_limit_per_pi_limit:
+                    limit_reached = True
+                    limit_title = 'Pending Resource Allocation Request Limit'
+                    limit_description = f'Can only have {allocation_pending_request_limit_per_pi_limit} pending request(s) per user'
+
             help_url = resource_obj.resourceattribute_set.filter(resource_attribute_type__name='help_url')
             if help_url.exists():
                 help_url = help_url[0].value
@@ -317,6 +328,18 @@ class GenericView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 request, 'Only the PI can request a new allocation for this resource.'
             )
             return HttpResponseRedirect(reverse('custom-allocation-create', kwargs={'project_pk': project_obj.pk}))
+        
+        allocation_pending_request_limit_per_pi_obj = resource_obj.resourceattribute_set.filter(
+            resource_attribute_type__name='allocation_pending_request_limit_per_pi'
+        )
+        if allocation_pending_request_limit_per_pi_obj.exists():
+            allocation_pending_request_limit_per_pi_limit = int(allocation_pending_request_limit_per_pi_obj[0].value)
+            pending_requests = Allocation.objects.filter(resources=resource_obj, status__name='New')
+            if pending_requests.exists() and len(pending_requests) >= allocation_pending_request_limit_per_pi_limit:
+                messages.error(
+                    request, 'You are at the pending allocation limit per user allowed for this resource.'
+                )
+                return HttpResponseRedirect(reverse('custom-allocation-create', kwargs={'project_pk': project_obj.pk}))
 
         return super().dispatch(request, *args, **kwargs)
 
