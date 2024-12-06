@@ -11,6 +11,7 @@ from django import forms
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import user_passes_test, login_required
 from django.contrib.auth.models import User
+from coldfront.core.project.utils import generate_project_code
 from coldfront.core.utils.common import import_from_settings
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
@@ -70,6 +71,9 @@ if EMAIL_ENABLED:
     EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
         'EMAIL_DIRECTOR_EMAIL_ADDRESS')
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
+
+PROJECT_CODE = import_from_settings('PROJECT_CODE', False)
+PROJECT_CODE_PADDING = import_from_settings('PROJECT_CODE_PADDING', False)
 
 logger = logging.getLogger(__name__)
 
@@ -176,6 +180,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['attributes_with_usage'] = attributes_with_usage
         context['project_users'] = project_users
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
+        context['project_code'] = project_obj.project_code
 
         try:
             context['ondemand_url'] = settings.ONDEMAND_URL
@@ -474,6 +479,14 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
             role=ProjectUserRoleChoice.objects.get(name='Manager'),
             status=ProjectUserStatusChoice.objects.get(name='Active')
         )
+
+        if PROJECT_CODE:
+            '''
+            Set the ProjectCode object, if PROJECT_CODE is defined. 
+            If PROJECT_CODE_PADDING is defined, the set amount of padding will be added to PROJECT_CODE.
+            '''
+            project_obj.project_code = generate_project_code(PROJECT_CODE, project_obj.pk, PROJECT_CODE_PADDING or 0)
+            project_obj.save(update_fields=["project_code"])
 
         return super().form_valid(form)
 
