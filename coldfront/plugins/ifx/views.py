@@ -94,10 +94,9 @@ def get_billing_record_list(request):
         raise PermissionDenied
     return ifxbilling_get_billing_record_list(request._request)
 
-@login_required
 @api_view(['POST',])
 @permission_classes([AdminPermissions,])
-def calculate_billing_month(request, year, month):
+def calculate_billing_month(request, invoice_prefix, year, month):
     '''
     Calculate billing month view
     '''
