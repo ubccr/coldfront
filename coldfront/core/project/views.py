@@ -11,6 +11,7 @@ from django import forms
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import user_passes_test, login_required
 from django.contrib.auth.models import User
+from coldfront.core.project.utils import generate_project_code
 from coldfront.core.utils.common import import_from_settings
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
@@ -76,6 +77,9 @@ if EMAIL_ENABLED:
     EMAIL_DIRECTOR_EMAIL_ADDRESS = import_from_settings(
         'EMAIL_DIRECTOR_EMAIL_ADDRESS')
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
+
+PROJECT_CODE = import_from_settings('PROJECT_CODE', False)
+PROJECT_CODE_PADDING = import_from_settings('PROJECT_CODE_PADDING', False)
 
 logger = logging.getLogger(__name__)
 
@@ -488,6 +492,14 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         # project signals
         project_new.send(sender=self.__class__, project_obj=project_obj)
 
+        if PROJECT_CODE:
+            '''
+            Set the ProjectCode object, if PROJECT_CODE is defined. 
+            If PROJECT_CODE_PADDING is defined, the set amount of padding will be added to PROJECT_CODE.
+            '''
+            project_obj.project_code = generate_project_code(PROJECT_CODE, project_obj.pk, PROJECT_CODE_PADDING or 0)
+            project_obj.save(update_fields=["project_code"])
+
         return super().form_valid(form)
 
     def get_success_url(self):
@@ -515,6 +527,14 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+
+        if PROJECT_CODE and project_obj.project_code == "":
+            '''
+            Updates project code if no value was set, providing the feature is activated. 
+            '''
+            project_obj.project_code = generate_project_code(PROJECT_CODE, project_obj.pk, PROJECT_CODE_PADDING or 0)
+            project_obj.save(update_fields=["project_code"])
+
         if project_obj.status.name not in ['Active', 'New', ]:
             messages.error(request, 'You cannot update an archived project.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
