@@ -164,6 +164,7 @@ For more info on [ColdFront plugins](../../plugin/existing_plugins/) (Django app
 | AUTH_LDAP_BIND_PASSWORD     | The password to use AUTH_LDAP_BIND_DN   |
 | AUTH_LDAP_USER_SEARCH_BASE  | User search base dn                     |
 | AUTH_LDAP_GROUP_SEARCH_BASE | Group search base dn                    |
+| AUTH_COLDFRONT_LDAP_SEARCH_SCOPE | The search scope for Coldfront authentication. Options: SUBTREE or default (ONELEVEL)   |
 | AUTH_LDAP_MIRROR_GROUPS     | Enable/disable mirroring of groups. Default True  |
 | AUTH_LDAP_BIND_AS_AUTHENTICATING_USER     | Authentication will leave the LDAP connection bound as the authenticating user, rather than forcing it to re-bind. Default False    |
 
