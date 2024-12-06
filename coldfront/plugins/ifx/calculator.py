@@ -593,7 +593,8 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
 
         if BillingRecord.objects.filter(product_usage=product_usage).exists():
             if recalculate:
-                BillingRecord.objects.filter(product_usage=product_usage).delete()
+                for br in BillingRecord.objects.filter(product_usage=product_usage):
+                    br.delete()
             else:
                 msg = f'Billing record already exists for usage {product_usage}'
                 raise Exception(msg)

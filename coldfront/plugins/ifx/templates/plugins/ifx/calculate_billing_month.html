@@ -138,7 +138,7 @@ Calculate Billing Month
 
                 $.ajax({
                     contentType: 'application/json',
-                    url: `/ifx/api/billing/calculate-billing-month/${year}/${month}/`,
+                    url: `/ifx/api/billing/calculate-billing-month/RC/${year}/${month}/`,
                     method: 'POST',
                     headers: {'X-CSRFToken': '{{ csrf_token }}'},
                     data: data,
