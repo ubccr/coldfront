@@ -10,7 +10,7 @@ from django.db import connection, transaction
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.conf import settings
-from ifxbilling.calculator import BasicBillingCalculator, NewBillingCalculator
+from ifxbilling.calculator import BasicBillingCalculator, NewBillingCalculator, Rebalance
 from ifxbilling.models import Account, Product, ProductUsage, Rate, BillingRecord
 from ifxuser.models import Organization
 from coldfront.core.allocation.models import Allocation, AllocationStatusChoice
@@ -29,7 +29,7 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
     STORAGE_QUOTA_ATTRIBUTE = 'Storage Quota (TB)'
     STORAGE_RESOURCE_TYPE = 'Storage'
 
-    def calculate_billing_month(self, year, month, organizations=None, recalculate=False, verbosity=0):
+    def calculate_billing_month(self, year, month, organizations=None, user=None, recalculate=False, verbosity=0):
         '''
         Calculate a month of billing for the given year and month
 
@@ -46,6 +46,9 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
 
         :param organizations: List of specific organizations to process.  If not set, all Harvard org_tree organizations will be processed.
         :type organizations: list, optional
+
+        :param user: Limit billing to this year.  If not set, all users will be processed.
+        :type user: :class:`~ifxuser.models.IfxUser`, optional
 
         :param recalculate: If set to True, will delete existing :class:`~ifxbilling.models.BillingRecord` objects
         :type recalculate: bool, optional
@@ -66,7 +69,7 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
 
         results = {}
         for organization in organizations_to_process:
-            result = self.generate_billing_records_for_organization(year, month, organization, recalculate)
+            result = self.generate_billing_records_for_organization(year, month, organization, user, recalculate)
             results[organization.name] = result
 
         if year == 2023 and (month == 3 or month == 4):
@@ -74,7 +77,7 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
 
         return Resultinator(results)
 
-    def generate_billing_records_for_organization(self, year, month, organization, recalculate, **kwargs):
+    def generate_billing_records_for_organization(self, year, month, organization, user, recalculate, **kwargs):
         '''
         Create and save all of the :class:`~ifxbilling.models.BillingRecord` objects for the month for an organization.
 
@@ -101,6 +104,9 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
 
         :param organization: The organization whose :class:`~ifxbilling.models.BillingRecord` objects should be generated
         :type organization: list
+
+        :param user: Limit billing to this user.  If not set, all users will be processed.
+        :type user: :class:`~ifxuser.models.IfxUser`
 
         :param recalculate: If True, will delete existing :class:`~ifxbilling.models.BillingRecord` objects if possible
         :type recalculate: bool
@@ -587,7 +593,8 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
 
         if BillingRecord.objects.filter(product_usage=product_usage).exists():
             if recalculate:
-                BillingRecord.objects.filter(product_usage=product_usage).delete()
+                for br in BillingRecord.objects.filter(product_usage=product_usage):
+                    br.delete()
             else:
                 msg = f'Billing record already exists for usage {product_usage}'
                 raise Exception(msg)
@@ -733,6 +740,24 @@ class Resultinator():
                     errors_by_lab[lab] = output[1]
         return errors_by_lab
 
+    def get_other_errors_by_organization(self, organization_name=None):
+        '''
+        Return dict of all of the "Other" errors keyed by lab
+        '''
+        errors_by_lab = {}
+        for lab, output in self.results.items():
+            if output[1] and 'No project' not in output[1][0]:
+                if organization_name is None or lab == organization_name:
+                    for error in output[1]:
+                        for error_type, regex in self.error_types.items():
+                            if error_type == 'Other' and re.search(regex, error):
+                                if lab not in errors_by_lab:
+                                    errors_by_lab[lab] = []
+                                errors_by_lab[lab].append(error)
+                            elif re.search(regex, error):
+                                break
+        return errors_by_lab
+
     def get_successes_by_organization(self, organization_name=None):
         '''
         Return dict of successes keyed by lab
@@ -771,3 +796,59 @@ class Resultinator():
                                 errors_by_type[error_type].append(lab)
                                 break
         return errors_by_type
+
+
+class ColdfrontRebalance(Rebalance):
+    '''
+    Coldfront Rebalance.  Does not do a user-specific rebalance, but rather the entire organization so that offer letter reprocessing is done.
+    '''
+
+    def get_recalculate_body(self, user, account_data):
+        '''
+        Get the body of the recalculate POST
+        '''
+        if not account_data or not len(account_data):
+            raise Exception('No account data provided')
+
+        # Figure out the organization that needs to be rebalanced from the account_data
+        organization = None
+        try:
+            account = Account.objects.filter(ifxacct=account_data[0]['account']).first()
+            organization = account.organization
+        except Account.DoesNotExist:
+            raise Exception(f'Account {account_data[0]["account"]} not found')
+
+        return {
+            'recalculate': False,
+            'user_ifxorg': organization.ifxorg,
+        }
+
+    def remove_billing_records(self, user, account_data):
+        '''
+        Remove the billing records for the given facility, year, month, and organization (as determined by the account_data)
+        Need to clear out the whole org so that offer letter allocations can be properly credited
+        '''
+        if not account_data or not len(account_data):
+            raise Exception('No account data provided')
+
+        # Figure out the organization that needs to be rebalanced from the account_data
+        organization = None
+        try:
+            account = Account.objects.filter(ifxacct=account_data[0]['account']).first()
+            organization = account.organization
+        except Account.DoesNotExist:
+            raise Exception(f'Account {account_data[0]["account"]} not found')
+
+        if not organization:
+            raise Exception(f'Organization not found for account {account_data[0]["account"]}')
+
+        # Remove the billing records for the organization
+        billing_records = BillingRecord.objects.filter(
+            product_usage__product__facility=self.facility,
+            account__organization=organization,
+            year=self.year,
+            month=self.month,
+        ).exclude(current_state='FINAL')
+
+        for br in billing_records:
+            br.delete()
