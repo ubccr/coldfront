@@ -21,7 +21,7 @@ urlpatterns = [
     path('api/billing/get-summary-by-account/', ifxbilling_views.get_summary_by_account),
     path('api/billing/get-pending-year-month/<str:invoice_prefix>/', ifxbilling_views.get_pending_year_month),
     path('api/billing/rebalance/', ifxbilling_views.rebalance),
-    path('api/calculate-billing-month/<int:year>/<int:month>/', calculate_billing_month, name='calculate-billing-month'),
+    path('api/billing/calculate-billing-month/<str:invoice_prefix>/<int:year>/<int:month>/', calculate_billing_month, name='calculate-billing-month'),
     path('api/run-report/', run_report),
     path('api/get-org-names/', get_org_names, name='get-org-names'),
     path('api/get-product-usages/', get_product_usages, name='get-product-usages'),

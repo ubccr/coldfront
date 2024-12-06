@@ -138,7 +138,7 @@ Calculate Billing Month
 
                 $.ajax({
                     contentType: 'application/json',
-                    url: `/ifx/api/calculate-billing-month/${year}/${month}/`,
+                    url: `/ifx/api/billing/calculate-billing-month/RC/${year}/${month}/`,
                     method: 'POST',
                     headers: {'X-CSRFToken': '{{ csrf_token }}'},
                     data: data,
@@ -161,9 +161,10 @@ Calculate Billing Month
                     error: function (jqXHR, status, error) {
                         alert(status + ' ' + error)
                     },
-                }).success(
-                    alert('Update started.  You will receive an email when the update is complete.')
-                )
+                    success: function () {
+                        alert('Update started.  You will receive an email when the update is complete.')
+                    }
+                })
             })
         })
     })(jQuery)
