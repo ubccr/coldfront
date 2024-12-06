@@ -118,12 +118,21 @@ def calculate_billing_month(request, invoice_prefix, year, month):
         organizations = ifxuser_models.Organization.objects.filter(org_tree='Harvard')
         if user_ifxorg:
             organizations = [ifxuser_models.Organization.objects.get(ifxorg=user_ifxorg)]
+
         if recalculate:
             for br in ifxbilling_models.BillingRecord.objects.filter(year=year, month=month):
                 br.delete()
             ifxbilling_models.ProductUsageProcessing.objects.filter(product_usage__year=year, product_usage__month=month).delete()
         calculator = NewColdfrontBillingCalculator()
-        calculator.calculate_billing_month(year, month, organizations=organizations, recalculate=recalculate)
+        resultinator = calculator.calculate_billing_month(year, month, organizations=organizations, recalculate=recalculate)
+        successes = 0
+        errors = []
+        for org, result in resultinator.results.items():
+            if len(result[0]):
+                successes += len(result[0])
+        errors = [v[0] for v in resultinator.get_other_errors_by_organization().values()]
+
+        return Response(data={ 'successes': successes, 'errors': errors }, status=status.HTTP_200_OK)
         return Response('OK', status=status.HTTP_200_OK)
     # pylint: disable=broad-exception-caught
     except Exception as e:

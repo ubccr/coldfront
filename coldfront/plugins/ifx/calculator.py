@@ -739,6 +739,24 @@ class Resultinator():
                     errors_by_lab[lab] = output[1]
         return errors_by_lab
 
+    def get_other_errors_by_organization(self, organization_name=None):
+        '''
+        Return dict of all of the "Other" errors keyed by lab
+        '''
+        errors_by_lab = {}
+        for lab, output in self.results.items():
+            if output[1] and 'No project' not in output[1][0]:
+                if organization_name is None or lab == organization_name:
+                    for error in output[1]:
+                        for error_type, regex in self.error_types.items():
+                            if error_type == 'Other' and re.search(regex, error):
+                                if lab not in errors_by_lab:
+                                    errors_by_lab[lab] = []
+                                errors_by_lab[lab].append(error)
+                            elif re.search(regex, error):
+                                break
+        return errors_by_lab
+
     def get_successes_by_organization(self, organization_name=None):
         '''
         Return dict of successes keyed by lab
