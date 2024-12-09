@@ -715,17 +715,12 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
         users_to_add = []
         for user in missing_users:
-            role = get_default_allocation_user_role(resource_obj, allocation_obj.project, user)
-            if role.exists():
-                role = role[0]
-            else:
-                role = None
             users_to_add.append({
                 'username': user.username,
                 'first_name': user.first_name,
                 'last_name': user.last_name,
                 'email': user.email,
-                'role': role
+                'role': None
             })
 
         return users_to_add
