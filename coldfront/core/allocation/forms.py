@@ -136,7 +136,7 @@ class AllocationAddUserFormset(forms.BaseFormSet):
         """
         kwargs = super().get_form_kwargs(index)
         disable_selected = kwargs['disable_selected'][index]
-        return {'disable_selected': disable_selected}
+        return {'disable_selected': disable_selected, 'resource': kwargs.get('resource')}
 
 
 class AllocationRemoveUserForm(forms.Form):
