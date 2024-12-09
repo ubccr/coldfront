@@ -1,3 +1,4 @@
+import djp
 import environ
 from split_settings.tools import optional, include
 from coldfront.config.env import ENV, PROJECT_ROOT
@@ -50,3 +51,5 @@ for lc in local_configs:
     coldfront_configs.append(optional(lc))
 
 include(*coldfront_configs)
+
+djp.settings(globals())
