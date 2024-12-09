@@ -4,12 +4,10 @@ from django.utils.html import format_html
 from crispy_forms.helper import FormHelper
 
 
-from django import forms
-
 class DisableableCheckboxSelectMultiple(forms.CheckboxSelectMultiple):
 
     def __init__(self, *args, **kwargs):
-        self.disable_choices = kwargs.pop('disable_choices', [])
+        self.disable_choices = kwargs.pop('disable_choices', {})
         super().__init__(*args, **kwargs)
 
     def create_option(self, name, value, *args, **kwargs):
