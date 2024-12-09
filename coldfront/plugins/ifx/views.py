@@ -23,7 +23,7 @@ from ifxbilling import models as ifxbilling_models
 from ifxbilling.calculator import getClassFromName
 from ifxbilling.views import get_billing_record_list as ifxbilling_get_billing_record_list
 from ifxbilling.fiine import update_user_accounts
-from ifxbilling.rebalancer import get_rebalancer_class
+from ifxbilling.calculator import get_rebalancer_class
 from ifxmail.client import send
 from ifxuser import models as ifxuser_models
 from coldfront.plugins.ifx.calculator import NewColdfrontBillingCalculator
