@@ -1109,10 +1109,6 @@ def get_slate_project_info(username):
         if not attribute_obj.exists():
             continue
         directory = attribute_obj[0]
-        owner = allocation_user_obj.allocation.project.pi.username
-        # For imported projects that have a project owner who can't be a PI.
-        if owner == 'thcrowe' and allocation_user_obj.allocation.project.requestor:
-            owner = allocation_user_obj.allocation.project.requestor.username
         slate_projects.append(
             {
                 'name': directory.value.split('/')[-1],
@@ -1411,7 +1407,9 @@ def import_slate_projects(json_file_name, out_file_name, importing_user, limit=N
     imported = 0
     for slate_project in slate_projects:
         existing_gid = AllocationAttribute.objects.filter(
-            allocation_attribute_type__name='GID', value=slate_project.get('gid_number')
+            allocation_attribute_type__name='GID',
+            value=slate_project.get('gid_number'),
+            allocation__status__name__in= ['Active', 'New', 'Renewal Pending']
         )
         if existing_gid.exists():
             logger.warning(f'Slate Project GID {slate_project.get("gid_number")} already exists in '
