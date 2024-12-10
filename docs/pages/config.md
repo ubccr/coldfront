@@ -266,6 +266,7 @@ exist in your backend LDAP to show up in the ColdFront user search.
 | LDAP_USER_SEARCH_PRIV_KEY_FILE  | Path to the private key file.       |
 | LDAP_USER_SEARCH_CERT_FILE  | Path to the certificate file.           |
 | LDAP_USER_SEARCH_CACERT_FILE  | Path to the CA cert file.             |
+| LDAP_USER_SEARCH_CERT_VALIDATE_MODE | Whether to require/validate certs.  If 'required', certs are required and validated.  If 'optional', certs are optional but validated if provided.  If 'none' (the default) certs are ignored. |
 
 ## Advanced Configuration
 
