@@ -3,6 +3,7 @@ from coldfront.config.base import INSTALLED_APPS
 INSTALLED_APPS += [
         'django_filters',
         'rest_framework',
+        'rest_framework.authtoken',
         'coldfront.plugins.api'
         ]
 
