@@ -754,12 +754,11 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             sender=self.__class__, users_to_remove=users_list, project=project_obj
         )
         if signal_response:
-            user_categories = signal_response[0][1]
-            users_no_removal = user_categories[0]
-            users_to_remove = user_categories[1]
+            users_to_remove = signal_response[0][1]
         else:
-            users_no_removal = []
             users_to_remove = users_list
+
+        users_no_removal = [u for u in users_list if u not in users_to_remove]
 
         context = {}
 
@@ -784,8 +783,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             sender=self.__class__, users_to_remove=users_to_remove, project=project_obj
         )
         if signal_response:
-            user_categories = signal_response[0][1]
-            users_to_remove = user_categories[1]
+            users_to_remove = signal_response[0][1]
         else:
             users_to_remove = users_to_remove
 
@@ -793,6 +791,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         formset = formset(request.POST, initial=users_to_remove, prefix='userform')
 
         remove_users_count = 0
+        failed_user_removals = []
 
         if formset.is_valid():
             projectuser_status_removed = ProjectUserStatusChoice.objects.get(
@@ -818,18 +817,15 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                             user_name=user_obj.username, group_name=project_obj.title
                         )
                         logger.info(
-                            "P802: Coldfront user %s removed AD User for %s from AD Group for %s",
+                            "P815: Coldfront user %s removed AD User for %s from AD Group for %s",
                             self.request.user,
                             user_obj.username,
                             project_obj.title,
                         )
                     except Exception as e:
-                        messages.error(
-                            request,
-                            f"could not remove user {user_obj}: {e}"
-                        )
+                        failed_user_removals += [f"could not remove user {user_obj}: {e}"]
                         logger.exception(
-                            "P802: Coldfront user %s could NOT remove AD User for %s from AD Group for %s: %s",
+                            "P815: Coldfront user %s could NOT remove AD User for %s from AD Group for %s: %s",
                             self.request.user,
                             user_obj.username,
                             project_obj.title,
@@ -856,6 +852,8 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                             )
                     remove_users_count += 1
             user_pl = 'user' if remove_users_count == 1 else 'users'
+            for fail in failed_user_removals:
+                messages.error(request, fail)
             messages.success(
                 request, f'Removed {remove_users_count} {user_pl} from project.'
             )
