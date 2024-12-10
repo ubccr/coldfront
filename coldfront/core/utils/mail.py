@@ -36,6 +36,13 @@ def allocation_email_recipients(allocation_obj):
 def send_email(subject, body, sender, receiver_list, cc=[]):
     """Helper function for sending emails"""
 
+    # TEMPORARY: only sends emails to app-eng while we get a picture of the email system
+    body = f"Original Recipients: {receiver_list}\n\nCC'dL {cc}\n\n{body}"
+
+    receiver_list = ["ris-appeng@gowustl.onmicrosoft.com"]
+    cc = []
+    # END TEMPORARY
+
     if not EMAIL_ENABLED:
         return
 
