@@ -1,12 +1,19 @@
+import csv
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
-from django.db.models import OuterRef, Subquery, Q, F, ExpressionWrapper, fields
+
+from django.db.models import OuterRef, Subquery, Q, F, ExpressionWrapper, Case, When, Value, fields, DurationField
 from django.db.models.functions import Cast
+from django.http import HttpResponse
+from django.utils.http import urlencode
 from django_filters import rest_framework as filters
 from ifxuser.models import Organization
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.renderers import AdminRenderer, JSONRenderer
+from rest_framework import filters as drf_filters
+
 from simple_history.utils import get_history_model_for_model
 
 from coldfront.core.utils.common import import_from_settings
@@ -19,13 +26,67 @@ UNFULFILLED_ALLOCATION_STATUSES = ['Denied'] + import_from_settings(
     'PENDING_ALLOCATION_STATUSES', ['New', 'In Progress', 'On Hold', 'Pending Activation']
 )
 
+class CustomAdminRenderer(AdminRenderer):
+    def render(self, data, accepted_media_type=None, renderer_context=None):
+
+        # Get the count of objects
+        count = len(data['results']) if 'results' in data else len(data)
+
+        # Create the count HTML
+        count_html = f'<div><strong>Total Objects: {count}</strong></div>'
+
+        # Render the original content
+        original_content = super().render(data, accepted_media_type, renderer_context)
+
+        # Ensure original_content is a string
+        if isinstance(original_content, bytes):
+            original_content = original_content.decode('utf-8')
+
+
+        # Get the request object
+        request = renderer_context.get('request')
+
+        # Generate the CSV export URL
+        query_params = request.GET.copy()
+        params_present = request.build_absolute_uri(request.path) != request.build_absolute_uri()
+        connector = '&' if params_present else '?'
+        export_url = f"{request.build_absolute_uri()}{connector}export=csv"
+
+        # Create the button HTML
+        button_html = f'''
+        <div style="margin: 20px 0;">
+            <a href="{export_url}" class="button" style="padding: 10px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">Export to CSV</a>
+        </div>
+        '''
+
+        # Insert the count HTML after the docstring and before the results table
+        parts = original_content.split('<table', 1)
+        content_with_count_and_button = parts[0] + count_html + button_html +'<table' + parts[1]
+
+        return content_with_count_and_button.encode('utf-8')
+
 class ResourceViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = serializers.ResourceSerializer
     queryset = Resource.objects.all()
 
 
+class AllocationFilter(filters.FilterSet):
+    '''Filters for AllocationViewSet.
+    created_before is the date the request was created before.
+    created_after is the date the request was created after.
+    '''
+    created = filters.DateFromToRangeFilter()
+
+    class Meta:
+        model = Allocation
+        fields = [
+            'created',
+        ]
+
+
 class AllocationViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = serializers.AllocationSerializer
+    filterset_class = AllocationFilter
     # permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
     def get_queryset(self):
@@ -57,10 +118,26 @@ class AllocationRequestFilter(filters.FilterSet):
     created_before is the date the request was created before.
     created_after is the date the request was created after.
     '''
-    created = filters.DateFromToRangeFilter()
-    fulfilled = filters.BooleanFilter(method='filter_fulfilled')
-    fulfilled_date = filters.DateFromToRangeFilter()
-    time_to_fulfillment = filters.NumericRangeFilter(method='filter_time_to_fulfillment')
+    created = filters.DateFromToRangeFilter(label='Created Range')
+    fulfilled = filters.BooleanFilter(label='Fulfilled', method='filter_fulfilled')
+    fulfilled_date = filters.DateFromToRangeFilter(label='Fulfilled Date Range')
+    requested_size = filters.NumericRangeFilter(label='Requested Size', field_name='requested_size')
+    pi = filters.CharFilter(label='PI', field_name='project__pi__full_name', lookup_expr='icontains')
+    project = filters.CharFilter(label='Project', field_name='project__title', lookup_expr='icontains')
+    status = filters.CharFilter(label='Status', field_name='status__name', lookup_expr='icontains')
+    time_to_fulfillment = filters.NumericRangeFilter(label='Time-to-fulfillment Range', method='filter_time_to_fulfillment')
+    o = filters.OrderingFilter(
+        fields=(
+            ('id', 'id'),
+            ('created', 'created'),
+            ('project__title', 'project'),
+            ('project__pi__full_name', 'pi'),
+            ('status__name', 'status'),
+            ('quantity', 'requested_size'),
+            ('fulfilled_date', 'fulfilled_date'),
+            ('time_to_fulfillment', 'time_to_fulfillment'),
+        )
+    )
 
     class Meta:
         model = Allocation
@@ -68,6 +145,8 @@ class AllocationRequestFilter(filters.FilterSet):
             'created',
             'fulfilled',
             'fulfilled_date',
+            'pi',
+            'requested_size',
             'time_to_fulfillment',
         ]
 
@@ -91,10 +170,13 @@ class AllocationRequestFilter(filters.FilterSet):
 
 class AllocationRequestViewSet(viewsets.ReadOnlyModelViewSet):
     '''Report view on allocations requested through Coldfront.
+
     Data:
     - id: allocation id
     - project: project name
-    - resource: resource name
+    - pi: full name of project PI
+    - resource: name of allocation's resource
+    - tier: storage tier of allocation's resource
     - path: path to the allocation on the resource
     - status: current status of the allocation
     - size: current size of the allocation
@@ -102,8 +184,9 @@ class AllocationRequestViewSet(viewsets.ReadOnlyModelViewSet):
     - created_by: user who submitted the allocation request
     - fulfilled_date: date the allocation's status was first set to "Active"
     - fulfilled_by: user who first set the allocation status to "Active"
-    - time_to_fulfillment: time between request creation and time_to_fulfillment
-        displayed as "DAY_INTEGER HH:MM:SS"
+    - time_to_fulfillment: time from request creation to time_to_fulfillment displayed as "DAY_INTEGER HH:MM:SS"
+
+    Filters and ordering can be added either by manually defining in the url or by clicking on the "filters" button in the top right corner.
 
     Filters:
     - created_before/created_after (structure date as 'YYYY-MM-DD')
@@ -114,9 +197,11 @@ class AllocationRequestViewSet(viewsets.ReadOnlyModelViewSet):
         Set to the maximum/minimum number of days between request creation and time_to_fulfillment.
     '''
     serializer_class = serializers.AllocationRequestSerializer
-    filter_backends = (filters.DjangoFilterBackend,)
+    filter_backends = (filters.DjangoFilterBackend, )
     filterset_class = AllocationRequestFilter
     permission_classes = [IsAuthenticated, IsAdminUser]
+    renderer_classes = [CustomAdminRenderer, JSONRenderer]
+    csv_filename = 'allocation_requests.csv'
 
     def get_queryset(self):
         HistoricalAllocation = get_history_model_for_model(Allocation)
@@ -133,19 +218,56 @@ class AllocationRequestViewSet(viewsets.ReadOnlyModelViewSet):
         # Annotate allocations with the status_id of their earliest historical record
         allocations = Allocation.objects.annotate(
             earliest_status_name=Subquery(earliest_history)
-        ).filter(earliest_status_name='New').order_by('created')
+        ).filter(earliest_status_name='New')
 
         allocations = allocations.annotate(
             fulfilled_date=Subquery(fulfilled_date)
         )
-
+        # Use Case and When to handle null fulfilled_date
         allocations = allocations.annotate(
-            time_to_fulfillment=ExpressionWrapper(
-                (Cast(Subquery(fulfilled_date), fields.DateTimeField()) - F('created')),
-                output_field=fields.DurationField()
+            time_to_fulfillment=Case(
+                When(
+                    fulfilled_date__isnull=False,
+                    then=ExpressionWrapper(
+                        (Cast(Subquery(fulfilled_date), fields.DateTimeField()) - F('created')),
+                        output_field=DurationField()
+                    )
+                ),
+                default=Value(None),  # If fulfilled_date is null, set time_to_fulfillment to None
+                output_field=DurationField()
             )
         )
         return allocations
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        # Check if the export query parameter is present
+        if request.GET.get('export') == 'csv':
+            return self.export_to_csv(queryset)
+
+        # Otherwise, use the default list implementation
+        return super().list(request, *args, **kwargs)
+
+    def export_to_csv(self, queryset):
+        # Create the HttpResponse object with CSV header.
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="{self.csv_filename}"'
+
+        # Create a CSV writer object
+        writer = csv.writer(response)
+
+        serializer = self.get_serializer()
+        field_names = [field.label or field_name for field_name, field in serializer.fields.items()]
+        # Write the header row
+        writer.writerow(field_names)
+
+        # Write data rows
+        for item in queryset:
+            serializer_instance = self.get_serializer(item)
+            row = [serializer_instance.data[field_name] for field_name in serializer.fields.keys()]
+            writer.writerow(row)
+
+        return response
 
 
 class AllocationChangeRequestFilter(filters.FilterSet):
@@ -154,16 +276,32 @@ class AllocationChangeRequestFilter(filters.FilterSet):
     created_after is the date the request was created after.
     '''
     created = filters.DateFromToRangeFilter()
-    fulfilled = filters.BooleanFilter(method='filter_fulfilled')
-    fulfilled_date = filters.DateFromToRangeFilter()
-    time_to_fulfillment = filters.NumericRangeFilter(method='filter_time_to_fulfillment')
-
+    fulfilled = filters.BooleanFilter(label='Fulfilled', method='filter_fulfilled')
+    fulfilled_date = filters.DateFromToRangeFilter(label='Fulfilled Date Range')
+    pi = filters.CharFilter(label='PI', field_name='allocation__project__pi__full_name', lookup_expr='icontains')
+    project = filters.CharFilter(label='Project', field_name='allocation__project__title', lookup_expr='icontains')
+    time_to_fulfillment = filters.NumericRangeFilter(label='Time-to-fulfillment Range', method='filter_time_to_fulfillment')
+    o = filters.OrderingFilter(
+        fields=(
+            ('created', 'created'),
+            ('id', 'id'),
+            ('allocation__id', 'allocation'),
+            ('allocation__project__title', 'project'),
+            ('allocation__project__pi__full_name', 'pi'),
+            ('status__name', 'status'),
+            ('fulfilled_date', 'fulfilled_date'),
+            ('time_to_fulfillment', 'time_to_fulfillment'),
+        )
+    )
     class Meta:
         model = AllocationChangeRequest
         fields = [
+            'id',
             'created',
             'fulfilled',
             'fulfilled_date',
+            'pi',
+            'project',
             'time_to_fulfillment',
         ]
 
@@ -188,7 +326,12 @@ class AllocationChangeRequestFilter(filters.FilterSet):
 class AllocationChangeRequestViewSet(viewsets.ReadOnlyModelViewSet):
     '''
     Data:
-    - allocation: allocation object details
+    - id: allocationchangerequest id
+    - allocation: allocation id
+    - project: project title
+    - pi: full name of project PI
+    - resource: allocation's resource
+    - tier: storage tier of allocation's resource
     - justification: justification provided at time of filing
     - status: request status
     - created: date created
@@ -196,7 +339,9 @@ class AllocationChangeRequestViewSet(viewsets.ReadOnlyModelViewSet):
     - fulfilled_date: date the allocationchangerequests's status was first set to "Approved"
     - fulfilled_by: user who last modified an approved object.
 
-    Query parameters:
+    Filters and ordering can be added either by manually defining in the url or by clicking on the "filters" button in the top right corner.
+
+    Filters:
     - created_before/created_after (structure date as 'YYYY-MM-DD')
     - fulfilled (boolean)
         Set to true to return all approved requests, false to return all pending and denied requests.
@@ -205,8 +350,10 @@ class AllocationChangeRequestViewSet(viewsets.ReadOnlyModelViewSet):
         Set to the maximum/minimum number of days between request creation and time_to_fulfillment.
     '''
     serializer_class = serializers.AllocationChangeRequestSerializer
-    filter_backends = (filters.DjangoFilterBackend,)
+    filter_backends = (filters.DjangoFilterBackend, )
     filterset_class = AllocationChangeRequestFilter
+    renderer_classes = [CustomAdminRenderer, JSONRenderer]
+    csv_filename = 'allocation_change_requests.csv'
 
     def get_queryset(self):
         requests = AllocationChangeRequest.objects.prefetch_related(
@@ -241,10 +388,50 @@ class AllocationChangeRequestViewSet(viewsets.ReadOnlyModelViewSet):
                 output_field=fields.DurationField()
             )
         )
-        requests = requests.order_by('created')
 
         return requests
 
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        # Check if the export query parameter is present
+        if request.GET.get('export') == 'csv':
+            return self.export_to_csv(queryset)
+
+        # Otherwise, use the default list implementation
+        return super().list(request, *args, **kwargs)
+
+    def export_to_csv(self, queryset):
+        # Create the HttpResponse object with CSV header.
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="{self.csv_filename}"'
+
+        # Create a CSV writer object
+        writer = csv.writer(response)
+
+        serializer = self.get_serializer()
+        field_names = [field.label or field_name for field_name, field in serializer.fields.items()]
+        # Write the header row
+        writer.writerow(field_names)
+
+        # Write data rows
+        for item in queryset:
+            serializer_instance = self.get_serializer(item)
+            row = [serializer_instance.data[field_name] for field_name in serializer.fields.keys()]
+            writer.writerow(row)
+
+        return response
+
+
+class ProjectFilter(filters.FilterSet):
+    '''Filters for ProjectViewSet.
+    '''
+    created = filters.DateFromToRangeFilter()
+
+    class Meta:
+        model = Project
+        fields = [
+            'created',
+        ]
 
 class ProjectViewSet(viewsets.ReadOnlyModelViewSet):
     '''
@@ -253,8 +440,10 @@ class ProjectViewSet(viewsets.ReadOnlyModelViewSet):
         Show related allocation data.
     - project_users (default false)
         Show related user data.
+    - created_before/created_after (structure date as 'YYYY-MM-DD')
     '''
     serializer_class = serializers.ProjectSerializer
+    filterset_class = ProjectFilter
 
     def get_queryset(self):
         projects = Project.objects.prefetch_related('status')

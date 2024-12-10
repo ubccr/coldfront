@@ -1,7 +1,7 @@
 import re
 
 import requests
-from bs4 import BeautifulSoup
+from beautifulsoup4 import BeautifulSoup
 
 from coldfront.core.utils.common import import_from_settings
 

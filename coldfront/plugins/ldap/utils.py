@@ -5,7 +5,6 @@ import logging
 import operator
 from functools import reduce
 
-from coldfront.core import field_of_science
 from django.db.models import Q
 from django.dispatch import receiver
 from django.utils import timezone
@@ -14,7 +13,13 @@ from ldap3 import Connection, Server, ALL_ATTRIBUTES
 from ldap3.extend.microsoft.addMembersToGroups import ad_add_members_to_groups
 from ldap3.extend.microsoft.removeMembersFromGroups import ad_remove_members_from_groups
 
-from coldfront.core.project.signals import project_create, project_post_create
+from coldfront.core.project.signals import (
+    project_filter_users_to_remove,
+    project_preremove_projectuser,
+    project_make_projectuser,
+    project_create,
+    project_post_create,
+)
 from coldfront.core.utils.common import (
     import_from_settings, uniques_and_intersection
 )
@@ -179,11 +184,6 @@ class LDAPConn:
             raise ValueError("no groups returned")
         return group[0]
 
-    def add_user_to_group(self, user_name, group_name):
-        group = self.return_group_by_name(group_name)
-        user = self.return_user_by_name(user_name)
-        self.add_member_to_group(user, group)
-
     def add_group_to_group(self, group_name, parent_group_name):
         group = self.return_group_by_name(group_name)
         parent_group = self.return_group_by_name(parent_group_name)
@@ -198,8 +198,9 @@ class LDAPConn:
         except Exception as e:
             logger.exception("Error encountered while adding user to group: %s", e)
             raise LDAPUserAdditionError("Error adding user to group.")
-        if not self.member_in_group(member_dn, group_dn):
+        if not self.member_in_group(member_dn, group_dn) or not result:
             raise LDAPUserAdditionError("Member not successfully added to group.")
+        logger.info('user %s added to AD group %s', member_dn, group_dn)
         return result
 
     def remove_member_from_group(self, user_name, group_name):
@@ -219,8 +220,9 @@ class LDAPConn:
         except Exception as e:
             logger.exception("Error encountered while removing user from group: %s", e)
             raise LDAPUserRemovalError("Error removing user from group.")
-        if self.member_in_group(user_dn, group_dn):
+        if self.member_in_group(user_dn, group_dn) or not result:
             raise LDAPUserRemovalError("Member not successfully removed from group.")
+        logger.info('user %s removed from AD group %s', user_dn, group_dn)
         return result
 
     def users_in_primary_group(self, usernames, groupname):
@@ -714,3 +716,26 @@ def update_new_project(sender, **kwargs):
             role=ProjectUserRoleChoice.objects.get(name=role_name),
             status=ProjectUserStatusChoice.objects.get(name='Active'),
         )
+
+@receiver(project_filter_users_to_remove)
+def filter_project_users_to_remove(sender, **kwargs):
+    users_to_remove = kwargs['users_to_remove']
+    usernames = [u['username'] for u in users_to_remove]
+    ldap_conn = LDAPConn()
+    users_main_group = ldap_conn.users_in_primary_group(usernames, kwargs['project'].title)
+    users_to_remove = [
+        u for u in users_to_remove if u['username'] not in users_main_group
+    ]
+    return users_to_remove
+
+@receiver(project_make_projectuser)
+def add_user_to_group(sender, **kwargs):
+    ldap_conn = LDAPConn()
+    group = ldap_conn.return_group_by_name(kwargs['group_name'])
+    user = ldap_conn.return_user_by_name(kwargs['user_name'])
+    ldap_conn.add_member_to_group(user, group)
+
+@receiver(project_preremove_projectuser)
+def remove_member_from_group(sender, **kwargs):
+    ldap_conn = LDAPConn()
+    ldap_conn.remove_member_from_group(kwargs['user_name'], kwargs['group_name'])
