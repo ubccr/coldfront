@@ -34,6 +34,7 @@ Request New Allocation
   {{ form.workflow_needs|custom_field }}
   {{ form.gpu_memory|as_crispy_field }}
   {{ form.applications_list|as_crispy_field }}
+  {{ form.users|as_crispy_field }}
   <input class="btn btn-primary" type="submit" value="Submit" />
   {% if after_project_creation == 'true' %}
     <a
