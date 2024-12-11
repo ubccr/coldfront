@@ -32,8 +32,8 @@ Choose a Resource for Your Allocation
                       PI only
                     {% elif resource.limit_reached %}
                       limit reached
-                      <a href="#" data-toggle="popover" data-trigger="hover" title="{{ resource.limit_title }}" data-content="{{ resource.limit_description }}">
-                        <i class="fas fa-info-circle" aria-hidden="true"></i>
+                      <a href="#" data-toggle="popover" data-trigger="hover" title="{{ resource.limit_title }} Reached" data-content="{{ resource.limit_description }}">
+                        <i class="fas fa-question-circle" aria-hidden="true"></i>
                       </a>
                     {% elif not resource.has_account %}
                       <a href="https://access.iu.edu/Accounts/Create">Account required</a>

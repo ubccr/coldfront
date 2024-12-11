@@ -1,4 +1,5 @@
 import os
+import re
 import csv
 import logging
 import json
@@ -56,6 +57,108 @@ if EMAIL_ENABLED:
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
     EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
     EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
+
+
+def check_directory_name_format(slate_project_name):
+    return not re.search('^[0-9a-zA-Z_-]+$', slate_project_name) is None
+
+
+def check_directory_name_duplicates(slate_project_name):
+    directory_value = '/N/project/' + slate_project_name
+    directory_names = AllocationAttribute.objects.filter(
+        allocation_attribute_type__name='Slate Project Directory'
+    ).values_list('value', flat=True)
+    for directory_name in directory_names:
+        if directory_name == directory_value:
+            return True
+
+    if not os.path.isfile(os.path.join(SLATE_PROJECT_INCOMING_DIR, 'allocated_quantity.csv')):
+        logger.warning('allocated_quantity.csv is missing. Skipping additional directory name checking')
+        return False
+
+    with open(os.path.join(SLATE_PROJECT_INCOMING_DIR, 'allocated_quantity.csv'), 'r') as slate_projects:
+        csv_reader = csv.reader(slate_projects)
+        for line in csv_reader:
+            if line[0] == slate_project_name:
+                return True
+
+    return False
+
+
+def add_gid_allocation_attribute(allocation_obj):
+    ldap_conn = LDAPModify()
+
+    ldap_group = AllocationAttribute.objects.filter(allocation_attribute_type__name='LDAP Group')
+    if not ldap_group.exists():
+        logger.warning(
+            f'Failed to create a Slate Project GID allocation attribute after allocation approval. The '
+            f'allocation (pk={allocation_obj.pk}) is missing the allocation attribute "LDAP Group"'
+        )
+        return
+    ldap_group = ldap_group[0].value
+
+    gid = ldap_conn.get_attribute('gidNumber', ldap_group, 'cn')
+    if not gid:
+        logger.warning(
+            f'Slate Project allocation (pk={allocation_obj.pk}) with LDAP group {ldap_group} does '
+            f'not have a GID. Skipping allocation attribute creation'
+        )
+        return
+
+    _, created = AllocationAttribute.objects.get_or_create(
+        allocation=allocation_obj,
+        allocation_attribute_type=AllocationAttributeType.objects.get(name='GID'),
+        value=gid
+    )
+    if created:
+        logger.info(
+            f'Created a Slate Project GID allocation attribute after allocation approval (pk={allocation_obj.pk})'
+        )
+
+
+def sync_smb_status(allocation_obj, allocation_attribute_type_obj=None, ldap_conn=None):
+    gid_obj = allocation_obj.allocationattribute_set.filter(
+        allocation_attribute_type__name='GID'
+    )
+    if not gid_obj.exists():
+        logger.error(
+            f'Failed to sync smb status in a Slate Project allocation. The allocation '
+            f'(pk={allocation_obj.pk}) is missing the allocation attribute "GID"'
+        )
+        return
+    gid = int(gid_obj[0].value)
+
+    if allocation_attribute_type_obj is None:
+        allocation_attribute_type_obj = AllocationAttributeType.objects.get(name='SMB Enabled')
+
+    if ldap_conn is None:
+        ldap_conn = LDAPModify()
+
+    smb_enabled = ldap_conn.get_attribute('userPassword', gid)
+    if not smb_enabled:
+        allocation_attribute_obj = AllocationAttribute.objects.filter(
+            allocation=allocation_obj,
+            allocation_attribute_type=allocation_attribute_type_obj
+        )
+        if allocation_attribute_obj.exists():
+            allocation_attribute_obj[0].delete()
+            logger.info(
+                f'The allocation attribute {allocation_attribute_type_obj.name} was deleted in '
+                f'Slate Project allocation {allocation_obj.pk}' 
+            )
+        return
+
+    _, created = AllocationAttribute.objects.get_or_create(
+        allocation=allocation_obj,
+        allocation_attribute_type=allocation_attribute_type_obj,
+        value='Yes'
+    )
+
+    if created:
+        logger.info(
+            f'The allocation attribute {allocation_attribute_type_obj.name} was created in Slate '
+            f'Project allocation {allocation_obj.pk}' 
+        )
 
 
 def sync_slate_project_user_statuses(slate_project_user_objs):
@@ -484,7 +587,7 @@ def get_pi_total_allocated_quantity(pi_username):
         csv_reader = csv.reader(netid_total_allocation_csv)
         for line in csv_reader:
             if line[0] == pi_username:
-                total_allocated_quantity = line[1]
+                total_allocated_quantity = int(line[1])
                 break
 
     return total_allocated_quantity
@@ -1006,10 +1109,6 @@ def get_slate_project_info(username):
         if not attribute_obj.exists():
             continue
         directory = attribute_obj[0]
-        owner = allocation_user_obj.allocation.project.pi.username
-        # For imported projects that have a project owner who can't be a PI.
-        if owner == 'thcrowe' and allocation_user_obj.allocation.project.requestor:
-            owner = allocation_user_obj.allocation.project.requestor.username
         slate_projects.append(
             {
                 'name': directory.value.split('/')[-1],
@@ -1308,7 +1407,9 @@ def import_slate_projects(json_file_name, out_file_name, importing_user, limit=N
     imported = 0
     for slate_project in slate_projects:
         existing_gid = AllocationAttribute.objects.filter(
-            allocation_attribute_type__name='GID', value=slate_project.get('gid_number')
+            allocation_attribute_type__name='GID',
+            value=slate_project.get('gid_number'),
+            allocation__status__name__in= ['Active', 'New', 'Renewal Pending']
         )
         if existing_gid.exists():
             logger.warning(f'Slate Project GID {slate_project.get("gid_number")} already exists in '
@@ -1654,10 +1755,10 @@ class LDAPModify:
             
         return attributes.get('memberUid')
 
-    def get_attribute(self, attribute, gid_number):
+    def get_attribute(self, attribute, filter_value, default_filter='gidNumber'):
         search_parameters = {
             'search_base': self.LDAP_BASE_DN,
-            'search_filter': ldap.filter.filter_format('(gidNumber=%s)', [str(gid_number)]),
+            'search_filter': ldap.filter.filter_format(f'({default_filter}=%s)', [str(filter_value)]),
             'attributes': [attribute],
             'size_limit': 1
         }
@@ -1668,7 +1769,11 @@ class LDAPModify:
         else:
             attributes = {attribute: ['']}
 
-        return attributes.get(attribute)[0]
+        attribute = attributes.get(attribute)
+        if not attribute:
+            return ''
+
+        return attribute[0]
     
     def check_attribute_exists(self, attribute, gid_number):
         search_parameters = {

@@ -331,7 +331,7 @@ Project Detail
                     <i class="fas fa-user-plus" aria-hidden="true"></i><span class="sr-only">Add Users</span>
                   </a>
                 {% endif %}
-                {% if allocation.project.requires_review %}
+                {% if allocation.project.requires_review and not allocation.project.type.name == 'Class' %}
                   {% if allocation.is_locked and allocation.status.name == 'Active' and allocation.expires_in <= ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING and allocation.expires_in >= 0 %}
                     <span class="badge badge-warning"><i class="far fa-clock" aria-hidden="true"></i>
                       Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} - Not renewable

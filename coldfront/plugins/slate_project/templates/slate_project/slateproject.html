@@ -1,0 +1,242 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %}
+Request New Allocation
+{% endblock %}
+
+{% block content %}
+<style>
+  label:not(.custom-control-label) {
+    font-weight: bold;
+  }
+
+  .validating-feedback {
+    width: 100%;
+    margin-top: .25rem;
+    font-size: 80%;
+    color: #006298;
+  }
+</style>
+
+<h2>Request New {{ resource_obj.name }} Allocation <br><small>Project: {{ project_obj.title }}</small></h2>
+<hr>
+
+<form method="post">
+  {% csrf_token %}
+  {{ form|as_crispy_errors }}
+  <fieldset>
+    <legend><u>Contact Information</u></legend>
+    <div class="row">
+      <div class="col">
+        {{ form.first_name|as_crispy_field }}
+      </div>
+      <div class="col">
+        {{ form.last_name|as_crispy_field }}
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        {{ form.campus_affiliation|as_crispy_field }}
+      </div>
+      <div class="col">
+        {{ form.email|as_crispy_field }}
+      </div>
+    </div>
+  </fieldset>
+  <fieldset>
+  <legend><u>Project Information</u></legend>
+    <div class="row">
+      <div class="col">
+        {{ form.project_directory_name|as_crispy_field }}
+      </div>
+      <div class="col">
+        {{ form.storage_space|as_crispy_field }}
+      </div>
+    </div>
+    <div id="div_amount_warning" class="alert alert-warning" role="alert">
+      <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+      This request exceeds the 120TB limit and will require additional review that may take up to 4 weeks.
+    </div>
+    <div>
+      {{ form.description|as_crispy_field }}
+    </div>
+    <div>
+      {{ form.data_generation|as_crispy_field }}
+    </div>
+    <div>
+      {{ form.data_protection|as_crispy_field }}
+    </div>
+    <div>
+      {{ form.data_computational_lifetime|as_crispy_field }}
+    </div>
+    <div>
+      {{ form.expected_project_lifetime|as_crispy_field }}
+    </div>
+    <div>
+      {{ form.account_number|as_crispy_field }}
+    </div>
+  </fieldset>
+  <fieldset>
+    <legend><u>Sensitive Information</u></legend>
+    {{ form.store_ephi|as_crispy_field }}
+  </fieldset>
+  <input class="btn btn-primary" type="submit" value="Submit" />
+  {% if after_project_creation == 'true' %}
+    <a
+     class="btn btn-secondary"
+     href="{% url 'custom-allocation-create' project_obj.pk %}?after_project_creation=true"
+     role="button">Back to Resource Selection
+    </a>
+  {% else %}
+    <a
+     class="btn btn-secondary"
+     href="{% url 'custom-allocation-create' project_obj.pk %}"
+     role="button">Back to Resource Selection
+    </a>
+  {% endif %}
+</form>
+
+<script>
+  var total_pi_allocated_quantity = {{ total_pi_allocated_quantity|safe }}
+  var pi_allocated_quantity_threshold = {{ pi_allocated_quantity_threshold|safe }}
+  var default_na = ['data_generation', 'data_protection'] 
+  var mid_range = ['data_computational_lifetime', 'expected_project_lifetime']
+  var beyond_120 = ['account_number']
+
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-project-menu").addClass("active");
+
+  function runDirectoryNameValidation(value) {
+    $('#id_project_directory_name').removeClass(['is-invalid', 'is-valid']);
+    $('#directory_name_validation_result').remove();
+    if (!value.length) {
+      return;
+    }
+
+    $('#id_project_directory_name').after(
+      '<span id="validating_project_directory_name" class="validating-feedback">\
+        <i class="fas fa-sync fa-spin fa-fw" aria-hidden="true"></i>\
+        <strong>Validating Slate Project directory name</strong>\
+      </span>'
+    );
+
+    $.ajax({
+      url : "{% url 'validate-directory-name' %}",
+      type : "POST",
+      data : {
+        directory_name: value,
+        csrfmiddlewaretoken: "{{ csrf_token }}"
+      },
+      success : function (data) {
+        $('#validating_project_directory_name').remove();
+        $('#id_project_directory_name').after(data);
+        var is_invalid = $('#directory_name_validation_result').hasClass('invalid-feedback')
+        if (is_invalid) {
+          $('#id_project_directory_name').addClass('is-invalid');
+        } else {
+          $('#id_project_directory_name').addClass('is-valid');
+        }
+      },
+      error : function() {
+        $('#validating_project_directory_name').remove();
+        $('#id_project_directory_name').after(
+          '<span id="directory_name_validation_result" class="invalid-feedback">\
+            <strong>An error occured while validating this Slate Project directory name</strong>\
+          </span>'
+        );
+        $('#id_project_directory_name').addClass('is-invalid');
+      }
+    })
+  }
+
+  function setUpDirectoryNameValidation() {
+    $('#error_1_id_project_directory_name').remove();
+    runDirectoryNameValidation($('#id_project_directory_name').val())
+    $('#id_project_directory_name').change(function (e) {
+      runDirectoryNameValidation(e.target.value)
+    });
+  }
+
+  $(document).ready(function () {
+    setUpDirectoryNameValidation()
+
+    if (total_pi_allocated_quantity > pi_allocated_quantity_threshold) {
+      $("#id_account_number").val('');
+    } else {
+      $("#div_id_account_number").hide();
+      $("#div_amount_warning").hide();
+    }
+
+    if (total_pi_allocated_quantity > pi_allocated_quantity_threshold / 2 ) {
+      mid_range.forEach(element => {
+        $('#id_' + element).val('');
+      });
+      default_na.forEach(element => {
+        $('#id_' + element).val('');
+      });
+    } else {
+      mid_range.forEach(element => {
+        $('#div_id_' + element).hide();
+      });
+      default_na.forEach(element => {
+        $('#div_id_' + element).hide('');
+      });
+    }
+
+    $("#id_storage_space").change(function(e) {
+      var current_value = total_pi_allocated_quantity + parseInt(e.target.value)
+      if (current_value > pi_allocated_quantity_threshold) {
+        $("#div_id_account_number").show();
+        $("#id_account_number").val('');
+        $("#div_amount_warning").show();
+      } else {
+        $("#div_id_account_number").hide();
+        $("#id_account_number").val('00-000-00');
+        $("#div_amount_warning").hide();
+      }
+
+      if (current_value > pi_allocated_quantity_threshold / 2 ) {
+        mid_range.forEach(element => {
+          $('#id_' + element).val('');
+        });
+        mid_range.forEach(element => {
+          $('#div_id_' + element).show();
+        });
+        default_na.forEach(element => {
+          $('#id_' + element).val('');
+        });
+        default_na.forEach(element => {
+          $('#div_id_' + element).show();
+        });
+      } else {
+        mid_range.forEach(element => {
+          $('#id_' + element).val('<1 year');
+        });
+        mid_range.forEach(element => {
+          $('#div_id_' + element).hide();
+        });
+        default_na.forEach(element => {
+          $('#id_' + element).val('N/A');
+        });
+        default_na.forEach(element => {
+          $('#div_id_' + element).hide();
+        });
+      }
+    })
+
+    var radios = $("[type=radio]").parent();
+    for (var i = 0; i < radios.length; i++) {
+      radios[i].className = "custom-control custom-radio custom-control-inline";
+    }
+		
+    $(".datepicker")
+    .flatpickr({
+      minDate: "today",
+      maxDate: new Date().fp_incr(356 * 5),
+      dateFormat: "m/d/Y",
+    })
+  })
+</script>
+{% endblock %}

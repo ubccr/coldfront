@@ -1,8 +1,16 @@
+import logging
 import datetime
 
 from django.forms.models import model_to_dict
 
 from coldfront.core.project.models import ProjectAdminAction, Project
+from coldfront.core.utils.common import import_from_settings
+from coldfront.core.user.models import UserProfile
+from coldfront.plugins.ldap_user_info.utils import get_user_info
+
+PROJECT_PI_ELIGIBLE_ADS_GROUPS = import_from_settings('PROJECT_PI_ELIGIBLE_ADS_GROUPS', [])
+
+logger = logging.getLogger(__name__)
 
 
 def add_project_status_choices(apps, schema_editor):
@@ -154,3 +162,32 @@ def create_admin_action_for_project_creation(user, project):
         project=project,
         action=f'Created a project with status "{project.status.name}"'
     )
+
+
+def check_if_pi_eligible(user):
+    if not PROJECT_PI_ELIGIBLE_ADS_GROUPS:
+        return True
+
+    # ACNP is not included in memberships so check this separately
+    title = UserProfile.objects.get(user=user).title
+    if title == 'Academic (ACNP)':
+        return True 
+
+    memberships = get_user_info(user.username, ['memberOf']).get('memberOf')
+    if not memberships:
+        return False
+
+    for membership in memberships:
+        if membership in PROJECT_PI_ELIGIBLE_ADS_GROUPS:
+            if title not in ['Staff', 'Faculty']:
+                logger.warning(
+                    f'User {user.username} has an eligible PI membership but has a title of {title} '
+                )
+            return True
+
+    if title in ['Staff', 'Faculty']:
+        logger.warning(
+            f'User {user.username} has a title of {title} but is not in an eligible PI membership'
+        )
+
+    return False

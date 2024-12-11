@@ -1,6 +1,6 @@
 import logging
 
-from coldfront.core.allocation.models import Allocation, AllocationUser, AllocationUserStatusChoice
+from coldfront.core.allocation.models import Allocation, AllocationAttributeType, AllocationUser
 from coldfront.plugins.slate_project.utils import (sync_slate_project_users,
                                                    sync_slate_project_ldap_group,
                                                    sync_slate_project_user_statuses,
@@ -8,12 +8,11 @@ from coldfront.plugins.slate_project.utils import (sync_slate_project_users,
                                                    send_ineligible_users_report,
                                                    send_ineligible_pis_report,
                                                    import_slate_projects,
-                                                   get_new_user_status,
-                                                   send_access_removed_email,
                                                    create_slate_project_data_file,
                                                    send_slate_project_data_file,
                                                    download_files,
                                                    check_slate_project_owner_aginst_current_pi,
+                                                   sync_smb_status,
                                                    LDAPModify,
                                                    LDAPImportSearch)
 
@@ -33,12 +32,14 @@ def sync_all_slate_project_allocations():
     slate_project_allocation_objs = Allocation.objects.filter(
         resources__name='Slate Project', status__name__in=['Active', 'Renewal Requested']
     )
+    allocation_attribute_type_obj = AllocationAttributeType.objects.get(name='SMB Enabled')
     ldap_conn = LDAPModify()
     ldap_search_conn = LDAPImportSearch()
     logger.info('Running sync...')
     for slate_project_allocation_obj in slate_project_allocation_objs:
         sync_slate_project_ldap_group(slate_project_allocation_obj, ldap_conn)
         sync_slate_project_users(slate_project_allocation_obj, ldap_conn, ldap_search_conn)
+        sync_smb_status(slate_project_allocation_obj, allocation_attribute_type_obj, ldap_conn)
     logger.info('Sync complete')
 
 

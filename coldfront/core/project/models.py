@@ -107,7 +107,7 @@ be stored. Please include your area of research and your department. If this is 
 put the approximate class size.
 """
 
-    title = models.CharField(max_length=255,)
+    title = models.CharField(max_length=255, db_collation='utf8mb4_0900_ai_ci')
     pi = models.ForeignKey(User, on_delete=models.CASCADE,)
     pi_username = models.CharField(
         verbose_name="PI Username",
@@ -128,6 +128,7 @@ required to log onto the site at least once before they can be added.
                 'The project description must be > 10 characters.',
             )
         ],
+        db_collation='utf8mb4_0900_ai_ci'
     )
 
     slurm_account_name = models.CharField(
@@ -218,6 +219,9 @@ required to log onto the site at least once before they can be added.
         Returns:
             bool: whether or not the project can be reviewed
         """
+        if self.type.name in ['Class', ]:
+            return False
+
         if self.status.name in ['Archived', 'Denied', 'Review Pending', 'Renewal Denied', ]:
             return False
 

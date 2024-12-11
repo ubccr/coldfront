@@ -40,6 +40,7 @@ from coldfront.core.allocation.forms import (AllocationAccountForm,
                                              AllocationUpdateForm,
                                              AllocationInvoiceSearchForm,
                                              AllocationUserUpdateForm,
+                                             AllocationAddUserFormset
                                              )
 from coldfront.core.allocation.models import (Allocation,
                                               AllocationPermission,
@@ -714,53 +715,39 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
         users_to_add = []
         for user in missing_users:
-            role = get_default_allocation_user_role(resource_obj, allocation_obj.project, user)
-            if role.exists():
-                role = role[0]
-            else:
-                role = None
             users_to_add.append({
                 'username': user.username,
                 'first_name': user.first_name,
                 'last_name': user.last_name,
                 'email': user.email,
-                'role': role
+                'role': None
             })
 
         return users_to_add
 
-    def get_list_of_users_to_add(self, formset):
-        users = []
+    def get_dict_of_users_to_add(self, formset):
+        users = {}
         for form in formset:
             user_form_data = form.cleaned_data
             if user_form_data['selected']:
-                users.append(user_form_data.get('username'))
+                users[user_form_data.get('username')] = user_form_data.get('role')
 
         return users
 
-    def get_total_users_in_allocation_if_added(self, allocation_obj, formset):
+    def get_total_users_in_allocation_if_added(self, allocation_obj, selected_users):
         total_users = len(list(allocation_obj.allocationuser_set.exclude(
             status__name__in=['Removed']).values_list('user__username', flat=True)))
-        total_users += len(self.get_list_of_users_to_add(formset))
+        total_users += len(selected_users)
 
         return total_users
     
-    def get_users_accounts(self, formset):
-        selected_users_accounts = {}
-        selected_users_usernames = []
-        for form in formset:
-            user_form_data = form.cleaned_data
-            if user_form_data.get('selected'):
-                selected_users_usernames.append(user_form_data.get('username'))
-                selected_users_accounts[user_form_data.get('username')] = []
-
-        if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
-            from coldfront.plugins.ldap_user_info.utils import get_users_info
-            results = get_users_info(selected_users_usernames, ['memberOf'])
-            for username, result in results.items():
-                selected_users_accounts[username] = result.get('memberOf')
-
-        return selected_users_accounts
+    def get_disable_select_list(self, allocation_obj, usernames):
+        disable_select_list = [False] * len(usernames)
+        results = allocation_obj.get_parent_resource.check_users_accounts(usernames)
+        for i, result in enumerate(results.values()):
+            if not result.get('exists'):
+                disable_select_list[i] = True
+        return disable_select_list
 
     def get(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
@@ -769,15 +756,29 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         users_to_add = self.get_users_to_add(allocation_obj)
         context = {}
 
+        results = {}
         if users_to_add:
             formset = formset_factory(
-                AllocationAddUserForm, max_num=len(users_to_add))
-            formset = formset(initial=users_to_add, prefix='userform',
-                form_kwargs={'resource': allocation_obj.get_parent_resource})
+                AllocationAddUserForm,
+                max_num=len(users_to_add),
+                formset=AllocationAddUserFormset    
+            )
+            results = allocation_obj.get_parent_resource.check_users_accounts([user.get('username') for user in users_to_add])
+            formset = formset(
+                initial=users_to_add,
+                prefix='userform',
+                form_kwargs={
+                    'resource': allocation_obj.get_parent_resource,
+                    'disable_selected': [not result.get('exists') for result in results.values()]
+                })
             context['formset'] = formset
 
         context['allocation_user_roles_enabled'] = check_if_roles_are_enabled(allocation_obj)
         context['allocation'] = allocation_obj
+        account_results = {}
+        for username, result in results.items():
+            account_results[username] = result.get('reason')
+        context['account_results'] = account_results
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
@@ -792,117 +793,130 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         formset = formset(request.POST, initial=users_to_add,
             prefix='userform', form_kwargs={'resource': allocation_obj.get_parent_resource})
 
-        added_user_objs = []
-        denied_users = []
         if formset.is_valid():
+            selected_users = self.get_dict_of_users_to_add(formset)
+
+            user_account_results = allocation_obj.get_parent_resource.check_users_accounts(
+                [selected_user for selected_user in selected_users.keys()])
+
+            missing_accounts = []
+            missing_resource_accounts = []
+            for username, result in user_account_results.items():
+                if not result.get('exists'):
+                    if result.get('reason') == 'no_account':
+                        missing_accounts.append(username)
+                    elif result.get('reason') == 'no_resource_account':
+                        missing_resource_accounts.append(username)
+                    selected_users.pop(username)
+
+            if missing_accounts:
+                message = 'The following user does not have an IU account and was not added:'
+                if len(missing_accounts) > 1:
+                    message = 'The following users do not have IU accounts and were not added:'
+                messages.warning(
+                    request,
+                    f'{message} {", ".join(missing_accounts)}'
+                )
+                logger.info(f'User(s) {", ".join(missing_accounts)} do not have IU accounts and '
+                            f'were not added to a {allocation_obj.get_parent_resource.name} '
+                            f'allocation (allocation pk={allocation_obj.pk})')
+
+            if missing_resource_accounts:
+                message = 'The following user does not have an account on this resource and was not added:'
+                if len(missing_resource_accounts) > 1:
+                    message = 'The following users do not have an account on this resource and were not added:'
+                accounts_url = 'https://access.iu.edu/Accounts/Create'
+                messages.warning(request, format_html(
+                        f'{message} {", ".join(missing_resource_accounts)}. Please direct them '
+                        f'to <a href="{accounts_url}">{accounts_url}</a> to create one.'
+                    )
+                )
+
+                logger.info(
+                    f'User(s) {", ".join(missing_resource_accounts)} were missing accounts for a '
+                    f'{allocation_obj.get_parent_resource.name} allocation (allocation pk={allocation_obj.pk})'
+                )
+
             if allocation_user_limit:
-                # The users_to_add variable is not an actual list of users to add. The users listed
-                # are the remaining users in the project that are not in the allocation. We have to
-                # cycle through the formset and increment the total user count for each user that
-                # has been selected in the list.
-                total_users = self.get_total_users_in_allocation_if_added(allocation_obj, formset)
+                total_users = self.get_total_users_in_allocation_if_added(
+                    allocation_obj, [selected_user for selected_user in selected_users.keys()])
                 if total_users > int(allocation_user_limit):
-                    messages.error(request, "Only {} users are allowed on this resource. Users were not added. (Total users counted: {})".format(allocation_user_limit, total_users))
+                    messages.warning(
+                        request,
+                        f'Only {allocation_user_limit} users are allowed on this resource. Users '
+                        f'were not added. (Total users counted: {total_users})')
                     return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
-            allocation_user_active_status_choice = AllocationUserStatusChoice.objects.get(
-                name='Active')
-            allocation_user_pending_add_status_choice = AllocationUserStatusChoice.objects.get(
-                name='Pending - Add')
-
-            allocation_user_status_choice = allocation_user_active_status_choice
+            allocation_user_status_choice = AllocationUserStatusChoice.objects.get(name='Active')
             requires_user_request = allocation_obj.get_parent_resource.get_attribute('requires_user_request')
 
             if requires_user_request is not None and requires_user_request == 'Yes':
-                allocation_user_status_choice = allocation_user_pending_add_status_choice
+                allocation_user_status_choice = AllocationUserStatusChoice.objects.get(name='Pending - Add')
 
-            selected_users_accounts = self.get_users_accounts(formset)
             requestor_user = User.objects.get(username=request.user)
-            for form in formset:
-                user_form_data = form.cleaned_data
-                if user_form_data['selected']:
+            selected_user_objs = []
+            for username, role in selected_users.items():
 
-                    user_obj = get_user_model().objects.get(
-                        username=user_form_data.get('username'))
+                user_obj = get_user_model().objects.get(username=username)
+                selected_user_objs.append(user_obj)
 
-                    username = user_obj.username
-                    accounts = selected_users_accounts.get(username)
-                    if not allocation_obj.get_parent_resource.check_user_account_exists(username, accounts):
-                        denied_users.append(username)
-                        continue
-                    added_user_objs.append(user_obj)
-
-                    if allocation_obj.allocationuser_set.filter(user=user_obj).exists():
-                        allocation_user_obj = allocation_obj.allocationuser_set.get(
-                            user=user_obj)
-                        allocation_user_obj.status = allocation_user_status_choice
-                        allocation_user_obj.role = user_form_data.get('role')
-                        allocation_user_obj.save()
-                    else:
-                        allocation_user_obj = AllocationUser.objects.create(
-                            allocation=allocation_obj,
-                            user=user_obj,
-                            status=allocation_user_status_choice,
-                            role=user_form_data.get('role')    
-                        )
-
-                    allocation_user_request_obj = allocation_obj.create_user_request(
-                        requestor_user=requestor_user,
-                        allocation_user=allocation_user_obj,
-                        allocation_user_status=allocation_user_status_choice
+                if allocation_obj.allocationuser_set.filter(user=user_obj).exists():
+                    allocation_user_obj = allocation_obj.allocationuser_set.get(
+                        user=user_obj)
+                    allocation_user_obj.status = allocation_user_status_choice
+                    allocation_user_obj.role = role
+                    allocation_user_obj.save()
+                else:
+                    allocation_user_obj = AllocationUser.objects.create(
+                        allocation=allocation_obj,
+                        user=user_obj,
+                        status=allocation_user_status_choice,
+                        role=role  
                     )
 
-                    allocation_activate_user.send(sender=self.__class__,
-                                                  allocation_user_pk=allocation_user_obj.pk)
-            if added_user_objs:
-                added_users = [added_users_obj.username for added_users_obj in added_user_objs]
+                allocation_obj.create_user_request(
+                    requestor_user=requestor_user,
+                    allocation_user=allocation_user_obj,
+                    allocation_user_status=allocation_user_status_choice
+                )
+
+                allocation_activate_user.send(sender=self.__class__,
+                                                allocation_user_pk=allocation_user_obj.pk)
+
+            if selected_users:
                 if allocation_user_status_choice.name == 'Pending - Add':
                     email_recipient = get_email_recipient_from_groups(
                         allocation_obj.get_parent_resource.review_groups.all())
                     send_allocation_user_request_email(
-                        self.request, added_users, allocation_obj.get_parent_resource.name, email_recipient)
+                        self.request, selected_users.keys(), allocation_obj.get_parent_resource.name, email_recipient)
                     messages.success(
-                        request, 'Pending addition of user(s) {} to allocation.'.format(', '.join(added_users)))
+                        request, 'Pending addition of user(s) {} to the allocation.'.format(', '.join(selected_users.keys())))
 
                     logger.info(
-                        f'User {request.user.username} requested to add {len(added_users)} user(s) '
+                        f'User {request.user.username} requested to add {len(selected_users)} user(s) '
                         f'to a {allocation_obj.get_parent_resource.name} allocation '
                         f'(allocation pk={allocation_obj.pk})'
                     )
                 else:
                     allocation_added_users_emails = list(allocation_obj.project.projectuser_set.filter(
-                        user__in=added_user_objs, enable_notifications=True
+                        user__in=selected_user_objs, enable_notifications=True
                     ).values_list('user__email', flat=True))
                     if allocation_obj.project.pi.email not in allocation_added_users_emails:
                         allocation_added_users_emails.append(allocation_obj.project.pi.email)
 
-                    send_added_user_email(request, allocation_obj, added_user_objs, allocation_added_users_emails)
+                    send_added_user_email(request, allocation_obj, selected_user_objs, allocation_added_users_emails)
 
+                    is_plural = len(selected_users.keys()) > 1
                     messages.success(
-                        request, 'Added user(s) {} to allocation.'.format(', '.join(added_users)))
+                        request,
+                        f'User{"s" if is_plural else ""} added to the allocation: {", ".join(selected_users.keys())}'
+                    )
 
                     logger.info(
-                        f'User {request.user.username} added {", ".join(added_users)} '
+                        f'User {request.user.username} added {", ".join(selected_users.keys())} '
                         f'to a {allocation_obj.get_parent_resource.name} allocation '
                         f'(allocation pk={allocation_obj.pk})'
                     )
-
-            if denied_users:
-                user_text = 'user'
-                if len(denied_users) > 1:
-                    user_text += 's'
-                messages.warning(request, format_html(
-                    'Did not add {} {} to allocation. An account is needed for this resource.\
-                    Please direct them to\
-                    <a href="https://access.iu.edu/Accounts/Create">https://access.iu.edu/Accounts/Create</a>\
-                    to create one.'.format(user_text, ', '.join(denied_users))
-                    )
-                )
-
-                logger.info(
-                    f'Users {", ".join(denied_users)} were missing accounts for a '
-                    f'{allocation_obj.get_parent_resource.name} allocation (allocation pk={allocation_obj.pk})'
-                )
         else:
             logger.warning(
                 f'An error occured when adding users to an allocation (allocation pk={allocation_obj.pk})')
@@ -1361,7 +1375,12 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
             )
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
-        if allocation_obj.project.needs_review or allocation_obj.project.can_be_reviewed:
+        if allocation_obj.project.type.name == 'Class': 
+            messages.error(
+                request, 'You cannot renew allocations in a Class project.')
+            return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk})) 
+
+        if allocation_obj.project.needs_review or allocation_obj.project.can_be_reviewed: 
             messages.error(
                 request, 'You cannot renew your allocation until you review your project first.')
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
@@ -1900,6 +1919,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
              'attribute_pk': attribute_change.allocation_attribute.pk,
              'name': attribute_change.allocation_attribute.allocation_attribute_type.name,
              'value': attribute_change.allocation_attribute.value,
+             'old_value': attribute_change.old_value,
              'new_value': attribute_change.new_value,
              }
 
@@ -2231,6 +2251,7 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 'pk': attribute.pk,
                 'name': attribute.allocation_attribute_type.name,
                 'value': attribute.value,
+                'old_value': attribute.value
              }
             for attribute in attributes_to_change
         ]
@@ -2312,6 +2333,7 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                         attribute_change_request_obj = AllocationAttributeChangeRequest.objects.create(
                             allocation_change_request=allocation_change_request_obj,
                             allocation_attribute=attribute[0],
+                            old_value=attribute[0].value,
                             new_value=attribute[1]
                             )
                     messages.success(
@@ -3133,13 +3155,13 @@ class AllocationUserDenyRequestView(LoginRequiredMixin, UserPassesTestMixin, Vie
         #             email_receiver_list
         #         )
 
-        # logger.info(
-        #     f'Admin {request.user.username} denied a {allocation_user.allocation.get_parent_resource.name} '
-        #     f'allocation user request (allocation pk={allocation_user.allocation.pk})'
-        # )
-        # messages.success(request, 'User {}\'s status has been DENIED'.format(allocation_user.user.username))
+        logger.info(
+            f'Admin {request.user.username} denied a {allocation_user.allocation.get_parent_resource.name} '
+            f'allocation user request (allocation pk={allocation_user.allocation.pk})'
+        )
+        messages.success(request, 'User {}\'s status has been DENIED'.format(allocation_user.user.username))
 
-        # return HttpResponseRedirect(reverse('allocation-user-request-list'))
+        return HttpResponseRedirect(reverse('allocation-user-request-list'))
 
 
 class AllocationUserRequestInfoView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):

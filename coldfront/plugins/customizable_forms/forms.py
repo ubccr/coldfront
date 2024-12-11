@@ -1,11 +1,35 @@
 from django import forms
 from django.forms.widgets import RadioSelect
+from django.utils.html import format_html
 from crispy_forms.helper import FormHelper
+
+
+class DisableableCheckboxSelectMultiple(forms.CheckboxSelectMultiple):
+
+    def __init__(self, *args, **kwargs):
+        self.disable_choices = kwargs.pop('disable_choices', {})
+        super().__init__(*args, **kwargs)
+
+    def create_option(self, name, value, *args, **kwargs):
+        option = super().create_option(name, value, *args, **kwargs)
+        if value in self.disable_choices.keys():
+            option['attrs']['disabled'] = True
+            label = format_html(
+                f'{option["label"]} '
+                f'<a href="#" data-toggle="popover" title="Cannot Add" data-trigger="hover" data-content="{self.disable_choices[value]}">'
+                f'<span class="badge badge-warning">'
+                f'<i class="fas fa-exclamation-circle" aria-hidden="true"></i>'
+                f'<span class="sr-only">{self.disable_choices[value]}</span>'
+                f'</span>'
+                f'</a>'
+            )
+            option['label'] = label
+        return option
 
 
 class BaseForm(forms.Form):
     resource = forms.IntegerField(disabled=True, widget=forms.HiddenInput())
-    users = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple, required=False)
+    users = forms.MultipleChoiceField(widget=DisableableCheckboxSelectMultiple, required=False)
 
     def __init__(self, request_user, resource_attributes, project_obj, resource_obj, *args, run_form_setup=True, **kwargs):
         super().__init__(*args, **kwargs)
@@ -20,9 +44,24 @@ class BaseForm(forms.Form):
         user_query_set = user_query_set.exclude(user__in=[project_obj.pi, request_user])
 
         if user_query_set:
+            disable_choices = {}
+            results = resource_obj.check_users_accounts([user.user.username for user in user_query_set])
+            for username, result in results.items():
+                if not result.get('exists'):
+                    message = ''
+                    if result.get('reason') == 'no_account':
+                        message = 'No IU account'
+                    elif result.get('reason') == 'no_resource_account':
+                        message = f'No {resource_obj.name} account'
+                    
+                    disable_choices[username] = message
+
             self.fields['users'].choices = ((user.user.username, "%s %s (%s)" % (
                 user.user.first_name, user.user.last_name, user.user.username)) for user in user_query_set)
-            self.fields['users'].help_text = '<br/>Select users in your project to add to this allocation.'
+            self.fields['users'].help_text = (f'<br/>Select users in your project to add to this allocation. '
+                                              f'If a user cannot be added hover over the icon next to their username to see why.')
+            if disable_choices:
+                self.fields['users'].widget.disable_choices = disable_choices
         else:
             self.fields['users'].widget = forms.HiddenInput()
 
@@ -31,7 +70,7 @@ class BaseForm(forms.Form):
         # Move users field to the bottom of the form
         self.fields['users'] = self.fields.pop('users')
 
-    def set_up_fields(self, request_user, resource_attributes, project_obj, resource_obj, ):
+    def set_up_fields(self, request_user, resource_attributes, project_obj, resource_obj):
         for resource_attribute in resource_attributes:
             name = resource_attribute.resource_attribute_type.name
             if 'label' in name:

@@ -1,31 +1,21 @@
 from django.urls import path
-from coldfront.plugins.customizable_forms.custom.views import ComputeView, PositConnectView, SlateProjectView, GeodeProjectView
+from coldfront.plugins.customizable_forms.custom.views import ComputeView, PositConnectView
 
 
 urlpatterns = [
     path(
-        '<int:project_pk>/create/<int:resource_pk>/quartz',
+        '<int:project_pk>/create/<int:resource_pk>/Quartz',
         ComputeView.as_view(),
         name='quartz-form'
     ),
     path(
-        '<int:project_pk>/create/<int:resource_pk>/bigred200',
+        '<int:project_pk>/create/<int:resource_pk>/BigRed200',
         ComputeView.as_view(),
         name='bigred200-form'
     ),
     path(
-        '<int:project_pk>/create/<int:resource_pk>/positconnect',
+        '<int:project_pk>/create/<int:resource_pk>/PositConnect',
         PositConnectView.as_view(),
-        name='posit-form'
-    ),
-    path(
-        '<int:project_pk>/create/<int:resource_pk>/slateproject',
-        SlateProjectView.as_view(),
-        name='slateproject-form'
-    ),
-    path(
-        '<int:project_pk>/create/<int:resource_pk>/geode-projects',
-        GeodeProjectView.as_view(),
-        name='geodeproject-form'
+        name='positconnect-form'
     ),
 ]

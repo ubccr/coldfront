@@ -111,10 +111,14 @@ class AllocationAddUserForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         resource = kwargs.pop('resource', None)
+        disable_selected = kwargs.pop('disable_selected', None)
         super().__init__(*args, **kwargs)
         if resource and resource.requires_user_roles:
             self.fields['role'].disabled = False
             self.fields['role'].queryset = AllocationUserRoleChoice.objects.filter(resources=resource)
+
+        if disable_selected:
+            self.fields['selected'].disabled = True
 
     def clean(self):
         cleaned_data = super().clean()
@@ -123,6 +127,16 @@ class AllocationAddUserForm(forms.Form):
                 raise ValidationError('This resource requires user roles')
 
         return cleaned_data
+
+
+class AllocationAddUserFormset(forms.BaseFormSet):
+    def get_form_kwargs(self, index):
+        """
+        Override so specific users can be prevented from being added.
+        """
+        kwargs = super().get_form_kwargs(index)
+        disable_selected = kwargs['disable_selected'][index]
+        return {'disable_selected': disable_selected, 'resource': kwargs.get('resource')}
 
 
 class AllocationRemoveUserForm(forms.Form):
@@ -260,6 +274,7 @@ class AllocationAttributeUpdateForm(forms.Form):
     attribute_pk = forms.IntegerField(required=False, disabled=True)
     name = forms.CharField(max_length=150, required=False, disabled=True)
     value = forms.CharField(max_length=150, required=False, disabled=True)
+    old_value = forms.CharField(max_length=150, required=False, disabled=True)
     new_value = forms.CharField(max_length=150, required=False, disabled=False)
 
     def __init__(self, *args, **kwargs):

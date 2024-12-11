@@ -429,6 +429,9 @@ class Allocation(TimeStampedModel):
 
         return None
 
+    def get_user_roles(self):
+        return AllocationUserRoleChoice.objects.filter(resources=self.get_parent_resource)
+
     def __str__(self):
         return "%s (%s)" % (self.get_parent_resource.name, self.project.pi)
 
@@ -526,7 +529,7 @@ class AllocationAttribute(TimeStampedModel):
     allocation_attribute_type = models.ForeignKey(
         AllocationAttributeType, on_delete=models.CASCADE)
     allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE)
-    value = models.CharField(max_length=128)
+    value = models.CharField(max_length=128, db_collation='utf8mb4_0900_ai_ci')
     history = HistoricalRecords()
 
     def save(self, *args, **kwargs):
@@ -824,6 +827,7 @@ class AllocationAttributeChangeRequest(TimeStampedModel):
     allocation_change_request = models.ForeignKey(AllocationChangeRequest, on_delete=models.CASCADE)
     allocation_attribute = models.ForeignKey(AllocationAttribute, on_delete=models.CASCADE)
     new_value = models.CharField(max_length=128)
+    old_value = models.CharField(max_length=128)
     history = HistoricalRecords()
 
     def __str__(self):

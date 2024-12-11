@@ -101,7 +101,7 @@ class CombinedUserSearch:
                     usernames_found.append(username)
                     matches.append(user)
 
-        if len(self.user_search_string.split()) > 1:
+        if len(self.user_search_string.split()) >= 1:
             number_of_usernames_searched = len(self.user_search_string.split())
             number_of_usernames_found = len(usernames_found)
             usernames_not_found = list(set(self.user_search_string.split()) - set(usernames_found) - set(self.usernames_names_to_exclude))

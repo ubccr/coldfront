@@ -332,7 +332,7 @@ class ProjectAdminActionAdmin(admin.ModelAdmin):
     list_display = ('pk', 'user', 'project_pk', 'project_title', 'action', 'created', )
     fields_change = ('user', 'project', 'action', 'modified', 'created', )
     readonly_fields_change = ('modified', 'created', )
-    raw_id_fields = ('user', )
+    raw_id_fields = ('user', 'project', )
 
     def project_pk(self, obj):
         return obj.project.pk

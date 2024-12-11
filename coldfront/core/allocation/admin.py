@@ -1,6 +1,7 @@
 import textwrap
 
 from django.contrib import admin
+from django.core.exceptions import FieldError
 from django.utils.translation import gettext_lazy as _
 from simple_history.admin import SimpleHistoryAdmin
 
@@ -66,8 +67,62 @@ class AllocationAdminActionInline(admin.TabularInline):
     extra = 0
 
 
+class ResourceFilter(admin.SimpleListFilter):
+    title = 'Resource'
+    parameter_name = 'resource'
+
+    def lookups(self, request, model_admin):
+        model = model_admin.model
+        objs = model.objects.all()
+        if model == Allocation:
+            if not request.user.is_superuser:
+                objs = objs.filter(resources__review_groups__in=list(request.user.groups.all()))
+            return set([(obj.get_parent_resource.name, obj.get_parent_resource.name) for obj in objs])
+        
+        if model == AllocationAttributeUsage:
+            if not request.user.is_superuser:
+                objs = objs.filter(
+                    allocation_attribute__allocation__resources__review_groups__in=list(request.user.groups.all())
+                    ).prefetch_related('allocation_attribute__allocation')
+            return set([
+                (obj.allocation_attribute.allocation.get_parent_resource.name, obj.allocation_attribute.allocation.get_parent_resource.name)
+                for obj in objs])
+
+        if not request.user.is_superuser:
+            objs = objs.filter(
+                allocation__resources__review_groups__in=list(request.user.groups.all())).prefetch_related('allocation')
+        return set([
+            (obj.allocation.get_parent_resource.name, obj.allocation.get_parent_resource.name) for obj in objs
+        ])
+
+    def queryset(self, request, queryset):
+        if self.value() is not None:
+            try:
+                queryset = queryset.filter(resources__name=self.value())
+            except FieldError:
+                try:
+                    queryset = queryset.filter(allocation__resources__name=self.value())
+                except FieldError:
+                    queryset = queryset.filter(allocation_attribute__allocation__resources__name=self.value())
+        return queryset
+
+
+class ReviewGroupFilteredResourceQueryset(admin.ModelAdmin):
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        if not request.user.is_superuser:
+            try:
+                queryset = queryset.filter(resources__review_groups__in=list(request.user.groups.all()))
+            except FieldError:
+                try:
+                    queryset = queryset.filter(allocation__resources__review_groups__in=list(request.user.groups.all()))
+                except FieldError:
+                    queryset = queryset.filter(allocation_attribute__allocation__resources__review_groups__in=list(request.user.groups.all()))
+        return queryset
+
+
 @admin.register(Allocation)
-class AllocationAdmin(SimpleHistoryAdmin):
+class AllocationAdmin(SimpleHistoryAdmin, ReviewGroupFilteredResourceQueryset):
     readonly_fields_change = (
         'project', 'justification', 'created', 'modified',)
     fields_change = ('project', 'resources', 'quantity', 'justification',
@@ -80,7 +135,7 @@ class AllocationAdmin(SimpleHistoryAdmin):
                AllocationUserNoteInline,
                AllocationAdminActionInline]
     list_filter = ('resources__resource_type__name',
-                   'status', 'resources__name', 'is_locked')
+                   'status', ResourceFilter, 'is_locked')
     search_fields = ['project__pi__username', 'project__pi__first_name', 'project__pi__last_name', 'resources__name',
                      'allocationuser__user__first_name', 'allocationuser__user__last_name', 'allocationuser__user__username']
     filter_horizontal = ['resources', ]
@@ -123,21 +178,6 @@ class AllocationAdmin(SimpleHistoryAdmin):
                 instance.save()
         else:
             formset.save()
-
-    # def set_locked(self, request, queryset):
-    #     queryset.update(is_locked=True)
-
-    # def set_unlocked(self, request, queryset):
-    #     queryset.update(is_locked=False)
-
-    # set_locked.short_description = "Lock Selected Allocations"
-
-    # set_unlocked.short_description = "Unlock Selected Allocations"
-
-    # actions = [
-    #     set_locked,
-    #     set_unlocked
-    # ]
 
 
 @admin.register(AttributeType)
@@ -190,7 +230,7 @@ class UsageValueFilter(admin.SimpleListFilter):
 
 
 @admin.register(AllocationAttribute)
-class AllocationAttributeAdmin(SimpleHistoryAdmin):
+class AllocationAttributeAdmin(SimpleHistoryAdmin, ReviewGroupFilteredResourceQueryset):
     readonly_fields_change = (
         'allocation', 'allocation_attribute_type', 'created', 'modified', 'project_title')
     fields_change = ('project_title', 'allocation',
@@ -199,7 +239,7 @@ class AllocationAttributeAdmin(SimpleHistoryAdmin):
                     'allocation_attribute_type', 'value', 'usage', 'created', 'modified',)
     inlines = [AllocationAttributeUsageInline, ]
     list_filter = (UsageValueFilter, 'allocation_attribute_type',
-                   'allocation__status', 'allocation__resources')
+                   'allocation__status', ResourceFilter)
     search_fields = (
         'allocation__project__pi__first_name',
         'allocation__project__pi__last_name',
@@ -266,13 +306,13 @@ class AllocationUserRoleChoiceAdmin(admin.ModelAdmin):
 
 
 @admin.register(AllocationUser)
-class AllocationUserAdmin(SimpleHistoryAdmin):
+class AllocationUserAdmin(SimpleHistoryAdmin, ReviewGroupFilteredResourceQueryset):
     readonly_fields_change = ('allocation', 'user',
                               'resource', 'created', 'modified',)
     fields_change = ('allocation', 'user', 'role', 'status', 'created', 'modified',)
     list_display = ('pk', 'project', 'project_pi', 'resource', 'allocation_status',
                     'user_info', 'role', 'status', 'created', 'modified',)
-    list_filter = ('status', 'allocation__status', 'allocation__resources',)
+    list_filter = ('status', 'allocation__status', ResourceFilter,)
     search_fields = (
         'user__first_name',
         'user__last_name',
@@ -370,13 +410,13 @@ class ValueFilter(admin.SimpleListFilter):
 
 
 @admin.register(AllocationAttributeUsage)
-class AllocationAttributeUsageAdmin(SimpleHistoryAdmin):
+class AllocationAttributeUsageAdmin(SimpleHistoryAdmin, ReviewGroupFilteredResourceQueryset):
     list_display = ('allocation_attribute', 'project',
                     'project_pi', 'resource', 'value',)
     readonly_fields = ('allocation_attribute',)
     fields = ('allocation_attribute', 'value',)
     list_filter = ('allocation_attribute__allocation_attribute_type',
-                   'allocation_attribute__allocation__resources', ValueFilter, )
+                   ResourceFilter, ValueFilter, )
 
     def resource(self, obj):
         return obj.allocation_attribute.allocation.resources.first().name
@@ -399,7 +439,7 @@ class AllocationUserRequestStatusChoiceAdmin(admin.ModelAdmin):
 
 
 @admin.register(AllocationUserRequest)
-class AllocationUserRequestAdmin(SimpleHistoryAdmin):
+class AllocationUserRequestAdmin(SimpleHistoryAdmin, ReviewGroupFilteredResourceQueryset):
     list_display = (
         'pk',
         'project',
@@ -473,17 +513,18 @@ class AllocationChangeStatusChoiceAdmin(admin.ModelAdmin):
 
 
 @admin.register(AllocationChangeRequest)
-class AllocationChangeRequestAdmin(admin.ModelAdmin):
+class AllocationChangeRequestAdmin(ReviewGroupFilteredResourceQueryset):
     list_display = ('pk', 'allocation', 'status', 'end_date_extension', 'justification', 'notes', )
+    list_filter = (ResourceFilter, )
 
 
 @admin.register(AllocationAttributeChangeRequest)
 class AllocationChangeStatusChoiceAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'allocation_change_request', 'allocation_attribute', 'new_value', )
+    list_display = ('pk', 'allocation_change_request', 'allocation_attribute', 'old_value', 'new_value', )
 
 
 @admin.register(AllocationInvoice)
-class AllocationInvoice(SimpleHistoryAdmin):
+class AllocationInvoice(ReviewGroupFilteredResourceQueryset):
     list_display = ('allocation_pk', 'resource', 'status', 'created', )
 
     def allocation_pk(self, obj):
@@ -494,7 +535,7 @@ class AllocationInvoice(SimpleHistoryAdmin):
 
 
 @admin.register(AllocationAdminAction)
-class AllocationAdminActionAdmin(admin.ModelAdmin):
+class AllocationAdminActionAdmin(ReviewGroupFilteredResourceQueryset):
     list_display = ('pk', 'user', 'allocation_pk', 'allocation', 'action', 'created', )
     fields_change = ('user', 'allocation', 'action', 'modified', 'created', )
     readonly_fields_change = ('modified', 'created', )
@@ -519,7 +560,7 @@ class AllocationAdminActionAdmin(admin.ModelAdmin):
 
 
 @admin.register(AllocationRemovalRequest)
-class AllocationRemovalRequestAdmin(admin.ModelAdmin):
+class AllocationRemovalRequestAdmin(ReviewGroupFilteredResourceQueryset):
     list_display = ('pk', 'allocation_pk', 'project_pi', 'requestor', 'allocation_prior_status',
                     'resource', 'status')
     readonly_fields = ('project_pi', 'requestor', 'allocation_prior_status', 'allocation')

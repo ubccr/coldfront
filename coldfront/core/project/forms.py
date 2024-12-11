@@ -46,12 +46,30 @@ class ProjectAddUserForm(forms.Form):
     selected = forms.BooleanField(initial=False, required=False)
 
 
+class ProjectAddUsersToAllocationFormSet(forms.BaseFormSet):
+    def get_form_kwargs(self, index):
+        """
+        Override so allocations can have role selection
+        """
+        kwargs = super().get_form_kwargs(index)
+        roles = kwargs['roles'][index]
+        return {'roles': roles}
+
+
 class ProjectAddUsersToAllocationForm(forms.Form):
     pk = forms.IntegerField(disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
     resource = forms.CharField(max_length=50, disabled=True)
     resource_type = forms.CharField(max_length=50, disabled=True)
     status = forms.CharField(max_length=50, disabled=True)
+    role = forms.ChoiceField(choices=(('', '----'),), disabled=True, required=False)
+
+    def __init__(self, *args, **kwargs):
+        roles = kwargs.pop('roles')
+        super().__init__(*args, **kwargs)
+        if roles:
+            self.fields['role'].disabled = False
+            self.fields['role'].choices = tuple([(role, role) for role in roles])
 
 
 class ProjectRemoveUserForm(forms.Form):

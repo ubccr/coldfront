@@ -11,7 +11,8 @@ class LDAPUserSearchView(LoginRequiredMixin, View):
             'username_exists': False,
             'name': None,
             'email': None,
-            'id': request.POST.get('id')
+            'id': request.POST.get('id'),
+            'message': 'Invalid username'
         }
 
         attributes = get_user_info(request.POST.get('username'), ['displayName', 'mail'])
@@ -21,5 +22,6 @@ class LDAPUserSearchView(LoginRequiredMixin, View):
             context['username_exists'] = True
             context['name'] = display_name[0]
             context['email'] = attributes.get('mail')[0]
+            context['message'] = 'Valid username'
 
         return render(request, 'username_search_result.html', context)

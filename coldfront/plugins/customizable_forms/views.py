@@ -1,3 +1,4 @@
+import re
 import logging
 import urllib
 
@@ -162,6 +163,17 @@ class AllocationResourceSelectionView(LoginRequiredMixin, UserPassesTestMixin, T
                         limit_title = 'PI Resource Limit'
                         limit_description = f'Can only have {allocation_per_pi_limit} per PI'
 
+            allocation_pending_request_limit_per_pi_obj = resource_obj.resourceattribute_set.filter(
+                resource_attribute_type__name='allocation_pending_request_limit_per_pi'
+            )
+            if allocation_pending_request_limit_per_pi_obj.exists():
+                allocation_pending_request_limit_per_pi_limit = int(allocation_pending_request_limit_per_pi_obj[0].value)
+                pending_requests = Allocation.objects.filter(resources=resource_obj, status__name='New')
+                if pending_requests.exists() and len(pending_requests) >= allocation_pending_request_limit_per_pi_limit:
+                    limit_reached = True
+                    limit_title = 'Pending Resource Allocation Request Limit'
+                    limit_description = f'Can only have {allocation_pending_request_limit_per_pi_limit} pending request(s) per user'
+
             help_url = resource_obj.resourceattribute_set.filter(resource_attribute_type__name='help_url')
             if help_url.exists():
                 help_url = help_url[0].value
@@ -169,7 +181,7 @@ class AllocationResourceSelectionView(LoginRequiredMixin, UserPassesTestMixin, T
                 help_url = None
 
             has_account = True
-            if not resource_obj.check_user_account_exists(self.request.user.username, accounts):
+            if not resource_obj.check_accounts(accounts).get('exists'):
                 has_account = False
 
             pi_request_only = resource_obj.resourceattribute_set.filter(resource_attribute_type__name='pi_request_only')
@@ -206,7 +218,7 @@ class DispatchView(LoginRequiredMixin, View):
     def dispatch(self, request, project_pk, resource_pk, *args, **kwargs):
         resource_obj = get_object_or_404(Resource, pk=resource_pk)
         resource_name = resource_obj.name
-        resource_name = ''.join(resource_name.lower().split(' '))
+        resource_name = re.sub('[^A-Za-z0-9]+', '', resource_name)
         return HttpResponseRedirect(
             self.reverse_with_params(
                 reverse(
@@ -316,6 +328,18 @@ class GenericView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 request, 'Only the PI can request a new allocation for this resource.'
             )
             return HttpResponseRedirect(reverse('custom-allocation-create', kwargs={'project_pk': project_obj.pk}))
+        
+        allocation_pending_request_limit_per_pi_obj = resource_obj.resourceattribute_set.filter(
+            resource_attribute_type__name='allocation_pending_request_limit_per_pi'
+        )
+        if allocation_pending_request_limit_per_pi_obj.exists():
+            allocation_pending_request_limit_per_pi_limit = int(allocation_pending_request_limit_per_pi_obj[0].value)
+            pending_requests = Allocation.objects.filter(resources=resource_obj, status__name='New')
+            if pending_requests.exists() and len(pending_requests) >= allocation_pending_request_limit_per_pi_limit:
+                messages.error(
+                    request, 'You are at the pending allocation limit per user allowed for this resource.'
+                )
+                return HttpResponseRedirect(reverse('custom-allocation-create', kwargs={'project_pk': project_obj.pk}))
 
         return super().dispatch(request, *args, **kwargs)
 
@@ -367,7 +391,7 @@ class GenericView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         for allocation_attribute_type_obj in allocation_attribute_type_objs:
             if allocation_attribute_type_obj.linked_resource_attribute_type in resource_attribute_type_objs:
                 value = form_data.get(allocation_attribute_type_obj.linked_resource_attribute_type.name)
-                if value is not None and value is not '':
+                if value is not None and value != '':
                     if type(value) == list:
                         value = ','.join(value)
                     AllocationAttribute.objects.create(
@@ -485,6 +509,49 @@ class GenericView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                     )
 
         return users
+    
+    def check_user_accounts(self, usernames, allocation_obj):
+        user_account_results = allocation_obj.get_parent_resource.check_users_accounts(usernames)
+
+        missing_accounts = []
+        missing_resource_accounts = []
+        for username, result in user_account_results.items():
+            if not result.get('exists'):
+                if result.get('reason') == 'no_account':
+                    missing_accounts.append(username)
+                elif result.get('reason') == 'no_resource_account':
+                    missing_resource_accounts.append(username)
+                usernames.remove(username)
+
+        if missing_accounts:
+            message = 'The following user does not have an IU account and was not added:'
+            if len(missing_accounts) > 1:
+                message = 'The following users do not have IU accounts and were not added:'
+            messages.warning(
+                self.request,
+                f'{message} {", ".join(missing_accounts)}'
+            )
+            logger.info(f'User(s) {", ".join(missing_accounts)} do not have IU accounts and '
+                        f'were not added to a {allocation_obj.get_parent_resource.name} '
+                        f'allocation (allocation pk={allocation_obj.pk})')
+
+        if missing_resource_accounts:
+            message = 'The following user does not have an account on this resource and was not added:'
+            if len(missing_resource_accounts) > 1:
+                message = 'The following users do not have an account on this resource and were not added:'
+            accounts_url = 'https://access.iu.edu/Accounts/Create'
+            messages.warning(self.request, format_html(
+                    f'{message} {", ".join(missing_resource_accounts)}. Please direct them '
+                    f'to <a href="{accounts_url}">{accounts_url}</a> to create one.'
+                )
+            )
+
+            logger.info(
+                f'User(s) {", ".join(missing_resource_accounts)} were missing accounts for a '
+                f'{allocation_obj.get_parent_resource.name} allocation (allocation pk={allocation_obj.pk})'
+            )
+
+        return usernames
 
     def form_valid(self, form):
         form_data = form.cleaned_data
@@ -528,6 +595,7 @@ class GenericView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
         allocation_obj.resources.add(resource_obj)
 
+        usernames = self.check_user_accounts(usernames, allocation_obj)
         self.add_allocation_attributes(resource_obj, form_data, allocation_obj)
 
         if ALLOCATION_ACCOUNT_ENABLED and allocation_account and resource_obj.name in ALLOCATION_ACCOUNT_MAPPING:
