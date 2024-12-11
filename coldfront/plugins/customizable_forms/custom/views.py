@@ -9,7 +9,7 @@ from django.utils.html import format_html
 from coldfront.core.allocation.models import AllocationAttributeType, AllocationAttribute
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
-from coldfront.plugins.customizable_forms.custom.forms import PositConnectForm, ComputeForm
+from coldfront.plugins.customizable_forms.custom.forms import PositConnectForm, ComputeForm, QuartzHopperForm
 from coldfront.plugins.customizable_forms.views import GenericView
 from coldfront.plugins.ldap_user_info.utils import get_users_info
 
@@ -60,3 +60,8 @@ class ComputeView(GenericView):
             )
 
         return http_response
+
+
+class QuartzHopperView(ComputeView):
+    form_class = QuartzHopperForm
+    template_name = 'customizable_forms/quartzhopper.html'

@@ -1,5 +1,5 @@
 from django.urls import path
-from coldfront.plugins.customizable_forms.custom.views import ComputeView, PositConnectView
+from coldfront.plugins.customizable_forms.custom.views import ComputeView, PositConnectView, QuartzHopperView
 
 
 urlpatterns = [
@@ -17,5 +17,10 @@ urlpatterns = [
         '<int:project_pk>/create/<int:resource_pk>/PositConnect',
         PositConnectView.as_view(),
         name='positconnect-form'
+    ),
+    path(
+        '<int:project_pk>/create/<int:resource_pk>/QuartzHopper',
+        QuartzHopperView.as_view(),
+        name='quartzhopper-form'
     ),
 ]
