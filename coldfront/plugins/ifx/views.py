@@ -23,12 +23,33 @@ from ifxbilling import models as ifxbilling_models
 from ifxbilling.calculator import getClassFromName
 from ifxbilling.views import get_billing_record_list as ifxbilling_get_billing_record_list
 from ifxbilling.fiine import update_user_accounts
+from ifxbilling.calculator import get_rebalancer_class
 from ifxmail.client import send
 from ifxuser import models as ifxuser_models
 from coldfront.plugins.ifx.calculator import NewColdfrontBillingCalculator
 from coldfront.plugins.ifx.permissions import AdminPermissions
+from coldfront.plugins.ifx.models import PreferredUsername
 
 logger = logging.getLogger(__name__)
+
+def get_preferred_user(ifxid):
+    '''
+    Get the IfxUser with the preferred username
+    '''
+    users = ifxuser_models.IfxUser.objects.filter(ifxid=ifxid)
+    if not users:
+        raise Exception(f'User cannot be found using ifxid {ifxid}')
+    try:
+        pu = PreferredUsername.objects.get(ifxid=ifxid)
+        users = users.filter(username=pu.preferred_username)
+    except PreferredUsername.DoesNotExist:
+        pass
+    except PreferredUsername.MultipleObjectsReturned:
+        raise Exception(f'Multiple preferred usernames found for ifxid {ifxid}')
+    if len(users) > 1:
+        raise Exception(f'Multiple users found for ifxid {ifxid} and no preferred username is set')
+    return users[0]
+
 
 @login_required
 def unauthorized(request):
@@ -351,3 +372,65 @@ def lab_billing_summary(request):
         raise PermissionDenied
     token = request.user.auth_token.key
     return render(request, 'plugins/ifx/lab_billing_summary.html', { 'auth_token': token })
+
+
+@api_view(('POST', ))
+def rebalance(request):
+    '''
+    Rebalance the billing records for the given facility, user, year, and month.
+
+    *** This is a copy of the ifxbilling view modified to handle preferred usernames ***
+    '''
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+    except json.JSONDecodeError as e:
+        logger.exception(e)
+        return Response(data={'error': 'Cannot parse request body'}, status=status.HTTP_400_BAD_REQUEST)
+
+    invoice_prefix = data.get('invoice_prefix', None)
+    ifxid = data.get('ifxid', None)
+    year = data.get('year', None)
+    month = data.get('month', None)
+    account_data = data.get('account_data', None)
+    requestor_ifxid = data.get('requestor_ifxid', None)
+
+    if not invoice_prefix:
+        return Response(data={ 'error': 'invoice_prefix is required' }, status=status.HTTP_400_BAD_REQUEST)
+    if not ifxid:
+        return Response(data={ 'error': 'ifxid is required' }, status=status.HTTP_400_BAD_REQUEST)
+    if not year:
+        return Response(data={ 'error': 'year is required' }, status=status.HTTP_400_BAD_REQUEST)
+    if not month:
+        return Response(data={ 'error': 'month is required' }, status=status.HTTP_400_BAD_REQUEST)
+    if not requestor_ifxid:
+        return Response(data={ 'error': 'requestor_ifxid is required' }, status=status.HTTP_400_BAD_REQUEST)
+
+
+    try:
+        facility = ifxbilling_models.Facility.objects.get(invoice_prefix=invoice_prefix)
+    except ifxbilling_models.Facility.DoesNotExist:
+        return Response(data={ 'error': f'Facility cannot be found using invoice_prefix {invoice_prefix}' }, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        user = get_preferred_user(ifxid)
+    except Exception as e:
+        return Response(data={ 'error': f'Error getting user with ifxid {ifxid}: {e}' }, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        requestor = get_preferred_user(requestor_ifxid)
+    except Exception as e:
+        return Response(data={ 'error': f'Error getting requestor with ifxid {requestor_ifxid}: {e}' }, status=status.HTTP_400_BAD_REQUEST)
+
+
+    auth_token_str = request.META.get('HTTP_AUTHORIZATION')
+    rebalancer = get_rebalancer_class()(year, month, facility, auth_token_str, requestor)
+    try:
+        rebalancer.rebalance_user_billing_month(user, account_data)
+        result = f'Rebalance of accounts for {user.full_name} for billing month {month}/{year} was successful.'
+        rebalancer.send_result_notification(result)
+        return Response(data={ 'success':  result })
+    except Exception as e:
+        logger.exception(e)
+        result = f'Rebalance of accounts for {user.full_name} for billing month {month}/{year} failed: {e}'
+        rebalancer.send_result_notification(result)
+        return Response(data={ 'error': f'Rebalance failed {e}' }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
