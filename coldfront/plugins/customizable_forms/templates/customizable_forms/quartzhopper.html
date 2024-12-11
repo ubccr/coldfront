@@ -81,22 +81,24 @@ Request New Allocation
     });
 
     var label = $("input[name^='multi_gpu_workflow']:checked").val()
-    if (label === 'No') {
+    if (label !== undefined && label !== 'No') {
       $("#div_id_workflow_needs").show();
       $("input[name^='workflow_needs_0']").prop('required', true);
     } else {
       $("#div_id_workflow_needs").hide();
       $("input[name^='workflow_needs_0']").removeAttr('required');
+      $("input[name^='workflow_needs_0']:checked").prop('checked', false)
     }
 
     $("input[name^='multi_gpu_workflow']").click(function(e) {
       var label = e.target.value
-      if (label === 'No') {
+      if (label !== undefined && label !== 'No') {
         $("#div_id_workflow_needs").show();
         $("input[name^='workflow_needs_0']").prop('required', true);
       } else {
         $("#div_id_workflow_needs").hide();
         $("input[name^='workflow_needs_0']").removeAttr('required');
+        $("input[name^='workflow_needs_0']:checked").prop('checked', false)
       }
     })
   })
