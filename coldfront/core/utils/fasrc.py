@@ -2,6 +2,7 @@
 """
 import os
 import json
+import logging
 import operator
 from functools import reduce
 from datetime import datetime
@@ -15,6 +16,7 @@ from coldfront.core.utils.common import import_from_settings
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
 
+logger = logging.getLogger(__name__)
 
 MISSING_DATA_DIR = './local_data/missing/'
 
@@ -74,7 +76,7 @@ def select_one_project_allocation(project_obj, resource_obj, dirpath):
             return allocations[0]
         elif len(allocations) > 1:
             print(allocations)
-            logger.exception('multiple allocations found for project/resource/path pairing: %s', allocations)
+            logger.exception('multiple allocations found for project/resource/path pairing: %s %s', allocations, allocations[0].path)
             raise Exception('multiple allocations found for project/resource/path pairing')
 
 def determine_size_fmt(byte_num):

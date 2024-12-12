@@ -203,6 +203,10 @@ def help_page(request):
                 'href': 'coldfront-allocation-management',
                 'title': 'Coldfront Usage Guide',
             },
+            {
+                'href': 'roles-responsibilities',
+                'title': 'Project User Roles Overview',
+            },
         ],
         'Storage Documentation':[
             {

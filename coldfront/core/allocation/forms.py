@@ -308,7 +308,7 @@ class AllocationSearchForm(forms.Form):
     resource_name = forms.ModelMultipleChoiceField(
         label='Resource Name',
         queryset=Resource.objects.filter(
-            is_allocatable=True).order_by(Lower('name')),
+            is_public=True).order_by(Lower('name')),
         required=False)
     allocation_attribute_name = forms.ModelChoiceField(
         label='Allocation Attribute Name',
