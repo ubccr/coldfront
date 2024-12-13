@@ -9,7 +9,7 @@ from coldfront.core.utils.validate import AttributeValidator
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
-from ifxuser.models import Organization
+from ifxuser.models import Organization, OrgRelation
 from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.utils.common import import_from_settings
 
@@ -194,6 +194,24 @@ class Project(TimeStampedModel):
 
         user_conditions = (models.Q(status__name='Active') & models.Q(user=user))
         if not self.projectuser_set.filter(user_conditions).exists() and not self.pi.id == user.id:
+            # if the user is an approver in a project's department, give them user permissions
+            departments = Organization.objects.filter(
+                org_tree='Research Computing Storage Billing',
+                useraffiliation__role='approver',
+                useraffiliation__user=user,
+            )
+            for department in departments:
+                child_lab_ids = list(
+                    OrgRelation.objects.filter(parent=department, child__rank="lab").values_list(
+                        'child_id', flat=True
+                    )
+                )
+                project_org_links = ProjectOrganization.objects.filter(
+                    organization_id__in=child_lab_ids
+                ).values_list("project_id")
+                proj_pool = Project.objects.filter(pk__in=project_org_links)
+                if self in proj_pool:
+                    return [ProjectPermission.USER]
             return []
 
 
@@ -215,16 +233,6 @@ class Project(TimeStampedModel):
 
         if self.pi.id == user.id:
             permissions.append(ProjectPermission.PI)
-
-        # if the user is an approver in a department connected to the project,
-        # give them user permissions
-        departments = Organization.objects.filter(
-            org_tree='Research Computing Storage Billing'
-        )
-        proj_departments = [d for d in departments if self in d.get_projects()]
-        for department in proj_departments:
-            if user in department.useraffiliation_set.filter(role='approver'):
-                permissions.append(ProjectPermission.USER)
 
         return permissions
 
