@@ -10,7 +10,9 @@ from django.core.management.base import BaseCommand
 class Command(BaseCommand):
     def handle(self, *args, **options):
         storage_host = os.environ.get("QUMULO_HOST")
-        request_res = requests.get("https://" + storage_host + "/api/v1/version")
+        request_res = requests.get(
+            "https://" + storage_host + "/api/v1/version", verify=False
+        )
         print(f"Pod connects to Storage: {request_res.status_code == 200}")
         print(request_res.json())
 
@@ -33,6 +35,6 @@ class Command(BaseCommand):
 
         try:
             rc.ad.list_ad()
-            print(f"Storage connects to Qumulo")
+            print(f"Storage connects to AD")
         except Exception as e:
             print(f"Storage doesn't connect to Storage")
