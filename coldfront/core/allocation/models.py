@@ -1,5 +1,6 @@
 import datetime
 import importlib
+import json
 import logging
 from ast import literal_eval
 from enum import Enum
@@ -18,30 +19,40 @@ from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import import_from_settings
 import coldfront.core.attribute_expansion as attribute_expansion
 
+from coldfront.core.utils.validate import (
+    AttributeValidator,
+    AllocationAttributeValidator,
+)
+
 logger = logging.getLogger(__name__)
 
 ALLOCATION_ATTRIBUTE_VIEW_LIST = import_from_settings(
-    'ALLOCATION_ATTRIBUTE_VIEW_LIST', [])
-ALLOCATION_FUNCS_ON_EXPIRE = import_from_settings(
-    'ALLOCATION_FUNCS_ON_EXPIRE', [])
+    "ALLOCATION_ATTRIBUTE_VIEW_LIST", []
+)
+ALLOCATION_FUNCS_ON_EXPIRE = import_from_settings("ALLOCATION_FUNCS_ON_EXPIRE", [])
 ALLOCATION_RESOURCE_ORDERING = import_from_settings(
-    'ALLOCATION_RESOURCE_ORDERING',
-    ['-is_allocatable', 'name'])
+    "ALLOCATION_RESOURCE_ORDERING", ["-is_allocatable", "name"]
+)
+
 
 class AllocationPermission(Enum):
-    """ A project permission stores the user and manager fields of a project. """
+    """A project permission stores the user and manager fields of a project."""
 
-    USER = 'USER'
-    MANAGER = 'MANAGER'
+    USER = "USER"
+    MANAGER = "MANAGER"
+
 
 class AllocationStatusChoice(TimeStampedModel):
-    """ A project status choice indicates the status of the project. Examples include Active, Archived, and New. 
-    
+    """A project status choice indicates the status of the project. Examples include Active, Archived, and New.
+
     Attributes:
         name (str): name of project status choice
     """
+
     class Meta:
-        ordering = ['name', ]
+        ordering = [
+            "name",
+        ]
 
     class AllocationStatusChoiceManager(models.Manager):
         def get_by_natural_key(self, name):
@@ -56,9 +67,10 @@ class AllocationStatusChoice(TimeStampedModel):
     def natural_key(self):
         return (self.name,)
 
+
 class Allocation(TimeStampedModel):
-    """ An allocation provides users access to a resource. 
-    
+    """An allocation provides users access to a resource.
+
     Attributes:
         project (Project): links the project the allocation falls under
         resources (Resource): links resources that this allocation allocates
@@ -73,18 +85,24 @@ class Allocation(TimeStampedModel):
     """
 
     class Meta:
-        ordering = ['end_date', ]
+        ordering = [
+            "end_date",
+        ]
 
         permissions = (
-            ('can_view_all_allocations', 'Can view all allocations'),
-            ('can_review_allocation_requests',
-             'Can review allocation requests'),
-            ('can_manage_invoice', 'Can manage invoice'),
+            ("can_view_all_allocations", "Can view all allocations"),
+            ("can_review_allocation_requests", "Can review allocation requests"),
+            ("can_manage_invoice", "Can manage invoice"),
         )
 
-    project = models.ForeignKey(Project, on_delete=models.CASCADE,)
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE,
+    )
     resources = models.ManyToManyField(Resource)
-    status = models.ForeignKey(AllocationStatusChoice, on_delete=models.CASCADE, verbose_name='Status')
+    status = models.ForeignKey(
+        AllocationStatusChoice, on_delete=models.CASCADE, verbose_name="Status"
+    )
     quantity = models.IntegerField(default=1)
     start_date = models.DateField(blank=True, null=True)
     end_date = models.DateField(blank=True, null=True)
@@ -95,37 +113,37 @@ class Allocation(TimeStampedModel):
     history = HistoricalRecords()
 
     def clean(self):
-        """ Validates the allocation and raises errors if the allocation is invalid. """
+        """Validates the allocation and raises errors if the allocation is invalid."""
 
-        if self.status.name == 'Expired':
+        if self.status.name == "Expired":
             if not self.end_date:
-                raise ValidationError('You have to set the end date.')
+                raise ValidationError("You have to set the end date.")
 
             if self.end_date > datetime.datetime.now().date():
-                raise ValidationError(
-                    'End date cannot be greater than today.')
+                raise ValidationError("End date cannot be greater than today.")
 
             if self.start_date > self.end_date:
-                raise ValidationError(
-                    'End date cannot be greater than start date.')
+                raise ValidationError("End date cannot be greater than start date.")
 
-        elif self.status.name == 'Active':
+        elif self.status.name == "Active":
             if not self.start_date:
-                raise ValidationError('You have to set the start date.')
+                raise ValidationError("You have to set the start date.")
 
             if not self.end_date:
-                raise ValidationError('You have to set the end date.')
+                raise ValidationError("You have to set the end date.")
 
             if self.start_date > self.end_date:
-                raise ValidationError(
-                    'Start date cannot be greater than the end date.')
+                raise ValidationError("Start date cannot be greater than the end date.")
 
     def save(self, *args, **kwargs):
-        """ Saves the project. """
+        """Saves the project."""
 
         if self.pk:
             old_obj = Allocation.objects.get(pk=self.pk)
-            if old_obj.status.name != self.status.name and self.status.name == 'Expired':
+            if (
+                old_obj.status.name != self.status.name
+                and self.status.name == "Expired"
+            ):
                 for func_string in ALLOCATION_FUNCS_ON_EXPIRE:
                     func_to_run = import_string(func_string)
                     func_to_run(self.pk)
@@ -134,7 +152,7 @@ class Allocation(TimeStampedModel):
 
     @property
     def expires_in(self):
-        """ 
+        """
         Returns:
             int: the number of days until the allocation expires
         """
@@ -143,35 +161,50 @@ class Allocation(TimeStampedModel):
 
     @property
     def get_information(self):
-        """ 
+        """
         Returns:
             str: the allocation's attribute type, usage out of total value, and usage out of total value as a percentage
         """
 
-        html_string = ''
+        html_string = ""
         for attribute in self.allocationattribute_set.all():
-            if attribute.allocation_attribute_type.name in ALLOCATION_ATTRIBUTE_VIEW_LIST:
-                html_string += '%s: %s <br>' % (
-                    attribute.allocation_attribute_type.name, attribute.value)
+            if (
+                attribute.allocation_attribute_type.name
+                in ALLOCATION_ATTRIBUTE_VIEW_LIST
+            ):
+                html_string += "%s: %s <br>" % (
+                    attribute.allocation_attribute_type.name,
+                    attribute.value,
+                )
 
-            if hasattr(attribute, 'allocationattributeusage'):
+            if hasattr(attribute, "allocationattributeusage"):
                 try:
-                    percent = round(float(attribute.allocationattributeusage.value) /
-                                    float(attribute.value) * 10000) / 100
+                    percent = (
+                        round(
+                            float(attribute.allocationattributeusage.value)
+                            / float(attribute.value)
+                            * 10000
+                        )
+                        / 100
+                    )
                 except ValueError:
-                    percent = 'Invalid Value'
-                    logger.error("Allocation attribute '%s' is not an int but has a usage",
-                                 attribute.allocation_attribute_type.name)
+                    percent = "Invalid Value"
+                    logger.error(
+                        "Allocation attribute '%s' is not an int but has a usage",
+                        attribute.allocation_attribute_type.name,
+                    )
                 except ZeroDivisionError:
                     percent = 100
-                    logger.error("Allocation attribute '%s' == 0 but has a usage",
-                                 attribute.allocation_attribute_type.name)
+                    logger.error(
+                        "Allocation attribute '%s' == 0 but has a usage",
+                        attribute.allocation_attribute_type.name,
+                    )
 
-                string = '{}: {}/{} ({} %) <br>'.format(
+                string = "{}: {}/{} ({} %) <br>".format(
                     attribute.allocation_attribute_type.name,
                     attribute.allocationattributeusage.value,
                     attribute.value,
-                    percent
+                    percent,
                 )
                 html_string += string
 
@@ -184,8 +217,12 @@ class Allocation(TimeStampedModel):
             str: the resources for the allocation
         """
 
-        return ', '.join([ele.name for ele in self.resources.all().order_by(
-            *ALLOCATION_RESOURCE_ORDERING)])
+        return ", ".join(
+            [
+                ele.name
+                for ele in self.resources.all().order_by(*ALLOCATION_RESOURCE_ORDERING)
+            ]
+        )
 
     @property
     def get_resources_as_list(self):
@@ -194,7 +231,7 @@ class Allocation(TimeStampedModel):
             list[Resource]: the resources for the allocation
         """
 
-        return [ele for ele in self.resources.all().order_by('-is_allocatable')]
+        return [ele for ele in self.resources.all().order_by("-is_allocatable")]
 
     @property
     def get_parent_resource(self):
@@ -206,15 +243,13 @@ class Allocation(TimeStampedModel):
         if self.resources.count() == 1:
             return self.resources.first()
         else:
-            parent = self.resources.order_by(
-                *ALLOCATION_RESOURCE_ORDERING).first()
+            parent = self.resources.order_by(*ALLOCATION_RESOURCE_ORDERING).first()
             if parent:
                 return parent
             # Fallback
             return self.resources.first()
 
-    def get_attribute(self, name, expand=True, typed=True,
-        extra_allocations=[]):
+    def get_attribute(self, name, expand=True, typed=True, extra_allocations=[]):
         """
         Params:
             name (str): name of the allocation attribute type
@@ -227,11 +262,13 @@ class Allocation(TimeStampedModel):
         """
 
         attr = self.allocationattribute_set.filter(
-            allocation_attribute_type__name=name).first()
+            allocation_attribute_type__name=name
+        ).first()
         if attr:
             if expand:
                 return attr.expanded_value(
-                    extra_allocations=extra_allocations, typed=typed)
+                    extra_allocations=extra_allocations, typed=typed
+                )
             else:
                 if typed:
                     return attr.typed_value()
@@ -247,24 +284,25 @@ class Allocation(TimeStampedModel):
         """
 
         attr = self.allocationattribute_set.filter(
-            allocation_attribute_type__name=name).first()
+            allocation_attribute_type__name=name
+        ).first()
         if not attr:
             return
 
         if not attr.allocation_attribute_type.has_usage:
             return
 
-        if not AllocationAttributeUsage.objects.filter(allocation_attribute=attr).exists():
-            usage = AllocationAttributeUsage.objects.create(
-                allocation_attribute=attr)
+        if not AllocationAttributeUsage.objects.filter(
+            allocation_attribute=attr
+        ).exists():
+            usage = AllocationAttributeUsage.objects.create(allocation_attribute=attr)
         else:
             usage = attr.allocationattributeusage
 
         usage.value = value
         usage.save()
 
-    def get_attribute_list(self, name, expand=True, typed=True,
-        extra_allocations=[]):
+    def get_attribute_list(self, name, expand=True, typed=True, extra_allocations=[]):
         """
         Params:
             name (str): name of the allocation
@@ -277,10 +315,13 @@ class Allocation(TimeStampedModel):
         """
 
         attr = self.allocationattribute_set.filter(
-            allocation_attribute_type__name=name).all()
+            allocation_attribute_type__name=name
+        ).all()
         if expand:
-            return [a.expanded_value(typed=typed,
-                extra_allocations=extra_allocations) for a in attr]
+            return [
+                a.expanded_value(typed=typed, extra_allocations=extra_allocations)
+                for a in attr
+            ]
         else:
             if typed:
                 return [a.typed_value() for a in attr]
@@ -297,9 +338,13 @@ class Allocation(TimeStampedModel):
         """
 
         if user.is_superuser:
-            return self.allocationattribute_set.all().order_by('allocation_attribute_type__name')
+            return self.allocationattribute_set.all().order_by(
+                "allocation_attribute_type__name"
+            )
 
-        return self.allocationattribute_set.filter(allocation_attribute_type__is_private=False).order_by('allocation_attribute_type__name')
+        return self.allocationattribute_set.filter(
+            allocation_attribute_type__is_private=False
+        ).order_by("allocation_attribute_type__name")
 
     def user_permissions(self, user):
         """
@@ -318,10 +363,19 @@ class Allocation(TimeStampedModel):
         if ProjectPermission.USER not in project_perms:
             return []
 
-        if ProjectPermission.PI in project_perms or ProjectPermission.MANAGER in project_perms:
+        if (
+            ProjectPermission.PI in project_perms
+            or ProjectPermission.MANAGER in project_perms
+        ):
             return [AllocationPermission.USER, AllocationPermission.MANAGER]
 
-        if self.allocationuser_set.filter(user=user, status__name__in=['Active', 'New', ]).exists():
+        if self.allocationuser_set.filter(
+            user=user,
+            status__name__in=[
+                "Active",
+                "New",
+            ],
+        ).exists():
             return [AllocationPermission.USER]
 
         return []
@@ -343,7 +397,6 @@ class Allocation(TimeStampedModel):
         return "%s (%s)" % (self.get_parent_resource.name, self.project.pi)
 
 
-
 class AllocationLinkage(TimeStampedModel):
     """An allocation linkage maintains a relationship between a parent allocation and 1-or-more children
     Attributes:
@@ -362,10 +415,9 @@ class AllocationLinkage(TimeStampedModel):
         return f"{self.parent.pk}->{child_ids_str}"
 
 
-
 class AllocationAdminNote(TimeStampedModel):
-    """ An allocation admin note is a note that an admin makes on an allocation.
-    
+    """An allocation admin note is a note that an admin makes on an allocation.
+
     Attributes:
         allocation (Allocation): links the allocation to the note
         author (User): represents the User class of the admin who authored the note
@@ -379,9 +431,10 @@ class AllocationAdminNote(TimeStampedModel):
     def __str__(self):
         return self.note
 
+
 class AllocationUserNote(TimeStampedModel):
-    """ An allocation user note is a note that an user makes on an allocation.
-    
+    """An allocation user note is a note that an user makes on an allocation.
+
     Attributes:
         allocation (Allocation): links the allocation to the note
         author (User): represents the User class of the user who authored the note
@@ -397,9 +450,10 @@ class AllocationUserNote(TimeStampedModel):
     def __str__(self):
         return self.note
 
+
 class AttributeType(TimeStampedModel):
-    """ An attribute type indicates the data type of the attribute. Examples include Date, Float, Int, Text, and Yes/No. 
-    
+    """An attribute type indicates the data type of the attribute. Examples include Date, Float, Int, Text, and Yes/No.
+
     Attributes:
         name (str): name of attribute data type
     """
@@ -410,11 +464,14 @@ class AttributeType(TimeStampedModel):
         return self.name
 
     class Meta:
-        ordering = ['name', ]
+        ordering = [
+            "name",
+        ]
+
 
 class AllocationAttributeType(TimeStampedModel):
-    """ An allocation attribute type indicates the type of the attribute. Examples include Cloud Account Name and Core Usage (Hours). 
-    
+    """An allocation attribute type indicates the type of the attribute. Examples include Cloud Account Name and Core Usage (Hours).
+
     Attributes:
         attribute_type (AttributeType): indicates the data type of the attribute
         name (str): name of allocation attribute type
@@ -435,14 +492,17 @@ class AllocationAttributeType(TimeStampedModel):
     history = HistoricalRecords()
 
     def __str__(self):
-        return '%s' % (self.name)
+        return "%s" % (self.name)
 
     class Meta:
-        ordering = ['name', ]
+        ordering = [
+            "name",
+        ]
+
 
 class AllocationAttribute(TimeStampedModel):
-    """ An allocation attribute class links an allocation attribute type and an allocation. 
-    
+    """An allocation attribute class links an allocation attribute type and an allocation.
+
     Attributes:
         allocation_attribute_type (AllocationAttributeType): attribute type to link
         allocation (Allocation): allocation to link
@@ -450,46 +510,67 @@ class AllocationAttribute(TimeStampedModel):
     """
 
     allocation_attribute_type = models.ForeignKey(
-        AllocationAttributeType, on_delete=models.CASCADE)
+        AllocationAttributeType, on_delete=models.CASCADE
+    )
     allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE)
-    value = models.CharField(max_length=128)
+    value = models.CharField(max_length=8192)
     history = HistoricalRecords()
 
     def save(self, *args, **kwargs):
-        """ Saves the allocation attribute. """
+        """Saves the allocation attribute."""
 
         super().save(*args, **kwargs)
-        if self.allocation_attribute_type.has_usage and not AllocationAttributeUsage.objects.filter(allocation_attribute=self).exists():
-            AllocationAttributeUsage.objects.create(
-                allocation_attribute=self)
+        if (
+            self.allocation_attribute_type.has_usage
+            and not AllocationAttributeUsage.objects.filter(
+                allocation_attribute=self
+            ).exists()
+        ):
+            AllocationAttributeUsage.objects.create(allocation_attribute=self)
 
     def clean(self):
-        """ Validates the allocation attribute and raises errors if the allocation attribute is invalid. """
+        """Validates the allocation attribute and raises errors if the allocation attribute is invalid."""
 
-        if self.allocation_attribute_type.is_unique and self.allocation.allocationattribute_set.filter(allocation_attribute_type=self.allocation_attribute_type).exclude(id=self.pk).exists():
-            raise ValidationError("'{}' attribute already exists for this allocation.".format(
-                self.allocation_attribute_type))
+        if (
+            self.allocation_attribute_type.is_unique
+            and self.allocation.allocationattribute_set.filter(
+                allocation_attribute_type=self.allocation_attribute_type
+            )
+            .exclude(id=self.pk)
+            .exists()
+        ):
+            raise ValidationError(
+                "'{}' attribute already exists for this allocation.".format(
+                    self.allocation_attribute_type
+                )
+            )
 
-        expected_value_type = self.allocation_attribute_type.attribute_type.name.strip()
+        expected_attr_type = self.allocation_attribute_type.attribute_type.name.strip()
 
-        if expected_value_type == "Int" and not isinstance(literal_eval(self.value), int):
-            raise ValidationError(
-                'Invalid Value "%s" for "%s". Value must be an integer.' % (self.value, self.allocation_attribute_type.name))
-        elif expected_value_type == "Float" and not (isinstance(literal_eval(self.value), float) or isinstance(literal_eval(self.value), int)):
-            raise ValidationError(
-                'Invalid Value "%s" for "%s". Value must be a float.' % (self.value, self.allocation_attribute_type.name))
-        elif expected_value_type == "Yes/No" and self.value not in ["Yes", "No"]:
-            raise ValidationError(
-                'Invalid Value "%s" for "%s". Allowed inputs are "Yes" or "No".' % (self.value, self.allocation_attribute_type.name))
-        elif expected_value_type == "Date":
-            try:
-                datetime.datetime.strptime(self.value.strip(), "%Y-%m-%d")
-            except ValueError:
-                raise ValidationError(
-                    'Invalid Value "%s" for "%s". Date must be in format YYYY-MM-DD' % (self.value, self.allocation_attribute_type.name))
+        expected_alloc_attr_type = self.allocation_attribute_type.name.strip()
+
+        # AttributeType-level validators
+        attr_validator = AttributeValidator(self.value)
+
+        if expected_attr_type == "Int":
+            attr_validator.validate_int()
+        elif expected_attr_type == "Float":
+            attr_validator.validate_float()
+        elif expected_attr_type == "Yes/No":
+            attr_validator.validate_yes_no()
+        elif expected_attr_type == "Date":
+            attr_validator.validate_date()
+        elif expected_attr_type == "JSON":
+            attr_validator.validate_json()
+
+        # AllocationAttributeType-level validators
+        alloc_validator = AllocationAttributeValidator(self.value)
+
+        if expected_alloc_attr_type == "billing_cycle":
+            alloc_validator.validate_billing_cycle()
 
     def __str__(self):
-        return '%s' % (self.allocation_attribute_type.name)
+        return "%s" % (self.allocation_attribute_type.name)
 
     def typed_value(self):
         """
@@ -499,10 +580,8 @@ class AllocationAttribute(TimeStampedModel):
 
         raw_value = self.value
         atype_name = self.allocation_attribute_type.attribute_type.name
-        return attribute_expansion.convert_type(
-            value=raw_value, type_name=atype_name)
-                
-    
+        return attribute_expansion.convert_type(value=raw_value, type_name=atype_name)
+
     def expanded_value(self, extra_allocations=[], typed=True):
         """
         Params:
@@ -512,7 +591,7 @@ class AllocationAttribute(TimeStampedModel):
         Returns:
             int, float, str: the value of the attribute after attribute expansion
 
-        For attributes with attribute type of 'Attribute Expanded Text' we look for an attribute with same name suffixed with '_attriblist' (this should be ResourceAttribute of the Resource associated with the attribute). If the attriblist attribute is found, we use it to generate a dictionary to use to expand the attribute value, and the expanded value is returned.  
+        For attributes with attribute type of 'Attribute Expanded Text' we look for an attribute with same name suffixed with '_attriblist' (this should be ResourceAttribute of the Resource associated with the attribute). If the attriblist attribute is found, we use it to generate a dictionary to use to expand the attribute value, and the expanded value is returned.
 
         If the expansion fails, or if no attriblist attribute is found, or if the attribute type is not 'Attribute Expanded Text', we just return the raw value.
         """
@@ -523,55 +602,64 @@ class AllocationAttribute(TimeStampedModel):
             raw_value = self.typed_value()
 
         if not attribute_expansion.is_expandable_type(
-            self.allocation_attribute_type.attribute_type):
+            self.allocation_attribute_type.attribute_type
+        ):
             # We are not an expandable type, return raw_value
             return raw_value
 
-        allocs = [ self.allocation ] + extra_allocations
+        allocs = [self.allocation] + extra_allocations
         resources = list(self.allocation.resources.all())
         attrib_name = self.allocation_attribute_type.name
 
         attriblist = attribute_expansion.get_attriblist_str(
-            attribute_name = attrib_name,
-            resources = resources,
-            allocations = allocs)
+            attribute_name=attrib_name, resources=resources, allocations=allocs
+        )
 
         if not attriblist:
             # We do not have an attriblist, return raw_value
             return raw_value
 
         expanded = attribute_expansion.expand_attribute(
-            raw_value = raw_value,
-            attribute_name = attrib_name,
-            attriblist_string = attriblist,
-            resources = resources,
-            allocations = allocs)
+            raw_value=raw_value,
+            attribute_name=attrib_name,
+            attriblist_string=attriblist,
+            resources=resources,
+            allocations=allocs,
+        )
         return expanded
-           
+
+
 class AllocationAttributeUsage(TimeStampedModel):
-    """ Allocation attribute usage indicates the usage of an allocation attribute. 
-    
+    """Allocation attribute usage indicates the usage of an allocation attribute.
+
     Attributes:
         allocation_attribute (AllocationAttribute): links the usage to its allocation attribute
         value (float): usage value of the allocation attribute
     """
 
     allocation_attribute = models.OneToOneField(
-        AllocationAttribute, on_delete=models.CASCADE, primary_key=True)
+        AllocationAttribute, on_delete=models.CASCADE, primary_key=True
+    )
     value = models.FloatField(default=0)
     history = HistoricalRecords()
 
     def __str__(self):
-        return '{}: {}'.format(self.allocation_attribute.allocation_attribute_type.name, self.value)
+        return "{}: {}".format(
+            self.allocation_attribute.allocation_attribute_type.name, self.value
+        )
+
 
 class AllocationUserStatusChoice(TimeStampedModel):
-    """ An allocation user status choice indicates the status of an allocation user. Examples include Active, Error, and Removed.
-    
+    """An allocation user status choice indicates the status of an allocation user. Examples include Active, Error, and Removed.
+
     Attributes:
         name (str): name of the allocation user status choice
     """
+
     class Meta:
-        ordering = ['name', ]
+        ordering = [
+            "name",
+        ]
 
     class AllocationUserStatusChoiceManager(models.Manager):
         def get_by_natural_key(self, name):
@@ -586,9 +674,10 @@ class AllocationUserStatusChoice(TimeStampedModel):
     def natural_key(self):
         return (self.name,)
 
+
 class AllocationUser(TimeStampedModel):
-    """ An allocation user represents a user on the allocation.
-    
+    """An allocation user represents a user on the allocation.
+
     Attributes:
         allocation (Allocation): links user to its allocation
         user (User): represents the User object of the allocation user
@@ -597,21 +686,25 @@ class AllocationUser(TimeStampedModel):
 
     allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    status = models.ForeignKey(AllocationUserStatusChoice, on_delete=models.CASCADE,
-                               verbose_name='Allocation User Status')
+    status = models.ForeignKey(
+        AllocationUserStatusChoice,
+        on_delete=models.CASCADE,
+        verbose_name="Allocation User Status",
+    )
     history = HistoricalRecords()
 
     def __str__(self):
-        return '%s' % (self.user)
+        return "%s" % (self.user)
 
     class Meta:
-        verbose_name_plural = 'Allocation User Status'
-        unique_together = ('user', 'allocation')
+        verbose_name_plural = "Allocation User Status"
+        unique_together = ("user", "allocation")
+
 
 class AllocationAccount(TimeStampedModel):
-    """ An allocation account 
+    """An allocation account
     #come back to
-    
+
     Attributes:
         user (User): represents the User object of the project user
         name (str):
@@ -624,11 +717,14 @@ class AllocationAccount(TimeStampedModel):
         return self.name
 
     class Meta:
-        ordering = ['name', ]
+        ordering = [
+            "name",
+        ]
+
 
 class AllocationChangeStatusChoice(TimeStampedModel):
-    """ An allocation change status choice represents statuses displayed when a user changes their allocation status (for allocations that have their is_changeable attribute set to True). Examples include Expired and Payment Pending.
-    
+    """An allocation change status choice represents statuses displayed when a user changes their allocation status (for allocations that have their is_changeable attribute set to True). Examples include Expired and Payment Pending.
+
     Attributes:
         name (str): status name
     """
@@ -639,11 +735,14 @@ class AllocationChangeStatusChoice(TimeStampedModel):
         return self.name
 
     class Meta:
-        ordering = ['name', ]
+        ordering = [
+            "name",
+        ]
+
 
 class AllocationChangeRequest(TimeStampedModel):
-    """ An allocation change request represents a request from a PI or manager to change their allocation.
-    
+    """An allocation change request represents a request from a PI or manager to change their allocation.
+
     Attributes:
         allocation (Allocation): represents the allocation to change
         status (AllocationStatusChoice): represents the allocation status of the changed allocation
@@ -652,9 +751,13 @@ class AllocationChangeRequest(TimeStampedModel):
         notes (str): represents notes for users changing allocations
     """
 
-    allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE,)
+    allocation = models.ForeignKey(
+        Allocation,
+        on_delete=models.CASCADE,
+    )
     status = models.ForeignKey(
-        AllocationChangeStatusChoice, on_delete=models.CASCADE, verbose_name='Status')
+        AllocationChangeStatusChoice, on_delete=models.CASCADE, verbose_name="Status"
+    )
     end_date_extension = models.IntegerField(blank=True, null=True)
     justification = models.TextField()
     notes = models.CharField(max_length=512, blank=True, null=True)
@@ -675,19 +778,24 @@ class AllocationChangeRequest(TimeStampedModel):
     def __str__(self):
         return "%s (%s)" % (self.get_parent_resource.name, self.allocation.project.pi)
 
+
 class AllocationAttributeChangeRequest(TimeStampedModel):
-    """ An allocation attribute change request represents a request from a PI/ manager to change their allocation attribute.
-    
+    """An allocation attribute change request represents a request from a PI/ manager to change their allocation attribute.
+
     Attributes:
         allocation_change_request (AllocationChangeRequest): links the change request from which this attribute change is derived
         allocation_attribute (AllocationAttribute): represents the allocation_attribute to change
-        new_value (str): new value of allocation attribute    
+        new_value (str): new value of allocation attribute
     """
 
-    allocation_change_request = models.ForeignKey(AllocationChangeRequest, on_delete=models.CASCADE)
-    allocation_attribute = models.ForeignKey(AllocationAttribute, on_delete=models.CASCADE)
+    allocation_change_request = models.ForeignKey(
+        AllocationChangeRequest, on_delete=models.CASCADE
+    )
+    allocation_attribute = models.ForeignKey(
+        AllocationAttribute, on_delete=models.CASCADE
+    )
     new_value = models.CharField(max_length=128)
     history = HistoricalRecords()
 
     def __str__(self):
-        return '%s' % (self.allocation_attribute.allocation_attribute_type.name)
+        return "%s" % (self.allocation_attribute.allocation_attribute_type.name)

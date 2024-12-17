@@ -15,5 +15,6 @@ class Command(BaseCommand):
 
 def call_base_commands():
     call_command("add_qumulo_resource")
+    call_command("add_qumulo_project_attribute_types")
     call_command("add_qumulo_allocation_attribute_type")
     call_command("add_allocation_status")

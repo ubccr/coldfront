@@ -10,16 +10,24 @@ from coldfront.core.allocation.models import (
 )
 
 from coldfront.plugins.qumulo.tests.utils.mock_data import build_models
-from coldfront.plugins.qumulo.views.allocation_view import AllocationView
+from coldfront.plugins.qumulo.services.allocation_service import AllocationService
 from coldfront.plugins.qumulo.views.create_sub_allocation_view import (
     CreateSubAllocationView,
 )
 
+from coldfront.core.allocation.models import (
+    AllocationLinkage,
+    AllocationAttributeType,
+    AllocationAttribute,
+)
 
-@patch("coldfront.plugins.qumulo.views.allocation_view.async_task")
-@patch("coldfront.plugins.qumulo.views.allocation_view.ActiveDirectoryAPI")
+# TODO why isn't the CreateSubAllocationForm used?
+from coldfront.plugins.qumulo.forms import CreateSubAllocationForm
+
+
+@patch("coldfront.plugins.qumulo.services.allocation_service.ActiveDirectoryAPI")
+@patch("coldfront.plugins.qumulo.services.allocation_service.async_task")
 @patch("coldfront.plugins.qumulo.validators.ActiveDirectoryAPI")
-@patch("coldfront.plugins.qumulo.views.allocation_view.AclAllocations")
 class AllocationViewTests(TestCase):
     def setUp(self):
         build_data = build_models()
@@ -62,12 +70,11 @@ class AllocationViewTests(TestCase):
 
     def test_create_sub_allocation(
         self,
-        mock_AclAllocations: MagicMock,
         mock_ActiveDirectoryAPI_validator: MagicMock,
         mock_ActiveDirectoryAPI: MagicMock,
         mock_async_task: MagicMock,
     ):
-        parent_result = AllocationView.create_new_allocation(
+        parent_result = AllocationService.create_new_allocation(
             self.parent_form_data, self.user
         )
 
@@ -80,7 +87,7 @@ class AllocationViewTests(TestCase):
         self.assertEqual(AllocationLinkage.objects.count(), 0)
 
         # create a sub-allocation
-        sub_result = CreateSubAllocationView.create_new_allocation(
+        sub_result = AllocationService.create_new_allocation(
             self.sub_form_data, self.user, parent_allocation=parent_result["allocation"]
         )
 

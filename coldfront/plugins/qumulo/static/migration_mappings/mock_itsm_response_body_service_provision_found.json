@@ -1,0 +1,302 @@
+{
+    "attribute": [
+        "id",
+        "service_id",
+        "name",
+        "sponsor",
+        "department_number",
+        "department_name",
+        "funding_number",
+        "billing_contact",
+        "technical_contact",
+        "secure",
+        "service_desk_ticket_number",
+        "audit",
+        "creation_timestamp",
+        "billing_startdate",
+        "status",
+        "sponsor_department_number",
+        "fileset_name",
+        "fileset_alias",
+        "exempt",
+        "service_rate_category",
+        "comment",
+        "billing_cycle",
+        "subsidized",
+        "quota",
+        "allow_nonfaculty",
+        "acl_group_members",
+        "who",
+        "parent_id",
+        "is_condo_group",
+        "sla"
+    ],
+    "metadata": [
+        {
+            "column": "id",
+            "display_name": "Id",
+            "show": true,
+            "table_alias": "a",
+            "type": "_num"
+        },
+        {
+            "column": "service_id",
+            "display_name": "Service Id",
+            "show": true,
+            "table_alias": "a",
+            "type": "service"
+        },
+        {
+            "column": "name",
+            "display_name": "Name",
+            "show": true,
+            "table_alias": "a",
+            "type": "_string"
+        },
+        {
+            "column": "sponsor",
+            "display_name": "Sponsor",
+            "show": true,
+            "table_alias": "a",
+            "editable": true,
+            "type": "_string"
+        },
+        {
+            "type": "department",
+            "table_alias": "a",
+            "column": "department_number",
+            "display_name": "Department",
+            "editable": true,
+            "show": true
+        },
+        {
+            "type": "department",
+            "table_alias": "d",
+            "column": "name",
+            "display_name": "Department",
+            "show": true
+        },
+        {
+            "column": "funding_number",
+            "display_name": "Funding Number",
+            "show": true,
+            "table_alias": "a",
+            "editable": true,
+            "type": "_string"
+        },
+        {
+            "column": "billing_contact",
+            "display_name": "Billing Contacts (comma separated)",
+            "show": true,
+            "table_alias": "a",
+            "editable": true,
+            "type": "_string"
+        },
+        {
+            "column": "technical_contact",
+            "display_name": "Technical Contact",
+            "show": true,
+            "table_alias": "a",
+            "editable": true,
+            "type": "_string"
+        },
+        {
+            "column": "secure",
+            "display_name": "Secure",
+            "show": true,
+            "table_alias": "a",
+            "type": "_boolean"
+        },
+        {
+            "column": "service_desk_ticket_number",
+            "display_name": "Service Desk Ticket Number",
+            "show": true,
+            "table_alias": "a",
+            "editable": true,
+            "type": "_string"
+        },
+        {
+            "column": "audit",
+            "display_name": "Audit",
+            "show": true,
+            "table_alias": "a",
+            "editable": true,
+            "type": "_string"
+        },
+        {
+            "column": "creation_timestamp",
+            "display_name": "Creation Timestamp",
+            "show": true,
+            "table_alias": "a",
+            "type": "_timestamp"
+        },
+        {
+            "column": "billing_startdate",
+            "display_name": "Billing Startdate",
+            "show": true,
+            "table_alias": "a",
+            "type": "_date"
+        },
+        {
+            "column": "status",
+            "display_name": "Status",
+            "show": true,
+            "table_alias": "a",
+            "editable": true,
+            "type": "_string"
+        },
+        {
+            "column": "sponsor_department_number",
+            "display_name": "Sponsor Department Number",
+            "show": true,
+            "table_alias": "a",
+            "type": "_num",
+            "editable": true
+        },
+        {
+            "column": "fileset_name",
+            "display_name": "Fileset Name",
+            "show": true,
+            "table_alias": "a",
+            "type": "_string"
+        },
+        {
+            "column": "fileset_alias",
+            "display_name": "Fileset Alias",
+            "show": true,
+            "table_alias": "a",
+            "type": "_string",
+            "editable": true
+        },
+        {
+            "column": "exempt",
+            "display_name": "Exempt from Billing",
+            "show": true,
+            "table_alias": "a",
+            "editable": true,
+            "type": "_boolean"
+        },
+        {
+            "type": "service_rate_category",
+            "table_alias": "a",
+            "column": "service_rate_category",
+            "display_name": "Service Rate Category",
+            "editable": true,
+            "show": true
+        },
+        {
+            "column": "comment",
+            "display_name": "Comment",
+            "show": true,
+            "table_alias": "a",
+            "editable": true,
+            "type": "_string"
+        },
+        {
+            "column": "billing_cycle",
+            "display_name": "Billing Cycle",
+            "show": true,
+            "table_alias": "a",
+            "editable": true,
+            "type": "billing_cycle"
+        },
+        {
+            "column": "subsidized",
+            "display_name": "Subsidized",
+            "show": true,
+            "table_alias": "a",
+            "editable": true,
+            "type": "_boolean"
+        },
+        {
+            "column": "quota",
+            "display_name": "Quota",
+            "show": true,
+            "table_alias": "a",
+            "editable": true,
+            "type": "_string"
+        },
+        {
+            "column": "allow_nonfaculty",
+            "display_name": "Allow Non-faculty",
+            "show": true,
+            "table_alias": "a",
+            "type": "_boolean"
+        },
+        {
+            "column": "acl_group_members",
+            "display_name": "ACL Group Members",
+            "show": true,
+            "table_alias": "a",
+            "editable": true,
+            "type": "_string"
+        },
+        {
+            "column": "who",
+            "display_name": "Last Edited by",
+            "show": true,
+            "table_alias": "a",
+            "editable": false,
+            "type": "_string"
+        },
+        {
+            "column": "parent_id",
+            "display_name": "Condo Group",
+            "show": true,
+            "table_alias": "a",
+            "editable": true,
+            "type": "collection_select"
+        },
+        {
+            "column": "is_condo_group",
+            "display_name": "Is Condo Group",
+            "show": true,
+            "table_alias": "a",
+            "type": "_boolean"
+        },
+        {
+            "column": "sla",
+            "display_name": "SLA",
+            "show": true,
+            "table_alias": "a",
+            "type": "_string"
+        }
+    ],
+    "data": [
+        {
+            "id": 774,
+            "service_id": 1,
+            "name": "/vol/rdcw-fs1/jin810",
+            "sponsor": "mocker",
+            "department_number": "CH00409",
+            "department_name": "Genetics",
+            "funding_number": "CC0004259",
+            "billing_contact": "jin810",
+            "technical_contact": "jin810",
+            "secure": false,
+            "service_desk_ticket_number": "ITSD-2222",
+            "audit": null,
+            "creation_timestamp": "2020-04-16T00: 00: 00.000Z",
+            "billing_startdate": "2020-04-15T00: 00: 00.000Z",
+            "status": "active",
+            "sponsor_department_number": "CH00409",
+            "fileset_name": "mocker_active",
+            "fileset_alias": "mocker_active",
+            "exempt": false,
+            "service_rate_category": "subscription",
+            "comment": "{\"afm_cache_enable\":true,\"_jenkins\":\"https://systems-ci.gsc.wustl.edu/job/storage1_allocation/2652\",\"add_archive\":\"true\"}",
+            "billing_cycle": "monthly",
+            "subsidized": true,
+            "quota": "200T",
+            "allow_nonfaculty": null,
+            "acl_group_members": "b.cooper,c.m.choi,fup,jin810,k.mariam,k.prashantkumar,kuangyingyang,shohaibshaffiey,shujuanzhao,spencer.king,WG-amarsheth,WG-fu.po-ying,WG-kareena,WG-kesava,WG-nicholas.diab,yung-chun,w.max",
+            "who": "rpokorne",
+            "parent_id": null,
+            "is_condo_group": false,
+            "sla": null,
+            "_service_provision": 774,
+            "_department": "CH00409"
+        }
+    ],
+    "entity": "service_provision"
+}

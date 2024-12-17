@@ -1,0 +1,486 @@
+itsm_to_coldfront_map:
+  sponsor:
+    coldfront:
+      - entity: user
+        attributes: # AD should pull the attributes for personal info such as first, last, and email.
+          - name: username
+            value:
+              type: string
+              transforms: null
+              validates:
+                presence: true
+                length:
+                  maximum: 128
+                ad_record_exist: true
+      - entity: project
+        attributes:
+          - name: pi
+            value:
+              type: int
+              transforms: null
+              foreign_key: User.objects.get(username=sponsor)
+              validates:
+                presence: true
+    itsm_value:
+      entity: service_provision
+      attribute: sponsor
+      type: string
+  acl_group_members:
+    coldfront:
+      - entity: allocation_form
+        attributes:
+          - name: rw_users
+            value:
+              type: string
+              transforms: acl_group_members_to_aggregate_create_users
+              validates:
+                presence: true
+                length:
+                  maximum: 128
+                ad_record_exist: true
+    itsm_value:
+      entity: service_provision
+      attribute: acl_group_members
+      type: string
+  department_number:
+    coldfront:
+      - entity: allocation_attribute
+        attributes:
+          - name: allocation_attribute_type__name
+            value: department_number
+          - name: value
+            value:
+              type: string
+              transforms: null
+              validates:
+                presence: true
+                length:
+                  maximum: 128
+      - entity: allocation_form
+        attributes:
+          - name: department_number
+            value:
+              type: string
+              transforms: null
+              validates:
+                presence: true
+                length:
+                  maximum: 128
+    itsm_value:
+      entity: service_provision
+      attribute: department_number
+      type: string
+      nulls: true
+  funding_number:
+    coldfront:
+      - entity: allocation_form
+        attributes:
+          - name: cost_center
+            value:
+              type: string
+              transforms: null
+              validates:
+                presence: true
+                length:
+                  maximum: 128
+    itsm_value:
+      entity: service_provision
+      attribute: funding_number
+      type: string
+      nulls: true
+  billing_contact:
+    coldfront:
+      - entity: allocation_attribute
+        attributes:
+          - name: allocation_attribute_type__name
+            value: billing_contact
+          - name: value
+            value:
+              type: string
+              transforms: null
+              validates:
+                exclusion: emails
+                length:
+                  maximum: 128
+                  allow_blank: true
+    itsm_value:
+      entity: service_provision
+      attribute: billing_contact
+      type: string
+      nulls: true
+  technical_contact:
+    coldfront:
+      - entity: allocation_attribute
+        attributes:
+          - name: allocation_attribute_type__name
+            value: technical_contact
+          - name: value
+            value:
+              type: string
+              transforms: null
+              validates:
+                exclusion: emails
+                length:
+                  maximum: 128
+                  allow_blank: true
+    itsm_value:
+      entity: service_provision
+      attribute: technical_contact
+      type: string
+      nulls: true
+  secure:
+    coldfront:
+      - entity: allocation_attribute
+        attributes:
+          - name: allocation_attribute_type__name
+            value: secure
+          - name: value
+            value:
+              type: Yes/No
+              transforms: truthy_or_falsy_to_boolean
+              validates:
+                inclusion: ["Yes", "No"]
+    itsm_value:
+      entity: service_provision
+      attribute: secure
+      type: boolean
+      defaults_to: false
+  service_desk_ticket_number:
+    coldfront:
+      - entity: allocation_attribute
+        attributes:
+          - name: allocation_attribute_type__name
+            value: storage_ticket
+          - name: value
+            value:
+              type: string
+              transforms: null
+              validates:
+                presence: true
+                validate_ticket: true
+      - entity: allocation_form
+        attributes:
+          - name: service_desk_ticket_number
+            value:
+              type: string
+              transforms: null
+              validates:
+                presence: true
+                validate_ticket: true
+    itsm_value:
+      entity: service_provision
+      attribute: service_desk_ticket_number
+      type: string
+  audit:
+    coldfront:
+      - entity: allocation_attribute
+        attributes:
+          - name: allocation_attribute_type__name
+            value: audit
+          - name: value
+            value:
+              type: Yes/No
+              transforms: truthy_or_falsy_to_boolean
+              validates:
+                inclusion: ["Yes", "No"]
+    itsm_value:
+      entity: service_provision
+      attribute: audit
+      type: string
+      values: ["0", "1", "false", "true", null]
+      defaults_to: false
+  billing_startdate:
+    coldfront:
+      - entity: allocation_attribute
+        attributes:
+          - name: allocation_attribute_type__name
+            value: billing_startdate
+          - name: value
+            value:
+              type: Date
+              transforms: null
+              validates:
+                presence: true # Is the conditionally necessary? Not all allocations have a billing_startdate.
+    itsm_value:
+      entity: service_provision
+      attribute: billing_startdate
+      type: date
+      nulls: true
+  sponsor_department_number:
+    coldfront:
+      - entity: project_attribute
+        attributes:
+          - name: proj_attr_type
+            value: sponsor_department_number
+          - name: value
+            value:
+              type: string
+              transforms: null
+              validates:
+                presence: true # is this conditionally necessary?
+                length:
+                  maximum: 128
+    itsm_value:
+      entity: service_provision
+      attribute: sponsor_department_number
+      type: string
+      nulls: true
+      defaults_to: ""
+  fileset_name:
+    coldfront:
+      - entity: allocation_attribute
+        attributes:
+          - name: allocation_attribute_type__name
+            value: fileset_name
+          - name: value
+            value:
+              type: string
+              transforms: null
+              validates:
+                presence: true
+                length:
+                  maximum: 128
+      - entity: allocation_form
+        attributes:
+          - name: storage_filesystem_path
+            value:
+              type: string
+              transforms: fileset_name_to_storage_filesystem_path
+              validates:
+                presence: true
+                uniqueness:
+                  entity: AllocationAttribute
+                  entity_attribute: allocation_attribute_type__name
+                  attribute_name_value: storage_filesystem_path
+                length:
+                  maximum: 128
+      - entity: allocation_form
+        attributes:
+          - name: storage_export_path
+            value:
+              type: string
+              transforms: fileset_name_to_storage_export_path
+              validates:
+                presence: true
+                uniqueness:
+                  entity: AllocationAttribute
+                  entity_attribute: allocation_attribute_type__name
+                  attribute_name_value: storage_export_path
+                length:
+                  maximum: 128
+      - entity: allocation_form
+        attributes:
+          - name: storage_name
+            value:
+              type: string
+              transforms: fileset_name_to_storage_name
+              validates:
+                presence: true
+                length:
+                  maximum: 128
+    itsm_value:
+      entity: service_provision
+      attribute: fileset_name
+      type: string
+      nulls: true # found nulls and found duplicates
+  fileset_alias:
+    coldfront:
+      - entity: allocation_attribute
+        attributes:
+          - name: allocation_attribute_type__name
+            value: fileset_alias
+          - name: value
+            value:
+              type: string
+              transforms: null
+              validates:
+                presence: true
+                length:
+                  maximum: 128
+    itsm_value:
+      entity: service_provision
+      attribute: fileset_alias
+      type: string
+      nulls: true # found nulls and found duplicates
+  exempt:
+    coldfront:
+      - entity: allocation_attribute
+        attributes:
+          - name: allocation_attribute_type__name
+            value: exempt
+          - name: value
+            value:
+              type: Yes/No
+              transforms: truthy_or_falsy_to_boolean
+              validates:
+                inclusion: ["Yes", "No"]
+    itsm_value:
+      entity: service_provision
+      attribute: exempt
+      type: boolean
+      nulls: true # Most likely, the default value was added after some records had been created
+      defaults_to: false
+  service_rate_category:
+    coldfront:
+      - entity: allocation_form
+        attributes:
+          - name: service_rate
+            value:
+              type: string
+              transforms: null
+              validates:
+                inclusion: ["condo", "consumption", "subscription"]
+    itsm_value:
+      entity: service_provision
+      attribute: service_rate_category
+      type: string
+      values: ["condo", "consumption", "subscription"] # if the status is active
+      nulls: true
+      defaults_to: subscription
+  comment:
+    coldfront:
+      - entity: allocation_attribute
+        attributes:
+          - name: allocation_attribute_type__name
+            value: itsm_comment
+          - name: value
+            value:
+              type: Attribute Expanded Text
+              transforms: null
+              validates:
+                validate_json:
+                  allow_blank: true
+      - entity: allocation_form
+        attributes:
+          - name: protocols
+            value:
+              type: string
+              transforms: comment_to_protocols
+              validates:
+                inclusion: [smb, nfs]
+    itsm_value:
+      entity: service_provision
+      attribute: comment
+      type: text
+      nulls: true
+      defaults_to: {}
+  billing_cycle:
+    coldfront:
+      - entity: allocation_attribute
+        attributes:
+          - name: allocation_attribute_type__name
+            value: billing_cycle
+          - name: value
+            value:
+              type: string
+              transforms: null
+              validates:
+                presence: true
+                length:
+                  maximum: 128
+                inclusion: [monthly, yearly, quarterly, prepaid, fiscal year]
+    itsm_value:
+      entity: service_provision
+      attribute: billing_cycle
+      type: string # In fact the data type is a user defined named billing_cycle with labels: [ monthly, yearly, quarterly, prepaid, fiscal year]. For simplicity, let's set it to string.
+      nulls: true
+      defaults_to: monthly
+  subsidized:
+    coldfront:
+      - entity: allocation_attribute
+        attributes:
+          - name: allocation_attribute_type__name
+            value: subsidized
+          - name: value
+            value:
+              type: Yes/No
+              transforms: truthy_or_falsy_to_boolean
+              validates:
+                inclusion: ["Yes", "No"]
+    itsm_value:
+      entity: service_provision
+      attribute: subsidized
+      type: boolean
+      nulls: true
+      defaults_to: false
+  quota:
+    coldfront:
+      - entity: allocation_form
+        attributes:
+          - name: storage_quota
+            value:
+              type: Int
+              transforms: string_parsing_quota_and_unit_to_integer
+              validates:
+                presence: true
+                numericallity:
+                  only_integer: true
+                  greater_than: 0
+                  less_than_or_equal_to: 2000
+    itsm_value:
+      entity: service_provision
+      attribute: quota
+      type: string
+      nulls: true
+  allow_nonfaculty:
+    coldfront:
+      - entity: project_attribute
+        attributes:
+          - name: proj_attr_type
+            value: allow_nonfaculty
+          - name: value
+            value:
+              type: Yes/No
+              transforms: truthy_or_falsy_to_boolean
+              validates:
+                inclusion: ["Yes", "No"]
+    itsm_value:
+      entity: service_provision
+      attribute: allow_nonfaculty
+      type: boolean
+      nulls: true
+      defaults_to: false
+  sla:
+    coldfront:
+      - entity: allocation_attribute
+        attributes:
+          - name: allocation_attribute_type__name
+            value: sla_name
+          - name: value
+            value:
+              type: string
+              transforms: null
+              validates:
+                length:
+                  maximum: 128
+                  allow_blank: true
+    itsm_value:
+      entity: service_provision
+      attribute: sla
+      type: string
+      defaults_to: ""
+  is_condo_group:
+    coldfront:
+      - entity: project_attribute
+        attributes:
+          - name: proj_attr_type
+            value: is_condo_group
+          - name: value
+            value:
+              type: Yes/No
+              transforms: truthy_or_falsy_to_boolean
+              validates:
+                inclusion: ["Yes", "No"]
+    itsm_value:
+      entity: service_provision
+      attribute: is_condo_group
+      type: boolean
+      defaults_to: false
+  id: null
+  name: null
+  department_name: null
+  creation_timestamp: null
+  service_id: null
+  status: null
+  who: null
+  parent_id: null

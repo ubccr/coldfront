@@ -47,6 +47,7 @@ from coldfront.core.project.forms import (ProjectAddUserForm,
                                           ProjectCreateForm)
 from coldfront.core.project.models import (Project,
                                            ProjectAttribute,
+                                           ProjectAttributeType,
                                            ProjectReview,
                                            ProjectReviewStatusChoice,
                                            ProjectStatusChoice,
@@ -463,6 +464,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
             return True
 
     def form_valid(self, form):
+        form_data = form.cleaned_data
         project_obj = form.save(commit=False)
         form.instance.status = ProjectStatusChoice.objects.get(name='New')
         project_obj.save()
@@ -473,6 +475,14 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
             project=project_obj,
             role=ProjectUserRoleChoice.objects.get(name='Manager'),
             status=ProjectUserStatusChoice.objects.get(name='Active')
+        )
+
+        # create the project attributes for this new project
+        dep_type = ProjectAttributeType.objects.get(name="sponsor_department_number")
+        ProjectAttribute.objects.create(
+            proj_attr_type=dep_type,
+            project=project_obj,
+            value=form_data.get('sponsor_department_number', 'Unknown')
         )
 
         return super().form_valid(form)

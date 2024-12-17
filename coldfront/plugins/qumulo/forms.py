@@ -18,8 +18,9 @@ from coldfront.plugins.qumulo.validators import (
 from coldfront.plugins.qumulo.constants import (
     STORAGE_SERVICE_RATES,
     PROTOCOL_OPTIONS,
-    BILLING_CYCLE_OPTIONS,
 )
+
+from coldfront.core.constants import BILLING_CYCLE_OPTIONS
 
 
 from coldfront.core.allocation.models import (

@@ -1,15 +1,18 @@
 from django.test import TestCase
 from unittest.mock import patch, MagicMock
 
-from coldfront.core.allocation.models import Allocation
+from coldfront.core.allocation.models import (
+    Allocation,
+    AllocationAttributeType,
+    AllocationAttribute,
+)
 
 from coldfront.plugins.qumulo.tests.utils.mock_data import build_models
-from coldfront.plugins.qumulo.views.allocation_view import AllocationView
+from coldfront.plugins.qumulo.services.allocation_service import AllocationService
 
 
-@patch("coldfront.plugins.qumulo.views.allocation_view.ActiveDirectoryAPI")
-@patch("coldfront.plugins.qumulo.views.allocation_view.async_task")
-@patch("coldfront.plugins.qumulo.views.allocation_view.AclAllocations")
+@patch("coldfront.plugins.qumulo.services.allocation_service.ActiveDirectoryAPI")
+@patch("coldfront.plugins.qumulo.services.allocation_service.async_task")
 @patch("coldfront.plugins.qumulo.validators.ActiveDirectoryAPI")
 class AllocationViewTests(TestCase):
     def setUp(self):
@@ -37,12 +40,11 @@ class AllocationViewTests(TestCase):
 
     def test_create_new_allocation_create_allocation(
         self,
-        mock_AclAllocations: MagicMock,
         mock_ActiveDirectoryValidator: MagicMock,
         mock_async_task: MagicMock,
         mock_ActiveDirectoryAPI: MagicMock,
     ):
-        AllocationView.create_new_allocation(self.form_data, self.user)
+        AllocationService.create_new_allocation(self.form_data, self.user)
 
         # verifying that a new Allocation object was created
         self.assertEqual(Allocation.objects.count(), 3)
@@ -53,13 +55,29 @@ class AllocationViewTests(TestCase):
         # verifying that Allocation attributes were set correctly
         self.assertEqual(allocation.project, self.project)
 
+        # verify that the allocation has the right default attributes
+        allocation_defaults = {
+            "secure": "No",
+            "audit": "No",
+            "exempt": "No",
+            "subsidized": "No",
+        }
+        for attr, value in allocation_defaults.items():
+            attribute_type = AllocationAttributeType.objects.get(name=attr)
+            num_attrs = len(
+                AllocationAttribute.objects.filter(
+                    allocation_attribute_type=attribute_type,
+                    allocation=allocation,
+                )
+            )
+            self.assertEqual(num_attrs, 1)
+
     def test_new_allocation_status_is_pending(
         self,
-        mock_AclAllocations: MagicMock,
         mock_ActiveDirectoryValidator: MagicMock,
         mock_async_task: MagicMock,
         mock_ActiveDirectoryAPI: MagicMock,
     ):
-        AllocationView.create_new_allocation(self.form_data, self.user)
+        AllocationService.create_new_allocation(self.form_data, self.user)
         allocation = Allocation.objects.first()
         self.assertEqual(allocation.status.name, "Pending")
