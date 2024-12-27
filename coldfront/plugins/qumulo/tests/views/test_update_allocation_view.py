@@ -302,6 +302,92 @@ class UpdateAllocationViewTests(TestCase):
 
             self.assertEqual(change_request.new_value, new_val)
 
+    def test_attribute_change_request_creation_with_optional_attributes(
+        self, mock_ActiveDirectoryAPI: MagicMock, mock_async_task: MagicMock
+    ):
+        form_data_missing_contacts = {
+            "storage_filesystem_path": "foo_missing",
+            "storage_export_path": "bar_missing",
+            "storage_ticket": "ITSD-54321",
+            "storage_name": "baz",
+            "storage_quota": 7,
+            "protocols": ["smb"],
+            "rw_users": ["test"],
+            "ro_users": [],
+            "cost_center": "Internation Monetary Fund",
+            "department_number": "Time Travel Services",
+            "service_rate": "consumption",
+        }
+
+        storage_allocation_missing_contacts = create_allocation(
+            self.project, self.user, form_data_missing_contacts
+        )
+
+        attributes_to_check = [
+            "cost_center",
+            "department_number",
+            "technical_contact",
+            "billing_contact",
+            "service_rate",
+            "storage_ticket",
+            "storage_quota",
+        ]
+        original_values = AllocationAttribute.objects.filter(
+            allocation_attribute_type__name__in=attributes_to_check,
+            allocation=storage_allocation_missing_contacts,
+        ).values_list("allocation_attribute_type__name", "value")
+
+        allocation_change_request = AllocationChangeRequest.objects.create(
+            allocation=storage_allocation_missing_contacts,
+            status=AllocationChangeStatusChoice.objects.get(name="Pending"),
+            justification="updating",
+            notes="updating",
+            end_date_extension=10,
+        )
+
+        for name, value in original_values:
+            UpdateAllocationView._handle_attribute_change(
+                allocation=storage_allocation_missing_contacts,
+                allocation_change_request=allocation_change_request,
+                attribute_name=name,
+                form_value=value,
+            )
+
+        for name, value in [
+            ("billing_contact", "new_billing_contact"),
+            ("technical_contact", "new_tech_contact"),
+        ]:
+            UpdateAllocationView._handle_attribute_change(
+                allocation=storage_allocation_missing_contacts,
+                allocation_change_request=allocation_change_request,
+                attribute_name=name,
+                form_value=value,
+            )
+
+            change_request = AllocationAttributeChangeRequest.objects.get(
+                allocation_attribute=AllocationAttribute.objects.get(
+                    allocation_attribute_type__name=name,
+                    allocation=storage_allocation_missing_contacts,
+                ),
+                allocation_change_request=allocation_change_request,
+            )
+
+            self.assertEqual(change_request.new_value, value)
+
+        request = RequestFactory().post("/irrelevant")
+        form = UpdateAllocationForm(
+            data=form_data_missing_contacts, user_id=self.user.id
+        )
+        form_data_missing_contacts["billing_contact"] = "new_billing_contact"
+        form_data_missing_contacts["technical_contact"] = "new_tech_contact"
+        form.cleaned_data = form_data_missing_contacts
+        form.clean()
+        view = UpdateAllocationView(form=form, user_id=self.user.id)
+        view.setup(request, allocation_id=storage_allocation_missing_contacts.id)
+        view.success_id = 1
+
+        self.assertTrue(view.form_valid(form))
+
     def test_update_allocation_form_and_view_valid(
         self, mock_ActiveDirectoryAPI: MagicMock, mock_async_task: MagicMock
     ):

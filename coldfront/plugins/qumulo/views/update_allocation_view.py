@@ -190,11 +190,15 @@ class UpdateAllocationView(AllocationView):
         attribute_name: str,
         form_value: Union[str, int],
     ) -> None:
-        attribute = AllocationAttribute.objects.get(
+        # some attributes are optional and so may not exist
+        # if they don't, we want to create them with an empty
+        # value so the change request flow will work
+        attribute, _ = AllocationAttribute.objects.get_or_create(
             allocation_attribute_type=AllocationAttributeType.objects.get(
                 name=attribute_name
             ),
             allocation=allocation,
+            defaults={"value": ""},
         )
 
         # storage quota needs to be compared as an integer
