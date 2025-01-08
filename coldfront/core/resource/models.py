@@ -10,7 +10,7 @@ from simple_history.models import HistoricalRecords
 from coldfront.core.utils.common import import_from_settings
 import coldfront.core.attribute_expansion as attribute_expansion
 
-from coldfront.plugins.ldap_user_info.utils import LDAPSearch, check_if_user_exists, get_user_info
+from coldfront.plugins.ldap_user_info.utils import get_user_info, get_users_info
 
 logger = logging.getLogger(__name__)
 
@@ -247,9 +247,9 @@ class Resource(TimeStampedModel):
                 results[username] = {'exists': True, 'reason': 'not_enabled'}
             return results
 
-        ldap_conn = LDAPSearch()
+        users_accounts = get_users_info(usernames, ['memberOf'])
         for username in usernames:
-            result = self.check_user_account(username, ldap_conn)
+            result = self.check_user_account(username, users_accounts)
             results[username] = result
 
         return results
@@ -279,7 +279,7 @@ class Resource(TimeStampedModel):
 
         return {'exists': False, 'reason': 'no_resource_account'}
 
-    def check_user_account(self, username, ldap_conn=None):
+    def check_user_account(self, username, users_accounts=None):
         """Checks if an account exists for the resource by running an LDAP query
 
         Params:
@@ -299,18 +299,17 @@ class Resource(TimeStampedModel):
         if resource is None:
             return {'exists': True, 'reason': 'not_required'}
 
-        if ldap_conn is None:
-            ldap_conn = LDAPSearch()
+        if users_accounts is None:
+            accounts = get_user_info(username, ['memberOf']).get('memberOf')
+        else:
+            accounts = users_accounts.get(username).get('memberOf')
 
-        user_exists = check_if_user_exists(username, ldap_conn)
-        if not user_exists:
+        if accounts[0] == '':
             return {'exists': False, 'reason': 'no_account'}
 
         resource_acc = RESOURCE_ACCOUNTS.get(resource)    
         if not resource_acc:
             return {'exists': True, 'reason': 'has_account'}
-
-        accounts = get_user_info(username, ['memberOf'], ldap_conn).get('memberOf')
 
         if resource_acc in accounts:
             return {'exists': True, 'reason': 'has_resource_account'}

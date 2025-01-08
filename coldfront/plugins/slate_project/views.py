@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404
 from django.http import HttpResponseForbidden, HttpResponseRedirect
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
+from django.contrib import messages
 
 from coldfront.core.allocation.models import Allocation, AllocationAttribute, AllocationAttributeType
 from coldfront.core.utils.mail import build_link
@@ -157,8 +158,27 @@ class SlateProjectView:
     form_class = SlateProjectForm
     template_name = 'slate_project/slateproject.html'
 
+    def test_func(self):
+        """ UserPassesTestMixin Tests"""
+        if not super().test_func():
+            return
+
+        if self.request.user.is_superuser:
+            return True
+
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
+        if project_obj.type.name == 'Class':
+            messages.error(self.request, 'Slate Project allocations are not allowed in class projects.')
+            return False
+
+        if project_obj.pi != self.request.user:
+            messages.error(self.request, 'Only the PI can create a new Slate Project allocation.')
+            return False
+
+        return True
+
     def get_context_data(self, **kwargs):
-        context =  super().get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
 
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
         pi_username = project_obj.pi.username

@@ -192,6 +192,9 @@ class AllocationResourceSelectionView(LoginRequiredMixin, UserPassesTestMixin, T
                 if pi_request_only[0].value.lower() == 'true' and project_obj.pi != self.request.user:
                     can_request = False
 
+            if project_obj.type.name == 'Class' and resource_obj.name == 'Slate Project':
+                can_request = False
+
             resource_categories[resource_type_name]['resources'].append(
                 {
                     'resource': resource_obj,

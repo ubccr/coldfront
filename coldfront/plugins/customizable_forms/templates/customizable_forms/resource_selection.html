@@ -29,7 +29,11 @@ Choose a Resource for Your Allocation
                       Allocated,
                     {% endif %}
                     {% if not resource.can_request %}
-                      PI only
+                      {% if resource.resource.name == 'Slate Project' and project_obj.type.name == 'Class' %}
+                        Not available for class projects
+                      {% else %}
+                        PI only
+                      {% endif %}
                     {% elif resource.limit_reached %}
                       limit reached
                       <a href="#" data-toggle="popover" data-trigger="hover" title="{{ resource.limit_title }} Reached" data-content="{{ resource.limit_description }}">
