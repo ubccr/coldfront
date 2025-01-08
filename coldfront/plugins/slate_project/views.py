@@ -191,11 +191,14 @@ class SlateProjectView:
         form_data = form.cleaned_data
 
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
-        if SLATE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD / 2 <= utils.get_pi_total_allocated_quantity(project_obj.pi.username):
+        if utils.get_pi_total_allocated_quantity(project_obj.pi.username) + form_data.get('storage_space') <= SLATE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD / 2:
             form.cleaned_data['data_generation'] = ''
             form.cleaned_data['data_protection'] = ''
             form.cleaned_data['data_computational_lifetime'] = ''
             form.cleaned_data['expected_project_lifetime'] = ''
+
+        if utils.get_pi_total_allocated_quantity(project_obj.pi.username) + form_data.get('storage_space') <= SLATE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD:
+            form.cleaned_data['account_number'] = ''
 
         if SLATE_PROJECT_ENABLE_MOU_SERVER:
             start_date = form_data.get('start_date', '')
