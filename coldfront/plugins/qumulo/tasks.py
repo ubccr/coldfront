@@ -117,7 +117,7 @@ def ingest_quotas_with_daily_usage() -> None:
     __validate_results(base_allocation_quota_usages, logger)
 
 
-def addUsersToADGroup(
+def addMembersToADGroup(
     wustlkeys: list[str],
     acl_allocation: Allocation,
     bad_keys: Optional[list[str]] = None,
@@ -129,24 +129,27 @@ def addUsersToADGroup(
         good_keys = []
 
     if len(wustlkeys) == 0:
-        return __ad_users_and_handle_errors(
+        return __ad_members_and_handle_errors(
             wustlkeys, acl_allocation, good_keys, bad_keys
         )
 
     active_directory_api = ActiveDirectoryAPI()
     wustlkey = wustlkeys[0]
 
-    user = None
     try:
-        user = active_directory_api.get_user(wustlkey)
-        good_keys.append({"wustlkey": wustlkey, "dn": user["dn"]})
+        member = active_directory_api.get_member(wustlkey)
+        is_group = "group" in member["attributes"]["objectClass"]
+
+        good_keys.append(
+            {"wustlkey": wustlkey, "dn": member["dn"], "is_group": is_group}
+        )
     except ValueError:
         bad_keys.append(wustlkey)
 
-    async_task(addUsersToADGroup, wustlkeys[1:], acl_allocation, bad_keys, good_keys)
+    async_task(addMembersToADGroup, wustlkeys[1:], acl_allocation, bad_keys, good_keys)
 
 
-def __ad_users_and_handle_errors(
+def __ad_members_and_handle_errors(
     wustlkeys: list[str],
     acl_allocation: Allocation,
     good_keys: list[dict],
@@ -156,17 +159,17 @@ def __ad_users_and_handle_errors(
     group_name = acl_allocation.get_attribute("storage_acl_name")
 
     if len(good_keys) > 0:
-        user_dns = [user["dn"] for user in good_keys]
+        member_dns = [member["dn"] for member in good_keys]
         try:
-            active_directory_api.add_user_dns_to_ad_group(user_dns, group_name)
+            active_directory_api.add_members_to_ad_group(member_dns, group_name)
         except Exception as e:
             logger.error(f"Error adding users to AD group: {e}")
             __send_error_adding_users_email(acl_allocation, wustlkeys)
             return
 
-        for user in good_keys:
+        for member in good_keys:
             AclAllocations.add_user_to_access_allocation(
-                user["wustlkey"], acl_allocation
+                member["wustlkey"], acl_allocation, member["is_group"]
             )
     if len(bad_keys) > 0:
         __send_invalid_users_email(acl_allocation, bad_keys)

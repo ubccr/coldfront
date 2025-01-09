@@ -223,7 +223,7 @@ class UpdateAllocationViewTests(TestCase):
             storage_allocation, "rw"
         )
 
-        mock_active_directory_api.remove_user_from_group.assert_called_once_with(
+        mock_active_directory_api.remove_member_from_group.assert_called_once_with(
             "test", access_allocation.get_attribute("storage_acl_name")
         )
 

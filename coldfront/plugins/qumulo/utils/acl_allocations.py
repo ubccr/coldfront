@@ -4,11 +4,11 @@ from coldfront.core.allocation.models import (
     AllocationAttributeType,
     AllocationLinkage,
     AllocationStatusChoice,
-    Resource,
     AllocationUserStatusChoice,
     AllocationUser,
     User,
 )
+from coldfront.core.user.models import UserProfile
 
 from coldfront.plugins.qumulo.utils.aces_manager import AcesManager
 from coldfront.plugins.qumulo.utils.qumulo_api import QumuloAPI
@@ -37,44 +37,22 @@ class AclAllocations:
             )
 
     @staticmethod
-    def add_user_to_access_allocation(username: str, allocation: Allocation):
+    def add_user_to_access_allocation(
+        username: str, allocation: Allocation, is_group: bool = False
+    ):
         # NOTE - just need to provide the proper username
         # post_save handler will retrieve email, given/surname, etc.
         user_tuple = User.objects.get_or_create(username=username)
+
+        user_profile = UserProfile.objects.get(user=user_tuple[0])
+        user_profile.is_group = is_group
+        user_profile.save()
 
         AllocationUser.objects.create(
             allocation=allocation,
             user=user_tuple[0],
             status=AllocationUserStatusChoice.objects.get(name="Active"),
         )
-
-    def create_acl_allocation(
-        self, acl_type: str, users: list, active_directory_api=None
-    ):
-        allocation = Allocation.objects.create(
-            project=self.project_pk,
-            justification="",
-            quantity=1,
-            status=AllocationStatusChoice.objects.get(name="Active"),
-        )
-
-        resource = Resource.objects.get(name=acl_type)
-
-        allocation.resources.add(resource)
-
-        self.add_allocation_users(allocation=allocation, wustlkeys=users)
-        self.set_allocation_attributes(
-            allocation=allocation, acl_type=acl_type, wustlkey=users[0]
-        )
-
-        try:
-            self.create_ad_group_and_add_users(
-                wustlkeys=users,
-                allocation=allocation,
-                active_directory_api=active_directory_api,
-            )
-        except LDAPException as e:
-            Allocation.delete(allocation)
 
     @staticmethod
     def get_access_allocation(storage_allocation: Allocation, resource_name: str):

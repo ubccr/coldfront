@@ -47,3 +47,25 @@ class TestUpdateUserData(TestCase):
             assert saved_user.email == email
             assert saved_user.last_name == surname
             assert saved_user.first_name == given_name
+
+    def test_update_user_ignores_group(self):
+        wustlkey = "test_wustlkey"
+
+        with patch(
+            "coldfront.plugins.qumulo.utils.update_user_data.ActiveDirectoryAPI"
+        ) as mock_init:
+            mock_instance = MagicMock()
+            mock_init.return_value = mock_instance
+            mock_instance.get_user.side_effect = ValueError
+            mock_instance.get_member.return_value = {
+                "dn": "foo",
+                "objectClass": "group",
+            }
+
+            username = "test_wustlkey"
+
+            update_user_with_additional_data(wustlkey, test_override=True)
+
+            saved_user = User.objects.get(username=username)
+
+            assert saved_user.username == username

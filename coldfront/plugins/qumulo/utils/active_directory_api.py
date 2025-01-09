@@ -32,12 +32,24 @@ class ActiveDirectoryAPI:
 
         self.conn.search(
             "dc=accounts,dc=ad,dc=wustl,dc=edu",
-            f"(&(objectclass=person)(sAMAccountName={wustlkey}))",
+            f"(&(objectClass=person)(sAMAccountName={wustlkey}))",
             attributes=["sAMAccountName", "mail", "givenName", "sn"],
         )
 
         if not self.conn.response:
             raise ValueError("Invalid wustlkey")
+
+        return self.conn.response[0]
+
+    def get_member(self, account_name: str):
+        self.conn.search(
+            "dc=accounts,dc=ad,dc=wustl,dc=edu",
+            f"(&(|(objectClass=group)(objectClass=person))(sAMAccountName={account_name}))",
+            attributes=["sAMAccountName", "objectClass"],
+        )
+
+        if not self.conn.response:
+            raise ValueError("Invalid account_name")
 
         return self.conn.response[0]
 
@@ -47,7 +59,7 @@ class ActiveDirectoryAPI:
 
         self.conn.search(
             "dc=accounts,dc=ad,dc=wustl,dc=edu",
-            f"(&(objectclass=person)(mail={email}))",
+            f"(&(objectClass=person)(mail={email}))",
             attributes=["sAMAccountName", "mail", "givenName", "sn"],
         )
 
@@ -65,10 +77,10 @@ class ActiveDirectoryAPI:
             attributes={"sAMAccountName": group_name},
         )
 
-    def add_user_dns_to_ad_group(self, user_dns: list[str], group_name: str):
+    def add_members_to_ad_group(self, member_dns: list[str], group_name: str):
         group_dn = self.get_group_dn(group_name)
 
-        ad_add_members_to_groups(self.conn, user_dns, group_dn)
+        ad_add_members_to_groups(self.conn, member_dns, group_dn)
 
     def add_user_to_ad_group(self, wustlkey: str, group_name: str):
         group_dn = self.get_group_dn(group_name)
@@ -78,27 +90,30 @@ class ActiveDirectoryAPI:
 
         ad_add_members_to_groups(self.conn, user_dn, group_dn)
 
-    def get_group_dn(self, group_name: str) -> str:
+    def get_group(self, group_name: str) -> str:
         groups_OU = os.environ.get("AD_GROUPS_OU")
         self.conn.search(
-            groups_OU, f"(&(objectclass=group)(sAMAccountName={group_name}))"
+            groups_OU, f"(&(objectClass=group)(sAMAccountName={group_name}))"
         )
 
         if not self.conn.response:
             raise ValueError("Invalid group_name")
 
-        return self.conn.response[0]["dn"]
+        return self.conn.response[0]
+
+    def get_group_dn(self, group_name: str) -> str:
+        return self.get_group(group_name)["dn"]
 
     def delete_ad_group(self, group_name: str):
         group_dn = self.get_group_dn(group_name)
 
         return self.conn.delete(group_dn)
 
-    def remove_user_from_group(self, user_name: str, group_name: str):
-        user_dn = self.get_user(user_name)["dn"]
+    def remove_member_from_group(self, member_name: str, group_name: str):
+        member_dn = self.get_member(member_name)["dn"]
         group_dn = self.get_group_dn(group_name)
 
-        self.conn.modify(group_dn, {"member": [(MODIFY_DELETE, [user_dn])]})
+        self.conn.modify(group_dn, {"member": [(MODIFY_DELETE, [member_dn])]})
 
     @staticmethod
     def generate_group_dn(group_name: str) -> str:
