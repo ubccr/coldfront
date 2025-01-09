@@ -88,7 +88,9 @@ def check_directory_name_duplicates(slate_project_name):
 def add_gid_allocation_attribute(allocation_obj):
     ldap_conn = LDAPModify()
 
-    ldap_group = AllocationAttribute.objects.filter(allocation_attribute_type__name='LDAP Group')
+    ldap_group = AllocationAttribute.objects.filter(
+        allocation=allocation_obj, allocation_attribute_type__name='LDAP Group'
+    )
     if not ldap_group.exists():
         logger.warning(
             f'Failed to create a Slate Project GID allocation attribute after allocation approval. The '
