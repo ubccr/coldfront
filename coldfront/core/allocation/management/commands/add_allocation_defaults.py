@@ -40,12 +40,12 @@ class Command(BaseCommand):
         for choice in ('Approved', 'Pending', 'Denied', ):
             AllocationRemovalStatusChoice.objects.get_or_create(name=choice)
 
-        for choice, is_user_default, is_admin_default in (
+        for choice, is_user_default, is_manager_default in (
             ('read/write', True, True),
             ('read only', False, False)
         ):
             AllocationUserRoleChoice.objects.get_or_create(
-                name=choice, is_user_default=is_user_default, is_admin_default=is_admin_default)
+                name=choice, is_user_default=is_user_default, is_manager_default=is_manager_default)
 
         for name, attribute_type, has_usage, is_private in (
             ('Cloud Account Name', 'Text', False, False),
