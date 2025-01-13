@@ -11,7 +11,6 @@ from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
 from coldfront.plugins.customizable_forms.custom.forms import PositConnectForm, ComputeForm, QuartzHopperForm
 from coldfront.plugins.customizable_forms.views import GenericView
-from coldfront.plugins.ldap_user_info.utils import get_users_info
 
 logger = logging.getLogger(__name__)
 
@@ -65,3 +64,12 @@ class ComputeView(GenericView):
 class QuartzHopperView(ComputeView):
     form_class = QuartzHopperForm
     template_name = 'customizable_forms/quartzhopper.html'
+    
+    def dispatch(self, request, *args, **kwargs):
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
+        resource_obj = get_object_or_404(Resource, pk=self.kwargs.get('resource_pk'))
+        if resource_obj.name == 'Quartz - Hopper' and not project_obj.allocation_set.filter(resources__name='Quartz', status__name='Active'):
+            messages.error(self.request, 'You must have an active Quartz allocation first.')
+            return HttpResponseRedirect(reverse('custom-allocation-create', kwargs={'project_pk': project_obj.pk}))
+        
+        return super().dispatch(request, *args, **kwargs)
