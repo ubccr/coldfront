@@ -31,6 +31,8 @@ Choose a Resource for Your Allocation
                     {% if not resource.can_request %}
                       {% if resource.resource.name == 'Slate Project' and project_obj.type.name == 'Class' %}
                         Not available for class projects
+                      {% elif resource.resource.name == 'Quartz - Hopper' %}
+                        Requires an active Quartz allocation
                       {% else %}
                         PI only
                       {% endif %}

@@ -195,6 +195,9 @@ class AllocationResourceSelectionView(LoginRequiredMixin, UserPassesTestMixin, T
             if project_obj.type.name == 'Class' and resource_obj.name == 'Slate Project':
                 can_request = False
 
+            if resource_obj.name == 'Quartz - Hopper' and not project_obj.allocation_set.filter(resources__name='Quartz', status__name='Active'):
+                can_request = False
+
             resource_categories[resource_type_name]['resources'].append(
                 {
                     'resource': resource_obj,
