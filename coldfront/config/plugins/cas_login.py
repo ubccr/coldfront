@@ -9,9 +9,11 @@ MIDDLEWARE += [
     'django_cas_ng.middleware.CASMiddleware',
 ]
 
-# INSTALLED_APPS += [
-#     'django_extensions'
-# ]
+ENABLE_DJANGO_EXTENSIONS = ENV.bool('ENABLE_DJANGO_EXTENSIONS', default=False)
+if ENABLE_DJANGO_EXTENSIONS:
+    INSTALLED_APPS += [
+        'django_extensions'
+    ]
 
 AUTHENTICATION_BACKENDS += [
     'django_cas_ng.backends.CASBackend',
