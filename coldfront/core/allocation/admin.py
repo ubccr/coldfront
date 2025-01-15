@@ -40,6 +40,9 @@ class AllocationUserInline(admin.TabularInline):
     fields = ('user', 'status', )
     raw_id_fields = ('user', )
 
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related('user', 'status')
+
 
 class AllocationAttributeInline(admin.TabularInline):
     model = AllocationAttribute

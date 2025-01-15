@@ -80,6 +80,9 @@ class ProjectUserInline(admin.TabularInline):
     readonly_fields = ['user', 'project', ]
     extra = 0
 
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related('user', 'project', 'role', 'status')
+
 
 class ProjectAdminCommentInline(admin.TabularInline):
     model = ProjectAdminComment
