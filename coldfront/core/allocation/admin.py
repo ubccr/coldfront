@@ -158,7 +158,13 @@ class AllocationAdmin(SimpleHistoryAdmin, ReviewGroupFilteredResourceQueryset):
             # We are adding an object
             return []
         else:
-            return super().get_inline_instances(request)
+            inline_instances = super().get_inline_instances(request)
+            allocation_user_inline = inline_instances[0]
+            if obj and obj.allocationuser_set.all().count() > 200:
+                setattr(allocation_user_inline, 'readonly_fields', ['user', 'status'])
+                setattr(allocation_user_inline, 'can_delete', False)
+                inline_instances[0] = allocation_user_inline
+            return inline_instances
 
     def save_formset(self, request, form, formset, change):
         if formset.model in [AllocationAdminNote, AllocationUserNote]:

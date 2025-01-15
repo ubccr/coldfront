@@ -295,7 +295,13 @@ class ProjectAdmin(SimpleHistoryAdmin):
             # We are adding an object
             return []
         else:
-            return super().get_inline_instances(request)
+            inline_instances = super().get_inline_instances(request)
+            project_user_inline = inline_instances[0]
+            if obj and obj.projectuser_set.all().count() > 200:
+                setattr(project_user_inline, 'readonly_fields', ['user', 'project', 'role', 'status', 'enable_notifications', ])
+                setattr(project_user_inline, 'can_delete', False)
+                inline_instances[0] = project_user_inline
+            return inline_instances
 
     def save_formset(self, request, form, formset, change):
         if formset.model in [ProjectAdminComment, ProjectUserMessage]:
