@@ -844,7 +844,7 @@ class AllocationAdminAction(TimeStampedModel):
     """
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     allocation = models.ForeignKey(Allocation, on_delete=models.CASCADE)
-    action = models.CharField(max_length=128)
+    action = models.CharField(max_length=256)
 
 
 class AllocationRemovalStatusChoice(TimeStampedModel):

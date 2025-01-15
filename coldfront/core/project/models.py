@@ -603,7 +603,7 @@ class ProjectAdminAction(TimeStampedModel):
     """
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    action = models.CharField(max_length=100)
+    action = models.CharField(max_length=256)
 
 
 class ProjectDescriptionRecord(TimeStampedModel):
