@@ -1330,7 +1330,7 @@ class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templat
             allocation_list = Allocation.objects.filter(
                 status__name__in=['New', 'Renewal Requested', 'Paid', 'Billing Information Submitted'],
                 resources__review_groups__in=list(self.request.user.groups.all())
-            ).exclude(project__status__name__in=['Review Pending', 'Archived'])
+            ).exclude(project__status__name__in=['Review Pending', 'Archived']).distinct()
 
         context['allocation_status_active'] = AllocationStatusChoice.objects.get(name='Active')
         context['allocation_list'] = allocation_list
