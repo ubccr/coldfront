@@ -120,6 +120,7 @@ def ingest_quotas_with_daily_usage() -> None:
 def addMembersToADGroup(
     wustlkeys: list[str],
     acl_allocation: Allocation,
+    create_group_time: datetime,
     bad_keys: Optional[list[str]] = None,
     good_keys: Optional[list[dict]] = None,
 ) -> None:
@@ -130,7 +131,7 @@ def addMembersToADGroup(
 
     if len(wustlkeys) == 0:
         return __ad_members_and_handle_errors(
-            wustlkeys, acl_allocation, good_keys, bad_keys
+            wustlkeys, acl_allocation, create_group_time, good_keys, bad_keys
         )
 
     active_directory_api = ActiveDirectoryAPI()
@@ -146,12 +147,20 @@ def addMembersToADGroup(
     except ValueError:
         bad_keys.append(wustlkey)
 
-    async_task(addMembersToADGroup, wustlkeys[1:], acl_allocation, bad_keys, good_keys)
+    async_task(
+        addMembersToADGroup,
+        wustlkeys[1:],
+        acl_allocation,
+        create_group_time,
+        bad_keys,
+        good_keys,
+    )
 
 
 def __ad_members_and_handle_errors(
     wustlkeys: list[str],
     acl_allocation: Allocation,
+    create_group_time: datetime,
     good_keys: list[dict],
     bad_keys: list[str],
 ) -> None:
@@ -160,6 +169,20 @@ def __ad_members_and_handle_errors(
 
     if len(good_keys) > 0:
         member_dns = [member["dn"] for member in good_keys]
+
+        current_time = datetime.now()
+        logger.warn(
+            f"Adding {len(member_dns)} users to AD group {group_name} at time {current_time}\nTime since group creation: {current_time - create_group_time}"
+        )
+        for x in range(1, 5):
+            try:
+                active_directory_api.get_group_dn(group_name)
+                logger.warn(f"Group {group_name} found on try number {x}")
+                break
+            except ValueError:
+                logger.warn(f"Group {group_name} not found on try number {x}")
+                time.sleep(3)
+
         try:
             active_directory_api.add_members_to_ad_group(member_dns, group_name)
         except Exception as e:

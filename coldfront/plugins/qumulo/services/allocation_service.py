@@ -22,6 +22,8 @@ from coldfront.core.allocation.models import (
 from coldfront.plugins.qumulo.tasks import addMembersToADGroup
 from coldfront.plugins.qumulo.utils.active_directory_api import ActiveDirectoryAPI
 
+from datetime import datetime
+
 
 class AllocationService:
 
@@ -76,10 +78,13 @@ class AllocationService:
             form_key = f"{resource.name.lower()}_users"
             access_users = form_data[form_key]
 
+            create_group_time = datetime.now()
             active_directory_api.create_ad_group(
                 group_name=access_allocation.get_attribute(name="storage_acl_name")
             )
-            async_task(addMembersToADGroup, access_users, access_allocation)
+            async_task(
+                addMembersToADGroup, access_users, access_allocation, create_group_time
+            )
 
         return {"allocation": allocation, "access_allocations": access_allocations}
 

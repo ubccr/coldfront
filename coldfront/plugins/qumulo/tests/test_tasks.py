@@ -330,7 +330,7 @@ class TestAddMembersToADGroup(TestCase):
         )
 
         try:
-            addMembersToADGroup([], acl_allocation)
+            addMembersToADGroup([], acl_allocation, datetime.datetime.now())
         except Exception as e:
             self.fail("Function failed with exception: " + e)
 
@@ -354,7 +354,7 @@ class TestAddMembersToADGroup(TestCase):
             storage_allocation=allocation, resource_name="rw"
         )
 
-        addMembersToADGroup(wustlkeys, acl_allocation)
+        addMembersToADGroup(wustlkeys, acl_allocation, datetime.datetime.now())
 
         active_directory_instance.get_member.assert_called_once_with(wustlkeys[0])
 
@@ -386,7 +386,8 @@ class TestAddMembersToADGroup(TestCase):
             storage_allocation=allocation, resource_name="rw"
         )
 
-        addMembersToADGroup(wustlkeys, acl_allocation)
+        datetime_now = datetime.datetime.now()
+        addMembersToADGroup(wustlkeys, acl_allocation, datetime_now)
 
         mock_async_task.assert_called_once()
         self.assertTupleEqual(
@@ -395,6 +396,7 @@ class TestAddMembersToADGroup(TestCase):
                 addMembersToADGroup,
                 ["bar"],
                 acl_allocation,
+                datetime_now,
                 [],
                 [
                     {
@@ -429,12 +431,13 @@ class TestAddMembersToADGroup(TestCase):
             storage_allocation=allocation, resource_name="rw"
         )
 
-        addMembersToADGroup(wustlkeys, acl_allocation)
+        datetime_now = datetime.datetime.now()
+        addMembersToADGroup(wustlkeys, acl_allocation, datetime_now)
 
         mock_async_task.assert_called_once()
         self.assertTupleEqual(
             mock_async_task.call_args[0],
-            (addMembersToADGroup, ["bar"], acl_allocation, ["foo"], []),
+            (addMembersToADGroup, ["bar"], acl_allocation, datetime_now, ["foo"], []),
         )
 
     def test_appends_good_user_list_on_valid_user(
@@ -464,7 +467,8 @@ class TestAddMembersToADGroup(TestCase):
             storage_allocation=allocation, resource_name="rw"
         )
 
-        addMembersToADGroup(wustlkeys, acl_allocation)
+        datetime_now = datetime.datetime.now()
+        addMembersToADGroup(wustlkeys, acl_allocation, datetime_now)
 
         mock_async_task.assert_called_once()
         self.assertTupleEqual(
@@ -473,6 +477,7 @@ class TestAddMembersToADGroup(TestCase):
                 addMembersToADGroup,
                 ["bar"],
                 acl_allocation,
+                datetime_now,
                 [],
                 [
                     {
@@ -509,7 +514,8 @@ class TestAddMembersToADGroup(TestCase):
             storage_allocation=allocation, resource_name="rw"
         )
 
-        addMembersToADGroup(wustlkeys, acl_allocation)
+        datetime_now = datetime.datetime.now()
+        addMembersToADGroup(wustlkeys, acl_allocation, datetime_now)
 
         mock_async_task.assert_called_once()
         self.assertTupleEqual(
@@ -518,6 +524,7 @@ class TestAddMembersToADGroup(TestCase):
                 addMembersToADGroup,
                 ["bar"],
                 acl_allocation,
+                datetime_now,
                 [],
                 [
                     {
@@ -548,7 +555,7 @@ class TestAddMembersToADGroup(TestCase):
             storage_allocation=allocation, resource_name="rw"
         )
 
-        addMembersToADGroup([], acl_allocation, wustlkeys)
+        addMembersToADGroup([], acl_allocation, datetime.datetime.now(), wustlkeys)
 
         mock_send_email_template.assert_called_once()
 
@@ -585,7 +592,7 @@ class TestAddMembersToADGroup(TestCase):
             storage_allocation=allocation, resource_name="rw"
         )
 
-        addMembersToADGroup(wustlkeys, acl_allocation)
+        addMembersToADGroup(wustlkeys, acl_allocation, datetime.datetime.now())
 
         active_directory_instance.add_members_to_ad_group.assert_not_called()
 
@@ -617,7 +624,7 @@ class TestAddMembersToADGroup(TestCase):
             storage_allocation=base_allocation, resource_name="rw"
         )
 
-        addMembersToADGroup(wustlkeys, acl_allocation, [])
+        addMembersToADGroup(wustlkeys, acl_allocation, datetime.datetime.now(), [])
         allocation_users = list(
             map(
                 lambda allocation_user: allocation_user.user.username,
@@ -656,7 +663,7 @@ class TestAddMembersToADGroup(TestCase):
             storage_allocation=base_allocation, resource_name="rw"
         )
 
-        addMembersToADGroup(wustlkeys, acl_allocation, [])
+        addMembersToADGroup(wustlkeys, acl_allocation, datetime.datetime.now(), [])
         allocation_users = list(
             map(
                 lambda allocation_user: allocation_user.user.username,
@@ -698,6 +705,7 @@ class TestAddMembersToADGroup(TestCase):
         addMembersToADGroup(
             [],
             acl_allocation,
+            datetime.datetime.now(),
             [],
             [{"wustlkey": wustlkeys[0], "dn": "foo", "is_group": False}],
         )
@@ -738,6 +746,7 @@ class TestAddMembersToADGroup(TestCase):
         addMembersToADGroup(
             [],
             acl_allocation,
+            datetime.datetime.now(),
             [],
             [{"wustlkey": wustlkey, "dn": "foo"} for wustlkey in wustlkeys],
         )
@@ -773,7 +782,7 @@ class TestAddMembersToADGroup(TestCase):
         self.user.groups.add(ris_group[0].id)
         self.user.save()
 
-        addMembersToADGroup([], acl_allocation, wustlkeys)
+        addMembersToADGroup([], acl_allocation, datetime.datetime.now(), wustlkeys)
 
         mock_send_email_template.assert_called_once_with(
             subject="Users not found in Storage Allocation",
