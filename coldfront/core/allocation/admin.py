@@ -26,6 +26,8 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationRemovalStatusChoice,
                                               AllocationUserRoleChoice,)
 
+from coldfront.core.resource.models import Resource
+
 
 @admin.register(AllocationStatusChoice)
 class AllocationStatusChoiceAdmin(admin.ModelAdmin):
@@ -72,28 +74,16 @@ class ResourceFilter(admin.SimpleListFilter):
     parameter_name = 'resource'
 
     def lookups(self, request, model_admin):
-        model = model_admin.model
-        objs = model.objects.all()
-        if model == Allocation:
-            if not request.user.is_superuser:
-                objs = objs.filter(resources__review_groups__in=list(request.user.groups.all()))
-            return set([(obj.get_parent_resource.name, obj.get_parent_resource.name) for obj in objs])
-        
-        if model == AllocationAttributeUsage:
-            if not request.user.is_superuser:
-                objs = objs.filter(
-                    allocation_attribute__allocation__resources__review_groups__in=list(request.user.groups.all())
-                    ).prefetch_related('allocation_attribute__allocation')
-            return set([
-                (obj.allocation_attribute.allocation.get_parent_resource.name, obj.allocation_attribute.allocation.get_parent_resource.name)
-                for obj in objs])
-
+        resource_objs = Resource.objects.all()
         if not request.user.is_superuser:
-            objs = objs.filter(
-                allocation__resources__review_groups__in=list(request.user.groups.all())).prefetch_related('allocation')
-        return set([
-            (obj.allocation.get_parent_resource.name, obj.allocation.get_parent_resource.name) for obj in objs
-        ])
+            objs = objs.filter(resources__review_groups__in=list(request.user.groups.all()))
+        
+        return [
+            (
+                f'{resource_obj.name} ({resource_obj.resource_type.name})',
+                f'{resource_obj.name} ({resource_obj.resource_type.name})'
+            ) for resource_obj in resource_objs
+        ]
 
     def queryset(self, request, queryset):
         if self.value() is not None:
