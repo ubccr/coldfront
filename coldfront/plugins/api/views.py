@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
@@ -5,6 +6,9 @@ from django.db.models import OuterRef, Subquery, Q, F, ExpressionWrapper, fields
 from django.db.models.functions import Cast
 from django_filters import rest_framework as filters
 from rest_framework import viewsets
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from simple_history.utils import get_history_model_for_model
 
@@ -14,9 +18,32 @@ from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
 from coldfront.plugins.api import serializers
 
+logger = logging.getLogger(__name__)
+
 UNFULFILLED_ALLOCATION_STATUSES = ['Denied'] + import_from_settings(
     'PENDING_ALLOCATION_STATUSES', ['New', 'In Progress', 'On Hold', 'Pending Activation']
 )
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def regenerate_token(request):
+    old_token = None
+    if hasattr(request.user, 'auth_token'):
+        old_token = request.user.auth_token.key[-6:]  # Last 6 chars for logging
+        # Delete existing token
+        Token.objects.filter(user=request.user).delete()
+
+    # Create new token
+    token = Token.objects.create(user=request.user)
+
+    logger.info(
+        "API token regenerated for user %s (uid: %s). Old token ending: %s",
+        request.user.username,
+        request.user.id,
+        old_token or 'None'
+    )
+    return Response({'token': token.key})
+
 
 class ResourceViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = serializers.ResourceSerializer

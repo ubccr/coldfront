@@ -1,24 +1,11 @@
 from rest_framework import status
-from rest_framework.test import APITestCase, APIRequestFactory
-from coldfront.core.test_helpers.factories import setup_models, AllocationFactory
+from rest_framework.test import APITestCase
 from coldfront.core.allocation.models import Allocation
 from coldfront.core.project.models import Project
 
 
 class ColdfrontAPI(APITestCase):
-    """Tests for the Coldfront rest API"""
-
-    fixtures = [
-        "coldfront/core/test_helpers/test_data/test_fixtures/ifx.json",
-    ]
-
-    @classmethod
-    def setUpTestData(cls):
-        """Create some test data"""
-        setup_models(cls)
-        cls.additional_allocations = [
-            AllocationFactory() for i in list(range(50))
-        ]
+    """Tests for the Coldfront REST API"""
 
     def test_requires_login(self):
         """Test that the API requires authentication"""
