@@ -69,6 +69,7 @@ def save_user_profile(sender, instance, **kwargs):
 
 @receiver(user_logged_in, sender=User)
 def update_user_profile(sender, user, **kwargs):
+    logger.info(f'{user.username} logged in')
     if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
         from coldfront.plugins.ldap_user_info.utils import get_user_info
         search_attributes = {'title': '', 'department': '', 'division': '', 'mail': ''}
