@@ -19,6 +19,7 @@ from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.mail import send_email_template
 from coldfront.plugins.slate_project.forms import SlateProjectForm
 from coldfront.plugins.slate_project.utils import check_directory_name_duplicates, check_directory_name_format, get_pi_total_allocated_quantity
+from coldfront.core.resource.models import Resource
 
 
 SLATE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD = import_from_settings('SLATE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD', 120)
@@ -171,7 +172,9 @@ class SlateProjectView:
             messages.error(self.request, 'Slate Project allocations are not allowed in class projects.')
             return False
 
-        if project_obj.pi != self.request.user:
+        resource_obj = get_object_or_404(Resource, pk=self.kwargs.get('resource_pk'))
+        pi_request_only = resource_obj.resourceattribute_set.filter(resource_attribute_type__name='pi_request_only')
+        if project_obj.pi != self.request.user and pi_request_only.exists() and pi_request_only[0].value.lower() == 'true':
             messages.error(self.request, 'Only the PI can create a new Slate Project allocation.')
             return False
 
