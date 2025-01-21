@@ -73,13 +73,7 @@ class LDAPSearch:
         attributes = {}
         if self.conn.entries:
             attributes = json.loads(self.conn.entries[0].entry_to_json()).get('attributes')
-            logger.info(
-                f'LDAPSearch: Attributes {search_attributes_list} found for user {user_search_string}'
-            )
         else:
             attributes = dict.fromkeys(search_attributes_list, [''])
-            logger.info(
-                f'LDAPSearch: Attributes {search_attributes_list} not found for user {user_search_string}'
-            )
 
         return attributes

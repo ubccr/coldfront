@@ -221,7 +221,8 @@ class SlateProjectView:
                 "account": form_data.get('account_number', ''),
                 "sub_account": '',
                 "fiscal_officer": '',
-                "faculty_advisor": ''
+                "faculty_advisor": '',
+                "namespace_class": 'RT-PROJ'
             }
             data = parse.urlencode(data)
             try:

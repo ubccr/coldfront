@@ -1111,11 +1111,18 @@ def get_slate_project_info(username):
         if not attribute_obj.exists():
             continue
         directory = attribute_obj[0]
+
+        attribute_obj = allocation_user_obj.allocation.allocationattribute_set.filter(
+            allocation_attribute_type__name='Allocated Quantity'
+        )
+        allocated_quantity = f'{attribute_obj[0].value} TB' if attribute_obj.exists() else 'N/A'
+
         slate_projects.append(
             {
                 'name': directory.value.split('/')[-1],
                 'access': allocation_user_obj.role.name,
-                'owner': allocation_user_obj.allocation.project.pi.username
+                'owner': allocation_user_obj.allocation.project.pi.username,
+                'allocated_quantity': allocated_quantity
             }
         )
 

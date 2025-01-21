@@ -11,6 +11,7 @@
             <th scope="col">Project</th>
             <th scope="col">Owner</th>
             <th scope="col">Access</th>
+            <th scope="col">Allocated Quantity</th>
           </tr>
         </thead>
         <tbody>
@@ -19,6 +20,7 @@
               <td>{{ slate_project.name }}</td>
               <td>{{ slate_project.owner }}</td>
               <td>{{ slate_project.access }}</td>
+              <td>{{ slate_project.allocated_quantity }}</td>
             </tr>
           {% endfor %}
         </tbody>

@@ -26,6 +26,8 @@ from coldfront.core.allocation.models import (Allocation, AllocationAccount,
                                               AllocationRemovalStatusChoice,
                                               AllocationUserRoleChoice,)
 
+from coldfront.core.resource.models import Resource
+
 
 @admin.register(AllocationStatusChoice)
 class AllocationStatusChoiceAdmin(admin.ModelAdmin):
@@ -37,6 +39,9 @@ class AllocationUserInline(admin.TabularInline):
     extra = 0
     fields = ('user', 'status', )
     raw_id_fields = ('user', )
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related('user', 'status')
 
 
 class AllocationAttributeInline(admin.TabularInline):
@@ -72,28 +77,16 @@ class ResourceFilter(admin.SimpleListFilter):
     parameter_name = 'resource'
 
     def lookups(self, request, model_admin):
-        model = model_admin.model
-        objs = model.objects.all()
-        if model == Allocation:
-            if not request.user.is_superuser:
-                objs = objs.filter(resources__review_groups__in=list(request.user.groups.all()))
-            return set([(obj.get_parent_resource.name, obj.get_parent_resource.name) for obj in objs])
-        
-        if model == AllocationAttributeUsage:
-            if not request.user.is_superuser:
-                objs = objs.filter(
-                    allocation_attribute__allocation__resources__review_groups__in=list(request.user.groups.all())
-                    ).prefetch_related('allocation_attribute__allocation')
-            return set([
-                (obj.allocation_attribute.allocation.get_parent_resource.name, obj.allocation_attribute.allocation.get_parent_resource.name)
-                for obj in objs])
-
+        resource_objs = Resource.objects.all()
         if not request.user.is_superuser:
-            objs = objs.filter(
-                allocation__resources__review_groups__in=list(request.user.groups.all())).prefetch_related('allocation')
-        return set([
-            (obj.allocation.get_parent_resource.name, obj.allocation.get_parent_resource.name) for obj in objs
-        ])
+            objs = objs.filter(resources__review_groups__in=list(request.user.groups.all()))
+        
+        return [
+            (
+                f'{resource_obj.name} ({resource_obj.resource_type.name})',
+                f'{resource_obj.name} ({resource_obj.resource_type.name})'
+            ) for resource_obj in resource_objs
+        ]
 
     def queryset(self, request, queryset):
         if self.value() is not None:
@@ -168,7 +161,13 @@ class AllocationAdmin(SimpleHistoryAdmin, ReviewGroupFilteredResourceQueryset):
             # We are adding an object
             return []
         else:
-            return super().get_inline_instances(request)
+            inline_instances = super().get_inline_instances(request)
+            allocation_user_inline = inline_instances[0]
+            if obj and obj.allocationuser_set.all().count() > 200:
+                setattr(allocation_user_inline, 'readonly_fields', ['user', 'status'])
+                setattr(allocation_user_inline, 'can_delete', False)
+                inline_instances[0] = allocation_user_inline
+            return inline_instances
 
     def save_formset(self, request, form, formset, change):
         if formset.model in [AllocationAdminNote, AllocationUserNote]:
