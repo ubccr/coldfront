@@ -918,11 +918,14 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                         f'(allocation pk={allocation_obj.pk})'
                     )
         else:
-            logger.warning(
-                f'An error occured when adding users to an allocation (allocation pk={allocation_obj.pk})')
             for error in formset.errors:
-                messages.error(request, error.get('__all__'))
-                return HttpResponseRedirect(reverse('allocation-add-users', kwargs={'pk': pk}))
+                if error.get('__all__'):
+                    messages.error(request, error.get('__all__')[0])
+                    logger.warning(
+                        f'An error occured when adding users to an allocation (allocation pk={allocation_obj.pk}). '
+                        f'Error: {error.get("__all__")[0]}'
+                    )
+                    return HttpResponseRedirect(reverse('allocation-add-users', kwargs={'pk': pk}))
 
         return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
