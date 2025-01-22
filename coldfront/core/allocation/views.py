@@ -1325,12 +1325,12 @@ class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templat
         if self.request.user.is_superuser:
             allocation_list = Allocation.objects.filter(
                 status__name__in=['New', 'Renewal Requested', 'Paid', 'Billing Information Submitted']
-            ).exclude(project__status__name__in=['Review Pending', 'Archived'])
+            ).exclude(project__status__name__in=['Archived', 'Renewal Denied'])
         else:
             allocation_list = Allocation.objects.filter(
                 status__name__in=['New', 'Renewal Requested', 'Paid', 'Billing Information Submitted'],
                 resources__review_groups__in=list(self.request.user.groups.all())
-            ).exclude(project__status__name__in=['Review Pending', 'Archived']).distinct()
+            ).exclude(project__status__name__in=['Archived', 'Renewal Denied']).distinct()
 
         context['allocation_status_active'] = AllocationStatusChoice.objects.get(name='Active')
         context['allocation_list'] = allocation_list
@@ -1368,7 +1368,7 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
             messages.error(request, f'You cannot renew a allocation with status {allocation_obj.status.name}.')
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
-        if allocation_obj.project.status.name in ['Review Pending', 'Denied', 'Expired', 'Archived', ]:
+        if allocation_obj.project.status.name in ['Denied', 'Expired', 'Archived', 'Renewal Denied', ]:
             messages.error(
                 request, 'You cannot renew an allocation with project status "{}".'.format(
                     allocation_obj.project.status.name)

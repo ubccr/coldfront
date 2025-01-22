@@ -19,7 +19,8 @@ from coldfront.core.allocation.tasks import update_statuses
 from coldfront.core.allocation.models import AllocationUser, Allocation
 from coldfront.core.project.views import (ProjectAddUsersView,
                                           ProjectRemoveUsersView,
-                                          ProjectArchiveProjectView)
+                                          ProjectArchiveProjectView,
+                                          ProjectReviewDenyView)
 from coldfront.plugins.slate_project.utils import (add_user_to_slate_project_group,
                                                    add_gid_allocation_attribute,
                                                    remove_user_from_slate_project_group,
@@ -81,6 +82,7 @@ def change_user_role(sender, **kwargs):
 
 @receiver(allocation_expire, sender=update_statuses)
 @receiver(allocation_expire, sender=ProjectArchiveProjectView)
+@receiver(allocation_expire, sender=ProjectReviewDenyView)
 def expire(sender, **kwargs):
     allocation_pk = kwargs.get('allocation_pk')
     allocation_obj = Allocation.objects.get(pk=allocation_pk)
