@@ -33,7 +33,8 @@ plugin_configs = {
     'PLUGIN_UPDATE_USER_PROFILES': 'plugins/update_user_profiles.py',
     'PLUGIN_CUSTOMIZABLE_FORMS': 'plugins/customizable_forms.py',
     'PLUGIN_PI_SEARCH': 'plugins/pi_search.py',
-    'PLUGIN_GEODE_PROJECT': 'plugins/geode_project.py'
+    'PLUGIN_GEODE_PROJECT': 'plugins/geode_project.py',
+    'PLUGIN_ANNOUNCEMENTS': 'plugins/announcements.py'
 }
 
 # This allows plugins to be enabled via environment variables. Can alternatively
