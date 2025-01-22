@@ -1502,13 +1502,13 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
                 'project_title': project_obj.title,
                 'project_id': project_obj.pk,
             }
-            send_allocation_admin_email(allocation_obj, 'Allocation Renewed', 'email/allocation_renewed.txt', domain_url=get_domain_url(self.request), addtl_context=addtl_context)
+            send_allocation_admin_email(allocation_obj, 'Allocation Renewal Requested', 'email/allocation_renewed.txt', domain_url=get_domain_url(self.request), addtl_context=addtl_context)
 
             logger.info(
                 f'User {request.user.username} sent a {allocation_obj.get_parent_resource.name} '
                 f'allocation renewal request (allocation pk={allocation_obj.pk})'
             )
-            messages.success(request, 'Allocation renewed successfully')
+            messages.success(request, 'Allocation renewal submitted')
         else:
             if not formset.is_valid():
                 for error in formset.errors:
