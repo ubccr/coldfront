@@ -1,0 +1,120 @@
+{% extends "common/base.html" %}
+{% load common_tags %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Announcements
+{% endblock %}
+
+
+{% block content %}
+<h2 class="d-inline">Announcements</h2>
+<a class="btn btn-primary float-right" type="button" href="{% url 'announcement-create' %}">New Announcement</a>
+</div>
+<hr>
+<div class="mb-3" id="category_filter_accordion">
+	<div class="card">
+		<div class="card-header">
+			<a id="expand_category_filter_button" href="#collapse_category_filter" role="button" class="card-link" data-toggle="collapse">
+				<i id="search_plus_minus_1" class="fas fa-search-minus"></i>
+				Filter Categories
+				<i id="plus_minus_1" class="fas fa-minus float-right"></i>
+			</a>
+		</div>
+		<div id="collapse_category_filter" class="collapse show" data-parent="#category_filter_accordion">
+			<div class="card-body">
+				<div class="row">
+					{% if enabled_pi_search %}
+						<div class="col">
+							{% include "pi_search/pi_search_div.html" %}
+						</div>
+					{% endif %}
+					{% if enabled_slate_project_search %}
+						<div class="col">
+							{% include "slate_project/slate_project_search_div.html" %}
+						</div>
+					{% endif %}
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+{% if announcements %}
+	{% for announcement in announcements %}
+		<div class="card">
+			<div class="card-header">
+				<div class="row">
+					<div class="col pr-0">
+						<h3>
+							{{ announcement.title }}
+						</h3>
+					</div>
+					<div class="col-1">
+						<div class="float-right" style="position: relative; top: 1px; right: 1px;">
+							<a id="id_has_read" type="button" href="#"><i class="far fa-square"></i></a>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="card-body">
+				{{ announcement.body|linebreaks }}
+				<hr>
+				{% for category in announcement.categories.all %} 
+					<span class="badge badge-pill badge-primary">{{ category }}</span>
+				{% endfor %}
+			</div>
+			<div class="card-footer">
+				{{ announcement.created }}
+				<a href="{% url 'announcement-detail' pk=announcement.pk}" class="btn btn-secondary float-right" type="button">Details</a>
+				<a href="{% url 'announcement-update' pk=announcement.pk}" class="btn btn-primary float-right mr-1" type="button">Update</a>
+			</div>
+		</div>
+	{% endfor %}
+{% else %}
+	<div class="alert alert-secondary">
+		No announcements to display!
+	</div>
+{% endif %}
+
+<script>
+	var current_user = '{{ current_user|safe }}';
+
+	function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie != '') {
+      var cookies = document.cookie.split(';');
+      for (var i = 0; i < cookies.length; i++) {
+        var cookie = jQuery.trim(cookies[i]);
+        // Does this cookie string begin with the name we want?
+        if (cookie.substring(0, name.length + 1) == (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+	$(document).ready(function() {
+		$('#id_has_read').click(function (e) {
+			$.ajax({
+          headers: { 'X-CSRFToken': getCookie('csrftoken') },
+          type: "POST",
+          url: "{% url 'announcement-read' pk=e.target.value}",
+          data: {
+            user: current_user,
+          },
+          success: function (json) {
+            $('#id_has_read').html(
+							`
+							<a id="id_has_read" type="button" href="#"><i class="fas fa-check-square"></i></a>
+							`
+						);
+          }
+        });
+		})
+	})
+</script>
+{% endblock %}

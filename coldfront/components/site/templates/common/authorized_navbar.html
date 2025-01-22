@@ -51,6 +51,15 @@
         {% if settings.CENTER_HELP_URL %}
           {% include 'common/navbar_help.html' %}
         {% endif %}
+        {% if 'coldfront.plugins.announcements' in EXTRA_APPS %}
+          {% load announcement_tags %}
+          <li id="navbar-api" class="nav-item">
+            <a class="nav-link" href="{% url 'announcement-list' %}" style="position: relative;">
+              Announcements
+              <span class="badge badge-light" style="position: absolute; top: 0px; right: -3px;">2</span>
+            </a>
+          </li>
+        {% endif %}
       </ul>
 
       <ul class="navbar-nav ml-auto">
