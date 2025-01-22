@@ -1681,7 +1681,9 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                     logger.error(
                         f'There was an error submitting allocation renewals for PI '
                         f'{project_obj.pi.username} (project pk={project_obj.pk})'
+                        f'Errors: {formset.errors}'
                     )
+
                     messages.error(
                         request, 'There was an error submitting your allocation renewals.'
                     )
@@ -2519,16 +2521,6 @@ class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
 
         project_review_obj.status = project_review_status_obj
         project_obj.status = project_status_obj
-
-        if project_review_obj.allocation_renewals:
-            allocation_status_choice = AllocationStatusChoice.objects.get(name="Active")
-            for allocation_pk in project_review_obj.allocation_renewals.split(','):
-                allocation = Allocation.objects.get(pk=int(allocation_pk))
-                allocation.start_date = datetime.datetime.today()
-                allocation.end_date = project_obj.end_date
-                allocation.status = allocation_status_choice
-                allocation.save()
-
         project_review_obj.save()
         project_obj.save()
 
@@ -2541,13 +2533,6 @@ class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
             project_url = '{}{}'.format(domain_url, reverse(
                 'project-detail', kwargs={'pk': project_review_obj.project.pk}
             ))
-            renewed_allocation_urls = []
-            if project_review_obj.allocation_renewals:
-                for allocation_pk in project_review_obj.allocation_renewals.split(','):
-                    allocation_url = '{}{}'.format(domain_url, reverse(
-                        'allocation-detail', kwargs={'pk': allocation_pk}
-                    ))
-                    renewed_allocation_urls.append(allocation_url)
 
             template_context = {
                 'project_title': project_review_obj.project.title,
@@ -2555,7 +2540,6 @@ class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
                 'signature': EMAIL_SIGNATURE,
                 'help_email': EMAIL_TICKET_SYSTEM_ADDRESS,
                 'center_name': EMAIL_CENTER_NAME,
-                'renewed_allocation_urls': renewed_allocation_urls
             }
 
             email_receiver_list = get_project_user_emails(project_obj)
