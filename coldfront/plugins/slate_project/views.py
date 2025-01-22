@@ -172,12 +172,6 @@ class SlateProjectView:
             messages.error(self.request, 'Slate Project allocations are not allowed in class projects.')
             return False
 
-        resource_obj = get_object_or_404(Resource, pk=self.kwargs.get('resource_pk'))
-        pi_request_only = resource_obj.resourceattribute_set.filter(resource_attribute_type__name='pi_request_only')
-        if project_obj.pi != self.request.user and pi_request_only.exists() and pi_request_only[0].value.lower() == 'true':
-            messages.error(self.request, 'Only the PI can create a new Slate Project allocation.')
-            return False
-
         return True
 
     def get_context_data(self, **kwargs):
