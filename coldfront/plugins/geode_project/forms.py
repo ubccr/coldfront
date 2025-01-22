@@ -21,9 +21,11 @@ class GeodeProjectForm:
         ('SB', 'SB'),
         ('SE', 'SE'),
     )
-    STORAGE_QUANTITY_CHOICES = (
-        (num, num) for num in range(6)
-    )
+    STORAGE_QUANTITY_CHOICES = [
+        (num, num) for num in range(1, 6)
+    ]
+
+    STORAGE_QUANTITY_CHOICES = [('', '')] + STORAGE_QUANTITY_CHOICES
     DATE_RANGES = (
         ('', ''),
         ('<1 year', '<1 year'),
@@ -42,7 +44,7 @@ class GeodeProjectForm:
     data_protection = forms.CharField(max_length=128, initial='N/A')
     data_computational_lifetime = forms.ChoiceField(initial='<1 year', choices=DATE_RANGES)
     expected_project_lifetime = forms.ChoiceField(initial='<1 year', choices=DATE_RANGES)
-    storage_space = forms.IntegerField(min_value=1, max_value=30, widget=forms.Select(choices=STORAGE_QUANTITY_CHOICES))
+    storage_space = forms.IntegerField(min_value=1, max_value=5, widget=forms.Select(choices=STORAGE_QUANTITY_CHOICES))
     store_ephi = forms.ChoiceField(choices=YES_NO_CHOICES, widget=forms.RadioSelect)
 
     def __init__(self, request_user, resource_attributes, project_obj, resource_obj, *args, **kwargs):
