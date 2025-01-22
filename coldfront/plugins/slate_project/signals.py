@@ -41,6 +41,8 @@ def add_group(sender, **kwargs):
         return
 
     add_gid_allocation_attribute(allocation_obj)
+    for allocation_user_obj in allocation_obj.allocationuser_set.filter(status__name='Active'):
+        add_user_to_slate_project_group(allocation_user_obj)
 
 @receiver(allocation_activate_user, sender=ProjectAddUsersView)
 @receiver(allocation_activate_user, sender=AllocationAddUsersView)
