@@ -52,7 +52,7 @@ class GeodeProjectForm:
         self.fields['first_name'].initial = request_user.first_name
         self.fields['last_name'].initial = request_user.last_name
         self.fields['email'].initial = request_user.email
-        self.fields['project_directory_name'].widget.attrs.update({'placeholder': 'example_A-Za-z0-9'})
+        self.fields['project_directory_name'].widget.attrs.update({'placeholder': 'YourDept-ProjectName'})
 
         for field in self.errors:
             self.fields[field].widget.attrs.update({'autofocus': ''})
