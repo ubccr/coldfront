@@ -79,7 +79,7 @@ class ResourceFilter(admin.SimpleListFilter):
     def lookups(self, request, model_admin):
         resource_objs = Resource.objects.all()
         if not request.user.is_superuser:
-            objs = objs.filter(resources__review_groups__in=list(request.user.groups.all()))
+            resource_objs = resource_objs.filter(review_groups__in=list(request.user.groups.all()))
         
         return [
             (
