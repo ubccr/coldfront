@@ -1681,7 +1681,9 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                     logger.error(
                         f'There was an error submitting allocation renewals for PI '
                         f'{project_obj.pi.username} (project pk={project_obj.pk})'
+                        f'Errors: {formset.errors}'
                     )
+
                     messages.error(
                         request, 'There was an error submitting your allocation renewals.'
                     )
@@ -2519,16 +2521,6 @@ class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
 
         project_review_obj.status = project_review_status_obj
         project_obj.status = project_status_obj
-
-        if project_review_obj.allocation_renewals:
-            allocation_status_choice = AllocationStatusChoice.objects.get(name="Active")
-            for allocation_pk in project_review_obj.allocation_renewals.split(','):
-                allocation = Allocation.objects.get(pk=int(allocation_pk))
-                allocation.start_date = datetime.datetime.today()
-                allocation.end_date = project_obj.end_date
-                allocation.status = allocation_status_choice
-                allocation.save()
-
         project_review_obj.save()
         project_obj.save()
 
@@ -2541,13 +2533,6 @@ class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
             project_url = '{}{}'.format(domain_url, reverse(
                 'project-detail', kwargs={'pk': project_review_obj.project.pk}
             ))
-            renewed_allocation_urls = []
-            if project_review_obj.allocation_renewals:
-                for allocation_pk in project_review_obj.allocation_renewals.split(','):
-                    allocation_url = '{}{}'.format(domain_url, reverse(
-                        'allocation-detail', kwargs={'pk': allocation_pk}
-                    ))
-                    renewed_allocation_urls.append(allocation_url)
 
             template_context = {
                 'project_title': project_review_obj.project.title,
@@ -2555,7 +2540,6 @@ class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
                 'signature': EMAIL_SIGNATURE,
                 'help_email': EMAIL_TICKET_SYSTEM_ADDRESS,
                 'center_name': EMAIL_CENTER_NAME,
-                'renewed_allocation_urls': renewed_allocation_urls
             }
 
             email_receiver_list = get_project_user_emails(project_obj)
@@ -2601,13 +2585,14 @@ class ProjectReviewDenyView(LoginRequiredMixin, UserPassesTestMixin, View):
         project_review_obj.status = project_review_status_obj
         project_obj.status = project_status_obj
 
-        if project_review_obj.allocation_renewals:
+        allocation_renewals = project_obj.allocation_set.filter(status__name='Renewal Requested')
+        if allocation_renewals:
             allocation_active_status_choice = AllocationStatusChoice.objects.get(name="Active")
             allocation_expired_status_choice = AllocationStatusChoice.objects.get(name="Expired")
-            for allocation_pk in project_review_obj.allocation_renewals.split(','):
-                allocation = Allocation.objects.get(pk=int(allocation_pk))
-                if allocation.end_date <= datetime.datetime.now().date():
+            for allocation in allocation_renewals:
+                if allocation.end_date < datetime.datetime.now().date():
                     allocation.status = allocation_expired_status_choice
+                    allocation_expire.send(sender=ProjectReviewDenyView, allocation_pk=allocation.pk)
                 else:
                     allocation.status = allocation_active_status_choice
                 allocation.save()

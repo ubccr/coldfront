@@ -336,6 +336,10 @@ Project Detail
                     <span class="badge badge-warning"><i class="far fa-clock" aria-hidden="true"></i>
                       Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} - Not renewable
                     </span>
+                  {% elif project.status.name == 'Renewal Denied' and allocation.status.name == 'Active' and allocation.expires_in <= ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING and allocation.expires_in >= 0 %}
+                    <span class="badge badge-warning"><i class="far fa-clock" aria-hidden="true"></i>
+                      Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} - Not renewable
+                    </span>
                   {% elif is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Active' and allocation.expires_in <= ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING and allocation.expires_in >= 0 %}
                     <a href="{% url 'allocation-renew' allocation.pk %}">
                       <span class="badge badge-warning"><i class="fas fa-redo-alt" aria-hidden="true"></i>

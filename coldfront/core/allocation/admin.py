@@ -79,17 +79,17 @@ class ResourceFilter(admin.SimpleListFilter):
     def lookups(self, request, model_admin):
         resource_objs = Resource.objects.all()
         if not request.user.is_superuser:
-            objs = objs.filter(resources__review_groups__in=list(request.user.groups.all()))
+            resource_objs = resource_objs.filter(review_groups__in=list(request.user.groups.all()))
         
         return [
             (
-                f'{resource_obj.name} ({resource_obj.resource_type.name})',
-                f'{resource_obj.name} ({resource_obj.resource_type.name})'
+                resource_obj.name,
+                resource_obj
             ) for resource_obj in resource_objs
         ]
 
     def queryset(self, request, queryset):
-        if self.value() is not None:
+        if self.value() is not None and queryset.exists():
             try:
                 queryset = queryset.filter(resources__name=self.value())
             except FieldError:
@@ -103,7 +103,7 @@ class ResourceFilter(admin.SimpleListFilter):
 class ReviewGroupFilteredResourceQueryset(admin.ModelAdmin):
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
-        if not request.user.is_superuser:
+        if not request.user.is_superuser and queryset.exists():
             try:
                 queryset = queryset.filter(resources__review_groups__in=list(request.user.groups.all()))
             except FieldError:
@@ -463,7 +463,7 @@ class AllocationUserRequestAdmin(SimpleHistoryAdmin, ReviewGroupFilteredResource
     list_filter = (
         'status',
         'allocation_user_status',
-        'allocation_user__allocation__resources'
+        ResourceFilter
     )
 
     raw_id_fields = (

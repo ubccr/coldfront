@@ -185,7 +185,7 @@ class Allocation(TimeStampedModel):
         if self.status.name not in ['Active', 'Expired']:
             return False
 
-        if self.project.needs_review or self.project.can_be_reviewed or self.project.status.name not in ['Active']:
+        if self.project.needs_review or self.project.can_be_reviewed or self.project.status.name not in ['Active', 'Review Pending']:
             return False
 
         if self.status.name == 'Active' and self.expires_in <= ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING  and self.expires_in >= 0:

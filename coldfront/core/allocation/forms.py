@@ -4,7 +4,6 @@ from coldfront.core.user.models import UserProfile
 from django import forms
 from django.db.models.functions import Lower
 from django.core.exceptions import ValidationError
-from django.forms.widgets import RadioSelect
 from django.shortcuts import get_object_or_404
 from django.conf import settings
 
@@ -17,10 +16,6 @@ from coldfront.core.allocation.utils import get_user_resources
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource, ResourceType
 from coldfront.core.utils.common import import_from_settings
-
-from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Field, Layout, Submit, HTML, Row, Column, Fieldset, Reset
-from crispy_forms.bootstrap import InlineRadios, FormActions, PrependedText
 
 logger = logging.getLogger(__name__)
 

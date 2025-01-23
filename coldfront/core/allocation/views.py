@@ -918,11 +918,14 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                         f'(allocation pk={allocation_obj.pk})'
                     )
         else:
-            logger.warning(
-                f'An error occured when adding users to an allocation (allocation pk={allocation_obj.pk})')
             for error in formset.errors:
-                messages.error(request, error.get('__all__'))
-                return HttpResponseRedirect(reverse('allocation-add-users', kwargs={'pk': pk}))
+                if error.get('__all__'):
+                    messages.error(request, error.get('__all__')[0])
+                    logger.warning(
+                        f'An error occured when adding users to an allocation (allocation pk={allocation_obj.pk}). '
+                        f'Error: {error.get("__all__")[0]}'
+                    )
+                    return HttpResponseRedirect(reverse('allocation-add-users', kwargs={'pk': pk}))
 
         return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
@@ -1325,12 +1328,12 @@ class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templat
         if self.request.user.is_superuser:
             allocation_list = Allocation.objects.filter(
                 status__name__in=['New', 'Renewal Requested', 'Paid', 'Billing Information Submitted']
-            ).exclude(project__status__name__in=['Review Pending', 'Archived'])
+            ).exclude(project__status__name__in=['Archived', 'Renewal Denied'])
         else:
             allocation_list = Allocation.objects.filter(
                 status__name__in=['New', 'Renewal Requested', 'Paid', 'Billing Information Submitted'],
                 resources__review_groups__in=list(self.request.user.groups.all())
-            ).exclude(project__status__name__in=['Review Pending', 'Archived']).distinct()
+            ).exclude(project__status__name__in=['Archived', 'Renewal Denied']).distinct()
 
         context['allocation_status_active'] = AllocationStatusChoice.objects.get(name='Active')
         context['allocation_list'] = allocation_list
@@ -1368,7 +1371,7 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
             messages.error(request, f'You cannot renew a allocation with status {allocation_obj.status.name}.')
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
-        if allocation_obj.project.status.name in ['Review Pending', 'Denied', 'Expired', 'Archived', ]:
+        if allocation_obj.project.status.name in ['Denied', 'Expired', 'Archived', 'Renewal Denied', ]:
             messages.error(
                 request, 'You cannot renew an allocation with project status "{}".'.format(
                     allocation_obj.project.status.name)
@@ -1502,13 +1505,13 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
                 'project_title': project_obj.title,
                 'project_id': project_obj.pk,
             }
-            send_allocation_admin_email(allocation_obj, 'Allocation Renewed', 'email/allocation_renewed.txt', domain_url=get_domain_url(self.request), addtl_context=addtl_context)
+            send_allocation_admin_email(allocation_obj, 'Allocation Renewal Requested', 'email/allocation_renewed.txt', domain_url=get_domain_url(self.request), addtl_context=addtl_context)
 
             logger.info(
                 f'User {request.user.username} sent a {allocation_obj.get_parent_resource.name} '
                 f'allocation renewal request (allocation pk={allocation_obj.pk})'
             )
-            messages.success(request, 'Allocation renewed successfully')
+            messages.success(request, 'Allocation renewal submitted')
         else:
             if not formset.is_valid():
                 for error in formset.errors:
