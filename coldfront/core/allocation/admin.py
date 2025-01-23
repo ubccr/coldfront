@@ -83,8 +83,8 @@ class ResourceFilter(admin.SimpleListFilter):
         
         return [
             (
-                f'{resource_obj.name} ({resource_obj.resource_type.name})',
-                f'{resource_obj.name} ({resource_obj.resource_type.name})'
+                resource_obj.name,
+                resource_obj
             ) for resource_obj in resource_objs
         ]
 
