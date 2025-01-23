@@ -168,8 +168,9 @@ class AllocationResourceSelectionView(LoginRequiredMixin, UserPassesTestMixin, T
             )
             if allocation_pending_request_limit_per_pi_obj.exists():
                 allocation_pending_request_limit_per_pi_limit = int(allocation_pending_request_limit_per_pi_obj[0].value)
-                pending_requests = Allocation.objects.filter(resources=resource_obj, status__name='New')
-                if pending_requests.exists() and len(pending_requests) >= allocation_pending_request_limit_per_pi_limit:
+                pending_requests = Allocation.objects.filter(
+                    resources=resource_obj, status__name='New', project__pi=self.request.user).count()
+                if pending_requests >= allocation_pending_request_limit_per_pi_limit:
                     limit_reached = True
                     limit_title = 'Pending Resource Allocation Request Limit'
                     limit_description = f'Can only have {allocation_pending_request_limit_per_pi_limit} pending request(s) per user'
@@ -340,8 +341,9 @@ class GenericView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         )
         if allocation_pending_request_limit_per_pi_obj.exists():
             allocation_pending_request_limit_per_pi_limit = int(allocation_pending_request_limit_per_pi_obj[0].value)
-            pending_requests = Allocation.objects.filter(resources=resource_obj, status__name='New')
-            if pending_requests.exists() and len(pending_requests) >= allocation_pending_request_limit_per_pi_limit:
+            pending_requests = Allocation.objects.filter(
+                resources=resource_obj, status__name='New', project__pi=request.user).count()
+            if pending_requests >= allocation_pending_request_limit_per_pi_limit:
                 messages.error(
                     request, 'You are at the pending allocation limit per user allowed for this resource.'
                 )
