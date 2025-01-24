@@ -51,7 +51,7 @@ Create Announcement
       <div class="col">
         <div class="card">
           <div class="card-header" style="min-height: 56.8px;">
-            To Email
+            Selected
           </div>
           <div class="card-body" style="min-height: 140px;">
             <div id="selected_mailing_lists"></div>
@@ -157,7 +157,7 @@ Create Announcement
   }
 
   function setUpSelections(selection) {
-    // $('#div_id_' + selection).hide()
+    $('#div_id_' + selection).hide()
     selections[selection]['full_list'].forEach(element => {
       createSearchResult(element, selection);
     });
