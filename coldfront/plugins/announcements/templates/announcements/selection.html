@@ -1,0 +1,42 @@
+{% load common_tags %}
+<div id="div_id_{{ selection|get_value_from_dict:'name' }}_select" class="form-group">
+  <div class="row">
+    <div class="col">
+      <div class="card">
+        <div class="card-header">
+          <div class="row">
+            <div class="col-3">
+              <label for="div_id_{{ selection|get_value_from_dict:'name' }}_filter">
+                {{ label }}
+              </label>
+            </div>
+            <div class="col-8">
+              <div class="input-group input-group-sm">
+                <div class="input-group-prepend">
+                  <span class="input-group-text"><i class="fas fa-search"></i></span>
+                </div>
+                <input type="text" name="{{ selection|get_value_from_dict:'name' }}_filter" maxlength="100" class="textinput form-control" id="id_{{ selection|get_value_from_dict:'name' }}_filter" autocomplete="off">
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-body" style="min-height: 140px;">
+          <div id="{{ selection|get_value_from_dict:'name' }}_search_results"></div>
+        </div>
+      </div>
+    </div>
+    <div class="align-self-center">
+      <i class="fas fa-exchange-alt"></i>
+    </div>
+    <div class="col">
+      <div class="card">
+        <div class="card-header" style="min-height: 56.8px;">
+          Selected
+        </div>
+        <div class="card-body" style="min-height: 140px;">
+          <div id="selected_{{ selection|get_value_from_dict:'name' }}"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

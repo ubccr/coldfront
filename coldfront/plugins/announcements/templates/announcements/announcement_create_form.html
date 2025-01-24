@@ -3,6 +3,7 @@
 {% load crispy_forms_filters %}
 {% load static %}
 {% load i18n %}
+{% load common_tags %}
 
 {% block title %}
 Create Announcement
@@ -19,89 +20,9 @@ Create Announcement
   {{ form.body|as_crispy_field }}
   {{ form.categories|as_crispy_field }}
   {{ form.mailing_lists|as_crispy_field }}
-  <div id="div_id_mailing_lists_select" class="form-group">
-    <div class="row">
-      <div class="col">
-        <div class="card">
-          <div class="card-header">
-            <div class="row">
-              <div class="col-3">
-                <label for="div_id_mailing_lists_filter">
-                  Mailing Lists
-                </label>
-              </div>
-              <div class="col-8">
-                <div class="input-group input-group-sm">
-                  <div class="input-group-prepend">
-                    <span class="input-group-text"><i class="fas fa-search"></i></span>
-                  </div>
-                  <input type="text" name="mailing_lists_filter" maxlength="100" class="textinput form-control" id="id_mailing_lists_filter" autocomplete="off">
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="card-body" style="min-height: 140px;">
-            <div id="mailing_lists_search_results"></div>
-          </div>
-        </div>
-      </div>
-      <div class="align-self-center">
-        <i class="fas fa-exchange-alt"></i>
-      </div>
-      <div class="col">
-        <div class="card">
-          <div class="card-header" style="min-height: 56.8px;">
-            Selected
-          </div>
-          <div class="card-body" style="min-height: 140px;">
-            <div id="selected_mailing_lists"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <div id="div_id_categories_select" class="form-group">
-    <div class="row">
-      <div class="col">
-        <div class="card">
-          <div class="card-header">
-            <div class="row">
-              <div class="col-3">
-                <label for="div_id_categories_filter">
-                  Categories
-                </label>
-              </div>
-              <div class="col-8">
-                <div class="input-group input-group-sm">
-                  <div class="input-group-prepend">
-                    <span class="input-group-text"><i class="fas fa-search"></i></span>
-                  </div>
-                  <input type="text" name="categories_filter" maxlength="100" class="textinput form-control" id="id_categories_filter" autocomplete="off">
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="card-body" style="min-height: 140px;">
-            <div id="categories_search_results"></div>
-          </div>
-        </div>
-      </div>
-      <div class="align-self-center">
-        <i class="fas fa-exchange-alt"></i>
-      </div>
-      <div class="col">
-        <div class="card">
-          <div class="card-header" style="min-height: 56.8px;">
-            Selected
-          </div>
-          <div class="card-body" style="min-height: 140px;">
-            <div id="selected_categories"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  {% include 'announcements/selection.html' with label='Categories' selection=selections|get_value_from_dict:'categories' %}
+  {% include 'announcements/selection.html' with label='Mailing Lists' selection=selections|get_value_from_dict:'mailing_lists' %}
 
   <hr>
   <input class="btn btn-primary" type="submit" value="Create" />
