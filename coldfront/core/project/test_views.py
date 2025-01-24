@@ -308,7 +308,7 @@ class ProjectListViewTest(ProjectViewTestBase):
         url_base = self.url + '?show_all_projects=on'
         url = (
             f'{url_base}&last_name={self.project.pi.last_name}' +
-            f'&field_of_science={self.project.field_of_science.description}'
+            f'&school={self.project.school.description}'
         )
         # search by project project_title
         response = utils.login_and_get_page(self.client, self.admin_user, url)

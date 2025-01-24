@@ -28,7 +28,7 @@ class Command(BaseCommand):
 
 def run_setup():
     call_command('migrate')
-    call_command('import_field_of_science_data')
+    call_command('import_school_data')
     call_command('add_default_grant_options')
     call_command('add_default_project_choices')
     call_command('add_resource_defaults')

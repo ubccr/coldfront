@@ -189,7 +189,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
 
     model = Project
     template_name = 'project/project_list.html'
-    prefetch_related = ['pi', 'status', 'field_of_science', ]
+    prefetch_related = ['pi', 'status', 'school', ]
     context_object_name = 'project_list'
     paginate_by = 25
 
@@ -209,10 +209,10 @@ class ProjectListView(LoginRequiredMixin, ListView):
         if project_search_form.is_valid():
             data = project_search_form.cleaned_data
             if data.get('show_all_projects') and (self.request.user.is_superuser or self.request.user.has_perm('project.can_view_all_projects')):
-                projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
+                projects = Project.objects.prefetch_related('pi', 'school', 'status',).filter(
                     status__name__in=['New', 'Active', ]).order_by(order_by)
             else:
-                projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
+                projects = Project.objects.prefetch_related('pi', 'school', 'status',).filter(
                     Q(status__name__in=['New', 'Active', ]) &
                     Q(projectuser__user=self.request.user) &
                     Q(projectuser__status__name='Active')
@@ -232,12 +232,12 @@ class ProjectListView(LoginRequiredMixin, ListView):
                 )
 
             # Field of Science
-            if data.get('field_of_science'):
+            if data.get('school'):
                 projects = projects.filter(
-                    field_of_science__description__icontains=data.get('field_of_science'))
+                    school__description__icontains=data.get('school'))
 
         else:
-            projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
+            projects = Project.objects.prefetch_related('pi', 'school', 'status',).filter(
                 Q(status__name__in=['New', 'Active', ]) &
                 Q(projectuser__user=self.request.user) &
                 Q(projectuser__status__name='Active')
@@ -301,7 +301,7 @@ class ProjectArchivedListView(LoginRequiredMixin, ListView):
 
     model = Project
     template_name = 'project/project_archived_list.html'
-    prefetch_related = ['pi', 'status', 'field_of_science', ]
+    prefetch_related = ['pi', 'status', 'school', ]
     context_object_name = 'project_list'
     paginate_by = 10
 
@@ -319,11 +319,11 @@ class ProjectArchivedListView(LoginRequiredMixin, ListView):
         if project_search_form.is_valid():
             data = project_search_form.cleaned_data
             if data.get('show_all_projects') and (self.request.user.is_superuser or self.request.user.has_perm('project.can_view_all_projects')):
-                projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
+                projects = Project.objects.prefetch_related('pi', 'school', 'status',).filter(
                     status__name__in=['Archived', ]).order_by(order_by)
             else:
 
-                projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
+                projects = Project.objects.prefetch_related('pi', 'school', 'status',).filter(
                     Q(status__name__in=['Archived', ]) &
                     Q(projectuser__user=self.request.user) &
                     Q(projectuser__status__name='Active')
@@ -340,12 +340,12 @@ class ProjectArchivedListView(LoginRequiredMixin, ListView):
                     pi__username__icontains=data.get('username'))
 
             # Field of Science
-            if data.get('field_of_science'):
+            if data.get('school'):
                 projects = projects.filter(
-                    field_of_science__description__icontains=data.get('field_of_science'))
+                    school__description__icontains=data.get('school'))
 
         else:
-            projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
+            projects = Project.objects.prefetch_related('pi', 'school', 'status',).filter(
                 Q(status__name__in=['Archived', ]) &
                 Q(projectuser__user=self.request.user) &
                 Q(projectuser__status__name='Active')
@@ -451,7 +451,8 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
 class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Project
     template_name_suffix = '_create_form'
-    fields = ['title', 'description', 'field_of_science', ]
+    # Add one more field here
+    fields = ['title', 'description', 'school', ]
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -484,7 +485,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Project
     template_name_suffix = '_update_form'
-    fields = ['title', 'description', 'field_of_science', ]
+    fields = ['title', 'description', 'school', ]
     success_message = 'Project updated.'
 
     def test_func(self):

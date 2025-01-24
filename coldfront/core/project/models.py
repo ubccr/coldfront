@@ -11,7 +11,7 @@ from coldfront.core.utils.validate import AttributeValidator
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
-from coldfront.core.field_of_science.models import FieldOfScience
+from coldfront.core.school.models import School
 from coldfront.core.utils.common import import_from_settings
 
 PROJECT_ENABLE_PROJECT_REVIEW = import_from_settings('PROJECT_ENABLE_PROJECT_REVIEW', False)
@@ -47,13 +47,14 @@ class ProjectStatusChoice(TimeStampedModel):
         return (self.name,)
 
 class Project(TimeStampedModel):
-    """ A project is a container that includes users, allocations, publications, grants, and other research output. 
+    # ADD AN ATTRIBUTE HERE
+    """ A project is a container that includes users, allocations, publications, grants, and other research output.
     
     Attributes:
         title (str): name of the project
         pi (User): represents the User object of the project's PI
         description (str): description of the project
-        field_of_science (FieldOfScience): represents the field of science for this project
+        school (School): represents a school for this project
         status (ProjectStatusChoice): represents the ProjectStatusChoice of this project
         force_review (bool): indicates whether or not to force a review for the project
         requires_review (bool): indicates whether or not the project requires review
@@ -88,7 +89,7 @@ We do not have information about your research. Please provide a detailed descri
         ],
     )
 
-    field_of_science = models.ForeignKey(FieldOfScience, on_delete=models.CASCADE, default=FieldOfScience.DEFAULT_PK)
+    school = models.ForeignKey(School, on_delete=models.CASCADE, default=School.DEFAULT_PK)
     status = models.ForeignKey(ProjectStatusChoice, on_delete=models.CASCADE)
     force_review = models.BooleanField(default=False)
     requires_review = models.BooleanField(default=True)

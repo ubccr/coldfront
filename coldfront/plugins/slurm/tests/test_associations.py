@@ -13,7 +13,7 @@ class AssociationTest(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        call_command('import_field_of_science_data')
+        call_command('import_school_data')
         call_command('add_default_grant_options')
         call_command('add_default_project_choices')
         call_command('add_default_allocation_choices')

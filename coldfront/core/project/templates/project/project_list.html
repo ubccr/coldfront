@@ -63,8 +63,8 @@ Project List
           <th scope="col">Title</th>
           <th scope="col" class="text-nowrap">
             Field of Science
-            <a href="?order_by=field_of_science&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Field of Science asc</span></a>
-            <a href="?order_by=field_of_science&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Field of Science desc</span></a>
+            <a href="?order_by=school&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort School asc</span></a>
+            <a href="?order_by=school&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort School desc</span></a>
           </th>
           <th scope="col" class="text-nowrap">
             Status
@@ -79,7 +79,7 @@ Project List
             <td><a href="/project/{{project.id}}/">{{ project.id }}</a></td>
             <td>{{ project.pi.username }}</td>
             <td style="text-align: justify; text-justify: inter-word;">{{ project.title }}</td>
-            <td>{{ project.field_of_science.description }}</td>
+            <td>{{ project.school.description }}</td>
             <td>{{ project.status.name }}</td>
           </tr>
         {% endfor %}

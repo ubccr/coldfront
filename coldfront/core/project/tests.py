@@ -6,7 +6,7 @@ from django.test import TestCase
 from coldfront.core.test_helpers.factories import (
     UserFactory,
     ProjectFactory,
-    FieldOfScienceFactory,
+    SchoolFactory,
     ProjectAttributeFactory,
     ProjectStatusChoiceFactory,
     ProjectAttributeTypeFactory,
@@ -29,14 +29,14 @@ class TestProject(TestCase):
             user = UserFactory(username='cgray')
             user.userprofile.is_pi = True
 
-            field_of_science = FieldOfScienceFactory(description='Chemistry')
+            school = SchoolFactory(description='NYU IT')
             status = ProjectStatusChoiceFactory(name='Active')
 
             self.initial_fields = {
                 'pi': user,
                 'title': 'Angular momentum in QGP holography',
                 'description': 'We want to estimate the quark chemical potential of a rotating sample of plasma.',
-                'field_of_science': field_of_science,
+                'school': school,
                 'status': status,
                 'force_review': True
             }
@@ -144,7 +144,7 @@ class TestProject(TestCase):
 
         self.assertEqual(1, len(Project.objects.all()))
 
-        project_obj.field_of_science.delete()
+        project_obj.school.delete()
 
         # expecting CASCADE
         with self.assertRaises(Project.DoesNotExist):
