@@ -17,7 +17,7 @@ class AnnouncementMailingListChoice(TimeStampedModel):
     value = models.EmailField(max_length=64)
     subcribed = models.ManyToManyField(User, blank=True)
     objects = AnnouncementMailingListChoiceManager()
-  
+
     def __str__(self):
         return self.name
 
