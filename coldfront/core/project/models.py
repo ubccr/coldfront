@@ -47,7 +47,6 @@ class ProjectStatusChoice(TimeStampedModel):
         return (self.name,)
 
 class Project(TimeStampedModel):
-    # ADD AN ATTRIBUTE HERE
     """ A project is a container that includes users, allocations, publications, grants, and other research output.
     
     Attributes:
@@ -89,7 +88,7 @@ We do not have information about your research. Please provide a detailed descri
         ],
     )
 
-    school = models.ForeignKey(School, on_delete=models.CASCADE, default=School.DEFAULT_PK)
+    school = models.ForeignKey(School, on_delete=models.CASCADE, default=School.DEFAULT_PK, null=True, blank=True) # Allows legacy data
     status = models.ForeignKey(ProjectStatusChoice, on_delete=models.CASCADE)
     force_review = models.BooleanField(default=False)
     requires_review = models.BooleanField(default=True)

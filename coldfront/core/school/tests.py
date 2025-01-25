@@ -2,6 +2,7 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 from coldfront.core.school.models import School
+from coldfront.core.test_helpers.factories import SchoolFactory
 
 
 class TestSchool(TestCase):
@@ -18,6 +19,7 @@ class TestSchool(TestCase):
 
     def setUp(self):
         self.data = self.Data()
+        SchoolFactory()
 
     def test_fields_generic(self):
         self.assertEqual(1, len(School.objects.all()))

@@ -41,6 +41,7 @@ from coldfront.core.publication.models import PublicationSource
 
 project_status_choice_names = ['New', 'Active', 'Archived']
 project_user_role_choice_names = ['User', 'Manager']
+field_of_science_names = ['Physics', 'Chemistry', 'Economics', 'Biology', 'Sociology']
 school_names = ['Arts & Science', 'College of Dentistry', 'School of Law', 'NYU Shanghai', 'NYU IT']
 attr_types = ['Date', 'Int', 'Float', 'Text', 'Boolean']
 
@@ -58,12 +59,16 @@ class ColdfrontProvider(BaseProvider):
         last_name = fake.last_name()
         return f'{first_name}{last_name}'.lower()
 
+field_of_science_provider = DynamicProvider(
+    provider_name="fieldofscience", elements=field_of_science_names
+)
+
 school_provider = DynamicProvider(
     provider_name="school", elements=school_names
 )
 attr_type_provider = DynamicProvider(provider_name="attr_types", elements=attr_types)
 
-for provider in [ColdfrontProvider, school_provider, attr_type_provider]:
+for provider in [ColdfrontProvider, school_provider, field_of_science_provider, attr_type_provider]:
     factory.Faker.add_provider(provider)
 
 

@@ -65,6 +65,7 @@ INSTALLED_APPS += [
 INSTALLED_APPS += [
     'coldfront.core.user',
     'coldfront.core.field_of_science',
+    'coldfront.core.school',
     'coldfront.core.utils',
     'coldfront.core.portal',
     'coldfront.core.project',

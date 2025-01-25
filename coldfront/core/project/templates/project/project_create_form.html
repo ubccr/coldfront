@@ -11,7 +11,7 @@ Create Project
 {% block content %}
  <form method="post">
   {% csrf_token %}
-  {{ form|crispy }} # Django automatically generates a form based on these fields
+  {{ form|crispy }}
   <input class="btn btn-primary" type="submit" value="Save" />
   <a class="btn btn-secondary" href="{% url 'project-list' %}" role="button">Cancel</a>
 </form>
