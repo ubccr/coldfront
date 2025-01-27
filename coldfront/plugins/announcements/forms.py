@@ -16,3 +16,11 @@ class AnnouncementCreateForm(forms.Form):
         widget=forms.CheckboxSelectMultiple,
         required=False
     )
+
+
+class AnnouncementFilterForm(forms.Form):
+    categories = forms.ModelMultipleChoiceField(
+        queryset=AnnouncementCategoryChoice.objects.all(),
+        widget=forms.CheckboxSelectMultiple,
+        required=False
+    )

@@ -6,7 +6,7 @@ from django.views.generic import ListView, UpdateView, DeleteView, DetailView, F
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 
 from coldfront.plugins.announcements.models import Announcement, AnnouncementCategoryChoice, AnnouncementMailingListChoice, AnnouncementStatusChoice
-from coldfront.plugins.announcements.forms import AnnouncementCreateForm
+from coldfront.plugins.announcements.forms import AnnouncementCreateForm, AnnouncementFilterForm
 
 
 class AnnouncementListView(LoginRequiredMixin, ListView):
@@ -18,15 +18,31 @@ class AnnouncementListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         announcements = Announcement.objects.all()
 
-        categories = self.request.GET.get('categories')
-        if categories:
-            announcements.filter(categories=categories)
- 
+        announcement_filter_form = AnnouncementFilterForm(self.request.GET)
+        if announcement_filter_form.is_valid():
+            data = announcement_filter_form.cleaned_data
+            if data.get('categories'):
+                announcements = announcements.filter(categories__in=data.get('categories'))
+
         return announcements
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['current_user'] = self.request.user.username
+        context['selections'] = json.dumps({
+            'categories': {
+                'full_list': list(AnnouncementCategoryChoice.objects.all().values_list('name', flat=True)),
+                'available': [],
+                'selected': [],
+                'name': 'categories'
+            },
+        })
+        
+        announcement_filter_form = AnnouncementFilterForm(self.request.GET)
+        if not announcement_filter_form.is_valid():
+            announcement_filter_form = AnnouncementFilterForm()
+
+        context['filter_form'] = announcement_filter_form
 
         return context
 
