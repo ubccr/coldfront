@@ -73,12 +73,14 @@ class AnnouncementCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             'categories': {
                 'full_list': list(AnnouncementCategoryChoice.objects.all().values_list('name', flat=True)),
                 'available': [],
-                'selected': []
+                'selected': [],
+                'name': 'categories'
             },
             'mailing_lists': {
                 'full_list': list(AnnouncementMailingListChoice.objects.all().values_list('name', flat=True)),
                 'available': [],
-                'selected': []
+                'selected': [],
+                'name': 'mailing_lists'
             },
         })
 
