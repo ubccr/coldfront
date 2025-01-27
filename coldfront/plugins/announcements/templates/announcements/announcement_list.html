@@ -59,8 +59,12 @@ Announcements
         {% endfor %}
       </div>
       <div class="card-footer">
-        {{ announcement.created }}
-        <a href="{% url 'announcement-detail' pk=announcement.pk}" class="btn btn-secondary float-right" type="button">Details</a>
+        Created: {{ announcement.created }}
+        {% if announcement.details_url %}
+          <a target="_blank" href="{{ announcement.details_url }}" class="btn btn-secondary float-right" type="button">
+            <i class="fas fa-external-link-alt" aria-hidden="true"></i> Details
+          </a>
+        {% endif %}
         <a href="{% url 'announcement-update' pk=announcement.pk}" class="btn btn-primary float-right mr-1" type="button">Update</a>
       </div>
     </div>

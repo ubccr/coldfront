@@ -16,6 +16,9 @@ class AnnouncementCreateForm(forms.Form):
         widget=forms.CheckboxSelectMultiple,
         required=False
     )
+    details_url = forms.URLField(
+        max_length=100, required=False, help_text='For links to external sources with more information'
+    )
 
 
 class AnnouncementFilterForm(forms.Form):

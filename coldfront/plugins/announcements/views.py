@@ -2,7 +2,7 @@ import json
 from django.contrib import messages
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
-from django.views.generic import ListView, UpdateView, DeleteView, DetailView, FormView, View
+from django.views.generic import ListView, UpdateView, DeleteView, FormView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 
 from coldfront.plugins.announcements.models import Announcement, AnnouncementCategoryChoice, AnnouncementMailingListChoice, AnnouncementStatusChoice
@@ -16,7 +16,7 @@ class AnnouncementListView(LoginRequiredMixin, ListView):
     paginate_by = 5
 
     def get_queryset(self):
-        announcements = Announcement.objects.all()
+        announcements = Announcement.objects.all().order_by('-created')
 
         announcement_filter_form = AnnouncementFilterForm(self.request.GET)
         if announcement_filter_form.is_valid():
@@ -45,18 +45,6 @@ class AnnouncementListView(LoginRequiredMixin, ListView):
         context['filter_form'] = announcement_filter_form
 
         return context
-
-
-class AnnouncementDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
-    model=Announcement
-    context_object_name = "announcement"
-
-    def test_func(self):
-        pk = self.kwargs.get('pk')
-        announcement_obj = get_object_or_404(Announcement, pk=pk)
-
-        if self.request.user.is_superuser:
-            return True
 
 
 class AnnouncementCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
@@ -131,7 +119,3 @@ class AnnouncementDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView
 
         if self.request.user.is_superuser:
             return True
-
-
-class AnnouncementCategorySearchView(View):
-    pass

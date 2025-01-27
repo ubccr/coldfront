@@ -18,6 +18,7 @@ Create Announcement
   {% csrf_token %}
   {{ form.title|as_crispy_field }}
   {{ form.body|as_crispy_field }}
+  {{ form.details_url|as_crispy_field }} 
   {{ form.categories|as_crispy_field }}
   {{ form.mailing_lists|as_crispy_field }}
 
