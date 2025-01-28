@@ -48,7 +48,12 @@ Announcements
             </h3>
           </div>
           <div class="col-1">
-            <div id="id_is_read_{{ announcement.pk }}" class="float-right" style="position: relative; top: 1px; right: 1px;">
+            {% if current_user.is_superuser %}
+              <div class="float-right" title="Views" style="position: relative; top: 1px; right: 1px;">
+                <span class="badge badge-secondary">{{announcement.viewed_by.count}}</span>
+              </div>
+            {% endif %}
+            <div id="id_is_read_{{ announcement.pk }}" class="float-right mr-1" style="position: relative; top: 1px; right: 1px;">
               {% if not current_user in announcement.viewed_by.all %}
                 <a title="Mark as read" type="button" href="#"><i class="far fa-circle"></i></a>
               {% else %}
@@ -69,10 +74,10 @@ Announcements
         Created: {{ announcement.created }}
         {% if announcement.details_url %}
           <a target="_blank" href="{{ announcement.details_url }}" class="btn btn-secondary float-right" type="button">
-            <i class="fas fa-external-link-alt" aria-hidden="true"></i> Details
+            <i class="fas fa-external-link-alt" aria-hidden="true"></i> More Details
           </a>
         {% endif %}
-        <a href="{% url 'announcement-update' pk=announcement.pk}" class="btn btn-primary float-right mr-1" type="button">Update</a>
+        <a href="{% url 'announcement-update' pk=announcement.pk %}" class="btn btn-primary float-right mr-1" type="button">Update</a>
       </div>
     </div>
     <hr>
