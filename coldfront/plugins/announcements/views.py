@@ -1,5 +1,6 @@
 import json
 from django.contrib import messages
+from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.views.generic import ListView, UpdateView, DeleteView, FormView, View
@@ -129,8 +130,13 @@ class AnnouncementReadView(LoginRequiredMixin, UserPassesTestMixin, View):
         if self.request.user.is_superuser:
             return True
 
+    def get(self, request, *args, **kwargs):
+        announcement_objs = Announcement.objects.filter(status__name='Active')
+        for announcement_obj in announcement_objs:
+            announcement_obj.viewed_by.add(request.user)
+        return HttpResponseRedirect(reverse('announcement-list'))
+
     def post(self, request, *args, **kwargs):
         announcement_obj = Announcement.objects.get(pk=request.POST.get('id'))
         announcement_obj.viewed_by.add(request.user)
-
-        return render(request, 'announcements/navbar_announcement_unread.html', {'user': self.request.user}) 
+        return render(request, 'announcements/navbar_announcement_unread.html', {'user': self.request.user})
