@@ -21,6 +21,8 @@ class AnnouncementListView(LoginRequiredMixin, ListView):
         announcement_filter_form = AnnouncementFilterForm(self.request.GET)
         if announcement_filter_form.is_valid():
             data = announcement_filter_form.cleaned_data
+            if data.get('title'):
+                announcements = announcements.filter(title__icontains=data.get('title'))
             if data.get('categories'):
                 announcements = announcements.filter(categories__in=data.get('categories'))
 
