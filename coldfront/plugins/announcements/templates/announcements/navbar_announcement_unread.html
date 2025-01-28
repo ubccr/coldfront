@@ -1,2 +1,4 @@
 {% load announcement_tags %}
-{{ user|get_unread_count }}
+{% if user|get_unread_count %}
+  {{ user|get_unread_count }}
+{% endif %}
