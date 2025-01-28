@@ -45,8 +45,12 @@ Announcements
             </h3>
           </div>
           <div class="col-1">
-            <div class="float-right" style="position: relative; top: 1px; right: 1px;">
-              <a id="id_has_read" type="button" href="#"><i class="far fa-square"></i></a>
+            <div id="id_is_read_{{ announcement.pk }}" class="float-right" style="position: relative; top: 1px; right: 1px;">
+              {% if not current_user in announcement.viewed_by.all %}
+                <a title="Mark as read" type="button" href="#"><i class="far fa-circle"></i></a>
+              {% else %}
+                <i title="Marked as read" style="color: green; " class="fa fa-check"></i>
+              {% endif %}
             </div>
           </div>
         </div>
@@ -106,7 +110,6 @@ Announcements
   </div>
 {% endif %}
 <script>
-  var current_user = '{{ current_user|safe }}';
   var selections = {{ selections|safe }};
   selections['categories']['available'] = new Set(selections['categories']['full_list'])
   selections['categories']['selected'] = new Set()
@@ -213,21 +216,21 @@ Announcements
 
   $(document).ready(function() {
     setUpSelections('categories')
-
-    $('#id_has_read').click(function (e) {
+    $("[id^=id_is_read_]").click(function (e) {
+      e.preventDefault();
+      var id = e.currentTarget.id.split('_').pop()
+      $('#id_is_read_' + id).html(
+        '<i title="Marked as read" style="color: green; " class="fa fa-check"></i>'
+      );
       $.ajax({
         headers: { 'X-CSRFToken': getCookie('csrftoken') },
         type: "POST",
-        url: "{% url 'announcement-read' pk=e.target.value}",
+        url: "{% url 'announcement-read' %}",
         data: {
-          user: current_user,
+          id: id
         },
-        success: function (json) {
-          $('#id_has_read').html(
-            `
-            <a id="id_has_read" type="button" href="#"><i class="fas fa-check-square"></i></a>
-            `
-          );
+        success: function (data) {
+          $('#id_unread_count').text(data)
         }
       });
     })

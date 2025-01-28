@@ -1,8 +1,8 @@
 import json
 from django.contrib import messages
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
-from django.views.generic import ListView, UpdateView, DeleteView, FormView
+from django.views.generic import ListView, UpdateView, DeleteView, FormView, View
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 
 from coldfront.plugins.announcements.models import Announcement, AnnouncementCategoryChoice, AnnouncementMailingListChoice, AnnouncementStatusChoice
@@ -28,7 +28,7 @@ class AnnouncementListView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['current_user'] = self.request.user.username
+        context['current_user'] = self.request.user
         context['selections'] = json.dumps({
             'categories': {
                 'full_list': list(AnnouncementCategoryChoice.objects.all().values_list('name', flat=True)),
@@ -120,3 +120,15 @@ class AnnouncementDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView
 
         if self.request.user.is_superuser:
             return True
+
+
+class AnnouncementReadView(LoginRequiredMixin, UserPassesTestMixin, View):
+    def test_func(self):
+        if self.request.user.is_superuser:
+            return True
+
+    def post(self, request, *args, **kwargs):
+        announcement_obj = Announcement.objects.get(pk=request.POST.get('id'))
+        announcement_obj.viewed_by.add(request.user)
+
+        return render(request, 'announcements/navbar_announcement_unread.html', {'user': self.request.user}) 

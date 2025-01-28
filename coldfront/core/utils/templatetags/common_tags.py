@@ -1,3 +1,5 @@
+import json
+
 from django import template
 from django.conf import settings
 from django.utils.safestring import mark_safe
@@ -55,6 +57,8 @@ def get_value_from_dict(dict_data, key):
     usage example {{ your_dict|get_value_from_dict:your_key }}
     """
     if key:
+        if type(dict_data) == str:
+            dict_data = json.loads(dict_data)
         return dict_data.get(key)
 
 
