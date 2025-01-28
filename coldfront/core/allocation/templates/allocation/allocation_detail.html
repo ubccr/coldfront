@@ -337,6 +337,7 @@ Allocation Detail
 </div>
 
 <!-- Start Admin Messages -->
+
 <div class="card mb-3">
   <div class="card-header">
     <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Notifications</h3>
@@ -346,16 +347,28 @@ Allocation Detail
         <a class="btn btn-success" href="{% url 'allocation-note-add' allocation.pk %}" role="button">
           <i class="fas fa-plus" aria-hidden="true"></i> Add Notification
         </a>
+        <a class="btn btn-info" href="{% url 'notes-download' project.id %}" role="button"><i class="fas fa-plus" aria-hidden="true"></i> Export to CSV</a>
       {% endif %}
     </div>
   </div>
-  <div class="card-body">
-    {% if notes %}
+  <br>
+<div class="bd-example">
+  <nav>
+    <div class="nav nav-tabs mb-3" id="nav-tab" role="tablist">
+      <button class="nav-link active" id="nav-home-tab" data-bs-toggle="tab" data-bs-target="#nav-home" type="button" role="tab" aria-controls="nav-home" aria-selected="false" fdprocessedid="d6nz6" tabindex="-1">All</button>
+      {% for note_tag in note_tags %}
+      <button class="nav-link" id="{{ note_tag }}" data-bs-toggle="tab" data-bs-target="#{{ note_tag }}" type="button" role="tab" aria-controls="{{ note_tag }}" aria-selected="false" tabindex="-1">{{ note_tag }}</button>
+      {% endfor %}
+    </div>
+  </nav>
+  <div class="tab-content" id="nav-tabContent">
+    <div class="tab-pane fade active show" id="nav-home" role="tabpanel" aria-labelledby="nav-home-tab" tabindex="0">
       <div class="table-responsive">
-        <table class="table table-hover">
+        <table class="table table-hover" table id="notes_table">
           <thead>
             <tr>
               <th scope="col">Note</th>
+              <th scope="col">Tag</th>
               <th scope="col">Administrator</th>
               <th scope="col">Last Modified</th>
             </tr>
@@ -364,7 +377,8 @@ Allocation Detail
             {% for note in notes %}
               {% if not note.is_private or request.user.is_superuser %}
                 <tr>
-                  <td>{{ note.note }}</td>
+                  <td>{{ note.message }}</td>
+                  <td>{{ note.tags }}</td>
                   <td>{{ note.author.first_name }} {{ note.author.last_name }}</td>
                   <td>{{ note.modified }}</td>
                 </tr>
@@ -372,14 +386,42 @@ Allocation Detail
             {% endfor %}
           </tbody>
         </table>
-      </div>
-    {% else %}
-      <div class="alert alert-info" role="alert">
-        <i class="fa fa-info-circle" aria-hidden="true"></i> There are no notes from system administrators.
-      </div>
-    {% endif %}
+      </div>    </div>
+    {% for note_tag in note_tags %}
+      <div class="tab-pane fade" id="a" role="tabpanel" aria-labelledby="a" tabindex="0">
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th scope="col">Note</th>
+                <th scope="col">Tag</th>
+                <th scope="col">Administrator</th>
+                <th scope="col">Last Modified</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for note in notes %}
+                {% if not note.is_private or request.user.is_superuser %}
+                  <tr>
+                    <td>{{ note.message }}</td>
+                    <td>{{ note.tags }}</td>
+                    <td>{{ note.author.first_name }} {{ note.author.last_name }}</td>
+                    <td>{{ note.modified }}</td>
+                  </tr>
+                {% endif %}
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>    </div>
+        {% endfor %}
+
   </div>
 </div>
+</div>
+
+
+
+
 
 <script>
   $(document).ready(function () {
@@ -396,6 +438,13 @@ Allocation Detail
       }]
     });
     $('#allocationuser_table').DataTable({
+      'aoColumnDefs': [{
+        'bSortable': false,
+        'aTargets': ['nosort']
+      }]
+    });
+
+  $('#notes_table').DataTable({
       'aoColumnDefs': [{
         'bSortable': false,
         'aTargets': ['nosort']
