@@ -5,16 +5,6 @@ from coldfront.plugins.qumulo.utils.qumulo_api import QumuloAPI
 
 @patch("coldfront.plugins.qumulo.utils.qumulo_api.RestClient")
 class CreateProtocol(TestCase):
-    def test_rejects_when_missing_protocol(self, mock_RestClient: MagicMock):
-        qumulo_instance = QumuloAPI()
-
-        with self.assertRaises(ValueError):
-            qumulo_instance.create_protocol(
-                protocol=None,
-                export_path="/foo",
-                fs_path="/bar",
-                name="baz",
-            )
 
     def test_rejects_when_incorrect_protocol(self, mock_RestClient: MagicMock):
         qumulo_instance = QumuloAPI()

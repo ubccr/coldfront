@@ -6,29 +6,6 @@ from qumulo.lib.request import RequestError
 
 @patch("coldfront.plugins.qumulo.utils.qumulo_api.RestClient")
 class UpdateAllocation(TestCase):
-    def test_rejects_when_missing_protocol(self, mock_RestClient: MagicMock):
-        qumulo_instance = QumuloAPI()
-
-        with self.assertRaises(ValueError):
-            qumulo_instance.update_allocation(
-                protocols=None,
-                export_path="/foo",
-                fs_path="/bar",
-                name="bar",
-                limit_in_bytes=10**9,
-            )
-
-    def test_rejects_when_protocols_is_empty(self, mock_RestClient: MagicMock):
-        qumulo_instance = QumuloAPI()
-
-        with self.assertRaises(ValueError):
-            qumulo_instance.update_allocation(
-                protocols=[],
-                export_path="/foo",
-                fs_path="/bar",
-                name="bar",
-                limit_in_bytes=10**9,
-            )
 
     def test_rejects_when_incorrect_protocol(self, mock_RestClient: MagicMock):
         qumulo_instance = QumuloAPI()

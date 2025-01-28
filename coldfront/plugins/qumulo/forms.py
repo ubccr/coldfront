@@ -86,7 +86,7 @@ class AllocationForm(forms.Form):
         widget=forms.CheckboxSelectMultiple(),
         choices=PROTOCOL_OPTIONS,
         label="Protocols",
-        help_text="Choose one or more protocols from the above list",
+        help_text="Choose protocols from the above list (or leave blank to configure no protocol)",
         initial=["smb"],
         required=False,
     )

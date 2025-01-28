@@ -203,15 +203,12 @@ class QumuloAPI:
 
     def update_allocation(
         self,
-        protocols: list[str],
+        protocols: list[str] = [],
         export_path: str = None,
         fs_path: str = None,
         name: str = None,
         limit_in_bytes: int = 0,
     ):
-        if not protocols:
-            raise ValueError("protocols should be defined.")
-
         self.validate_protocols(protocols=protocols)
 
         for protocol in self.valid_protocols:
