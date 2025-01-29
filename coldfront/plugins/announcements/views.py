@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
-from django.views.generic import ListView, UpdateView, DeleteView, FormView, View
+from django.views.generic import ListView, UpdateView, DeleteView, FormView, View, TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 
 from coldfront.plugins.announcements.models import Announcement, AnnouncementCategoryChoice, AnnouncementMailingListChoice, AnnouncementStatusChoice
@@ -102,15 +102,35 @@ class AnnouncementCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
 
 class AnnouncementUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
-    model=Announcement
-    context_object_name = "announcement"
+    model = Announcement
+    fields = ['title', 'body', 'categories', 'mailing_lists', 'details_url']
+    template_name_suffix='_update_form'
 
     def test_func(self):
-        pk = self.kwargs.get('pk')
-        announcement_obj = get_object_or_404(Announcement, pk=pk)
-
         if self.request.user.is_superuser:
             return True
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['selections'] = json.dumps({
+            'categories': {
+                'full_list': list(AnnouncementCategoryChoice.objects.all().values_list('name', flat=True)),
+                'available': [],
+                'selected': [],
+                'name': 'categories'
+            },
+            'mailing_lists': {
+                'full_list': list(AnnouncementMailingListChoice.objects.all().values_list('name', flat=True)),
+                'available': [],
+                'selected': [],
+                'name': 'mailing_lists'
+            },
+        })
+
+        return context
+    
+    def get_success_url(self):
+        return reverse('announcement-list')
 
 
 class AnnouncementDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):

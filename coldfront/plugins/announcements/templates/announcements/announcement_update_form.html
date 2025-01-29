@@ -1,0 +1,132 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load crispy_forms_filters %}
+{% load static %}
+{% load i18n %}
+{% load common_tags %}
+
+{% block title %}
+Create Announcement
+{% endblock %}
+
+
+{% block content %}
+<h2>Create Announcement</h2>
+<hr>
+
+<form method="post">
+  {% csrf_token %}
+  {{ form.title|as_crispy_field }}
+  {{ form.body|as_crispy_field }}
+  {{ form.details_url|as_crispy_field }}
+  {{ form.categories|as_crispy_field }}
+  {{ form.mailing_lists|as_crispy_field }}
+
+  {% include 'announcements/selection.html' with label='Categories' selection=selections|get_value_from_dict:'categories' %}
+  {% include 'announcements/selection.html' with label='Mailing Lists' selection=selections|get_value_from_dict:'mailing_lists' %}
+
+  <hr>
+  <input class="btn btn-primary" type="submit" value="Update" />
+  <a class="btn btn-secondary" href="{% url 'announcement-list' %}" role="button">Cancel</a>
+</form>
+
+<script>
+  var selections = {{ selections|safe }};
+  selections['categories']['available'] = new Set(selections['categories']['full_list'])
+  selections['categories']['selected'] = new Set()
+
+  selections['mailing_lists']['available'] = new Set(selections['mailing_lists']['full_list'])
+  selections['mailing_lists']['selected'] = new Set()
+
+  function createSearchResult(value, selection) {
+    const current_filter = $(`#id_${selection}_filter`).val();
+    if (current_filter.length && !value.toLowerCase().startsWith(current_filter.toLowerCase())) {
+      return;
+    }
+
+    $(`#${selection}_search_results`).append(
+      `
+      <div id="search_result_${value.replaceAll(' ', '_')}" class="d-inline">
+        <a href="#", title="Add tag">
+          <span class="badge badge-pill badge-secondary"><i class="fas fa-plus"></i> ${value}</span>
+        </a>
+      </div>
+      `
+    )
+    selections[selection]['available'].add(value)
+    $('#search_result_' + value.replaceAll(' ', '_')).click(function(e) {
+      e.preventDefault();
+      createSelectedResult(value, selection);
+      selections[selection]['available'].delete(value)
+      console.log(`select[name=${selection}] option[text=${value}]`)
+      console.log($(`select[name=${selection}] option[text='${value}']`))
+      $(`select[name=${selection}] option[text=${value}]`).attr('selected', true);
+      // $(`#id_${selection}_${selections[selection]['full_list'].indexOf(value)}`).attr('checked', true);
+      $(this).remove();
+    })
+  }
+
+  function createSelectedResult(value, selection) {
+    $(`#selected_${selection}`).append(
+      `
+      <div id="selected_result_${value.replaceAll(' ', '_')}" class="d-inline">
+        <a href="#", title="Add tag">
+          <span class="badge badge-pill badge-primary"><i class="fas fa-minus"></i> ${value}</span>
+        </a>
+      </div>
+      `
+    )
+    selections[selection]['selected'].add(value)
+    $('#selected_result_' + value.replaceAll(' ', '_')).click(function(e) {
+      e.preventDefault();
+      createSearchResult(value, selection);
+      selections[selection]['selected'].delete(value);
+      $(`select[name=${selection}] option[text=${value}]`).attr('selected', false);
+      // $(`#id_${selection}_${selections[selection]['full_list'].indexOf(value)}`).attr('checked', false);
+      $(this).remove();
+    })
+  }
+
+  function setUpSelections(selection) {
+    // $('#div_id_' + selection).hide()
+    $(`select[name=${selection}] option`).each(function() {
+      if (this.selected) {
+        createSelectedResult(this.text, selection);
+      } else {
+        createSearchResult(this.text, selection);
+      }
+    })
+
+    $(`#id_${selection}_filter`).keyup(function(e) {
+      var full_list = selections[selection]['full_list']
+      var value = e.target.value;
+
+      var matches = new Set();
+      full_list.forEach(element => {
+        if (element.toLowerCase().startsWith(value.toLowerCase())) {
+          if (!selections[selection]['selected'].has(element)){
+            matches.add(element)
+          }
+        }
+      });
+
+      var to_remove = selections[selection]['available'].difference(matches);
+      to_remove.forEach(element => {
+        $("#search_result_" + element.replaceAll(' ', '_')).remove();
+      });
+
+      var to_add = matches.difference(selections[selection]['available']);
+      to_add.forEach(element => {
+        createSearchResult(element, selection);
+      });
+
+      selections[selection]['available'] = matches;
+    })
+  }
+
+  $(document).ready(function() {
+    setUpSelections('categories')
+    setUpSelections('mailing_lists')
+  })
+</script>
+{% endblock %}
