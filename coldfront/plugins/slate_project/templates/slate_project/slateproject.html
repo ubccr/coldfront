@@ -101,10 +101,6 @@ Request New Allocation
 <script>
   var total_pi_allocated_quantity = {{ total_pi_allocated_quantity|safe }}
   var pi_allocated_quantity_threshold = {{ pi_allocated_quantity_threshold|safe }}
-  var default_na = ['data_generation', 'data_protection'] 
-  var mid_range = ['data_computational_lifetime', 'expected_project_lifetime']
-  var beyond_120 = ['account_number']
-
   $("#navbar-main > ul > li.active").removeClass("active");
   $("#navbar-project-menu").addClass("active");
 
@@ -169,22 +165,6 @@ Request New Allocation
       $("#div_amount_warning").hide();
     }
 
-    if (total_pi_allocated_quantity > pi_allocated_quantity_threshold / 2 ) {
-      mid_range.forEach(element => {
-        $('#id_' + element).val('');
-      });
-      default_na.forEach(element => {
-        $('#id_' + element).val('');
-      });
-    } else {
-      mid_range.forEach(element => {
-        $('#div_id_' + element).hide();
-      });
-      default_na.forEach(element => {
-        $('#div_id_' + element).hide('');
-      });
-    }
-
     $("#id_storage_space").change(function(e) {
       var current_value = total_pi_allocated_quantity + parseInt(e.target.value)
       if (current_value > pi_allocated_quantity_threshold) {
@@ -195,34 +175,6 @@ Request New Allocation
         $("#div_id_account_number").hide();
         $("#id_account_number").val('00-000-00');
         $("#div_amount_warning").hide();
-      }
-
-      if (current_value > pi_allocated_quantity_threshold / 2 ) {
-        mid_range.forEach(element => {
-          $('#id_' + element).val('');
-        });
-        mid_range.forEach(element => {
-          $('#div_id_' + element).show();
-        });
-        default_na.forEach(element => {
-          $('#id_' + element).val('');
-        });
-        default_na.forEach(element => {
-          $('#div_id_' + element).show();
-        });
-      } else {
-        mid_range.forEach(element => {
-          $('#id_' + element).val('<1 year');
-        });
-        mid_range.forEach(element => {
-          $('#div_id_' + element).hide();
-        });
-        default_na.forEach(element => {
-          $('#id_' + element).val('N/A');
-        });
-        default_na.forEach(element => {
-          $('#div_id_' + element).hide();
-        });
       }
     })
 
