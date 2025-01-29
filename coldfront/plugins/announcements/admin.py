@@ -12,6 +12,7 @@ class AnnouncementAdmin(SimpleHistoryAdmin):
     list_display = ('title', 'category_list', 'status', 'created', 'modified', )
     search_fields = ('title', 'categories', )
     list_filter = ('categories', 'status', )
+    filter_horizontal = ('categories', 'viewed_by', 'mailing_lists')
 
     def category_list(self, obj):
         return ', '.join([category.name for category in obj.categories.all()])
