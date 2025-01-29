@@ -151,6 +151,8 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         # Can the user update the project?
         if self.request.user.is_superuser:
             context['is_allowed_to_update_project'] = True
+        elif self.request.user.has_perm('project.change_project'):
+            context['is_allowed_to_update_project'] = True
         elif self.object.projectuser_set.filter(user=self.request.user).exists():
             project_user = self.object.projectuser_set.get(
                 user=self.request.user)
@@ -695,6 +697,9 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
             return True
 
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+
+        if self.request.user.has_perm('project.change_project'):
+            return True
 
         if project_obj.pi == self.request.user:
             return True
