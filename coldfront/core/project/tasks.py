@@ -2,9 +2,10 @@ import datetime
 import logging
 
 from coldfront.core.project.models import (Project, ProjectStatusChoice)
-from coldfront.core.project.utils import get_project_user_emails
+from coldfront.core.project.utils import get_project_user_emails, check_if_pi_eligible
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.mail import send_email_template
+from coldfront.plugins.ldap_user_info.utils import get_users_info
 
 logger = logging.getLogger(__name__)
 
@@ -97,3 +98,13 @@ def send_expiry_emails():
                 f'Project {project_obj.title} expires today, email sent to project users '
                 f'(project pk={project_obj.pk})'
             )
+
+
+def check_current_pi_eligibilities():
+    project_pis = set(Project.objects.filter(status__name='Active').values_list('pi__username', flat=True))
+    project_pi_memberships = get_users_info(project_pis, ['memberOf'])
+    logger.info('Checking PI eligibilities...')
+    for project_pi, memberships in project_pi_memberships.items():
+        if not check_if_pi_eligible(project_pi, memberships.get('memberOf')):
+            logger.warning(f'PI {project_pi} is no longer eligible to be a PI')
+    logger.info('Done checking PI eligibilities')
