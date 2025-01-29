@@ -1269,7 +1269,7 @@ class AllocationNoteCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateVi
         group_exists = check_if_groups_in_review_groups(
             allocation_obj.get_parent_resource.review_groups.all(),
             self.request.user.groups.all(),
-            'add_allocationadminnote'
+            'add_allocationusernote'
         )
         if group_exists:
             return True
