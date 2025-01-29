@@ -43,11 +43,8 @@ class Command(BaseCommand):
         for choice in ('Active', 'Error', 'Removed', ):
             AllocationUserStatusChoice.objects.get_or_create(name=choice)
 
-        for name, attribute_type, is_private in (
-            ('FairShare', 'Float', False),
-            ('NormShares', 'Float', False),
-            ('EffectvUsage', 'Float', False),
-            ('RawUsage', 'Int', False),
+        for name, attribute_type, is_private, is_changeable in (
+            ('slurm_specs', 'Attribute Expanded Text', False, True),
         ):
             AllocationUserAttributeType.objects.update_or_create(
                 name=name,
@@ -92,7 +89,7 @@ class Command(BaseCommand):
             # ('Purchase Order Number', 'Int', False, True),
             # ('send_expiry_email_on_date', 'Date', False, True),
             ('slurm_account_name', 'Text', False, False),
-            # ('slurm_specs', 'Attribute Expanded Text', False, True),
+            ('slurm_specs', 'Attribute Expanded Text', False, True),
             # ('slurm_specs_attriblist', 'Text', False, True),
             # ('slurm_user_specs', 'Attribute Expanded Text', False, True),
             # ('slurm_user_specs_attriblist', 'Text', False, True),

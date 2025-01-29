@@ -10,6 +10,7 @@ from django.db import models
 from django.db.models import Q
 from django.utils.html import mark_safe
 from django.utils.module_loading import import_string
+from django.contrib.auth import get_user_model
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 
@@ -17,7 +18,8 @@ from coldfront.config.env import ENV
 from coldfront.core import attribute_expansion
 from coldfront.core.resource.models import Resource
 from coldfront.core.utils.common import import_from_settings
-from coldfront.core.project.models import Project, ProjectPermission
+from coldfront.core.project.models import Project, ProjectPermission, ProjectUser
+
 
 if ENV.bool('PLUGIN_IFX', default=False):
     from coldfront.core.utils.fasrc import get_resource_rate
@@ -62,6 +64,7 @@ class AllocationStatusChoice(TimeStampedModel):
 
     def natural_key(self):
         return (self.name,)
+
 
 class Allocation(TimeStampedModel):
     """ An allocation provides users access to a resource.
@@ -144,13 +147,27 @@ class Allocation(TimeStampedModel):
         if requires_payment == None:
             return self.get_parent_resource.requires_payment
 
+    def get_slurm_spec_value(self, name):
+        slurm_spec_value = None
+        slurm_specs = self.get_attribute('slurm_specs')
+        if slurm_specs is not None:
+            for slurm_spec in self.get_attribute('slurm_specs').split(','):
+                if name in slurm_spec:
+                    slurm_spec_value = slurm_spec.replace(f'{name}=', '')
+            return slurm_spec_value
+        return ""
+
+    @property
+    def rawshares(self):
+        return self.get_slurm_spec_value('RawShares')
+
     @property
     def fairshare(self):
-        return self.get_attribute('FairShare')
+        return self.get_slurm_spec_value('FairShare')
 
     @property
     def normshares(self):
-        return self.get_attribute('NormShares')
+        return self.get_slurm_spec_value('NormShares')
 
     @property
     def effectvusage(self):
@@ -158,7 +175,7 @@ class Allocation(TimeStampedModel):
 
     @property
     def rawusage(self):
-        return self.get_attribute('RawUsage')
+        return self.get_slurm_spec_value('RawUsage')
 
     @property
     def expense_code(self):
@@ -377,8 +394,30 @@ class Allocation(TimeStampedModel):
         # Fallback
         return self.resources.first()
 
-    def get_attribute(self, name, expand=True, typed=True,
-        extra_allocations=[]):
+    @property
+    def get_cluster(self):
+        try:
+            return self.resources.get(resource_type__name='Cluster')
+        except Resource.DoesNotExist:
+            logger.error(f'No cluster resource found for partition {self.project}')
+            return None
+
+    @property
+    def is_cluster_allocation(self):
+        cluster_found = False
+        for resource in self.get_resources_as_list:
+            if 'Cluster' in resource.resource_type.name:
+                cluster_found = True
+        return cluster_found
+
+    @property
+    def get_non_project_users(self):
+        if 'Cluster' not in self.get_parent_resource.resource_type.name:
+            return []
+        project_user_list = [project_user.user for project_user in self.project.projectuser_set.filter(status__name='Active')]
+        return self.allocationuser_set.filter(status__name='Active').exclude(user__in=project_user_list)
+
+    def get_attribute(self, name, expand=True, typed=True, extra_allocations=[]):
         """
         Params:
             name (str): name of the allocation attribute type
@@ -399,6 +438,13 @@ class Allocation(TimeStampedModel):
             if typed:
                 return attr.typed_value()
             return attr.value
+        return None
+
+    def get_full_attribute(self, name):
+        attr = self.allocationattribute_set.filter(
+            allocation_attribute_type__name=name).first()
+        if attr:
+            return attr
         return None
 
     def set_usage(self, name, value):
@@ -447,6 +493,20 @@ class Allocation(TimeStampedModel):
             return [a.typed_value() for a in attr]
         return [a.value for a in attr]
 
+    def update_slurm_spec_value(self, key, value):
+        try:
+            slurm_spec_attribute = self.get_full_attribute('slurm_specs')
+            for slurm_spec in self.get_attribute('slurm_specs').split(','):
+                if key in slurm_spec:
+                    old_slurm_spec_value = slurm_spec.replace(f'{key}=', '')
+                    slurm_spec_attribute.value = self.get_attribute('slurm_specs').replace(f'{key}={old_slurm_spec_value}', f'{key}={value}')
+                    slurm_spec_attribute.save()
+                    return True
+            return f'Error updating Allocation Slurm Spec value {key}={value} for {self.user.username} at {self.allocation}: Cant find key={key}'
+        except Exception as e:
+            error_message = f'Error updating Allocation Slurm Spec value {key}={value} for {self.user.username} at {self.allocation} : {str(e)}'
+            logger.exception(error_message)
+            return error_message
 
     def get_attribute_set(self, user):
         """
@@ -499,11 +559,19 @@ class Allocation(TimeStampedModel):
         perms = self.user_permissions(user)
         return perm in perms
 
+    def user_can_manage_allocation(self, user):
+        is_manager = False
+        for resource in self.resources.all():
+            if resource.user_can_manage_resource(user):
+                is_manager = True
+        return is_manager
+
     def __str__(self):
         tmp = self.get_parent_resource
         if tmp is None:
             return '%s' % (self.project.pi)
         return '%s (%s)' % (self.get_parent_resource.name, self.project.pi)
+
 
 class AllocationAdminNote(TimeStampedModel):
     """ An allocation admin note is a note that an admin makes on an allocation.
@@ -520,6 +588,7 @@ class AllocationAdminNote(TimeStampedModel):
 
     def __str__(self):
         return self.note
+
 
 class AllocationUserNote(TimeStampedModel):
     """ An allocation user note is a note that an user makes on an allocation.
@@ -538,6 +607,7 @@ class AllocationUserNote(TimeStampedModel):
 
     def __str__(self):
         return self.note
+
 
 class AttributeType(TimeStampedModel):
     """ An attribute type indicates the data type of the attribute. Examples include Date, Float, Int, Text, and Yes/No.
@@ -703,6 +773,7 @@ class AllocationAttribute(TimeStampedModel):
             allocations = allocs)
         return expanded
 
+
 class AllocationAttributeUsage(TimeStampedModel):
     """ Allocation attribute usage indicates the usage of an allocation attribute.
 
@@ -718,6 +789,7 @@ class AllocationAttributeUsage(TimeStampedModel):
 
     def __str__(self):
         return '{}: {}'.format(self.allocation_attribute.allocation_attribute_type.name, self.value)
+
 
 class AllocationUserStatusChoice(TimeStampedModel):
     """ An allocation user status choice indicates the status of an allocation user. Examples include Active, Error, and Removed.
@@ -741,6 +813,7 @@ class AllocationUserStatusChoice(TimeStampedModel):
     def natural_key(self):
         return (self.name,)
 
+
 class AllocationUser(TimeStampedModel):
     """ An allocation user represents a user on the allocation.
 
@@ -756,7 +829,6 @@ class AllocationUser(TimeStampedModel):
     status = models.ForeignKey(AllocationUserStatusChoice, on_delete=models.CASCADE,
                                verbose_name='Allocation User Status')
     usage_bytes = models.BigIntegerField(blank=True, null=True)
-    # usage = models.DecimalField(max_digits=6, decimal_places=2, default=0)
     usage = models.FloatField(default = 0)
     unit = models.TextField(max_length=20, default='N/A Unit')
 
@@ -788,21 +860,72 @@ class AllocationUser(TimeStampedModel):
             return attr.value
         return None
 
+    def get_slurm_spec_value(self, name):
+        slurm_spec_value = None
+        slurm_specs = self.get_attribute('slurm_specs')
+        if slurm_specs is not None:
+            for slurm_spec in self.get_attribute('slurm_specs').split(','):
+                if name in slurm_spec:
+                    slurm_spec_value = slurm_spec.replace(f'{name}=', '')
+            return slurm_spec_value
+        return ""
+
+    def update_slurm_spec_value(self, key, value):
+        try:
+            slurm_spec_attribute = self.allocationuserattribute_set.filter(allocationuser_attribute_type__name='slurm_specs').first()
+            if slurm_spec_attribute is None: # AllocationUser does not have slurm_specs set up for this allocation (probably non project user)
+                logger.warning('AllocationUser does not have slurm_specs set up for this allocation, creating default one (RawShares=0,NormShares=0,RawUsage=0,FairShare=0)')
+                attribute_type = AllocationUserAttributeType.objects.get(name='slurm_specs')
+                slurm_spec_attribute = AllocationUserAttribute(
+                    allocationuser_attribute_type=attribute_type,
+                    allocationuser=self,
+                    value='RawShares=0,NormShares=0,RawUsage=0,FairShare=0'
+                )
+                slurm_spec_attribute.save()
+            old_slurm_spec_value = self.get_slurm_spec_value(key)
+            if old_slurm_spec_value in [""]:
+                return f'Error updating AllocationUser Slurm Spec value {key}={value} for {self.user.username} at {self.allocation}: Cant find key={key}'
+            slurm_spec_attribute.value = self.get_attribute('slurm_specs').replace(f'{key}={old_slurm_spec_value}', f'{key}={value}')
+            slurm_spec_attribute.save()
+            return True
+
+
+        except Exception as e:
+            error_message = f'Error updating AllocationUser Slurm Spec value {key}={value} for {self.user.username} at {self.allocation} : {str(e)}'
+            logger.exception(error_message)
+            return error_message
+
+    @property
+    def rawshares(self):
+        return self.get_slurm_spec_value('RawShares')
+
     @property
     def fairshare(self):
-        return self.get_attribute('FairShare')
+        return self.get_slurm_spec_value('FairShare')
 
     @property
     def normshares(self):
-        return self.get_attribute('NormShares')
+        return self.get_slurm_spec_value('NormShares')
 
     @property
     def effectvusage(self):
-        return self.get_attribute('EffectvUsage')
+        return self.get_slurm_spec_value('EffectvUsage')
 
     @property
     def rawusage(self):
-        return self.get_attribute('RawUsage')
+        return self.get_slurm_spec_value('RawUsage')
+
+    @property
+    def user_usage(self):
+        if self.unit == "CPU Hours":
+            return self.usage
+        return self.usage_bytes
+
+    @property
+    def allocation_usage(self):
+        if self.unit == "CPU Hours":
+            return self.allocation.size
+        return self.allocation.usage_exact
 
 
 class AllocationUserAttributeType(TimeStampedModel):

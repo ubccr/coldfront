@@ -202,10 +202,6 @@ class Resource(TimeStampedModel):
 
         return ResourceAttribute.objects.get(resource=self, resource_attribute_type__attribute='Status').value
 
-    # @property
-    # def status(self):
-    #     return ResourceAttribute.objects.get(resource=self, resource_attribute_type__attribute='Status').value
-
     @property
     def expiry(self):
         return self.get_attribute('WarrantyExpirationDate')
@@ -269,6 +265,9 @@ class Resource(TimeStampedModel):
     def quantity_label(self):
         return self.get_attribute('quantity_label')
 
+    def user_can_manage_resource(self, user):
+        return user in self.allowed_users.all() or user.is_superuser
+
     def get_ondemand_status(self):
         """
         Returns:
@@ -286,7 +285,6 @@ class Resource(TimeStampedModel):
 
     def natural_key(self):
         return [self.name]
-
 
 class ResourceAttribute(TimeStampedModel):
     """ A resource attribute class links a resource attribute type and a resource.

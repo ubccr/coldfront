@@ -1,0 +1,64 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Project User Detail
+{% endblock %}
+
+
+{% block content %}
+<h2>Edit User for Allocation: {{ allocation.project }}</h2>
+<td>
+  {% if allocation.get_resources_as_list %}
+    {% for resource in allocation.get_resources_as_list %}
+      {{ resource }}
+    {% endfor %}
+  {% else %}
+    None
+  {% endif %}
+</td>
+<hr>
+
+<form action="{% url 'allocation-edit-user' allocation.pk userid %}" method="post">
+  {% csrf_token %}
+  <div class="card">
+    <div class="card-header"><i class="fas fa-user" aria-hidden="true"></i> User Detail</div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table">
+          <tr>
+            <th scope="row">Username:</th>
+            <td>{{user.user.username}}</td>
+          </tr>
+          <tr>
+            <th scope="row">First Name:</th>
+            <td>{{user.user.first_name}}</td>
+          </tr>
+          <tr>
+            <th scope="row">Last Name:</th>
+            <td>{{user.user.last_name}}</td>
+          </tr>
+          <tr>
+            <th scope="row">Email:</th>
+            <td>{{user.user.email}}</td>
+          </tr>
+          <tr>
+            <th scope="row">Status:</th>
+            <td>{{user.status.name}}</td>
+          </tr>
+          <tr>
+            <th scope="row">FairShare:</th>
+            <td>{{formset.fairshare}}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+    <div class="card-footer">
+      <button type="submit" class="btn btn-primary">Update</button>
+      <a class="btn btn-secondary" href="{% url 'allocation-detail' allocation.pk %}" role="button">Back to Allocation</a>
+    </div>
+  </div>
+</form>
+{% endblock%}

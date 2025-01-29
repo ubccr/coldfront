@@ -4,8 +4,9 @@ import struct
 import subprocess
 import csv
 from io import StringIO
-from coldfront.core.utils.fasrc import get_quarter_start_end
+
 from coldfront.core.utils.common import import_from_settings
+from coldfront.core.utils.fasrc import get_quarter_start_end
 
 SLURM_CLUSTER_ATTRIBUTE_NAME = import_from_settings(
     'SLURM_CLUSTER_ATTRIBUTE_NAME', 'slurm_cluster')
@@ -19,24 +20,52 @@ SLURM_SACCTMGR_PATH = import_from_settings(
     'SLURM_SACCTMGR_PATH', '/usr/bin/sacctmgr')
 SLURM_SSHARE_PATH = import_from_settings('SLURM_SSHARE_PATH', '/usr/bin/sshare')
 SLURM_SREPORT_PATH = import_from_settings('SLURM_SREPORT_PATH', '/usr/bin/sreport')
+SLURM_SCONTROL_PATH = import_from_settings('SLURM_SCONTROL_PATH', '/usr/bin/scontrol')
 
 SLURM_CMD_PULL_FAIRSHARE = SLURM_SSHARE_PATH + ' -a -o "Cluster,Account%25,User%25,RawShares,NormShares,RawUsage,EffectvUsage,FairShare"'
 SLURM_CMD_PULL_SREPORT = SLURM_SREPORT_PATH + '-T gres/gpu,cpu cluster accountutilization format="Cluster,Account%25,Login%25,TRESname,Used" start={}T00:00:00 end=now -t hours'
-SLURM_CMD_REMOVE_USER = SLURM_SACCTMGR_PATH + ' -Q -i delete user where name={} cluster={} account={}'
+SLURM_CMD_REMOVE_USER = SLURM_SACCTMGR_PATH + ' -Q -i delete user where name={} account={}'
 SLURM_CMD_REMOVE_QOS = SLURM_SACCTMGR_PATH + ' -Q -i modify user where name={} cluster={} account={} set {}'
+SLURM_CMD_EDIT_RAWSHARE= SLURM_SACCTMGR_PATH + ' -Q -i modify user set fairshare={} where name={} account={}'
+SLURM_CMD_EDIT_ACCOUNT_RAWSHARE= SLURM_SACCTMGR_PATH + ' -Q -i modify account set fairshare={} where name={}'
 SLURM_CMD_REMOVE_ACCOUNT = SLURM_SACCTMGR_PATH + ' -Q -i delete account where name={} cluster={}'
 SLURM_CMD_ADD_ACCOUNT = SLURM_SACCTMGR_PATH + ' -Q -i create account name={} cluster={}'
 SLURM_CMD_ADD_USER = SLURM_SACCTMGR_PATH + ' -Q -i create user name={} cluster={} account={}'
 SLURM_CMD_CHECK_ASSOCIATION = SLURM_SACCTMGR_PATH + ' list associations User={} Cluster={} Account={} Format=Cluster,Account,User,QOS -P'
 SLURM_CMD_BLOCK_ACCOUNT = SLURM_SACCTMGR_PATH + ' -Q -i modify account {} where Cluster={} set GrpSubmitJobs=0'
 SLURM_CMD_DUMP_CLUSTER = SLURM_SACCTMGR_PATH + ' dump {} file={}'
+SLURM_CMD_LIST_PARTITIONS = SLURM_SCONTROL_PATH + ' show partitions'
+
 
 logger = logging.getLogger(__name__)
+
 
 class SlurmError(Exception):
     pass
 
-def _run_slurm_cmd(cmd, noop=True):
+def slurm_list_partitions(noop=False):
+    def get_process_partition_item_value(partition_item):
+        item_values = partition_item.split('=')
+        if len(item_values) == 2: # Item follows format: Nodes=cpn01
+            return item_values[1]
+        # Item follows format: TRESBillingWeights=CPU=1.0,Mem=0.25G
+        item_name = f'{item_values[0]}='
+        partition_item_values = partition_item.replace(item_name, '')
+        return partition_item_values
+
+    logger.debug(f'  Pulling Partition data')
+    cmd = SLURM_CMD_LIST_PARTITIONS
+    partitions = _run_slurm_cmd(cmd, noop=noop)
+
+    partitions = partitions.decode('utf-8').split('\n\n')
+    partitions = [element.replace('\n ', '').replace('  ', ' ') for element in partitions]
+    partitions = [element.split(' ') for element in partitions]
+    partitions = [element for element in partitions if element != ['']]
+    partitions = [{item.split('=')[0]: get_process_partition_item_value(item) for item in fields} for fields in partitions]
+
+    return partitions
+
+def _run_slurm_cmd(cmd, noop=True, show_output=False):
     if noop:
         logger.warning('NOOP - Slurm cmd: %s', cmd)
         return
@@ -48,25 +77,25 @@ def _run_slurm_cmd(cmd, noop=True):
     except subprocess.CalledProcessError as e:
         if 'Nothing deleted' in str(e.stdout):
             # We tried to delete something that didn't exist. Don't throw error
-            logger.warning('Nothing to delete: %s', cmd)
+            logger.warning(f'Nothing to delete: {cmd}')
             return e.stdout
         if 'Nothing new added' in str(e.stdout):
             # We tried to add something that already exists. Don't throw error
-            logger.warning('Nothing new to add: %s', cmd)
+            logger.warning(f'Nothing new to add: {cmd}')
             return e.stdout
 
-        logger.error('Slurm command failed: %s', cmd)
+        logger.error(f'Slurm command {cmd} failed: {cmd}')
         err_msg = 'return_value={} stdout={} stderr={}'.format(e.returncode, e.stdout, e.stderr)
         raise SlurmError(err_msg)
-
-    logger.debug('Slurm cmd: %s', cmd)
-    logger.debug('Slurm cmd output: %s', result.stdout)
+    logger.debug(f' \x1b[33;20m Slurm cmd: \x1b[31;1m {cmd} \x1b[0m')
+    if show_output:
+        logger.debug(f' \x1b[33;20m Slurm cmd output: \x1b[31;1m {result.stdout} \x1b[0m')
 
     return result.stdout
 
-def slurm_remove_assoc(user, cluster, account, noop=False):
+def slurm_remove_assoc(user, account, noop=False):
     cmd = SLURM_CMD_REMOVE_USER.format(
-        shlex.quote(user), shlex.quote(cluster), shlex.quote(account)
+        shlex.quote(user), shlex.quote(account)
     )
     _run_slurm_cmd(cmd, noop=noop)
 
@@ -75,6 +104,21 @@ def slurm_remove_qos(user, cluster, account, qos, noop=False):
         shlex.quote(user), shlex.quote(cluster), shlex.quote(account), shlex.quote(qos)
     )
     _run_slurm_cmd(cmd, noop=noop)
+
+def slurm_update_raw_share(user,  account, raw_share, noop=False):
+    cmd = SLURM_CMD_EDIT_RAWSHARE.format(
+        shlex.quote(raw_share),
+        user,
+        account
+    )
+    return _run_slurm_cmd(cmd, noop=noop)
+
+def slurm_update_account_raw_share(account, raw_share, noop=False):
+    cmd = SLURM_CMD_EDIT_ACCOUNT_RAWSHARE.format(
+        shlex.quote(raw_share),
+        account
+    )
+    return _run_slurm_cmd(cmd, noop=noop)
 
 def slurm_remove_account(cluster, account, noop=False):
     cmd = SLURM_CMD_REMOVE_ACCOUNT.format(shlex.quote(account), shlex.quote(cluster))
@@ -118,7 +162,6 @@ def slurm_dump_cluster(cluster, fname, noop=False):
     cmd = SLURM_CMD_DUMP_CLUSTER.format(shlex.quote(cluster), shlex.quote(fname))
     _run_slurm_cmd(cmd, noop=noop)
 
-
 def convert_to_dict(input_list):
     keys = input_list[0]
     data = input_list[2:]
@@ -126,7 +169,6 @@ def convert_to_dict(input_list):
     for item in data:
         result.append(dict(zip(keys, item)))
     return result
-
 
 def slurm_fixed_width_lines_to_dict(line_iterable):
     """Take a list of fixed-width lines and convert them to dictionaries.
@@ -141,7 +183,6 @@ def slurm_fixed_width_lines_to_dict(line_iterable):
     # pair values with headers
     return convert_to_dict(line_iterable)
 
-
 def slurm_collect_usage(cluster=None, output_file=None):
     """collect usage for all accounts. Can specify a cluster if needed."""
     cluster_str = f' cluster {cluster}' if cluster else ''
@@ -155,16 +196,16 @@ def slurm_collect_usage(cluster=None, output_file=None):
     usage_data = slurm_fixed_width_lines_to_dict(usage_data)
     return usage_data
 
-
-def slurm_collect_fairshares(cluster=None, output_file=None):
+def slurm_collect_shares(cluster=None, output_file=None):
     """collect fairshares for all accounts. Can specify a cluster if needed."""
     cluster_str = f' -M {cluster}' if cluster else ''
     output_str = f' > {output_file}' if output_file else ''
     cmd = SLURM_CMD_PULL_FAIRSHARE + cluster_str + output_str
 
-    fairshare_data = _run_slurm_cmd(cmd, noop=False)
-    fairshare_data = fairshare_data.decode('utf-8').split('\n')
-    if "-----" not in fairshare_data[1]:
-        fairshare_data = fairshare_data[1:]
-    fairshare_data = slurm_fixed_width_lines_to_dict(fairshare_data)
-    return fairshare_data
+    logger.debug(f'  Pulling Share data for cluster {cluster}')
+    share_data = _run_slurm_cmd(cmd, noop=False)
+    share_data = share_data.decode('utf-8').split('\n')
+    if "-----" not in share_data[1]:
+        share_data = share_data[1:]
+    share_data = slurm_fixed_width_lines_to_dict(share_data)
+    return share_data

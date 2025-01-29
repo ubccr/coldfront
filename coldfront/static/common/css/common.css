@@ -88,6 +88,16 @@ body > main > div > div.card.border-primary > div.card-body > form > div.alert.a
 
 }
 
+.last_sync_users{
+    margin-left: 25px;
+}
+
+.allocation_users_legend{
+    text-align: right;
+    font-size: large;
+    margin-bottom: 25px;
+}
+
 /*
  * These were copied from django-hijack https://github.com/arteria/django-hijack
  *
@@ -229,4 +239,8 @@ tr td a {
   position: relative;
   top: 18px;
   left: 10px;
+}
+
+#edit_allocation_attributes_table tbody tr th{
+    font-weight: 400 !important;
 }

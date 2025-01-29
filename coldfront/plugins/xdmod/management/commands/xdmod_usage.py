@@ -180,7 +180,6 @@ class Command(BaseCommand):
                 str(usage),
             ]))
 
-
     def process_total_gpu_hours(self):
         header = [
             'allocation_id',
@@ -242,7 +241,6 @@ class Command(BaseCommand):
             ]))
         if no_xdmodrows:
             logger.warning("XDmod rows not found for the following items: %s", no_xdmodrows)
-
 
     def process_total_cpu_hours(self):
         header = [
@@ -338,7 +336,6 @@ class Command(BaseCommand):
         if no_xdmodrows:
             logger.warning("XDmod rows not found for the following items: %s", no_xdmodrows)
 
-
     def process_cloud_core_time(self):
         header = [
             'allocation_id',
@@ -394,7 +391,7 @@ class Command(BaseCommand):
             ]))
 
     def handle(self, *args, **options):
-
+        # print("Calling handle")
         if options['sync']:
             self.sync = True
             logger.warning("Syncing ColdFront with XDMoD")
@@ -405,6 +402,7 @@ class Command(BaseCommand):
             'project': self.filter_project,
             'resource': self.filter_resource,
         }
+        # print(filters.items())
         for filter_name, filter_attr in filters.items():
             if options[filter_name]:
                 logger.info("Filtering output by %s: %s", filter_name, options[filter_name])

@@ -241,6 +241,20 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
         context['notes'] = self.return_visible_notes()
 
+        all_allocations = self.object.allocation_set.all()
+        print('all allocations', all_allocations.count())
+
+        resources = []
+        resources_users = []
+        for allocation in all_allocations:
+            print('resources', allocation.resources.all())
+            resources.extend(allocation.resources.all())
+
+        resources_list = list(resources)
+        print('all resources', len(resources_list))
+
+        context['resources'] = resources_list
+
         context['allocation_history_records'] = allocation_history_records
         context['note_update_link'] = 'project-note-update'
         context['time_chart_data'] = time_chart_data
@@ -421,7 +435,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         form_valid_status = super().form_valid(form)
         try:
             project_post_create.send(
-                    sender=self.__class__, project_obj=project_obj
+                sender=self.__class__, project_obj=project_obj
             )
         except Exception as exception:
             logger.exception(exception)
@@ -838,7 +852,8 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
                     # get allocation to remove users from
                     allocations_to_remove_user_from = project_obj.allocation_set.filter(
-                        status__name__in=['Active', 'New', 'Renewal Requested']
+                        status__name__in=['Active', 'New', 'Renewal Requested'],
+                        resources__resource_type__name='Storage'
                     )
                     for allocation in allocations_to_remove_user_from:
                         for alloc_user in allocation.allocationuser_set.filter(
