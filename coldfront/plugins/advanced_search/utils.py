@@ -601,6 +601,13 @@ class UserTable:
                         status__name='Active',
                         project__status__name='Active'
                     ))
+                if attribute == 'total_manager_projects':
+                    current_attribute = len(ProjectUser.objects.filter(
+                        user=user_obj,
+                        role__name='Manager',
+                        status__name='Active',
+                        project__status__name='Active'
+                    ))
                 if attribute == 'total_allocations':
                     current_attribute = len(AllocationUser.objects.filter(
                         user=user_obj,
