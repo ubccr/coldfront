@@ -1,9 +1,6 @@
 <li id="navbar-announcements" class="nav-item">
   <a type="button" class="position-relative nav-link" href="{% url 'announcement-list' %}">
     Announcements
-    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-secondary">
-      <p id="id_unread_count">{% include 'announcements/navbar_announcement_unread.html' %}</p>
-      <span class="visually-hidden">unread announcements</span>
-    </span>
+    {% include 'announcements/navbar_announcement_unread.html' %}
   </a>
 </li>
