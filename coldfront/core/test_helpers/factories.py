@@ -59,10 +59,6 @@ class ColdfrontProvider(BaseProvider):
         last_name = fake.last_name()
         return f'{first_name}{last_name}'.lower()
 
-field_of_science_provider = DynamicProvider(
-    provider_name="fieldofscience", elements=field_of_science_names
-)
-
 school_provider = DynamicProvider(
     provider_name="school", elements=school_names
 )
@@ -84,15 +80,6 @@ class UserFactory(DjangoModelFactory):
     # username = factory.Faker('username')
     username = factory.LazyAttribute(lambda o: f'{o.first_name}{o.last_name}')
     email = factory.LazyAttribute(lambda o: '%s@example.com' % o.username)
-
-### Field of Science factories ###
-class FieldOfScienceFactory(DjangoModelFactory):
-    class Meta:
-        model = FieldOfScience
-        django_get_or_create = ('description',)
-
-    # description = FuzzyChoice(field_of_science_names)
-    description = factory.Faker('fieldofscience')
 
 ### School factories ###
 class SchoolFactory(DjangoModelFactory):
