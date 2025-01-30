@@ -6,7 +6,6 @@ from factory.django import DjangoModelFactory
 from faker import Faker
 from faker.providers import BaseProvider, DynamicProvider
 
-from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.school.models import School
 from coldfront.core.resource.models import ResourceType, Resource
 from coldfront.core.project.models import (
@@ -41,7 +40,6 @@ from coldfront.core.publication.models import PublicationSource
 
 project_status_choice_names = ['New', 'Active', 'Archived']
 project_user_role_choice_names = ['User', 'Manager']
-field_of_science_names = ['Physics', 'Chemistry', 'Economics', 'Biology', 'Sociology']
 school_names = ['Arts & Science', 'College of Dentistry', 'School of Law', 'NYU Shanghai', 'NYU IT']
 attr_types = ['Date', 'Int', 'Float', 'Text', 'Boolean']
 
@@ -64,7 +62,7 @@ school_provider = DynamicProvider(
 )
 attr_type_provider = DynamicProvider(provider_name="attr_types", elements=attr_types)
 
-for provider in [ColdfrontProvider, school_provider, field_of_science_provider, attr_type_provider]:
+for provider in [ColdfrontProvider, school_provider,  attr_type_provider]:
     factory.Faker.add_provider(provider)
 
 

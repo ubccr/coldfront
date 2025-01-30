@@ -108,6 +108,7 @@ def center_summary(request):
     return render(request, 'portal/center_summary.html', context)
 
 
+'''
 @cache_page(60 * 15)
 def allocation_by_fos(request):
 
@@ -130,7 +131,7 @@ def allocation_by_fos(request):
     context['total_allocations_users'] = total_allocations_users
     context['active_pi_count'] = active_pi_count
     return render(request, 'portal/allocation_by_fos.html', context)
-
+'''
 
 @cache_page(60 * 15)
 def allocation_summary(request):
