@@ -73,13 +73,43 @@ class TestMigrateToColdfront(TestCase):
             ("sla_name", ""),
         ]
 
+        self.expected_allocation_attributes_billing_startdate_missing = [
+            ("storage_name", "mocker"),
+            ("storage_quota", "200"),
+            ("storage_protocols", '["smb"]'),
+            ("storage_filesystem_path", "/storage2-dev/fs1/mocker"),
+            ("storage_export_path", "/storage2-dev/fs1/mocker"),
+            ("cost_center", "CC0004259"),
+            ("department_number", "CH00409"),
+            ("service_rate", "subscription"),
+            ("secure", "No"),
+            ("audit", "No"),
+            ("exempt", "No"),
+            ("subsidized", "Yes"),
+            ("billing_contact", "jin810"),
+            ("technical_contact", "jin810"),
+            ("storage_ticket", "ITSD-2222"),
+            ("fileset_name", "mocker_active"),
+            ("fileset_alias", "mocker_active"),
+            (
+                "itsm_comment",
+                '{"afm_cache_enable":true,"_jenkins":"https://systems-ci.gsc.wustl.edu/job/storage1_allocation/2652","add_archive":"true"}',
+            ),
+            ("billing_cycle", "monthly"),
+            ("sla_name", ""),
+        ]
+
     @mock.patch(
         "coldfront.plugins.qumulo.services.itsm.migrate_to_coldfront.ItsmClient"
+    )
+    @mock.patch(
+        "coldfront.plugins.qumulo.services.allocation_service.ActiveDirectoryAPI"
     )
     @mock.patch("coldfront.plugins.qumulo.services.allocation_service.async_task")
     def test_migrate_to_coldfront_by_fileset_name(
         self,
         mock_async_task: mock.MagicMock,
+        mock_active_directory_api: mock.MagicMock,
         mock_itsm_client: mock.MagicMock,
     ) -> None:
         with open(
@@ -123,10 +153,14 @@ class TestMigrateToColdfront(TestCase):
     @mock.patch(
         "coldfront.plugins.qumulo.services.itsm.migrate_to_coldfront.ItsmClient"
     )
+    @mock.patch(
+        "coldfront.plugins.qumulo.services.allocation_service.ActiveDirectoryAPI"
+    )
     @mock.patch("coldfront.plugins.qumulo.services.allocation_service.async_task")
     def test_migrate_to_coldfront_with_contacts_missing(
         self,
         mock_async_task: mock.MagicMock,
+        mock_active_directory_api: mock.MagicMock,
         mock_itsm_client: mock.MagicMock,
     ) -> None:
         with open(
@@ -157,4 +191,49 @@ class TestMigrateToColdfront(TestCase):
         # optional fields with empty or missing values should not create
         # allocation_attributes on create allocation
         for value in [("billing_contact", ""), ("technical_contact", "")]:
+            self.assertNotIn(value, allocation_attribute_values)
+
+    @mock.patch(
+        "coldfront.plugins.qumulo.services.itsm.migrate_to_coldfront.ItsmClient"
+    )
+    @mock.patch(
+        "coldfront.plugins.qumulo.services.allocation_service.ActiveDirectoryAPI"
+    )
+    @mock.patch("coldfront.plugins.qumulo.services.allocation_service.async_task")
+    def test_migrate_to_coldfront_with_billing_startdate_missing(
+        self,
+        mock_async_task: mock.MagicMock,
+        mock_active_directory_api: mock.MagicMock,
+        mock_itsm_client: mock.MagicMock,
+    ) -> None:
+        with open(
+            "coldfront/plugins/qumulo/static/migration_mappings/mock_itsm_response_body_billing_startdate_not_found.json",
+            "r",
+        ) as file:
+            mock_response = json.load(file)["data"]
+            itsm_client = mock.MagicMock()
+            itsm_client.get_fs1_allocation_by_fileset_name.return_value = mock_response
+            mock_itsm_client.return_value = itsm_client
+
+        name = "mocker_missing_contacts"
+        result = self.migrate.by_fileset_name(f"{name}_active")
+        allocation = Allocation.objects.get(id=result["allocation_id"])
+        self.assertEqual(allocation.id, result["allocation_id"])
+
+        allocation_attributes = AllocationAttribute.objects.filter(
+            allocation=result["allocation_id"]
+        )
+        allocation_attribute_values = allocation_attributes.values_list(
+            "allocation_attribute_type__name", "value"
+        )
+
+        for (
+            attribute_value
+        ) in self.expected_allocation_attributes_billing_startdate_missing:
+            self.assertIn(attribute_value, allocation_attribute_values)
+
+        self.assertEqual(allocation_attributes.count(), 20)
+        # optional fields with empty or missing values should not create
+        # allocation_attributes on create allocation
+        for value in [("billing_startdate", "")]:
             self.assertNotIn(value, allocation_attribute_values)

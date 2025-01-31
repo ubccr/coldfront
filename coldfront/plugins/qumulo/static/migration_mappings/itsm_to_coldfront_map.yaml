@@ -200,7 +200,9 @@ itsm_to_coldfront_map:
               type: Date
               transforms: null
               validates:
-                presence: true # Is the conditionally necessary? Not all allocations have a billing_startdate.
+                length:
+                  maximum: 128
+                  allow_blank: true
     itsm_value:
       entity: service_provision
       attribute: billing_startdate
