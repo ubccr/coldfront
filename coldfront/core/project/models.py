@@ -73,7 +73,7 @@ class Project(TimeStampedModel):
 
 
     DEFAULT_DESCRIPTION = '''
-We do not have information about your research. Please provide a detailed description of your work and update your field of science. Thank you!
+We do not have information about your research. Please provide a detailed description of your work and update your school. Thank you!
         '''
 
     title = models.CharField(max_length=255,)
@@ -88,7 +88,7 @@ We do not have information about your research. Please provide a detailed descri
         ],
     )
 
-    school = models.ForeignKey(School, on_delete=models.CASCADE, default=School.DEFAULT_PK, null=True, blank=True) # Allows legacy data
+    school = models.ForeignKey(School, on_delete=models.CASCADE, default=School.DEFAULT_PK)
     status = models.ForeignKey(ProjectStatusChoice, on_delete=models.CASCADE)
     force_review = models.BooleanField(default=False)
     requires_review = models.BooleanField(default=True)
@@ -101,7 +101,7 @@ We do not have information about your research. Please provide a detailed descri
         if 'Auto-Import Project'.lower() in self.title.lower():
             raise ValidationError('You must update the project title. You cannot have "Auto-Import Project" in the title.')
 
-        if 'We do not have information about your research. Please provide a detailed description of your work and update your field of science. Thank you!' in self.description:
+        if 'We do not have information about your research. Please provide a detailed description of your work and update your school. Thank you!' in self.description:
             raise ValidationError('You must update the project description.')
 
     @property

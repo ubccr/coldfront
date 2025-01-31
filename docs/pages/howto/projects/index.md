@@ -7,13 +7,13 @@ These fields are created and populated when the project is created:
 - PI (principal investigator or project owner)  
 - Project Title\*   
 - Project Description\*  
-- Field of Science\*  
+- School\*  
 - Status (new, active, archived)  
 - Creation dates  
 
 \* These fields are editable by the PI or manager by clicking the "Update Project Information" at the top of the Project Detail page
 
-**NOTE:** The Field of Science list is pre-populated in ColdFront using the National Science Foundation FOS list.  Centers can edit this using the ColdFront Administration Dashboard, if desired.
+**NOTE:** The School list is pre-populated in ColdFront using our school affiliations list.  If desired, the list can be edited from coldfront/core/school/management/commands/data/school_data.csv.
 
 ### Users
 All users with an 'Active' status on the project are displayed in this section.  Administrators can see all users, regardless of status on the project in the ColdFront Administration Dashboard.  PIs and managers on the project can add and remove users.  When adding new users, a list of all allocations on the project is displayed allowing a selection to be made for which allocation(s) the user should be added to.  When removing a user from a project, they are automatically removed from all allocations.  A user must be a member of the project in order to be on an allocation in that project.  More information on users can be [found here](../roles/index.md)

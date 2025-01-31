@@ -2,7 +2,8 @@ from django.db import models
 from model_utils.models import TimeStampedModel
 
 class School(TimeStampedModel):
-    """ A school is a school affiliate under which a project falls. The list is prepopulated in ColdFront using the National Science Foundation FOS list, but can be changed by a center admin if needed. Examples include Chemistry and Physics.
+    """ A school is a school affiliate under which a project falls. The list is prepopulated in ColdFront using the
+    school affiliations list. Examples include Arts & Science and College of Dentistry.
 
     Attributes:
         description (str): school description

@@ -136,8 +136,8 @@ class TestProject(TestCase):
             Project.objects.get(pk=project_obj.pk)
         self.assertEqual(0, len(Project.objects.all()))
 
-    def test_fos_foreignkey_on_delete(self):
-        """Test that a project is deleted when its field of science is deleted.
+    def test_school_foreignkey_on_delete(self):
+        """Test that a project is deleted when its school is deleted.
         """
         project_obj = self.data.unsaved_object
         project_obj.save()
