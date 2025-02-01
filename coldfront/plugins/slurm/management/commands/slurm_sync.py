@@ -17,7 +17,6 @@ from coldfront.core.allocation.models import (
 from coldfront.core.resource.models import Resource
 from coldfront.plugins.slurm.utils import SlurmError, slurm_dump_cluster
 from coldfront.plugins.slurm.associations import SlurmCluster
-from coldfront.config.logger import CustomLogger
 
 
 logger = logging.getLogger(__name__)
