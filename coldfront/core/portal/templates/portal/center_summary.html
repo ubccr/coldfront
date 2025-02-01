@@ -59,19 +59,19 @@ Center Summary
 <!-- End Grants -->
 {% endif %}
 
-<!-- Start Allocation by Field of Science -->
-<div class="card mb-3 border-primary">
-  <div class="card-header bg-primary text-white">
-    <i class="fas fa-flask" aria-hidden="true"></i> Active Allocations and Users by Field of Science
-  </div>
-  <div id="allocation-by-fos" class="card-body">
-    <div class="text-center">
-      <button type="button" class="btn btn-primary"><i class="fas fa-sync fa-spin fa-fw" aria-hidden="true"></i> Getting Data <span
-          class="sr-only">...</span></button>
-    </div>
-  </div>
-</div>
-<!-- End Allocation by Field of Science -->
+<!--&lt;!&ndash; Start Allocation by Field of Science &ndash;&gt;-->
+<!--<div class="card mb-3 border-primary">-->
+<!--  <div class="card-header bg-primary text-white">-->
+<!--    <i class="fas fa-flask" aria-hidden="true"></i> Active Allocations and Users by Field of Science-->
+<!--  </div>-->
+<!--  <div id="allocation-by-fos" class="card-body">-->
+<!--    <div class="text-center">-->
+<!--      <button type="button" class="btn btn-primary"><i class="fas fa-sync fa-spin fa-fw" aria-hidden="true"></i> Getting Data <span-->
+<!--          class="sr-only">...</span></button>-->
+<!--    </div>-->
+<!--  </div>-->
+<!--</div>-->
+<!--&lt;!&ndash; End Allocation by Field of Science &ndash;&gt;-->
 
 <!-- Start Allocation Charts -->
 <div class="card mb-3 border-primary">
@@ -102,7 +102,7 @@ Center Summary
 
     drawPublications();
     drawGrantsByAgency();
-    get_allocation_by_fos()
+    // get_allocation_by_fos()
     get_allocation_summary();
   });
 
