@@ -4,7 +4,8 @@ import os
 import re
 import sys
 
-from django.contrib.auth import get_user_model, Group
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 
 from coldfront.core.allocation.models import (
         Allocation,
