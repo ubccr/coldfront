@@ -11,13 +11,13 @@ class School(TimeStampedModel):
     class Meta:
         ordering = ['description']
 
-    class FieldOfScienceManager(models.Manager):
+    class SchoolManager(models.Manager):
         def get_by_natural_key(self, description):
             return self.get(description=description)
 
     DEFAULT_PK = 1
     description = models.CharField(max_length=255, unique=True)
-    objects = FieldOfScienceManager()
+    objects = SchoolManager()
 
     def __str__(self):
         return self.description
