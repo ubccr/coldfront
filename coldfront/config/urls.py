@@ -17,7 +17,7 @@ urlpatterns = [
     path('', portal_views.home, name='home'),
     path('center-summary', portal_views.center_summary, name='center-summary'),
     path('allocation-summary', portal_views.allocation_summary, name='allocation-summary'),
-    path('allocation-by-fos', portal_views.allocation_by_fos, name='allocation-by-fos'),
+    # path('allocation-by-fos', portal_views.allocation_by_fos, name='allocation-by-fos'),
     path('user/', include('coldfront.core.user.urls')),
     path('project/', include('coldfront.core.project.urls')),
     path('allocation/', include('coldfront.core.allocation.urls')),

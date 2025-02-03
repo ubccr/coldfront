@@ -38,7 +38,7 @@ User Projects and Managers{% if not user == viewed_user %}: {{ viewed_user.usern
               {% endif %}
             </p>
             <p class="card-text text-justify"><strong>Description: </strong>{{ project.description }}</p>
-            <p class="card-text text-justify"><strong>Field of Science: </strong>{{ project.field_of_science }}</p>
+            <p class="card-text text-justify"><strong>School: </strong>{{ project.school }}</p>
             <p class="card-text text-justify"><strong>Project Status: </strong>{{ project.status }} </p>
             <p class="card-text"><strong>Principal Investigator: </strong>{{ project.pi.first_name }} {{ project.pi.last_name }} ({{ project.pi.username }})
               <a href="mailto:{{ project.pi.email }} "><i class="far fa-envelope" aria-hidden="true"></i><span class="sr-only">Email</span></a>

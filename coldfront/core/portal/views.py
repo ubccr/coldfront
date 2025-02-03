@@ -97,17 +97,24 @@ def center_summary(request):
         total_grants_by_agency)
     context['grants_agency_chart_data'] = grants_agency_chart_data
     context['grants_total'] = intcomma(
-        int(sum(list(Grant.objects.values_list('total_amount_awarded', flat=True)))))
+        int(sum(float(amount.amount) if hasattr(amount, 'amount') else float(amount)
+                for amount in Grant.objects.values_list('total_amount_awarded', flat=True) if amount)))
     context['grants_total_pi_only'] = intcomma(
-        int(sum(list(Grant.objects.filter(role='PI').values_list('total_amount_awarded', flat=True)))))
+        int(sum(float(amount.amount) if hasattr(amount, 'amount') else float(amount)
+                for amount in Grant.objects.filter(role='PI').values_list('total_amount_awarded', flat=True) if
+                amount)))
     context['grants_total_copi_only'] = intcomma(
-        int(sum(list(Grant.objects.filter(role='CoPI').values_list('total_amount_awarded', flat=True)))))
+        int(sum(float(amount.amount) if hasattr(amount, 'amount') else float(amount)
+                for amount in Grant.objects.filter(role='CoPI').values_list('total_amount_awarded', flat=True) if
+                amount)))
     context['grants_total_sp_only'] = intcomma(
-        int(sum(list(Grant.objects.filter(role='SP').values_list('total_amount_awarded', flat=True)))))
-
+        int(sum(float(amount.amount) if hasattr(amount, 'amount') else float(amount)
+                for amount in Grant.objects.filter(role='SP').values_list('total_amount_awarded', flat=True) if
+                amount)))
     return render(request, 'portal/center_summary.html', context)
 
 
+'''
 @cache_page(60 * 15)
 def allocation_by_fos(request):
 
@@ -130,7 +137,7 @@ def allocation_by_fos(request):
     context['total_allocations_users'] = total_allocations_users
     context['active_pi_count'] = active_pi_count
     return render(request, 'portal/allocation_by_fos.html', context)
-
+'''
 
 @cache_page(60 * 15)
 def allocation_summary(request):

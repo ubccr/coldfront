@@ -12,7 +12,7 @@ from coldfront.core.allocation.models import (Allocation, AllocationAttribute,
                                               AllocationStatusChoice,
                                               AllocationUser,
                                               AllocationUserStatusChoice)
-from coldfront.core.field_of_science.models import FieldOfScience
+from coldfront.core.school.models import School
 from coldfront.core.grant.models import (Grant, GrantFundingAgency,
                                          GrantStatusChoice)
 from coldfront.core.project.models import (Project, ProjectStatusChoice,
@@ -195,8 +195,8 @@ class Command(BaseCommand):
             pi=pi1,
             title='Angular momentum in QGP holography',
             description='We want to estimate the quark chemical potential of a rotating sample of plasma.',
-            field_of_science=FieldOfScience.objects.get(
-                description='Chemistry'),
+            school=School.objects.get(
+                description='Tandon School of Engineering'),
             status=ProjectStatusChoice.objects.get(name='Active'),
             force_review=True
         )
@@ -442,7 +442,7 @@ class Command(BaseCommand):
             pi=pi2,
             title='Measuring critical behavior of quantum Hall transitions',
             description='This purpose of this project is to measure the critical behavior of quantum Hall transitions.',
-            field_of_science=FieldOfScience.objects.get(description='Physics'),
+            school=School.objects.get(description='Arts & Science'),
             status=ProjectStatusChoice.objects.get(name='Active')
         )
 

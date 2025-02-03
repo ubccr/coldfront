@@ -6,7 +6,7 @@ from factory.django import DjangoModelFactory
 from faker import Faker
 from faker.providers import BaseProvider, DynamicProvider
 
-from coldfront.core.field_of_science.models import FieldOfScience
+from coldfront.core.school.models import School
 from coldfront.core.resource.models import ResourceType, Resource
 from coldfront.core.project.models import (
     Project,
@@ -40,7 +40,7 @@ from coldfront.core.publication.models import PublicationSource
 
 project_status_choice_names = ['New', 'Active', 'Archived']
 project_user_role_choice_names = ['User', 'Manager']
-field_of_science_names = ['Physics', 'Chemistry', 'Economics', 'Biology', 'Sociology']
+school_names = ['Arts & Science', 'College of Dentistry', 'School of Law', 'NYU Shanghai', 'NYU IT']
 attr_types = ['Date', 'Int', 'Float', 'Text', 'Boolean']
 
 fake = Faker()
@@ -57,12 +57,12 @@ class ColdfrontProvider(BaseProvider):
         last_name = fake.last_name()
         return f'{first_name}{last_name}'.lower()
 
-field_of_science_provider = DynamicProvider(
-    provider_name="fieldofscience", elements=field_of_science_names
+school_provider = DynamicProvider(
+    provider_name="school", elements=school_names
 )
 attr_type_provider = DynamicProvider(provider_name="attr_types", elements=attr_types)
 
-for provider in [ColdfrontProvider, field_of_science_provider, attr_type_provider]:
+for provider in [ColdfrontProvider, school_provider,  attr_type_provider]:
     factory.Faker.add_provider(provider)
 
 
@@ -79,18 +79,13 @@ class UserFactory(DjangoModelFactory):
     username = factory.LazyAttribute(lambda o: f'{o.first_name}{o.last_name}')
     email = factory.LazyAttribute(lambda o: '%s@example.com' % o.username)
 
-
-### Field of Science factories ###
-
-class FieldOfScienceFactory(DjangoModelFactory):
+### School factories ###
+class SchoolFactory(DjangoModelFactory):
     class Meta:
-        model = FieldOfScience
+        model = School
         django_get_or_create = ('description',)
 
-    # description = FuzzyChoice(field_of_science_names)
-    description = factory.Faker('fieldofscience')
-
-
+    description = factory.Faker('school')
 
 ### Grant factories ###
 
@@ -125,7 +120,7 @@ class ProjectFactory(DjangoModelFactory):
     pi = SubFactory(UserFactory)
     title = factory.Faker('project_title')
     description = factory.Faker('sentence')
-    field_of_science = SubFactory(FieldOfScienceFactory)
+    school = SubFactory(SchoolFactory)
     status = SubFactory(ProjectStatusChoiceFactory)
     force_review = False
     requires_review = False
