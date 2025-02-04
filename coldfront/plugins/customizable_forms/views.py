@@ -193,7 +193,7 @@ class AllocationResourceSelectionView(LoginRequiredMixin, UserPassesTestMixin, T
                 if pi_request_only[0].value.lower() == 'true' and project_obj.pi != self.request.user:
                     can_request = False
 
-            if project_obj.type.name == 'Class' and resource_obj.name == 'Slate Project':
+            if resource_obj.name in project_obj.get_env.get('forbidden_resources'):
                 can_request = False
 
             if resource_obj.name == 'Quartz - Hopper' and not project_obj.allocation_set.filter(resources__name='Quartz', status__name='Active'):
@@ -348,6 +348,10 @@ class GenericView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                     request, 'You are at the pending allocation limit per user allowed for this resource.'
                 )
                 return HttpResponseRedirect(reverse('custom-allocation-create', kwargs={'project_pk': project_obj.pk}))
+
+        if resource_obj.name in project_obj.get_env.get('forbidden_resources'):
+            messages.error(self.request, f'{resource_obj.name} allocations are not allowed in {project_obj.type.name} projects.')
+            return HttpResponseRedirect(reverse('custom-allocation-create', kwargs={'project_pk': project_obj.pk}))
 
         return super().dispatch(request, *args, **kwargs)
 

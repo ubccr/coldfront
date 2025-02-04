@@ -1378,9 +1378,9 @@ class AllocationRenewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
             )
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
-        if allocation_obj.project.type.name == 'Class': 
+        if not allocation_obj.project.get_env.get('renewable'): 
             messages.error(
-                request, 'You cannot renew allocations in a Class project.')
+                request, f'You cannot renew allocations in a {allocation_obj.project.type.name} project.')
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk})) 
 
         if allocation_obj.project.needs_review or allocation_obj.project.can_be_reviewed: 

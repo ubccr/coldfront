@@ -97,8 +97,10 @@ Create Project
     var type_text = $("#id_type option:selected").text();
     if (type_text === "Class") {
       $("#div_id_class_number").show();
+      $("#id_class_number").attr('required', true);
       $("#div_id_class_info").show();
     } else {
+      $("#id_class_number").attr('required', false);
       $("#div_id_class_number").hide();
       $("#div_id_class_info").hide();
     }
@@ -123,8 +125,10 @@ Create Project
     var type_text = $("#id_type option:selected").text();
     if (type_text === "Class") {
       $("#div_id_class_number").show();
+      $("#id_class_number").attr('required', true);
       $("#div_id_class_info").show();
     } else {
+      $("#id_class_number").attr('required', false);
       $("#div_id_class_number").hide();
       $("#div_id_class_info").hide();
     }

@@ -118,10 +118,7 @@ def generate_slurm_account_name(project_obj):
     num = str(project_obj.pk)
     string = '00000'
     string = string[:-len(num)] + num
-    project_type = project_obj.type.name
-    letter = 'r'
-    if project_type == 'Class':
-        letter = 'c'
+    letter = project_obj.type.name.lower()[0]
 
     return letter + string
 
