@@ -3,7 +3,14 @@ import logging
 from django import forms
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.db.models import Q
+from django.db.models import (
+    Q, F, Value, Count, Case, When, 
+    Subquery, OuterRef, CharField, IntegerField, FloatField
+)
+from django.db.models.functions import (
+    Substr, StrIndex, Concat, Coalesce,
+    Cast, Length
+)
 from django.db.models.functions import Lower
 from django.forms import formset_factory
 from django.http import HttpResponseRedirect
@@ -20,7 +27,7 @@ from coldfront.core.resource.forms import (
     ResourceAttributeDeleteForm,
     ResourceAllocationUpdateForm,
 )
-from coldfront.core.allocation.models import AllocationStatusChoice
+from coldfront.core.allocation.models import AllocationStatusChoice, AllocationAttributeType, AllocationAttribute, Allocation
 from coldfront.core.allocation.signals import allocation_raw_share_edit
 
 from coldfront.plugins.slurm.utils import SlurmError
@@ -78,8 +85,93 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         child_resources = self.get_child_resources(resource_obj)
         inactive_status = AllocationStatusChoice.objects.get(name='Inactive')
-        context['allocations'] = resource_obj.allocation_set.exclude(status=inactive_status)
+        allocations = resource_obj.allocation_set.exclude(status=inactive_status).prefetch_related('project', "allocationattribute_set")
+        if 'Cluster' in resource_obj.resource_type.name:
+            total_hours = sum([a.usage for a in allocations if a.usage])
+            context['total_hours'] = total_hours
 
+            # Get attribute type IDs
+            slurm_specs_type = AllocationAttributeType.objects.get(name='slurm_specs')
+            usage_type = AllocationAttributeType.objects.get(name='Core Usage (Hours)')
+            effectv_type = AllocationAttributeType.objects.get(name='EffectvUsage')
+
+            allocations = (
+                allocations.annotate(
+                    project_title=F('project__title'),
+                    user_count=Count('allocationuser__id', distinct=True),
+                    # For slurm_specs parsing
+                    specs_value=Subquery(
+                        AllocationAttribute.objects
+                        .filter(
+                            allocation_id=OuterRef('id'),
+                            allocation_attribute_type=slurm_specs_type
+                        )
+                        .values('value')[:1]
+                    ),
+                    rawshares=Substr(
+                        'specs_value',
+                        StrIndex('specs_value', Value('RawShares=')) + 10,
+                        Cast(StrIndex(
+                            Substr(
+                                'specs_value',
+                                StrIndex('specs_value', Value('RawShares=')) + 10
+                            ),
+                            Value(',')
+                        ) - 1, IntegerField())
+                    ),
+                    normshares=Substr(
+                        'specs_value',
+                        StrIndex('specs_value', Value('NormShares=')) + 11,
+                        Cast(StrIndex(
+                            Substr(
+                                'specs_value',
+                                StrIndex('specs_value', Value('NormShares=')) + 11
+                            ),
+                            Value(',')
+                        ) - 1, IntegerField())
+                    ),
+                    fairshare=Substr(
+                        'specs_value',
+                        StrIndex('specs_value', Value('FairShare=')) + 10,
+                        Length('specs_value')
+                    ),
+                    usage=Coalesce(
+                        Subquery(
+                            AllocationAttribute.objects
+                            .filter(
+                                allocation_id=OuterRef('id'),
+                                allocation_attribute_type=usage_type
+                            )
+                            .values('value')[:1]
+                        ),
+                        Value('0')
+                    ),
+                    effectvusage=Coalesce(
+                        Subquery(
+                            AllocationAttribute.objects
+                            .filter(
+                                allocation_id=OuterRef('id'),
+                                allocation_attribute_type=effectv_type
+                            )
+                            .values('value')[:1]
+                        ),
+                        Value('0')
+                    )
+                )
+                .order_by('id')
+                .values(
+                    'id',
+                    'project_title',
+                    'user_count',
+                    'rawshares',
+                    'normshares',
+                    'fairshare',
+                    'usage',
+                    'effectvusage'
+                )
+            )
+
+        context['allocations'] = allocations
         context['resource'] = resource_obj
         context['attributes'] = attributes
         context['child_resources'] = child_resources

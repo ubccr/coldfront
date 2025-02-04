@@ -184,25 +184,25 @@ Resource Detail
 
             <tbody>
               {% for allocation in allocations %}
-                <tr status="{{ allocation.project.status }}">
+                <tr>
                   <td>
-                    <a href="{% url 'allocation-detail' allocation.pk %}">
-                      {{ allocation.project.title }}
+                    <a href="{% url 'allocation-detail' allocation.id %}">
+                      {{ allocation.project_title }}
                     </a>
                   </td>
-                  <td>{{ allocation.project.projectuser_set.all.count }}</td>
+                  <td>{{ allocation.user_count }}</td>
                   <td data-sort="{{allocation.usage}}" name="usage_bytes">
                     {% if allocation.usage is None %}
-                      0%
+                      0
                     {% else %}
                       {{ allocation.usage|floatformat:1 }} CPU Hours
                     {% endif %}
                   </td>
-                  <td data-sort="{{allocation.size}}" name="usage_bytes">
-                    {% if allocation.size is None or allocation.size == 0 %}
-                      0
+                  <td data-sort="{{allocation.usage}}" name="usage_bytes">
+                    {% if allocation.usage is None or allocation.usage == 0 %}
+                      0%
                     {% else %}
-                      {{allocation.usage|div:allocation.size|mul:100|floatformat:2 }}%
+                      {{allocation.usage|div:total_hours|mul:100|floatformat:2 }}%
                     {% endif %}
                   </td>
                   <td>{{ allocation.rawshares}}</td>
@@ -329,12 +329,7 @@ Resource Detail
   $(document).ready(function () {
     $('#child_resource_table, #mydatatable, #resource_admin_table').DataTable({
       lengthMenu: [5, 10, 25, 50, 100],
-      "pageLength": 5,
-      "ordering": false,
-      'aoColumnDefs': [{
-          'bSortable': false,
-          'aTargets': ['nosort']
-      }]
+      "pageLength": 10,
     });
   });
 </script>
