@@ -18,15 +18,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Enable caching and define a custom cache key suffix
+        id: setup-uv
+        uses: astral-sh/setup-uv@v5
         with:
-          python-version: '3.12'
-          
-      - name: install deps and run tests
+          enable-cache: true
+
+      - name: Test
         run: |
-          python -m pip install --upgrade pip
-          pip install setuptools
-          pip install -r requirements.txt
-          pip install .
-          python manage.py test
+          uv venv --python 3.12
+          source .venv/bin/activate
+          uv run python -m pip install --upgrade pip
+          uv run python -m pip install setuptools
+          uv run python -m pip install -r requirements.txt
+          uv run python -m pip install .
+          uv run manage.py test        
         shell: bash
