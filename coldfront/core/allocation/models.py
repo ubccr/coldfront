@@ -205,7 +205,7 @@ class Allocation(TimeStampedModel):
         parent_resource = self.get_parent_resource
         if not parent_resource:
             return None
-        if parent_resource.resource_type.name == 'Cluster':
+        if 'Cluster' in parent_resource.resource_type.name:
             size_attr_name = 'Core Usage (Hours)'
         elif 'Storage' in parent_resource.resource_type.name:
             if s_type == 'exact':
