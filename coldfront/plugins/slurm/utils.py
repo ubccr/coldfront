@@ -22,7 +22,7 @@ SLURM_SSHARE_PATH = import_from_settings('SLURM_SSHARE_PATH', '/usr/bin/sshare')
 SLURM_SREPORT_PATH = import_from_settings('SLURM_SREPORT_PATH', '/usr/bin/sreport')
 SLURM_SCONTROL_PATH = import_from_settings('SLURM_SCONTROL_PATH', '/usr/bin/scontrol')
 
-SLURM_CMD_PULL_FAIRSHARE = SLURM_SSHARE_PATH + ' -a -o "Cluster,Account%25,User%25,RawShares,NormShares,RawUsage,EffectvUsage,FairShare"'
+SLURM_CMD_PULL_FAIRSHARE = SLURM_SSHARE_PATH + ' -a -o "Cluster,Account%30,User%25,RawShares,NormShares,RawUsage,EffectvUsage,FairShare"'
 SLURM_CMD_PULL_SREPORT = SLURM_SREPORT_PATH + '-T gres/gpu,cpu cluster accountutilization format="Cluster,Account%25,Login%25,TRESname,Used" start={}T00:00:00 end=now -t hours'
 SLURM_CMD_REMOVE_USER = SLURM_SACCTMGR_PATH + ' -Q -i delete user where name={} account={}'
 SLURM_CMD_REMOVE_QOS = SLURM_SACCTMGR_PATH + ' -Q -i modify user where name={} cluster={} account={} set {}'
