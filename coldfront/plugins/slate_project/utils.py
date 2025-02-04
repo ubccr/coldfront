@@ -47,7 +47,6 @@ SLATE_PROJECT_INCOMING_DIR = import_from_settings('SLATE_PROJECT_INCOMING_DIR', 
 SLATE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD = import_from_settings('SLATE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD', 120)
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 CENTER_BASE_URL = import_from_settings('CENTER_BASE_URL')
-PROJECT_DEFAULT_MAX_MANAGERS = import_from_settings('PROJECT_DEFAULT_MAX_MANAGERS', 3)
 if EMAIL_ENABLED:
     SLATE_PROJECT_EMAIL = import_from_settings('SLATE_PROJECT_EMAIL', '')
     EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
@@ -1462,7 +1461,6 @@ def import_slate_projects(json_file_name, out_file_name, importing_user, limit=N
                     title=slate_project.get('project_title'),
                     description=slate_project.get('abstract'),
                     pi=user_obj,
-                    max_managers=PROJECT_DEFAULT_MAX_MANAGERS,
                     requestor=user_obj,
                     type=ProjectTypeChoice.objects.get(name='Research'),
                     status=ProjectStatusChoice.objects.get(name='Active'),

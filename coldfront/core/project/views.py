@@ -92,8 +92,6 @@ ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING = import_from_settings(
     'ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING', 30)
 ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING = import_from_settings(
     'ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING', 60)
-PROJECT_DEFAULT_MAX_MANAGERS = import_from_settings(
-    'PROJECT_DEFAULT_MAX_MANAGERS', 3)
 PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING = import_from_settings(
     'PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING', 60)
 PROJECT_END_DATE_CARRYOVER_DAYS = import_from_settings(
@@ -547,7 +545,6 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
         form.instance.requestor = self.request.user
         form.instance.status = ProjectStatusChoice.objects.get(name='Waiting For Admin Approval')
-        form.instance.max_managers = PROJECT_DEFAULT_MAX_MANAGERS
 
         expiry_dates = project_obj.get_env.get('expiry_dates')
         if expiry_dates:

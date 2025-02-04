@@ -156,7 +156,7 @@ required to log onto the site at least once before they can be added.
     force_review = models.BooleanField(default=False)
     requires_review = models.BooleanField(default=True)
     end_date = models.DateField()
-    max_managers = models.IntegerField()
+    max_managers = models.IntegerField(default=3)
     history = HistoricalRecords()
     objects = ProjectManager()
 
