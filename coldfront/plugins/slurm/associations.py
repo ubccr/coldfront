@@ -4,9 +4,6 @@ import os
 import re
 import sys
 
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
-
 from coldfront.core.allocation.models import (
         Allocation,
         AllocationStatusChoice,
@@ -177,45 +174,30 @@ class SlurmCluster(SlurmBase):
         account.specs += specs
         self.accounts[name] = account
 
-    def add_partition_groups(self, partition_info, new_partition):
-        """Add groups to the partition"""
-        # TODO: check if the groups are properly read
-        if partition_info['AllowGroups'] == 'ALL':
-            group = Group.objects.all()
-        else:
-            group = Group.objects.filter(name__in=partition_info['AllowGroups'].split(','))
-
-        # Retrieve the current allowed groups for the new_resource
-        current_allowed_groups = set(new_partition.allowed_groups.all())
-
-        # Filter the groups that are not already in the allowed groups
-        groups_to_add = [g for g in group if g not in current_allowed_groups]
-
-        # Add the filtered groups to the allowed groups of the new_resource
-        new_partition.allowed_groups.add(*groups_to_add)
-
-    def add_partition_accounts(self, partition_info, new_partition):
-        """Add accounts to the partition"""
+    def id_partition_projects(self, partition_info):
+        """identify the partition projects
+        Crossreference Allow/DenyAccounts and Allow/DenyGroups.
+        Projects must be permitted on both lists to access a given partition.
+        """
+        # identify allowed_groups
+        allowed_groups = partition_info.get('AllowGroups', '').split(',')
+        # if 'cluster_users' is in allowed_groups, then all users/accounts are allowed
+        if 'cluster_users' in allowed_groups:
+            allowed_groups = list(self.accounts.values())
+        # determine allowed_accounts
         if 'AllowAccounts' in partition_info:
             if partition_info['AllowAccounts'] == 'ALL':
-                resource_accounts = list(self.accounts.values())
+                allowed_accounts = list(self.accounts.values())
             else:
-                aux_accounts = {k: v for k, v in self.accounts.items() if k in partition_info['AllowAccounts'].split(',')}
-                resource_accounts = list(aux_accounts.values())
+                allowed_accounts = partition_info.get('AllowAccounts', '').split(',')
         else:
-            if 'DenyAccounts' in partition_info:
-                aux_accounts = {k: v for k, v in self.accounts.items() if k not in partition_info['DenyAccounts'].split(',')}
-                resource_accounts = list(aux_accounts.values())
-            else:
-                logger.debug("no AllowAccounts and no DenyAccounts")
-                resource_accounts = []
+            allowed_accounts = list(self.accounts.values())
 
-        # Commenting next lines as requested in https://github.com/theam/coldfront/issues/19
-        #allowed_users_ids = list({key for account in resource_accounts for key in account.users.keys()})
-        #allowed_users = get_user_model().objects.filter(username__in=allowed_users_ids)
-        #new_partition.allowed_users.set(allowed_users)
-
-        return resource_accounts
+        if 'DenyAccounts' in partition_info:
+            denied_accounts = partition_info.get('DenyAccounts', '').split(',')
+            allowed_accounts = [a for a in allowed_accounts if a not in denied_accounts]
+        partition_project_names = list(set(allowed_groups) & set(allowed_accounts))
+        return partition_project_names
 
     def append_partitions(self):
         """append partition data to accounts"""
@@ -267,19 +249,25 @@ class SlurmCluster(SlurmBase):
         cluster_partition_resource_type = ResourceType.objects.filter(name__in=['Cluster Partition'])[0]
         slurm_specs_resource_attribute_type = ResourceAttributeType.objects.get(name=SLURM_SPECS_ATTRIBUTE_NAME)
         for partition in partitions:
-            new_resource = create_resource_attributes(partition, current_cluster_resource,
-                                                      cluster_partition_resource_type,
-                                                      slurm_specs_resource_attribute_type)
-            # Commenting next line as requested in https://github.com/theam/coldfront/issues/19
-            # self.add_partition_groups(partition, new_resource)
-            resource_accounts = self.add_partition_accounts(partition, new_resource)
-            resource_account_names = [account.name for account in resource_accounts]
+            new_resource = create_resource_attributes(
+                    partition, current_cluster_resource,
+                    cluster_partition_resource_type,
+                    slurm_specs_resource_attribute_type
+            )
+            partition_project_names = self.id_partition_projects(partition)
             # Retrieve all projects that have the same name as the resource accounts
-            matching_projects = Project.objects.filter(title__in=resource_account_names)
+            matching_projects = Project.objects.filter(title__in=partition_project_names)
+            # look for allocations belonging to projects outside of the
+            # partition_project_names that have this resource
+            matching_allocations = Allocation.objects.filter(resources=new_resource)
+            for allocation in matching_allocations:
+                if allocation.project not in matching_projects:
+                    allocation.resources.remove(new_resource)
             for project in matching_projects:
                 try:
                     existing_allocation = Allocation.objects.get(project=project, resources=current_cluster_resource)
-                    existing_allocation.resources.add(new_resource)
+                    if new_resource not in existing_allocation.resources.all():
+                        existing_allocation.resources.add(new_resource)
                 except Allocation.DoesNotExist:
                     new_allocation = create_allocation_attributes(project, 'slurm_sync', 1, new_resource)
                     self.add_allocation(new_allocation)
