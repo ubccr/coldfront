@@ -51,9 +51,9 @@ class Command(BaseCommand):
             # ('InstallDate', 'Date'),
             # ('WarrantyExpirationDate', 'Date'),
         ):
-            ResourceAttributeType.objects.get_or_create(
+            ResourceAttributeType.objects.update_or_create(
                 name=resource_attribute_type,
-                attribute_type=AttributeType.objects.get(name=attribute_type)
+                defaults={"attribute_type": AttributeType.objects.get(name=attribute_type)}
             )
 
         for resource_type, description in (
