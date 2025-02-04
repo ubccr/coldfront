@@ -260,7 +260,7 @@ class SlurmCluster(SlurmBase):
 
         partitions = slurm_list_partitions()
         current_cluster_resource = Resource.objects.filter(
-            name=self.name, resource_type__name='Cluster').first()
+            resourceattribute__value=self.name, resource_type__name='Cluster').first()
         if not current_cluster_resource:
             logger.debug("Current cluster resource not found", True)
             return
@@ -278,7 +278,7 @@ class SlurmCluster(SlurmBase):
             matching_projects = Project.objects.filter(title__in=resource_account_names)
             for project in matching_projects:
                 try:
-                    existing_allocation = Allocation.objects.get(project=project)
+                    existing_allocation = Allocation.objects.get(project=project, resources=current_cluster_resource)
                     existing_allocation.resources.add(new_resource)
                 except Allocation.DoesNotExist:
                     new_allocation = create_allocation_attributes(project, 'slurm_sync', 1, new_resource)
