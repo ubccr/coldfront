@@ -55,7 +55,7 @@ def send_email(subject, body, sender, receiver_list, cc=[]):
         else:
             send_mail(subject, body, sender,
                       receiver_list, fail_silently=False)
-    except SMTPException as e:
+    except SMTPException:
         logger.error('Failed to send email to %s from %s with subject %s',
                      sender, ','.join(receiver_list), subject)
 

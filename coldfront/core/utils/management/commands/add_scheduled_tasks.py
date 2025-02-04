@@ -1,8 +1,7 @@
 import datetime
-import os
 
 from django.conf import settings
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.utils import timezone
 from django_q.models import Schedule
 from django_q.tasks import schedule

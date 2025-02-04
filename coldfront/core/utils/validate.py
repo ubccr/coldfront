@@ -1,8 +1,6 @@
 import datetime
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator
-import formencode
-from formencode import validators, Invalid
+from formencode import validators
 
 class AttributeValidator:
 

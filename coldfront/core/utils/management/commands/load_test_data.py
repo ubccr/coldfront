@@ -1,10 +1,8 @@
 import datetime
-import os
 
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
 from coldfront.core.allocation.models import (Allocation, AllocationAttribute,
@@ -23,7 +21,6 @@ from coldfront.core.publication.models import Publication, PublicationSource
 from coldfront.core.resource.models import (Resource, ResourceAttribute,
                                             ResourceAttributeType,
                                             ResourceType)
-from coldfront.core.user.models import UserProfile
 
 base_dir = settings.BASE_DIR
 
