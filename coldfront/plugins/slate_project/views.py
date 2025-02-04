@@ -167,11 +167,6 @@ class SlateProjectView:
         if self.request.user.is_superuser:
             return True
 
-        project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
-        if project_obj.type.name == 'Class':
-            messages.error(self.request, 'Slate Project allocations are not allowed in class projects.')
-            return False
-
         return True
 
     def get_context_data(self, **kwargs):

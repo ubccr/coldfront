@@ -20,7 +20,7 @@ Review Project
 
   <ol>
     <li><a href="{% url 'project-update' project.pk %}"><i class="fas fa-external-link-alt" aria-hidden="true"></i> Verify</a> your project description is accurate</li>
-    {% if project.type.name != 'Class' %}
+    {% if 'publication' not in project.get_env|get_value_from_dict:'forbidden_features' %}
       <li><a href="{% url 'publication-search' project.pk %}"><i class="fas fa-external-link-alt" aria-hidden="true"></i> Add</a> Publications</li>
     {% endif %}
     <!-- <li><a href="{% url 'grant-create' project.pk %}"><i class="fas fa-external-link-alt" aria-hidden="true"></i> Add</a> Grants</li> -->

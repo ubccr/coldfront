@@ -19,6 +19,10 @@ PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING = import_from_settings(
     'PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING', 60)
 PROJECT_DAYS_TO_REVIEW_BEFORE_EXPIRING = import_from_settings(
     'PROJECT_DAYS_TO_REVIEW_BEFORE_EXPIRING', 30)
+PROJECT_ENABLE_PERMISSIONS_PER_TYPE = import_from_settings(
+    'PROJECT_ENABLE_PERMISSIONS_PER_TYPE', False)
+if PROJECT_ENABLE_PERMISSIONS_PER_TYPE:
+    PROJECT_PERMISSIONS_PER_TYPE = import_from_settings('PROJECT_PERMISSIONS_PER_TYPE')
 
 class ProjectPermission(Enum):
     """ A project permission stores the user, manager, pi, and update fields of a project. """
@@ -219,7 +223,7 @@ required to log onto the site at least once before they can be added.
         Returns:
             bool: whether or not the project can be reviewed
         """
-        if self.type.name in ['Class', ]:
+        if not self.get_env.get('renewable'):
             return False
 
         if self.status.name in ['Archived', 'Denied', 'Review Pending', 'Renewal Denied', ]:
@@ -351,6 +355,14 @@ required to log onto the site at least once before they can be added.
 
     def natural_key(self):
         return (self.title,) + self.pi.natural_key()
+    
+    @property
+    def get_env(self):
+        if not PROJECT_ENABLE_PERMISSIONS_PER_TYPE or PROJECT_PERMISSIONS_PER_TYPE.get(self.type.name) is None:
+            return PROJECT_ENABLE_PERMISSIONS_PER_TYPE.get('Default')
+        merged = PROJECT_PERMISSIONS_PER_TYPE.get('Default') | PROJECT_PERMISSIONS_PER_TYPE.get(self.type.name)
+        return merged
+
 
 class ProjectAdminComment(TimeStampedModel):
     """ A project admin comment is a comment that an admin can make on a project. 

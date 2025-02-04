@@ -62,10 +62,14 @@ Project Detail
     <div class="card-body">
       {% if not project.status.name in 'Archived, Denied, Expired, Renewal Denied' %}
         <a class="btn btn-success" href="{% url 'project-add-users-search' project.pk %}" role="button"><i class="fas fa-user-plus" aria-hidden="true"></i> Add Users</a>
-        {% if project.type.name != 'Class' %}
-          <!-- <a class="btn btn-success" href="{% url 'grant-create' project.id %}" role="button"><i class="fas fa-trophy" aria-hidden="true"></i> Add Grant</a> -->
+        {% if 'grant' not in project.get_env|get_value_from_dict:'forbidden_features' %}
+          <a class="btn btn-success" href="{% url 'grant-create' project.id %}" role="button"><i class="fas fa-trophy" aria-hidden="true"></i> Add Grant</a>
+        {% endif %}
+        {% if 'publication' not in project.get_env|get_value_from_dict:'forbidden_features' %}  
           <a class="btn btn-success" href="{% url 'publication-search' project.pk %}" role="button"><i class="fas fa-newspaper" aria-hidden="true"></i> Add Publication</a>
-          <!-- <a class="btn btn-success" href="{% url 'add-research-output' project.pk %}" role="button"><i class="far fa-newspaper" aria-hidden="true"></i> Add Research Output</a> -->
+        {% endif %}
+        {% if 'research_output' not in project.get_env|get_value_from_dict:'forbidden_features' %}   
+          <a class="btn btn-success" href="{% url 'add-research-output' project.pk %}" role="button"><i class="far fa-newspaper" aria-hidden="true"></i> Add Research Output</a>
         {% endif %}
       {% endif %}
     </div>
@@ -331,7 +335,7 @@ Project Detail
                     <i class="fas fa-user-plus" aria-hidden="true"></i><span class="sr-only">Add Users</span>
                   </a>
                 {% endif %}
-                {% if allocation.project.requires_review and not allocation.project.type.name == 'Class' %}
+                {% if allocation.project.requires_review and allocation.project.get_env|get_value_from_dict:'renewable' %}
                   {% if allocation.is_locked and allocation.status.name == 'Active' and allocation.expires_in <= ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING and allocation.expires_in >= 0 %}
                     <span class="badge badge-warning"><i class="far fa-clock" aria-hidden="true"></i>
                       Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} - Not renewable
@@ -447,9 +451,9 @@ Project Detail
 
 <!-- End Project Attributes -->
 
-{% if project.type.name != 'Class' %}
+{% if 'grant' not in project.get_env|get_value_from_dict:'forbidden_features' %}
   <!-- Start Project Grants -->
-  <!-- <div class="card mb-3">
+  <div class="card mb-3">
     <div class="card-header">
       <h3 class="d-inline" id="grants"><i class="fas fa-trophy" aria-hidden="true"></i> Grants</h3> <span class="badge badge-secondary">{{grants.count}}</span>
       <div class="float-right">
@@ -498,10 +502,11 @@ Project Detail
         <div class="alert alert-info" role="alert"><i class="fas fa-info-circle" aria-hidden="true"></i> There are no grants to display.</div>
       {% endif %}
     </div>
-  </div> -->
+  </div>
   <!-- End Project Grants -->
+{% endif %}
 
-
+{% if 'publication' not in project.get_env|get_value_from_dict:'forbidden_features' %}
   <!-- Start Project Publications -->
   <div class="card mb-3">
     <div class="card-header">
@@ -552,10 +557,11 @@ Project Detail
     </div>
   </div>
   <!-- End Project Publications -->
+{% endif %}
 
-
+{% if 'research_output' not in project.get_env|get_value_from_dict:'forbidden_features' %}
   <!-- Start Project ResearchOutputs -->
-  <!-- <div class="card mb-3">
+  <div class="card mb-3">
     <div class="card-header">
       <h3 class="d-inline" id="research_outputs"><i class="far fa-newspaper" aria-hidden="true"></i> Research Outputs</h3> <span class="badge badge-secondary">{{ research_outputs.count}}</span>
       <div class="float-right">
@@ -591,7 +597,7 @@ Project Detail
         <div class="alert alert-info" role="alert"><i class="fas fa-info-circle"></i> There are no research outputs to display.</div>
       {% endif %}
     </div>
-  </div> -->
+  </div>
   <!-- End Project ResearchOutputs -->
 {% endif %}
 
