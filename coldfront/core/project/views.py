@@ -64,6 +64,7 @@ from coldfront.core.project.models import (
 from coldfront.core.project.utils import generate_usage_history_graph
 from coldfront.core.publication.models import Publication
 from coldfront.core.research_output.models import ResearchOutput
+from coldfront.core.resource.models import ResourceAttribute
 from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.utils.views import ColdfrontListView, NoteCreateView, NoteUpdateView
@@ -241,19 +242,12 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
         context['notes'] = self.return_visible_notes()
 
-        all_allocations = self.object.allocation_set.all()
-        print('all allocations', all_allocations.count())
+        resources = [attr.resource for attr in ResourceAttribute.objects.filter(
+            resourceattributetype__name='Owner',
+            value=self.object.title
+            )]
 
-        resources = []
-        resources_users = []
-        for allocation in all_allocations:
-            print('resources', allocation.resources.all())
-            resources.extend(allocation.resources.all())
-
-        resources_list = list(resources)
-        print('all resources', len(resources_list))
-
-        context['resources'] = resources_list
+        context['resources'] = resources
 
         context['allocation_history_records'] = allocation_history_records
         context['note_update_link'] = 'project-note-update'
