@@ -8,7 +8,6 @@ from coldfront.core.allocation.views import (AllocationAddUsersView,
                                              AllocationRenewView)
 from coldfront.core.project.views import (ProjectAddUsersView,
                                           ProjectRemoveUsersView)
-from coldfront.core.utils.common import import_from_settings
 
 
 @receiver(allocation_activate_user, sender=ProjectAddUsersView)

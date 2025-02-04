@@ -9,4 +9,4 @@ class IPAConfig(AppConfig):
 
     def ready(self):
         if FREEIPA_ENABLE_SIGNALS:
-            import coldfront.plugins.freeipa.signals
+            pass

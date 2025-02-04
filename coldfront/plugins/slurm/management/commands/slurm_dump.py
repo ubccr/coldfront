@@ -1,7 +1,7 @@
 import logging
 import os
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 
 from coldfront.core.resource.models import ResourceAttribute
 from coldfront.plugins.slurm.utils import SLURM_CLUSTER_ATTRIBUTE_NAME

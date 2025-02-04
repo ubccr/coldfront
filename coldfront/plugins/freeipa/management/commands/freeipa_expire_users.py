@@ -7,10 +7,9 @@ import dbus
 from django.core.management.base import BaseCommand
 from django.urls import reverse
 from ipalib import api
-from ipalib.errors import NotFound
 
 from coldfront.core.utils.mail import build_link
-from coldfront.core.allocation.models import Allocation, AllocationUser
+from coldfront.core.allocation.models import AllocationUser
 from coldfront.plugins.freeipa.utils import (CLIENT_KTNAME, FREEIPA_NOOP)
 
 logger = logging.getLogger(__name__)

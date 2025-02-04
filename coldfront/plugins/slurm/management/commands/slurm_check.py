@@ -3,15 +3,12 @@ import os
 import sys
 import tempfile
 
-from django.conf import settings
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 
 from coldfront.core.resource.models import ResourceAttribute
 from coldfront.core.utils.common import import_from_settings
 from coldfront.plugins.slurm.associations import SlurmCluster
-from coldfront.plugins.slurm.utils import (SLURM_ACCOUNT_ATTRIBUTE_NAME,
-                                           SLURM_CLUSTER_ATTRIBUTE_NAME,
-                                           SLURM_USER_SPECS_ATTRIBUTE_NAME,
+from coldfront.plugins.slurm.utils import (SLURM_CLUSTER_ATTRIBUTE_NAME,
                                            SlurmError, slurm_remove_qos,
                                            slurm_dump_cluster, slurm_remove_account,
                                            slurm_remove_assoc)
