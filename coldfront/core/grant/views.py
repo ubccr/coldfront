@@ -7,13 +7,12 @@ from django.http import HttpResponseRedirect, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.views import View
-from django.views.generic import DetailView, FormView, ListView, TemplateView
-from django.views.generic.edit import CreateView, UpdateView
+from django.views.generic import FormView, ListView, TemplateView
+from django.views.generic.edit import UpdateView
 
 from coldfront.core.utils.common import Echo
 from coldfront.core.grant.forms import GrantDeleteForm, GrantDownloadForm, GrantForm
-from coldfront.core.grant.models import (Grant, GrantFundingAgency,
-                                         GrantStatusChoice)
+from coldfront.core.grant.models import (Grant)
 from coldfront.core.project.models import Project
 
 
