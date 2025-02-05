@@ -199,18 +199,6 @@ class SlurmCluster(SlurmBase):
 
     def append_partitions(self):
         """append partition data to accounts"""
-        def create_resource_attributes(partition, current_cluster, cluster_partition_resource_type, slurm_specs_resource_attribute_type):
-            resource, created = Resource.objects.get_or_create(
-                name=partition['PartitionName'],
-                parent_resource=current_cluster,
-                resource_type=cluster_partition_resource_type,
-            )
-            ResourceAttribute.objects.get_or_create(
-                resource=resource,
-                resource_attribute_type=slurm_specs_resource_attribute_type,
-                value=partition['TRESBillingWeights']
-            )
-            return resource
 
         def create_allocation_attributes(project, justification, quantity, resource):
             new_allocation = Allocation.objects.create(
@@ -244,36 +232,45 @@ class SlurmCluster(SlurmBase):
         if not current_cluster_resource:
             logger.debug("Current cluster resource not found", True)
             return
-        cluster_partition_resource_type = ResourceType.objects.filter(name__in=['Cluster Partition'])[0]
-        slurm_specs_resource_attribute_type = ResourceAttributeType.objects.get(name=SLURM_SPECS_ATTRIBUTE_NAME)
+        partition_resourcetype = ResourceType.objects.get(name='Cluster Partition')
+        slurm_specs_resourceattribute_type = ResourceAttributeType.objects.get(name=SLURM_SPECS_ATTRIBUTE_NAME)
         for partition in partitions:
-            new_resource = create_resource_attributes(
-                    partition, current_cluster_resource,
-                    cluster_partition_resource_type,
-                    slurm_specs_resource_attribute_type
+            partition_resource, created = Resource.objects.get_or_create(
+                name=partition['PartitionName'],
+                parent_resource=current_cluster_resource,
+                resource_type=partition_resourcetype,
+            )
+            partition_resource.resourceattribute_set.update_or_create(
+                resource_attribute_type=slurm_specs_resourceattribute_type,
+                defaults={'value': partition['TRESBillingWeights']}
             )
             partition_project_names = self.id_partition_projects(partition)
             # Retrieve all projects that have the same name as the resource accounts
             matching_projects = Project.objects.filter(title__in=partition_project_names)
             # look for allocations belonging to projects outside of the
             # partition_project_names that have this resource
-            matching_allocations = Allocation.objects.filter(resources=new_resource)
+            matching_allocations = Allocation.objects.filter(resources=partition_resource)
             for allocation in matching_allocations:
                 if allocation.project not in matching_projects:
-                    allocation.resources.remove(new_resource)
+                    allocation.resources.remove(partition_resource)
 
             allocations_missing_partition = Allocation.objects.filter(
                     project__in=matching_projects, resources=current_cluster_resource
-            ).exclude(resources=new_resource)
+            ).exclude(resources=partition_resource)
             for allocation in allocations_missing_partition:
-                allocation.resources.add(new_resource)
+                allocation.resources.add(partition_resource)
 
             projects_without_allocations = matching_projects.exclude(
-                allocation__resources=new_resource
+                allocation__resources=partition_resource
             )
-            for project in projects_without_allocations:
-                new_allocation = create_allocation_attributes(project, 'slurm_sync', 1, new_resource)
-                self.add_allocation(new_allocation)
+            logger.info(f'projects without cluster allocations that are on a partition access list: {projects_without_allocations}')
+            # for project in projects_without_allocations:
+            #     new_allocation = create_allocation_attributes(
+            #             project, 'slurm_sync', 1, current_cluster_resource
+            #     )
+            #     new_allocation.resources.add(partition_resource)
+            #     new_allocation.save()
+            #     self.add_allocation(new_allocation)
 
     def pull_sshare_data(self, file=None):
         """append sshare data to accounts and users"""
