@@ -215,7 +215,7 @@ class SlurmCluster(SlurmBase):
         def create_allocation_attributes(project, justification, quantity, resource):
             new_allocation = Allocation.objects.create(
                 project=project, justification=justification, quantity=quantity,
-                status=AllocationStatusChoice.objects.get(name="New"),
+                status=AllocationStatusChoice.objects.get(name="Active"),
             )
             new_allocation.resources.add(resource)
             attribute_name_type = AllocationAttributeType.objects.get(name=SLURM_ACCOUNT_ATTRIBUTE_NAME)
