@@ -26,12 +26,5 @@ jobs:
 
       - name: Test
         run: |
-          uv venv --python 3.12
-          source .venv/bin/activate
-          python -m ensurepip
-          python -m pip install --upgrade pip
-          python -m pip install setuptools
-          python -m pip install -r requirements.txt
-          python -m pip install .
-          python manage.py test        
+          uv run manage.py test       
         shell: bash
