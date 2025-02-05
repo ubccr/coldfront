@@ -49,18 +49,9 @@ class GrantStatusChoice(TimeStampedModel):
     def natural_key(self):
         return [self.name]
     
-class MoneyField(models.CharField):
-    validators = [
-        RegexValidator(r'\$*[\d,.]{1,}$',
-                        'Enter only digits, decimals, commas, dollar signs, or spaces.',
-                        'Invalid input.')
-    ]
+class MoneyField(models.IntegerField):
     def to_python(self, value):
         value = super().to_python(value)
-        if value:
-            value = value.replace(" ", "")
-            value = value.replace(",", "")
-            value = value.replace("$", "")
         return value
         
 class PercentField(models.CharField):
@@ -91,8 +82,8 @@ class Grant(TimeStampedModel):
         grant_start (Date): represents grant start date
         grant_end (Date): represents the grant end date
         percent_credit (float): indicates how much of the grant is awarded as credit
-        direct_funding (float): indicates how much of the grant is directly funded
-        total_amount_awarded (float): indicates the total amount awarded
+        direct_funding (int): indicates how much of the grant is directly funded
+        total_amount_awarded (int): indicates the total amount awarded
         status (GrantStatusChoice): represents the status of the grant
     """
     
@@ -123,8 +114,8 @@ class Grant(TimeStampedModel):
     grant_start = models.DateField('Grant Start Date')
     grant_end = models.DateField('Grant End Date')
     percent_credit = PercentField(max_length=100, validators=[MaxValueValidator(100)])
-    direct_funding = MoneyField(max_length=100)
-    total_amount_awarded = MoneyField(max_length=100)
+    direct_funding = MoneyField()
+    total_amount_awarded = MoneyField()
     status = models.ForeignKey(GrantStatusChoice, on_delete=models.CASCADE)
     history = HistoricalRecords()
 
