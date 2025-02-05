@@ -98,7 +98,11 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             allocations = (
                 allocations.annotate(
                     project_title=F('project__title'),
-                    user_count=Count('allocationuser__id', distinct=True),
+                    user_count=Count(
+                        'allocationuser__id',
+                        filter=Q(allocationuser__status__name='Active'),
+                        distinct=True
+                    ),
                     # For slurm_specs parsing
                     specs_value=Subquery(
                         AllocationAttribute.objects
