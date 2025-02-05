@@ -7,7 +7,7 @@ from django.db.models import Count, Q, Sum
 from django.shortcuts import render
 from django.views.decorators.cache import cache_page
 
-from coldfront.core.allocation.models import Allocation, AllocationUser
+from coldfront.core.allocation.models import Allocation
 from coldfront.core.grant.models import Grant
 from coldfront.core.portal.utils import (generate_allocations_chart_data,
                                          generate_publication_by_year_chart_data,
