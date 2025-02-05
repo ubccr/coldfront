@@ -5,7 +5,6 @@ from django.test import TestCase
 
 from coldfront.core.resource.models import Resource
 from coldfront.plugins.slurm.associations import SlurmCluster
-from coldfront.plugins.slurm.utils import SLURM_CLUSTER_ATTRIBUTE_NAME
 
 
 class AssociationTest(TestCase):

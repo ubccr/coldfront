@@ -28,7 +28,7 @@ class Iquota:
             (_, vc) = kerberos.authGSSClientInit(service)
             kerberos.authGSSClientStep(vc, "")
             return kerberos.authGSSClientResponse(vc)
-        except kerberos.GSSError as e:
+        except kerberos.GSSError:
             raise KerberosError('error initializing GSS client')
 
     def _humanize_user_quota(self, path, user_used, user_limit):
@@ -57,7 +57,7 @@ class Iquota:
 
         try:
             usage = r.json()[0]
-        except KeyError as e:
+        except KeyError:
             raise MissingQuotaError(
                 'Missing user quota for username: %s' % (self.username))
         else:

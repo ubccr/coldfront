@@ -2,21 +2,17 @@ import ast
 import re
 import uuid
 import requests
-import os
 import io
-from io import StringIO
 from bibtexparser.bibdatabase import as_text
 from bibtexparser.bparser import BibTexParser
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.db import IntegrityError
 from django.forms import formset_factory
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
-from django.views.generic import DetailView, ListView, TemplateView, View
+from django.views.generic import TemplateView, View
 from django.views.generic.edit import FormView
-from django.views.static import serve
 
 from coldfront.core.project.models import Project
 from coldfront.core.publication.forms import (

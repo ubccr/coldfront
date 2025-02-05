@@ -1,6 +1,5 @@
 from django import forms
 
-from coldfront.core.publication.models import PublicationSource
 
 
 class PublicationAddForm(forms.Form):

@@ -27,7 +27,7 @@ def is_expandable_type(attribute_type):
     ATTRIBUTE_EXPANSION_TYPE_PREFIX
     """
 
-    atype_name = attribute_type.name;
+    atype_name = attribute_type.name
     return atype_name.startswith(ATTRIBUTE_EXPANSION_TYPE_PREFIX)
 
 def get_attriblist_str(attribute_name, resources=[], allocations=[]):
@@ -262,7 +262,7 @@ def process_attribute_parameter_operation(
         # If reached here, we do not recognize opcode
         logger.error('Unrecognized operation {}= in {}, '
             'returning None'.format( opcode, error_text))
-    except Exception as xcept:
+    except Exception:
         logger.warn("Error performing operator {op}= on oldvalue='{old}' "
             "and argument={arg} in {errtext}".format(
             op=opcode, old=oldvalue, arg=argument, errtext=error_text))

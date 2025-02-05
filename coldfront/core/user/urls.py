@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.contrib.auth.views import LoginView, LogoutView
-from django.urls import path, reverse_lazy
+from django.urls import path
 
 import coldfront.core.user.views as user_views
 

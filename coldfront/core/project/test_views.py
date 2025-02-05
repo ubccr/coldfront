@@ -341,7 +341,7 @@ class ProjectReviewListViewTest(ProjectViewTestBase):
     """Tests for ProjectReviewListView"""
     def setUp(self):
         """set up users and project for testing"""
-        self.url = f'/project/project-review-list'
+        self.url = '/project/project-review-list'
 
     def test_projectreviewlistview_access(self):
         """test access to project review list page"""
@@ -352,7 +352,7 @@ class ProjectArchivedListViewTest(ProjectViewTestBase):
     """Tests for ProjectArchivedListView"""
     def setUp(self):
         """set up users and project for testing"""
-        self.url = f'/project/archived/'
+        self.url = '/project/archived/'
 
     def test_projectarchivedlistview_access(self):
         """test access to project archived list page"""
