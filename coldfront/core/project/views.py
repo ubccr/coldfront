@@ -243,9 +243,9 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['notes'] = self.return_visible_notes()
 
         resources = [attr.resource for attr in ResourceAttribute.objects.filter(
-            resourceattributetype__name='Owner',
+            resource_attribute_type__name='Owner',
             value=self.object.title
-            )]
+        )]
 
         context['resources'] = resources
 
