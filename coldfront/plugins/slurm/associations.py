@@ -168,7 +168,7 @@ class SlurmCluster(SlurmBase):
         if not name:
             name = 'root'
 
-        logger.debug(f"Adding allocation name={name} specs={specs} user_specs={user_specs}")
+        logger.info(f"Adding allocation name={name} specs={specs} user_specs={user_specs}")
         account = self.accounts.get(name, SlurmAccount(name))
         account.add_allocation(allocation, user_specs=user_specs)
         account.specs += specs
@@ -263,14 +263,19 @@ class SlurmCluster(SlurmBase):
             for allocation in matching_allocations:
                 if allocation.project not in matching_projects:
                     allocation.resources.remove(new_resource)
-            for project in matching_projects:
-                try:
-                    existing_allocation = Allocation.objects.get(project=project, resources=current_cluster_resource)
-                    if new_resource not in existing_allocation.resources.all():
-                        existing_allocation.resources.add(new_resource)
-                except Allocation.DoesNotExist:
-                    new_allocation = create_allocation_attributes(project, 'slurm_sync', 1, new_resource)
-                    self.add_allocation(new_allocation)
+
+            allocations_missing_partition = Allocation.objects.filter(
+                    project__in=matching_projects, resources=current_cluster_resource
+            ).exclude(resources=new_resource)
+            for allocation in allocations_missing_partition:
+                allocation.resources.add(new_resource)
+
+            projects_without_allocations = matching_projects.exclude(
+                allocation__resources=new_resource
+            )
+            for project in projects_without_allocations:
+                new_allocation = create_allocation_attributes(project, 'slurm_sync', 1, new_resource)
+                self.add_allocation(new_allocation)
 
     def pull_sshare_data(self, file=None):
         """append sshare data to accounts and users"""
