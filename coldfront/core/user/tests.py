@@ -1,9 +1,6 @@
 from coldfront.core.test_helpers.factories import UserFactory
 from django.test import TestCase
 
-from coldfront.core.test_helpers.factories import (
-    UserFactory,
-)
 
 from coldfront.core.user.models import UserProfile
 
