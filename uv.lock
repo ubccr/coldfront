@@ -78,6 +78,7 @@ dependencies = [
     { name = "django-settings-export" },
     { name = "django-simple-history" },
     { name = "django-split-settings" },
+    { name = "django-sslserver" },
     { name = "django-su" },
     { name = "doi2bib" },
     { name = "factory-boy" },
@@ -105,7 +106,6 @@ prod = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "django-sslserver" },
     { name = "types-python-dateutil" },
 ]
 
@@ -123,6 +123,7 @@ requires-dist = [
     { name = "django-settings-export", specifier = ">=1.2.1" },
     { name = "django-simple-history", specifier = ">=3.8.0" },
     { name = "django-split-settings", specifier = ">=1.3.2" },
+    { name = "django-sslserver", specifier = ">=0.22" },
     { name = "django-su", specifier = ">=1.0.0" },
     { name = "doi2bib", specifier = ">=0.4.0" },
     { name = "factory-boy", specifier = ">=3.3.3" },
@@ -140,10 +141,7 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-dev = [
-    { name = "django-sslserver", specifier = ">=0.22" },
-    { name = "types-python-dateutil", specifier = ">=2.9.0.20241206" },
-]
+dev = [{ name = "types-python-dateutil", specifier = ">=2.9.0.20241206" }]
 
 [[package]]
 name = "crispy-bootstrap4"
