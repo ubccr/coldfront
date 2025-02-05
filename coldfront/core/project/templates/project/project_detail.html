@@ -194,30 +194,28 @@ Project Detail
           </thead>
           <tbody>
             {% for allocation in compute_allocations %}
-              {% if allocation.get_parent_resource.resource_type.name == 'Cluster' %}
-                {% if allocation.status.name == 'Active' %}
-                  <tr style="background-color:#FFFFFF">
-                    <td>{{ allocation.get_parent_resource.name }}</td>
-                    <td>{{ allocation.allocationuser_set.count }}</td>
-                    <td>
-                        {{ allocation.size|floatformat:1 }} {{ allocation.get_parent_resource.unit }}
-                    </td>
-                    <td>
-                      <a href="{% url 'allocation-detail' allocation.pk %}">
-                        <span class="badge badge-success">
-                          <i class="fas fa-search" aria-hidden="true"></i>
-                          View Details
-                        </span>
-                      </a>
-                      <br/>
-                      {% if allocation.get_parent_resource.get_ondemand_status == 'Yes' and ondemand_url %}
-                        <a href="{{ ondemand_url }}" target="_blank"> <img
-                            src="/static/core/portal/imgs/ondemand.png" alt="ondemand cta"
-                            width="25" height="25"></a>
-                      {% endif %}
-                    </td>
-                  </tr>
-                {% endif %}
+              {% if allocation.status.name == 'Active' %}
+                <tr style="background-color:#FFFFFF">
+                  <td>{{ allocation.get_parent_resource.name }}</td>
+                  <td>{{ allocation.allocationuser_set.count }}</td>
+                  <td>
+                    {{ allocation.size|floatformat:1 }} {{ allocation.get_parent_resource.unit }}
+                  </td>
+                  <td>
+                    <a href="{% url 'allocation-detail' allocation.pk %}">
+                      <span class="badge badge-success">
+                        <i class="fas fa-search" aria-hidden="true"></i>
+                        View Details
+                      </span>
+                    </a>
+                    <br/>
+                    {% if allocation.get_parent_resource.get_ondemand_status == 'Yes' and ondemand_url %}
+                      <a href="{{ ondemand_url }}" target="_blank"> <img
+                          src="/static/core/portal/imgs/ondemand.png" alt="ondemand cta"
+                          width="25" height="25"></a>
+                    {% endif %}
+                  </td>
+                </tr>
               {% endif %}
             {% endfor %}
           </tbody>
