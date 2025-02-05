@@ -132,7 +132,7 @@ Resource Detail
 {% endif %}
 
 <!-- Start Resource Allocations -->
-{% if 'Cluster' in resource.name %}
+{% if 'Cluster' in resource.resource_type.name %}
   <div class="card mb-3">
     <div class="card-header">
       <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Resource Allocations</h3>
