@@ -180,23 +180,21 @@ class SlurmCluster(SlurmBase):
         Projects must be permitted on both lists to access a given partition.
         """
         # identify allowed_groups
+        all_slurm_account_names = [a.name for a in list(self.accounts.values())]
         allowed_groups = partition_info.get('AllowGroups', '').split(',')
+        denied_accounts = partition_info.get('DenyAccounts', '').split(',')
         # if 'cluster_users' is in allowed_groups, then all users/accounts are allowed
         if 'cluster_users' in allowed_groups:
-            allowed_groups = list(self.accounts.values())
-        # determine allowed_accounts
-        if 'AllowAccounts' in partition_info:
-            if partition_info['AllowAccounts'] == 'ALL':
-                allowed_accounts = list(self.accounts.values())
-            else:
-                allowed_accounts = partition_info.get('AllowAccounts', '').split(',')
+            partition_project_names = [a for a in all_slurm_account_names if a not in denied_accounts]
         else:
-            allowed_accounts = list(self.accounts.values())
+            allowed_accounts = partition_info.get('AllowAccounts', 'NA').split(',')
+            if allowed_accounts == ['ALL']:
+                partition_project_names = allowed_groups
+            elif allowed_accounts == ['NA']:
+                partition_project_names = [a for a in allowed_groups if a not in denied_accounts]
+            else:
+                partition_project_names = set(allowed_groups + allowed_accounts)
 
-        if 'DenyAccounts' in partition_info:
-            denied_accounts = partition_info.get('DenyAccounts', '').split(',')
-            allowed_accounts = [a for a in allowed_accounts if a not in denied_accounts]
-        partition_project_names = list(set(allowed_groups) & set(allowed_accounts))
         return partition_project_names
 
     def append_partitions(self):
