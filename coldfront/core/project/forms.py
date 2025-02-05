@@ -3,11 +3,8 @@ import datetime
 from django import forms
 from django.db.models.functions import Lower
 from django.shortcuts import get_object_or_404
-from ast import Constant
-from django.db.models.functions import Lower
-from cProfile import label
 
-from coldfront.core.project.models import (Project, ProjectAttribute, ProjectAttributeType, ProjectReview,
+from coldfront.core.project.models import (Project, ProjectAttribute, ProjectReview,
                                            ProjectUserRoleChoice)
 from coldfront.core.utils.common import import_from_settings
 

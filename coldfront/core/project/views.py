@@ -1,25 +1,19 @@
 import datetime
-from pipes import Template
-import pprint
-import django
 import logging 
 from django import forms
 
 from django.conf import settings
 from django.contrib import messages
-from django import forms
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.contrib.auth.decorators import user_passes_test, login_required
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from coldfront.core.utils.common import import_from_settings
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Q
-from django.forms import formset_factory, modelformset_factory
-from django.http import (HttpResponse, HttpResponseForbidden,
-                         HttpResponseRedirect)
+from django.forms import formset_factory
+from django.http import (HttpResponse, HttpResponseRedirect)
 from django.shortcuts import get_object_or_404, redirect, render
-from django.template.loader import render_to_string
 from django.urls import reverse
 from coldfront.core.allocation.utils import generate_guauge_data_from_usage
 from django.views import View
@@ -57,7 +51,7 @@ from coldfront.core.publication.models import Publication
 from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
-from coldfront.core.utils.common import get_domain_url, import_from_settings
+from coldfront.core.utils.common import get_domain_url
 from coldfront.core.utils.mail import send_email, send_email_template
 
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
