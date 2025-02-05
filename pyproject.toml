@@ -44,6 +44,7 @@ dependencies = [
     "humanize>=4.11.0",
     "redis>=5.2.1",
     "requests>=2.32.3",
+    "wheel>=0.45.1",
 ]
 
 [project.optional-dependencies]
