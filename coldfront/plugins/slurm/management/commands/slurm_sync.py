@@ -81,7 +81,11 @@ class Command(BaseCommand):
                 defaults={"value": share_data}
             )
 
-        def create_allocation_users(account, project_allocation, user_status_active, slurm_specs_allocation_user_attribute_type):
+        def update_allocation_users(account, project_allocation, user_status_active, slurm_specs_allocationuser_attribute_type):
+            for allocationuser in project_allocation.allocationuser_set.filter(status__name='Active'):
+                if allocationuser.user.username not in account.users.keys():
+                    allocationuser.status = AllocationUserStatusChoice.objects.get(name='Removed')
+                    allocationuser.save()
             for user_name, user_account in account.users.items():
                 try:
                     user = get_user_model().objects.get(username=user_name)
@@ -96,13 +100,13 @@ class Command(BaseCommand):
                 )
                 share_data = ','.join(f"{key}={value}" for key, value in user_account.share_dict.items())
                 alloc_user.allocationuserattribute_set.update_or_create(
-                    allocationuser_attribute_type=slurm_specs_allocation_user_attribute_type,
+                    allocationuser_attribute_type=slurm_specs_allocationuser_attribute_type,
                     value=share_data
                 )
 
         undetected_projects = []
         slurm_specs_allocation_attribute_type = AllocationAttributeType.objects.get(name='slurm_specs')
-        slurm_specs_allocation_user_attribute_type = AllocationUserAttributeType.objects.get(name='slurm_specs')
+        slurm_specs_allocationuser_attribute_type = AllocationUserAttributeType.objects.get(name='slurm_specs')
         for name, account in cluster.accounts.items():
             try:
                 current_project = Project.objects.get(title=name)
@@ -128,7 +132,7 @@ class Command(BaseCommand):
                     continue
                 create_project_allocation_attributes(project_allocation, account, cloud_acct_name_attr_type, hours_attr_type, slurm_specs_allocation_attribute_type, slurm_acct_name_attr_type_obj)
                 # add allocationusers from account
-                create_allocation_users(account, project_allocation, user_status_active, slurm_specs_allocation_user_attribute_type)
+                update_allocation_users(account, project_allocation, user_status_active, slurm_specs_allocationuser_attribute_type)
             except Project.DoesNotExist:
                 undetected_projects.append(name)
                 continue
