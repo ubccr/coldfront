@@ -816,10 +816,9 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
     def get_non_project_users_to_add(self, allocation_obj, return_all=False, limit=10):
         if allocation_obj.get_parent_resource.resource_type.name == "Storage":
             return []
-        allocation_user_list = [allocation_user.user.id for allocation_user in allocation_obj.allocationuser_set.filter(status__name="Active")]
-        project_user_list = [proj_user.user.id for proj_user in
-                             allocation_obj.project.projectuser_set.filter(status__name='Active')]
-        user_exclude_list = allocation_user_list + project_user_list
+        allocation_user_ids = list(allocation_obj.allocationuser_set.filter(status__name="Active").values_list('user__id', flat=True))
+        project_user_ids = list(allocation_obj.project.projectuser_set.filter(status__name='Active').values_list('user__id', flat=True))
+        user_exclude_list = allocation_user_ids + project_user_ids
         non_project_users_to_add = get_user_model().objects.exclude(id__in=user_exclude_list)
         if return_all:
             return non_project_users_to_add
@@ -905,6 +904,22 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                     username=form_data.get('username')
                 )
 
+                account = allocation_obj.project.title
+                cluster = allocation_obj.get_cluster.get_attribute('slurm_cluster')
+                logger.warning(f"Username {form_data.get('username')} cluster {cluster}")
+                username = form_data.get('username')
+                try:
+                    allocation_user_add_on_slurm.send(
+                        sender=self.__class__,
+                        username=username,
+                        account=account,
+                        cluster=cluster
+                    )
+                except Exception as e:
+                    logger.exception(f"signal processes for addition of user {username} to allocation {allocation_obj.pk} ({allocation.project.title} {allocation.get_parent_resource.name}) failed: {e}")
+                    err = f"addition of user {username} to allocation {allocation_obj.pk} ({allocation.project.title} {allocation.get_parent_resource.name}) failed: {e}"
+                    messages.error(request, err)
+                    continue
                 allocation_user_obj, _ = (
                     allocation_obj.allocationuser_set.update_or_create(
                         user=user_obj, defaults={'status': user_active_status}
@@ -912,17 +927,8 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                 )
                 allocation_activate_user.send(
                     sender=self.__class__,
-                    username=form_data.get('username'),
+                    username=username,
                     allocation_user_pk=allocation_user_obj.pk
-                )
-                account = allocation_obj.project.title
-                cluster = allocation_obj.get_cluster.get_attribute('slurm_cluster')
-                logger.warning(f"Username {form_data.get('username')} cluster {cluster}")
-                allocation_user_add_on_slurm.send(
-                    sender=self.__class__,
-                    username=form_data.get('username'),
-                    account=account,
-                    cluster=cluster
                 )
                 users_added_count += 1
 
