@@ -45,18 +45,6 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         """ UserPassesTestMixin Tests"""
         return True
 
-    def map_project_user(self, user):
-        try:
-            project_user = ProjectUser.objects.get(user=user)
-            return {
-                'username': project_user.user.username,
-                'full_name': f'{project_user.user.first_name} {project_user.user.last_name}',
-                'email': project_user.user.email,
-                'enable_notifications': project_user.enable_notifications,
-            }
-        except ProjectUser.DoesNotExist:
-            return None
-
     def get_child_resources(self, resource_obj):
         child_resources = list(resource_obj.resource_set.all().order_by('name'))
 
@@ -180,7 +168,7 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         context['attributes'] = attributes
         context['child_resources'] = child_resources
         context['user_is_manager'] = resource_obj.user_can_manage_resource(self.request.user)
-        context['resource_admin_list'] = [self.map_project_user(user) for user in resource_obj.allowed_users.all()]
+        context['resource_admin_list'] = resource_obj.allowed_users.values("username", "full_name", "email")
         return context
 
 
