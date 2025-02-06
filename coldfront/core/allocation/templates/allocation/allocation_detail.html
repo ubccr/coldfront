@@ -475,10 +475,12 @@ Allocation Detail
 
   <div class="card-body">
     <div class="table-responsive">
-      <div class="container allocation_users_legend">
-        <i class="fas fa-user-circle"></i> Project User
-        <i class="far fa-user-circle"></i> Non Project User
-      </div>
+      {% if 'Cluster' in allocation.get_parent_resource.resource_type.name %}
+        <div class="container allocation_users_legend">
+          <i class="fas fa-user-circle"></i> Project User
+          <i class="far fa-user-circle"></i> Non Project User
+        </div>
+      {% endif %}
       <div class="container mb-3 mt-3">
         <table id="allocation_datatable" class="table table-striped table-bordered" filter="off">
           <thead>
@@ -514,7 +516,7 @@ Allocation Detail
                     </a>
                   </th>
               {% endif %}
-              {% if user_can_manage_allocation %}
+              {% if user_can_manage_allocation and 'Cluster' in allocation.get_parent_resource.resource_type.name %}
                 <th scope="col">Actions</th>
               {% endif %}
               <!-- <th scope="col">Status</th> -->
@@ -525,8 +527,8 @@ Allocation Detail
           <tbody>
             {% for user in allocation_users %}
               <tr status="Project" title="This is a Project Allocation User">
-                <td> <i class="fas fa-user-circle"></i> {{ user.user.first_name }} {{ user.user.last_name }}</td>
-                <td class="text-success">{{ user.user.username }}</td>
+                <td>{% if 'Cluster' in allocation.get_parent_resource.resource_type.name %} <i class="fas fa-user-circle"></i> {% endif %}{{ user.user.first_name }} {{ user.user.last_name }}</td>
+                <td name="username">{{ user.user.username }}</td>
                 {% if user.status.name == 'Active' %}
                   <td class="text-success">{{ user.status.name }}</td>
                 {% elif user.status.name == 'Removed' %}
@@ -538,7 +540,7 @@ Allocation Detail
                   {% if user.user_usage is None %}
                     0 {{ user.unit }}
                   {% else %}
-                    {{ user.user_usage|floatformat:1 }} {{ user.unit }}
+                    {{ user.usage|floatformat:1 }} {{ user.unit }}
                   {% endif %}
                 </td>
                 {% if user.allocation_usage == None or user.allocation_usage == 0 %}
@@ -558,14 +560,14 @@ Allocation Detail
                   <td>{{ user.effectvusage }}</td>
                   <td>{{ user.normshares }}</td>
                   <td>{{ user.fairshare }}</td>
-                {% endif %}
-                {% if user_can_manage_allocation %}
-                  <td>
-                    <a href="{% url 'allocation-edit-user' allocation.pk user.pk %}">
-                      <i class="far fa-edit" aria-hidden="true"></i>
-                      <span class="sr-only">Edit</span>
-                    </a>
-                  </td>
+                  {% if user_can_manage_allocation %}
+                    <td>
+                      <a href="{% url 'allocation-edit-user' allocation.pk user.pk %}">
+                        <i class="far fa-edit" aria-hidden="true"></i>
+                        <span class="sr-only">Edit</span>
+                      </a>
+                    </td>
+                  {% endif %}
                 {% endif %}
               </tr>
             {% endfor %}
@@ -630,9 +632,12 @@ Allocation Detail
           </script>
 
         </table>
-        <div class="alert alert-warning" role="alert">
-          <i class="fas fa-exclamation-triangle"></i> Non-project users might need access to corresponding storage to make use of their cluster access.
-        </div>
+
+        {% if 'Cluster' in allocation.get_parent_resource.resource_type.name and allocation_non_project_users %}
+          <div class="alert alert-warning" role="alert">
+            <i class="fas fa-exclamation-triangle"></i> Non-project users might need access to corresponding storage to make use of their cluster access.
+          </div>
+	{% endif %}
       </div>
 
     </div>
@@ -756,7 +761,7 @@ Allocation Detail
         var allocation_status = '{{ allocation.status }}';
         var user_is_admin = {{ request.user.is_superuser | lower }};
         var code = [];
-        if (allocation_status in ['New' 'In Progress', 'On Hold'], && user_is_admin && resource_id !== '') {
+        if (allocation_status in ['New', 'In Progress', 'On Hold'] && user_is_admin && resource_id !== '') {
             $.ajax({
                 url: "{% url 'resource-detail' 0 %}".replace('0', resource_id),
                 type: 'GET',
