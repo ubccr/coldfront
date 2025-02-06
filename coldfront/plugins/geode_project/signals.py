@@ -3,7 +3,8 @@ from django.dispatch import receiver
 from coldfront.core.project.signals import project_activate, project_user_role_changed
 from coldfront.core.project.views import ProjectActivateRequestView, ProjectUserDetail
 from coldfront.core.project.models import Project, ProjectUser
-from coldfront.core.allocation.signals import allocation_activate, allocation_activate_user, allocation_remove, allocation_remove_user
+from coldfront.core.allocation.signals import allocation_activate, allocation_activate_user, allocation_remove, allocation_remove_user, allocation_expire
+from coldfront.core.allocation.tasks import update_statuses
 from coldfront.core.allocation.models import Allocation, AllocationUser
 from coldfront.core.allocation.views import (AllocationDetailView,
                                              AllocationAddUsersView,
@@ -33,6 +34,7 @@ def add_groups(sender, **kwargs):
     utils.add_groups(allocation_obj)
 
 
+@receiver(allocation_expire, sender=update_statuses)
 @receiver(allocation_remove, sender=AllocationRemoveView)
 @receiver(allocation_remove, sender=AllocationApproveRemovalRequestView)
 def remove_groups(sender, **kwargs):
@@ -40,7 +42,7 @@ def remove_groups(sender, **kwargs):
     allocation_obj = Allocation.objects.get(pk=allocation_pk)
     if not allocation_obj.get_parent_resource.name == 'Geode-Projects':
         return
-    if not allocation_obj.status.name == 'Removed':
+    if not allocation_obj.status.name in ['Removed', 'Expired']:
         return
 
     utils.remove_groups(allocation_obj)
@@ -55,7 +57,12 @@ def add_user(sender, **kwargs):
     if not allocation_user_obj.allocation.status.name in ['Active', 'Renewal Requested', ]:
         return
 
-    utils.add_user(allocation_user_obj)
+    is_manager = allocation_user_obj.allocation.project.projectuser_set.filter(
+        role__name='Manager', user=allocation_user_obj.user)
+    if is_manager:
+        utils.add_user(allocation_user_obj, "Storage: Admin Group")
+    else:
+        utils.add_user(allocation_user_obj, "Storage: Users Group")
 
 
 @receiver(allocation_remove_user, sender=AllocationRemoveUsersView)
@@ -67,7 +74,12 @@ def remove_user(sender, **kwargs):
     if not allocation_user_obj.allocation.status.name in ['Active', 'Renewal Requested', ]:
         return
 
-    utils.remove_user(allocation_user_obj)
+    is_manager = allocation_user_obj.allocation.project.projectuser_set.filter(
+        role__name='Manager', user=allocation_user_obj.user)
+    if is_manager:
+        utils.remove_user(allocation_user_obj, "Storage: Admin Group")
+    else:
+        utils.remove_user(allocation_user_obj, "Storage: Users Group")
 
 
 @receiver(project_user_role_changed, sender=ProjectUserDetail)
