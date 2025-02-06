@@ -161,22 +161,17 @@ Resource Detail
                 <th scope="col">CPU Hours</th>
                 <th scope="col">Percent Usage</th>
                 <th scope="col">RawShare</th>
-                <th scope="col">EffectvUsage
-                  <a class="info-button" title="EffectvUsage" data-toggle="popover" data-trigger="click"
-                     data-content="The fraction of the cluster the account has been granted. For more information, go <a href='https://docs.rc.fas.harvard.edu/kb/fairshare/#articleTOC_4' title='fairshare calculation'>here</a>.">
-                    <i class="fas fa-info-circle" aria-hidden="true"></i>
-                  </a>
+                <th scope="col">EffectvUsage <a class="info-button" title="EffectvUsage" data-toggle="popover" data-trigger="click"
+                    data-content="The fraction of the cluster the account has been granted. For more information, go <a href='https://docs.rc.fas.harvard.edu/kb/fairshare/#articleTOC_4' title='fairshare calculation'>here</a>."><i class="fas fa-info-circle"
+                    aria-hidden="true"></i></a>
                 </th>
-                <th scope="col">NormShares
-                  <a class="info-button" title="NormShares" data-toggle="popover" data-trigger="click"
-                      data-content="Calculated fairshare per user. For more information on this number, go <a href='https://docs.rc.fas.harvard.edu/kb/fairshare/#articleTOC_4' title='fairshare calculation'>here</a>.">
-                    <i class="fas fa-info-circle" aria-hidden="true"></i>
-                  </a>
+                <th scope="col">NormShares <a class="info-button" title="NormShares" data-toggle="popover" data-trigger="click"
+                      data-content="Calculated fairshare per user. For more information on this number, go <a href='https://docs.rc.fas.harvard.edu/kb/fairshare/#articleTOC_4' title='fairshare calculation'>here</a>."
+		      ><i class="fas fa-info-circle" aria-hidden="true"></i></a>
                 </th>
-                <th scope="col">FairShare
-                  <a class="info-button" title="FairShare" data-toggle="popover" data-trigger="click"
-                     data-content="User fairshare, calculated by the equation 2^(-EffectvUsage/NormShares). For more information on fairshare calculation, go <a href='https://docs.rc.fas.harvard.edu/kb/fairshare/#articleTOC_4' title='fairshare calculation'>here</a>.">
-                    <i class="fas fa-info-circle" aria-hidden="true"></i>
+                <th scope="col">FairShare <a class="info-button" title="FairShare" data-toggle="popover" data-trigger="click"
+                     data-content="User fairshare, calculated by the equation 2^(-EffectvUsage/NormShares). For more information on fairshare calculation, go <a href='https://docs.rc.fas.harvard.edu/kb/fairshare/#articleTOC_4' title='fairshare calculation'>here</a>."
+		     ><i class="fas fa-info-circle" aria-hidden="true"></i>
                   </a>
                 </th>
               </tr>
@@ -213,19 +208,6 @@ Resource Detail
                 </tr>
               {% endfor %}
             </tbody>
-
-            <script type="text/javascript">
-                function findTotal(){
-                    var arr = document.getElementsByName('usage');
-                    var tot=0;
-                    for(var i=0;i<arr.length;i++){
-                        if(parseInt(arr[i].value))
-                            tot += parseInt(arr[i].value);
-                    }
-                    document.getElementById('total').value = tot;
-                }
-            </script>
-
           </table>
         </div>
 
@@ -325,11 +307,15 @@ Resource Detail
 </div>
 
 
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.24/af-2.3.5/b-1.7.0/b-colvis-1.7.0/b-html5-1.7.0/b-print-1.7.0/cr-1.5.3/date-1.0.2/fc-3.3.2/kt-2.6.1/r-2.2.7/rg-1.1.2/rr-1.2.7/sl-1.3.2/datatables.min.css"/>
+<script type="text/javascript" src="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.24/af-2.3.5/b-1.7.0/b-colvis-1.7.0/b-html5-1.7.0/b-print-1.7.0/cr-1.5.3/date-1.0.2/fc-3.3.2/kt-2.6.1/r-2.2.7/rg-1.1.2/rr-1.2.7/sl-1.3.2/datatables.min.js"></script>
+
 <script>
   $(document).ready(function () {
     $('#child_resource_table, #mydatatable, #resource_admin_table').DataTable({
       lengthMenu: [5, 10, 25, 50, 100],
-      "pageLength": 10,
+      pageLength: 10,
+      dom: 'lfrtip',
     });
   });
 </script>
