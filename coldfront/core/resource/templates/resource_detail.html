@@ -132,7 +132,7 @@ Resource Detail
 {% endif %}
 
 <!-- Start Resource Allocations -->
-{% if 'Cluster' in resource.resource_type.name %}
+{% if user_is_manager and 'Cluster' in resource.resource_type.name %}
   <div class="card mb-3">
     <div class="card-header">
       <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Resource Allocations</h3>
@@ -141,13 +141,11 @@ Resource Detail
       {# {% if user_sync_dt %}#}
       {# <span class="float-right">Last Sync: {{user_sync_dt}}</span>#}
       {# {% endif %}#}
-      {% if user_is_manager %}
-        <div class="float-right">
-          <a class="btn btn-danger" href="{% url 'resource-allocations-edit' resource.pk %}" role="button">
-            <i class="fas fa-edit" aria-hidden="true"></i> Edit Resource Allocations
-          </a>
-        </div>
-      {% endif %}
+      <div class="float-right">
+        <a class="btn btn-danger" href="{% url 'resource-allocations-edit' resource.pk %}" role="button">
+          <i class="fas fa-edit" aria-hidden="true"></i> Edit Resource Allocations
+        </a>
+      </div>
     </div>
     <div class="card-body">
       <div class="table-responsive">
@@ -186,14 +184,14 @@ Resource Detail
                     </a>
                   </td>
                   <td>{{ allocation.user_count }}</td>
-                  <td data-sort="{{allocation.usage}}" name="usage_bytes">
+                  <td data-sort="{{allocation.usage}}" name="usage">
                     {% if allocation.usage is None %}
                       0
                     {% else %}
                       {{ allocation.usage|floatformat:1 }} CPU Hours
                     {% endif %}
                   </td>
-                  <td data-sort="{{allocation.usage}}" name="usage_bytes">
+                  <td data-sort="{{allocation.usage}}" name="usage_pct">
                     {% if allocation.usage is None or allocation.usage == 0 %}
                       0%
                     {% else %}
