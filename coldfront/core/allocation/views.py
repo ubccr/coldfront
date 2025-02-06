@@ -2243,6 +2243,10 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             messages.error(request, f'You cannot request a change to an allocation with status "{allocation_obj.status.name}".')
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
 
+        if allocation_obj.allocationchangerequest_set.filter(status__name='Pending'):
+            messages.error(request, f'You cannot request a change to an allocation with a pending change request')
+            return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
+
         return super().dispatch(request, *args, **kwargs)
 
     def get_allocation_attributes_to_change(self, allocation_obj):
