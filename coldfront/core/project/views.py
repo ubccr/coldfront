@@ -225,10 +225,10 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             time_chart_data_error = None
         except Exception as e:
             time_chart_data_error = e
-            time_chart_data = None
-        if time_chart_data:
+            time_chart_data = '"null"'
+        if time_chart_data != '"null"':
             if not time_chart_data['groups'][0]:
-                time_chart_data = None
+                time_chart_data = '"null"'
 
         if 'django_q' in settings.INSTALLED_APPS:
             # get last successful runs of djangoq task responsible for projectuser data pull

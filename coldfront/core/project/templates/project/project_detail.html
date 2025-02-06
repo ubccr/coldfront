@@ -300,7 +300,7 @@ Project Detail
 <!-- End Allocations -->
 
 <!-- Start Invoice History Chart -->
-<!-- {% if time_chart_data %}
+<!-- {% if time_chart_data != '"null"' %}
 <div class="html2pdf__page-break"></div>
 <div class="card mb-3">
   <div class="card-header">
@@ -692,6 +692,7 @@ Project Detail
 
 
 <script>
+    var None = null;
     var time_chart_data = {{ time_chart_data | safe }};
 
     function getCookie(name) {
@@ -710,7 +711,7 @@ Project Detail
         return cookieValue;
     }
 
-    function drawBillHistoryChart() {
+    function drawBillHistoryChart(time_chart_data) {
         var chart = c3.generate({
             bindto: '#chartCostHistory',
             data: time_chart_data,
@@ -742,7 +743,9 @@ Project Detail
 
     $(document).ready(function () {
 
-        drawBillHistoryChart();
+	if (time_chart_data != "null") {
+            drawBillHistoryChart(time_chart_data)
+	};
 
         var guage_data = {{ guage_data | safe }};
         drawGauges(guage_data);
