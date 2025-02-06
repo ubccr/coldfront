@@ -183,8 +183,10 @@ class SlateProjectView:
         form_data = form.cleaned_data
 
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
-        if utils.get_pi_total_allocated_quantity(project_obj.pi.username) + form_data.get('storage_space') <= SLATE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD:
-            form.cleaned_data['account_number'] = ''
+        if utils.get_pi_total_allocated_quantity(project_obj.pi.username) + form_data.get('storage_space') > SLATE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD:
+            if not form_data.get('account_number'):
+                form.add_error('account_number', 'You must provide an account number')
+                return self.form_invalid(form)
 
         if SLATE_PROJECT_ENABLE_MOU_SERVER:
             start_date = form_data.get('start_date', '')

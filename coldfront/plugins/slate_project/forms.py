@@ -27,9 +27,10 @@ class SlateProjectForm:
         ('SB', 'SB'),
         ('SE', 'SE'),
     )
-    STORAGE_QUANTITY_CHOICES = (
-        (num, num) for num in range(31)
-    )
+    STORAGE_QUANTITY_CHOICES = [
+        (num, num) for num in range(1, 31)
+    ]
+    STORAGE_QUANTITY_CHOICES = [('', '')] + STORAGE_QUANTITY_CHOICES
     DATE_RANGES = (
         ('', ''),
         ('<1 year', '<1 year'),
@@ -52,7 +53,7 @@ class SlateProjectForm:
     expected_project_lifetime = forms.ChoiceField(choices=DATE_RANGES)
     storage_space = forms.IntegerField(min_value=1, max_value=30, widget=forms.Select(choices=STORAGE_QUANTITY_CHOICES))
     start_date = forms.DateField(disabled=True)
-    account_number = forms.CharField(max_length=9, initial='00-000-00', validators=[ValidateAccountNumber()])
+    account_number = forms.CharField(max_length=9, validators=[ValidateAccountNumber()], required=False)
     store_ephi = forms.ChoiceField(choices=YES_NO_CHOICES, widget=RadioSelect)
 
     def __init__(self, request_user, resource_attributes, project_obj, resource_obj, *args, **kwargs):

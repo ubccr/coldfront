@@ -158,9 +158,11 @@ Request New Allocation
   $(document).ready(function () {
     setUpDirectoryNameValidation()
 
-    if (total_pi_allocated_quantity > pi_allocated_quantity_threshold) {
-      $("#id_account_number").val('');
-    } else {
+    account_label = $('label[for="id_account_number"]')
+    account_label.html('Account*')
+
+    if (total_pi_allocated_quantity <= pi_allocated_quantity_threshold) {
+      $("#id_account_number").attr('required', false);
       $("#div_id_account_number").hide();
       $("#div_amount_warning").hide();
     }
@@ -169,11 +171,11 @@ Request New Allocation
       var current_value = total_pi_allocated_quantity + parseInt(e.target.value)
       if (current_value > pi_allocated_quantity_threshold) {
         $("#div_id_account_number").show();
-        $("#id_account_number").val('');
+        $("#id_account_number").attr('required', true);
         $("#div_amount_warning").show();
       } else {
+        $("#id_account_number").attr('required', false);
         $("#div_id_account_number").hide();
-        $("#id_account_number").val('00-000-00');
         $("#div_amount_warning").hide();
       }
     })
