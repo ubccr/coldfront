@@ -38,7 +38,7 @@ class GeodeProjectForm:
     last_name = forms.CharField(max_length=40, disabled=True)
     campus_affiliation = forms.ChoiceField(choices=CAMPUS_CHOICES)
     email = forms.EmailField(max_length=40, disabled=True)
-    project_directory_name = forms.CharField(max_length=23)
+    group_name = forms.CharField(max_length=23)
     description = forms.CharField(widget=forms.Textarea)
     data_generation = forms.CharField(max_length=128)
     data_protection = forms.CharField(max_length=128)
@@ -52,7 +52,6 @@ class GeodeProjectForm:
         self.fields['first_name'].initial = request_user.first_name
         self.fields['last_name'].initial = request_user.last_name
         self.fields['email'].initial = request_user.email
-        self.fields['project_directory_name'].widget.attrs.update({'placeholder': 'YourDept-ProjectName'})
 
         for field in self.errors:
             self.fields[field].widget.attrs.update({'autofocus': ''})
