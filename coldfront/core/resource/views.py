@@ -98,11 +98,11 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             allocations = (
                 allocations.annotate(
                     project_title=F('project__title'),
-                    user_count=Count(
+                    user_count=Cast(Count(
                         'allocationuser__id',
                         filter=Q(allocationuser__status__name='Active'),
                         distinct=True
-                    ),
+                    ), IntegerField()),
                     # For slurm_specs parsing
                     specs_value=Subquery(
                         AllocationAttribute.objects
@@ -139,7 +139,7 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                         StrIndex('specs_value', Value('FairShare=')) + 10,
                         Length('specs_value')
                     ),
-                    usage=Coalesce(
+                    usage=Cast(Coalesce(
                         Subquery(
                             AllocationAttribute.objects
                             .filter(
@@ -149,8 +149,8 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                             .values('value')[:1]
                         ),
                         Value('0')
-                    ),
-                    effectvusage=Coalesce(
+                    ), FloatField()),
+                    effectvusage=Cast(Coalesce(
                         Subquery(
                             AllocationAttribute.objects
                             .filter(
@@ -160,7 +160,7 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                             .values('value')[:1]
                         ),
                         Value('0')
-                    )
+                    ), FloatField())
                 )
                 .order_by('id')
                 .values(
