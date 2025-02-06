@@ -1,3 +1,5 @@
+import os
+import csv
 import logging
 import requests
 from urllib import parse
@@ -22,6 +24,7 @@ from coldfront.plugins.slate_project.utils import check_directory_name_duplicate
 from coldfront.core.resource.models import Resource
 
 
+SLATE_PROJECT_INCOMING_DIR = import_from_settings('SLATE_PROJECT_INCOMING_DIR', '')
 SLATE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD = import_from_settings('SLATE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD', 120)
 SLATE_PROJECT_ENABLE_MOU_SERVER = import_from_settings('SLATE_PROJECT_ENABLE_MOU_SERVER', False)
 if SLATE_PROJECT_ENABLE_MOU_SERVER:
@@ -176,6 +179,33 @@ class SlateProjectView:
         pi_username = project_obj.pi.username
         context['total_pi_allocated_quantity'] = utils.get_pi_total_allocated_quantity(pi_username)
         context['pi_allocated_quantity_threshold'] = SLATE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD
+        all_slate_projects = []
+        total_allocated_storage = 0
+        with open(os.path.join(SLATE_PROJECT_INCOMING_DIR, 'netid-all-allocated_quantity.csv'), 'r') as all_projects:
+            csv_reader = csv.reader(all_projects)
+            for line in csv_reader:
+                allocation_url = 'N/A'
+                project_url = 'N/A'
+                project_title = 'Not Imported'
+                if line[0] == pi_username:
+                    gid_obj = AllocationAttribute.objects.filter(
+                        allocation_attribute_type__name='GID', allocation__status__name='Active', value=line[1]).prefetch_related('allocation')
+                    if gid_obj.exists():
+                        allocation_obj = gid_obj[0].allocation
+                        allocation_url = reverse('allocation-detail', kwargs={'pk': allocation_obj.pk})
+                        project_title = allocation_obj.project.title
+                        project_url = reverse('project-detail', kwargs={'pk': allocation_obj.project.pk})
+
+                    total_allocated_storage += int(line[3])
+                    all_slate_projects.append({
+                        'directory_name': line[2],
+                        'storage_quantity': line[3],
+                        'project_title': project_title,
+                        'project_url': project_url,
+                        'allocation_url': allocation_url
+                    })
+        context['all_slate_projects'] = all_slate_projects
+        context['total_allocated_storage'] = total_allocated_storage
 
         return context
 

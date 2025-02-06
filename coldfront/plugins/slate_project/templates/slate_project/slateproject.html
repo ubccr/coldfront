@@ -23,6 +23,52 @@ Request New Allocation
 <h2>Request New {{ resource_obj.name }} Allocation <br><small>Project: {{ project_obj.title }}</small></h2>
 <hr>
 
+{% if all_slate_projects %}
+  <div class="card">
+    <div class="card-header">
+      <h4>Active Slate Projects</h4>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th scope="col">Allocated</th>
+              <th scope="col">Directory Name</th>
+              <th scope="col">Project</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for slate_project in all_slate_projects %}
+              <tr>
+                <td>{{ slate_project.storage_quantity }} TB</td>
+                <td>
+                  {% if slate_project.allocation_url == 'N/A' %}
+                    {{ slate_project.directory_name }}
+                  {% else %}
+                    <a href="{{ slate_project.allocation_url }}" target="_blank">{{ slate_project.directory_name }} <i class="fas fa-external-link-alt" aria-hidden="true"></i></a>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if slate_project.project_url == 'N/A' %}
+                    {{ slate_project.project_title }}
+                  {% else %}
+                    <a href="{{ slate_project.project_url }}" target="_blank">{{ slate_project.project_title }} <i class="fas fa-external-link-alt" aria-hidden="true"></i></a>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card-footer">
+      Total Storage Allocated: {{ total_allocated_storage }} TB
+    </div>
+  </div>
+  <hr>
+{% endif %}
+
 <form method="post">
   {% csrf_token %}
   {{ form|as_crispy_errors }}
