@@ -14,6 +14,9 @@
       <h2>Edit Allocations for {{resource.name}} {{resource.resource_type.name}}</h2>
       <hr>
     </div>
+    <div class="alert alert-warning" role="alert">
+      <i class="fas fa-exclamation-triangle"></i> Editing Cluster Allocation values changes cluster-wide values for the corresponding slurm accounts. Please keep this in mind when making changes.
+    </div>
     <!-- Start Allocation Users -->
     <div class="mb-3">
       <div class="row">
