@@ -973,6 +973,8 @@ class AllocationEditUserView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             err = 'You cannot edit this allocation because it is locked! Contact support for details.'
         elif allocation_obj.status.name not in PENDING_ACTIVE_ALLOCATION_STATUSES:
             err = f'You cannot edit users on an allocation with status {allocation_obj.status.name}.'
+        elif 'Cluster' not in allocation_obj.get_parent_resource.resource_type.name:
+            err = 'You cannot edit storage allocation users.'
         if err:
             messages.error(request, err)
             return HttpResponseRedirect(
