@@ -814,15 +814,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             )
         return super().dispatch(request, *args, **kwargs)
 
-    def map_project_user(self, project_user):
-        return {
-            'username': project_user.username,
-            'first_name': project_user.first_name,
-            'last_name': project_user.last_name,
-            'email': project_user.email
-        }
-
-    def get_non_project_users_to_add(self, allocation_obj, return_all=False, limit= 10):
+    def get_non_project_users_to_add(self, allocation_obj, return_all=False, limit=10):
         if allocation_obj.get_parent_resource.resource_type.name == "Storage":
             return []
         allocation_user_list = [allocation_user.user.id for allocation_user in allocation_obj.allocationuser_set.filter(status__name="Active")]
@@ -832,10 +824,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         non_project_users_to_add = get_user_model().objects.exclude(id__in=user_exclude_list)
         if return_all:
             return non_project_users_to_add
-        return [
-            self.map_project_user(project_user)
-            for project_user in non_project_users_to_add
-        ][0:limit]
+        return non_project_users_to_add.values('username', 'first_name', 'last_name', 'email')[0:limit]
 
     def get_users_to_add(self, allocation_obj):
         active_users_in_project = list(allocation_obj.project.projectuser_set.filter(
@@ -853,10 +842,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             get_user_model().objects.filter(username__in=missing_users)
             .exclude(pk=allocation_obj.project.pi.pk)
         )
-        users_to_add = [
-            self.map_project_user(user)
-            for user in missing_users
-        ]
+        users_to_add = missing_users.values('username', 'first_name', 'last_name', 'email')
         return users_to_add
 
     def non_project_users_search(self, allocation_obj, search_term):
@@ -864,10 +850,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             last_name__icontains=search_term) or Q(title_icontains=search_term))
         non_project_users = self.get_non_project_users_to_add(allocation_obj, return_all=True).filter(
             like_filter).exclude(project=allocation_obj.project)
-        return [
-            self.map_project_user(project_user)
-            for project_user in non_project_users
-        ]
+        return non_project_users.values('username', 'first_name', 'last_name', 'email')
 
     def search_non_project_users(self, allocation_obj, search_term, request):
         found_non_project_users = self.non_project_users_search(allocation_obj, search_term)
