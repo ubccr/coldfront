@@ -313,10 +313,6 @@ class AllocationAddNonProjectUserForm(forms.Form):
     selected = forms.BooleanField(initial=False, required=False)
 
 
-class AllocationEditUserForm(forms.Form):
-    fairshare = forms.CharField(max_length=10, required=True)
-
-
 class AllocationRemoveUserForm(forms.Form):
     username = forms.CharField(max_length=150, disabled=True)
     first_name = forms.CharField(max_length=150, required=False, disabled=True)
