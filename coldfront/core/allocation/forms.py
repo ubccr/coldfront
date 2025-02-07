@@ -273,9 +273,13 @@ class AllocationAttributeUpdateForm(forms.Form):
     new_value = forms.CharField(max_length=150, required=False, disabled=False)
 
     def __init__(self, *args, **kwargs):
+        new_value_disabled = kwargs.pop('new_value_disabled')
         super().__init__(*args, **kwargs)
         self.fields['change_pk'].widget = forms.HiddenInput()
         self.fields['attribute_pk'].widget = forms.HiddenInput()
+
+        if new_value_disabled:
+            self.fields['new_value'].disabled = True
 
     def clean(self):
         cleaned_data = super().clean()

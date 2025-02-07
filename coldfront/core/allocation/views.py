@@ -1940,14 +1940,21 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
         allocation_attributes_to_change = self.get_allocation_attributes_to_change(
             allocation_change_obj)
 
+        allocation_obj = allocation_change_obj.allocation
         if allocation_attributes_to_change:
+            user_can_change = check_if_groups_in_review_groups(
+                allocation_obj.get_parent_resource.review_groups.all(),
+                self.request.user.groups.all(),
+                'update_allocationattributechangerequest'
+            )
             formset = formset_factory(self.formset_class, max_num=len(
                 allocation_attributes_to_change))
             formset = formset(
-                initial=allocation_attributes_to_change, prefix='attributeform')
+                initial=allocation_attributes_to_change,
+                prefix='attributeform',
+                form_kwargs={'new_value_disabled': not user_can_change})
             context['formset'] = formset
 
-        allocation_obj = allocation_change_obj.allocation
         context['user_has_permissions'] = check_if_groups_in_review_groups(
             allocation_obj.get_parent_resource.review_groups.all(),
             self.request.user.groups.all(),
@@ -1959,6 +1966,11 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
 
         context['allocation_change'] = allocation_change_obj
         context['attribute_changes'] = allocation_attributes_to_change
+        context['user_can_delete'] = check_if_groups_in_review_groups(
+            allocation_obj.get_parent_resource.review_groups.all(),
+            self.request.user.groups.all(),
+            'delete_allocationattributechangerequest'
+        )
 
         return context
 
@@ -2013,10 +2025,18 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
             allocation_change_obj)
 
         if allocation_attributes_to_change:
+            user_can_change = check_if_groups_in_review_groups(
+                allocation_obj.get_parent_resource.review_groups.all(),
+                self.request.user.groups.all(),
+                'update_allocationattributechangerequest'
+            )
             formset = formset_factory(self.formset_class, max_num=len(
                 allocation_attributes_to_change))
             formset = formset(
-                request.POST, initial=allocation_attributes_to_change, prefix='attributeform')
+                request.POST,
+                initial=allocation_attributes_to_change,
+                prefix='attributeform',
+                form_kwargs={'new_value_disabled': not user_can_change})
 
         note_form = AllocationChangeNoteForm(
             request.POST, initial={'notes': allocation_change_obj.notes})
