@@ -57,12 +57,12 @@ class Command(BaseCommand):
             project_allocation.allocationattribute_set.get_or_create(
                 # 'slurm_account_name'? XDMOD_ACCOUNT_ATTRIBUTE_NAME
                 allocation_attribute_type=cloud_acct_name_attr_type,
-                value=name
+                defaults={'value': name}
             )
             project_allocation.allocationattribute_set.get_or_create(
                 # 'Cloud Account Name'? XDMOD_CLOUD_PROJECT_ATTRIBUTE_NAME
                 allocation_attribute_type=cloud_acct_name_attr_type,
-                value=name
+                defaults={'value': name}
             )
 
             project_allocation.allocationattribute_set.get_or_create(

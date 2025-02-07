@@ -211,8 +211,8 @@ def slurm_collect_shares(cluster=None, output_file=None):
     share_data = slurm_fixed_width_lines_to_dict(share_data)
     return share_data
 
-def slurm_get_user_info(username, account):
-    cmd = SLURM_CMD_GET_USER_INFO.format(shlex.quote(username), shlex.quote(account)) + ' --json'
-    output = _run_slurm_cmd(cmd)
+def slurm_get_user_info(username, account, noop=False):
+    cmd = SLURM_CMD_GET_USER_INFO.format(shlex.quote(username), shlex.quote(account))
+    output = _run_slurm_cmd(cmd, noop=noop)
     output = output.decode('utf-8').split('\n')
     return output

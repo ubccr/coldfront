@@ -43,8 +43,8 @@ def allocation_activate_user_handler(sender, **kwargs):
     username = allocationuser.user.username
     project_title = allocationuser.allocation.project.title
     slurm_stats = slurm_get_user_info(username, project_title)
-    keys = slurm_stats[0]
-    values = next(i for i in slurm_stats if username in i and project_title in i)
+    keys = slurm_stats[0].split('|')
+    values = next(i for i in slurm_stats if username in i and project_title in i).split('|')
     stats = dict(zip(keys, values))
     # Extract only the fields we want in the order specified
     wanted_fields = ['RawShares', 'NormShares', 'RawUsage', 'FairShare']
