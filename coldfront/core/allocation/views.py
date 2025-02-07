@@ -223,7 +223,13 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         }
 
         form = AllocationUpdateForm(initial=initial_data)
-        if not self.request.user.is_superuser:
+        user_has_permissions = check_if_groups_in_review_groups(
+            allocation_obj.get_parent_resource.review_groups.all(),
+            self.request.user.groups.all(),
+            'change_allocation'
+        )
+
+        if not self.request.user.is_superuser and not user_has_permissions:
             form.fields['is_locked'].disabled = True
             form.fields['is_changeable'].disabled = True
 
