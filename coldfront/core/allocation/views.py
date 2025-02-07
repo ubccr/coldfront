@@ -1945,7 +1945,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
             user_can_change = check_if_groups_in_review_groups(
                 allocation_obj.get_parent_resource.review_groups.all(),
                 self.request.user.groups.all(),
-                'update_allocationattributechangerequest'
+                'change_allocationattributechangerequest'
             )
             formset = formset_factory(self.formset_class, max_num=len(
                 allocation_attributes_to_change))
@@ -2028,7 +2028,7 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
             user_can_change = check_if_groups_in_review_groups(
                 allocation_obj.get_parent_resource.review_groups.all(),
                 self.request.user.groups.all(),
-                'update_allocationattributechangerequest'
+                'change_allocationattributechangerequest'
             )
             formset = formset_factory(self.formset_class, max_num=len(
                 allocation_attributes_to_change))
