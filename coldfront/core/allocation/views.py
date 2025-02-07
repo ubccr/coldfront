@@ -989,7 +989,12 @@ class AllocationEditUserView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         initial_data = {'attribute_pk': allocationuser_obj.pk, 'value': allocationuser_obj.get_slurm_spec_value('RawShares')}
         form = AllocationUserAttributeUpdateForm(initial=initial_data)
 
-        context = {'allocation': allocation_obj, 'user': allocationuser_obj, 'userid': allocationuser_obj.pk, 'formset': form}
+        context = {
+            'allocation': allocation_obj,
+            'allocationuser': allocationuser_obj,
+            'userid': allocationuser_obj.pk,
+            'formset': form
+        }
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
@@ -1009,7 +1014,6 @@ class AllocationEditUserView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                 )
 
             # TODO: Update fairshare
-            # allocation_obj.fairshare = form_data.get('fairshare')
             try:
                 allocation_user_attribute_edit.send(
                     sender=self.__class__, user=allocationuser_obj, account=account, raw_share=form_data['value']
