@@ -982,6 +982,12 @@ class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templat
         context = super().get_context_data(**kwargs)
         allocation_list = Allocation.objects.filter(
             status__name__in=['New', 'Renewal Requested', 'Paid', 'Approved',])
+
+        # Restrict to approvers reviewing only their school's projects and let superuser see all
+        if self.request.user.has_perm('allocation.can_review_allocation_requests'):
+            user_school = self.request.user.userprofile.school
+            allocation_list = allocation_list.filter(project__school=user_school)
+
         context['allocation_status_active'] = AllocationStatusChoice.objects.get(name='Active')
         context['allocation_list'] = allocation_list
         context['PROJECT_ENABLE_PROJECT_REVIEW'] = PROJECT_ENABLE_PROJECT_REVIEW
@@ -1689,6 +1695,13 @@ class AllocationChangeListView(LoginRequiredMixin, UserPassesTestMixin, Template
         context = super().get_context_data(**kwargs)
         allocation_change_list = AllocationChangeRequest.objects.filter(
             status__name__in=['Pending', ])
+
+        # Restrict to approvers reviewing only their school's projects and let superuser see all
+        if self.request.user.has_perm(
+                'allocation.can_review_allocation_requests') and not self.request.user.is_superuser:
+            user_school = getattr(self.request.user.userprofile, 'school', None)
+            allocation_change_list = allocation_change_list.filter(project__school=user_school)
+
         context['allocation_change_list'] = allocation_change_list
         context['PROJECT_ENABLE_PROJECT_REVIEW'] = PROJECT_ENABLE_PROJECT_REVIEW
         return context
@@ -1865,7 +1878,18 @@ class AllocationChangeDeleteAttributeView(LoginRequiredMixin, UserPassesTestMixi
             return True
 
         if self.request.user.has_perm('allocation.can_review_allocation_requests'):
-            return True
+            # Get the allocation change request
+            pk = self.kwargs.get('pk')
+            allocation_attribute_change_obj = get_object_or_404(AllocationAttributeChangeRequest, pk=pk)
+            allocation_change_obj = allocation_attribute_change_obj.allocation_change_request
+            allocation_project = allocation_change_obj.allocation.project
+
+            # Get user's school
+            user_school = getattr(self.request.user.userprofile, 'school', None)
+
+            # Check if the user is an approver and belongs to the same school as the project
+            if user_school and allocation_project.school == user_school:
+                return True
 
         messages.error(self.request, 'You do not have permission to update an allocation change request.')
         return False
