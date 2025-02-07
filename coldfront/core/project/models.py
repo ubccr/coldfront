@@ -1,10 +1,12 @@
 import datetime
 from enum import Enum
 
+from coldfront.core.resource.models import Resource
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.validators import MinLengthValidator
 from django.db import models
+from django.db.models import JSONField
 from coldfront.core.utils.validate import AttributeValidator
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
@@ -90,8 +92,27 @@ We do not have information about your research. Please provide a detailed descri
     status = models.ForeignKey(ProjectStatusChoice, on_delete=models.CASCADE)
     force_review = models.BooleanField(default=False)
     requires_review = models.BooleanField(default=True)
+    project_names = JSONField(default=list)
     history = HistoricalRecords()
     objects = ProjectManager()
+
+    def update_project_names(self):
+        """Automatically updates the project_names field based on the project's PK and associated resources."""
+        if not self.pk:  # Ensure the project is saved before generating names
+            return
+
+        # Base project name
+        project_name_general = f"pr_{self.pk}_general"
+
+        # Get associated resources for the school's projects
+        resource_names = Resource.objects.filter(school=self.school).values_list('name', flat=True)
+
+        # Generate names for each resource
+        project_names = [f"pr_{self.pk}_{resource_name}" for resource_name in resource_names]
+
+        # Update project_names field
+        self.project_names = [project_name_general] + project_names
+        self.save(update_fields=['project_names'])  # Save only this field
 
     def clean(self):
         """ Validates the project and raises errors if the project is invalid. """
@@ -101,6 +122,11 @@ We do not have information about your research. Please provide a detailed descri
 
         if 'We do not have information about your research. Please provide a detailed description of your work and update your school. Thank you!' in self.description:
             raise ValidationError('You must update the project description.')
+
+    def save(self, *args, **kwargs):
+        """Overrides save to update project_names before saving."""
+        super().save(*args, **kwargs)  # Save first to get a valid `pk`
+        self.update_project_names()  # Update the project names list
 
     @property
     def last_project_review(self):
