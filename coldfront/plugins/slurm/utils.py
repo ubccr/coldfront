@@ -35,6 +35,7 @@ SLURM_CMD_CHECK_ASSOCIATION = SLURM_SACCTMGR_PATH + ' list associations User={} 
 SLURM_CMD_BLOCK_ACCOUNT = SLURM_SACCTMGR_PATH + ' -Q -i modify account {} where Cluster={} set GrpSubmitJobs=0'
 SLURM_CMD_DUMP_CLUSTER = SLURM_SACCTMGR_PATH + ' dump {} file={}'
 SLURM_CMD_LIST_PARTITIONS = SLURM_SCONTROL_PATH + ' show partitions'
+SLURM_CMD_GET_USER_INFO = SLURM_SSHARE_PATH + ' -u {} -A {} -o Account,User,RawShares,NormShares,RawUsage,FairShare --parsable'
 
 
 logger = logging.getLogger(__name__)
@@ -209,3 +210,9 @@ def slurm_collect_shares(cluster=None, output_file=None):
         share_data = share_data[1:]
     share_data = slurm_fixed_width_lines_to_dict(share_data)
     return share_data
+
+def slurm_get_user_info(username, account):
+    cmd = SLURM_CMD_GET_USER_INFO.format(shlex.quote(username), shlex.quote(account)) + ' --json'
+    output = _run_slurm_cmd(cmd)
+    output = output.decode('utf-8').split('\n')
+    return output
