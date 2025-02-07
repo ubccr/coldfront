@@ -51,37 +51,33 @@ class Command(BaseCommand):
         slurm_cluster.pull_sshare_data()
         return slurm_cluster
 
-    def create_account_allocations_and_attributes(self, cloud_acct_name_attr_type, hours_attr_type,slurm_acct_name_attr_type_obj, user_status_active, cluster, resource):
-        def create_project_allocation_attributes(project_allocation, account, cloud_acct_name_attr_type, hours_attr_type, slurm_specs_allocation_attribute_type, slurm_acct_name_attr_type_obj):
+    def create_account_allocations_and_attributes(self, cluster, resource):
+        def create_cluster_allocation_attributes(
+            allocation, account, cloud_acct_name_attrtype, hours_attrtype, slurm_specs_attrtype, slurm_acct_name_attrtype
+        ):
             # XDMOD related allocation attributes
-            project_allocation.allocationattribute_set.get_or_create(
+            allocation.allocationattribute_set.get_or_create(
                 # 'slurm_account_name'? XDMOD_ACCOUNT_ATTRIBUTE_NAME
-                allocation_attribute_type=cloud_acct_name_attr_type,
+                allocation_attribute_type=slurm_acct_name_attrtype,
                 defaults={'value': name}
             )
-            project_allocation.allocationattribute_set.get_or_create(
+            allocation.allocationattribute_set.get_or_create(
                 # 'Cloud Account Name'? XDMOD_CLOUD_PROJECT_ATTRIBUTE_NAME
-                allocation_attribute_type=cloud_acct_name_attr_type,
+                allocation_attribute_type=cloud_acct_name_attrtype,
                 defaults={'value': name}
             )
-
-            project_allocation.allocationattribute_set.get_or_create(
-                allocation_attribute_type=hours_attr_type,
+            allocation.allocationattribute_set.get_or_create(
+                allocation_attribute_type=hours_attrtype,
                 defaults={'value': 0}
             )
-            project_allocation.allocationattribute_set.get_or_create(
-                allocation_attribute_type=slurm_acct_name_attr_type_obj,
-                defaults={'value': name}
-            )
-
             # Sshare related allocation attributes
             share_data = ','.join(f"{key}={value}" for key, value in account.share_dict.items())
-            project_allocation.allocationattribute_set.update_or_create(
-                allocation_attribute_type=slurm_specs_allocation_attribute_type,
+            allocation.allocationattribute_set.update_or_create(
+                allocation_attribute_type=slurm_specs_attrtype,
                 defaults={"value": share_data}
             )
 
-        def update_allocation_users(account, project_allocation, user_status_active, slurm_specs_allocationuser_attribute_type):
+        def update_allocation_users(account, project_allocation, user_status_active, slurm_specs_allocationuser_attrtype):
             for allocationuser in project_allocation.allocationuser_set.filter(status__name='Active'):
                 if allocationuser.user.username not in account.users.keys():
                     allocationuser.status = AllocationUserStatusChoice.objects.get(name='Removed')
@@ -100,11 +96,18 @@ class Command(BaseCommand):
                 )
                 share_data = ','.join(f"{key}={value}" for key, value in user_account.share_dict.items())
                 alloc_user.allocationuserattribute_set.update_or_create(
-                    allocationuser_attribute_type=slurm_specs_allocationuser_attribute_type,
+                    allocationuser_attribute_type=slurm_specs_allocationuser_attrtype,
                     defaults={'value': share_data}
                 )
 
         undetected_projects = []
+        user_status_active = AllocationUserStatusChoice.objects.get(name='Active')
+        slurm_acct_name_attr_type = AllocationAttributeType.objects.get(
+            name='slurm_account_name')
+        cloud_acct_name_attr_type = AllocationAttributeType.objects.get(
+            name='Cloud Account Name')
+        hours_attr_type = AllocationAttributeType.objects.get(
+            name='Core Usage (Hours)')
         slurm_specs_allocation_attribute_type = AllocationAttributeType.objects.get(name='slurm_specs')
         slurm_specs_allocationuser_attribute_type = AllocationUserAttributeType.objects.get(name='slurm_specs')
         allocation_active_status = AllocationStatusChoice.objects.get(name='Active')
@@ -123,7 +126,7 @@ class Command(BaseCommand):
         ).prefetch_related('allocation_set')
         for project in projects_with_no_account:
             allocation_to_deactivate = project.allocation_set.get(
-                resources=resource, status__name='Active'
+                resources=resource, status=allocation_active_status
             )
             logger.info(f"Deactivating {resource.name} allocation for project {project.title}")
             allocation_to_deactivate.status = allocation_inactive_status
@@ -153,14 +156,11 @@ class Command(BaseCommand):
                     project_allocation.status = allocation_active_status
                     project_allocation.save()
             elif len(project_cluster_allocations) > 1:
-                logger.error(
-                    f'multiple cluster allocations returned for project {project.title} resource {resource.name}: {project_cluster_allocations}',
-                )
-                print(
-                    f'multiple cluster allocations returned for project {project.title} resource {resource.name}: {project_cluster_allocations}',
-                        )
+                msg = f'multiple cluster allocations returned for project {project.title} resource {resource.name}: {project_cluster_allocations}',
+                logger.error(msg)
+                print(msg)
                 continue
-            create_project_allocation_attributes(project_allocation, account, cloud_acct_name_attr_type, hours_attr_type, slurm_specs_allocation_attribute_type, slurm_acct_name_attr_type_obj)
+            create_cluster_allocation_attributes(project_allocation, account, cloud_acct_name_attr_type, hours_attr_type, slurm_specs_allocation_attribute_type, slurm_acct_name_attr_type)
             # add allocationusers from account
             update_allocation_users(account, project_allocation, user_status_active, slurm_specs_allocationuser_attribute_type)
 
@@ -180,20 +180,9 @@ class Command(BaseCommand):
         }
         for cluster, cluster_dump in slurm_clusters.items():
             cluster_dump.write(sys.stdout)
-        slurm_acct_name_attr_type_obj = AllocationAttributeType.objects.get(
-            name='slurm_account_name')
-        cloud_acct_name_attr_type_obj = AllocationAttributeType.objects.get(
-            name='Cloud Account Name')
-        hours_attr_type_obj = AllocationAttributeType.objects.get(
-            name='Core Usage (Hours)')
-        user_status_active = AllocationUserStatusChoice.objects.get(name='Active')
         for resource, cluster in slurm_clusters.items():
             # create an allocation for each account
             undetected_projects = self.create_account_allocations_and_attributes(
-                cloud_acct_name_attr_type_obj,
-                hours_attr_type_obj,
-                slurm_acct_name_attr_type_obj,
-                user_status_active,
                 cluster,
                 resource,
             )
