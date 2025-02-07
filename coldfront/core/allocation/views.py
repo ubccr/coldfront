@@ -1991,6 +1991,8 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
 
     def post(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
+        allocation_change_obj = get_object_or_404(AllocationChangeRequest, pk=pk)
+        allocation_obj = allocation_change_obj.allocation
         if not request.user.is_superuser:
             group_exists = check_if_groups_in_review_groups(
                 allocation_obj.get_parent_resource.review_groups.all(),
@@ -2002,8 +2004,6 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
                     request, 'You do not have permission to manage this allocation change request with this resource.')
                 return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': allocation_change_obj.pk}))
 
-        allocation_change_obj = get_object_or_404(AllocationChangeRequest, pk=pk)
-        allocation_obj = allocation_change_obj.allocation
         allocation_change_form = AllocationChangeForm(request.POST,
             initial={'justification': allocation_change_obj.justification,
                      'end_date_extension': allocation_change_obj.end_date_extension})
