@@ -926,8 +926,8 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                         cluster=cluster
                     )
                 except Exception as e:
-                    logger.exception(f"signal processes for addition of user {username} to allocation {allocation_obj.pk} ({allocation.project.title} {allocation.get_parent_resource.name}) failed: {e}")
-                    err = f"addition of user {username} to allocation {allocation_obj.pk} ({allocation.project.title} {allocation.get_parent_resource.name}) failed: {e}"
+                    logger.exception(f"signal processes for addition of user {username} to allocation {allocation_obj.pk} ({allocation_obj.project.title} {allocation_obj.get_parent_resource.name}) failed: {e}")
+                    err = f"addition of user {username} to allocation {allocation_obj.pk} ({allocation_obj.project.title} {allocation_obj.get_parent_resource.name}) failed: {e}"
                     messages.error(request, err)
                     continue
                 allocation_user_obj, _ = (

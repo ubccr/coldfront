@@ -379,26 +379,26 @@ class ResourceAllocationsEditView(LoginRequiredMixin, UserPassesTestMixin, Templ
         return super().dispatch(request, *args, **kwargs)
 
     def get_formset_initial_data(self, resource_allocations):
-        edit_allocations_form_set_initial_data = []
+        edit_allocations_formset_initial_data = []
         if resource_allocations:
-            edit_allocations_form_set_initial_data = []
             for allocation in resource_allocations:
                 slurm_specs_attribute = allocation.get_full_attribute('slurm_specs')
                 if slurm_specs_attribute is not None:
-                    edit_allocations_form_set_initial_data.append(
+                    edit_allocations_formset_initial_data.append(
                         {
                             'allocation_pk': allocation.pk,
                             'rawshare': allocation.get_slurm_spec_value('RawShares'),
                             'project': allocation.project.title,
                             'usage': allocation.usage,
-                            'user_count': len(allocation.allocationuser_set.all())
+                            'user_count': allocation.allocationuser_set.count(),
                         }
                     )
-        return edit_allocations_form_set_initial_data
+        return edit_allocations_formset_initial_data
 
     def get_context_data(self, resource_obj):
         context = {}
-        resource_allocations = resource_obj.allocation_set.all()
+        resource_allocations = resource_obj.allocation_set.filter(
+            status__name='Active').prefetch_related('allocationattribute_set')
         if resource_allocations:
             ResourceAllocationUpdateFormSet = formset_factory(
                 ResourceAllocationUpdateForm,
@@ -439,12 +439,14 @@ class ResourceAllocationsEditView(LoginRequiredMixin, UserPassesTestMixin, Templ
                 current_raw_share = allocation.get_slurm_spec_value('RawShares')
                 new_raw_share = allocation_raw_shares.get(str(allocation.pk), None)
                 if new_raw_share and current_raw_share != new_raw_share: # Ignore unchanged values
+                    logger.info(f'recognized changes in RawShares value for {allocation.project.title} slurm account: {current_raw_share} changed to {new_raw_share}')
                     try:
                         allocation_raw_share_edit.send(
                             sender=self.__class__,
                             account=allocation.project.title,
                             raw_share=new_raw_share
                         )
+                        logger.info(f"RawShares value for {allocation.project.title} slurm account successfully updated from {current_raw_share} to {new_raw_share}")
                     except SlurmError as e:
                         err = f"Problem encountered while editing RawShares value for {allocation.project.title} slurm account: {e}"
 
