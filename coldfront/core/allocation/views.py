@@ -816,10 +816,14 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         return super().dispatch(request, *args, **kwargs)
 
     def get_non_project_users_to_add(self, allocation_obj, return_all=False, limit=10):
-        if allocation_obj.get_parent_resource.resource_type.name == "Storage":
-            return []
-        allocation_user_ids = list(allocation_obj.allocationuser_set.filter(status__name="Active").values_list('user__id', flat=True))
-        project_user_ids = list(allocation_obj.project.projectuser_set.filter(status__name='Active').values_list('user__id', flat=True))
+        allocation_user_ids = list(
+            allocation_obj.allocationuser_set.filter(status__name="Active")
+            .values_list('user__id', flat=True)
+        )
+        project_user_ids = list(
+            allocation_obj.project.projectuser_set.filter(status__name='Active')
+            .values_list('user__id', flat=True)
+        )
         user_exclude_list = allocation_user_ids + project_user_ids
         non_project_users_to_add = get_user_model().objects.exclude(id__in=user_exclude_list)
         if return_all:
