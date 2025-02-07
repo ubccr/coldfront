@@ -381,6 +381,7 @@ class ResourceAllocationsEditView(LoginRequiredMixin, UserPassesTestMixin, Templ
     def get_formset_initial_data(self, resource_allocations):
         edit_allocations_formset_initial_data = []
         if resource_allocations:
+
             for allocation in resource_allocations:
                 slurm_specs_attribute = allocation.get_full_attribute('slurm_specs')
                 if slurm_specs_attribute is not None:
@@ -398,7 +399,8 @@ class ResourceAllocationsEditView(LoginRequiredMixin, UserPassesTestMixin, Templ
     def get_context_data(self, resource_obj):
         context = {}
         resource_allocations = resource_obj.allocation_set.filter(
-            status__name='Active').prefetch_related('allocationattribute_set')
+            status__name='Active'
+        ).select_related('project').prefetch_related('allocationattribute_set')
         if resource_allocations:
             ResourceAllocationUpdateFormSet = formset_factory(
                 ResourceAllocationUpdateForm,
