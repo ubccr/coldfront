@@ -107,35 +107,63 @@ class Command(BaseCommand):
         undetected_projects = []
         slurm_specs_allocation_attribute_type = AllocationAttributeType.objects.get(name='slurm_specs')
         slurm_specs_allocationuser_attribute_type = AllocationUserAttributeType.objects.get(name='slurm_specs')
+        allocation_active_status = AllocationStatusChoice.objects.get(name='Active')
+        allocation_inactive_status = AllocationStatusChoice.objects.get(name='Inactive')
+        # deactivate allocations for accounts not found
+        account_names = set(cluster.accounts.keys())
+        cluster_project_names = set(
+            Project.objects.filter(
+                allocation__resources=resource,
+                allocation__status=allocation_active_status
+            ).values_list('title', flat=True)
+        )
+        projects_with_no_account_titles = cluster_project_names - account_names
+        projects_with_no_account = Project.objects.filter(
+            title__in=projects_with_no_account_titles
+        ).prefetch_related('allocation__set')
+        for project in projects_with_no_account:
+            allocation_to_deactivate = project.allocation_set.get(
+                resources=resource, status__name='Active'
+            )
+            print(f"Deactivating {resource.name} allocation for project {project.title}")
+            logger.info(f"Deactivating {resource.name} allocation for project {project.title}")
+            # allocation_to_deactivate.status = allocation_inactive_status
+            # allocation_to_deactivate.save()
+
+        # add/update allocations for existing accounts
         for name, account in cluster.accounts.items():
             try:
-                current_project = Project.objects.get(title=name)
-                current_project_allocations = current_project.allocation_set.filter(resources__name=resource.name)
-                if not current_project_allocations:
-                    new_project_allocation = current_project.allocation_set.create(
-                        status=AllocationStatusChoice.objects.get(name='Active'),
-                        start_date=timezone.now(),
-                        justification= 'slurm_sync',
-                        quantity=1
-                    )
-                    new_project_allocation.resources.add(resource)
-                    new_project_allocation.save()
-                    project_allocation = new_project_allocation
-                elif len(current_project_allocations) == 1:
-                    project_allocation = current_project_allocations.first()
-                elif len(current_project_allocations) > 1:
-                    logger.debug(f'Too many allocations: {current_project_allocations}')
-                    logger.debug(
-                        f'multiple allocations returned for project {current_project.title} resource {resource.name}',
-                        True
-                    )
-                    continue
-                create_project_allocation_attributes(project_allocation, account, cloud_acct_name_attr_type, hours_attr_type, slurm_specs_allocation_attribute_type, slurm_acct_name_attr_type_obj)
-                # add allocationusers from account
-                update_allocation_users(account, project_allocation, user_status_active, slurm_specs_allocationuser_attribute_type)
+                project = Project.objects.get(title=name)
             except Project.DoesNotExist:
                 undetected_projects.append(name)
                 continue
+            project_cluster_allocations = project.allocation_set.filter(resources=resource)
+            if not project_cluster_allocations:
+                new_project_allocation = project.allocation_set.create(
+                    status=allocation_active_status,
+                    start_date=timezone.now(),
+                    justification='slurm_sync',
+                    quantity=1
+                )
+                new_project_allocation.resources.add(resource)
+                new_project_allocation.save()
+                project_allocation = new_project_allocation
+            elif len(project_cluster_allocations) == 1:
+                project_allocation = project_cluster_allocations.first()
+                if project_allocation.status.name != 'Active':
+                    project_allocation.status = allocation_active_status
+                    project_allocation.save()
+            elif len(project_cluster_allocations) > 1:
+                logger.error(
+                    f'multiple cluster allocations returned for project {project.title} resource {resource.name}: {project_cluster_allocations}',
+                )
+                print(
+                    f'multiple cluster allocations returned for project {project.title} resource {resource.name}: {project_cluster_allocations}',
+                        )
+                continue
+            create_project_allocation_attributes(project_allocation, account, cloud_acct_name_attr_type, hours_attr_type, slurm_specs_allocation_attribute_type, slurm_acct_name_attr_type_obj)
+            # add allocationusers from account
+            update_allocation_users(account, project_allocation, user_status_active, slurm_specs_allocationuser_attribute_type)
 
         return undetected_projects
 
@@ -147,9 +175,12 @@ class Command(BaseCommand):
             resource_type__name='Cluster', is_available=True
         )
         logger.debug(f"  File: {options['file']} - Cluster_resources {cluster_resources}")
-        slurm_clusters = {cluster_resource: self._cluster_from_dump(cluster_resource, file=file) for cluster_resource in cluster_resources}
-        for slurm_cluster, slurm_cluster_dump  in slurm_clusters.items():
-            slurm_cluster_dump.write(sys.stdout)
+        slurm_clusters = {
+            cluster_resource: self._cluster_from_dump(cluster_resource, file=file)
+            for cluster_resource in cluster_resources
+        }
+        for cluster, cluster_dump in slurm_clusters.items():
+            cluster_dump.write(sys.stdout)
         slurm_acct_name_attr_type_obj = AllocationAttributeType.objects.get(
             name='slurm_account_name')
         cloud_acct_name_attr_type_obj = AllocationAttributeType.objects.get(

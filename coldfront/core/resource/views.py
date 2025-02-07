@@ -73,7 +73,9 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
         child_resources = self.get_child_resources(resource_obj)
         inactive_status = AllocationStatusChoice.objects.get(name='Inactive')
-        allocations = resource_obj.allocation_set.exclude(status=inactive_status).prefetch_related('project', "allocationattribute_set")
+        allocations = resource_obj.allocation_set.exclude(
+            status=inactive_status
+        ).prefetch_related('project', 'allocationattribute_set')
         if 'Cluster' in resource_obj.resource_type.name:
             total_hours = sum([a.usage for a in allocations if a.usage])
             context['total_hours'] = total_hours
@@ -168,7 +170,7 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         context['attributes'] = attributes
         context['child_resources'] = child_resources
         context['user_is_manager'] = resource_obj.user_can_manage_resource(self.request.user)
-        context['resource_admin_list'] = resource_obj.allowed_users.values("username", "full_name", "email")
+        context['resource_admin_list'] = resource_obj.allowed_users.values('username', 'full_name', 'email')
         return context
 
 
@@ -381,7 +383,6 @@ class ResourceAllocationsEditView(LoginRequiredMixin, UserPassesTestMixin, Templ
     def get_formset_initial_data(self, resource_allocations):
         edit_allocations_formset_initial_data = []
         if resource_allocations:
-
             for allocation in resource_allocations:
                 slurm_specs_attribute = allocation.get_full_attribute('slurm_specs')
                 if slurm_specs_attribute is not None:
@@ -448,9 +449,9 @@ class ResourceAllocationsEditView(LoginRequiredMixin, UserPassesTestMixin, Templ
                             account=allocation.project.title,
                             raw_share=new_raw_share
                         )
-                        logger.info(f"RawShares value for {allocation.project.title} slurm account successfully updated from {current_raw_share} to {new_raw_share}")
+                        logger.info(f'RawShares value for {allocation.project.title} slurm account successfully updated from {current_raw_share} to {new_raw_share}')
                     except SlurmError as e:
-                        err = f"Problem encountered while editing RawShares value for {allocation.project.title} slurm account: {e}"
+                        err = f'Problem encountered while editing RawShares value for {allocation.project.title} slurm account: {e}'
 
                         messages.error(request, err)
                         logger.error(err)
@@ -460,10 +461,10 @@ class ResourceAllocationsEditView(LoginRequiredMixin, UserPassesTestMixin, Templ
                         logger.error(err)
                         messages.error(request, err)
 
-            messages.success(request, "Allocation update complete.")
+            messages.success(request, 'Allocation update complete.')
             return HttpResponseRedirect(reverse('resource-detail', kwargs={'pk': pk}))
         else:
-            messages.error(request, "Errors encountered, changes not saved. Check the form for details")
+            messages.error(request, 'Errors encountered, changes not saved. Check the form for details')
             context = self.get_context_data(resource_obj)
             context['formset'] = formset
             return render(request, self.template_name, context)
