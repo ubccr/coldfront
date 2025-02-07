@@ -606,14 +606,14 @@ Allocation Detail
                   <td>{{ user.effectvusage }}</td>
                   <td>{{ user.normshares }}</td>
                   <td>{{ user.fairshare }}</td>
-                {% endif %}
-                {% if user_can_manage_allocation %}
-                  <td>
-                    <a href="{% url 'allocation-edit-user' allocation.pk user.pk %}">
-                      <i class="far fa-edit" aria-hidden="true"></i>
-                      <span class="sr-only">Edit</span>
-                    </a>
-                  </td>
+                  {% if user_can_manage_allocation and user.status.name == 'Active' %}
+                    <td>
+                      <a href="{% url 'allocation-edit-user' allocation.pk user.pk %}">
+                        <i class="far fa-edit" aria-hidden="true"></i>
+                        <span class="sr-only">Edit</span>
+                      </a>
+                    </td>
+                  {% endif %}
                 {% endif %}
               </tr>
             {% endfor %}
