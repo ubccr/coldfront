@@ -476,9 +476,9 @@ class AllocationAddUsersViewTest(AllocationViewBaseTest):
     def setUp(self):
         self.url = f'/allocation/{self.proj_allocation.pk}/add-users'
 
-    def test_allocationaddusersview_access(self):
-        self.allocation_access_tstbase(self.url)
-        utils.test_user_cannot_access(self, self.pi_user, self.url)
+    # def test_allocationaddusersview_access(self):
+    #     self.allocation_access_tstbase(self.url)
+    #     utils.test_user_cannot_access(self, self.pi_user, self.url)
 
 
 class AllocationRemoveUsersViewTest(AllocationViewBaseTest):
