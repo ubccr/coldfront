@@ -120,15 +120,14 @@ class Command(BaseCommand):
         projects_with_no_account_titles = cluster_project_names - account_names
         projects_with_no_account = Project.objects.filter(
             title__in=projects_with_no_account_titles
-        ).prefetch_related('allocation__set')
+        ).prefetch_related('allocation_set')
         for project in projects_with_no_account:
             allocation_to_deactivate = project.allocation_set.get(
                 resources=resource, status__name='Active'
             )
-            print(f"Deactivating {resource.name} allocation for project {project.title}")
             logger.info(f"Deactivating {resource.name} allocation for project {project.title}")
-            # allocation_to_deactivate.status = allocation_inactive_status
-            # allocation_to_deactivate.save()
+            allocation_to_deactivate.status = allocation_inactive_status
+            allocation_to_deactivate.save()
 
         # add/update allocations for existing accounts
         for name, account in cluster.accounts.items():
