@@ -153,7 +153,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
                 allocation.allocationuser_set.filter(user_filter).order_by('user__username')
             )
         inactive_status = AllocationUserStatusChoice.objects.get(name='Removed')
-        inactive_users_without_usage_filter = ((Q(usage=0) or Q(usage_bytes=0)) & Q(status=inactive_status))
+        inactive_users_without_usage_filter = (Q(usage=0) & Q(status=inactive_status))
         return allocation.allocationuser_set.exclude(inactive_users_without_usage_filter).order_by('user__username')
 
     def get_context_data(self, **kwargs):
@@ -970,7 +970,7 @@ class AllocationEditUserView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         err = None
         if allocation_obj.is_locked and not self.request.user.is_superuser:
             err = 'You cannot edit this allocation because it is locked! Contact support for details.'
-        elif 'Cluster' not in allocation_obj.get_parent_resource.resource_type.name:
+        elif 'Storage' in allocation_obj.get_parent_resource.resource_type.name:
             err = 'You cannot edit storage allocation users.'
         elif allocation_obj.status.name not in PENDING_ACTIVE_ALLOCATION_STATUSES:
             err = f'You cannot edit users on an allocation with status {allocation_obj.status.name}.'

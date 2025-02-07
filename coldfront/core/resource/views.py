@@ -220,27 +220,13 @@ class ResourceAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Templ
         messages.error(
             self.request, 'You do not have permission to delete resource attributes.')
 
-    def get_resource_attributes_to_delete(self, resource_obj):
-
-        resource_attributes_to_delete = ResourceAttribute.objects.filter(
-            resource=resource_obj)
-        resource_attributes_to_delete = [
-
-            {'pk': attribute.pk,
-             'name': attribute.resource_attribute_type.name,
-             'value': attribute.value,
-             }
-            for attribute in resource_attributes_to_delete
-        ]
-
-        return resource_attributes_to_delete
-
     def get(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         resource_obj = get_object_or_404(Resource, pk=pk)
 
-        resource_attributes_to_delete = self.get_resource_attributes_to_delete(
-            resource_obj)
+        resource_attributes_to_delete = list(resource_obj.resourceattribute_set.values(
+            'pk', 'value', name=F('resource_attribute_type__name')
+        ))
         context = {}
 
         if resource_attributes_to_delete:
@@ -256,28 +242,32 @@ class ResourceAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, Templ
         pk = self.kwargs.get('pk')
         resource_obj = get_object_or_404(Resource, pk=pk)
 
-        resource_attributes_to_delete = self.get_resource_attributes_to_delete(
-            resource_obj)
+        resource_attributes_to_delete = list(resource_obj.resourceattribute_set.values(
+            'pk', 'value', name=F('resource_attribute_type__name')
+        ))
 
         formset = formset_factory(ResourceAttributeDeleteForm, max_num=len(
             resource_attributes_to_delete))
         formset = formset(
-            request.POST, initial=resource_attributes_to_delete, prefix='attributeform')
+            request.POST,
+            initial=resource_attributes_to_delete,
+            prefix='attributeform'
+        )
 
-        attributes_deleted_count = 0
-
+        attrs_deleted_count = 0
         if formset.is_valid():
             for form in formset:
                 form_data = form.cleaned_data
                 if form_data['selected']:
-                    attributes_deleted_count += 1
+                    attrs_deleted_count += 1
 
                     resource_attribute = ResourceAttribute.objects.get(
                         pk=form_data['pk'])
                     resource_attribute.delete()
 
-            messages.success(request,
-                             f'Deleted {attributes_deleted_count} attributes from resource.')
+            messages.success(
+                request, f'Deleted {attrs_deleted_count} attributes from resource.'
+            )
         else:
             for error in formset.errors:
                 messages.error(request, error)
@@ -372,11 +362,23 @@ class ResourceAllocationsEditView(LoginRequiredMixin, UserPassesTestMixin, Templ
         resource_obj = get_object_or_404(Resource, pk=self.kwargs.get('pk'))
         if resource_obj.user_can_manage_resource(self.request.user):
             return True
-        err = 'You do not have permission to add edit resource allocations.'
+        err = 'You do not have permission to edit resource allocations.'
         messages.error(self.request, err)
         return False
 
-    def get_formset_inital_data(self, resource_allocations):
+    def dispatch(self, request, *args, **kwargs):
+        resource_obj = get_object_or_404(Resource, pk=self.kwargs.get('pk'))
+        err = None
+        if 'Storage' in resource_obj.resource_type.name:
+            err = 'You cannot bulk-edit storage allocations.'
+        if err:
+            messages.error(request, err)
+            return HttpResponseRedirect(
+                reverse('resource-detail', kwargs={'pk': resource_obj.pk})
+            )
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_formset_initial_data(self, resource_allocations):
         edit_allocations_form_set_initial_data = []
         if resource_allocations:
             edit_allocations_form_set_initial_data = []
@@ -398,9 +400,16 @@ class ResourceAllocationsEditView(LoginRequiredMixin, UserPassesTestMixin, Templ
         context = {}
         resource_allocations = resource_obj.allocation_set.all()
         if resource_allocations:
-            ResourceAllocationUpdateFormSet = formset_factory(ResourceAllocationUpdateForm, max_num=len(resource_allocations), extra=0)
-            edit_allocations_form_set_initial_data = self.get_formset_inital_data(resource_allocations)
-            formset = ResourceAllocationUpdateFormSet(initial=edit_allocations_form_set_initial_data, prefix='allocationsform')
+            ResourceAllocationUpdateFormSet = formset_factory(
+                ResourceAllocationUpdateForm,
+                max_num=len(resource_allocations),
+                extra=0
+            )
+            edit_allocations_formset_initial_data = self.get_formset_initial_data(resource_allocations)
+            formset = ResourceAllocationUpdateFormSet(
+                initial=edit_allocations_formset_initial_data,
+                prefix='allocationsform'
+            )
             context['formset'] = formset
         context['resource'] = resource_obj
         return context
@@ -413,26 +422,41 @@ class ResourceAllocationsEditView(LoginRequiredMixin, UserPassesTestMixin, Templ
     def post(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         resource_obj = get_object_or_404(Resource, pk=pk)
-        if not self.request.user.is_superuser:
-            err = 'You do not have permission to update the allocation'
-            messages.error(request, err)
-            return HttpResponseRedirect(reverse('resource-allocations-edit', kwargs={'pk': pk}))
         resource_allocations = resource_obj.allocation_set.all()
-        ResourceAllocationUpdateFormSet = formset_factory(ResourceAllocationUpdateForm, max_num=len(resource_allocations), extra=0)
-        edit_allocations_form_set_initial_data = self.get_formset_inital_data(resource_allocations)
-        formset = ResourceAllocationUpdateFormSet(request.POST, initial=edit_allocations_form_set_initial_data, prefix='allocationsform')
+        ResourceAllocationUpdateFormSet = formset_factory(
+            ResourceAllocationUpdateForm, max_num=len(resource_allocations), extra=0
+        )
+        edit_allocations_formset_initial_data = self.get_formset_initial_data(resource_allocations)
+        formset = ResourceAllocationUpdateFormSet(
+            request.POST, initial=edit_allocations_formset_initial_data, prefix='allocationsform'
+        )
         if formset.is_valid():
-            allocation_raw_shares = {str(form.cleaned_data.get('allocation_pk')): form.cleaned_data.get('rawshare') for form in formset.forms}
+            allocation_raw_shares = {
+                str(form.cleaned_data.get('allocation_pk')): form.cleaned_data.get('rawshare')
+                for form in formset.forms
+            }
             for allocation in resource_allocations:
                 current_raw_share = allocation.get_slurm_spec_value('RawShares')
                 new_raw_share = allocation_raw_shares.get(str(allocation.pk), None)
                 if new_raw_share and current_raw_share != new_raw_share: # Ignore unchanged values
                     try:
-                        if allocation.update_slurm_spec_value('RawShares', new_raw_share) is True:
-                            allocation_raw_share_edit.send(sender=self.__class__, account=allocation.project.title, raw_share=new_raw_share)
-                    except SlurmError:
-                        messages.error(request, f"Problem found wile editing RawShares value for {allocation.project.title} Allocation")
-            messages.success(request, "Allocation changes saved!")
+                        allocation_raw_share_edit.send(
+                            sender=self.__class__,
+                            account=allocation.project.title,
+                            raw_share=new_raw_share
+                        )
+                    except SlurmError as e:
+                        err = f"Problem encountered while editing RawShares value for {allocation.project.title} slurm account: {e}"
+
+                        messages.error(request, err)
+                        logger.error(err)
+                    spec_update = allocation.update_slurm_spec_value('RawShares', new_raw_share)
+                    if spec_update != True:
+                        err = f'Slurm account for {allocation.project.title} successfully updated, but a problem was encountered while reflecting the updates in ColdFront: {spec_update}'
+                        logger.error(err)
+                        messages.error(request, err)
+
+            messages.success(request, "Allocation update complete.")
             return HttpResponseRedirect(reverse('resource-detail', kwargs={'pk': pk}))
         else:
             messages.error(request, "Errors encountered, changes not saved. Check the form for details")
