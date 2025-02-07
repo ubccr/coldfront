@@ -71,7 +71,7 @@ class Command(BaseCommand):
             )
             project_allocation.allocationattribute_set.get_or_create(
                 allocation_attribute_type=slurm_acct_name_attr_type_obj,
-                value=name
+                defaults={'value': name}
             )
 
             # Sshare related allocation attributes
@@ -101,7 +101,7 @@ class Command(BaseCommand):
                 share_data = ','.join(f"{key}={value}" for key, value in user_account.share_dict.items())
                 alloc_user.allocationuserattribute_set.update_or_create(
                     allocationuser_attribute_type=slurm_specs_allocationuser_attribute_type,
-                    value=share_data
+                    defaults={'value': share_data}
                 )
 
         undetected_projects = []

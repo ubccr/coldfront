@@ -804,6 +804,8 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         err = None
         if allocation_obj.is_locked and not self.request.user.is_superuser:
             err = 'You cannot modify this allocation because it is locked! Contact support for details.'
+        elif allocation_obj.get_parent_resource.resource_type.name == "Storage":
+            err = 'You cannot edit the user list for a storage allocation.'
         elif allocation_obj.status.name not in PENDING_ACTIVE_ALLOCATION_STATUSES:
             err = f'You cannot add users to an allocation with status {allocation_obj.status.name}.'
         if err:
@@ -846,9 +848,13 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
     def non_project_users_search(self, allocation_obj, search_term):
         like_filter = (Q(username__icontains=search_term) or Q(first_name__icontains=search_term) or Q(
             last_name__icontains=search_term) or Q(title_icontains=search_term))
-        non_project_users = self.get_non_project_users_to_add(allocation_obj, return_all=True).filter(
-            like_filter).exclude(project=allocation_obj.project)
-        return non_project_users.values('username', 'first_name', 'last_name', 'email')
+        non_project_users = (
+            self.get_non_project_users_to_add(allocation_obj, return_all=True)
+            .filter(like_filter)
+            .exclude(project=allocation_obj.project)
+            .values('username', 'first_name', 'last_name', 'email')
+        )
+        return non_project_users
 
     def search_non_project_users(self, allocation_obj, search_term, request):
         found_non_project_users = self.non_project_users_search(allocation_obj, search_term)
