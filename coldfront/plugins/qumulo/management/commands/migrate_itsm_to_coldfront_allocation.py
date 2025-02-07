@@ -21,13 +21,21 @@ class Command(BaseCommand):
             help="Queries by fileset_alias instead of by fileset_name",
         )
 
+        parser.add_argument(
+            "--dry-run",
+            action="store_true",
+            help="Execute validations but does not create any records",
+        )
+
     def handle(self, *args, **options) -> None:
         fileset = options["fileset"]
         ic(fileset)
         find_by_alias = options["fileset_alias"]
         ic(find_by_alias)
+        dry_run = options["--dry-run"]
+        ic(dry_run)
 
-        migrate_from_itsm_to_coldfront = MigrateToColdfront()
+        migrate_from_itsm_to_coldfront = MigrateToColdfront(dry_run)
         if find_by_alias:
             result = migrate_from_itsm_to_coldfront.by_fileset_alias(fileset)
         else:

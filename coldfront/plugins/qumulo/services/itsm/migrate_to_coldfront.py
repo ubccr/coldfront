@@ -29,6 +29,9 @@ from coldfront.plugins.qumulo.services.itsm.fields.itsm_to_coldfront_fields_fact
 
 class MigrateToColdfront:
 
+    def __init__(self, dry_run: bool):
+        self.dry_run = dry_run
+
     def by_fileset_alias(self, fileset_alias: str) -> str:
         itsm_result = self.__get_itsm_allocation_by_fileset_alias(fileset_alias)
         result = self.__create_by(fileset_alias, itsm_result)
@@ -57,6 +60,12 @@ class MigrateToColdfront:
         if field_error_messages:
             errors = {"errors": field_error_messages}
             raise Exception("Validation messages: ", errors)
+
+        if self.dry_run:
+            return {
+                f"validations checks for {fileset_key}": "successful",
+                "itsm_allocationt": itsm_allocation,
+            }
 
         pi_user = self.__get_or_create_user(fields)
         project, created = self.__get_or_create_project(pi_user)
