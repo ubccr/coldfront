@@ -1052,6 +1052,8 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
         err = None
         if allocation_obj.is_locked and not self.request.user.is_superuser:
             err = 'You cannot modify this allocation because it is locked! Contact support for details.'
+        elif 'Storage' in allocation_obj.get_parent_resource.resource_type.name:
+            err = 'You cannot edit storage allocation users.'
         elif allocation_obj.status.name not in PENDING_ACTIVE_ALLOCATION_STATUSES:
             err = f'You cannot remove users from an allocation with status {allocation_obj.status.name}.'
         if err:
