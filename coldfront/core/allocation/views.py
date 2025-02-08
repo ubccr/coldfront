@@ -1409,6 +1409,7 @@ class AllocationUserAttributesEditView(LoginRequiredMixin, UserPassesTestMixin, 
         formset = EditRawShareFormSet(request.POST)
         error_found = False
         context = self.get_context_data()
+        error_messages = []
         if formset.is_valid():
             allocation_users = context['allocation_users']
             user_raw_shares = {
@@ -1430,24 +1431,27 @@ class AllocationUserAttributesEditView(LoginRequiredMixin, UserPassesTestMixin, 
                                 raw_share=allocationuser_new_rawshare_value
                             )
                         except Exception as e:
-                            error_message = f"Failed to update Rawshare on slurm for user {user} account {account} with value {allocationuser_new_rawshare_value}: {str(e)}"
-                            logger.exception(error_message)
-                            messages.error(request, error_message)
+                            err = f"Failed to update Rawshare on slurm for user {user} account {account} with value {allocationuser_new_rawshare_value}: {str(e)}"
+                            logger.exception(err)
+                            error_messages.append(err)
                             error_found = True
                             continue
                         rawshare_updated = allocation_user.update_slurm_spec_value('RawShares', allocationuser_new_rawshare_value)
                         if rawshare_updated != True:
-                            messages.error(request, rawshare_updated)
+                            error_messages.append('value updated on slurm for user {user} with value {allocationuser_new_rawshare_value} but error encountered while changing value on coldfront.')
                             error_found = True
                             continue
                         msg = f'User Attributes for {allocation_user.user} in allocation {allocation.pk} ({allocation}) successfully updated from {allocationuser_current_rawshare_value} to {allocationuser_new_rawshare_value}'
                         logger.info(msg)
                         messages.success(request, msg)
         else:
+            for error in formset.errors:
+                messages.error(request, error)
             error_found = True
         context['formset'] = formset
-        if error_found:
-            return self.render_to_response(context)
+        if error_messages:
+            for err in error_messages:
+                messages.error(request, err)
         messages.success(request, "User Attributes updated!")
         return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
 
