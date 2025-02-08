@@ -425,7 +425,9 @@ class ResourceAllocationsEditView(LoginRequiredMixin, UserPassesTestMixin, Templ
     def post(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         resource_obj = get_object_or_404(Resource, pk=pk)
-        resource_allocations = resource_obj.allocation_set.all()
+        resource_allocations = resource_obj.allocation_set.filter(
+            status__name='Active'
+        ).select_related('project').prefetch_related('allocationattribute_set')
         ResourceAllocationUpdateFormSet = formset_factory(
             ResourceAllocationUpdateForm, max_num=len(resource_allocations), extra=0
         )
@@ -434,28 +436,29 @@ class ResourceAllocationsEditView(LoginRequiredMixin, UserPassesTestMixin, Templ
             request.POST, initial=edit_allocations_formset_initial_data, prefix='allocationsform'
         )
         if formset.is_valid():
-            allocation_raw_shares = {
+            allocation_rawshares = {
                 str(form.cleaned_data.get('allocation_pk')): form.cleaned_data.get('rawshare')
                 for form in formset.forms
             }
             for allocation in resource_allocations:
-                current_raw_share = allocation.get_slurm_spec_value('RawShares')
-                new_raw_share = allocation_raw_shares.get(str(allocation.pk), None)
-                if new_raw_share and current_raw_share != new_raw_share: # Ignore unchanged values
-                    logger.info(f'recognized changes in RawShares value for {allocation.project.title} slurm account: {current_raw_share} changed to {new_raw_share}')
+                current_rawshare = allocation.get_slurm_spec_value('RawShares')
+                new_rawshare = allocation_rawshares.get(str(allocation.pk), None)
+                if new_rawshare and current_rawshare != new_rawshare: # Ignore unchanged values
+                    logger.info(f'recognized changes in RawShares value for {allocation.project.title} slurm account: {current_rawshare} changed to {new_rawshare}')
                     try:
                         allocation_raw_share_edit.send(
                             sender=self.__class__,
                             account=allocation.project.title,
-                            raw_share=new_raw_share
+                            raw_share=new_rawshare
                         )
-                        logger.info(f'RawShares value for {allocation.project.title} slurm account successfully updated from {current_raw_share} to {new_raw_share}')
+                        msg = f'RawShares value for {allocation.project.title} slurm account successfully updated from {current_rawshare} to {new_rawshare}'
+                        logger.info(msg)
+                        messages.success(request, msg)
                     except SlurmError as e:
                         err = f'Problem encountered while editing RawShares value for {allocation.project.title} slurm account: {e}'
-
+                        logger.exception(err)
                         messages.error(request, err)
-                        logger.error(err)
-                    spec_update = allocation.update_slurm_spec_value('RawShares', new_raw_share)
+                    spec_update = allocation.update_slurm_spec_value('RawShares', new_rawshare)
                     if spec_update != True:
                         err = f'Slurm account for {allocation.project.title} successfully updated, but a problem was encountered while reflecting the updates in ColdFront: {spec_update}'
                         logger.error(err)

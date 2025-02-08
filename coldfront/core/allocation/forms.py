@@ -438,12 +438,12 @@ class AllocationAttributeUpdateForm(forms.Form):
 
 
 class AllocationUserAttributeUpdateForm(forms.Form):
-    attribute_pk = forms.IntegerField(required=True)
+    allocationuser_pk = forms.IntegerField(required=True)
     value = AllocationUserRawSareField(required=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['attribute_pk'].widget = forms.HiddenInput()
+        self.fields['allocationuser_pk'].widget = forms.HiddenInput()
 
 
 class AllocationChangeForm(forms.Form):

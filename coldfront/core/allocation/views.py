@@ -804,7 +804,7 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         err = None
         if allocation_obj.is_locked and not self.request.user.is_superuser:
             err = 'You cannot modify this allocation because it is locked! Contact support for details.'
-        elif allocation_obj.get_parent_resource.resource_type.name == "Storage":
+        elif 'Storage' in allocation_obj.get_parent_resource.resource_type.name:
             err = 'You cannot edit the user list for a storage allocation.'
         elif allocation_obj.status.name not in PENDING_ACTIVE_ALLOCATION_STATUSES:
             err = f'You cannot add users to an allocation with status {allocation_obj.status.name}.'
@@ -986,7 +986,7 @@ class AllocationEditUserView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
     def get(self, request, *args, **kwargs):
         allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
         allocationuser_obj = get_object_or_404(AllocationUser, pk=self.kwargs.get('userid'))
-        initial_data = {'attribute_pk': allocationuser_obj.pk, 'value': allocationuser_obj.get_slurm_spec_value('RawShares')}
+        initial_data = {'allocationuser_pk': allocationuser_obj.pk, 'value': allocationuser_obj.get_slurm_spec_value('RawShares')}
         form = AllocationUserAttributeUpdateForm(initial=initial_data)
 
         context = {
@@ -1001,7 +1001,7 @@ class AllocationEditUserView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
         allocationuser_obj = get_object_or_404(AllocationUser, pk=self.kwargs.get('userid'))
 
-        initial_data = {'attribute_pk': allocationuser_obj.pk, 'value': allocationuser_obj.get_slurm_spec_value('RawShares')}
+        initial_data = {'allocationuser_pk': allocationuser_obj.pk, 'value': allocationuser_obj.get_slurm_spec_value('RawShares')}
 
         form = AllocationUserAttributeUpdateForm(request.POST, initial=initial_data)
 
@@ -1015,6 +1015,7 @@ class AllocationEditUserView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
             # TODO: Update fairshare
             try:
+                account = allocation_obj.project.title
                 allocation_user_attribute_edit.send(
                     sender=self.__class__, user=allocationuser_obj, account=account, raw_share=form_data['value']
                 )
@@ -1352,22 +1353,21 @@ class AllocationUserAttributesEditView(LoginRequiredMixin, UserPassesTestMixin, 
         allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
         if allocation_obj.user_can_manage_allocation(self.request.user):
             return True
+        elif 'Storage' in allocation_obj.resources.resource_type.name:
+            messages.error(
+                self.request, 'You cannot edit storage allocation user attributes.'
+            )
+            return HttpResponseRedirect(
+                reverse('allocation-detail', kwargs={'pk': allocation_obj.pk})
+            )
         allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
         return allocation_obj.has_perm(self.request.user, AllocationPermission.USER)
-
-    def get_allocation_users(self, allocation):
-        if allocation.get_parent_resource.resource_type.name == "Storage":
-            user_filter = (~Q(usage_bytes=0) & Q(usage_bytes__isnull=False))
-            return (
-                allocation.allocationuser_set.filter(user_filter).order_by('user__username')
-            )
-        inactive_status = AllocationUserStatusChoice.objects.get(name='Removed')
-        return allocation.allocationuser_set.exclude(status=inactive_status).order_by('user__username')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
-        allocation_users = self.get_allocation_users(allocation_obj)
+        inactive_status = AllocationUserStatusChoice.objects.get(name='Removed')
+        allocation_users = allocation_obj.allocationuser_set.exclude(status=inactive_status).order_by('user__username')
 
         # Can the user update the project?
         project_update_perm = allocation_obj.project.has_perm(
@@ -1375,24 +1375,24 @@ class AllocationUserAttributesEditView(LoginRequiredMixin, UserPassesTestMixin, 
         )
         context['is_allowed_to_update_project'] = project_update_perm
         context['allocation_users'] = allocation_users
-        return context
-
-    def get_template_data(self):
-        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
-        context = self.get_context_data()
         context['allocation'] = allocation_obj
         return context
 
     def get(self, request, *args, **kwargs):
-        context = self.get_template_data()
+        context = self.get_context_data()
         if context['allocation'].project.status.name in ['Archived']:
-            return HttpResponseForbidden(" This is an allocation from an archived project! You cannot make any changes.")
+            return HttpResponseForbidden(
+                'This is an allocation from an archived project! You cannot make any changes.'
+            )
         elif context['allocation'].status.name in ['Pending Deactivation', 'Inactive', 'Denied']:
             return HttpResponseForbidden(f"This allocation is {context['allocation'].status.name.lower()}! You cannot make any changes.")
         EditRawShareFormSet = formset_factory(AllocationUserAttributeUpdateForm, extra=0)
-        allocation_users = self.get_allocation_users(context['allocation'])
+        allocation_users = context['allocation_users']
         edit_raw_share_form_set_initial_data = [
-            {'attribute_pk': allocation_user.pk, 'value': allocation_user.get_slurm_spec_value('RawShares')}
+            {
+                'allocationuser_pk': allocation_user.pk,
+                'value': allocation_user.get_slurm_spec_value('RawShares')
+            }
             for allocation_user in allocation_users
         ]
         context['formset'] = EditRawShareFormSet(initial=edit_raw_share_form_set_initial_data)
@@ -1408,33 +1408,45 @@ class AllocationUserAttributesEditView(LoginRequiredMixin, UserPassesTestMixin, 
         EditRawShareFormSet = formset_factory(AllocationUserAttributeUpdateForm, extra=0)
         formset = EditRawShareFormSet(request.POST)
         error_found = False
+        context = self.get_context_data()
         if formset.is_valid():
-            allocation_users = self.get_allocation_users(allocation)
-            user_raw_shares = {str(form.cleaned_data.get('attribute_pk')): form.cleaned_data.get('value') for form in formset.forms}
+            allocation_users = context['allocation_users']
+            user_raw_shares = {
+                str(form.cleaned_data.get('allocationuser_pk')): form.cleaned_data.get('value')
+                for form in formset.forms
+            }
             for allocation_user in allocation_users:
                 user = allocation_user.user.username
                 account = allocation.project.title
-                allocation_user_new_raw_share_value = user_raw_shares.get(str(allocation_user.pk), None)
-                try:
-                    if allocation_user_new_raw_share_value is not None:
-                        allocation_user_current_raw_share_value = allocation_user.get_slurm_spec_value('RawShares')
-                        if str(allocation_user_current_raw_share_value) != str(allocation_user_new_raw_share_value): #Ignore unchanged values
-                            user_raw_share_updated_in_coldfront_result = allocation_user.update_slurm_spec_value('RawShares', allocation_user_new_raw_share_value)
-                            if user_raw_share_updated_in_coldfront_result is True:
-                                allocation_user_attribute_edit.send(sender=self.__class__, user=user, account=account, raw_share=allocation_user_new_raw_share_value)
-                            else:
-                                messages.error(request, user_raw_share_updated_in_coldfront_result)
-                                error_found = True
-                except Exception as e:
-                    error_message = f"Failed to update Rawshare on slurm for user {user} account {account} with value {allocation_user_new_raw_share_value}: {str(e)}"
-                    logger.exception(error_message)
-                    messages.error(request, error_message)
-                    error_found = True
+                allocationuser_new_rawshare_value = user_raw_shares.get(str(allocation_user.pk), None)
+                if allocationuser_new_rawshare_value is not None:
+                    allocationuser_current_rawshare_value = allocation_user.get_slurm_spec_value('RawShares')
+                    if str(allocationuser_current_rawshare_value) != str(allocationuser_new_rawshare_value): #Ignore unchanged values
+                        try:
+                            allocation_user_attribute_edit.send(
+                                sender=self.__class__,
+                                user=user,
+                                account=account,
+                                raw_share=allocationuser_new_rawshare_value
+                            )
+                        except Exception as e:
+                            error_message = f"Failed to update Rawshare on slurm for user {user} account {account} with value {allocationuser_new_rawshare_value}: {str(e)}"
+                            logger.exception(error_message)
+                            messages.error(request, error_message)
+                            error_found = True
+                            continue
+                        rawshare_updated = allocation_user.update_slurm_spec_value('RawShares', allocationuser_new_rawshare_value)
+                        if rawshare_updated != True:
+                            messages.error(request, rawshare_updated)
+                            error_found = True
+                            continue
+                        msg = f'User Attributes for {allocation_user.user} in allocation {allocation.pk} ({allocation}) successfully updated from {allocationuser_current_rawshare_value} to {allocationuser_new_rawshare_value}'
+                        logger.info(msg)
+                        messages.success(request, msg)
         else:
             error_found = True
-        context = self.get_template_data()
         context['formset'] = formset
-        if error_found is True:
+        if error_found:
             return self.render_to_response(context)
         messages.success(request, "User Attributes updated!")
         return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
