@@ -25,7 +25,7 @@ Edit User Attributes for {{allocation.project.title}} {{allocation.get_parent_re
   </div>
 
   {% if update_raw_shares_error_list %}
-    {%for update_raw_shares_error in update_raw_shares_error_list%}
+    {% for update_raw_shares_error in update_raw_shares_error_list %}
       <div class="alert alert-danger" role="alert">
         {{ update_raw_shares_error }}
       </div>
@@ -49,32 +49,24 @@ Edit User Attributes for {{allocation.project.title}} {{allocation.get_parent_re
                   <th scope="col">Username</th>
                   <!-- <th scope="col">Email</th> -->
                   <th scope="col">Status</th>
-                  {% if "Storage" in allocation.get_parent_resource.resource_type.name %}
-                      <th scope="col">Logical Usage</th>
-                      <th scope="col">Percent Usage</th>
-                      {% if invoice %}
-                          <th scope="col">Cost Per User (TB/month)</th>
-                      {% endif %}
-                  {% else %}
-                      <th scope="col">CPU Hours</th>
-                      <th scope="col">Percent Usage</th>
-                      <th scope="col">RawShare</th>
-                      <th scope="col">EffectvUsage
-                          <a class="info-button" title="EffectvUsage" data-toggle="popover" data-trigger="click" data-content="The fraction of the cluster the account has been granted. For more information, go <a href='https://docs.rc.fas.harvard.edu/kb/fairshare/#articleTOC_4' title='fairshare calculation'>here</a>.">
-                              <i class="fas fa-info-circle" aria-hidden="true"></i>
-                          </a>
-                      </th>
-                      <th scope="col">NormShares
-                          <a class="info-button" title="NormShares" data-toggle="popover" data-trigger="click" data-content="Calculated fairshare per user. For more information on this number, go <a href='https://docs.rc.fas.harvard.edu/kb/fairshare/#articleTOC_4' title='fairshare calculation'>here</a>.">
-                              <i class="fas fa-info-circle" aria-hidden="true"></i>
-                          </a>
-                      </th>
-                      <th scope="col">FairShare
-                          <a class="info-button" title="FairShare" data-toggle="popover" data-trigger="click" data-content="User fairshare, calculated by the equation 2^(-EffectvUsage/NormShares). For more information on fairshare calculation, go <a href='https://docs.rc.fas.harvard.edu/kb/fairshare/#articleTOC_4' title='fairshare calculation'>here</a>.">
-                              <i class="fas fa-info-circle" aria-hidden="true"></i>
-                          </a>
-                      </th>
-                  {% endif %}
+                  <th scope="col">CPU Hours</th>
+                  <th scope="col">Percent Usage</th>
+                  <th scope="col">RawShare</th>
+                  <th scope="col">EffectvUsage
+                      <a class="info-button" title="EffectvUsage" data-toggle="popover" data-trigger="click" data-content="The fraction of the cluster the account has been granted. For more information, go <a href='https://docs.rc.fas.harvard.edu/kb/fairshare/#articleTOC_4' title='fairshare calculation'>here</a>.">
+                          <i class="fas fa-info-circle" aria-hidden="true"></i>
+                      </a>
+                  </th>
+                  <th scope="col">NormShares
+                      <a class="info-button" title="NormShares" data-toggle="popover" data-trigger="click" data-content="Calculated fairshare per user. For more information on this number, go <a href='https://docs.rc.fas.harvard.edu/kb/fairshare/#articleTOC_4' title='fairshare calculation'>here</a>.">
+                          <i class="fas fa-info-circle" aria-hidden="true"></i>
+                      </a>
+                  </th>
+                  <th scope="col">FairShare
+                      <a class="info-button" title="FairShare" data-toggle="popover" data-trigger="click" data-content="User fairshare, calculated by the equation 2^(-EffectvUsage/NormShares). For more information on fairshare calculation, go <a href='https://docs.rc.fas.harvard.edu/kb/fairshare/#articleTOC_4' title='fairshare calculation'>here</a>.">
+                          <i class="fas fa-info-circle" aria-hidden="true"></i>
+                      </a>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -101,16 +93,9 @@ Edit User Attributes for {{allocation.project.title}} {{allocation.get_parent_re
                     {% else %}
                       <td>{{user.user_usage|div:user.allocation_usage|mul:100|floatformat:2 }}%</td>
                     {% endif %}
-                    {% if invoice %}
-                      {% cost_bytes user.user_usage as cost %}
-                      {% if cost %}
-                        <td>{{ cost }}</td>
-                      {% endif %}
-                    {% endif %}
-                    {% if 'Cluster' in allocation.get_parent_resource.resource_type.name %}
                       <td>
                         {{ form.value }}
-                        {{ form.attribute_pk }}
+                        {{ form.allocationuser_pk }}
                         {% if form.value.errors %}
                           <div class="alert alert-danger" role="alert">{{ form.value.errors }}</div>
                         {% endif %}
@@ -118,7 +103,6 @@ Edit User Attributes for {{allocation.project.title}} {{allocation.get_parent_re
                       <td>{{ user.effectvusage }}</td>
                       <td>{{ user.normshares }}</td>
                       <td>{{ user.fairshare }}</td>
-                    {% endif %}
                   </tr>
                 {% endfor %}
               </tbody>
