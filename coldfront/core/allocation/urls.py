@@ -24,6 +24,7 @@ urlpatterns = [
          name='allocation-renew'),
     path('<int:pk>/allocationattribute/add',
          allocation_views.AllocationAttributeCreateView.as_view(), name='allocation-attribute-add'),
+    path('get-value-field/', allocation_views.get_value_field, name='get-value-field'),
     path('<int:pk>/change-request',
          allocation_views.AllocationChangeView.as_view(), name='allocation-change'),
     path('<int:pk>/allocationattribute/delete',
