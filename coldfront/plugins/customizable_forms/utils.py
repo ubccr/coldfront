@@ -1,4 +1,5 @@
 import re
+import inspect
 import importlib
 
 from django.urls import path
@@ -13,23 +14,39 @@ ADDITIONAL_CUSTOM_FORMS = import_from_settings('ADDITIONAL_CUSTOM_FORMS', [])
 
 def add_additional_forms():
     for additional_form in ADDITIONAL_CUSTOM_FORMS:
-        resource_name = additional_form.get('resource_name')
+        module_name = additional_form.get('module_name')
+        view_path = additional_form.get('view_path')
+        if not view_path:
+            view_path = 'views'
+        form_path = additional_form.get('form_path')
+        if not form_path:
+            form_path = 'forms'
+
+        form_class_name = additional_form.get('form_class')
+        view_class_name = additional_form.get('view_class')
+
+        if inspect.ismodule(module_name):
+            form_module = importlib.import_module(f'{module_name}.{form_path}')
+            view_module = importlib.import_module(f'{module_name}.{view_path}')
+        else:
+            base_path = 'coldfront.plugins'
+            form_module = importlib.import_module(f'{base_path}.{module_name}.{form_path}')
+            view_module = importlib.import_module(f'{base_path}.{module_name}.{view_path}')
+
         use_base_form = additional_form.get('use_base_form')
         use_generic_view = additional_form.get('use_generic_view')
-        form_module, form_name = additional_form.get('form_path').rsplit('.', 1)
-        form_module = importlib.import_module(form_module)
-        form_class = getattr(form_module, form_name)
+
+        form_class = getattr(form_module, form_class_name)
         if use_base_form:
             custom_form = type('CustomForm', (form_class, BaseForm), dict(vars(form_class)))
 
-        view_module, view_name = additional_form.get('view_path').rsplit('.', 1)
-        view_module = importlib.import_module(view_module)
-        view_class = getattr(view_module, view_name)
+        view_class = getattr(view_module, view_class_name)
         if use_generic_view:
             custom_view = type('CustomForm', (view_class, GenericView), dict(vars(view_class)))
 
         setattr(custom_view, 'form_class', custom_form)
 
+        resource_name = additional_form.get('resource_name')
         resource_name = re.sub('[^A-Za-z0-9]+', '', resource_name)
         urlpatterns.append(
             path(
