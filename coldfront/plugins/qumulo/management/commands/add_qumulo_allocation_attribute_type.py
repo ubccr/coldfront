@@ -147,6 +147,14 @@ class Command(BaseCommand):
 
         AllocationAttributeType.objects.get_or_create(
             attribute_type=AttributeType.objects.get(name="Date"),
+            name="prepaid_billing_date",
+            is_required=False,
+            is_private=False,
+            is_changeable=True,
+        )
+
+        AllocationAttributeType.objects.get_or_create(
+            attribute_type=AttributeType.objects.get(name="Date"),
             name="billing_startdate",
             is_required=False,
             is_private=False,
@@ -202,10 +210,26 @@ class Command(BaseCommand):
         )
 
         AllocationAttributeType.objects.get_or_create(
+            attribute_type=AttributeType.objects.get(name="Int"),
+            name="prepaid_time",
+            is_required=False,
+            is_private=False,
+            is_changeable=True,
+        )
+
+        AllocationAttributeType.objects.get_or_create(
             attribute_type=AttributeType.objects.get(name="Text"),
             name="sla_name",
             is_required=False,
             is_private=False,
             is_unique=False,
             is_changeable=True,
+        )
+        AllocationAttributeType.objects.get_or_create(
+            attribute_type=AttributeType.objects.get(name="Date"),
+            name="prepaid_expiration",
+            is_required=False,
+            is_private=False,
+            is_unique=False,
+            is_changeable=False,
         )

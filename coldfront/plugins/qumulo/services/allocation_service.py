@@ -200,6 +200,9 @@ class AllocationService:
             "technical_contact",
             "billing_contact",
             "service_rate",
+            "billing_cycle",
+            "prepaid_time",
+            "prepaid_billing_date",
         ]
 
         # some of the above are optional

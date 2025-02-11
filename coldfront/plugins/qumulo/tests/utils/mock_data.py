@@ -24,6 +24,8 @@ from django.core.management import call_command
 
 from typing import Optional
 
+from datetime import date
+
 import os
 
 default_form_data = {
@@ -103,6 +105,7 @@ def create_allocation(
         justification="",
         quantity=1,
         status=AllocationStatusChoice.objects.get(name="Pending"),
+        start_date=date.today(),
     )
 
     active_status = AllocationUserStatusChoice.objects.get(name="Active")
@@ -200,6 +203,10 @@ def set_allocation_attributes(
         "storage_ticket",
         "technical_contact",
         "billing_contact",
+        "billing_cycle",
+        "prepaid_time",
+        "prepaid_billing_date",
+        "prepaid_expiration",
     ]
 
     for allocation_attribute_name in allocation_attribute_names:

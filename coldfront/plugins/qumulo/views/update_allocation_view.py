@@ -77,6 +77,10 @@ class UpdateAllocationView(AllocationView):
             "technical_contact",
             "billing_contact",
             "service_rate",
+            "billing_cycle",
+            "prepaid_time",
+            "prepaid_billing_date",
+            "prepaid_expiration",
         ]
         for key in allocation_attribute_keys:
             form_data[key] = self.get_allocation_attribute(

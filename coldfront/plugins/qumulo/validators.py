@@ -16,6 +16,7 @@ from coldfront.plugins.qumulo.utils.qumulo_api import QumuloAPI
 
 from pathlib import PurePath
 from qumulo.lib import request
+from datetime import date
 
 
 def validate_ad_users(ad_users: list[str]):
@@ -180,6 +181,15 @@ def validate_ticket(ticket: str):
         gettext_lazy("%(value)s must have format: ITSD-12345 or 12345"),
         params={"value": ticket},
     )
+
+
+def validate_prepaid_start_date(prepaid_billing_date: date):
+    start_day = prepaid_billing_date.day
+    if start_day != 1:
+        raise ValidationError(
+            gettext_lazy("Prepaid billing can only start on the first of the month")
+        )
+    return
 
 
 def _ad_user_validation_helper(ad_user: str) -> bool:

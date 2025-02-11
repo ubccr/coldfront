@@ -9,7 +9,9 @@ from coldfront.plugins.qumulo.utils.acl_allocations import AclAllocations
 from coldfront.plugins.qumulo.tasks import reset_allocation_acls
 
 
-from coldfront.core.allocation.models import Allocation
+from coldfront.core.allocation.models import (
+    Allocation,
+)
 from coldfront.core.allocation.signals import (
     allocation_activate,
     allocation_disable,
@@ -23,8 +25,6 @@ from django.db.models.signals import post_save
 from coldfront.plugins.qumulo.utils.update_user_data import (
     update_user_with_additional_data,
 )
-
-import sys
 
 
 @receiver(post_save, sender=User)

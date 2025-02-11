@@ -14,6 +14,7 @@ from coldfront.plugins.qumulo.validators import validate_filesystem_path_unique
 from coldfront.plugins.qumulo.services.allocation_service import AllocationService
 
 from pathlib import PurePath
+from datetime import date
 
 
 class AllocationView(LoginRequiredMixin, FormView):
@@ -26,6 +27,12 @@ class AllocationView(LoginRequiredMixin, FormView):
         kwargs = super(AllocationView, self).get_form_kwargs()
         kwargs["user_id"] = self.request.user.id
         return kwargs
+
+    def set_billing_cycle(form_data):
+        billing_cycle = form_data.get("billing_cycle")
+        prepaid_billing_date = form_data.get("prepaid_billing_date")
+        if billing_cycle == "prepaid" and prepaid_billing_date > date.today():
+            form_data["billing_cycle"] = "monthly"
 
     def form_valid(
         self, form: AllocationForm, parent_allocation: Optional[Allocation] = None
@@ -49,6 +56,7 @@ class AllocationView(LoginRequiredMixin, FormView):
                 prepend_val = storage_root
 
             absolute_path = f"/{prepend_val}/{storage_filesystem_path}"
+        AllocationView.set_billing_cycle(form_data)
         validate_filesystem_path_unique(absolute_path)
 
         self.new_allocation = AllocationService.create_new_allocation(
