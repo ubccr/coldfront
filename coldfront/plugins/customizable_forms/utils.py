@@ -1,11 +1,10 @@
 import re
-import inspect
 import importlib
 
 from django.urls import path
 
 from coldfront.core.utils.common import import_from_settings
-from coldfront.plugins.customizable_forms.custom.urls import urlpatterns
+from coldfront.plugins.customizable_forms.urls import urlpatterns
 from coldfront.plugins.customizable_forms.views import GenericView
 from coldfront.plugins.customizable_forms.forms import BaseForm
 
@@ -24,11 +23,11 @@ def add_additional_forms():
 
         form_class_name = additional_form.get('form_class')
         view_class_name = additional_form.get('view_class')
-
-        if inspect.ismodule(module_name):
+        
+        try:
             form_module = importlib.import_module(f'{module_name}.{form_path}')
             view_module = importlib.import_module(f'{module_name}.{view_path}')
-        else:
+        except ModuleNotFoundError:
             base_path = 'coldfront.plugins'
             form_module = importlib.import_module(f'{base_path}.{module_name}.{form_path}')
             view_module = importlib.import_module(f'{base_path}.{module_name}.{view_path}')
@@ -50,8 +49,15 @@ def add_additional_forms():
         resource_name = re.sub('[^A-Za-z0-9]+', '', resource_name)
         urlpatterns.append(
             path(
-                f'<int:project_pk>/create/<int:resource_pk>/{resource_name}',
+                f'project/<int:project_pk>/create/<int:resource_pk>/{resource_name}',
                 custom_view.as_view(),
                 name=f'{resource_name.lower()}-form'
             ),
         )
+
+    urlpatterns.append(path(
+            'project/<int:project_pk>/create/<int:resource_pk>/<str:resource_name>',
+            GenericView.as_view(),
+            name='resource-form'
+        )
+    )
