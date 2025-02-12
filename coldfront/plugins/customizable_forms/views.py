@@ -636,24 +636,11 @@ class GenericView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
     def get_success_url(self):
         after_project_creation = self.request.GET.get('after_project_creation')
+        url_name = 'project-add-users-search'
         if after_project_creation is None or after_project_creation == 'false':
-            after_project_creation = False
+            url_name = 'project-detail'
 
-        if not after_project_creation:
-            url = self.reverse_with_params(
-                reverse(
-                    'project-detail',
-                    kwargs={'pk': self.kwargs.get('project_pk')}
-                ),
-                allocation_submitted='true'
-            )
-        else:
-            url = self.reverse_with_params(
-                reverse(
-                    'project-add-users-search',
-                    kwargs={'pk': self.kwargs.get('project_pk')}
-                ),
-                after_project_creation='true'
-            )
-
-        return url
+        return self.reverse_with_params(
+            reverse(url_name, kwargs={'pk': self.kwargs.get('project_pk')}),
+            allocation_submitted='true'
+        )
