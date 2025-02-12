@@ -1,0 +1,3 @@
+[submodule "coldfront-custom-resources"]
+	path = coldfront-custom-resources
+	url = https://github.com/IUResearchApplications/coldfront-custom-resources.git
