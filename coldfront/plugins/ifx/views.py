@@ -398,12 +398,16 @@ def rebalance(request):
         return Response(data={ 'error': 'invoice_prefix is required' }, status=status.HTTP_400_BAD_REQUEST)
     if not ifxid:
         return Response(data={ 'error': 'ifxid is required' }, status=status.HTTP_400_BAD_REQUEST)
-    if not year:
-        return Response(data={ 'error': 'year is required' }, status=status.HTTP_400_BAD_REQUEST)
-    if not month:
-        return Response(data={ 'error': 'month is required' }, status=status.HTTP_400_BAD_REQUEST)
     if not requestor_ifxid:
         return Response(data={ 'error': 'requestor_ifxid is required' }, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        year = int(year)
+    except ValueError:
+        return Response(data={ 'error': 'year must be an integer' }, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        month = int(month)
+    except ValueError:
+        return Response(data={ 'error': 'month must be an integer' }, status=status.HTTP_400_BAD_REQUEST)
 
 
     try:
