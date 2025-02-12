@@ -12,6 +12,7 @@ coldfront_configs = [
     'core.py',
     'email.py',
     'plugins/cas_login.py',
+    'plugins/debug_toolbar.py',
 ]
 
 # ColdFront plugin settings
@@ -32,6 +33,7 @@ plugin_configs = {
     'PLUGIN_SLATE_PROJECT': 'plugins/slate_project.py',
     'PLUGIN_GEODE_PROJECT': 'plugins/geode_project.py',
     'PLUGIN_UPDATE_USER_PROFILES': 'plugins/update_user_profiles.py',
+    'PLUGIN_COLDFRONT_CUSTOM_RESOURCES': 'plugins/coldfront_custom_resources.py',
     'PLUGIN_CUSTOMIZABLE_FORMS': 'plugins/customizable_forms.py',
     'PLUGIN_PI_SEARCH': 'plugins/pi_search.py',
 }
