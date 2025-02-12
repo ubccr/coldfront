@@ -3,6 +3,8 @@ Custom billing calculator class for Coldfront
 '''
 import logging
 import re
+import requests
+import json
 from collections import defaultdict, OrderedDict
 from decimal import Decimal
 from django.core.exceptions import MultipleObjectsReturned
@@ -852,3 +854,40 @@ class ColdfrontRebalance(Rebalance):
 
         for br in billing_records:
             br.delete()
+
+    def recalculate_billing_records(self, user, account_data):
+        '''
+        Recalculate the billing records for the given facility, user, year, and month
+        '''
+        # Recreate the billing records by calling the application calculate-billing-month url with invoice_prefix, year, and month
+        # url = getIfxUrl(f'{self.facility.application_username.upper()}_CALCULATE_BILLING_MONTH')
+
+        # This needs to be http://localhost because of some networky funk that I don't understand
+        url = 'http://localhost/ifx/api/billing/calculate-billing-month/'
+        url = f'{url}{self.facility.invoice_prefix}/{self.year}/{self.month}/'
+        headers = {
+            'Authorization': self.auth_token_str,
+            'Content-Type': 'application/json',
+        }
+        data = self.get_recalculate_body(user, account_data)
+        response = requests.post(url, headers=headers, json=data, timeout=None)
+        response_data = None
+        try:
+            response_data = response.json()
+            logger.error(f'Recalculate billing records response_data: {response_data}')
+        except json.JSONDecodeError:
+            raise Exception(f'Unable to decode response from {url}: {response.text}')
+
+        if response.status_code != 200:
+            if response_data:
+                error_message = ','.join(str(k) for k in response_data.values())
+            else:
+                error_message = response.text
+            logger.error(f'Recalculate billing records error response: {response_data}')
+            raise Exception(f'Error recalculating billing records for {user.full_name} for {self.month}/{self.year}: {error_message}')
+
+        if response_data != 'OK' and response_data.get('errors', None):
+            error_message = ','.join(set(response_data['errors']))
+            raise Exception(f'Error recalculating billing records for {user.full_name} for {self.month}/{self.year}: {error_message}')
+
+        logger.error(f'Recalculate billing records response: {response_data}')
