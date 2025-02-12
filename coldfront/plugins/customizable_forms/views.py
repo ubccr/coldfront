@@ -18,6 +18,7 @@ from coldfront.core.allocation.models import (Allocation,
                                               AllocationUserStatusChoice,
                                               AllocationUser)
 from coldfront.core.project.models import Project
+from coldfront.core.project.models import ProjectPermission
 from coldfront.core.resource.models import Resource
 from coldfront.plugins.customizable_forms.forms import GenericForm
 from coldfront.core.allocation.utils import (set_default_allocation_user_role,
@@ -246,18 +247,12 @@ class GenericView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-        if self.request.user.is_superuser:
-            return True
-
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
-
-        if project_obj.pi == self.request.user:
-            return True
-
-        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
             return True
 
         messages.error(self.request, 'You do not have permission to create a new allocation.')
+        return False
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
