@@ -1,8 +1,7 @@
-from django.urls import path, include
+from django.urls import path
 
-from coldfront.plugins.customizable_forms.views import (AllocationResourceSelectionView,
-                                                        GenericView,
-                                                        DispatchView)
+from coldfront.plugins.customizable_forms.views import AllocationResourceSelectionView, DispatchView
+
 
 urlpatterns = [
     path(
@@ -14,11 +13,5 @@ urlpatterns = [
         'project/<int:project_pk>/create/<int:resource_pk>',
         DispatchView.as_view(),
         name='resource-form-redirector'
-    ),
-    path('project/', include('coldfront.plugins.customizable_forms.custom.urls')),
-    path(
-        'project/<int:project_pk>/create/<int:resource_pk>/<str:resource_name>',
-        GenericView.as_view(),
-        name='resource-form'
     ),
 ]
