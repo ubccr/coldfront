@@ -345,7 +345,6 @@ class ProjectListView(ColdfrontListView):
 
 class ProjectArchivedListView(ProjectListView):
     template_name = 'project/project_archived_list.html'
-    paginate_by = 10
 
     def get_queryset(self):
         projects = Project.objects.prefetch_related('pi', 'status').filter(
