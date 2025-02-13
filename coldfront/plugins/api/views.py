@@ -79,9 +79,9 @@ class AllocationRequestFilter(filters.FilterSet):
     created_after is the date the request was created after.
     '''
     created = filters.DateFromToRangeFilter()
-    fulfilled = filters.BooleanFilter(method='filter_fulfilled')
-    fulfilled_date = filters.DateFromToRangeFilter()
-    time_to_fulfillment = filters.NumericRangeFilter(method='filter_time_to_fulfillment')
+    fulfilled = filters.BooleanFilter(method='filter_fulfilled', label='Fulfilled')
+    fulfilled_date = filters.DateFromToRangeFilter(label='Date fullfilled')
+    time_to_fulfillment = filters.NumericRangeFilter(method='filter_time_to_fulfillment', label='Time to fulfillment')
 
     class Meta:
         model = Allocation
@@ -173,9 +173,9 @@ class AllocationChangeRequestFilter(filters.FilterSet):
     created_after is the date the request was created after.
     '''
     created = filters.DateFromToRangeFilter()
-    fulfilled = filters.BooleanFilter(method='filter_fulfilled')
-    fulfilled_date = filters.DateFromToRangeFilter()
-    time_to_fulfillment = filters.NumericRangeFilter(method='filter_time_to_fulfillment')
+    fulfilled = filters.BooleanFilter(method='filter_fulfilled', label='Fulfilled')
+    fulfilled_date = filters.DateFromToRangeFilter(label='Date fullfilled')
+    time_to_fulfillment = filters.NumericRangeFilter(method='filter_time_to_fulfillment', label='Time to fulfillment')
 
     class Meta:
         model = AllocationChangeRequest
