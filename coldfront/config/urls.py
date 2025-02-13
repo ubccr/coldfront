@@ -6,7 +6,6 @@ from django.contrib import admin
 from django.urls import include, path
 from django.views.generic import TemplateView
 from django.conf.urls.static import static
-from debug_toolbar.toolbar import debug_toolbar_urls
 
 import coldfront.core.portal.views as portal_views
 
@@ -29,7 +28,7 @@ urlpatterns = [
     path('grant/', include('coldfront.core.grant.urls')),
     path('publication/', include('coldfront.core.publication.urls')),
     path('research-output/', include('coldfront.core.research_output.urls')), 
-] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) + debug_toolbar_urls()
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 if 'coldfront.plugins.allocation_removal_requests' in settings.INSTALLED_APPS:
     urlpatterns.append(path('allocation_removal_requests/', include('coldfront.plugins.allocation_removal_requests.urls')))
