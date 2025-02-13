@@ -2,7 +2,7 @@
 {% block profile_contents %}
   {% csrf_token %}
   {{ block.super }}
-  {% if viewed_user is request.user %}
+  {% if viewed_user == request.user %}
     <tr>
       <th scope="row">API Token:</th>
       <td>
