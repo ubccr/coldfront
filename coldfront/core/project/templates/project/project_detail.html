@@ -102,10 +102,10 @@ Project Detail
             <th scope="col">Resource Name</th>
             <th scope="col">Location</th>
             <th scope="col">User Count</th>
-            <th scope="col">Space</th>
+            <th scope="col">Quota</th>
             <th scope="col">Used</th>
             <th scope="col">Monthly Cost
-              <a class="info-button" title="Monthly Cost" data-toggle="popover" data-trigger="hover" data-content="Monthly cost for each allocation (not necessarily billed to project)">
+              <a class="info-button" title="Monthly Cost" data-toggle="popover" data-trigger="hover" data-content="Monthly cost for each allocation as determined by quota size. Not necessarily billed to project.">
                 <i class="fas fa-info-circle" aria-hidden="true"></i>
               </a>
             </th>
@@ -121,7 +121,7 @@ Project Detail
             <td>{{ allocation.allocationuser_set.count }}</td>
             <td>{{ allocation.size|floatformat:1 }} {{ allocation.get_parent_resource.unit }}</td>
             <td>{{ allocation.usage|floatformat:1 }}</td>
-            <td>{% if allocation_obj.requires_payment %}${{allocation.cost|floatformat:2 }}{% endif %}</td>
+	    <td>{% if allocation.requires_payment %}${{allocation.cost|floatformat:2 }}{% endif %}</td>
             <td>
               <a href="{% url 'allocation-detail' allocation.pk %}">
               <span class="badge badge-success"><i class="fas fa-search" aria-hidden="true"></i>

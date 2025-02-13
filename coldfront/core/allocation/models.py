@@ -143,6 +143,7 @@ class Allocation(TimeStampedModel):
         requires_payment = self.get_attribute('Requires Payment')
         if requires_payment == None:
             return self.get_parent_resource.requires_payment
+        return requires_payment
 
     @property
     def fairshare(self):

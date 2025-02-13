@@ -143,12 +143,6 @@ Allocation Detail
               <th scope="row" class="text-nowrap">Total Users with Usage:</th>
               <td>{{ allocation_users.count }}</td>
           </tr>
-          <tr>
-              <th scope="row" class="text-nowrap">Total Usage ({{allocation.get_parent_resource.quantity_label}}):</th>
-              <td>{{ allocation.usage|floatformat:2 }}
-                <span class="float-right">Last Synced {{user_sync_dt}}</span>
-              </td>
-          </tr>
 
           {% if "Cluster" in allocation.get_parent_resource.resource_type.name %}
             <tr>
@@ -166,7 +160,11 @@ Allocation Detail
             </tr>
             {% if invoice %}
               <tr>
-                  <th style="background-color:#D3D3D3" bordercolor="red" scope="row" class="text-nowrap">Total Amount Due:	</th>
+                  <th style="background-color:#D3D3D3" bordercolor="red" scope="row" class="text-nowrap">Total Amount Due:
+                    <a class="info-button" title="Monthly Cost" data-toggle="popover" data-trigger="hover" data-content="Monthly cost for allocation as determined by quota size. Not necessarily billed to project.">
+                      <i class="fas fa-info-circle" aria-hidden="true"></i>
+                    </a>
+		  </th>
                     {% cost_tb allocation.size as cost %}
                     {% if cost %}
                       <td style="background-color:#D3D3D3">{{ cost }}</td>
@@ -174,6 +172,12 @@ Allocation Detail
               </tr>
             {% endif %}
           {% endif %}
+          <tr>
+              <th scope="row" class="text-nowrap">Total Usage ({{allocation.get_parent_resource.quantity_label}}):</th>
+              <td>{{ allocation.usage|floatformat:2 }}
+                <span class="float-right">Last Synced {{user_sync_dt}}</span>
+              </td>
+          </tr>
           <tr>
             <th scope="row" class="text-nowrap">Start Date:</th>
             <td>
