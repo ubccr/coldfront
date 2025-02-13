@@ -6,7 +6,6 @@ from coldfront.core.allocation.models import (AttributeType,
                                               AllocationUserStatusChoice,
                                               AllocationUserRequestStatusChoice,
                                               AllocationChangeStatusChoice,
-                                              AllocationRemovalStatusChoice,
                                               AllocationUserRoleChoice)
 
 
@@ -23,7 +22,6 @@ class Command(BaseCommand):
                        'New', 'Paid', 'Payment Pending',
                        'Payment Requested', 'Payment Declined',
                        'Renewal Requested', 'Revoked', 'Unpaid',
-                       'Removal Requested', 'Removed',
                        'Billing Information Submitted',):
             AllocationStatusChoice.objects.get_or_create(name=choice)
 
@@ -36,9 +34,6 @@ class Command(BaseCommand):
 
         for choice in ('Approved', 'Pending', 'Denied', ):
             AllocationUserRequestStatusChoice.objects.get_or_create(name=choice)
-
-        for choice in ('Approved', 'Pending', 'Denied', ):
-            AllocationRemovalStatusChoice.objects.get_or_create(name=choice)
 
         for choice, is_user_default, is_manager_default in (
             ('read/write', True, True),

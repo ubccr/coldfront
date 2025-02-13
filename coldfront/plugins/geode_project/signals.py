@@ -3,14 +3,12 @@ from django.dispatch import receiver
 from coldfront.core.project.signals import project_activate, project_user_role_changed
 from coldfront.core.project.views import ProjectActivateRequestView, ProjectUserDetail
 from coldfront.core.project.models import Project, ProjectUser
-from coldfront.core.allocation.signals import allocation_activate, allocation_activate_user, allocation_remove, allocation_remove_user, allocation_expire
+from coldfront.core.allocation.signals import allocation_activate, allocation_activate_user, allocation_remove_user, allocation_expire
 from coldfront.core.allocation.tasks import update_statuses
 from coldfront.core.allocation.models import Allocation, AllocationUser
 from coldfront.core.allocation.views import (AllocationDetailView,
                                              AllocationAddUsersView,
-                                             AllocationRemoveUsersView,
-                                             AllocationRemoveView,
-                                             AllocationApproveRemovalRequestView)
+                                             AllocationRemoveUsersView)
 from coldfront.plugins.geode_project import utils
 
 
@@ -35,8 +33,6 @@ def add_groups(sender, **kwargs):
 
 
 @receiver(allocation_expire, sender=update_statuses)
-@receiver(allocation_remove, sender=AllocationRemoveView)
-@receiver(allocation_remove, sender=AllocationApproveRemovalRequestView)
 def remove_groups(sender, **kwargs):
     allocation_pk = kwargs.get('allocation_pk')
     allocation_obj = Allocation.objects.get(pk=allocation_pk)

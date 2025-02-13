@@ -50,8 +50,9 @@ Allocation Review Pending Removal Requests
             </td>
             <td>{{allocation_removal.allocation.get_parent_resource}}</td>
             <td class="text-nowrap">
-              <a href="{% url 'allocation-approve-removal-request' allocation_removal.pk %}" class="btn btn-success mr-1">Approve</a>
-              <a href="{% url 'allocation-deny-removal-request' allocation_removal.pk %}" class="btn btn-danger mr-1">Deny</a>
+              <a href="{% url 'allocation_removal_requests:allocation-approve-removal-request' allocation_removal.pk %}" class="btn btn-success mr-1">Approve</a>
+              <a href="{% url 'allocation_removal_requests:allocation-deny-removal-request' allocation_removal.pk %}" class="btn btn-danger mr-1">Deny</a>
+              <a href="{% url 'allocation-detail' allocation_removal.allocation.pk %}" class="btn btn-secondary mr-1">Details</a>
             </td>
           </tr>
         {% endfor %}
