@@ -12,17 +12,12 @@ from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from simple_history.utils import get_history_model_for_model
 
-from coldfront.core.utils.common import import_from_settings
 from coldfront.core.allocation.models import Allocation, AllocationChangeRequest
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource
 from coldfront.plugins.api import serializers
 
 logger = logging.getLogger(__name__)
-
-UNFULFILLED_ALLOCATION_STATUSES = ['Denied'] + import_from_settings(
-    'PENDING_ALLOCATION_STATUSES', ['New', 'In Progress', 'On Hold', 'Pending Activation']
-)
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -101,7 +96,7 @@ class AllocationRequestFilter(filters.FilterSet):
         if value:
             return queryset.filter(status__name='Approved')
         else:
-            return queryset.filter(status__name__in=UNFULFILLED_ALLOCATION_STATUSES)
+            return queryset.filter(status__name__in=['Denied', 'New', 'In Progress', 'On Hold', 'Pending Activation'])
 
     def filter_time_to_fulfillment(self, queryset, name, value):
         if value.start is not None:
