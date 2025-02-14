@@ -43,11 +43,17 @@ def home(request):
             Q(project__status__name__in=['Active', 'New']) &
             (
                 (
-                    Q(project__projectuser__user=request.user) &
-                    Q(project__projectuser__status__name__in=['Active', ]) &
-                        (Q(project__projectuser__role__name__in=MANAGERS) |
+                    (Q(resources__resource_type__name__contains='Storage') & (
+                        Q(project__projectuser__user=request.user) &
+                        Q(project__projectuser__status__name__in=['Active', ]) &
+                            (Q(project__projectuser__role__name__in=MANAGERS) |
+                            Q(allocationuser__user=request.user) &
+                            Q(allocationuser__status__name='Active'))
+                        ))|
+                    (Q(resources__resource_type__name__contains='Cluster') &
                         Q(allocationuser__user=request.user) &
-                        Q(allocationuser__status__name='Active'))
+                        Q(allocationuser__status__name='Active')
+                    )
                 ) | Q(project__pi=request.user)
             )
         ).distinct().order_by('-created')
@@ -77,6 +83,10 @@ def home(request):
             id__in=user_depts.values_list('organization_id')
         )
 
+        resource_list = Resource.objects.filter(
+            allowed_users=request.user)
+
+        context['resource_list'] = resource_list
         context['department_list'] = department_list
         context['project_list'] = project_list
         context['allocation_list'] = allocation_list
