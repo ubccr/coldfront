@@ -313,6 +313,15 @@ class ResourceListView(ColdfrontListView):
 
             if data.get('show_allocatable_resources'):
                 resources = resources.filter(is_allocatable=True)
+            if data.get('resource_name'):
+                resources = resources.filter(
+                    name__icontains=data.get('resource_name')
+                )
+            if data.get('resource_type'):
+                resources = resources.filter(
+                    resource_type=data.get('resource_type')
+                )
+
             if data.get('model'):
                 resources = resources.filter(
                     Q(resourceattribute__resource_attribute_type__name='Model') &
