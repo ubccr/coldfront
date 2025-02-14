@@ -1,0 +1,255 @@
+{% extends "common/base.html" %}
+{% load common_tags %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Announcements
+{% endblock %}
+
+
+{% block content %}
+<h2 class="d-inline">Announcements</h2>
+<a class="btn btn-primary float-right ml-1" type="button" href="{% url 'announcement-create' %}">New Announcement</a>
+<a class="btn btn-primary float-right" type="button" href="{% url 'announcement-read' %}">Mark all as read</a>
+</div>
+<hr>
+<div class="mb-3" id="category_filter_accordion">
+  <div class="card">
+    <div class="card-header">
+      <a id="expand_category_filter_button" href="#collapse_category_filter" role="button" class="card-link collapsed" data-toggle="collapse" aria-expanded="false">
+        <i id="search_plus_minus_1" class="fas fa-search-plus"></i>
+        Filter Categories
+        <i id="plus_minus_1" class="fas fa-plus float-right"></i>
+      </a>
+    </div>
+    <div id="collapse_category_filter" class="collapse" data-parent="#category_filter_accordion">
+      <div class="card-body">
+        <form id="filter_form" method="GET" action="{% url 'announcement-list' %}" autocomplete="off">
+          {{ filter_form.title|as_crispy_field }}
+          {{ filter_form.categories|as_crispy_field }}
+          {% include 'announcements/selection.html' with label='Categories' selection=selections|get_value_from_dict:'categories' %}
+          <input type="submit" class="btn btn-primary" value="Search">
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<hr>
+{% if announcements %}
+  {% for announcement in announcements %}
+    <div class="card">
+      <div class="card-header">
+        <div class="row">
+          <div class="col pr-0">
+            <h3>
+              {{ announcement.title }}
+            </h3>
+          </div>
+          <div class="col-1">
+            {% if current_user.is_superuser %}
+              <div class="float-right" title="Views" style="position: relative; top: 1px; right: 1px;">
+                <span class="badge badge-secondary">{{announcement.viewed_by.count}}</span>
+              </div>
+            {% endif %}
+            <div id="id_is_read_{{ announcement.pk }}" class="float-right mr-1" style="position: relative; top: 1px; right: 1px;">
+              {% if not current_user in announcement.viewed_by.all %}
+                <a title="Mark as read" type="button" href="#"><i class="far fa-circle"></i></a>
+              {% else %}
+                <i title="Marked as read" style="color: green; " class="fa fa-check"></i>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        {{ announcement.body|linebreaks }}
+        <hr>
+        {% for category in announcement.categories.all %} 
+          <span class="badge badge-pill badge-primary">{{ category }}</span>
+        {% endfor %}
+      </div>
+      <div class="card-footer">
+        Created: {{ announcement.created }}
+        {% if announcement.details_url %}
+          <a target="_blank" href="{{ announcement.details_url }}" class="btn btn-secondary float-right" type="button">
+            <i class="fas fa-external-link-alt" aria-hidden="true"></i> More Details
+          </a>
+        {% endif %}
+        <a href="{% url 'announcement-update' pk=announcement.pk %}" class="btn btn-primary float-right mr-1" type="button">Update</a>
+      </div>
+    </div>
+    <hr>
+  {% endfor %}
+
+  <div class="pagination d-inline">
+    <span class="step-links">
+      <div class="row">
+        <div class="col">
+          {% if page_obj.has_previous %}
+            <div class="text-left">
+              <a href="?page=1">&laquo; first</a>
+              <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+            </div>
+          {% endif %}
+        </div>
+        <div class="col">
+          <div class="text-center">
+            <span class="current">
+              Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+            </span>
+          </div>
+        </div>
+        <div class="col">
+          <div class="text-right">
+            {% if page_obj.has_next %}
+              <a href="?page={{ page_obj.next_page_number }}">next</a>
+              <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </span>
+  </div>
+{% else %}
+  <div class="alert alert-secondary">
+    No announcements to display!
+  </div>
+{% endif %}
+<script>
+  var selections = {{ selections|safe }};
+  selections['categories']['available'] = new Set(selections['categories']['full_list'])
+  selections['categories']['selected'] = new Set()
+
+  function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie != '') {
+      var cookies = document.cookie.split(';');
+      for (var i = 0; i < cookies.length; i++) {
+        var cookie = jQuery.trim(cookies[i]);
+        // Does this cookie string begin with the name we want?
+        if (cookie.substring(0, name.length + 1) == (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  function createSearchResult(value, selection) {
+    const current_filter = $(`#id_${selection}_filter`).val();
+    if (current_filter.length && !value.toLowerCase().startsWith(current_filter.toLowerCase())) {
+      return;
+    }
+
+    $(`#${selection}_search_results`).append(
+      `
+      <div id="search_result_${value.replaceAll(' ', '_')}" class="d-inline">
+        <a href="#", title="Add tag">
+          <span class="badge badge-pill badge-secondary"><i class="fas fa-plus"></i> ${value}</span>
+        </a>
+      </div>
+      `
+    )
+    selections[selection]['available'].add(value)
+    $('#search_result_' + value.replaceAll(' ', '_')).click(function(e) {
+      e.preventDefault();
+      createSelectedResult(value, selection);
+      selections[selection]['available'].delete(value)
+      $(`#id_${selection}_${selections[selection]['full_list'].indexOf(value)}`).attr('checked', true);
+      $(this).remove();
+    })
+  }
+
+  function createSelectedResult(value, selection) {
+    $(`#selected_${selection}`).append(
+      `
+      <div id="selected_result_${value.replaceAll(' ', '_')}" class="d-inline">
+        <a href="#", title="Add tag">
+          <span class="badge badge-pill badge-primary"><i class="fas fa-minus"></i> ${value}</span>
+        </a>
+      </div>
+      `
+    )
+    selections[selection]['selected'].add(value)
+    $('#selected_result_' + value.replaceAll(' ', '_')).click(function(e) {
+      e.preventDefault();
+      createSearchResult(value, selection);
+      selections[selection]['selected'].delete(value);
+      $(`#id_${selection}_${selections[selection]['full_list'].indexOf(value)}`).attr('checked', false);
+      $(this).remove();
+    })
+  }
+
+  function setUpSelections(selection) {
+    $('#div_id_' + selection).hide()
+    checked_categories_ids = $("input[name='categories']:checked").map(function() { return this.id; }).get();
+    for (let index = 0; index < selections[selection]['full_list'].length; index++) {
+      const element = selections[selection]['full_list'][index];
+      if (checked_categories_ids.includes(`id_${selection}_${index}`)) {
+        createSelectedResult(element, selection);
+        continue;
+      }
+      createSearchResult(element, selection);
+    }
+
+    $(`#id_${selection}_filter`).keyup(function(e) {
+      var full_list = selections[selection]['full_list']
+      var value = e.target.value;
+
+      var matches = new Set();
+      full_list.forEach(element => {
+        if (element.toLowerCase().startsWith(value.toLowerCase())) {
+          if (!selections[selection]['selected'].has(element)){
+            matches.add(element)
+          }
+        }
+      });
+
+      var to_remove = selections[selection]['available'].difference(matches);
+      to_remove.forEach(element => {
+        $("#search_result_" + element.replaceAll(' ', '_')).remove();
+      });
+
+      var to_add = matches.difference(selections[selection]['available']);
+      to_add.forEach(element => {
+        createSearchResult(element, selection);
+      });
+
+      selections[selection]['available'] = matches;
+    })
+  }
+
+  $(document).ready(function() {
+    setUpSelections('categories')
+    $("[id^=id_is_read_]").click(function (e) {
+      e.preventDefault();
+      var id = e.currentTarget.id.split('_').pop()
+      $('#id_is_read_' + id).html(
+        '<i title="Marked as read" style="color: green; " class="fa fa-check"></i>'
+      );
+      $.ajax({
+        headers: { 'X-CSRFToken': getCookie('csrftoken') },
+        type: "POST",
+        url: "{% url 'announcement-read' %}",
+        data: {
+          id: id
+        },
+        success: function (data) {
+          $('#id_unread_count').text(data)
+        }
+      });
+    })
+
+    $("#expand_category_filter_button").click(function() {
+      $('#collapse_category_filter').collapse();
+      search_icon = $("#search_plus_minus_1");
+      search_icon.toggleClass("fa-search-plus fa-search-minus")
+      icon = $("#plus_minus_1");
+      icon.toggleClass("fa-plus fa-minus");
+    });
+  })
+</script>
+{% endblock %}
