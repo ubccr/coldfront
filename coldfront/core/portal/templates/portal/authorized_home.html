@@ -27,6 +27,18 @@
         <hr>
       {% endif %}
     {% endif %}
+  {% if resource_list %}
+    <br/><br/>
+    <h2><a href="{% url 'resource-list' %}" >Managed Resources &raquo;</a></h2>
+    <hr>
+    <ul class="list-group">
+      {% for resource in resource_list %}
+        <li class="list-group-item">
+          <a href="{% url 'resource-detail' resource.pk %}"><i class="fa fa-folder fa-lg" aria-hidden="true"></i> {{resource.name}}</a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
   </div>
 
   <div class="col-lg-6 mt-2">
@@ -90,6 +102,7 @@
       </div>
     {% endif %}
   </div>
+
   <div class="col-lg-6 mt-2">
     {% if department_list %}
       <div class="col-lg-6 mt-2">
