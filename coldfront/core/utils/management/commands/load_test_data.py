@@ -21,6 +21,7 @@ from coldfront.core.publication.models import Publication, PublicationSource
 from coldfront.core.resource.models import (Resource, ResourceAttribute,
                                             ResourceAttributeType,
                                             ResourceType)
+from coldfront.core.user.management.commands.load_approver_schools import load_approver_schools
 
 base_dir = settings.BASE_DIR
 
@@ -28,8 +29,8 @@ base_dir = settings.BASE_DIR
 Users = ['Carl	Gray',  # PI#1
          'Stephanie	Foster',  # PI#2
          'Charles	Simmons',  # Director
-         'Andrea	Stewart',
-         'Alice	Rivera',
+         'Andrea	Stewart', # Approver#1
+         'Alice	Rivera', # Approver#2
          'Frank	Hernandez',
          'Justin	James',
          'Randy	Perry',
@@ -150,6 +151,12 @@ class Command(BaseCommand):
                 username=username.strip(),
                 email=email.strip()
             )
+
+        json_data = {
+            "astewart": ["Tandon School of Engineering", "NYU IT"],
+            "arivera": ["NYU IT"]
+        }
+        load_approver_schools(json_data)
 
         admin_user, _ = User.objects.get_or_create(username='admin')
         admin_user.is_superuser = True
