@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.db import models
+from coldfront.core.school.models import School
 
 
 class UserProfile(models.Model):
@@ -18,30 +19,25 @@ class UserProfile(models.Model):
         return self.user.has_perm('allocation.can_review_allocation_requests')
 
     @property
-    def school(self):
-        """Get school from ApproverProfile if the user is an approver."""
+    def schools(self):
+        """Get schools from ApproverProfile if the user is an approver."""
         if hasattr(self, 'approver_profile'):
-            return self.approver_profile.school
-        return None
+            return list(self.approver_profile.schools.values_list('description', flat=True))
+        return []
 
-    @school.setter
-    def school(self, value):
-        """Set school in ApproverProfile if the user is an approver."""
+    @schools.setter
+    def schools(self, values):
+        """Set schools in ApproverProfile if the user is an approver."""
         if self.is_approver():
             approver_profile, created = ApproverProfile.objects.get_or_create(user_profile=self)
-            approver_profile.school = value
-            approver_profile.save()
+            approver_profile.schools.set(School.objects.filter(description__in=values))
         else:
-            raise ValueError("User is not an approver, cannot set school.")
+            raise ValueError("User is not an approver, cannot set schools.")
 
 
 class ApproverProfile(models.Model):
-    """Stores additional information for approvers.
-
-    Attributes:
-        user_profile (UserProfile): Links to the base user profile.
-        school (str): Represents the school associated with the approver.
-    """
+    """Stores additional information for approvers."""
     user_profile = models.OneToOneField(UserProfile, on_delete=models.CASCADE, related_name="approver_profile")
-    school = models.CharField(max_length=255, blank=True, null=True)
+    schools = models.ManyToManyField(School, blank=True)
+
 
