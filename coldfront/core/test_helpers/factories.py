@@ -204,6 +204,7 @@ class ResourceFactory(DjangoModelFactory):
 
     description = factory.Faker('sentence')
     resource_type = SubFactory(ResourceTypeFactory)
+    school = SubFactory(SchoolFactory)  # Ensure a school is assigned
 
 
 

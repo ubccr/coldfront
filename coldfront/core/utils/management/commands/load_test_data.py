@@ -94,10 +94,10 @@ resources = [
 
     # Generic
     ('Generic', None, 'Arts & Science', 'Arts & Science Generic', School.objects.get(description='Arts & Science'),
-     True, True, True),
-    ('Generic', None, 'NYU IT', 'NYU IT Generic', School.objects.get(description='NYU IT'), True, True, True),
-    ('Generic', None, 'Tandon School of Engineering', 'Tandon School of Engineering Generic',
-    School.objects.get(description='Tandon School of Engineering'), True, True, True),
+     True, False, True),
+    ('Generic', None, 'NYU IT', 'NYU IT Generic', School.objects.get(description='NYU IT'), True, False, True),
+    ('Generic', None, 'Tandon-GPU-Adv', 'Tandon School of Engineering Generic',
+    School.objects.get(description='Tandon School of Engineering'), True, False, True),
 
     # Clusters
     ('Cluster', None, 'University HPC',
