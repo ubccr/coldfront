@@ -2,6 +2,7 @@ import datetime
 import logging
 from datetime import date
 
+from coldfront.core.user.models import UserProfile
 from dateutil.relativedelta import relativedelta
 from django import forms
 from django.contrib import messages
@@ -982,11 +983,19 @@ class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templat
         context = super().get_context_data(**kwargs)
         allocation_list = Allocation.objects.filter(
             status__name__in=['New', 'Renewal Requested', 'Paid', 'Approved',])
-
-        # Restrict to approvers reviewing only their school's projects and let superuser see all
-        if self.request.user.has_perm('allocation.can_review_allocation_requests'):
-            user_school = self.request.user.userprofile.school
-            allocation_list = allocation_list.filter(project__school=user_school)
+        user = self.request.user
+        # Restrict non-superusers to allocations from their school
+        if not user.is_superuser:
+            try:
+                user_school = user.userprofile.schools.all()  # Fetch the schools associated with the user
+                if user_school.exists():  # Ensure user has schools
+                    allocation_list = allocation_list.filter(project__school__in=user_school)
+                else:
+                    messages.warning(self.request, "You are not associated with any school.")
+                    allocation_list = Allocation.objects.none()
+            except UserProfile.DoesNotExist:
+                messages.warning(self.request, "No associated profile found.")
+                allocation_list = Allocation.objects.none()
 
         context['allocation_status_active'] = AllocationStatusChoice.objects.get(name='Active')
         context['allocation_list'] = allocation_list
@@ -1695,13 +1704,19 @@ class AllocationChangeListView(LoginRequiredMixin, UserPassesTestMixin, Template
         context = super().get_context_data(**kwargs)
         allocation_change_list = AllocationChangeRequest.objects.filter(
             status__name__in=['Pending', ])
-
-        # Restrict to approvers reviewing only their school's projects and let superuser see all
-        if self.request.user.has_perm(
-                'allocation.can_review_allocation_requests') and not self.request.user.is_superuser:
-            user_school = getattr(self.request.user.userprofile, 'school', None)
-            allocation_change_list = allocation_change_list.filter(project__school=user_school)
-
+        user = self.request.user
+        # Restrict non-superusers to allocations from their school
+        if not user.is_superuser:
+            try:
+                user_school = user.userprofile.schools.all()  # Fetch the schools associated with the user
+                if user_school.exists():  # Ensure user has schools
+                    allocation_change_list = allocation_change_list.filter(allocation__project__school__in=user_school)
+                else:
+                    messages.warning(self.request, "You are not associated with any school.")
+                    allocation_change_list = Allocation.objects.none()
+            except UserProfile.DoesNotExist:
+                messages.warning(self.request, "No associated profile found.")
+                allocation_change_list = Allocation.objects.none()
         context['allocation_change_list'] = allocation_change_list
         context['PROJECT_ENABLE_PROJECT_REVIEW'] = PROJECT_ENABLE_PROJECT_REVIEW
         return context
@@ -1874,30 +1889,43 @@ class AllocationChangeDeleteAttributeView(LoginRequiredMixin, UserPassesTestMixi
     def test_func(self):
         """ UserPassesTestMixin Tests"""
 
-        if self.request.user.is_superuser:
+        user = self.request.user
+
+        if user.is_superuser:
             return True
 
-        if self.request.user.has_perm('allocation.can_review_allocation_requests'):
-            # Get the allocation change request
-            pk = self.kwargs.get('pk')
-            allocation_attribute_change_obj = get_object_or_404(AllocationAttributeChangeRequest, pk=pk)
-            allocation_change_obj = allocation_attribute_change_obj.allocation_change_request
-            allocation_project = allocation_change_obj.allocation.project
-
-            # Get user's school
-            user_school = getattr(self.request.user.userprofile, 'school', None)
-
-            # Check if the user is an approver and belongs to the same school as the project
-            if user_school and allocation_project.school == user_school:
-                return True
+        if user.has_perm('allocation.can_review_allocation_requests'):
+            return True
 
         messages.error(self.request, 'You do not have permission to update an allocation change request.')
         return False
 
     def get(self, request, pk):
+        """ Restrict deletion of allocation change requests based on the user's school """
         allocation_attribute_change_obj = get_object_or_404(AllocationAttributeChangeRequest, pk=pk)
         allocation_change_pk = allocation_attribute_change_obj.allocation_change_request.pk
 
+        user = request.user
+
+        # Superusers can delete any allocation change request
+        if not user.is_superuser:
+            try:
+                user_schools = user.userprofile.schools.all()  # Fetch schools associated with the user
+                project_school = allocation_attribute_change_obj.allocation_change_request.allocation.project.school  # Get related project school
+
+                if not user_schools.exists():
+                    messages.error(request, "You are not associated with any school and cannot delete this request.")
+                    return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': allocation_change_pk}))
+
+                if project_school not in user_schools:
+                    messages.error(request, "You do not have permission to delete this allocation change request.")
+                    return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': allocation_change_pk}))
+
+            except UserProfile.DoesNotExist:
+                messages.error(request, "No associated profile found. You cannot delete this request.")
+                return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': allocation_change_pk}))
+
+        # Proceed with deletion if the user is authorized
         allocation_attribute_change_obj.delete()
 
         messages.success(
