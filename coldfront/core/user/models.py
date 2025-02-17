@@ -22,8 +22,8 @@ class UserProfile(models.Model):
     def schools(self):
         """Get schools from ApproverProfile if the user is an approver."""
         if hasattr(self, 'approver_profile'):
-            return list(self.approver_profile.schools.values_list('description', flat=True))
-        return []
+            return self.approver_profile.schools.all()
+        return School.objects.none()
 
     @schools.setter
     def schools(self, values):

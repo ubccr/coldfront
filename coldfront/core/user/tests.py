@@ -84,7 +84,7 @@ class TestUserProfile(TestCase):
 
         # Convert both lists to sets to ignore order
         expected_schools = {"Tandon School of Engineering", "NYU IT"}
-        actual_schools = set(self.data.user_profile.schools)
+        actual_schools = {school.description for school in self.data.user_profile.schools}
 
         self.assertEqual(expected_schools, actual_schools)
 
@@ -100,7 +100,7 @@ class TestUserProfile(TestCase):
 
         # Convert both lists to sets to ignore order
         expected_schools = {"Tandon School of Engineering", "NYU IT"}
-        actual_schools = set(self.data.user_profile.schools)
+        actual_schools = {school.description for school in self.data.user_profile.schools}
 
         self.assertEqual(expected_schools, actual_schools)
 
