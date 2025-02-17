@@ -1,5 +1,9 @@
 import logging
 
+from coldfront.core.project.models import Project
+from coldfront.core.school.models import School
+from coldfront.core.user.models import UserProfile, ApproverProfile
+from django.contrib.auth.models import Permission
 from django.test import TestCase
 from django.urls import reverse
 
@@ -20,7 +24,7 @@ from coldfront.core.test_helpers.factories import (
 )
 from coldfront.core.allocation.models import (
     AllocationChangeRequest,
-    AllocationChangeStatusChoice,
+    AllocationChangeStatusChoice, Allocation, AllocationStatusChoice,
 )
 
 logging.disable(logging.CRITICAL)
@@ -34,6 +38,7 @@ class AllocationViewBaseTest(TestCase):
     def setUpTestData(cls):
         """Test Data setup for all allocation view tests."""
         AllocationStatusChoiceFactory(name='New')
+        AllocationStatusChoiceFactory(name='Pending')
         cls.project = ProjectFactory(status=ProjectStatusChoiceFactory(name='Active'))
         cls.allocation = AllocationFactory(project=cls.project)
         cls.allocation.resources.add(ResourceFactory(name='holylfs07/tier1'))
@@ -337,8 +342,104 @@ class AllocationChangeListViewTest(AllocationViewBaseTest):
     def setUp(self):
         self.url = '/allocation/change-list'
 
+        # Create test users
+        self.superuser = UserFactory(username='superuser', is_superuser=True)
+        self.approver_user = UserFactory(username='approver_user')
+        self.regular_user = UserFactory(username='regular_user')
+
+        # Assign permissions
+        permission = Permission.objects.get(codename='can_review_allocation_requests')
+        self.approver_user.user_permissions.add(permission)
+
+        # Create UserProfiles
+        self.superuser_profile, _ = UserProfile.objects.get_or_create(user=self.superuser)
+        self.approver_user_profile, _ = UserProfile.objects.get_or_create(user=self.approver_user)
+        self.regular_profile, _ = UserProfile.objects.get_or_create(user=self.regular_user)
+        # Create Schools
+        self.school1, _ = School.objects.get_or_create(description="Tandon School of Engineering")
+        self.school2, _ = School.objects.get_or_create(description="NYU IT")
+        # Set Approver Profile
+        self.approver_profile, _ = ApproverProfile.objects.get_or_create(user_profile=self.approver_user_profile)
+        self.approver_profile.schools.set([self.school1])
+
+        # Create Projects
+        status = ProjectStatusChoiceFactory(name='Active')
+        self.project1 = Project.objects.create(title="Tandon School of Engineering Project 1", school=self.school1,
+                                               pi=self.approver_user_profile.user, status=status)
+        self.project2 = Project.objects.create(title="NYU IT Project 2", school=self.school2, pi=self.regular_profile.user,
+                                               status=status)
+
+        # Create Allocations
+        self.allocation1 = Allocation.objects.create(
+            project=self.project1,
+            status=AllocationStatusChoice.objects.get(name="Pending"),
+            quantity=100,
+            start_date="2025-01-01",
+            end_date="2025-12-31",
+            justification="Testing allocation 1",
+        )
+        self.allocation2 = Allocation.objects.create(
+            project=self.project2,
+            status=AllocationStatusChoice.objects.get(name="Pending"),
+            quantity=200,
+            start_date="2025-02-01",
+            end_date="2025-12-31",
+            justification="Testing allocation 2",
+        )
+
+        # Create AllocationChangeStatusChoice
+        self.pending_status, _ = AllocationChangeStatusChoice.objects.get_or_create(name="Pending")
+
+        # Create AllocationChangeRequest
+        self.allocation_change1 = AllocationChangeRequest.objects.create(
+            allocation=self.allocation1,
+            status=self.pending_status,
+            end_date_extension=30,
+            justification="Need to extend allocation 1",
+            notes="Request submitted for review"
+        )
+        self.allocation_change2 = AllocationChangeRequest.objects.create(
+            allocation=self.allocation2,
+            status=self.pending_status,
+            end_date_extension=60,
+            justification="Need to extend allocation 2",
+            notes="Urgent request"
+        )
+
     def test_allocationchangelistview_access(self):
         self.allocation_access_tstbase(self.url)
+
+    def test_superuser_can_see_all_allocation_changes(self):
+        """Test that superusers can see all allocation change requests."""
+        self.client.force_login(self.superuser, backend=BACKEND)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.allocation1.project.school.description)
+        self.assertContains(response, self.allocation2.project.school.description)
+
+    def test_approver_can_only_see_own_school_allocations(self):
+        """Test that approvers can only see allocation changes for their assigned schools."""
+        self.client.force_login(self.approver_user, backend=BACKEND)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.allocation_change1.allocation.project.school.description)
+        self.assertNotContains(response, self.allocation_change2.allocation.project.school.description)
+
+    def test_non_approver_cannot_access_page(self):
+        """Test that a regular user without the `can_review_allocation_requests` permission cannot access."""
+        self.client.force_login(self.regular_user, backend=BACKEND)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 403)  # Expect Forbidden access
+
+    def test_approver_with_no_school_sees_empty_list(self):
+        """Test that an approver without an assigned school sees an empty list."""
+        self.approver_profile.schools.clear()
+        self.client.force_login(self.approver_user, backend=BACKEND)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, self.allocation_change1.allocation.project.school.description)
+        self.assertNotContains(response, self.allocation_change2.allocation.project.school.description)
+        self.assertContains(response, "You are not associated with any school.")
 
 
 class AllocationNoteCreateViewTest(AllocationViewBaseTest):
