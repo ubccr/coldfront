@@ -1,6 +1,6 @@
 import json
 from django.contrib import messages
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponseNotFound
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.views.generic import ListView, UpdateView, DeleteView, FormView, View, TemplateView
@@ -10,11 +10,33 @@ from coldfront.plugins.announcements.models import Announcement, AnnouncementCat
 from coldfront.plugins.announcements.forms import AnnouncementCreateForm, AnnouncementFilterForm
 
 
-class AnnouncementListView(LoginRequiredMixin, ListView):
-    model=Announcement
+class AnnouncementListView(LoginRequiredMixin, TemplateView):
     template_name = 'announcements/announcement_list.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['current_user'] = self.request.user
+        context['categories'] = {category.pk: category.name for category in AnnouncementCategoryChoice.objects.all()}
+
+        announcement_filter_form = AnnouncementFilterForm(self.request.GET)
+        if not announcement_filter_form.is_valid():
+            announcement_filter_form = AnnouncementFilterForm()
+
+        context['filter_form'] = announcement_filter_form
+
+        return context
+
+
+class AnnouncementFilteredListView(LoginRequiredMixin, ListView):
+    model=Announcement
+    template_name = 'announcements/announcement_filtered.html'
     context_object_name = "announcements"
     paginate_by = 5
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.META.get('HTTP_REFERER') is None:
+            return HttpResponseNotFound(render(request, '404.html', {}))
+        return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
         announcements = Announcement.objects.all().order_by('-created')
@@ -28,26 +50,6 @@ class AnnouncementListView(LoginRequiredMixin, ListView):
                 announcements = announcements.filter(categories__in=data.get('categories'))
 
         return announcements
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['current_user'] = self.request.user
-        context['selections'] = json.dumps({
-            'categories': {
-                'full_list': list(AnnouncementCategoryChoice.objects.all().values_list('name', flat=True)),
-                'available': [],
-                'selected': [],
-                'name': 'categories'
-            },
-        })
-        
-        announcement_filter_form = AnnouncementFilterForm(self.request.GET)
-        if not announcement_filter_form.is_valid():
-            announcement_filter_form = AnnouncementFilterForm()
-
-        context['filter_form'] = announcement_filter_form
-
-        return context
 
 
 class AnnouncementCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):

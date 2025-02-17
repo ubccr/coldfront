@@ -25,6 +25,5 @@ class AnnouncementFilterForm(forms.Form):
     title = forms.CharField(max_length=100, required=False)
     categories = forms.ModelMultipleChoiceField(
         queryset=AnnouncementCategoryChoice.objects.all(),
-        widget=forms.CheckboxSelectMultiple,
         required=False
     )
