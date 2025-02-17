@@ -7,7 +7,7 @@ Remove Allocation
 {% endblock %}
 
 {% block content %}
-<h2>Remove Allocation</h2>
+<h2>Request to Remove Allocation</h2>
 {% if is_admin %}
   <div class="alert alert-warning" role="alert">
     <i class="fa fa-exclamation-circle"></i>
@@ -23,6 +23,9 @@ Remove Allocation
   </div>
   <div class="card-body">
     <div class="card-text">
+      {% for attribute in attributes %}
+        <p class="card-text"><strong>{{ attribute.allocation_attribute_type.name }}:</strong> {{ attribute.value }}</p>
+      {% endfor %}
       <p class="card-text">
         <strong>Users:</strong>
         {{ users }}
@@ -36,8 +39,12 @@ Remove Allocation
 
 <div class="alert alert-danger" role="alert">
   <form method="post">{% csrf_token %}
-    <p>Are you sure you want to remove access to this allocation?
-      Doing so will cause everyone in this allocation to lose access to its resource</p>
+    <p>
+      Are you sure you want to request to remove this allocation? Anything associated with it will be deleted
+      and everyone in it will lose access to its resource if it is approved. If this is a storage allocation you
+      will need to remove all of the data in it in order for the directory to be deleted. Removing an allocation
+      cannot be undone!
+    </p>
     <input class="btn btn-danger" type="submit" value="Yes" />
     <a class="btn btn-secondary" href="{% url 'allocation-detail' allocation.pk %}" role="button">Cancel</a>
   </form>

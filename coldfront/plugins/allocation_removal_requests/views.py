@@ -140,6 +140,7 @@ class AllocationRemoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context['users'] = ', '.join(users)
         context['allocation'] = allocation_obj
         context['is_admin'] = True
+        context['attributes'] = allocation_obj.allocationattribute_set.filter(allocation_attribute_type__is_private=False)
         return context
 
     def post(self, request, *args, **kwargs):
