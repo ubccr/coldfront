@@ -83,6 +83,15 @@
             </tr>
           {% endfor %}
         </tbody>
+        {% if project_list|length == 5 %}
+          <tfoot>
+            <tr>
+              <td>
+                <a href="{% url 'project-list' %}">See all</a>
+              </td>
+            </tr>
+          </tfoot>
+        {% endif %}
       </table>
     {% else %}
       <div class="alert alert-info" role="alert"><i class="fa fa-info-circle" aria-hidden="true"></i> There are no projects to display.</div>
@@ -109,7 +118,6 @@
             <th scope="col">Project</th>
             <th scope="col">Resource</th>
             <th scope="col">Status</th>
-
           </tr>
         </thead>
         <tbody>
@@ -151,6 +159,15 @@
           </tr>
           {% endfor %}
         </tbody>
+        {% if allocation_list|length == 5 %}
+          <tfoot>
+            <tr>
+              <td>
+                <a href="{% url 'allocation-list' %}">See all</a>
+              </td>
+            </tr>
+          </tfoot>
+        {% endif %}
       </table>
     {% else %}
       <div class="alert alert-info" role="alert">
