@@ -102,20 +102,12 @@ class AnnouncementUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['selections'] = json.dumps({
-            'categories': {
-                'full_list': list(AnnouncementCategoryChoice.objects.all().values_list('name', flat=True)),
-                'available': [],
-                'selected': [],
-                'name': 'categories'
-            },
-            'mailing_lists': {
-                'full_list': list(AnnouncementMailingListChoice.objects.all().values_list('name', flat=True)),
-                'available': [],
-                'selected': [],
-                'name': 'mailing_lists'
-            },
-        })
+        announcement_obj = get_object_or_404(Announcement, pk=self.kwargs.get('pk'))
+
+        context['categories'] = {category.pk: category.name for category in AnnouncementCategoryChoice.objects.all()}
+        context['initial_categories_selected'] = list(announcement_obj.categories.all().values_list('pk', flat=True))
+        context['mailing_lists'] = {mailing_list.pk: mailing_list.name for mailing_list in AnnouncementMailingListChoice.objects.all()}
+        context['initial_mailing_lists_selected'] = list(announcement_obj.mailing_lists.all().values_list('pk', flat=True))
 
         return context
     
