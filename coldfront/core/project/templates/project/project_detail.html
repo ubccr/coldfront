@@ -132,7 +132,7 @@ Project Detail
                   <td>{{ allocation.size|floatformat:1 }} {{ allocation.get_parent_resource.unit }}</td>
                   <td>{{ allocation.usage|floatformat:1 }}</td>
                   <td>
-                    {% if allocation_obj.requires_payment %}
+                    {% if allocation.requires_payment %}
                       ${{ allocation.cost|floatformat:2}}
                     {% endif %}
                   </td>
