@@ -1460,6 +1460,15 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
         if self.request.user.has_perm('allocation.can_view_all_allocations'):
             return True
 
+        if self.request.user.has_perm('allocation.can_review_allocation_requests'):
+            """
+            Added since in AllocationChangeDeleteAttributeView, an approver with can_review_allocation_requests 
+            can delete allocation change requests. After a successful deletion, the user is redirected to this 
+            allocation change detail view where they may not have access because can_review_allocation_requests is 
+            not checked before. We could remove this back or add more restrictions in other functions if needed.
+            """
+            return True
+
         if allocation_change_obj.allocation.has_perm(self.request.user, AllocationPermission.MANAGER):
             return True
 
@@ -1910,16 +1919,23 @@ class AllocationChangeDeleteAttributeView(LoginRequiredMixin, UserPassesTestMixi
         # Superusers can delete any allocation change request
         if not user.is_superuser:
             try:
-                user_schools = user.userprofile.schools.all()  # Fetch schools associated with the user
-                project_school = allocation_attribute_change_obj.allocation_change_request.allocation.project.school  # Get related project school
+                user_schools = list(user.userprofile.schools.all())  # Ensure QuerySet evaluation
+                project_school = allocation_attribute_change_obj.allocation_change_request.allocation.project.school
 
-                if not user_schools.exists():
+                if not project_school:
+                    messages.error(request, "This request is not associated with any school.")
+                    return HttpResponseRedirect(
+                        reverse('allocation-change-detail', kwargs={'pk': allocation_change_pk}))
+
+                if user_schools:
+                    if project_school.description not in [school.description for school in user_schools]:  # Explicit comparison
+                        messages.error(request, "You do not have permission to delete this allocation change request.")
+                        return HttpResponseRedirect(
+                            reverse('allocation-change-detail', kwargs={'pk': allocation_change_pk}))
+                else:
                     messages.error(request, "You are not associated with any school and cannot delete this request.")
-                    return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': allocation_change_pk}))
-
-                if project_school not in user_schools:
-                    messages.error(request, "You do not have permission to delete this allocation change request.")
-                    return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': allocation_change_pk}))
+                    return HttpResponseRedirect(
+                        reverse('allocation-change-detail', kwargs={'pk': allocation_change_pk}))
 
             except UserProfile.DoesNotExist:
                 messages.error(request, "No associated profile found. You cannot delete this request.")

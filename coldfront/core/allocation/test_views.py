@@ -24,7 +24,7 @@ from coldfront.core.test_helpers.factories import (
 )
 from coldfront.core.allocation.models import (
     AllocationChangeRequest,
-    AllocationChangeStatusChoice, Allocation, AllocationStatusChoice,
+    AllocationChangeStatusChoice, Allocation, AllocationStatusChoice, AllocationAttributeChangeRequest,
 )
 
 logging.disable(logging.CRITICAL)
@@ -54,7 +54,7 @@ class AllocationViewBaseTest(TestCase):
         pi_user = ProjectUserFactory(user=cls.project.pi, project=cls.project, role=manager_role)
         cls.pi_user = pi_user.user
         # make a quota TB allocation attribute
-        AllocationAttributeFactory(
+        cls.allocation_attribute = AllocationAttributeFactory(
             allocation=cls.allocation,
             value = 100,
             allocation_attribute_type=AllocationAttributeTypeFactory(name='Storage Quota (TB)'),
@@ -335,6 +335,96 @@ class AllocationRemoveUsersViewTest(AllocationViewBaseTest):
     def test_allocationremoveusersview_access(self):
         self.allocation_access_tstbase(self.url)
 
+class AllocationRequestListViewTest(AllocationViewBaseTest):
+    """Tests for the AllocationRequestListView"""
+
+    def setUp(self):
+        self.url = '/allocation/request-list'
+
+        # Create test users
+        self.superuser = UserFactory(username='superuser', is_superuser=True)
+        self.approver_user = UserFactory(username='approver_user')
+        self.regular_user = UserFactory(username='regular_user')
+
+        # Assign permissions
+        permission = Permission.objects.get(codename='can_review_allocation_requests')
+        self.approver_user.user_permissions.add(permission)
+
+        # Create UserProfiles
+        self.superuser_profile, _ = UserProfile.objects.get_or_create(user=self.superuser)
+        self.approver_user_profile, _ = UserProfile.objects.get_or_create(user=self.approver_user)
+        self.regular_profile, _ = UserProfile.objects.get_or_create(user=self.regular_user)
+
+        # Create Schools
+        self.school1, _ = School.objects.get_or_create(description="Tandon School of Engineering")
+        self.school2, _ = School.objects.get_or_create(description="NYU IT")
+
+        # Set Approver Profile
+        self.approver_profile, _ = ApproverProfile.objects.get_or_create(user_profile=self.approver_user_profile)
+        self.approver_profile.schools.set([self.school1])
+
+        # Create Projects
+        status = ProjectStatusChoiceFactory(name='Active')
+        self.project1 = Project.objects.create(title="Tandon School of Engineering Project 1", school=self.school1,
+                                               pi=self.approver_user_profile.user, status=status)
+        self.project2 = Project.objects.create(title="NYU IT Project 2", school=self.school2, pi=self.regular_profile.user,
+                                               status=status)
+
+        # Create Allocations
+        self.allocation1 = Allocation.objects.create(
+            project=self.project1,
+            status=AllocationStatusChoice.objects.get(name="New"),
+            quantity=100,
+            start_date="2025-01-01",
+            end_date="2025-12-31",
+            justification="Testing allocation 1",
+        )
+        self.allocation2 = Allocation.objects.create(
+            project=self.project2,
+            status=AllocationStatusChoice.objects.get(name="New"),
+            quantity=200,
+            start_date="2025-02-01",
+            end_date="2025-12-31",
+            justification="Testing allocation 2",
+        )
+
+    # TODO: check why login_url = '/' was set in AllocationRequestListView
+    # def test_allocationrequestlistview_access(self):
+    #     """Test that the allocation request list view is accessible for permitted users."""
+    #     self.allocation_access_tstbase(self.url)
+
+    def test_superuser_can_see_all_allocation_requests(self):
+        """Test that superusers can see all allocation requests."""
+        self.client.force_login(self.superuser, backend=BACKEND)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.allocation1.project.school.description)
+        self.assertContains(response, self.allocation2.project.school.description)
+
+    def test_approver_can_only_see_own_school_allocations(self):
+        """Test that approvers can only see allocation requests for their assigned schools."""
+        self.client.force_login(self.approver_user, backend=BACKEND)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.allocation1.project.school.description)
+        self.assertNotContains(response, self.allocation2.project.school.description)
+
+    def test_non_approver_cannot_access_page(self):
+        """Test that a regular user without the `can_review_allocation_requests` permission cannot access."""
+        self.client.force_login(self.regular_user, backend=BACKEND)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 403)  # Expect Forbidden access
+
+    def test_approver_with_no_school_sees_empty_list(self):
+        """Test that an approver without an assigned school sees an empty list."""
+        self.approver_profile.schools.clear()
+        self.client.force_login(self.approver_user, backend=BACKEND)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, self.allocation1.project.school.description)
+        self.assertNotContains(response, self.allocation2.project.school.description)
+        self.assertContains(response, "You are not associated with any school.")
+
 
 class AllocationChangeListViewTest(AllocationViewBaseTest):
     """Tests for the AllocationChangeListView"""
@@ -450,3 +540,121 @@ class AllocationNoteCreateViewTest(AllocationViewBaseTest):
 
     def test_allocationnotecreateview_access(self):
         self.allocation_access_tstbase(self.url)
+
+class AllocationChangeDeleteAttributeViewTest(AllocationViewBaseTest):
+    """Tests for the AllocationChangeDeleteAttributeView"""
+
+    def setUp(self):
+        # Create test users
+        self.superuser = UserFactory(username='superuser', is_superuser=True)
+        self.approver_user = UserFactory(username='approver_user')
+        self.regular_user = UserFactory(username='regular_user')
+
+        # Assign permissions
+        permission = Permission.objects.get(codename='can_review_allocation_requests')
+        self.approver_user.user_permissions.add(permission)
+        self.approver_user.save()
+
+        # Create UserProfiles
+        self.superuser_profile, _ = UserProfile.objects.get_or_create(user=self.superuser)
+        self.approver_user_profile, _ = UserProfile.objects.get_or_create(user=self.approver_user)
+        self.regular_profile, _ = UserProfile.objects.get_or_create(user=self.regular_user)
+
+        # Create Schools
+        self.school1, _ = School.objects.get_or_create(description="Tandon School of Engineering")
+        self.school2, _ = School.objects.get_or_create(description="NYU IT")
+
+        # Set Approver Profile
+        self.approver_profile, _ = ApproverProfile.objects.get_or_create(user_profile=self.approver_user_profile)
+        self.approver_profile.schools.set([self.school1])
+
+        # Create Projects
+        status = ProjectStatusChoiceFactory(name='Active')
+        self.project1 = Project.objects.create(title="Tandon Engineering Project", school=self.school1,
+                                               pi=self.approver_user_profile.user, status=status)
+        self.project2 = Project.objects.create(title="NYU IT Project", school=self.school2,
+                                               pi=self.regular_profile.user, status=status)
+
+        # Create Allocations
+        self.allocation1 = Allocation.objects.create(
+            project=self.project1,
+            status=AllocationStatusChoice.objects.get(name="New"),
+            quantity=100,
+            start_date="2025-01-01",
+            end_date="2025-12-31",
+            justification="Testing allocation 1",
+        )
+        self.allocation2 = Allocation.objects.create(
+            project=self.project2,
+            status=AllocationStatusChoice.objects.get(name="New"),
+            quantity=200,
+            start_date="2025-02-01",
+            end_date="2025-12-31",
+            justification="Testing allocation 2",
+        )
+        pending_status, _ = AllocationChangeStatusChoice.objects.get_or_create(name="Pending")
+        # Create AllocationChangeRequests
+        self.allocation_change1 = AllocationChangeRequest.objects.create(
+            allocation=self.allocation1,
+            status=pending_status,
+            end_date_extension=30,
+            justification="Extend allocation 1",
+            notes="Pending review"
+        )
+        self.allocation_change2 = AllocationChangeRequest.objects.create(
+            allocation=self.allocation2,
+            status=pending_status,
+            end_date_extension=60,
+            justification="Extend allocation 2",
+            notes="Urgent request"
+        )
+
+        # Create AllocationAttributeChangeRequests
+        self.attribute_change1 = AllocationAttributeChangeRequest.objects.create(
+            allocation_change_request=self.allocation_change1,
+            allocation_attribute = self.allocation_attribute
+        )
+        self.attribute_change2 = AllocationAttributeChangeRequest.objects.create(
+            allocation_change_request=self.allocation_change2,
+            allocation_attribute = self.allocation_attribute
+        )
+
+    def test_superuser_can_delete_any_attribute_change_request(self):
+        """Test that a superuser can delete any allocation attribute change request."""
+        url = reverse('allocation-attribute-change-delete', kwargs={'pk': self.attribute_change1.pk})
+        self.client.force_login(self.superuser, backend=BACKEND)
+        response = self.client.get(url)
+        self.assertRedirects(response, reverse('allocation-change-detail', kwargs={'pk': self.allocation_change1.pk}))
+        self.assertFalse(AllocationAttributeChangeRequest.objects.filter(pk=self.attribute_change1.pk).exists())
+
+    def test_approver_can_delete_own_school_attribute_change_request(self):
+        """Test that an approver can delete an allocation attribute change request for their assigned school."""
+        url = reverse('allocation-attribute-change-delete', kwargs={'pk': self.attribute_change1.pk})
+        self.client.force_login(self.approver_user)
+        response = self.client.get(url, follow=True)
+        self.assertRedirects(response, reverse('allocation-change-detail', kwargs={'pk': self.allocation_change1.pk}))
+        self.assertFalse(AllocationAttributeChangeRequest.objects.filter(pk=self.attribute_change1.pk).exists())
+
+    def test_approver_cannot_delete_other_school_attribute_change_request(self):
+        """Test that an approver cannot delete an allocation attribute change request outside their assigned school."""
+        url = reverse('allocation-attribute-change-delete', kwargs={'pk': self.attribute_change2.pk})
+        self.client.force_login(self.approver_user, backend=BACKEND)
+        response = self.client.get(url)
+        self.assertRedirects(response, reverse('allocation-change-detail', kwargs={'pk': self.allocation_change2.pk}))
+        self.assertTrue(AllocationAttributeChangeRequest.objects.filter(pk=self.attribute_change2.pk).exists())
+
+    def test_regular_user_cannot_access_delete_attribute_change_page(self):
+        """Test that a regular user cannot delete any allocation attribute change request."""
+        self.client.force_login(self.regular_user, backend=BACKEND)
+        url = reverse('allocation-attribute-change-delete', kwargs={'pk': self.attribute_change1.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 403)  # Expect Forbidden access
+
+    def test_approver_without_school_cannot_delete_any_request(self):
+        """Test that an approver without an assigned school cannot delete an allocation attribute change request."""
+        self.approver_profile.schools.clear()
+        self.client.force_login(self.approver_user, backend=BACKEND)
+        url = reverse('allocation-attribute-change-delete', kwargs={'pk': self.attribute_change1.pk})
+        response = self.client.get(url)
+        self.assertRedirects(response, reverse('allocation-change-detail', kwargs={'pk': self.allocation_change1.pk}))
+        self.assertTrue(AllocationAttributeChangeRequest.objects.filter(pk=self.attribute_change1.pk).exists())
