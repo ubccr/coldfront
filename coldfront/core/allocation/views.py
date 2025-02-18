@@ -492,6 +492,7 @@ class AllocationListView(ColdfrontListView):
                     # Q(project__projectuser__status__name='Active') &
                     # Q(project__projectuser__user=self.request.user) &
                     (
+                        Q(resources__allowed_users=self.request.user) |
                         Q(project__projectuser__user=self.request.user) |
                         Q(project__pi=self.request.user) |
                         (
@@ -1002,12 +1003,14 @@ class AllocationEditUserView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         allocationuser_obj = get_object_or_404(AllocationUser, pk=self.kwargs.get('userid'))
 
         initial_data = {'allocationuser_pk': allocationuser_obj.pk, 'value': allocationuser_obj.get_slurm_spec_value('RawShares')}
+        post_data = request.POST.copy()
+        post_data['allocationuser_pk'] = allocationuser_obj.pk
 
-        form = AllocationUserAttributeUpdateForm(request.POST, initial=initial_data)
+        form = AllocationUserAttributeUpdateForm(post_data, initial=initial_data)
 
         if form.is_valid():
             form_data = form.cleaned_data
-            if float(form_data['value']) == initial_data.get('value'):
+            if str(form_data['value']) == str(initial_data.get('value')):
                 messages.error(request, "Form not modified")
                 return HttpResponseRedirect(
                     reverse('allocation-edit-user', kwargs=self.kwargs)
@@ -1355,7 +1358,7 @@ class AllocationUserAttributesEditView(LoginRequiredMixin, UserPassesTestMixin, 
         allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
         if allocation_obj.user_can_manage_allocation(self.request.user):
             return True
-        elif 'Storage' in allocation_obj.resources.resource_type.name:
+        elif 'Storage' in allocation_obj.get_parent_resource.resource_type.name:
             messages.error(
                 self.request, 'You cannot edit storage allocation user attributes.'
             )
@@ -1363,7 +1366,7 @@ class AllocationUserAttributesEditView(LoginRequiredMixin, UserPassesTestMixin, 
                 reverse('allocation-detail', kwargs={'pk': allocation_obj.pk})
             )
         allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
-        return allocation_obj.has_perm(self.request.user, AllocationPermission.USER)
+        return allocation_obj.has_perm(self.request.user, AllocationPermission.MANAGER)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
