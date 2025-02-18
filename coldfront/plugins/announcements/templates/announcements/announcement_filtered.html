@@ -28,7 +28,7 @@
         {{ announcement.body|linebreaks }}
         <hr>
         {% for category in announcement.categories.all %} 
-          <span class="badge badge-pill badge-primary">{{ category }}</span>
+          <span class="badge badge-pill badge-danger">{{ category }}</span>
         {% endfor %}
       </div>
       <div class="card-footer">
