@@ -10,8 +10,8 @@ from coldfront.plugins.announcements.models import Announcement, AnnouncementCat
 from coldfront.plugins.announcements.forms import AnnouncementCreateForm, AnnouncementFilterForm
 
 
-class AnnouncementListView(LoginRequiredMixin, TemplateView):
-    template_name = 'announcements/announcement_list.html'
+class AnnouncementsView(LoginRequiredMixin, TemplateView):
+    template_name = 'announcements/announcements.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -27,9 +27,9 @@ class AnnouncementListView(LoginRequiredMixin, TemplateView):
         return context
 
 
-class AnnouncementFilteredListView(LoginRequiredMixin, ListView):
+class AnnouncementListView(LoginRequiredMixin, ListView):
     model=Announcement
-    template_name = 'announcements/announcement_filtered.html'
+    template_name = 'announcements/announcement_list.html'
     context_object_name = "announcements"
     paginate_by = 5
 
