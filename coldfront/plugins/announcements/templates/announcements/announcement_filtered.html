@@ -50,8 +50,8 @@
         <div class="col">
           {% if page_obj.has_previous %}
             <div class="text-left">
-              <button id="pagination" value="1">&laquo; first</button>
-              <button id="pagination" value="{{ page_obj.previous_page_number }}">previous</button>
+              <button id="pagination" class="btn btn-secondary" value="1">&laquo; first</button>
+              <button id="pagination" class="btn btn-secondary" value="{{ page_obj.previous_page_number }}">previous</button>
             </div>
           {% endif %}
         </div>
@@ -65,8 +65,8 @@
         <div class="col">
           <div class="text-right">
             {% if page_obj.has_next %}
-              <button id="pagination" value="{{ page_obj.next_page_number }}">next</button>
-              <button id="pagination" value="{{ page_obj.paginator.num_pages }}">last &raquo;</button>
+              <button id="pagination" class="btn btn-secondary" value="{{ page_obj.next_page_number }}">next</button>
+              <button id="pagination" class="btn btn-secondary" value="{{ page_obj.paginator.num_pages }}">last &raquo;</button>
             {% endif %}
           </div>
         </div>
