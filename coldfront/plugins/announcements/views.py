@@ -47,7 +47,8 @@ class AnnouncementFilteredListView(LoginRequiredMixin, ListView):
             if data.get('title'):
                 announcements = announcements.filter(title__icontains=data.get('title'))
             if data.get('categories'):
-                announcements = announcements.filter(categories__in=data.get('categories'))
+                for categories in data.get('categories'):
+                    announcements = announcements.filter(categories=categories)
 
         return announcements
 
