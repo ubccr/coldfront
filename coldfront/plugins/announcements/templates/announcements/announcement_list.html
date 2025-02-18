@@ -29,7 +29,7 @@ Announcements
         <form id="filter_form" method="GET" action="{% url 'announcement-filter' %}" autocomplete="off">
           {{ filter_form.title|as_crispy_field }}
           {{ filter_form.categories|as_crispy_field }}
-          {% include 'announcements/selection.html' %}
+          {% include 'announcements/selection.html' with label='Categories' name='categories' selection=categories %}
         </form>
       </div>
     </div>
@@ -59,7 +59,8 @@ Announcements
   }
 
   function setUpCategories() {
-    $('[id^=id_category_]').click(function (e) {
+    $('#div_id_categories').hide();
+    $('[id^=id_categories_] a').click(function (e) {
       e.preventDefault();
       var span = e.target;
       if (span.localName !== 'span') {
@@ -121,7 +122,6 @@ Announcements
   }
 
   $(document).ready(function() {
-    $('#div_id_categories').hide();
     setUpCategories();
     getAnnouncements();
     $('#filter_form').on('submit', function(e) {

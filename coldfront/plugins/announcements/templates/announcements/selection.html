@@ -1,11 +1,16 @@
-<div class="d-inline">
-  {% for key, value in categories.items %}
+<div>
+  <label for="div_id_{{ name }}_filter">
+    {{ label }}
+  </label>
+</div>
+<div id="id_{{ name }}_selection" class="d-inline">
+  {% for key, value in selection.items %}
     {% if key in selected %}
-      <a id="id_category_{{ key }}" name="{{ value }}" href="#", title="Add tag">
+      <a id="id_{{ name }}_{{ key }}" name="{{ value }}" href="#", title="Add tag">
         <span class="badge badge-pill badge-danger">{{ value }}</span>
       </a>
     {% else %}
-      <a id="id_category_{{ key }}" name="{{ value }}" href="#", title="Remove tag">
+      <a id="id_{{ name }}_{{ key }}" name="{{ value }}" href="#", title="Remove tag">
         <span class="badge badge-pill badge-secondary">{{ value }}</span>
       </a>
     {% endif %}
