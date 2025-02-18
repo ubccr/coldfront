@@ -1928,7 +1928,7 @@ class AllocationChangeDeleteAttributeView(LoginRequiredMixin, UserPassesTestMixi
                         reverse('allocation-change-detail', kwargs={'pk': allocation_change_pk}))
 
                 if user_schools:
-                    if project_school.description not in [school.description for school in user_schools]:  # Explicit comparison
+                    if project_school.pk not in [school.pk for school in user_schools]:
                         messages.error(request, "You do not have permission to delete this allocation change request.")
                         return HttpResponseRedirect(
                             reverse('allocation-change-detail', kwargs={'pk': allocation_change_pk}))
