@@ -27,7 +27,17 @@ Announcements
     <div id="collapse_category_filter" class="collapse" data-parent="#category_filter_accordion">
       <div class="card-body">
         <form id="filter_form" method="GET" action="{% url 'announcement-filter' %}" autocomplete="off">
-          {{ filter_form.title|as_crispy_field }}
+          <div id="div_id_title" class="form-group">
+            <label for="id_title" class="">
+              {{ filter_form.title.label }}
+            </label>
+            <div class="input-group mb-3">
+              <input type="text" name="title" maxlength="100" class="textinput form-control" id="id_title">
+              <div class="input-group-append">
+                <button id="id_search_title_button" class="btn btn-outline-secondary" type="submit">Search Title</button>
+              </div>
+            </div>
+          </div>
           {{ filter_form.categories|as_crispy_field }}
           {% include 'announcements/selection.html' with label='Categories' name='categories' selection=categories %}
         </form>
