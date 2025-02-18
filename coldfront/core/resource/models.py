@@ -6,6 +6,8 @@ from django.db import models
 from model_utils.models import TimeStampedModel
 from simple_history.models import HistoricalRecords
 import coldfront.core.attribute_expansion as attribute_expansion
+from coldfront.core.school.models import School
+
 
 class AttributeType(TimeStampedModel):
     """ An attribute type indicates the data type of the attribute. Examples include Date, Float, Int, Text, and Yes/No. 
@@ -100,6 +102,7 @@ class Resource(TimeStampedModel):
         resource_type (ResourceType): the type of resource (Cluster, Storage, etc.)
         name (str): name of resource 
         description (str): description of what the resource does and is used for 
+        school: school affiliation for Generic School of Resource Type
         is_available (bool): indicates whether or not the resource is available for users to request an allocation for
         is_public (bool):  indicates whether or not users can see the resource
         requires_payment (bool): indicates whether or not users have to pay to use this resource
@@ -118,6 +121,7 @@ class Resource(TimeStampedModel):
     resource_type = models.ForeignKey(ResourceType, on_delete=models.CASCADE)
     name = models.CharField(max_length=128, unique=True)
     description = models.TextField()
+    school = models.ForeignKey(School, on_delete=models.CASCADE, blank=True, null=True)
     is_available = models.BooleanField(default=True)
     is_public = models.BooleanField(default=True)
     is_allocatable = models.BooleanField(default=True)

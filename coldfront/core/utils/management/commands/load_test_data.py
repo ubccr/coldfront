@@ -89,49 +89,56 @@ dois = [
 ]
 
 
-# resource_type, parent_resource, name, description, is_available, is_public, is_allocatable
+# resource_type, parent_resource, name, description, school, is_available, is_public, is_allocatable
 resources = [
+
+    # Generic
+    ('Generic', None, 'Arts & Science', 'Arts & Science Generic', School.objects.get(description='Arts & Science'),
+     True, False, True),
+    ('Generic', None, 'NYU IT', 'NYU IT Generic', School.objects.get(description='NYU IT'), True, False, True),
+    ('Generic', None, 'Tandon-GPU-Adv', 'Tandon School of Engineering Generic',
+    School.objects.get(description='Tandon School of Engineering'), True, False, True),
 
     # Clusters
     ('Cluster', None, 'University HPC',
-     'University Academic Cluster', True, True, True),
-    ('Cluster', None, 'Chemistry', 'Chemistry Cluster', True, False, False),
-    ('Cluster', None, 'Physics', 'Physics Cluster', True, False, False),
-    ('Cluster', None, 'Industry', 'Industry Cluster', True, False, False),
-    ('Cluster', None, 'University Metered HPC', 'SU metered Cluster',
+     'University Academic Cluster', None, True, True, True),
+    ('Cluster', None, 'Chemistry', 'Chemistry Cluster', None, True, False, False),
+    ('Cluster', None, 'Physics', 'Physics Cluster', None, True, False, False),
+    ('Cluster', None, 'Industry', 'Industry Cluster', None, True, False, False),
+    ('Cluster', None, 'University Metered HPC', 'SU metered Cluster', None,
         True, True, True),
 
     # Cluster Partitions scavengers
     ('Cluster Partition', 'Chemistry', 'Chemistry-scavenger',
-     'Scavenger partition on Chemistry cluster', True, False, False),
+     'Scavenger partition on Chemistry cluster', None, True, False, False),
     ('Cluster Partition', 'Physics', 'Physics-scavenger',
-     'Scavenger partition on Physics cluster', True, False, False),
+     'Scavenger partition on Physics cluster', None, True, False, False),
     ('Cluster Partition', 'Industry', 'Industry-scavenger',
-     'Scavenger partition on Industry cluster', True, False, False),
+     'Scavenger partition on Industry cluster', None, True, False, False),
 
     # Cluster Partitions Users
     ('Cluster Partition', 'Chemistry', 'Chemistry-cgray',
-     "Carl Gray's nodes", True, False, True),
+     "Carl Gray's nodes", None, True, False, True),
     ('Cluster Partition', 'Physics', 'Physics-sfoster',
-     "Stephanie Foster's nodes", True, False, True),
+     "Stephanie Foster's nodes", None, True, False, True),
 
     # Servers
     ('Server', None, 'server-cgray',
-     "Server for Carl Gray's research lab", True, False, True),
+     "Server for Carl Gray's research lab", None, True, False, True),
     ('Server', None, 'server-sfoster',
-     "Server for Stephanie Foster's research lab", True, False, True),
+     "Server for Stephanie Foster's research lab", None, True, False, True),
 
     # Storage
     ('Storage', None, 'Budgetstorage',
-     'Low-tier storage option - NOT BACKED UP', True, True, True),
+     'Low-tier storage option - NOT BACKED UP', None, True, True, True),
     ('Storage', None, 'ProjectStorage',
-     'Enterprise-level storage - BACKED UP DAILY', True, True, True),
+     'Enterprise-level storage - BACKED UP DAILY', None, True, True, True),
 
     # Cloud
     ('Cloud', None, 'University Cloud',
-     'University Research Cloud', True, True, True),
+     'University Research Cloud', None, True, True, True),
     ('Storage', 'University Cloud', 'University Cloud Storage',
-     'Storage available to cloud instances', True, True, True),
+     'Storage available to cloud instances', None, True, True, True),
 
 ]
 
@@ -162,7 +169,7 @@ class Command(BaseCommand):
 
         for resource in resources:
 
-            resource_type, parent_resource, name, description, is_available, is_public, is_allocatable = resource
+            resource_type, parent_resource, name, description, school, is_available, is_public, is_allocatable = resource
             resource_type_obj = ResourceType.objects.get(name=resource_type)
             if parent_resource != None:
                 parent_resource_obj = Resource.objects.get(
@@ -175,6 +182,7 @@ class Command(BaseCommand):
                 parent_resource=parent_resource_obj,
                 name=name,
                 description=description,
+                school=school,
                 is_available=is_available,
                 is_public=is_public,
                 is_allocatable=is_allocatable
