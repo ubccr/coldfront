@@ -42,6 +42,9 @@ Announcements
 <script>
   var categories = {{ categories|safe }};
 
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-announcements").addClass("active");
+
   function getCookie(name) {
     var cookieValue = null;
     if (document.cookie && document.cookie != '') {
