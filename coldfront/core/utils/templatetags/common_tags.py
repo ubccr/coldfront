@@ -75,3 +75,11 @@ def change_sign(int):
 @register.filter
 def divide(int, divisor):
     return int // divisor
+
+@register.filter
+def template_exists(value):
+    try:
+        template.loader.get_template(value)
+        return True
+    except template.TemplateDoesNotExist:
+        return False
