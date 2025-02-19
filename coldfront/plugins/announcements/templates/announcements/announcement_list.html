@@ -9,7 +9,7 @@
             </h3>
           </div>
           <div class="col-1">
-            {% if request.user.is_superuser %}
+            {% if perms.announcements.view_announcement %}
               <div class="float-right" title="Views" style="position: relative; top: 0px; right: 0px;">
                 <span class="badge badge-secondary">{{announcement.viewed_by.count}}</span>
               </div>
@@ -38,7 +38,9 @@
             <i class="fas fa-external-link-alt" aria-hidden="true"></i> More Details
           </a>
         {% endif %}
-        <a href="{% url 'announcement-update' pk=announcement.pk %}" class="btn btn-primary float-right mr-1" type="button">Update</a>
+        {% if perms.announcements.change_announcement and announcement.author == request.user %}
+          <a href="{% url 'announcement-update' pk=announcement.pk %}" class="btn btn-primary float-right mr-1" type="button">Update</a>
+        {% endif %}
       </div>
     </div>
     <hr>

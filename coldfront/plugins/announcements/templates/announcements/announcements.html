@@ -11,7 +11,9 @@ Announcements
 
 {% block content %}
 <h2 class="d-inline">Announcements</h2>
-<a class="btn btn-primary float-right ml-1" type="button" href="{% url 'announcement-create' %}">New Announcement</a>
+{% if perms.announcements.add_announcement %}
+  <a class="btn btn-primary float-right ml-1" type="button" href="{% url 'announcement-create' %}">New Announcement</a>
+{% endif %}
 <a class="btn btn-primary float-right" type="button" href="{% url 'announcement-read' %}">Mark all as read</a>
 </div>
 <hr>
@@ -47,7 +49,7 @@ Announcements
 </div>
 <hr>
 
-<div id="filtered_announcements"></div>
+<div id="announcement_list"></div>
 
 <script>
   var categories = {{ categories|safe }};
@@ -106,7 +108,7 @@ Announcements
       url: form.attr('action'),
       data: data,
       success: function (data) {
-        $('#filtered_announcements').html(data);
+        $('#announcement_list').html(data);
 
         $('[id=pagination]').on('click', function(e) {
           getAnnouncements(e.target.value);

@@ -60,6 +60,9 @@ class AnnouncementCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     def test_func(self):
         if self.request.user.is_superuser:
             return True
+        
+        if self.request.user.has_perm('announcements.add_announcement'):
+            return True
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -99,7 +102,15 @@ class AnnouncementUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView
     template_name_suffix='_update_form'
 
     def test_func(self):
+        announcement_obj = get_object_or_404(Announcement, pk=self.kwargs.get('pk'))
         if self.request.user.is_superuser:
+            return True
+
+        if not self.request.user == announcement_obj.author:
+            messages.error(self.request, 'You can only update your own announcements.')
+            return
+
+        if self.request.user.has_perm('announcements.change_announcement'):
             return True
 
     def get_context_data(self, **kwargs):
@@ -122,17 +133,14 @@ class AnnouncementDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView
     context_object_name = "announcement"
 
     def test_func(self):
-        pk = self.kwargs.get('pk')
-        announcement_obj = get_object_or_404(Announcement, pk=pk)
-
         if self.request.user.is_superuser:
+            return True
+        
+        if self.request.user.has_perm('announcements.change_announcement'):
             return True
 
 
-class AnnouncementReadView(LoginRequiredMixin, UserPassesTestMixin, View):
-    def test_func(self):
-        if self.request.user.is_superuser:
-            return True
+class AnnouncementReadView(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         announcement_objs = Announcement.objects.filter(status__name='Active')
