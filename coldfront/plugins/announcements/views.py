@@ -1,9 +1,8 @@
-import json
 from django.contrib import messages
 from django.http import HttpResponseRedirect, HttpResponseNotFound
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
-from django.views.generic import ListView, UpdateView, DeleteView, FormView, View, TemplateView
+from django.views.generic import ListView, UpdateView, FormView, View, TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 
 from coldfront.core.utils.mail import send_email_template
@@ -48,7 +47,7 @@ class AnnouncementListView(LoginRequiredMixin, ListView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
-        announcements = Announcement.objects.all().order_by('-created')
+        announcements = Announcement.objects.filter(status__name='Active').order_by('-created')
 
         announcement_filter_form = AnnouncementFilterForm(self.request.GET)
         if announcement_filter_form.is_valid():
@@ -112,7 +111,7 @@ class AnnouncementCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 )
 
         return super().form_valid(form)
-    
+
     def get_success_url(self):
         msg = 'Announcement has been created.'
         messages.success(self.request, msg)
@@ -121,7 +120,7 @@ class AnnouncementCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
 class AnnouncementUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Announcement
-    fields = ['title', 'body', 'categories', 'mailing_lists', 'details_url']
+    fields = ['title', 'body', 'categories', 'mailing_lists', 'details_url', 'status']
     template_name_suffix='_update_form'
 
     def test_func(self):
@@ -136,6 +135,10 @@ class AnnouncementUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView
         if self.request.user.has_perm('announcements.change_announcement'):
             return True
 
+        if not announcement_obj.status.name == 'Active':
+            messages.error(self.request, 'You can only update active announcements.')
+            return
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         announcement_obj = get_object_or_404(Announcement, pk=self.kwargs.get('pk'))
@@ -144,23 +147,13 @@ class AnnouncementUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView
         context['initial_categories_selected'] = list(announcement_obj.categories.all().values_list('pk', flat=True))
         context['mailing_lists'] = {mailing_list.pk: mailing_list.name for mailing_list in AnnouncementMailingListChoice.objects.all()}
         context['initial_mailing_lists_selected'] = list(announcement_obj.mailing_lists.all().values_list('pk', flat=True))
+        context['pk'] = announcement_obj.pk
 
         return context
-    
+
     def get_success_url(self):
+        messages.success(self.request, 'Your announcement has been updated.')
         return reverse('announcement-list')
-
-
-class AnnouncementDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
-    model=Announcement
-    context_object_name = "announcement"
-
-    def test_func(self):
-        if self.request.user.is_superuser:
-            return True
-        
-        if self.request.user.has_perm('announcements.change_announcement'):
-            return True
 
 
 class AnnouncementReadView(LoginRequiredMixin, View):
@@ -172,6 +165,6 @@ class AnnouncementReadView(LoginRequiredMixin, View):
         return HttpResponseRedirect(reverse('announcement-list'))
 
     def post(self, request, *args, **kwargs):
-        announcement_obj = Announcement.objects.get(pk=request.POST.get('id'))
+        announcement_obj = Announcement.objects.get(pk=request.POST.get('pk'))
         announcement_obj.viewed_by.add(request.user)
         return render(request, 'announcements/navbar_announcements_unread.html', {'user': self.request.user})

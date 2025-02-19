@@ -125,7 +125,7 @@ Announcements
             type: "POST",
             url: "{% url 'announcement-read' %}",
             data: {
-              id: id
+              pk: id
             },
             success: function (data) {
               $('#navbar-announcements-unread').text(data);
