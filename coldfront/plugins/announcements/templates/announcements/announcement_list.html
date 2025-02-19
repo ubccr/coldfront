@@ -33,6 +33,9 @@
       </div>
       <div class="card-footer">
         Created: {{ announcement.created }}
+        {% if not announcement.created == announcement.modified %}
+          | Updated: {{ announcement.modified }}
+        {% endif %}
         {% if announcement.details_url %}
           <a target="_blank" href="{{ announcement.details_url }}" class="btn btn-secondary float-right" type="button">
             <i class="fas fa-external-link-alt" aria-hidden="true"></i> More Details
