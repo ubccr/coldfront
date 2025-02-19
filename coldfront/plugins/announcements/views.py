@@ -151,4 +151,4 @@ class AnnouncementReadView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         announcement_obj = Announcement.objects.get(pk=request.POST.get('id'))
         announcement_obj.viewed_by.add(request.user)
-        return render(request, 'announcements/navbar_announcement_unread.html', {'user': self.request.user})
+        return render(request, 'announcements/navbar_announcements_unread.html', {'user': self.request.user})
