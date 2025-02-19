@@ -47,7 +47,8 @@ Create Announcement
         return;
       }
       var id = span.parentElement.id;
-      id = id[id.length - 1];
+      id_split = id.split('_')
+      id = id_split[id_split.length - 1];
       if ($(span).hasClass('badge-danger')) {
         $(span).removeClass('badge-danger');
         $(span).addClass('badge-secondary');
