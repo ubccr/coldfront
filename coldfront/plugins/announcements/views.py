@@ -107,7 +107,7 @@ class AnnouncementCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                     template_name='announcements/announcement_created.txt',
                     template_context=context,
                     sender=self.request.user.email,
-                    receiver_list=[mailing_list]
+                    receiver_list=[mailing_list.value]
                 )
 
         return super().form_valid(form)
