@@ -6,8 +6,17 @@ from django.urls import reverse
 from django.views.generic import ListView, UpdateView, DeleteView, FormView, View, TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 
+from coldfront.core.utils.mail import send_email_template
+from coldfront.core.utils.common import import_from_settings
 from coldfront.plugins.announcements.models import Announcement, AnnouncementCategoryChoice, AnnouncementMailingListChoice, AnnouncementStatusChoice
 from coldfront.plugins.announcements.forms import AnnouncementCreateForm, AnnouncementFilterForm
+
+EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
+if EMAIL_ENABLED:
+    EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
+    EMAIL_CENTER_NAME = import_from_settings('CENTER_NAME')
+    EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
+
 
 
 class AnnouncementsView(LoginRequiredMixin, TemplateView):
@@ -60,7 +69,7 @@ class AnnouncementCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
     def test_func(self):
         if self.request.user.is_superuser:
             return True
-        
+
         if self.request.user.has_perm('announcements.add_announcement'):
             return True
 
@@ -70,9 +79,10 @@ class AnnouncementCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         context['mailing_lists'] = {mailing_list.pk: mailing_list.name for mailing_list in AnnouncementMailingListChoice.objects.all()}
 
         return context
-    
+
     def form_valid(self, form):
         data = form.cleaned_data
+        mailing_list = data.get('mailing_lists')
         announcement_obj = Announcement.objects.create(
             title = data.get('title'),
             body = data.get('body'),
@@ -82,11 +92,24 @@ class AnnouncementCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         )
 
         announcement_obj.categories.set(data.get('categories'))
-        announcement_obj.mailing_lists.set(data.get('mailing_lists'))
+        announcement_obj.mailing_lists.set(mailing_list)
 
 
-        if data.get('mailing_lists'):
-            pass
+        if mailing_list:
+            for mailing_list in mailing_list:
+                context = {
+                    'center_name': EMAIL_CENTER_NAME,
+                    'announcement': data.get('body'),
+                    'help_email': EMAIL_TICKET_SYSTEM_ADDRESS,
+                    'signature': EMAIL_SIGNATURE
+                }
+                send_email_template(
+                    subject=data.get('title'),
+                    template_name='announcements/announcement_created.txt',
+                    template_context=context,
+                    sender=self.request.user.email,
+                    receiver_list=[mailing_list]
+                )
 
         return super().form_valid(form)
     
