@@ -285,7 +285,6 @@ class Command(BaseCommand):
                 no_xdmodrows.append([s, account_name, resources])
                 continue
 
-
             logger.info(
                 "Total CPU hours = %s for allocation %s account %s cpu_hours %s resource %s",
                 usage, s, account_name, cpu_hours, resources

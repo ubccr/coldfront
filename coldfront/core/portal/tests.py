@@ -62,13 +62,13 @@ class HomePageTest(PortalViewTest):
         self.assertEqual(response.context['allocation_list'].count(), 2)
         # Storage Manager sees allocation
         response = utils.login_and_get_page(self.client, self.proj_datamanager, '')
-        self.assertEqual(response.context['allocation_list'].count(), 2)
+        self.assertEqual(response.context['allocation_list'].count(), 1)
         # project user not belonging to allocation cannot see allocation
         response = utils.login_and_get_page(self.client, self.proj_nonallocationuser, '')
         self.assertEqual(response.context['allocation_list'].count(), 0)
-        # allocation user not belonging to project cannot see allocation
+        # allocation user not belonging to project cannot see storage allocation, can see cluster allocation
         response = utils.login_and_get_page(self.client, self.nonproj_allocationuser, '')
-        self.assertEqual(response.context['allocation_list'].count(), 0)
+        self.assertEqual(response.context['allocation_list'].count(), 1)
 
     def test_home_page_projects_display(self):
         """check that projects display properly on the home page
