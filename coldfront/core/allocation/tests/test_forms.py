@@ -44,7 +44,7 @@ class AllocationFormTest(AllocationFormBaseTest):
             'justification': 'test justification',
             'quantity': '1',
             'expense_code': '123-12312-3123-123123-123123-1231-23123',
-            'resource': f'{self.proj_allocation.resources.first().pk}',
+            'resource': f'{self.storage_allocation.resources.first().pk}',
             'tier': Resource.objects.filter(resource_type=tier_restype).first()
         }
 
@@ -136,6 +136,6 @@ class AllocationUpdateFormTest(AllocationFormBaseTest):
 
     def setUp(self):
         self.post_data = {
-            'resource': self.proj_allocation.resources.first(),
+            'resource': self.storage_allocation.resources.first(),
             'status': 'Active',
         }
