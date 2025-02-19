@@ -78,4 +78,5 @@ class Announcement(TimeStampedModel):
     book_marked = models.ManyToManyField(User, related_name='book_marked', blank=True)
     mailing_lists = models.ManyToManyField(AnnouncementMailingListChoice, blank=True)
     details_url = models.URLField(blank=True)
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
     history = HistoricalRecords()

@@ -75,6 +75,7 @@ class AnnouncementCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             body = data.get('body'),
             status = AnnouncementStatusChoice.objects.get(name='Active'),
             details_url = data.get('details_url'),
+            author = self.request.user
         )
 
         announcement_obj.categories.set(data.get('categories'))
