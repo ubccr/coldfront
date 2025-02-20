@@ -56,7 +56,7 @@ def add_group(allocation_obj, allocation_attribute_type, group, usernames, role,
             f'LDAP: Added geode-project group {group_name} in allocation {allocation_obj.pk}'
         )
 
-        allocation_attribute_type_obj = AllocationAttributeType.objects.filter(name=f'Storage: {role} Group')
+        allocation_attribute_type_obj = AllocationAttributeType.objects.filter(name=allocation_attribute_type)
         if not allocation_attribute_type_obj.exists():
             logger.error(
                 f'Allocation attribute type "{allocation_attribute_type}" does not exist, allocation '
@@ -145,19 +145,14 @@ def remove_groups(allocation_obj, ldap_conn=None):
     remove_group(allocation_obj, 'Storage: Admin Group', ldap_conn)
 
 
-def add_user(allocation_user_obj, ldap_conn=None):
+def add_user(allocation_user_obj, allocation_attribute_type, ldap_conn=None):
     if not ENABLE_GEODE_PROJECT_LDAP_INTEGRATION:
         return
 
     if ldap_conn is None:
         ldap_conn = LDAPModify()
-    allocation_obj = allocation_user_obj.allocation
-    is_manager = allocation_obj.project.projectuser_set.filter(role__name='Manager', user=allocation_user_obj.user)
-    if is_manager:
-        allocation_attribute_type = 'Storage: Admin Group'
-    else:
-        allocation_attribute_type = 'Storage: Users Group'
 
+    allocation_obj = allocation_user_obj.allocation
     allocation_attribute = allocation_obj.allocationattribute_set.filter(allocation_attribute_type__name=allocation_attribute_type)
     username = allocation_user_obj.user.username
     if not allocation_attribute.exists:
@@ -180,18 +175,14 @@ def add_user(allocation_user_obj, ldap_conn=None):
         )
 
 
-def remove_user(allocation_user_obj):
+def remove_user(allocation_user_obj, allocation_attribute_type, ldap_conn=None):
     if not ENABLE_GEODE_PROJECT_LDAP_INTEGRATION:
         return
 
-    ldap_conn = LDAPModify()
-    allocation_obj = allocation_user_obj.allocation
-    is_manager = allocation_obj.project.projectuser_set.filter(role__name='Manager', user=allocation_user_obj.user)
-    if is_manager:
-        allocation_attribute_type = 'Storage: Admin Group'
-    else:
-        allocation_attribute_type = 'Storage: Users Group'
+    if ldap_conn is None:
+        ldap_conn = LDAPModify()
 
+    allocation_obj = allocation_user_obj.allocation
     allocation_attribute = allocation_obj.allocationattribute_set.filter(allocation_attribute_type__name=allocation_attribute_type)
     username = allocation_user_obj.user.username
     if not allocation_attribute.exists:
@@ -219,35 +210,14 @@ def update_user_groups(allocation_user_obj):
         return
 
     ldap_conn = LDAPModify()
-    add_user(allocation_user_obj, ldap_conn)
-
-    allocation_obj = allocation_user_obj.allocation
-    is_manager = allocation_obj.project.projectuser_set.filter(role__name='Manager', user=allocation_user_obj.user)
+    is_manager = allocation_user_obj.allocation.project.projectuser_set.filter(
+        role__name='Manager', user=allocation_user_obj.user)
     if is_manager:
-        allocation_attribute_type = 'Storage: Users Group'
+        add_user(allocation_user_obj, "Storage: Admin Group", ldap_conn)
+        remove_user(allocation_user_obj, "Storage: Users Group", ldap_conn)
     else:
-        allocation_attribute_type = 'Storage: Admin Group'
-
-    allocation_attribute = allocation_obj.allocationattribute_set.filter(allocation_attribute_type__name=allocation_attribute_type)
-    username = allocation_user_obj.user.username
-    if not allocation_attribute.exists:
-        logger.error(
-            f'Geode-Project allocation {allocation_obj.pk} is missing the allocation attribute '
-            f'"{allocation_attribute_type}". {username} was not remove from any AD groups '
-        )
-        return
-
-    group = allocation_attribute[0].value
-    added, output = ldap_conn.remove_user(group, LDAP_GEODE_PROJECT_USER_ACCOUNT_TEMPLATE.format(username))
-    if not added:
-        logger.error(
-            f'LDAP: Failed to remove user {username} from {group} in allocation {allocation_obj.pk}. '
-            f'Reason: {output}'
-        )
-    else:
-        logger.info(
-            f'LDAP: Removed user {username} from {group} in allocation {allocation_obj.pk}'
-        )
+        add_user(allocation_user_obj, "Storage: Users Group", ldap_conn)
+        remove_user(allocation_user_obj, "Storage: Admin Group", ldap_conn)
 
 
 class LDAPModify:

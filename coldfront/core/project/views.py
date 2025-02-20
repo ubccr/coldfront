@@ -92,18 +92,12 @@ ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING = import_from_settings(
     'ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING', 30)
 ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING = import_from_settings(
     'ALLOCATION_DAYS_TO_REVIEW_AFTER_EXPIRING', 60)
-PROJECT_CLASS_PROJECT_END_DATES = import_from_settings(
-    'PROJECT_CLASS_PROJECT_END_DATES', [(1, 19), (5, 11), (8, 23)])
-PROJECT_DEFAULT_MAX_MANAGERS = import_from_settings(
-    'PROJECT_DEFAULT_MAX_MANAGERS', 3)
 PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING = import_from_settings(
     'PROJECT_DAYS_TO_REVIEW_AFTER_EXPIRING', 60)
 PROJECT_END_DATE_CARRYOVER_DAYS = import_from_settings(
     'PROJECT_END_DATE_CARRYOVER_DAYS',  90)
 PROJECT_DAYS_TO_REVIEW_BEFORE_EXPIRING = import_from_settings(
     'PROJECT_DAYS_TO_REVIEW_BEFORE_EXPIRING', 30)
-PROJECT_TYPE_LIMIT_MAPPING = import_from_settings(
-    'PROJECT_TYPE_LIMIT_MAPPING', {})
 SLACK_MESSAGING_ENABLED = import_from_settings(
     'SLACK_MESSAGING_ENABLED', False)
 ENABLE_SLATE_PROJECT_SEARCH = import_from_settings(
@@ -150,6 +144,8 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         is_manager = False
         # Can the user update the project?
         if self.request.user.is_superuser:
+            context['is_allowed_to_update_project'] = True
+        elif self.request.user.has_perm('project.change_project'):
             context['is_allowed_to_update_project'] = True
         elif self.object.projectuser_set.filter(user=self.request.user).exists():
             project_user = self.object.projectuser_set.get(
@@ -480,7 +476,12 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
         if self.request.user.userprofile.is_pi:
             return True
-        
+
+    def get_form(self, form_class = None):
+        form = super().get_form(form_class)
+        form.fields['pi_username'].required = not check_if_pi_eligible(self.request.user)
+        return form
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['pi_search_url'] = ''
@@ -489,24 +490,14 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
         return context
 
-    def check_max_project_type_count_reached(self, project_type_obj, pi_obj):
-        limit = PROJECT_TYPE_LIMIT_MAPPING.get(project_type_obj.name)
-        user_profile = UserProfile.objects.get(user=pi_obj)
-        if project_type_obj.name == 'Research' and user_profile.max_research_projects_override > -1:
-            limit = user_profile.max_research_projects_override
-        elif project_type_obj.name == 'Class' and user_profile.max_class_projects_override > -1:
-            limit = user_profile.max_class_projects_override
+    def check_max_project_type_count_reached(self, project_obj, pi_obj):
+        limit = project_obj.get_env.get('allowed_per_pi')
 
         if limit is not None:
-            limit = int(limit)
             pi_projects_count = pi_obj.project_set.filter(
-                type=project_type_obj,
-                status__in=[
-                    ProjectStatusChoice.objects.get(name='Active'),
-                    ProjectStatusChoice.objects.get(name='Waiting For Admin Approval'),
-                    ProjectStatusChoice.objects.get(name='Contacted By Admin'),
-                    ProjectStatusChoice.objects.get(name='Review Pending')
-                ]).count()
+                type=project_obj.type,
+                status__name__in=['Active', 'Waiting For Admin Approval', 'Contacted By Admin', 'Review Pending']
+            ).count()
             return pi_projects_count >= limit
 
         return False
@@ -517,7 +508,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
             if not check_if_pi_eligible(self.request.user):
                 messages.error(self.request, 'Only faculty and staff can be the PI')
                 return super().form_invalid(form)
-            if self.check_max_project_type_count_reached(form.instance.type, self.request.user):
+            if self.check_max_project_type_count_reached(form.instance, self.request.user):
                 messages.error(
                     self.request, 'You have reached the max projects you can have of this type.'
                 )
@@ -544,7 +535,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
             if not check_if_pi_eligible(user):
                 messages.error(self.request, 'Only faculty and staff can be the PI')
                 return super().form_invalid(form)
-            if self.check_max_project_type_count_reached(form.instance.type, user):
+            if self.check_max_project_type_count_reached(form.instance, user):
                 messages.error(
                     self.request,
                     'This PI has reached the max projects they can have of this type.'
@@ -554,55 +545,43 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
         form.instance.requestor = self.request.user
         form.instance.status = ProjectStatusChoice.objects.get(name='Waiting For Admin Approval')
-        if form.instance.type.name == 'Class':
-            if not isinstance(PROJECT_CLASS_PROJECT_END_DATES[0], tuple):
-                expire_dates = [
-                    tuple(map(int, x.split(':'))) for x in PROJECT_CLASS_PROJECT_END_DATES
-                ]
-            else:
-                expire_dates = PROJECT_CLASS_PROJECT_END_DATES
 
+        expiry_dates = project_obj.get_env.get('expiry_dates')
+        if expiry_dates:
             full_expire_dates = []
-            for date in expire_dates:
+            for date in expiry_dates:
                 actual_date = datetime.date(datetime.date.today().year, date[0], date[1])
                 full_expire_dates.append(actual_date)
-
-            end_date = get_new_end_date_from_list(
-                full_expire_dates,
-                datetime.date.today(),
-                30
-            )
-
-            if end_date is None:
-                logger.error(
-                    f'End date for new project request was set to None on date {datetime.date.today()}'
-                )
-                messages.error(
-                    self.request,
-                    'Something went wrong while submitting this project request. Please try again later.'
-                )
-                return super().form_invalid(form)
-
-            project_obj.end_date = end_date
-
-            if not form.instance.class_number:
-                messages.error(self.request, 'You must provide a class number for a class project.')
-                return super().form_invalid(form)
         else:
-            actual_date = datetime.date(datetime.date.today().year, 6, 30)
-            end_date = get_new_end_date_from_list(
-                [actual_date, ],
-                datetime.date.today(),
-                PROJECT_END_DATE_CARRYOVER_DAYS
+            full_expire_dates = [datetime.date.today() + datetime.timedelta(days=365)]
+
+        end_date = get_new_end_date_from_list(
+            full_expire_dates,
+            datetime.date.today(),
+            PROJECT_END_DATE_CARRYOVER_DAYS
+        )
+
+        if end_date is None:
+            logger.error(
+                f'End date for new project request was set to None on date {datetime.date.today()}'
             )
-            form.instance.end_date = end_date
+            messages.error(
+                self.request,
+                'Something went wrong while submitting this project request. Please try again later.'
+            )
+            return super().form_invalid(form)
 
-        form.instance.max_managers = PROJECT_DEFAULT_MAX_MANAGERS
+        project_obj.end_date = end_date
+
+        for field in project_obj.get_env.get('addtl_fields', []):
+            if not getattr(form.instance, field):
+                messages.error(self.request, f'You must provide a {field} for a {project_obj.type} project.')
+                return super().form_invalid(form)
+
         project_obj.save()
-        self.object = project_obj
-
         project_obj.slurm_account_name = generate_slurm_account_name(project_obj)
         project_obj.save()
+        self.object = project_obj
 
         project_user_obj = ProjectUser.objects.create(
             user=self.request.user,
@@ -622,8 +601,8 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
             domain_url = get_domain_url(self.request)
             project_review_url = reverse('project-review-list')
             url = '{}{}'.format(domain_url, project_review_url)
-            text = f'A new request for project "{project_obj.title}" with id {project_obj.pk} has been submitted. You can view it here: {url}'
-            send_message(text)
+            send_message(
+                f'A new request for project "{project_obj.title}" with id {project_obj.pk} has been submitted. You can view it here: {url}')
         if EMAIL_ENABLED:
             domain_url = get_domain_url(self.request)
             project_review_url = reverse('project-review-list')
@@ -664,8 +643,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
                 logger.info(f'Email sent to pi {form.instance.pi.username} (project pk={project_obj.pk})')
 
         logger.info(
-            f'User {form.instance.requestor.username} created a new project (project pk={project_obj.pk})'
-        )
+            f'User {form.instance.requestor.username} created a new project (project pk={project_obj.pk})')
         return super().form_valid(form)
 
     def reverse_with_params(self, path, **kwargs):
@@ -695,6 +673,9 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
             return True
 
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
+
+        if self.request.user.has_perm('project.change_project'):
+            return True
 
         if project_obj.pi == self.request.user:
             return True
@@ -1587,7 +1568,10 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('pk'))
 
         if not project_obj.needs_review and not project_obj.can_be_reviewed:
-            messages.error(request, 'You do not need to review this project.')
+            if project_obj.get_env.get('renewable'):
+                messages.error(request, 'You do not need to review this project.')
+            else:
+                messages.error(request, 'This project cannot be reviewed.')
             return HttpResponseRedirect(reverse('project-detail', kwargs={'pk': project_obj.pk}))
 
         if 'Auto-Import Project'.lower() in project_obj.title.lower():
@@ -2479,43 +2463,31 @@ class ProjectReviewApproveView(LoginRequiredMixin, UserPassesTestMixin, View):
         project_obj = project_review_obj.project
         project_status_obj = ProjectStatusChoice.objects.get(name="Active")
 
-        if project_obj.type.name == 'Class':
-            if not isinstance(PROJECT_CLASS_PROJECT_END_DATES[0], tuple):
-                expire_dates = [
-                    tuple(map(int, x.split(':'))) for x in PROJECT_CLASS_PROJECT_END_DATES
-                ]
-            else:
-                expire_dates = PROJECT_CLASS_PROJECT_END_DATES
-
+        expiry_dates = project_obj.get_env.get('expiry_dates')
+        if expiry_dates:
             full_expire_dates = []
-            for date in expire_dates:
+            for date in expiry_dates:
                 actual_date = datetime.date(datetime.date.today().year, date[0], date[1])
                 full_expire_dates.append(actual_date)
-
-            end_date = get_new_end_date_from_list(
-                full_expire_dates,
-                project_review_obj.created.date(),
-                30
-            )
-
-            if end_date is None:
-                logger.error(
-                    f'New end date for project {project_obj.title} was set to None with project '
-                    f'review creation date {project_review_obj.created.date()} during project '
-                    f'review approval'
-                )
-                messages.error(request, 'Something went wrong while approving the review.')
-                return HttpResponseRedirect(reverse('project-review-list'))
-
-            project_obj.end_date = end_date
         else:
-            actual_date = datetime.date(datetime.date.today().year, 6, 30)
-            end_date = get_new_end_date_from_list(
-                [actual_date, ],
-                datetime.date.today(),
-                PROJECT_DAYS_TO_REVIEW_BEFORE_EXPIRING
+            full_expire_dates = [datetime.date.today() + datetime.timedelta(days=365)]
+
+        end_date = get_new_end_date_from_list(
+            full_expire_dates,
+            datetime.date.today(),
+            PROJECT_END_DATE_CARRYOVER_DAYS
+        )
+
+        if end_date is None:
+            logger.error(
+                f'New end date for project {project_obj.title} was set to None with project '
+                f'review creation date {project_review_obj.created.date()} during project '
+                f'review approval'
             )
-            project_obj.end_date = end_date
+            messages.error(request, 'Something went wrong while approving the review.')
+            return HttpResponseRedirect(reverse('project-review-list'))
+
+        project_obj.end_date = end_date
 
         create_admin_action(request.user, {'status': project_status_obj}, project_obj)
 

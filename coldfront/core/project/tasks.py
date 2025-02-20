@@ -2,9 +2,10 @@ import datetime
 import logging
 
 from coldfront.core.project.models import (Project, ProjectStatusChoice)
-from coldfront.core.project.utils import get_project_user_emails
+from coldfront.core.project.utils import get_project_user_emails, check_if_pi_eligible
 from coldfront.core.utils.common import import_from_settings
 from coldfront.core.utils.mail import send_email_template
+from coldfront.plugins.ldap_user_info.utils import get_users_info
 
 logger = logging.getLogger(__name__)
 
@@ -40,8 +41,12 @@ def update_statuses():
 
 
 def send_expiry_emails():
+    """
+    Sends an email if the project has no active allocations in it. The allocation expiry emails take
+    care of the projects that have active allocations.
+    """
     if EMAIL_ENABLED:
-        # Class projects expiring
+        # Projects expiring
         for days_remaining in sorted(set(EMAIL_PROJECT_EXPIRING_NOTIFICATION_DAYS)):
             expiring_in_days = datetime.datetime.today() + datetime.timedelta(days=days_remaining)
 
@@ -49,12 +54,16 @@ def send_expiry_emails():
                 status__name='Active',
                 end_date=expiring_in_days,
                 requires_review=True,
-                type__name='Class'
-            )
+            ).prefetch_related('allocation_set')
+
             for project_obj in projects_expiring_soon:
+                if project_obj.allocation_set.filter(status__name='Active').exists():
+                    continue
+
                 template_context = {
                     'center_name': CENTER_NAME,
                     'project_title': project_obj.title,
+                    'is_renewable': project_obj.get_env.get('is_renewable'),
                     'expiring_in_days': days_remaining,
                     'help_email': EMAIL_TICKET_SYSTEM_ADDRESS,
                     'signature': EMAIL_SIGNATURE
@@ -70,13 +79,21 @@ def send_expiry_emails():
                 )
 
                 logger.info(
-                    f'Project {project_obj.title} expiring in {days_remaining} days, email sent to '
-                    f'project users (project pk={project_obj.pk})'
+                    f'Project with no allocations {project_obj.title} expiring in {days_remaining} '
+                    f'days, email sent to project users (project pk={project_obj.pk})'
                 )
 
-        # Class projects expiring today
+        # Projects expiring today
         today = datetime.datetime.today()
-        for project_obj in Project.objects.filter(status__name='Active', end_date=today, requires_review=True, type__name='Class'):
+        projects_expiring_today = Project.objects.filter(
+            status__name='Active',
+            end_date=today,
+            requires_review=True
+        ).prefetch_related('allocation_set')
+        for project_obj in projects_expiring_today:
+            if project_obj.allocation_set.filter(status__name='Active').exists():
+                continue
+
             template_context = {
                 'center_name': CENTER_NAME,
                 'project_title': project_obj.title,
@@ -94,6 +111,16 @@ def send_expiry_emails():
             )
 
             logger.info(
-                f'Project {project_obj.title} expires today, email sent to project users '
-                f'(project pk={project_obj.pk})'
+                f'Project with no allocations {project_obj.title} expires today, email sent to '
+                f'project users (project pk={project_obj.pk})'
             )
+
+
+def check_current_pi_eligibilities():
+    project_pis = set(Project.objects.filter(status__name='Active').values_list('pi__username', flat=True))
+    project_pi_memberships = get_users_info(project_pis, ['memberOf'])
+    logger.info('Checking PI eligibilities...')
+    for project_pi, memberships in project_pi_memberships.items():
+        if not check_if_pi_eligible(project_pi, memberships.get('memberOf')):
+            logger.warning(f'PI {project_pi} is no longer eligible to be a PI')
+    logger.info('Done checking PI eligibilities')

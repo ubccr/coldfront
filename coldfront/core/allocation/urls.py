@@ -60,14 +60,6 @@ urlpatterns = [
          name='allocation-user-deny-request'),
     path('allocation-user/<int:pk>/info', allocation_views.AllocationUserRequestInfoView.as_view(),
          name='allocation-user-request-info'),
-    path('<int:pk>/allocation-remove/', allocation_views.AllocationRemoveView.as_view(),
-         name='allocation-remove'),
-    path('removal-list/', allocation_views.AllocationRemovalListView.as_view(),
-         name='allocation-removal-request-list'),
-    path('<int:pk>/allocation-approve-removal/', allocation_views.AllocationApproveRemovalRequestView.as_view(),
-         name='allocation-approve-removal-request'),
-    path('<int:pk>/allocation-deny-removal/', allocation_views.AllocationDenyRemovalRequestView.as_view(),
-         name='allocation-deny-removal-request'),
     path('<int:pk>/user-detail/<int:allocation_user_pk>', allocation_views.AllocationUserDetailView.as_view(),
          name='allocation-user-detail')
 ]

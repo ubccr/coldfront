@@ -140,17 +140,15 @@ Allocation Change Detail
                   <td>{{form.name.value}}</td>
                   {% if allocation_change.status.name == 'Pending' %}
                     <td>{{form.value.value}}</td>
-                    {% if request.user.is_superuser %}
-                      <td>
-                        {{form.new_value}}
+                    <td>
+                      {{form.new_value}}
+                      {% if user_can_delete %}
                         <a href="{% url 'allocation-attribute-change-delete' form.change_pk.value %}" class="float-right confirm-delete">
                           <i class="far fa-trash-alt fa-lg"></i>
                         </a>
-                      </td>
+                      {% endif %}
+                    </td>
                     {% else %}
-                      <td>{{form.new_value.value}}</td>
-                    {% endif %}
-                  {% else %}
                     <td>{{form.old_value.value}}</td>
                     {% if form.new_value.value == '' %}
                       <td>None</td>

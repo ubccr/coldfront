@@ -22,9 +22,9 @@
       <a id="navbar-allocation-requests" class="dropdown-item" href="{% url 'allocation-request-list' %}">
         Allocation Requests</a>
     {% endif %}
-    {% if perms.allocation.can_remove_allocation %}
-    <a id="navbar-allcoation-remove-requests" class="dropdown-item" href="{% url 'allocation-removal-request-list' %}">
-      Allocation Removal Requests</a>
+    {% if perms.allocation_removal_requests.view_allocationremovalrequest %}
+      <a id="navbar-allocation-remove-requests" class="dropdown-item" href="{% url 'allocation_removal_requests:allocation-removal-request-list' %}">
+        Allocation Removal Requests</a>
     {% endif %}
     {% if perms.allocation.can_view_all_allocations %}
       <a id="navbar-allocation-change-requests" class="dropdown-item" href="{% url 'allocation-change-list' %}">

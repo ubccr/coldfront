@@ -41,15 +41,23 @@ Allocation Detail
           <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>
         </div>
         <div class="col">
-          {% if allocation.is_changeable %}
+          {% if allocation.is_changeable and allocation.status.name == Active %}
             <a class="btn btn-primary" href="{% url 'allocation-change' allocation.pk %}" role="button" style="float: right;">
               Request Change
             </a>
           {% endif %}
-          {% if allocation.status.name in 'Active, Billing Information Submitted' and allocation.get_parent_resource.requires_payment %}
-            <a class="btn btn-primary mr-1" href="{% url 'allocation-remove' allocation.pk %}" role="button" style="float: right;">
-              Remove Access
-            </a>
+          {% if allocation.status.name in 'Active, Billing Information Submitted' and allocation.get_parent_resource.name in ALLOCATION_REMOVAL_REQUESTS_ALLOWED %}
+            {% load allocation_removal_requests_tags %}
+            {% has_admin_perm allocation request.user 'allocation_removal_requests.can_remove_allocations' as has_perm %}
+            {% if has_perm %}
+              <a class="btn btn-primary mr-1" href="{% url 'allocation_removal_requests:allocation-remove' allocation.pk %}" role="button" style="float: right;">
+                Remove Allocation
+              </a>
+            {% else %}
+              <a class="btn btn-primary mr-1" href="{% url 'allocation_removal_requests:allocation-removal-request' allocation.pk %}" role="button" style="float: right;">
+                Request Removal
+              </a>
+            {% endif %}
           {% endif %}
         </div>
       </div>
@@ -113,7 +121,7 @@ Allocation Detail
                 {% else %}
                   {{ allocation.end_date }}
                 {% endif %}
-                {% if allocation.project.requires_review and not allocation.project.type.name == 'Class' %}
+                {% if allocation.project.requires_review and allocation.project.get_env|get_value_from_dict:'renewable' %}
                   {% if allocation.is_locked and allocation.status.name == 'Active' and allocation.expires_in <= ALLOCATION_DAYS_TO_REVIEW_BEFORE_EXPIRING and allocation.expires_in >= 0 %}
                     <span class="badge badge-warning"><i class="far fa-clock" aria-hidden="true"></i>
                       Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} - Not renewable

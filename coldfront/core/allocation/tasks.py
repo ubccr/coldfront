@@ -66,15 +66,9 @@ def send_expiry_emails():
                     if not allocation.project.requires_review:
                         continue
 
-                    if allocation.project.type.name == 'Class':
-                        continue
-
                     project_url = f'{CENTER_BASE_URL.strip("/")}/{"project"}/{allocation.project.pk}/'
 
-                    if (allocation.status.name in ['Payment Pending', 'Payment Requested', 'Unpaid'] or allocation.is_locked):
-                        allocation_renew_url = f'{CENTER_BASE_URL.strip("/")}/{"allocation"}/{allocation.pk}/'
-                    else:
-                        allocation_renew_url = f'{CENTER_BASE_URL.strip("/")}/{"allocation"}/{allocation.pk}/{"renew"}'
+                    allocation_renew_url = f'{CENTER_BASE_URL.strip("/")}/{"allocation"}/{allocation.pk}/'
 
                     resource_name = allocation.get_parent_resource.name
 
@@ -114,10 +108,14 @@ def send_expiry_emails():
                                 expirationdict[days_remaining].append((project_url, allocation_renew_url, resource_name))
 
                             if allocation.project.title not in projectdict:
-                                projectdict[allocation.project.title] = (project_url, allocation.project.pi.username,)
+                                projectdict[allocation.project.title] = (
+                                    project_url,
+                                    allocation.project.pi.username,
+                                    allocation.project.get_env.get('renewable'),
+                                    allocation.project.type.name
+                                    )
                             
         if email_receiver_list:
-
             send_email_template(f'Your access to {CENTER_NAME}\'s resources is expiring soon',
                         'email/allocation_expiring.txt',
                         template_context,
@@ -146,14 +144,11 @@ def send_expiry_emails():
             if not allocation.project.requires_review:
                 continue
 
-            if allocation.project.type.name == 'Class':
-                continue
-
             if (allocation.end_date == expring_in_days and not allocation.is_locked):
                 
                 project_url = f'{CENTER_BASE_URL.strip("/")}/{"project"}/{allocation.project.pk}/'
 
-                allocation_renew_url = f'{CENTER_BASE_URL.strip("/")}/{"allocation"}/{allocation.pk}/{"renew"}'
+                allocation_renew_url = f'{CENTER_BASE_URL.strip("/")}/{"allocation"}/{allocation.pk}/'
 
                 allocation_url = f'{CENTER_BASE_URL.strip("/")}/{"allocation"}/{allocation.pk}/'
 
@@ -189,7 +184,12 @@ def send_expiry_emails():
                                     allocationdict[project_url].append({allocation_renew_url : resource_name})
 
                             if allocation.project.title not in projectdict:
-                                projectdict[allocation.project.title] = (project_url, allocation.project.pi.username)
+                                projectdict[allocation.project.title] = (
+                                    project_url,
+                                    allocation.project.pi.username,
+                                    allocation.project.get_env.get('renewable'),
+                                    allocation.project.type.name
+                                    )
 
                         if EMAIL_ADMINS_ON_ALLOCATION_EXPIRE:
                             

@@ -256,6 +256,10 @@ class UserSearchForm(forms.Form):
         label='Display total active PI projects', required=False
     )
 
+    display__user__total_manager_projects = forms.BooleanField(
+        label='Display total active Manager projects', required=False
+    )
+
     display__user__total_allocations = forms.BooleanField(
         label='Display total active allocations', required=False
     )
@@ -289,6 +293,7 @@ class UserSearchForm(forms.Form):
                 AccordionGroup('Projects',
                     'display__user__total_projects',
                     'display__user__total_pi_projects',
+                    'display__user__total_manager_projects',
                     active=False,
                 ),
                 AccordionGroup('Allocations',

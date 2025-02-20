@@ -118,10 +118,7 @@ def generate_slurm_account_name(project_obj):
     num = str(project_obj.pk)
     string = '00000'
     string = string[:-len(num)] + num
-    project_type = project_obj.type.name
-    letter = 'r'
-    if project_type == 'Class':
-        letter = 'c'
+    letter = project_obj.type.name.lower()[0]
 
     return letter + string
 
@@ -164,30 +161,18 @@ def create_admin_action_for_project_creation(user, project):
     )
 
 
-def check_if_pi_eligible(user):
+def check_if_pi_eligible(user, memberships=None):
     if not PROJECT_PI_ELIGIBLE_ADS_GROUPS:
         return True
 
-    # ACNP is not included in memberships so check this separately
-    title = UserProfile.objects.get(user=user).title
-    if title == 'Academic (ACNP)':
-        return True 
+    if not memberships:
+        memberships = get_user_info(user.username, ['memberOf']).get('memberOf')
 
-    memberships = get_user_info(user.username, ['memberOf']).get('memberOf')
     if not memberships:
         return False
 
     for membership in memberships:
         if membership in PROJECT_PI_ELIGIBLE_ADS_GROUPS:
-            if title not in ['Staff', 'Faculty']:
-                logger.warning(
-                    f'User {user.username} has an eligible PI membership but has a title of {title} '
-                )
             return True
-
-    if title in ['Staff', 'Faculty']:
-        logger.warning(
-            f'User {user.username} has a title of {title} but is not in an eligible PI membership'
-        )
 
     return False

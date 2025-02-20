@@ -1,0 +1,10 @@
+Dear {{center_name}} user,
+
+Your allocation removal request for {{resource}} has been denied.
+
+To view your allocation's information, please go to {{url}}
+
+If you are not the PI or a manager under this project, you are receiving this notice as a courtesy.
+
+Thank you,
+{{signature}}

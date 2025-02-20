@@ -6,14 +6,13 @@
 <div class="row">
 
   <div class="col-lg-6 mt-2">
-    <h2><a href="{% url 'project-list' %}">Projects &raquo;</a></h2>
+    <h2><a href="{% url 'project-list' %}">My Projects &raquo;</a></h2>
     <hr>
     <p>
-      If you are a faculty/staff member you can submit a 
-      {% if user.userprofile.title == 'group' %}project request{% else %}<a href="{% url 'project-create' %}">project request</a>{% endif %}. 
-      Students must have a separate PI to submit a project request. Once submitted you can add any additional users to 
-      your project and request a resource allocation. You can, however, search for your <a href="{% url 'project-list' %}">PI's username</a> 
-      and request access to a project they already have.
+      {% if not user.userprofile.title == 'group' %}<a href="{% url 'project-create' %}">Request a project</a>.{% endif %}
+      You can add additional users to your project and request a resource allocation as part of the project request.
+      Students should list an IU faculty or staff member as the PI. You can also search for your PI's username and request
+      access to a project they already have.
     </p>
     
 
@@ -21,7 +20,7 @@
       <table class="table">
         <thead>
           <tr>
-            <th scope="col">Project</th>
+            <th scope="col">Latest Projects</th>
             <th scope="col">PI</th>
             <th scope="col">Status</th>
           </tr>
@@ -94,12 +93,12 @@
   </div>
 
   <div class="col-lg-6 mt-2">
-    <h2><a href="{% url 'allocation-list' %}">Allocations &raquo;</a></h2>
+    <h2><a href="{% url 'allocation-list' %}">My Allocations &raquo;</a></h2>
     <hr>
     <p>
-      Resource allocations are required if you want to gain access to IU's resources. You must have a project to request an allocation.
-      Be sure to review the <a href="{% url 'resource-list' %}">list of available resources</a>. Users must be added to an allocation in
-      order to gain access to its resource. A project can have multiple allocations.
+      You must first have a project to request an allocation. Be sure to review the <a href="{% url 'resource-list' %}">list of available resources</a>.
+      Users must be added to an allocation in order to gain access to its resource. A project can have multiple storage and
+      compute allocations and each allocation can have its own unique memberships derived from the members of the RT Project.
     </p>
 
     {% if allocation_list %}
@@ -107,9 +106,8 @@
         <thead>
           <tr>
             <th scope="col">Project</th>
-            <th scope="col">Resource</th>
+            <th scope="col">Latest Resource</th>
             <th scope="col">Status</th>
-
           </tr>
         </thead>
         <tbody>

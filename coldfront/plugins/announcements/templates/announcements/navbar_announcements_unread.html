@@ -1,0 +1,6 @@
+{% load announcement_tags %}
+{% if user|get_unread_count %}
+  <span id="id_unread" class="position-absolute top-10 start-1000 translate-middle badge rounded-circle bg-light p-1">
+    <span class="visually-hidden">unread announcements</span>
+  </span>
+{% endif %}

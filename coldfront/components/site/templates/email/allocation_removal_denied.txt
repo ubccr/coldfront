@@ -1,8 +1,0 @@
-Dear {{center_name}} user,
-
-Your allocation removal request for {{resource}} has been denied.
-
-To view your allocation's information, please go to {{allocation_url}}
-
-Thank you,
-{{signature}}

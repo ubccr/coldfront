@@ -1,0 +1,8 @@
+<li id="navbar-announcements" class="nav-item">
+  <a type="button" class="position-relative nav-link" href="{% url 'announcement-list' %}">
+    Announcements
+    <span id="navbar-announcements-unread">
+      {% include 'announcements/navbar_announcements_unread.html' %}
+    </span>
+  </a>
+</li>

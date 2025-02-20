@@ -23,6 +23,52 @@ Request New Allocation
 <h2>Request New {{ resource_obj.name }} Allocation <br><small>Project: {{ project_obj.title }}</small></h2>
 <hr>
 
+{% if all_slate_projects %}
+  <div class="card">
+    <div class="card-header">
+      <h4>My slate-project allocations</h4>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th scope="col">Allocated</th>
+              <th scope="col">Directory Name</th>
+              <th scope="col">Project</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for slate_project in all_slate_projects %}
+              <tr>
+                <td>{{ slate_project.storage_quantity }} TB</td>
+                <td>
+                  {% if slate_project.allocation_url == 'N/A' %}
+                    {{ slate_project.directory_name }}
+                  {% else %}
+                    <a href="{{ slate_project.allocation_url }}" target="_blank">{{ slate_project.directory_name }} <i class="fas fa-external-link-alt" aria-hidden="true"></i></a>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if slate_project.project_url == 'N/A' %}
+                    {{ slate_project.project_title }}
+                  {% else %}
+                    <a href="{{ slate_project.project_url }}" target="_blank">{{ slate_project.project_title }} <i class="fas fa-external-link-alt" aria-hidden="true"></i></a>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card-footer">
+      Total Storage Allocated: {{ total_allocated_storage }} TB
+    </div>
+  </div>
+  <hr>
+{% endif %}
+
 <form method="post">
   {% csrf_token %}
   {{ form|as_crispy_errors }}
@@ -101,10 +147,6 @@ Request New Allocation
 <script>
   var total_pi_allocated_quantity = {{ total_pi_allocated_quantity|safe }}
   var pi_allocated_quantity_threshold = {{ pi_allocated_quantity_threshold|safe }}
-  var default_na = ['data_generation', 'data_protection'] 
-  var mid_range = ['data_computational_lifetime', 'expected_project_lifetime']
-  var beyond_120 = ['account_number']
-
   $("#navbar-main > ul > li.active").removeClass("active");
   $("#navbar-project-menu").addClass("active");
 
@@ -162,67 +204,25 @@ Request New Allocation
   $(document).ready(function () {
     setUpDirectoryNameValidation()
 
-    if (total_pi_allocated_quantity > pi_allocated_quantity_threshold) {
-      $("#id_account_number").val('');
-    } else {
+    account_label = $('label[for="id_account_number"]')
+    account_label.html('Account*')
+
+    if (total_pi_allocated_quantity <= pi_allocated_quantity_threshold) {
+      $("#id_account_number").attr('required', false);
       $("#div_id_account_number").hide();
       $("#div_amount_warning").hide();
-    }
-
-    if (total_pi_allocated_quantity > pi_allocated_quantity_threshold / 2 ) {
-      mid_range.forEach(element => {
-        $('#id_' + element).val('');
-      });
-      default_na.forEach(element => {
-        $('#id_' + element).val('');
-      });
-    } else {
-      mid_range.forEach(element => {
-        $('#div_id_' + element).hide();
-      });
-      default_na.forEach(element => {
-        $('#div_id_' + element).hide('');
-      });
     }
 
     $("#id_storage_space").change(function(e) {
       var current_value = total_pi_allocated_quantity + parseInt(e.target.value)
       if (current_value > pi_allocated_quantity_threshold) {
         $("#div_id_account_number").show();
-        $("#id_account_number").val('');
+        $("#id_account_number").attr('required', true);
         $("#div_amount_warning").show();
       } else {
+        $("#id_account_number").attr('required', false);
         $("#div_id_account_number").hide();
-        $("#id_account_number").val('00-000-00');
         $("#div_amount_warning").hide();
-      }
-
-      if (current_value > pi_allocated_quantity_threshold / 2 ) {
-        mid_range.forEach(element => {
-          $('#id_' + element).val('');
-        });
-        mid_range.forEach(element => {
-          $('#div_id_' + element).show();
-        });
-        default_na.forEach(element => {
-          $('#id_' + element).val('');
-        });
-        default_na.forEach(element => {
-          $('#div_id_' + element).show();
-        });
-      } else {
-        mid_range.forEach(element => {
-          $('#id_' + element).val('<1 year');
-        });
-        mid_range.forEach(element => {
-          $('#div_id_' + element).hide();
-        });
-        default_na.forEach(element => {
-          $('#id_' + element).val('N/A');
-        });
-        default_na.forEach(element => {
-          $('#div_id_' + element).hide();
-        });
       }
     })
 

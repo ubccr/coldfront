@@ -51,7 +51,7 @@ Request New Allocation
   <legend><u>Project Information</u></legend>
     <div class="row">
       <div class="col">
-        {{ form.project_directory_name|as_crispy_field }}
+        {{ form.group_name|as_crispy_field }}
       </div>
       <div class="col">
         {{ form.storage_space|as_crispy_field }}
@@ -111,62 +111,10 @@ Request New Allocation
 </form>
 
 <script>
-  var threshold = {{ GEODE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD|safe }}
-  var default_na = ['data_generation', 'data_protection'] 
-  var mid_range = ['data_computational_lifetime', 'expected_project_lifetime']
-
   $("#navbar-main > ul > li.active").removeClass("active");
   $("#navbar-project-menu").addClass("active");
 
   $(document).ready(function () {
-    if ($("#id_storage_space").val() >= threshold / 2 ) {
-      mid_range.forEach(element => {
-        $('#id_' + element).val('');
-      });
-      default_na.forEach(element => {
-        $('#id_' + element).val('');
-      });
-    } else {
-      mid_range.forEach(element => {
-        $('#div_id_' + element).hide();
-      });
-      default_na.forEach(element => {
-        $('#div_id_' + element).hide('');
-      });
-    }
-
-    $("#id_storage_space").change(function(e) {
-      console.log(parseInt(e.target.value))
-      console.log(threshold / 2)
-      if (e.target.value >= threshold / 2 ) {
-        console.log('here')
-        mid_range.forEach(element => {
-          $('#id_' + element).val('');
-        });
-        mid_range.forEach(element => {
-          $('#div_id_' + element).show();
-        });
-        default_na.forEach(element => {
-          $('#id_' + element).val('');
-        });
-        default_na.forEach(element => {
-          $('#div_id_' + element).show();
-        });
-      } else {
-        mid_range.forEach(element => {
-          $('#id_' + element).val('<1 year');
-        });
-        mid_range.forEach(element => {
-          $('#div_id_' + element).hide();
-        });
-        default_na.forEach(element => {
-          $('#id_' + element).val('N/A');
-        });
-        default_na.forEach(element => {
-          $('#div_id_' + element).hide();
-        });
-      }
-    })
 
     var radios = $("[type=radio]").parent();
     for (var i = 0; i < radios.length; i++) {

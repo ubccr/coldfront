@@ -1,0 +1,25 @@
+<style>
+  a:hover {
+    text-decoration: none;
+  }
+</style>
+<div style="padding-bottom: 10px;">
+  <div>
+    <label for="id_{{ name }}">
+      {{ label }}
+    </label>
+  </div>
+  <div id="id_{{ name }}_selection" class="d-inline">
+    {% for key, value in selection.items %}
+      {% if key in initial_selected %}
+        <a id="id_{{ name }}_{{ key }}" name="{{ value }}" href="#", title="Add tag">
+          <span class="badge badge-pill badge-danger">{{ value }}</span>
+        </a>
+      {% else %}
+        <a id="id_{{ name }}_{{ key }}" name="{{ value }}" href="#", title="Remove tag">
+          <span class="badge badge-pill badge-secondary">{{ value }}</span>
+        </a>
+      {% endif %}
+    {% endfor %}
+  </div>
+</div>

@@ -20,7 +20,7 @@ Review Project
 
   <ol>
     <li><a href="{% url 'project-update' project.pk %}"><i class="fas fa-external-link-alt" aria-hidden="true"></i> Verify</a> your project description is accurate</li>
-    {% if project.type.name != 'Class' %}
+    {% if 'publication' not in project.get_env|get_value_from_dict:'forbidden_features' %}
       <li><a href="{% url 'publication-search' project.pk %}"><i class="fas fa-external-link-alt" aria-hidden="true"></i> Add</a> Publications</li>
     {% endif %}
     <!-- <li><a href="{% url 'grant-create' project.pk %}"><i class="fas fa-external-link-alt" aria-hidden="true"></i> Add</a> Grants</li> -->
@@ -61,11 +61,11 @@ Review Project
           <thead>
             <tr>
               <th scope="col">#</th>
+              <th scope="col">Renew</th>
               <th scope="col">Resource</th>
               <th scope="col">Users</th>
               <th scope="col">Status</th>
               <th scope="col">Expires On</th>
-              <th scope="col">Renew</th>
               <th scope="col">Actions</th>
             </tr>
           </thead>
@@ -75,11 +75,11 @@ Review Project
                 <td>
                   <a href="{% url 'allocation-detail' form.pk.value %}">{{ form.pk.value }}</a>
                 </td>
+                <td class="text-center">{{ form.renew }}</td>
                 <td>{{ form.resource.value }}</td>
                 <td>{{ form.users.value }}</td>
                 <td>{{ form.status.value }}</td>
                 <td>{{ form.expires_on.value }}</td>
-                <td class="text-center">{{ form.renew }}</td>
                 <td><a href="{% url 'allocation-remove-users' form.pk.value %}"><i class="fas fa-external-link-alt" aria-hidden="true"></i> Remove Users</a></td>
               </tr>
             {% endfor %}

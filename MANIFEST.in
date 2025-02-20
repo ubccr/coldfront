@@ -13,12 +13,11 @@ recursive-include coldfront/core/grant/templates *
 recursive-include coldfront/core/user/templates *
 recursive-include coldfront/core/resource/templates *
 recursive-include coldfront/plugins/maintenance_mode/templates *
-recursive-include coldfront/plugins/maintenance_mode/management/commands *
 recursive-include coldfront/plugins/slate_project/templates *
-recursive-include coldfront/plugins/slate_project/management/commands *
 recursive-include coldfront/plugins/advanced_search/templates *
-recursive-include coldfront/plugins/update_user_profiles/management/commands *
 recursive-include coldfront/plugins/customizable_forms/templates *
 recursive-include coldfront/plugins/ldap_user_info/templates *
 recursive-include coldfront/plugins/pi_search/templates *
 recursive-include coldfront/plugins/geode_project/templates *
+recursive-include coldfront/plugins/allocation_removal_requests/templates *
+recursive-include coldfront/plugins/announcements/templates *

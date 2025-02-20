@@ -18,6 +18,7 @@ from coldfront.core.allocation.models import (Allocation,
                                               AllocationUserStatusChoice,
                                               AllocationUser)
 from coldfront.core.project.models import Project
+from coldfront.core.project.models import ProjectPermission
 from coldfront.core.resource.models import Resource
 from coldfront.plugins.customizable_forms.forms import GenericForm
 from coldfront.core.allocation.utils import (set_default_allocation_user_role,
@@ -52,19 +53,12 @@ class AllocationResourceSelectionView(LoginRequiredMixin, UserPassesTestMixin, T
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-        if self.request.user.is_superuser:
-            return True
-
-        project_obj = get_object_or_404(
-            Project, pk=self.kwargs.get('project_pk'))
-
-        if project_obj.pi == self.request.user:
-            return True
-
-        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
+        if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
             return True
 
         messages.error(self.request, 'You do not have permission to create a new allocation.')
+        return False
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
@@ -193,7 +187,7 @@ class AllocationResourceSelectionView(LoginRequiredMixin, UserPassesTestMixin, T
                 if pi_request_only[0].value.lower() == 'true' and project_obj.pi != self.request.user:
                     can_request = False
 
-            if project_obj.type.name == 'Class' and resource_obj.name == 'Slate Project':
+            if resource_obj.name in project_obj.get_env.get('forbidden_resources'):
                 can_request = False
 
             if resource_obj.name == 'Quartz - Hopper' and not project_obj.allocation_set.filter(resources__name='Quartz', status__name='Active'):
@@ -246,18 +240,12 @@ class GenericView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-        if self.request.user.is_superuser:
-            return True
-
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
-
-        if project_obj.pi == self.request.user:
-            return True
-
-        if project_obj.projectuser_set.filter(user=self.request.user, role__name='Manager', status__name='Active').exists():
+        if project_obj.has_perm(self.request.user, ProjectPermission.UPDATE):
             return True
 
         messages.error(self.request, 'You do not have permission to create a new allocation.')
+        return False
 
     def dispatch(self, request, *args, **kwargs):
         project_obj = get_object_or_404(Project, pk=self.kwargs.get('project_pk'))
@@ -348,6 +336,10 @@ class GenericView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                     request, 'You are at the pending allocation limit per user allowed for this resource.'
                 )
                 return HttpResponseRedirect(reverse('custom-allocation-create', kwargs={'project_pk': project_obj.pk}))
+
+        if resource_obj.name in project_obj.get_env.get('forbidden_resources'):
+            messages.error(self.request, f'{resource_obj.name} allocations are not allowed in {project_obj.type.name} projects.')
+            return HttpResponseRedirect(reverse('custom-allocation-create', kwargs={'project_pk': project_obj.pk}))
 
         return super().dispatch(request, *args, **kwargs)
 
@@ -644,24 +636,11 @@ class GenericView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
     def get_success_url(self):
         after_project_creation = self.request.GET.get('after_project_creation')
+        url_name = 'project-add-users-search'
         if after_project_creation is None or after_project_creation == 'false':
-            after_project_creation = False
+            url_name = 'project-detail'
 
-        if not after_project_creation:
-            url = self.reverse_with_params(
-                reverse(
-                    'project-detail',
-                    kwargs={'pk': self.kwargs.get('project_pk')}
-                ),
-                allocation_submitted='true'
-            )
-        else:
-            url = self.reverse_with_params(
-                reverse(
-                    'project-add-users-search',
-                    kwargs={'pk': self.kwargs.get('project_pk')}
-                ),
-                after_project_creation='true'
-            )
-
-        return url
+        return self.reverse_with_params(
+            reverse(url_name, kwargs={'pk': self.kwargs.get('project_pk')}),
+            allocation_submitted='true'
+        )
