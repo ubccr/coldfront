@@ -1535,7 +1535,7 @@ def import_slate_projects(json_file_name, out_file_name, importing_user, limit=N
             status=AllocationStatusChoice.objects.get(name='Active'),
             start_date=allocation_start_date,
             end_date=project_obj.end_date,
-            is_changeable=False
+            is_changeable=True
         )
         allocation_obj.resources.add(Resource.objects.get(name='Slate Project'))
 
