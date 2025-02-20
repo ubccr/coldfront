@@ -18,10 +18,9 @@
 
     {% if project_list %}
       <table class="table">
-        <caption>Latest Projects</caption>
         <thead>
           <tr>
-            <th scope="col">Project</th>
+            <th scope="col">Latest Projects</th>
             <th scope="col">PI</th>
             <th scope="col">Status</th>
           </tr>
@@ -99,16 +98,15 @@
     <p>
       You must first have a project to request an allocation. Be sure to review the <a href="{% url 'resource-list' %}">list of available resources</a>.
       Users must be added to an allocation in order to gain access to its resource. A project can have multiple storage and
-      compute allocations and each allocation can have its own unique membership list derived from the members of the RT Project.
+      compute allocations and each allocation can have its own unique memberships derived from the members of the RT Project.
     </p>
 
     {% if allocation_list %}
       <table class="table">
-        <caption>Latest Allocations</caption>
         <thead>
           <tr>
             <th scope="col">Project</th>
-            <th scope="col">Resource</th>
+            <th scope="col">Latest Resource</th>
             <th scope="col">Status</th>
           </tr>
         </thead>
