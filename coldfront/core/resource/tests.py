@@ -111,17 +111,73 @@ class StorageResourceDetailViewTest(ResourceViewBaseTest):
                 self, self.admin_user, self.url, 'Edit Resource Allocations')
 
 
-class ResourceAttributeCreateViewTest(ResourceViewBaseTest):
+class StorageResourceAttributeCreateViewTest(ResourceViewBaseTest):
     """Tests for ResourceAttributeCreateView"""
 
     def setUp(self):
-        self.url = f'/{self.cluster_resource.pk}/resourceattribute/add'
+        self.url = f'/resource/{self.storage_resource.pk}/resourceattribute/add'
 
     def test_resource_attribute_create_access(self):
         self.resource_access_tstbase(self.url)
         utils.test_user_cannot_access(self, self.resource_allowed_user, self.url)
         utils.test_user_cannot_access(self, self.pi_user, self.url)
 
-    def test_resource_attribute_create_form(self):
-        """Test that the form is displayed correctly"""
-        utils.test_form_displayed_correctly(self, self.admin_user, self.url)
+
+class ClusterResourceAttributeCreateViewTest(ResourceViewBaseTest):
+    """Tests for ResourceAttributeCreateView"""
+
+    def setUp(self):
+        self.url = f'/resource/{self.cluster_resource.pk}/resourceattribute/add'
+
+    def test_resource_attribute_create_access(self):
+        self.resource_access_tstbase(self.url)
+        utils.test_user_cannot_access(self, self.resource_allowed_user, self.url)
+        utils.test_user_cannot_access(self, self.pi_user, self.url)
+
+
+class StorageResourceAttributeDeleteViewTest(ResourceViewBaseTest):
+    """Tests for ResourceAttributeDeleteView"""
+
+    def setUp(self):
+        self.url = f'/resource/{self.storage_resource.pk}/resourceattribute/delete'
+
+    def test_resource_attribute_create_access(self):
+        self.resource_access_tstbase(self.url)
+        utils.test_user_cannot_access(self, self.resource_allowed_user, self.url)
+        utils.test_user_cannot_access(self, self.pi_user, self.url)
+
+class ClusterResourceAttributeDeleteViewTest(ResourceViewBaseTest):
+    """Tests for ResourceAttributeDeleteView"""
+
+    def setUp(self):
+        self.url = f'/resource/{self.cluster_resource.pk}/resourceattribute/delete'
+
+    def test_resource_attribute_create_access(self):
+        self.resource_access_tstbase(self.url)
+        utils.test_user_cannot_access(self, self.resource_allowed_user, self.url)
+        utils.test_user_cannot_access(self, self.pi_user, self.url)
+
+
+class StorageResourceAllocationsEditViewTest(ResourceViewBaseTest):
+    """Tests for ResourceAllocationsEditView"""
+
+    def setUp(self):
+        self.url = f'/resource/{self.storage_resource.pk}/resourceallocations/edit'
+
+    def test_resource_allocation_edit_access(self):
+        self.client.force_login(self.admin_user, backend=BACKEND)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 302)
+        utils.test_user_cannot_access(self, self.resource_allowed_user, self.url)
+
+
+class ClusterResourceAllocationsEditViewTest(ResourceViewBaseTest):
+    """Tests for ResourceAllocationsEditView"""
+
+    def setUp(self):
+        self.url = f'/resource/{self.cluster_resource.pk}/resourceallocations/edit'
+
+    def test_resource_allocation_edit_access(self):
+        self.resource_access_tstbase(self.url)
+        utils.test_user_can_access(self, self.resource_allowed_user, self.url)
+        utils.test_user_cannot_access(self, self.pi_user, self.url)

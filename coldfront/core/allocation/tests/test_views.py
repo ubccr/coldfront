@@ -157,7 +157,7 @@ class AllocationListViewTest(AllocationViewBaseTest):
         self.assertEqual(len(response.context['item_list']), 1)
         # confirm that resource_type of allocation is Storage
         self.assertEqual(
-            response.context['item_list'][0].resource_type.name, 'Storage')
+            response.context['item_list'][0].resources.first().resource_type.name, 'Storage')
 
     def test_allocation_list_access_nonproj_nonallocationuser(self):
         """non-ProjectUser non-AllocationUser User can see no Allocations
