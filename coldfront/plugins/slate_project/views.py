@@ -99,7 +99,7 @@ class SlateProjectSearchResultsView(LoginRequiredMixin, ListView):
         slate_projects = []
         for slate_project_obj in slate_project_objs:
             allocation_users = slate_project_obj.allocation.allocationuser_set.filter(
-                status__name__in=['Active', 'Eligible']).values_list('user', flat=True)
+                status__name__in=['Active', 'Invited']).values_list('user', flat=True)
 
             slate_project = slate_project_obj.value.split('/')[-1]
             slate_projects.append(

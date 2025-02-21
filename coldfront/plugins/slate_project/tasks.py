@@ -67,7 +67,7 @@ def update_all_user_statuses():
     slate_project_user_objs = AllocationUser.objects.filter(
         allocation__resources__name='Slate Project',
         allocation__status__name__in=['Active', 'Renewal Requested'],
-        status__name__in=['Active', 'Eligible', 'Disabled', 'Retired']
+        status__name__in=['Active', 'Invited', 'Disabled', 'Retired']
     ).select_related('user', 'status', 'allocation', 'allocation__project')
     sync_slate_project_user_statuses(slate_project_user_objs)
 

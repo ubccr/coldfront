@@ -54,7 +54,7 @@ def activate_user(sender, **kwargs):
         return
     if not allocation_user_obj.allocation.status.name in ['Active', 'Renewal Requested']:
         return
-    if not allocation_user_obj.status.name in ['Active', 'Eligible', 'Disabled', 'Retired']:
+    if not allocation_user_obj.status.name in ['Active', 'Invited', 'Disabled', 'Retired']:
         return
     add_user_to_slate_project_group(allocation_user_obj)
 
@@ -78,7 +78,7 @@ def change_user_role(sender, **kwargs):
         return
     if not allocation_user_obj.allocation.status.name in ['Active', 'Renewal Requested']:
         return
-    if not allocation_user_obj.status.name in ['Active', 'Eligible', 'Disabled', 'Retired']:
+    if not allocation_user_obj.status.name in ['Active', 'Invited', 'Disabled', 'Retired']:
         return
 
     change_users_slate_project_groups(allocation_user_obj)
@@ -120,7 +120,7 @@ def sync_slate_project(sender, **kwargs):
 
     slate_project_user_objs = AllocationUser.objects.filter(
         allocation = allocation_obj,
-        status__name__in=['Active', 'Eligible', 'Disabled', 'Retired'],
+        status__name__in=['Active', 'Invited', 'Disabled', 'Retired'],
         modified__lt = datetime.now() - timedelta(seconds=5)
     ).select_related('user', 'status', 'allocation', 'allocation__project')
     sync_slate_project_user_statuses(slate_project_user_objs)

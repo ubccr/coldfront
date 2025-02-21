@@ -47,7 +47,7 @@ class AllocationRemovalRequestView(LoginRequiredMixin, UserPassesTestMixin, Temp
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         allocation_obj = Allocation.objects.get(pk=self.kwargs.get('pk'))
-        allocation_users = allocation_obj.allocationuser_set.filter(status__name__in=['Active', 'Eligible', 'Disabled', 'Retired'])
+        allocation_users = allocation_obj.allocationuser_set.filter(status__name__in=['Active', 'Invited', 'Disabled', 'Retired'])
 
         users = []
         for allocation_user in allocation_users:
@@ -130,7 +130,7 @@ class AllocationRemoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         allocation_obj = Allocation.objects.get(pk=self.kwargs.get('pk'))
-        allocation_users = allocation_obj.allocationuser_set.filter(status__name__in=['Active', 'Eligible', 'Disabled', 'Retired'])
+        allocation_users = allocation_obj.allocationuser_set.filter(status__name__in=['Active', 'Invited', 'Disabled', 'Retired'])
 
         users = []
         for allocation_user in allocation_users:
@@ -163,7 +163,7 @@ class AllocationRemoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         allocation_obj.save()
 
         allocation_remove.send(sender=self.__class__, allocation_pk=allocation_obj.pk)
-        allocation_users = allocation_obj.allocationuser_set.filter(status__name__in=['Active', 'Inactive', 'Eligible', 'Disabled', 'Retired'])
+        allocation_users = allocation_obj.allocationuser_set.filter(status__name__in=['Active', 'Inactive', 'Invited', 'Disabled', 'Retired'])
         for allocation_user in allocation_users:
             allocation_remove_user.send(
                 sender=self.__class__, allocation_user_pk=allocation_user.pk)
@@ -255,7 +255,7 @@ class AllocationApproveRemovalRequestView(LoginRequiredMixin, UserPassesTestMixi
         allocation_obj.save()
 
         allocation_remove.send(sender=self.__class__, allocation_pk=allocation_obj.pk)
-        allocation_users = allocation_obj.allocationuser_set.filter(status__name__in=['Active', 'Inactive', 'Eligible', 'Disabled', 'Retired'])
+        allocation_users = allocation_obj.allocationuser_set.filter(status__name__in=['Active', 'Inactive', 'Invited', 'Disabled', 'Retired'])
         for allocation_user in allocation_users:
             allocation_remove_user.send(
                 sender=self.__class__, allocation_user_pk=allocation_user.pk)

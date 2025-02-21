@@ -168,7 +168,7 @@ def sync_slate_project_user_statuses(slate_project_user_objs):
     """
     status_objs = {
         'Active': AllocationUserStatusChoice.objects.get(name='Active'),
-        'Eligible': AllocationUserStatusChoice.objects.get(name='Eligible'),
+        'Invited': AllocationUserStatusChoice.objects.get(name='Invited'),
         'Disabled': AllocationUserStatusChoice.objects.get(name='Disabled'),
         'Retired': AllocationUserStatusChoice.objects.get(name='Retired'),
         'Error': AllocationUserStatusChoice.objects.get(name='Error')
@@ -319,10 +319,10 @@ def sync_slate_project_users(allocation_obj, ldap_conn=None, ldap_search_conn=No
         return
 
     read_write_user_objs = allocation_obj.allocationuser_set.filter(
-        role__name='read/write', status__name__in=['Active', 'Eligible', 'Disabled', 'Retired']
+        role__name='read/write', status__name__in=['Active', 'Invited', 'Disabled', 'Retired']
     )
     read_only_user_objs = allocation_obj.allocationuser_set.filter(
-        role__name='read only', status__name__in=['Active', 'Eligible', 'Disabled', 'Retired']
+        role__name='read only', status__name__in=['Active', 'Invited', 'Disabled', 'Retired']
     )
 
     ldap_read_write_usernames = ldap_conn.get_users(ldap_group_gid)
@@ -664,7 +664,7 @@ def get_new_user_status(username, ldap_search_conn=None, return_obj=True):
     if SLATE_PROJECT_ELIGIBILITY_ACCOUNT in accounts and SLATE_PROJECT_ACCOUNT in accounts:
         status = 'Active'
     elif SLATE_PROJECT_ELIGIBILITY_ACCOUNT in accounts and not SLATE_PROJECT_ACCOUNT in accounts:
-        status = 'Eligible'
+        status = 'Invited'
     elif not SLATE_PROJECT_ELIGIBILITY_ACCOUNT in accounts and SLATE_PROJECT_ACCOUNT in accounts:
         status = 'Disabled'
     elif not SLATE_PROJECT_ELIGIBILITY_ACCOUNT in accounts and not SLATE_PROJECT_ACCOUNT in accounts:
@@ -942,7 +942,7 @@ def add_user_to_slate_project_group(allocation_user_obj):
         # The user's new eligibility account is not propagated fast enough to be picked up in 
         # get_new_user_status so we set the status to Eligible ourselves.
         if added_to_eligibility_group:
-            allocation_user_obj.status = AllocationUserStatusChoice.objects.get(name='Eligible')
+            allocation_user_obj.status = AllocationUserStatusChoice.objects.get(name='Invited')
             allocation_user_obj.save()
         else:
             allocation_user_obj.status = get_new_user_status(username)
@@ -1095,7 +1095,7 @@ def get_slate_project_info(username):
     """
     allocation_user_objs = AllocationUser.objects.filter(
         user__username=username,
-        status__name__in=['Active', 'Eligible', 'Disabled', 'Retired'],
+        status__name__in=['Active', 'Invited', 'Disabled', 'Retired'],
         allocation__status__name__in=['Active', 'Renewal Requested'],
         allocation__resources__name='Slate Project'
     )
@@ -1403,7 +1403,7 @@ def import_slate_projects(json_file_name, out_file_name, importing_user, limit=N
 
     status_objs = {
         'Active': AllocationUserStatusChoice.objects.get(name='Active'),
-        'Eligible': AllocationUserStatusChoice.objects.get(name='Eligible'),
+        'Invited': AllocationUserStatusChoice.objects.get(name='Invited'),
         'Disabled': AllocationUserStatusChoice.objects.get(name='Disabled'),
         'Retired': AllocationUserStatusChoice.objects.get(name='Retired'),
         'Error': AllocationUserStatusChoice.objects.get(name='Error')
