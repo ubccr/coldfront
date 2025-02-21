@@ -172,12 +172,14 @@ class ClusterAllocationEditUserViewTest(ClusterAllocationViewBaseTest):
     """Tests for the AllocationEditUserView"""
 
     def setUp(self):
-        self.url = f'/allocation/{self.cluster_allocation.pk}/edit-user/{self.user_allocation.pk}/'
+        self.url = f'/allocation/{self.cluster_allocation.pk}/edit-user/{self.proj_allocationuser.pk}'
 
     def test_allocationedituserview_access(self):
         self.allocation_access_tstbase(self.url)
         utils.test_user_can_access(self, self.pi_user, self.url)
         utils.test_user_cannot_access(self, self.proj_allocationuser, self.url)
+
+
 class ClusterAllocationRemoveUsersViewTest(ClusterAllocationViewBaseTest):
     """Tests for the AllocationRemoveUsersView"""
 
