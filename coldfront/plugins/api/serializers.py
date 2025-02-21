@@ -147,11 +147,21 @@ class ProjectUserSerializer(serializers.ModelSerializer):
 class ProjectSerializer(serializers.ModelSerializer):
     pi = serializers.SlugRelatedField(slug_field='username', read_only=True)
     status = serializers.SlugRelatedField(slug_field='name', read_only=True)
-    project_users = ProjectUserSerializer(
-            source='projectuser_set', many=True, read_only=True)
-    allocations = ProjAllocationSerializer(
-            source='allocation_set', many=True, read_only=True)
+    project_users = serializers.SerializerMethodField()
+    allocations = serializers.SerializerMethodField()
 
     class Meta:
         model = Project
         fields = ('id', 'title', 'pi', 'status', 'project_users', 'allocations')
+
+    def get_project_users(self, obj):
+        request = self.context.get('request', None)
+        if request and request.query_params.get('project_users') in ['true','True']:
+            return ProjectUserSerializer(obj.projectuser_set, many=True, read_only=True).data
+        return None
+
+    def get_allocations(self, obj):
+        request = self.context.get('request', None)
+        if request and request.query_params.get('allocations') in ['true','True']:
+            return ProjAllocationSerializer(obj.allocation_set, many=True, read_only=True).data
+        return None
