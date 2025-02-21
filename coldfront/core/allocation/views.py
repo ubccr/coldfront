@@ -1978,6 +1978,8 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
             self.request.user.groups.all(),
             'delete_allocationattributechangerequest'
         )
+        if allocation_obj.get_parent_resource.name == 'Slate Project':
+            context['identifier'] = allocation_obj.allocationattribute_set.get(allocation_attribute_type__name='Slate Project Directory').value
 
         return context
 
@@ -2311,6 +2313,8 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             context['formset'] = formset
         context['allocation'] = allocation_obj
         context['attributes'] = allocation_attributes_to_change
+        if allocation_obj.get_parent_resource.name == 'Slate Project':
+            context['identifier'] = allocation_obj.allocationattribute_set.get(allocation_attribute_type__name='Slate Project Directory').value
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
