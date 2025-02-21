@@ -445,7 +445,8 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
             try:
                 allocation_activate.send(sender=self.__class__, allocation_pk=allocation_obj.pk)
-            except:
+            except Exception as e:
+                logger.exception(e)
                 messages.error(request, "Allocation activated, but certain parts of the post-creation process were unsuccessful. Please contact the administrator or check the logs for more information.")
 
             for allocation_user in allocation_users:

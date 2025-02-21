@@ -146,6 +146,7 @@ class Allocation(TimeStampedModel):
         requires_payment = self.get_attribute('Requires Payment')
         if requires_payment == None:
             return self.get_parent_resource.requires_payment
+        return requires_payment
 
     def get_slurm_spec_value(self, name):
         slurm_spec_value = None

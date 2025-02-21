@@ -11,7 +11,7 @@ from coldfront.plugins.sftocf.utils import StarFishRedash, StarFishServer
 logger = logging.getLogger(__name__)
 
 def make_error_csv(filename, errors):
-    csv_path = f"local_data/error_tracking/{filename}.csv"
+    csv_path = f"local_data/{filename}.csv"
     error_df = pd.DataFrame(errors)
     error_df['resolved'] = None
     error_df.to_csv(csv_path, index=False)
@@ -33,7 +33,7 @@ class Command(BaseCommand):
         data = [result for result in data if result['group_name']]
         starfishserver = StarFishServer()
         searched_resources = starfishserver.get_volumes_in_coldfront()
-        allocations = Allocation.objects.filter(resources__in=searched_resources)
+        allocations = Allocation.objects.filter(resources__name__in=searched_resources)
         for allocation in allocations:
             lab = allocation.project.title
             resource = allocation.get_parent_resource
@@ -43,7 +43,6 @@ class Command(BaseCommand):
             if not matched_subdirs:
                 if allocation.status.name in ['Pending Deactivation', 'Inactive']:
                     pass
-                    # errors.append({"lab":lab, "allocation":allocation, "issue": "no_results_inactive","url": f"https://coldfront.rc.fas.harvard.edu/allocation/{allocation.pk}"})
                 else:
                     errors.append({"lab":lab, "allocation":allocation, "issue": "no_results",
                         "url": f"https://coldfront.rc.fas.harvard.edu/allocation/{allocation.pk}"})
@@ -56,9 +55,14 @@ class Command(BaseCommand):
                 })
                 continue
             subdir_value = matched_subdirs[0]['path']
-            allocation.allocationattribute_set.update_or_create(
-                allocation_attribute_type_id=8, defaults={'value': subdir_value}
-            )
+            if subdir_value != allocation.path:
+               allocation.allocationattribute_set.update_or_create(
+                   allocation_attribute_type_id=8, defaults={'value': subdir_value}
+               )
+               confirmation = f"added path to allocation {allocation.pk}: {subdir_value}"
+               logger.info(confirmation)
+               print(confirmation)
         for error in errors:
             logger.error(error)
-        make_error_csv("subdirs_to_add", errors)
+            print(error)
+        make_error_csv("errors_subdirs_to_add", errors)
