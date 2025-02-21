@@ -56,6 +56,10 @@ if EMAIL_ENABLED:
     EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
 
 
+def update_user_status(allocation_user_obj, status):
+    allocation_user_obj.status = AllocationUserStatusChoice.objects.get(name=status)
+    allocation_user_obj.save()
+
 def check_directory_name_format(slate_project_name):
     return not re.search('^[0-9a-zA-Z_-]+$', slate_project_name) is None
 

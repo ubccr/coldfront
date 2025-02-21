@@ -5,13 +5,12 @@ from django.dispatch import receiver
 from coldfront.core.allocation.signals import (allocation_activate_user,
                                                allocation_remove_user,
                                                allocation_change_user_role,
-                                               allocation_expire, 
+                                               allocation_expire,
                                                allocation_activate,
                                                visit_allocation_detail)
 from coldfront.core.allocation.views import (AllocationAddUsersView,
                                              AllocationRemoveUsersView,
                                              AllocationUserDetailView,
-                                             
                                              AllocationDetailView)
 from coldfront.core.allocation.tasks import update_statuses
 from coldfront.core.allocation.models import AllocationUser, Allocation
@@ -23,7 +22,7 @@ from coldfront.plugins.slate_project.utils import (add_user_to_slate_project_gro
                                                    add_gid_allocation_attribute,
                                                    remove_user_from_slate_project_group,
                                                    change_users_slate_project_groups,
-                                                   add_slate_project_groups,
+                                                   update_user_status,
                                                    send_expiry_email,
                                                    sync_slate_project_users,
                                                    sync_slate_project_ldap_group,
@@ -31,6 +30,8 @@ from coldfront.plugins.slate_project.utils import (add_user_to_slate_project_gro
 from coldfront.plugins.allocation_removal_requests.views import (AllocationRemoveView,
                                                                  AllocationApproveRemovalRequestView)
 from coldfront.plugins.allocation_removal_requests.signals import allocation_remove
+from coldfront.plugins.customizable_forms.views import GenericView
+from coldfront.core.allocation.signals import allocation_new
 
 @receiver(allocation_activate, sender=AllocationDetailView)
 def add_group(sender, **kwargs):
@@ -42,7 +43,8 @@ def add_group(sender, **kwargs):
         return
 
     add_gid_allocation_attribute(allocation_obj)
-    for allocation_user_obj in allocation_obj.allocationuser_set.filter(status__name='Active'):
+    for allocation_user_obj in allocation_obj.allocationuser_set.filter(status__name='Pending'):
+        update_user_status(allocation_user_obj, 'Active')
         add_user_to_slate_project_group(allocation_user_obj)
 
 @receiver(allocation_activate_user, sender=ProjectAddUsersView)
@@ -57,6 +59,28 @@ def activate_user(sender, **kwargs):
     if not allocation_user_obj.status.name in ['Active', 'Invited', 'Disabled', 'Retired']:
         return
     add_user_to_slate_project_group(allocation_user_obj)
+
+@receiver(allocation_new, sender=GenericView)
+def update_new_allocation_users(sender, **kwargs):
+    allocation_pk = kwargs.get('allocation_pk')
+    allocation_obj = Allocation.objects.get(pk=allocation_pk)
+    if not allocation_obj.get_parent_resource.name == 'Slate Project':
+        return
+    if not allocation_obj.status.name in ['New']:
+        return
+    for allocation_user_obj in allocation_obj.allocationuser_set.filter(status__name='Active'):
+        update_user_status(allocation_user_obj, 'Pending')
+
+@receiver(allocation_activate_user, sender=ProjectAddUsersView)
+@receiver(allocation_activate_user, sender=AllocationAddUsersView)
+def add_user(sender, **kwargs):
+    allocation_user_pk = kwargs.get('allocation_user_pk')
+    allocation_user_obj = AllocationUser.objects.get(pk=allocation_user_pk)
+    if not allocation_user_obj.allocation.get_parent_resource.name == 'Slate Project':
+        return
+    if not allocation_user_obj.allocation.status.name in ['New']:
+        return
+    update_user_status(allocation_user_obj, 'Pending')
 
 @receiver(allocation_remove_user, sender=AllocationRemoveUsersView)
 @receiver(allocation_remove_user, sender=ProjectRemoveUsersView)

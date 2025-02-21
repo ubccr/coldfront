@@ -206,7 +206,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 Q(project__projectuser__user=self.request.user) &
                 Q(project__projectuser__status__name__in=['Active', ]) &
                 Q(allocationuser__user=self.request.user) &
-                Q(allocationuser__status__name__in=['Active', 'Invited', 'Disabled', 'Retired'])
+                Q(allocationuser__status__name__in=['Active', 'Invited', 'Pending', 'Disabled', 'Retired'])
             ).distinct().order_by('-end_date')
 
         allocation_submitted = self.request.GET.get('allocation_submitted')
@@ -1606,7 +1606,7 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                             '{} {}'.format(
                                 ele.user.first_name, ele.user.last_name
                             ) for ele in allocation.allocationuser_set.filter(
-                                status__name__in=['Active', 'Inactive', 'Invited', 'Disabled', 'Retired']
+                                status__name__in=['Active', 'Inactive', 'Invited', 'Pending', 'Disabled', 'Retired']
                             ).order_by('user__last_name')
                         ]
                     ),

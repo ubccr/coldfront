@@ -290,7 +290,7 @@ class UserListAllocations(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
 
         for project in Project.objects.filter(pi=self.request.user):
             for allocation in project.allocation_set.filter(status__name='Active'):
-                for allocation_user in allocation.allocationuser_set.filter(status__name__in=['Active', 'Invited', 'Disabled', 'Retired']).order_by('user__username'):
+                for allocation_user in allocation.allocationuser_set.filter(status__name__in=['Active', 'Invited', 'Pending', 'Disabled', 'Retired']).order_by('user__username'):
                     if allocation_user.user not in user_dict:
                         user_dict[allocation_user.user] = []
 

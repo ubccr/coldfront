@@ -75,7 +75,7 @@ def home(request):
             Q(project__projectuser__user=request.user) &
             Q(project__projectuser__status__name__in=['Active', ]) &
             Q(allocationuser__user=request.user) &
-            Q(allocationuser__status__name__in=['Active', 'Pending - Remove', 'Invited', 'Disabled', 'Retired'])
+            Q(allocationuser__status__name__in=['Active', 'Pending - Remove', 'Invited', 'Pending', 'Disabled', 'Retired'])
         ).distinct().order_by('-created')
 
         allocation_list = allocation_list[:5]
@@ -174,7 +174,7 @@ def allocation_by_fos(request):
         status__name='Active').values_list('project__field_of_science__description', flat=True)))
 
     user_allocations = AllocationUser.objects.filter(
-        status__name__in=['Active', 'Invited', 'Disabled', 'Retired'], allocation__status__name='Active')
+        status__name__in=['Active', 'Invited', 'Pending', 'Disabled', 'Retired'], allocation__status__name='Active')
 
     active_users_by_fos = Counter(list(user_allocations.values_list(
         'allocation__project__field_of_science__description', flat=True)))

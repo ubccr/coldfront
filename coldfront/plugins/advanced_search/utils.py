@@ -186,7 +186,7 @@ class AllocationTable:
         if data.get('allocation__user_username'):
             allocations = allocations.filter(
                 allocationuser__user__username__icontains=data.get('allocation__user_username'),
-                allocationuser__status__name__in=['Active', 'Invited', 'Disabled', 'Retired']
+                allocationuser__status__name__in=['Active', 'Invited', 'Pending', 'Disabled', 'Retired']
             )
 
         if data.get('allocation__status__name'):
@@ -404,7 +404,7 @@ class AllocationTable:
                         all_allocation_users = model.allocationuser_set.all()
                         filtered_allocation_users_count = 0
                         for allocation_user in all_allocation_users:
-                            if allocation_user.status.name in ['Active', 'Invited', 'Disabled', 'Retired']:
+                            if allocation_user.status.name in ['Active', 'Invited', 'Pending', 'Disabled', 'Retired']:
                                 filtered_allocation_users_count += 1
                         current_attribute = filtered_allocation_users_count
                         break
@@ -413,7 +413,7 @@ class AllocationTable:
                         all_allocation_users = model.allocationuser_set.all()
                         filtered_allocation_users = []
                         for allocation_user in all_allocation_users:
-                            if allocation_user.status.name in ['Active', 'Invited', 'Disabled', 'Retired']:
+                            if allocation_user.status.name in ['Active', 'Invited', 'Pending', 'Disabled', 'Retired']:
                                 filtered_allocation_users.append(allocation_user.user.username)
                         current_attribute = ', '.join(filtered_allocation_users)
                         break
@@ -532,7 +532,7 @@ class UserTable:
             users = users.filter(username__in=project_usernames)
         elif data.get('user__type') == 'allocation':
             allocation_usernames = set(AllocationUser.objects.filter(
-                status__name__in=['Active', 'Invited', 'Disabled', 'Retired'],
+                status__name__in=['Active', 'Invited', 'Pending', 'Disabled', 'Retired'],
                 allocation__status__name='Active',
                 allocation__project__status__name='Active'
             ).values_list('user__username', flat=True))
@@ -611,7 +611,7 @@ class UserTable:
                 if attribute == 'total_allocations':
                     current_attribute = AllocationUser.objects.filter(
                         user=user_obj,
-                        status__name__in=['Active', 'Invited', 'Disabled', 'Retired'],
+                        status__name__in=['Active', 'Invited', 'Pending', 'Disabled', 'Retired'],
                         allocation__status__name='Active',
                         allocation__project__status__name='Active'
                     ).count()
