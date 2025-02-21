@@ -94,9 +94,9 @@ class AllocationRequestFilter(filters.FilterSet):
 
     def filter_fulfilled(self, queryset, name, value):
         if value:
-            return queryset.filter(status__name='Approved')
+            return queryset.filter(fulfilled_date__isnull=False)
         else:
-            return queryset.filter(status__name__in=['Denied', 'New', 'In Progress', 'On Hold', 'Pending Activation'])
+            return queryset.filter(fulfilled_date__isnull=True)
 
     def filter_time_to_fulfillment(self, queryset, name, value):
         if value.start is not None:
