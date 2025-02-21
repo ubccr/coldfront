@@ -80,7 +80,7 @@ class AllocationRequestFilter(filters.FilterSet):
     '''
     created = filters.DateFromToRangeFilter()
     fulfilled = filters.BooleanFilter(method='filter_fulfilled', label='Fulfilled')
-    fulfilled_date = filters.DateFromToRangeFilter(label='Date fullfilled')
+    fulfilled_date = filters.DateFromToRangeFilter(label='Date fulfilled')
     time_to_fulfillment = filters.NumericRangeFilter(method='filter_time_to_fulfillment', label='Time to fulfillment')
 
     class Meta:
@@ -174,7 +174,7 @@ class AllocationChangeRequestFilter(filters.FilterSet):
     '''
     created = filters.DateFromToRangeFilter()
     fulfilled = filters.BooleanFilter(method='filter_fulfilled', label='Fulfilled')
-    fulfilled_date = filters.DateFromToRangeFilter(label='Date fullfilled')
+    fulfilled_date = filters.DateFromToRangeFilter(label='Date fulfilled')
     time_to_fulfillment = filters.NumericRangeFilter(method='filter_time_to_fulfillment', label='Time to fulfillment')
 
     class Meta:
