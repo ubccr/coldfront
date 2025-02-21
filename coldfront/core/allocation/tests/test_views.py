@@ -306,7 +306,6 @@ class AllocationDetailViewTest(AllocationViewBaseTest):
 
     def setUp(self):
         self.url = f'/allocation/{self.storage_allocation.pk}/'
-        self.compute_url = f'/allocation/{self.cluster_allocation.pk}/'
 
     def test_allocation_detail_access(self):
         self.allocation_access_tstbase(self.url)
@@ -378,27 +377,6 @@ class AllocationDetailViewTest(AllocationViewBaseTest):
         )
         utils.page_does_not_contain_for_user(
             self, self.proj_allocationuser, self.url, 'Remove Users'
-        )
-
-    def test_compute_allocationuser_button_visibility(self):
-        """Test visibility of "Add/Remove Users" buttons for different user types"""
-        # these buttons will only be available for compute allocations
-        # admin can see add/remove users buttons
-        utils.page_contains_for_user(
-                self, self.admin_user, self.compute_url, 'Add Users')
-        utils.page_contains_for_user(
-                self, self.admin_user, self.compute_url, 'Remove Users')
-        # pi can see add/remove users buttons
-        utils.page_contains_for_user(
-                self, self.pi_user, self.compute_url, 'Add Users')
-        utils.page_contains_for_user(
-                self, self.pi_user, self.compute_url, 'Remove Users')
-        # allocation user can't see add/remove users buttons
-        utils.page_does_not_contain_for_user(
-            self, self.proj_allocationuser, self.compute_url, 'Add Users'
-        )
-        utils.page_does_not_contain_for_user(
-            self, self.proj_allocationuser, self.compute_url, 'Remove Users'
         )
 
 

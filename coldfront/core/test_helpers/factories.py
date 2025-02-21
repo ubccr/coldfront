@@ -366,6 +366,9 @@ def setup_models(test_case):
         ('High Security', 'Yes/No', False, False),
         ('DUA', 'Yes/No', False, False),
         ('External Sharing', 'Yes/No', False, False),
+        ('slurm_specs', 'Text', False, False),
+        ('Core Usage (Hours)', 'Int', True, False),
+        ('EffectvUsage', 'Int', True, False),
         ('RequiresPayment', 'Yes/No', False, False),
     ):
         AllocationAttributeTypeFactory(
@@ -391,14 +394,21 @@ def setup_models(test_case):
     test_case.cluster_allocationuser = UserFactory(username='jdoe')
     test_case.nonproj_cluster_allocationuser = UserFactory(username='jdoe2')
 
+    # resources
+    test_case.resource_allowed_user = UserFactory(username='iberlin')
+    test_case.cluster_resource = Resource.objects.get(name='Test Cluster')
+    test_case.cluster_resource.allowed_users.add(test_case.resource_allowed_user)
+    test_case.storage_resource = Resource.objects.get(name='holylfs10/tier1')
+    test_case.storage_resource.allowed_users.add(test_case.resource_allowed_user)
+
     # allocations
     for alloc in ['storage test', 'compute test']:
         AllocationFactory(project=test_case.project, justification=alloc)
     test_case.storage_allocation = Allocation.objects.get(justification='storage test')
-    test_case.storage_allocation.resources.add(Resource.objects.get(name='holylfs10/tier1'))
+    test_case.storage_allocation.resources.add(test_case.storage_resource)
 
     test_case.cluster_allocation = Allocation.objects.get(justification='compute test')
-    test_case.cluster_allocation.resources.add(Resource.objects.get(name='Test Cluster'))
+    test_case.cluster_allocation.resources.add(test_case.cluster_resource)
 
     # make a quota_bytes allocation attribute
     allocation_quota = AllocationQuotaFactory(
