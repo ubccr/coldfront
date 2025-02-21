@@ -342,6 +342,8 @@ def setup_models(test_case):
         ProjectStatusChoiceFactory(name=status)
     for attribute_type in ['Date', 'Int', 'Float', 'Text', 'Yes/No']:
         AAttributeTypeFactory(name=attribute_type)
+    for status_choice in ['Active','Removed']:
+        AllocationUserStatusChoiceFactory(name=status_choice)
     for status in ['Pending', 'Approved', 'Denied']:
         AllocationChangeStatusChoiceFactory(name=status)
     for resource_type in ['Storage', 'Cluster', 'Cluster Partition', 'Compute Node']:

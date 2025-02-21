@@ -561,6 +561,8 @@ class Allocation(TimeStampedModel):
 
     def user_can_manage_allocation(self, user):
         is_manager = False
+        if self.project.pi == user:
+            is_manager = True
         for resource in self.resources.all():
             if resource.user_can_manage_resource(user):
                 is_manager = True

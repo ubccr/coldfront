@@ -117,6 +117,39 @@ PENDING_ACTIVE_ALLOCATION_STATUSES = import_from_settings(
 logger = logging.getLogger(__name__)
 
 
+def allocation_filter(allocations, user):
+    """Offer a definitive list of the allocations that are shown to a user"""
+    allocations = allocations.filter(
+        Q(status__name__in=['Active', 'New', 'Renewal Requested', ]) &
+        Q(project__status__name__in=['New', 'Active', ]) &
+        # Q(project__projectuser__status__name='Active') &
+        # Q(project__projectuser__user=self.request.user) &
+        (
+            (
+                (
+                    Q(resources__resource_type__name__contains='Storage') &
+                    (
+                        (Q(project__projectuser__user=user) &
+                        Q(project__projectuser__status__name='Active')) |
+                        (Q(allocationuser__user=user) &
+                        Q(allocationuser__status__name='Active'))
+                    )
+                ) | (
+                    Q(resources__resource_type__name__contains='Cluster') &
+                    Q(allocationuser__user=user) &
+                    Q(allocationuser__status__name='Active')
+                )
+            ) |
+            Q(project__pi=user) |
+            Q(resources__allowed_users=user) | (
+                Q(project__projectuser__user=user) &
+                Q(project__projectuser__status__name='Active') &
+                Q(project__projectuser__role__name__contains='Manager')
+            )
+        )
+    ).distinct()
+    return allocations
+
 def attribute_and_usage_as_floats(attribute):
     """return a tuple of a given attribute's value and its
     allocationattributeusage value, converted to floats.
@@ -487,20 +520,8 @@ class AllocationListView(ColdfrontListView):
             'allocation.can_view_all_allocations')):
                 allocations = allocations.order_by(order_by)
             else:
-                allocations = allocations.filter(
-                    Q(project__status__name__in=['New', 'Active', ]) &
-                    # Q(project__projectuser__status__name='Active') &
-                    # Q(project__projectuser__user=self.request.user) &
-                    (
-                        Q(resources__allowed_users=self.request.user) |
-                        Q(project__projectuser__user=self.request.user) |
-                        Q(project__pi=self.request.user) |
-                        (
-                            Q(allocationuser__user=self.request.user)
-                            & Q(allocationuser__status__name='Active')
-                        )
-                    )
-                ).distinct().order_by(order_by)
+                allocations = allocation_filter(allocations, self.request.user)
+                allocations = allocations.order_by(order_by)
 
             # Project Title
             if data.get('project'):
@@ -794,7 +815,8 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
     def test_func(self):
         """UserPassesTestMixin Tests"""
-        if self.request.user.is_superuser:
+        allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
+        if allocation_obj.user_can_manage_allocation(self.request.user):
             return True
         err = 'You do not have permission to add users to the allocation.'
         messages.error(self.request, err)
@@ -2381,7 +2403,6 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         allocation_obj = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
         if allocation_obj.has_perm(self.request.user, AllocationPermission.MANAGER):
             return True
-
         err = 'You do not have permission to request changes to this allocation.'
         messages.error(self.request, err)
         return False
@@ -2399,6 +2420,8 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         if allocation_obj.is_locked:
             err = 'You cannot request a change to a locked allocation.'
             errs.append(err)
+        if allocation_obj.resources.filter(resource_type__name='Storage').count() == 0:
+            errs.append('You can only request changes for storage allocations.')
         changeable_status_list = [
             'Active', 'Renewal Requested', 'Payment Pending', 'Payment Requested', 'Paid'
         ]

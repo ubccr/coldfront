@@ -50,7 +50,7 @@ Allocation Detail
       <div class="col">
         <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>
       </div>
-      {% if allocation.is_changeable and not allocation.is_locked and is_allowed_to_update_project and allocation.status.name in 'Active, Renewal Requested, Payment Pending, Payment Requested, Paid' %}
+      {% if allocation.is_changeable and not allocation.is_locked and is_allowed_to_update_project and allocation.status.name in 'Active, Renewal Requested, Payment Pending, Payment Requested, Paid' and 'Cluster' not in allocation.get_parent_resource.resource_type.name %}
         <div class="col">
           <a class="btn btn-primary" href="{% url 'allocation-change' allocation.pk %}" role="button" style="float: right;">
             Request Change
@@ -329,7 +329,7 @@ Allocation Detail
         <i class="fas fa-info-circle" aria-hidden="true"></i> Allocation Attributes
       </h3>
       <div class="float-right">
-        {% if user_can_manage_allocation %}
+        {% if request.user.is_superuser %}
           <a class="btn btn-success" href="{% url 'allocation-attribute-add' allocation.pk %}" role="button">
             <i class="fas fa-plus" aria-hidden="true"></i> Add Allocation Attribute
           </a>
@@ -390,6 +390,7 @@ Allocation Detail
 <div class="html2pdf__page-break"></div>
 
 <!-- Start Allocation Change Requests -->
+{% if "Cluster" not in allocation.get_parent_resource.resource_type.name %}
 <div class="card mb-3">
   <div class="card-header">
     <h3 class="d-inline">
@@ -447,6 +448,7 @@ Allocation Detail
     {% endif %}
   </div>
 </div>
+{% endif %}
 
 <!-- Start Allocation Users -->
 <div class="card mb-3">
@@ -462,7 +464,7 @@ Allocation Detail
         <a class="btn btn-success" href="{% url 'allocation-add-users' allocation.pk %}" role="button">
           <i class="fas fa-user-plus" aria-hidden="true"></i> Add Users
         </a>
-        <a class="btn btn-danger" href="{% url 'allocation-edit-user-allocation-attributes' allocation.pk %}" role="button">
+        <a class="btn btn-danger" href="{% url 'allocation-edit-users' allocation.pk %}" role="button">
           <i class="fas fa-edit" aria-hidden="true"></i> Edit Users
         </a>
 

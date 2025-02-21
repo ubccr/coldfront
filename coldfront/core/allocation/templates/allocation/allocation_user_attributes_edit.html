@@ -37,7 +37,7 @@ Edit User Attributes for {{allocation.project.title}} {{allocation.get_parent_re
     <div class="row">
       <div class="table-responsive">
         <div class="container mb-3 mt-3">
-          <form id="edit_user_attributes" method="POST" action="{% url 'allocation-edit-user-allocation-attributes' allocation.pk %}">
+          <form id="edit_user_attributes" method="POST" action="{% url 'allocation-edit-users' allocation.pk %}">
             {{ formset.management_form }}
             {% csrf_token %}
             <!-- <table  class="table table-hover mydatatable" > -->
