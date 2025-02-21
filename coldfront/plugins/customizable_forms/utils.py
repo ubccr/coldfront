@@ -37,11 +37,11 @@ def add_additional_forms():
 
         form_class = getattr(form_module, form_class_name)
         if use_base_form:
-            custom_form = type('CustomForm', (form_class, BaseForm), dict(vars(form_class)))
+            custom_form = type('Custom' + form_class_name, (form_class, BaseForm), dict(vars(form_class)))
 
         view_class = getattr(view_module, view_class_name)
         if use_generic_view:
-            custom_view = type('CustomForm', (view_class, GenericView), dict(vars(view_class)))
+            custom_view = type('Custom' + view_class_name, (view_class, GenericView), dict(vars(view_class)))
 
         setattr(custom_view, 'form_class', custom_form)
 
