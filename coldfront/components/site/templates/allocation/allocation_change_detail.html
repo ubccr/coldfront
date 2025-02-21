@@ -11,9 +11,10 @@ Allocation Change Detail
 {% block content %}
 
 <h2>
-  Change requested to {{ allocation.get_parent_resource }} for 
-  {% if identifier %}{{ identifier }} attached to{% endif %} project: {{ allocation.project.title }}
+  Request change to {{ allocation_change.allocation.get_parent_resource }} for 
+  {% if identifier %}{{ identifier }} attached to{% endif %} project: {{ allocation_change.allocation.project.title }}
 </h2>
+<hr>
 
   {% if allocation_change.status.name == "Approved" %}
     <div class="alert alert-success" role="alert">
