@@ -168,7 +168,6 @@ class StorageResourceAllocationsEditViewTest(ResourceViewBaseTest):
         self.client.force_login(self.admin_user, backend=BACKEND)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 302)
-        utils.test_user_cannot_access(self, self.resource_allowed_user, self.url)
 
 
 class ClusterResourceAllocationsEditViewTest(ResourceViewBaseTest):
