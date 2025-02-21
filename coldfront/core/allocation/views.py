@@ -904,13 +904,14 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                         f'(allocation pk={allocation_obj.pk})'
                     )
                 else:
-                    allocation_added_users_emails = list(allocation_obj.project.projectuser_set.filter(
-                        user__in=selected_user_objs, enable_notifications=True
-                    ).values_list('user__email', flat=True))
-                    if allocation_obj.project.pi.email not in allocation_added_users_emails:
-                        allocation_added_users_emails.append(allocation_obj.project.pi.email)
+                    if not allocation_obj.status.name == 'New':
+                        allocation_added_users_emails = list(allocation_obj.project.projectuser_set.filter(
+                            user__in=selected_user_objs, enable_notifications=True
+                        ).values_list('user__email', flat=True))
+                        if allocation_obj.project.pi.email not in allocation_added_users_emails:
+                            allocation_added_users_emails.append(allocation_obj.project.pi.email)
 
-                    send_added_user_email(request, allocation_obj, selected_user_objs, allocation_added_users_emails)
+                        send_added_user_email(request, allocation_obj, selected_user_objs, allocation_added_users_emails)
 
                     is_plural = len(selected_users.keys()) > 1
                     messages.success(

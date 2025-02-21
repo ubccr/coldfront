@@ -1178,6 +1178,8 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
                 if allocations_added_to:
                     for allocation, added_project_user_objs in allocations_added_to.items():
+                        if allocation.status.name == 'New':
+                            continue
                         users = [project_user_obj.user for project_user_obj in added_project_user_objs if project_user_obj.enable_notifications]
                         emails = [user.email for user in users]
                         if emails and project_obj.pi.email not in emails:
