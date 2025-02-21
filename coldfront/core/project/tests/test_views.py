@@ -33,8 +33,8 @@ class ProjectViewTestBase(TestCase):
     def setUpTestData(cls):
         """Set up users and project for testing"""
         setup_models(cls)
-        cls.project_user = cls.proj_allocation_user
-        cls.nonproject_user = cls.nonproj_allocation_user
+        cls.project_user = cls.proj_allocationuser
+        cls.nonproject_user = cls.nonproj_allocationuser
         # add pi_user and project_user to project_user
 
         attributetype = PAttributeTypeFactory(name='string')
@@ -290,8 +290,8 @@ class ProjectRemoveUsersViewTest(ProjectViewTestBase):
         """Set up users and project for testing"""
         super().setUp()
         self.url = reverse('project-remove-users', kwargs={'pk': self.project.pk})
-        self.project_user = self.proj_allocation_user
-        self.nonproject_user = self.nonproj_allocation_user
+        self.project_user = self.proj_allocationuser
+        self.nonproject_user = self.nonproj_allocationuser
 
     @tag('net')
     def test_projectremoveusersview_access(self):
@@ -367,7 +367,7 @@ class ProjectAddUsersSearchViewTest(ProjectViewTestBase):
         utils.test_user_can_access(self, self.pi_user, self.url)# pi can access
         utils.test_user_can_access(self, self.proj_accessmanager, self.url)# access manager can access
         utils.test_user_cannot_access(self, self.proj_datamanager, self.url)# data manager cannot access
-        utils.test_user_cannot_access(self, self.proj_allocation_user, self.url)# user cannot access
+        utils.test_user_cannot_access(self, self.proj_allocationuser, self.url)# user cannot access
 
 class ProjectAddUsersViewTest(ProjectViewTestBase):
     """Tests for ProjectAddUsersView"""
@@ -375,7 +375,7 @@ class ProjectAddUsersViewTest(ProjectViewTestBase):
         """set up users and project for testing"""
         self.url = reverse('project-add-users', kwargs={'pk': self.project.pk})
         self.form_data = {
-            'q': self.nonproj_allocation_user.username,
+            'q': self.nonproj_allocationuser.username,
             'search_by': 'username_only',
             'userform-TOTAL_FORMS': '1',
             'userform-INITIAL_FORMS': '0',
@@ -383,7 +383,7 @@ class ProjectAddUsersViewTest(ProjectViewTestBase):
             'userform-MAX_NUM_FORMS': '1',
             'userform-0-selected': 'on',
             'userform-0-role': ProjectUserRoleChoice.objects.get(name='User').pk,
-            'allocationform-allocation': [self.proj_allocation.pk]
+            'allocationform-allocation': [self.storage_allocation.pk]
         }
 
     @override_settings(PLUGIN_LDAP=True)
@@ -401,7 +401,7 @@ class ProjectAddUsersViewTest(ProjectViewTestBase):
         self.assertEqual(response.url, reverse('project-detail', kwargs={'pk': self.project.pk}))
         self.assertEqual(response.status_code, 302)
         # Check that user was added
-        self.assertTrue(ProjectUser.objects.filter(project=self.project, user=self.nonproj_allocation_user).exists())
+        self.assertTrue(ProjectUser.objects.filter(project=self.project, user=self.nonproj_allocationuser).exists())
 
     @patch('coldfront.core.project.signals.project_make_projectuser.send')
     def test_projectaddusers_signal_fail(self, mock_signal):

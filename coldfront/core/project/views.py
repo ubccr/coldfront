@@ -64,6 +64,7 @@ from coldfront.core.project.models import (
 from coldfront.core.project.utils import generate_usage_history_graph
 from coldfront.core.publication.models import Publication
 from coldfront.core.research_output.models import ResearchOutput
+from coldfront.core.resource.models import ResourceAttribute
 from coldfront.core.user.forms import UserSearchForm
 from coldfront.core.user.utils import CombinedUserSearch
 from coldfront.core.utils.views import ColdfrontListView, NoteCreateView, NoteUpdateView
@@ -224,10 +225,10 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             time_chart_data_error = None
         except Exception as e:
             time_chart_data_error = e
-            time_chart_data = None
-        if time_chart_data:
+            time_chart_data = '"null"'
+        if time_chart_data != '"null"':
             if not time_chart_data['groups'][0]:
-                time_chart_data = None
+                time_chart_data = '"null"'
 
         if 'django_q' in settings.INSTALLED_APPS:
             # get last successful runs of djangoq task responsible for projectuser data pull
@@ -240,6 +241,13 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['user_sync_dt'] = user_sync_dt
 
         context['notes'] = self.return_visible_notes()
+
+        resources = [attr.resource for attr in ResourceAttribute.objects.filter(
+            resource_attribute_type__name='Owner',
+            value=self.object.title
+        )]
+
+        context['resources'] = resources
 
         context['allocation_history_records'] = allocation_history_records
         context['note_update_link'] = 'project-note-update'
@@ -420,7 +428,7 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         form_valid_status = super().form_valid(form)
         try:
             project_post_create.send(
-                    sender=self.__class__, project_obj=project_obj
+                sender=self.__class__, project_obj=project_obj
             )
         except Exception as exception:
             logger.exception(exception)
@@ -837,7 +845,8 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
                     # get allocation to remove users from
                     allocations_to_remove_user_from = project_obj.allocation_set.filter(
-                        status__name__in=['Active', 'New', 'Renewal Requested']
+                        status__name__in=['Active', 'New', 'Renewal Requested'],
+                        resources__resource_type__name='Storage'
                     )
                     for allocation in allocations_to_remove_user_from:
                         for alloc_user in allocation.allocationuser_set.filter(

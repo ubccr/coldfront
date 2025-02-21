@@ -4,19 +4,34 @@ import os
 import re
 import sys
 
-from coldfront.core.resource.models import Resource
+from coldfront.core.allocation.models import (
+        Allocation,
+        AllocationStatusChoice,
+        AllocationAttribute,
+        AllocationAttributeType,
+)
+from coldfront.core.project.models import Project
+from coldfront.core.resource.models import (
+        Resource,
+        ResourceType,
+        ResourceAttribute,
+        ResourceAttributeType,
+)
 from coldfront.plugins.slurm.utils import (
     SLURM_ACCOUNT_ATTRIBUTE_NAME,
     SLURM_CLUSTER_ATTRIBUTE_NAME,
     SLURM_SPECS_ATTRIBUTE_NAME,
     SLURM_USER_SPECS_ATTRIBUTE_NAME,
-    slurm_collect_fairshares,
+    slurm_collect_shares,
     slurm_collect_usage,
+    slurm_list_partitions,
     slurm_fixed_width_lines_to_dict,
-    SlurmError
+    SlurmError,
 )
 
+
 logger = logging.getLogger(__name__)
+
 
 class SlurmParserError(SlurmError):
     pass
@@ -51,6 +66,11 @@ class SlurmBase:
         """Format unique list of Slurm Specs"""
         return ':'.join(self.spec_list())
 
+    def format_share(self):
+        if hasattr(self, 'share_dict'):
+            return ', '.join(f"{key}:{value}" for key, value in self.share_dict.items())
+        return ""
+
     def _write(self, out, data):
         try:
             out.write(data)
@@ -70,6 +90,7 @@ class SlurmCluster(SlurmBase):
         """Create a new SlurmCluster by parsing the output from sacctmgr dump."""
         cluster = None
         parent = None
+        name = ""
         for line in stream:
             line = line.strip()
             if re.match("^#", line):
@@ -103,7 +124,7 @@ class SlurmCluster(SlurmBase):
         if not cluster or not cluster.name:
             raise SlurmParserError(
                 'Failed to parse Slurm cluster name. Is this in sacctmgr dump file format?')
-
+        logger.debug(f"\x1b[33;20m  Cluster '{name}' accounts and users loaded \x1b[0m")
         return cluster
 
     @staticmethod
@@ -147,46 +168,151 @@ class SlurmCluster(SlurmBase):
         if not name:
             name = 'root'
 
-        logger.debug("Adding allocation name=%s specs=%s user_specs=%s", name, specs, user_specs)
+        logger.info(f"Adding allocation name={name} specs={specs} user_specs={user_specs}")
         account = self.accounts.get(name, SlurmAccount(name))
         account.add_allocation(allocation, user_specs=user_specs)
         account.specs += specs
         self.accounts[name] = account
 
-    def pull_fairshares(self, file=None):
-        """append sshare fairshare data to accounts and users"""
-        if not file:
-            fairshares = slurm_collect_fairshares(cluster=self.name)
+    def id_partition_projects(self, partition_info):
+        """identify the partition projects
+        Crossreference Allow/DenyAccounts and Allow/DenyGroups.
+        Projects must be permitted on both lists to access a given partition.
+        """
+        # identify allowed_groups
+        all_slurm_account_names = [a.name for a in list(self.accounts.values())]
+        allowed_groups = partition_info.get('AllowGroups', '').split(',')
+        denied_accounts = partition_info.get('DenyAccounts', '').split(',')
+        # if 'cluster_users' is in allowed_groups, then all users/accounts are allowed
+        if 'cluster_users' in allowed_groups:
+            partition_project_names = [a for a in all_slurm_account_names if a not in denied_accounts]
         else:
-            with open(file, 'r') as fairsharefile:
-                fairshare_data = list(fairsharefile)
-                fairshares = slurm_fixed_width_lines_to_dict(fairshare_data)
-        # select all fairshare lines with no user val, pin to SlurmAccounts.
-        acct_fairshares = [d for d in fairshares if not d['User']]
-        # pair acct_fairshares with SlurmAccounts
-        for acct_share in acct_fairshares:
+            allowed_accounts = partition_info.get('AllowAccounts', 'NA').split(',')
+            if allowed_accounts == ['ALL']:
+                partition_project_names = allowed_groups
+            elif allowed_accounts == ['NA']:
+                partition_project_names = [a for a in allowed_groups if a not in denied_accounts]
+            else:
+                partition_project_names = set(allowed_groups + allowed_accounts)
+
+        return partition_project_names
+
+    def append_partitions(self):
+        """append partition data to accounts"""
+
+        def create_allocation_attributes(project, justification, quantity, resource):
+            new_allocation = Allocation.objects.create(
+                project=project, justification=justification, quantity=quantity,
+                status=AllocationStatusChoice.objects.get(name="Active"),
+            )
+            new_allocation.resources.add(resource)
+            attribute_name_type = AllocationAttributeType.objects.get(name=SLURM_ACCOUNT_ATTRIBUTE_NAME)
+            AllocationAttribute.objects.create(
+                allocation=new_allocation,
+                allocation_attribute_type_id=attribute_name_type.pk,
+                value=project.title
+            )
+            slurm_specs_attribute_type = AllocationAttributeType.objects.get(name=SLURM_SPECS_ATTRIBUTE_NAME)
+            slurm_spec_list =  ['EffectvUsage', 'RawUsage', 'Fairshare', 'NormShare', 'RawShare']
+            attribute_value = ""
+            for slurm_spec in slurm_spec_list:
+                # TODO get Shares values for Allocation
+                attribute_value += f'{slurm_spec}=0,'
+            attribute_value = attribute_value.rstrip(',')
+            AllocationAttribute.objects.create(
+                allocation=new_allocation,
+                allocation_attribute_type_id=slurm_specs_attribute_type.pk,
+                value=attribute_value
+            )
+            return new_allocation
+
+        partitions = slurm_list_partitions()
+        current_cluster_resource = Resource.objects.filter(
+            resourceattribute__value=self.name, resource_type__name='Cluster').first()
+        if not current_cluster_resource:
+            logger.debug("Current cluster resource not found", True)
+            return
+        partition_resourcetype = ResourceType.objects.get(name='Cluster Partition')
+        slurm_specs_resourceattribute_type = ResourceAttributeType.objects.get(name=SLURM_SPECS_ATTRIBUTE_NAME)
+        for partition in partitions:
+            partition_resource, created = Resource.objects.get_or_create(
+                name=partition['PartitionName'],
+                parent_resource=current_cluster_resource,
+                resource_type=partition_resourcetype,
+            )
+            partition_resource.resourceattribute_set.update_or_create(
+                resource_attribute_type=slurm_specs_resourceattribute_type,
+                defaults={'value': partition['TRESBillingWeights']}
+            )
+            partition_project_names = self.id_partition_projects(partition)
+            # Retrieve all projects that have the same name as the resource accounts
+            matching_projects = Project.objects.filter(title__in=partition_project_names)
+            # look for allocations belonging to projects outside of the
+            # partition_project_names that have this resource
+            matching_allocations = Allocation.objects.filter(resources=partition_resource)
+            for allocation in matching_allocations:
+                if allocation.project not in matching_projects:
+                    allocation.resources.remove(partition_resource)
+
+            allocations_missing_partition = Allocation.objects.filter(
+                    project__in=matching_projects, resources=current_cluster_resource
+            ).exclude(resources=partition_resource)
+            for allocation in allocations_missing_partition:
+                allocation.resources.add(partition_resource)
+
+            projects_without_allocations = matching_projects.exclude(
+                allocation__resources=partition_resource
+            )
+            logger.info(f'projects without cluster allocations that are on a partition access list: {projects_without_allocations}')
+            # for project in projects_without_allocations:
+            #     new_allocation = create_allocation_attributes(
+            #             project, 'slurm_sync', 1, current_cluster_resource
+            #     )
+            #     new_allocation.resources.add(partition_resource)
+            #     new_allocation.save()
+            #     self.add_allocation(new_allocation)
+
+    def pull_sshare_data(self, file=None):
+        """append sshare data to accounts and users"""
+        def map_shares(share_info):
+            return {
+                'RawShares': share_info['RawShares'] or 0, 'NormShares': share_info['NormShares'] or 0,
+                'RawUsage': share_info['RawUsage'] or 0, 'FairShare': share_info['FairShare'] or 0
+            }
+
+        if not file:
+            share_info = slurm_collect_shares(cluster=self.name)
+        else:
+            with open(file, 'r') as share_file:
+                share_data = list(share_file)
+                share_info = slurm_fixed_width_lines_to_dict(share_data)
+        # select all share lines with no user val, pin to SlurmAccounts.
+        accounts_share = [share for share in share_info if not share['User']]
+        # pair accounts_share with SlurmAccounts
+        for acct_share in accounts_share:
             account = next(
                 (a for a in self.accounts.values() if a.name == acct_share['Account']), None
             )
             if not account:
-                print(f"no account for {acct_share}")
+                logger.debug(f" No account for {acct_share}")
                 continue
             user_shares = [
-                d for d in fairshares if d['Account'] == acct_share['Account'] and d['User']
+                d for d in share_info if d['Account'] == acct_share['Account'] and d['User']
             ]
             for user_share in user_shares:
                 user = next((u for u in account.users.values() if u.name == user_share['User']), None)
                 if not user:
-                    print(f"no user for {user_share}")
+                    logger.debug(f" No user for {user_share}")
                     continue
-                if not hasattr(user, 'fairshare_dict'):
-                    user.fairshare_dict = user_share
+                if not hasattr(user, 'share_dict'):
+                    user.share_dict = map_shares(user_share)
                 else:
-                    print("OVERWRITE BLOCKED:", user, user.fairshare_dict, user_share)
-            if not hasattr(account, 'fairshare_dict'):
-                account.fairshare_dict = acct_share
+                    print("OVERWRITE BLOCKED:", user, user.share_dict, user_share)
+            if not hasattr(account, 'share_dict'):
+                account.share_dict = map_shares(acct_share)
             else:
-                print("OVERWRITE BLOCKED:", account, account.fairshare_dict, acct_share)
+                print("OVERWRITE BLOCKED:", account, account.share_dict, acct_share)
+        logger.debug(f"\x1b[33;20m  Cluster '{self.name}' accounts and users share Info loaded \x1b[0m")
 
     def pull_usage(self):
         """append sreport usage data to accounts and users"""
@@ -212,7 +338,6 @@ class SlurmCluster(SlurmBase):
             else:
                 print("OVERWRITE BLOCKED:", account, account.usage_dict, acct_usage)
 
-
     def write(self, out):
         self._write(
             out,
@@ -230,9 +355,6 @@ class SlurmCluster(SlurmBase):
         for account in self.accounts.values():
             if account.name == 'root':
                 continue
-            account.write(out)
-
-        for account in self.accounts.values():
             account.write_users(out)
 
 
@@ -288,10 +410,13 @@ class SlurmAccount(SlurmBase):
 
     def write(self, out):
         if self.name != 'root':
-            self._write(out, f"Account - '{self.name}':{self.format_specs()}\n")
+            self._write(out, f"Account - '{self.name}': Specs {self.format_specs()} - Share {self.format_share()}\n")
+        else:
+            self._write(out, f"Parent - '{self.name}'\n")
 
     def write_users(self, out):
-        self._write(out, f"Parent - '{self.name}'\n")
+        # self._write(out, f"Parent - '{self.name}'\n")
+        self.write(out)
         for user in self.users.values():
             user.write(out)
 
@@ -315,4 +440,4 @@ class SlurmUser(SlurmBase):
         return SlurmUser(name, specs=parts[1:])
 
     def write(self, out):
-        self._write(out, f"User - '{self.name}':{self.format_specs()}\n")
+        self._write(out, f"   User - {self.name} - Specs: {self.format_specs()} - Share: {self.format_share()}\n")

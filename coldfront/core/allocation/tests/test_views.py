@@ -78,7 +78,7 @@ class AllocationListViewTest(AllocationViewBaseTest):
         ]
         for allocation in cls.additional_allocations:
             allocation.resources.add(Resource.objects.get(name='holylfs09/tier1'))
-        cls.nonproj_nonallocation_user = UserFactory(username='rdrake')
+        cls.nonproj_nonallocationuser = UserFactory(username='rdrake')
 
     def test_allocation_list_access_admin(self):
         """Confirm that AllocationList access control works for admin"""
@@ -91,16 +91,25 @@ class AllocationListViewTest(AllocationViewBaseTest):
         """Confirm that AllocationList access control works for pi
         When show_all_allocations=on, pi still sees only allocations belonging
         to the projects they are pi for.
+        PI sees all Allocations belonging to their Project, even if they're not
+        AllocationUsers
         """
-        # confirm that show_all_allocations=on enables admin to view all allocations
         self.client.force_login(self.pi_user, backend=BACKEND)
         response = self.client.get("/allocation/?show_all_allocations=on")
         self.assertEqual(len(response.context['item_list']), 2)
+        # PI is not an allocationuser in either allocation but can still see them
+        for allocation in response.context['item_list']:
+            allocation_user_exists = allocation.allocationuser_set.filter(
+                user=self.pi_user
+            ).exists()
+            self.assertFalse(allocation_user_exists, 
+                            "User should not be connected to this allocation")
 
     def test_allocation_list_access_manager(self):
         """Confirm that AllocationList access control works for managers
         When show_all_allocations=on, manager still sees only allocations belonging
         to the projects they are manager for.
+        Managers see all Project Allocations even if not AllocationUsers.
         """
         # confirm that show_all_allocations=on enables admin to view all allocations
         self.client.force_login(self.proj_datamanager, backend=BACKEND)
@@ -110,34 +119,51 @@ class AllocationListViewTest(AllocationViewBaseTest):
         self.client.force_login(self.proj_accessmanager, backend=BACKEND)
         response = self.client.get("/allocation/?show_all_allocations=on")
         self.assertEqual(len(response.context['item_list']), 2)
+        for allocation in response.context['item_list']:
+            allocation_user_exists = allocation.allocationuser_set.filter(
+                user__in=[self.proj_datamanager, self.proj_accessmanager]
+            ).exists()
+            self.assertFalse(allocation_user_exists, 
+                            "User should not be connected to this allocation")
 
-    def test_allocation_list_access_user(self):
+    def test_allocation_list_access_proj_allocationuser(self):
         """Confirm that AllocationList access control works for non-pi users
         When show_all_allocations=on, users see only the allocations they
         are AllocationUsers of.
         """
         # confirm that show_all_allocations=on is accessible to non-admin but
         # contains only the user's allocations
-        self.client.force_login(self.proj_allocation_user, backend=BACKEND)
+        self.client.force_login(self.proj_allocationuser, backend=BACKEND)
         response = self.client.get("/allocation/")
         self.assertEqual(len(response.context['item_list']), 2)
         response = self.client.get("/allocation/?show_all_allocations=on")
         self.assertEqual(len(response.context['item_list']), 2)
 
-        # allocation user not belonging to project can see allocation
-        self.client.force_login(self.nonproj_allocation_user, backend=BACKEND)
+    def test_allocation_list_access_nonproj_allocationuser(self):
+        """non-ProjectUser AllocationUser can see all Allocations they belong to
+        """
+        self.client.force_login(self.nonproj_allocationuser, backend=BACKEND)
         response = self.client.get("/allocation/")
         self.assertEqual(len(response.context['item_list']), 2)
         response = self.client.get("/allocation/?show_all_allocations=on")
         self.assertEqual(len(response.context['item_list']), 2)
 
-        # nonallocation user belonging to project can see allocation
-        self.client.force_login(self.proj_nonallocation_user, backend=BACKEND)
+    def test_allocation_list_access_proj_nonallocationuser(self):
+        """
+        non-AllocationUser ProjectUser can see storage but not cluster Allocations
+        """
+        self.client.force_login(self.proj_nonallocationuser, backend=BACKEND)
         response = self.client.get("/allocation/?show_all_allocations=on")
-        self.assertEqual(len(response.context['item_list']), 2)
+        self.assertEqual(len(response.context['item_list']), 1)
+        # confirm that resource_type of allocation is Storage
+        self.assertEqual(
+            response.context['item_list'][0].resources.first().resource_type.name, 'Storage')
 
+    def test_allocation_list_access_nonproj_nonallocationuser(self):
+        """non-ProjectUser non-AllocationUser User can see no Allocations
+        """
         # nonallocation user not belonging to project can't see allocation
-        self.client.force_login(self.nonproj_nonallocation_user, backend=BACKEND)
+        self.client.force_login(self.nonproj_nonallocationuser, backend=BACKEND)
         response = self.client.get("/allocation/?show_all_allocations=on")
         self.assertEqual(len(response.context['item_list']), 0)
 
@@ -146,7 +172,7 @@ class AllocationListViewTest(AllocationViewBaseTest):
         self.client.force_login(self.admin_user, backend=BACKEND)
         base_url = '/allocation/?show_all_allocations=on'
         response = self.client.get(
-            base_url + f'&resource_name={self.proj_allocation.resources.first().pk}'
+            base_url + f'&resource_name={self.storage_allocation.resources.first().pk}'
         )
         self.assertEqual(len(response.context['item_list']), 1)
 
@@ -157,7 +183,7 @@ class AllocationChangeDetailViewTest(AllocationViewBaseTest):
     def setUp(self):
         """create an AllocationChangeRequest to test"""
         self.client.force_login(self.admin_user, backend=BACKEND)
-        AllocationChangeRequestFactory(id=2, allocation=self.proj_allocation)
+        AllocationChangeRequestFactory(id=2, allocation=self.storage_allocation)
         self.url = reverse('allocation-change-detail', kwargs={'pk': 2})
 
     def test_allocationchangedetailview_access(self):
@@ -183,7 +209,7 @@ class AllocationChangeDetailViewTest(AllocationViewBaseTest):
     def test_allocationchangedetailview_post_permissions_normaluser(self):
         """normal user can't post changes"""
         param = {'action': 'deny'}
-        self.client.force_login(self.proj_allocation_user, backend=BACKEND)
+        self.client.force_login(self.proj_allocationuser, backend=BACKEND)
         self.client.post(self.url, param, follow=True)
         alloc_change_req = AllocationChangeRequest.objects.get(pk=2)
         self.assertNotEqual(alloc_change_req.status_id, 3)
@@ -225,7 +251,7 @@ class AllocationChangeViewTest(AllocationViewBaseTest):
         """Test get request"""
         self.allocation_access_tstbase(self.url)
         utils.test_user_can_access(self, self.pi_user, self.url)  # Manager can access
-        utils.test_user_cannot_access(self, self.proj_allocation_user, self.url)  # user can't access
+        utils.test_user_cannot_access(self, self.proj_allocationuser, self.url)  # user can't access
 
     def test_allocationchangeview_post_permissions(self):
         """Test post request"""
@@ -238,7 +264,7 @@ class AllocationChangeViewTest(AllocationViewBaseTest):
         response = self.client.post(self.url, data=self.post_data, follow=True)
         self.assertContains(response, self.success_msg)
 
-        self.client.force_login(self.proj_allocation_user, backend=BACKEND)
+        self.client.force_login(self.proj_allocationuser, backend=BACKEND)
         response = self.client.post(self.url, data=self.post_data, follow=True)
         self.assertEqual(response.status_code, 403)
 
@@ -279,14 +305,14 @@ class AllocationDetailViewTest(AllocationViewBaseTest):
     """Tests for AllocationDetailView"""
 
     def setUp(self):
-        self.url = f'/allocation/{self.proj_allocation.pk}/'
+        self.url = f'/allocation/{self.storage_allocation.pk}/'
 
     def test_allocation_detail_access(self):
         self.allocation_access_tstbase(self.url)
-        # pi, project nonallocation user, nonproj_allocation_user can access
+        # pi, project nonallocation user, nonproj_allocationuser can access
         utils.test_user_can_access(self, self.pi_user, self.url)
-        utils.test_user_can_access(self, self.proj_nonallocation_user, self.url)
-        utils.test_user_can_access(self, self.nonproj_allocation_user, self.url)
+        utils.test_user_can_access(self, self.proj_nonallocationuser, self.url)
+        utils.test_user_can_access(self, self.nonproj_allocationuser, self.url)
         # check access for allocation user with "Removed" status
 
     def test_allocation_detail_template_value_render(self):
@@ -310,7 +336,7 @@ class AllocationDetailViewTest(AllocationViewBaseTest):
         utils.page_does_not_contain_for_user(
             self, self.proj_accessmanager, self.url, search_text)
         utils.page_does_not_contain_for_user(
-            self, self.proj_allocation_user, self.url, search_text)
+            self, self.proj_allocationuser, self.url, search_text)
 
     def test_allocationattribute_button_visibility(self):
         """Test visibility of "Add Attribute" button for different user types"""
@@ -324,15 +350,15 @@ class AllocationDetailViewTest(AllocationViewBaseTest):
         utils.page_does_not_contain_for_user(self, self.pi_user, self.url, delete_text)
         # allocation user
         utils.page_does_not_contain_for_user(
-            self, self.proj_allocation_user, self.url, add_text
+            self, self.proj_allocationuser, self.url, add_text
         )
         utils.page_does_not_contain_for_user(
-            self, self.proj_allocation_user, self.url, delete_text
+            self, self.proj_allocationuser, self.url, delete_text
         )
 
-    def test_allocationuser_button_visibility(self):
+    def test_storage_allocationuser_button_visibility(self):
         """Test visibility of "Add/Remove Users" buttons for different user types"""
-        # we're removing these buttons for everybody, to avoid confusion re: procedure for user addition/removal
+        # these buttons will only be available for compute allocations
         # admin can't see add/remove users buttons
         utils.page_does_not_contain_for_user(
             self, self.admin_user, self.url, 'Add Users'
@@ -347,10 +373,10 @@ class AllocationDetailViewTest(AllocationViewBaseTest):
         )
         # allocation user can't see add/remove users buttons
         utils.page_does_not_contain_for_user(
-            self, self.proj_allocation_user, self.url, 'Add Users'
+            self, self.proj_allocationuser, self.url, 'Add Users'
         )
         utils.page_does_not_contain_for_user(
-            self, self.proj_allocation_user, self.url, 'Remove Users'
+            self, self.proj_allocationuser, self.url, 'Remove Users'
         )
 
 
@@ -409,7 +435,7 @@ class AllocationCreateViewTest(AllocationViewBaseTest):
         utils.test_user_can_access(self, self.pi_user, self.url)
         utils.test_user_can_access(self, self.proj_datamanager, self.url)
         utils.test_user_cannot_access(self, self.proj_accessmanager, self.url)
-        utils.test_user_cannot_access(self, self.proj_nonallocation_user, self.url)
+        utils.test_user_cannot_access(self, self.proj_nonallocationuser, self.url)
 
     def test_allocationcreateview_post(self):
         """Test POST to the AllocationCreateView"""
@@ -474,23 +500,25 @@ class AllocationAddUsersViewTest(AllocationViewBaseTest):
     """Tests for the AllocationAddUsersView"""
 
     def setUp(self):
-        self.url = f'/allocation/{self.proj_allocation.pk}/add-users'
+        self.compute_url = f'/allocation/{self.cluster_allocation.pk}/add-users'
 
     def test_allocationaddusersview_access(self):
-        self.allocation_access_tstbase(self.url)
-        utils.test_user_cannot_access(self, self.pi_user, self.url)
+        self.allocation_access_tstbase(self.compute_url)
+        utils.test_user_can_access(self, self.pi_user, self.compute_url)
+        utils.test_user_cannot_access(self, self.proj_allocationuser, self.compute_url)
 
 
 class AllocationRemoveUsersViewTest(AllocationViewBaseTest):
     """Tests for the AllocationRemoveUsersView"""
 
     def setUp(self):
-        self.url = f'/allocation/{self.proj_allocation.pk}/remove-users'
+        self.url = f'/allocation/{self.storage_allocation.pk}/remove-users'
 
     def test_allocationremoveusersview_access(self):
-        self.allocation_access_tstbase(self.url)
-        utils.test_user_cannot_access(self, self.pi_user, self.url)
-
+        """No storage allocations have this view available"""
+        self.client.force_login(self.admin_user, backend=BACKEND)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 302)
 
 class AllocationRequestListViewTest(AllocationViewBaseTest):
     """Tests for the AllocationRequestListView"""
@@ -523,7 +551,7 @@ class AllocationNoteCreateViewTest(AllocationViewBaseTest):
     """Tests for the AllocationNoteCreateView"""
 
     def setUp(self):
-        self.url = f'/allocation/{self.proj_allocation.pk}/allocationnote/add'
+        self.url = f'/allocation/{self.storage_allocation.pk}/allocationnote/add'
 
     def test_allocationnotecreateview_access(self):
         self.allocation_access_tstbase(self.url)
@@ -533,12 +561,12 @@ class AllocationNoteUpdateViewTest(AllocationViewBaseTest):
     """Tests for the AllocationNoteUpdateView"""
 
     def setUp(self):
-        self.proj_allocation_note = AllocationUserNote.objects.create(
-            allocation=self.proj_allocation,
+        self.storage_allocation_note = AllocationUserNote.objects.create(
+            allocation=self.storage_allocation,
             note='test note',
             author=self.admin_user,
         )
-        self.url = f'/allocation/allocation-note/{self.proj_allocation_note.pk}/update'
+        self.url = f'/allocation/allocation-note/{self.storage_allocation_note.pk}/update'
 
     def test_allocationnoteupdateview_access(self):
         self.allocation_access_tstbase(self.url)

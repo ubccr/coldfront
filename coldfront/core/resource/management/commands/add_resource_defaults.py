@@ -1,10 +1,9 @@
 from django.core.management.base import BaseCommand
-
+from django.db.utils import IntegrityError
 from coldfront.core.resource.models import (
     Resource,
     ResourceType,
     AttributeType,
-    ResourceAttribute,
     ResourceAttributeType,
 )
 
@@ -16,7 +15,8 @@ class Command(BaseCommand):
 
         for attribute_type in (
             'Active/Inactive', 'Date', 'Int',
-            'Public/Private', 'Text', 'Yes/No', 'Attribute Expanded Text',
+            'Public/Private', 'Text', 'Yes/No',
+            'Attribute Expanded Text',
             'Float',
         ):
             AttributeType.objects.get_or_create(name=attribute_type)
@@ -31,7 +31,7 @@ class Command(BaseCommand):
             # ('Core Count', 'Int'),
             # ('expiry_time', 'Int'),
             # ('fee_applies', 'Yes/No'),
-            # ('Node Count', 'Int'),
+            ('Node Count', 'Int'),
             # ('Owner', 'Text'),
             ('quantity_default_value', 'Int'),
             ('quantity_label', 'Text'),
@@ -40,8 +40,8 @@ class Command(BaseCommand):
             # ('OnDemand','Yes/No'),
             # ('ServiceEnd', 'Date'),
             # ('ServiceStart', 'Date'),
-            # ('slurm_cluster', 'Text'),
-            # ('slurm_specs', 'Attribute Expanded Text'),
+            ('slurm_cluster', 'Text'),
+            ('slurm_specs', 'Attribute Expanded Text'),
             # ('slurm_specs_attriblist', 'Text'),
             # ('Status', 'Public/Private'),
             # ('Vendor', 'Text'),
@@ -51,9 +51,9 @@ class Command(BaseCommand):
             # ('InstallDate', 'Date'),
             # ('WarrantyExpirationDate', 'Date'),
         ):
-            ResourceAttributeType.objects.get_or_create(
+            ResourceAttributeType.objects.update_or_create(
                 name=resource_attribute_type,
-                attribute_type=AttributeType.objects.get(name=attribute_type)
+                defaults={"attribute_type": AttributeType.objects.get(name=attribute_type)}
             )
 
         for resource_type, description in (
@@ -61,14 +61,16 @@ class Command(BaseCommand):
             ('Storage Tier', 'Storage Tier',),
             ('Cloud', 'Cloud Computing'),
             ('Cluster', 'Cluster servers'),
-            # ('Cluster Partition', 'Cluster Partition '),
+            ('Cluster Partition', 'Cluster Partition'),
             # ('Compute Node', 'Compute Node'),
             # ('Server', 'Extra servers providing various services'),
             # ('Software License', 'Software license purchased by users'),
             # ('Storage', 'NAS storage'),
         ):
             ResourceType.objects.get_or_create(
-                name=resource_type, description=description)
+                name=resource_type, description=description
+            )
+
 
         storage_tier = ResourceType.objects.get(name='Storage Tier')
         storage = ResourceType.objects.get(name='Storage')
@@ -126,6 +128,7 @@ class Command(BaseCommand):
                 resource_attribute_type=default_value_type,
                 defaults={'value': default_value}
             )
+
             resource_obj.resourceattribute_set.update_or_create(
                 resource_attribute_type=default_value_type,
                 defaults={'value': default_value}

@@ -342,14 +342,18 @@ def setup_models(test_case):
         ProjectStatusChoiceFactory(name=status)
     for attribute_type in ['Date', 'Int', 'Float', 'Text', 'Yes/No']:
         AAttributeTypeFactory(name=attribute_type)
+    for status_choice in ['Active','Removed']:
+        AllocationUserStatusChoiceFactory(name=status_choice)
     for status in ['Pending', 'Approved', 'Denied']:
         AllocationChangeStatusChoiceFactory(name=status)
-    for resource_type in ['Storage', 'Compute']:
+    for resource_type in ['Storage', 'Cluster', 'Cluster Partition', 'Compute Node']:
         ResourceTypeFactory(name=resource_type)
     for resource, r_id, rtype in [
         ('holylfs10/tier1', 1, 'Storage'), 
         ('holylfs09/tier1', 2, 'Storage'),
-        ('Test Cluster', 3, 'Cluster')
+        ('Test Cluster', 3, 'Cluster'),
+        # ('Test Partition', 4, 'Cluster Partition'),
+        # ('Test Node', 5, 'Compute Node')
     ]:
         ResourceFactory(name=resource, id=r_id, resource_type__name=rtype)
 
@@ -362,6 +366,9 @@ def setup_models(test_case):
         ('High Security', 'Yes/No', False, False),
         ('DUA', 'Yes/No', False, False),
         ('External Sharing', 'Yes/No', False, False),
+        ('slurm_specs', 'Text', False, False),
+        ('Core Usage (Hours)', 'Int', True, False),
+        ('EffectvUsage', 'Int', True, False),
         ('RequiresPayment', 'Yes/No', False, False),
     ):
         AllocationAttributeTypeFactory(
@@ -376,40 +383,50 @@ def setup_models(test_case):
     )
     # pi is a project admin but not an AllocationUser.
     test_case.pi_user = UserFactory(username='sdpoisson')
-    test_case.proj_allocation_user = UserFactory(username='ljbortkiewicz')
+    test_case.proj_allocationuser = UserFactory(username='ljbortkiewicz')
     test_case.proj_generalmanager = UserFactory(username='tedison')
     test_case.proj_datamanager = UserFactory(username='ajayer')
     test_case.proj_accessmanager = UserFactory(username='mdavis')
-    test_case.proj_nonallocation_user = UserFactory(username='wkohn')
-    test_case.nonproj_allocation_user = UserFactory(username='jsaul')
+    test_case.proj_nonallocationuser = UserFactory(username='wkohn')
+    test_case.nonproj_allocationuser = UserFactory(username='jsaul')
     test_case.project = ProjectFactory(pi=test_case.pi_user, title="poisson_lab")
+    # cluster allocation users
+    test_case.cluster_allocationuser = UserFactory(username='jdoe')
+    test_case.nonproj_cluster_allocationuser = UserFactory(username='jdoe2')
+
+    # resources
+    test_case.resource_allowed_user = UserFactory(username='iberlin')
+    test_case.cluster_resource = Resource.objects.get(name='Test Cluster')
+    test_case.cluster_resource.allowed_users.add(test_case.resource_allowed_user)
+    test_case.storage_resource = Resource.objects.get(name='holylfs10/tier1')
+    test_case.storage_resource.allowed_users.add(test_case.resource_allowed_user)
 
     # allocations
     for alloc in ['storage test', 'compute test']:
         AllocationFactory(project=test_case.project, justification=alloc)
-    test_case.proj_allocation = Allocation.objects.get(justification='storage test')
-    test_case.proj_allocation.resources.add(Resource.objects.get(name='holylfs10/tier1'))
+    test_case.storage_allocation = Allocation.objects.get(justification='storage test')
+    test_case.storage_allocation.resources.add(test_case.storage_resource)
 
     test_case.cluster_allocation = Allocation.objects.get(justification='compute test')
-    test_case.cluster_allocation.resources.add(Resource.objects.get(name='Test Cluster'))
+    test_case.cluster_allocation.resources.add(test_case.cluster_resource)
 
     # make a quota_bytes allocation attribute
     allocation_quota = AllocationQuotaFactory(
-        allocation=test_case.proj_allocation, value=109951162777600
+        allocation=test_case.storage_allocation, value=109951162777600
     )
     AllocationAttributeUsageFactory(
         allocation_attribute=allocation_quota, value=10995116277760
     )
     # make a quota TB allocation attribute
     allocation_quota_tb = AllocationAttributeFactory(
-        allocation=test_case.proj_allocation,
-        value = 100,
+        allocation=test_case.storage_allocation,
+        value=100,
         allocation_attribute_type=quota_tb_type,
     )
     AllocationAttributeUsageFactory(allocation_attribute=allocation_quota_tb, value=10)
     # relationships
-    for user in [test_case.proj_allocation_user, test_case.nonproj_allocation_user]:
-        AllocationUserFactory(user=user, allocation=test_case.proj_allocation)
+    for user in [test_case.proj_allocationuser, test_case.nonproj_allocationuser]:
+        AllocationUserFactory(user=user, allocation=test_case.storage_allocation)
         AllocationUserFactory(user=user, allocation=test_case.cluster_allocation)
 
     for user, role in {
@@ -417,11 +434,11 @@ def setup_models(test_case):
         test_case.proj_generalmanager: 'General Manager',
         test_case.proj_datamanager: 'Storage Manager',
         test_case.proj_accessmanager: 'Access Manager',
-        test_case.proj_nonallocation_user: 'User',
+        test_case.proj_nonallocationuser: 'User',
     }.items():
         ProjectUserFactory(
             user=user, project=test_case.project, role=ProjectUserRoleChoiceFactory(name=role)
         )
 
-    test_case.npu = ProjectUserFactory(user=test_case.proj_allocation_user, project=test_case.project)
+    test_case.npu = ProjectUserFactory(user=test_case.proj_allocationuser, project=test_case.project)
     test_case.normal_projuser = test_case.npu.user

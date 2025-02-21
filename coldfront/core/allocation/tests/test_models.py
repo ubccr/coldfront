@@ -22,15 +22,15 @@ class AllocationModelTests(TestCase):
     def test_allocation_str(self):
         """test that allocation str method returns correct string"""
         allocation_str = '%s (%s)' % (
-            self.proj_allocation.get_parent_resource.name,
-            self.proj_allocation.project.pi
+            self.storage_allocation.get_parent_resource.name,
+            self.storage_allocation.project.pi
         )
-        self.assertEqual(str(self.proj_allocation), allocation_str)
+        self.assertEqual(str(self.storage_allocation), allocation_str)
 
 
     def test_allocation_usage_property(self):
         """Test that allocation usage property displays correctly"""
-        self.assertEqual(self.proj_allocation.usage, 10)
+        self.assertEqual(self.storage_allocation.usage, 10)
 
     def test_allocation_usage_property_na(self):
         """Create allocation with no usage. Usage property should return None"""
@@ -45,7 +45,7 @@ class AllocationAttributeModelTests(TestCase):
     def setUpTestData(cls):
         """Set up allocationattribute to test model properties and methods"""
         setup_models(cls)
-        cls.allocationattribute = cls.proj_allocation.allocationattribute_set.get(
+        cls.allocationattribute = cls.storage_allocation.allocationattribute_set.get(
             allocation_attribute_type__name='Storage Quota (TB)'
         )
 

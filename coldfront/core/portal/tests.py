@@ -27,6 +27,7 @@ class CenterSummaryTest(PortalViewTest):
         response = self.client.get('/center-summary')
         self.assertEqual(response.status_code, 200)
 
+
 class HomePageTest(PortalViewTest):
 
     def test_pi_home_page(self):
@@ -44,13 +45,13 @@ class HomePageTest(PortalViewTest):
         self.assertNotContains(response, 'Requests')
         # When PI has requests, the requests table is visible
         AllocationChangeRequest.objects.create(
-            allocation=self.proj_allocation,
+            allocation=self.storage_allocation,
             status=AllocationChangeStatusChoice.objects.get(name='Pending')
             )
         response = self.client.get('')
         self.assertContains(response, 'Requests')
         # normal user sees no requests even when one exists
-        response = utils.login_and_get_page(self.client, self.proj_allocation_user, '')
+        response = utils.login_and_get_page(self.client, self.proj_allocationuser, '')
         self.assertNotContains(response, 'Requests')
 
     def test_home_page_allocations_display(self):
@@ -61,13 +62,13 @@ class HomePageTest(PortalViewTest):
         self.assertEqual(response.context['allocation_list'].count(), 2)
         # Storage Manager sees allocation
         response = utils.login_and_get_page(self.client, self.proj_datamanager, '')
-        self.assertEqual(response.context['allocation_list'].count(), 2)
+        self.assertEqual(response.context['allocation_list'].count(), 1)
         # project user not belonging to allocation cannot see allocation
-        response = utils.login_and_get_page(self.client, self.proj_nonallocation_user, '')
+        response = utils.login_and_get_page(self.client, self.proj_nonallocationuser, '')
         self.assertEqual(response.context['allocation_list'].count(), 0)
-        # allocation user not belonging to project cannot see allocation
-        response = utils.login_and_get_page(self.client, self.nonproj_allocation_user, '')
-        self.assertEqual(response.context['allocation_list'].count(), 0)
+        # allocation user not belonging to project cannot see storage allocation, can see cluster allocation
+        response = utils.login_and_get_page(self.client, self.nonproj_allocationuser, '')
+        self.assertEqual(response.context['allocation_list'].count(), 1)
 
     def test_home_page_projects_display(self):
         """check that projects display properly on the home page
@@ -79,8 +80,8 @@ class HomePageTest(PortalViewTest):
         response = utils.login_and_get_page(self.client, self.proj_datamanager, '')
         self.assertEqual(response.context['project_list'].count(), 1)
         # project user can see project
-        response = utils.login_and_get_page(self.client, self.proj_allocation_user, '')
+        response = utils.login_and_get_page(self.client, self.proj_allocationuser, '')
         self.assertEqual(response.context['project_list'].count(), 1)
-        # allocation user not belonging to project cannot see project
-        response = utils.login_and_get_page(self.client, self.nonproj_allocation_user, '')
+        # allocationuser not belonging to project cannot see project
+        response = utils.login_and_get_page(self.client, self.nonproj_allocationuser, '')
         self.assertEqual(response.context['project_list'].count(), 0)

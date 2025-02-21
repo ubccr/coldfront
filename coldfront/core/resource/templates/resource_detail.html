@@ -2,6 +2,7 @@
 {% load crispy_forms_tags %}
 {% load fasrc_tags %}
 {% load static %}
+{% load mathfilters %}
 
 
 {% block title %}
@@ -19,74 +20,74 @@ Resource Detail
 
 <div class="card mb-3">
   <div class="card-header">
-      <h3><i class="fas fa-list" aria-hidden="true"></i> Resource Information</h3>
+    <h3><i class="fas fa-list" aria-hidden="true"></i> Resource Information</h3>
   </div>
 
   <div class="card-body">
-      {% csrf_token %}
-      <div class="table-responsive">
-        <table class="table table-bordered table-sm">
-          <tr>
-            <th scope="row" class="text-nowrap">Name:</th>
-            <td>{{ resource.name }}</td>
-          </tr>
-          <tr>
-            <th scope="row" class="text-nowrap">Description:</th>
-            <td>{{ resource.description }}</td>
-          </tr>
-          <tr>
-            <th scope="row" class="text-nowrap">Resource Type:</th>
-            <td>{{ resource.resource_type }}</td>
-          </tr>
-          <tr>
-            <th scope="row" class="text-nowrap">Parent Resource:</th>
-            <td>
-              {% if resource.parent_resource %}
-                <a href="{% url 'resource-detail' resource.parent_resource.pk %}">
-                  {{ resource.parent_resource }}
-                </a>
-              {% else %}
+    {% csrf_token %}
+    <div class="table-responsive">
+      <table class="table table-bordered table-sm">
+        <tr>
+          <th scope="row" class="text-nowrap">Name:</th>
+          <td>{{ resource.name }}</td>
+        </tr>
+        <tr>
+          <th scope="row" class="text-nowrap">Description:</th>
+          <td>{{ resource.description }}</td>
+        </tr>
+        <tr>
+          <th scope="row" class="text-nowrap">Resource Type:</th>
+          <td>{{ resource.resource_type }}</td>
+        </tr>
+        <tr>
+          <th scope="row" class="text-nowrap">Parent Resource:</th>
+          <td>
+            {% if resource.parent_resource %}
+              <a href="{% url 'resource-detail' resource.parent_resource.pk %}">
                 {{ resource.parent_resource }}
-              {% endif %}
-            </td>
-          </tr>
-          <tr>
-            <th scope="row" class="text-nowrap">Linked Resources:</th>
-            <td>
+              </a>
+            {% else %}
+              {{ resource.parent_resource }}
+            {% endif %}
+          </td>
+        </tr>
+        <tr>
+          <th scope="row" class="text-nowrap">Linked Resources:</th>
+          <td>
             {% if resource.linked_resources.all %}
               {% for resource in resource.linked_resources.all %}
-                <a href="{% url 'resource-detail' resource.pk %}">{{ resource }}</a> <br>
+                <a href="{% url 'resource-detail' resource.pk %}">{{ resource }}</a><br>
               {% endfor %}
             {% else %}
               None
             {% endif %}
-            </td>
-          </tr>
-          <tr>
-            <th scope="row" class="text-nowrap">Public/Private:</th>
-            <td>
-              {% if resource.is_public %}
-                Public
-              {% else %}
-                Private
-              {% endif %}
-            </td>
-          </tr>
-        </table>
-      </div>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row" class="text-nowrap">Public/Private:</th>
+          <td>
+            {% if resource.is_public %}
+              Public
+            {% else %}
+              Private
+            {% endif %}
+          </td>
+        </tr>
+      </table>
+    </div>
   </div>
 </div>
 
 <!-- Start Storage Report -->
 {% if resource.resource_type.name == "Storage" %}
-<div class="card mb-3">
-  <div class="card-header">
-    <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Storage Report</h3>
+  <div class="card mb-3">
+    <div class="card-header">
+      <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Storage Report</h3>
+    </div>
+    <div class="card-body">
+      {% resource_summary_table resource %}
+    </div>
   </div>
-  <div class="card-body">
-    {% resource_summary_table resource %}
-  </div>
-</div>
 {% endif %}
 
 <!-- Start Resource Attributes -->
@@ -117,15 +118,136 @@ Resource Detail
             </thead>
             <tbody>
               {% for attribute in attributes %}
-                  <tr>
-                    <td>{{attribute.resource_attribute_type.name}}</td>
-                    <td>{{attribute.value}}</td>
-                  </tr>
+                <tr>
+                  <td>{{attribute.resource_attribute_type.name}}</td>
+                  <td>{{attribute.value}}</td>
+                </tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
       {% endif %}
+    </div>
+  </div>
+{% endif %}
+
+<!-- Start Resource Admins -->
+<div class="card mb-3">
+  <div class="card-header">
+    <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Resource Administrators</h3>
+    <span class="badge badge-secondary">{{resource_admin_list|length}}</span>
+  </div>
+
+  <div class="card-body">
+    {% if resource_admin_list|length > 0 %}
+      <div class="table-responsive">
+        <table id="resource_admin_table" class="table table-striped table-bordered">
+          <thead>
+            <tr>
+              <th scope="col">Username</th>
+              <th scope="col">Name</th>
+              <th scope="col">Email</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for user in resource_admin_list %}
+              <tr>
+                <td>{{user.username}}</td>
+                <td>{{user.full_name}}</td>
+                <td>{{user.email}}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="alert alert-info" role="alert">
+        <i class="fas fa-info-circle" aria-hidden="true"></i>
+        There are no Resource Administrators to display.
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Start Resource Allocations -->
+{% if user_is_manager and 'Cluster' in resource.resource_type.name %}
+  <div class="card mb-3">
+    <div class="card-header">
+      <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Resource Allocations</h3>
+      <span class="badge badge-secondary">{{ allocations.count }}</span>
+      <!--show user_sync_dt on the right side of the div header-->
+      {# {% if user_sync_dt %}#}
+      {# <span class="float-right">Last Sync: {{user_sync_dt}}</span>#}
+      {# {% endif %}#}
+      <div class="float-right">
+        <a class="btn btn-danger" href="{% url 'resource-allocations-edit' resource.pk %}" role="button">
+          <i class="fas fa-edit" aria-hidden="true"></i> Edit Resource Allocations
+        </a>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <div class="container mb-3 mt-3">
+          <!-- <table  class="table table-hover mydatatable" > -->
+          <table id="mydatatable" class="table table-striped table-bordered" filter="off">
+            <thead>
+              <tr>
+                <th scope="col">Project</th>
+                <th scope="col">Users</th>
+                <th scope="col">CPU Hours</th>
+                <th scope="col">Percent Usage</th>
+                <th scope="col">RawShare</th>
+                <th scope="col">EffectvUsage <a class="info-button" title="EffectvUsage" data-toggle="popover" data-trigger="click"
+                    data-content="The fraction of the cluster the account has been granted. For more information, go <a href='https://docs.rc.fas.harvard.edu/kb/fairshare/#articleTOC_4' title='fairshare calculation'>here</a>."><i class="fas fa-info-circle"
+                    aria-hidden="true"></i></a>
+                </th>
+                <th scope="col">NormShares <a class="info-button" title="NormShares" data-toggle="popover" data-trigger="click"
+                      data-content="Calculated fairshare per user. For more information on this number, go <a href='https://docs.rc.fas.harvard.edu/kb/fairshare/#articleTOC_4' title='fairshare calculation'>here</a>."
+		      ><i class="fas fa-info-circle" aria-hidden="true"></i></a>
+                </th>
+                <th scope="col">FairShare <a class="info-button" title="FairShare" data-toggle="popover" data-trigger="click"
+                     data-content="User fairshare, calculated by the equation 2^(-EffectvUsage/NormShares). For more information on fairshare calculation, go <a href='https://docs.rc.fas.harvard.edu/kb/fairshare/#articleTOC_4' title='fairshare calculation'>here</a>."
+		     ><i class="fas fa-info-circle" aria-hidden="true"></i>
+                  </a>
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {% for allocation in allocations %}
+                <tr>
+                  <td>
+                    <a href="{% url 'allocation-detail' allocation.id %}">
+                      {{ allocation.project_title }}
+                    </a>
+                  </td>
+                  <td>{{ allocation.user_count }}</td>
+                  <td data-sort="{{allocation.usage}}" name="usage">
+                    {% if allocation.usage is None %}
+                      0
+                    {% else %}
+                      {{ allocation.usage|floatformat:1 }}
+                    {% endif %}
+                  </td>
+                  <td data-sort="{{allocation.usage}}" name="usage_pct">
+                    {% if allocation.usage is None or allocation.usage == 0 %}
+                      0%
+                    {% else %}
+                      {{allocation.usage|div:total_hours|mul:100|floatformat:2 }}%
+                    {% endif %}
+                  </td>
+                  <td>{{ allocation.rawshares}}</td>
+                  <td>{{ allocation.effectvusage }}</td>
+                  <td>{{ allocation.normshares }}</td>
+                  <td>{{ allocation.fairshare }}</td>
+
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+      </div>
     </div>
   </div>
 {% endif %}
@@ -139,7 +261,7 @@ Resource Detail
   <div class="card-body">
     {% if child_resources %}
       <div class="table-responsive">
-        <table id="child_resource_table" class="table table-bordered table-sm">
+        <table id="child_resource_table" class="table table-striped table-bordered">
           <thead>
             <tr>
               <th scope="col">Resource Name</th>
@@ -152,39 +274,39 @@ Resource Detail
           </thead>
           <tbody>
             {% for child in child_resources %}
-                <tr>
-                  <td><a href="{% url 'resource-detail' child.object.pk %}">{{child.object}}</a></td>
-                  <td>{{child.WarrantyExpirationDate}}</td>
-                  <td>{{child.ServiceEnd}}</td>
-                  <td>{{child.Vendor}}</td>
-                  <td>{{child.SerialNumber}}</td>
-                  <td>{{child.Model}}</td>
-                </tr>
+              <tr>
+                <td><a href="{% url 'resource-detail' child.object.pk %}">{{child.object}}</a></td>
+                <td>{{child.WarrantyExpirationDate}}</td>
+                <td>{{child.ServiceEnd}}</td>
+                <td>{{child.Vendor}}</td>
+                <td>{{child.SerialNumber}}</td>
+                <td>{{child.Model}}</td>
+              </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
-      {% else %}
-        <div class="alert alert-info" role="alert">
-          <i class="fas fa-info-circle" aria-hidden="true"></i>
-          There are no child resources to display.
-        </div>
-      {% endif %}
+    {% else %}
+      <div class="alert alert-info" role="alert">
+        <i class="fas fa-info-circle" aria-hidden="true"></i>
+        There are no child resources to display.
+      </div>
+    {% endif %}
   </div>
 </div>
 
 
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.24/af-2.3.5/b-1.7.0/b-colvis-1.7.0/b-html5-1.7.0/b-print-1.7.0/cr-1.5.3/date-1.0.2/fc-3.3.2/kt-2.6.1/r-2.2.7/rg-1.1.2/rr-1.2.7/sl-1.3.2/datatables.min.css"/>
+<script type="text/javascript" src="https://cdn.datatables.net/v/dt/jszip-2.5.0/dt-1.10.24/af-2.3.5/b-1.7.0/b-colvis-1.7.0/b-html5-1.7.0/b-print-1.7.0/cr-1.5.3/date-1.0.2/fc-3.3.2/kt-2.6.1/r-2.2.7/rg-1.1.2/rr-1.2.7/sl-1.3.2/datatables.min.js"></script>
+
 <script>
   $(document).ready(function () {
-    $('#child_resource_table').DataTable({
-      lengthMenu: [5, 10, 20, 50, 100],
-      "pageLength": 5,
-      "ordering": false,
-      'aoColumnDefs': [{
-        'bSortable': false,
-        'aTargets': ['nosort']
-      }]
+    $('#child_resource_table, #mydatatable, #resource_admin_table').DataTable({
+      lengthMenu: [5, 10, 25, 50, 100],
+      pageLength: 10,
+      dom: 'lfrtip',
     });
   });
 </script>
+
 {% endblock %}

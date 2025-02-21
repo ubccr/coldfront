@@ -74,7 +74,9 @@ class LocalUserSearch(UserSearch):
 class CombinedUserSearch:
 
     def __init__(self, user_search_string, search_by, usernames_names_to_exclude=[]):
+        # As ADDITIONAL_USER_SEARCH_CLASSES is defining LDAP users, it will show the LDAP users in the search results.
         self.USER_SEARCH_CLASSES = import_from_settings('ADDITIONAL_USER_SEARCH_CLASSES', [])
+        # This line will add the LocalUserSearch class to the search classes that already contain the LDAP users.
         self.USER_SEARCH_CLASSES.insert(0, 'coldfront.core.user.utils.LocalUserSearch')
         self.user_search_string = user_search_string
         self.search_by = search_by

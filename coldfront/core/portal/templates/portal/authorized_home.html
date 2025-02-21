@@ -27,6 +27,18 @@
         <hr>
       {% endif %}
     {% endif %}
+  {% if resource_list %}
+    <br/><br/>
+    <h2><a href="{% url 'resource-list' %}" >Managed Resources &raquo;</a></h2>
+    <hr>
+    <ul class="list-group">
+      {% for resource in resource_list %}
+        <li class="list-group-item">
+          <a href="{% url 'resource-detail' resource.pk %}"><i class="fa fa-folder fa-lg" aria-hidden="true"></i> {{resource.name}}</a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
   </div>
 
   <div class="col-lg-6 mt-2">
@@ -52,12 +64,12 @@
               <a href = "{{ondemand_url}}"> {% load static %}  <img src="/static/core/portal/imgs/ondemand.png" alt="ondemand cta" width="25" height="25"></a>
             {% endif %}
             </td>
-            {%  if allocation.status.name == "Expired" and allocation.expires_in < 0 %}
+            {% if allocation.status.name == "Expired" and allocation.expires_in < 0 %}
             <td><a href="{% url 'allocation-detail' allocation.id %}" class="btn btn-danger btn-block">Expired</a></td>
-            {%  elif allocation.status.name == "Renewal Requested" %}
+            {% elif allocation.status.name == "Renewal Requested" %}
             <td><a href="{% url 'allocation-detail' allocation.id %}" class="btn btn-danger btn-block">Renewal
                 Requested</a></td>
-            {%  elif allocation.expires_in >= 0 and  allocation.expires_in <= 30 %}
+            {% elif allocation.expires_in >= 0 and allocation.expires_in <= 30 %}
             <td><a href="{% url 'allocation-detail' allocation.id %}" class="btn btn-danger btn-block">Expires in <span
                   class="badge badge-light">{{allocation.expires_in}}</span> day{{allocation.expires_in|pluralize }}</a>
             </td>
@@ -90,6 +102,7 @@
       </div>
     {% endif %}
   </div>
+
   <div class="col-lg-6 mt-2">
     {% if department_list %}
       <div class="col-lg-6 mt-2">

@@ -1,0 +1,55 @@
+{% extends "common/base.html" %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+
+{% block title %}
+Edit Allocation User
+{% endblock %}
+
+
+{% block content %}
+<h2>Edit User for {{ allocation.project.title }} {{ allocation.get_parent_resource.name }} Allocation</h2>
+<hr>
+
+<form action="{% url 'allocation-edit-user' allocation.pk userid %}" method="post">
+  {% csrf_token %}
+  <div class="card">
+    <div class="card-header"><i class="fas fa-user" aria-hidden="true"></i> User Detail</div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table">
+          <tr>
+            <th scope="row">Username:</th>
+            <td>{{allocationuser.user.username}}</td>
+          </tr>
+          <tr>
+            <th scope="row">First Name:</th>
+            <td>{{allocationuser.user.first_name}}</td>
+          </tr>
+          <tr>
+            <th scope="row">Last Name:</th>
+            <td>{{allocationuser.user.last_name}}</td>
+          </tr>
+          <tr>
+            <th scope="row">Email:</th>
+            <td>{{allocationuser.user.email}}</td>
+          </tr>
+          <tr>
+            <th scope="row">Status:</th>
+            <td>{{allocationuser.status.name}}</td>
+          </tr>
+          <tr>
+            <th scope="row">RawShare:</th>
+            <td>{{formset.value}}</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+    <div class="card-footer">
+      <button type="submit" class="btn btn-primary">Update</button>
+      <a class="btn btn-secondary" href="{% url 'allocation-detail' allocation.pk %}" role="button">Back to Allocation</a>
+    </div>
+  </div>
+</form>
+{% endblock%}

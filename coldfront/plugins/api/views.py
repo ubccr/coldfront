@@ -6,13 +6,11 @@ from django.contrib.auth import get_user_model
 from django.db.models import OuterRef, Subquery, Q, F, ExpressionWrapper, Case, When, Value, fields, DurationField
 from django.db.models.functions import Cast
 from django.http import HttpResponse
-from django.utils.http import urlencode
 from django_filters import rest_framework as filters
 from ifxuser.models import Organization
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.renderers import AdminRenderer, JSONRenderer
-from rest_framework import filters as drf_filters
 
 from simple_history.utils import get_history_model_for_model
 

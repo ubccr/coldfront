@@ -100,7 +100,7 @@ class ProjectDetailViewTest(ProjectViewTestBase):
         allocations_table = soup.find('table', {'id': 'invoice_table'})
         self.assertIn("holylfs10/tier1", allocations_table.get_text())
         # project user not belonging to allocation can see allocation
-        soup = utils.login_and_get_soup(self.client, self.proj_nonallocation_user, self.url)
+        soup = utils.login_and_get_soup(self.client, self.proj_nonallocationuser, self.url)
         allocations_table = soup.find('table', {'id': 'invoice_table'})
         self.assertIn("holylfs10/tier1", allocations_table.get_text())
 
@@ -115,6 +115,6 @@ class ProjectDetailViewTest(ProjectViewTestBase):
         allocations_table = soup.find('table', {'id': 'allocation_history'})
         self.assertIn("holylfs10/tier1", allocations_table.get_text())
         # project user not belonging to allocation can see allocation
-        soup = utils.login_and_get_soup(self.client, self.proj_nonallocation_user, self.url)
+        soup = utils.login_and_get_soup(self.client, self.proj_nonallocationuser, self.url)
         allocations_table = soup.find('table', {'id': 'allocation_history'})
         self.assertIn("holylfs10/tier1", allocations_table.get_text())

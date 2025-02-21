@@ -1,3 +1,4 @@
+import logging
 import re
 
 from django import forms
@@ -5,12 +6,15 @@ from django.conf import settings
 from django.db.models.functions import Lower
 from django.shortcuts import get_object_or_404
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 from coldfront.core.allocation.models import (
     AllocationAccount,
     AllocationAttributeType,
     AllocationAttribute,
-    AllocationStatusChoice
+    AllocationStatusChoice,
+    AllocationUserAttribute,
+    AllocationUser
 )
 from coldfront.core.allocation.utils import get_user_resources
 from coldfront.core.project.models import Project
@@ -27,6 +31,8 @@ ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS = import_from_settings(
     'ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS', [])
 HSPH_CODE = import_from_settings('HSPH_CODE', '000-000-000-000-000-000-000-000-000-000-000')
 SEAS_CODE = import_from_settings('SEAS_CODE', '111-111-111-111-111-111-111-111-111-111-111')
+
+logger = logging.getLogger(__name__)
 
 
 class ExpenseCodeField(forms.CharField):
@@ -55,6 +61,28 @@ class ExpenseCodeField(forms.CharField):
         # )
         # formatted_value = insert_dashes(digits_only)
         return value
+
+
+class AllocationUserRawSareField(forms.CharField):
+    """custom field for rawshare"""
+
+    def validate(self, value):
+        try:
+            integer_value = int(value)
+            if integer_value < 0:
+                raise ValidationError('RawShare value must be a positive integer number or the string "parent".')
+            if integer_value > 1410065399:
+                raise ValidationError('RawShare value must be a positive integer number below 1410065399 or the string "parent".')
+        except ValueError:
+            if value not in ['parent']:
+                raise ValidationError('RawShare value must be a positive integer number or the string "parent".')
+        except Exception:
+            raise ValidationError('Invalid RawShare value detected. It must be a positive integer number or the string "parent".')
+
+    def clean(self, value):
+        value = super().clean(value)
+        return value
+
 
 ALLOCATION_SPECIFICATIONS = [
     ('Heavy IO', 'My lab will perform heavy I/O from the cluster against this space (more than 100 cores)'),
@@ -277,6 +305,13 @@ class AllocationAddUserForm(forms.Form):
     email = forms.EmailField(max_length=100, required=False, disabled=True)
     selected = forms.BooleanField(initial=False, required=False)
 
+class AllocationAddNonProjectUserForm(forms.Form):
+    username = forms.CharField(max_length=150, disabled=True)
+    first_name = forms.CharField(max_length=150, required=False, disabled=True)
+    last_name = forms.CharField(max_length=150, required=False, disabled=True)
+    email = forms.EmailField(max_length=100, required=False, disabled=True)
+    selected = forms.BooleanField(initial=False, required=False)
+
 
 class AllocationRemoveUserForm(forms.Form):
     username = forms.CharField(max_length=150, disabled=True)
@@ -400,6 +435,15 @@ class AllocationAttributeUpdateForm(forms.Form):
 
         allocation_attribute.value = cleaned_data.get('new_value')
         allocation_attribute.clean()
+
+
+class AllocationUserAttributeUpdateForm(forms.Form):
+    allocationuser_pk = forms.IntegerField(required=True)
+    value = AllocationUserRawSareField(required=True)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['allocationuser_pk'].widget = forms.HiddenInput()
 
 
 class AllocationChangeForm(forms.Form):

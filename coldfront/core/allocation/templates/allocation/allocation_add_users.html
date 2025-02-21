@@ -11,68 +11,181 @@ Add Users to Allocation
 {% block content %}
 <h2>Add users to allocation for project: {{allocation.project.title}}</h2>
 <hr>
-
-{% if formset %}
-  <div class="card border-light">
+<div class="container-fluid">
+  <div class="card">
+    <div class="card-header">
+      <!-- Tabs Navigation -->
+      <ul class="nav nav-tabs" id="myTab" role="tablist">
+        <li class="nav-item" role="presentation">
+          <a class="nav-link active" id="home-tab" data-bs-toggle="tab" href="#home" role="tab"
+             aria-controls="home" aria-selected="true"> <i class="fas fa-user-circle"></i> Project Users</a>
+        </li>
+        <li class="nav-item" role="presentation">
+          <a class="nav-link" id="profile-tab" data-bs-toggle="tab" href="#profile" role="tab"
+             aria-controls="profile" aria-selected="false"><i class="far fa-user-circle"></i> Non Project
+              Users</a>
+        </li>
+      </ul>
+    </div>
     <div class="card-body">
-      <form action="{% url 'allocation-add-users' allocation.pk %}" method="post">
-        {% csrf_token %}
-        <div class="table-responsive">
-          <table class="table table-sm table-hover">
-            <thead>
-              <tr>
-                <th>
-                  <input type="checkbox" class="check" id="selectAll">
-                </th>
-                <th scope="col">#</th>
-                <th scope="col">Username</th>
-                <th scope="col">First Name</th>
-                <th scope="col">Last Name</th>
-                <th scope="col">Email</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for form in formset %}
-                <tr>
-                  <td>{{ form.selected }}</td>
-                  <td>{{ forloop.counter }}</td>
-                  <td>{{ form.username.value }}</td>
-                  <td>{{ form.first_name.value }}</td>
-                  <td>{{ form.last_name.value }}</td>
-                  <td>{{ form.email.value }}</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+      <!-- Tab Content -->
+      <div class="tab-content" id="myTabContent">
+        <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
+          {% if formset %}
+            <div class="card border-light">
+              <div class="card-body">
+                <form action="{% url 'allocation-add-users' allocation.pk %}" method="post">
+                  {% csrf_token %}
+                  <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                      <thead>
+                        <tr>
+                          <th>
+                            <input type="checkbox" class="check" id="selectAll">
+                          </th>
+                          <th scope="col">#</th>
+                          <th scope="col">Username</th>
+                          <th scope="col">First Name</th>
+                          <th scope="col">Last Name</th>
+                          <th scope="col">Email</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for form in formset %}
+                          <tr>
+                            <td>{{ form.selected }}</td>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ form.username.value }}</td>
+                            <td>{{ form.first_name.value }}</td>
+                            <td>{{ form.last_name.value }}</td>
+                            <td>{{ form.email.value }}</td>
+                          </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                  {{ formset.management_form }}
+                  <div>
+                    <button type="submit" class="btn btn-primary"><i class="fas
+                  faser-plus"></i> Add Selected Users to Allocation
+                    </button>
+                    <a class="btn btn-secondary" href="{% url 'allocation-detail' allocation.pk %}"
+                       role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i>
+                        Back to Allocation</a>
+                    <br>
+                  </div>
+                </form>
+              </div>
+            </div>
+          {% else %}
+            <div class="alert alert-info">
+              All users in project are already in this allocation!
+            </div>
+          {% endif %}
         </div>
-        {{ formset.management_form }}
-        <div>
-          <button type="submit" class="btn btn-primary"><i class="fas
-              fa-user-plus"></i> Add Selected Users to Allocation</button>
-          <a class="btn btn-secondary" href="{% url 'allocation-detail' allocation.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i>
-            Back to Allocation</a>
-          <br>
+        <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="profile-tab">
+          {% if user_search_form %}
+            <div class="card border-light">
+              <div class="card-body">
+                <div class="alert alert-warning" role="alert">
+                  <i class="fas fa-exclamation-triangle"></i> Non-project users might need access to
+                  corresponding storage to make use of their cluster access
+                </div>
+                <div class="row">
+                  <div class="col">
+                    <form method="post" action="/search-ldap" id="post-form">
+                      {% csrf_token %}
+                      {{ user_search_form|crispy }}
+                      <button id="search-button" type="submit" class="btn btn-success btn-block"><i
+                              class="fas fa-search" aria-hidden="true"></i> Search
+                      </button>
+                    </form>
+                  </div>
+                </div>
+                <br>
+                <div class="row">
+                  <div class="col" id="search_results">
+                    <div class="card border-light">
+                      <div class="card-body">
+                        <div id="search_results_inner"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col" id="selected_users">
+                    <div class="card border-light">
+                      <div class="card-body">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% else %}
+            <div class="alert alert-info">
+              All non project users are already in this allocation!
+            </div>
+          {% endif %}
         </div>
-      </form>
+      </div>
     </div>
   </div>
-{% else %}
-  <a class="btn btn-secondary mb-3" href="{% url 'allocation-detail' allocation.pk %}" role="button"><i class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Allocation</a>
-  <div class="alert alert-info">
-    All users in project are already in this allocation!
-  </div>
-{% endif %}
+  <br>
+  <a class="btn btn-secondary mb-3" href="{% url 'allocation-detail' allocation.pk %}" role="button"><i
+          class="fas fa-long-arrow-left" aria-hidden="true"></i> Back to Allocation</a>
+</div>
 
 <script>
-  $("#selectAll").click(function () {
-    $("input[name^='userform-']").prop('checked', $(this).prop('checked'));
+  $("#navbar-main > ul > li.active").removeClass("active");
+  $("#navbar-ldap-home").addClass("active");
+
+  $('#post-form').on('submit', function(event){
+    event.preventDefault();
+    $('#search_results').show();
+    $("#search_results_inner").html('<div class="alert alert-info text-center"><i class="fas fa-sync fa-spin fa-fw" aria-hidden="true"></i> Searching</div>')
+    create_post();
   });
 
-  $("input[name^='userform-']").click(function (ele) {
-    var id = $(this).attr('id');
-    if ( id != "selectAll") {
-      $("#selectAll").prop('checked', false);
+  function create_post() {
+    q = $('#id_q').val().trim();
+    search_by = $("#post-form input[type='radio']:checked").val();
+    if (q.indexOf(' ') >= 0) {
+      $("#id_id_search_by_0_1").prop("checked", true);
     }
+    if (q.indexOf('\n') >= 0) {
+      $("#id_id_search_by_0_1").prop("checked", true);
+    }
+
+    var pk = "{{ pk }}"
+    $.ajax({
+        url : "{% url 'allocation-add-users' allocation.pk %}?search="+q, // the endpoint
+        type : "GET", // http method
+        // handle a successful response
+        success : function(data) {
+            $('#search_results').show();
+            $('#search_results_inner').html(data.data);
+        },
+
+        // handle a non-successful response
+        error : function(xhr,errmsg,err) {
+            if(xhr.status == 403 || xhr.status == 401) {
+                $('#search_results_inner').html("<div class='alert alert-danger'>Your session expired. Please login again. <a href='#' class='close'>&times;</a></div>");
+            } else {
+                $('#search_results_inner').html("<div class='alert alert-danger'>Oops! We have encountered an error: "+errmsg+
+                    " <a href='#' class='close'>&times;</a></div>"); // add the error to the dom
+            }
+            console.log(xhr.status + ": " + xhr.responseText); // provide a bit more info about the error to the console
+        }
+    });
+  };
+
+  $(document).ready(function(){
+    $('#search_results').hide();
+    $('#selected_users').hide();
+    $('[data-toggle="popover"]').popover();
   });
 </script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
 {% endblock %}
