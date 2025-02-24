@@ -10,19 +10,22 @@ app_commands_dir = os.path.dirname(__file__)
 
 
 def load_approver_schools(json_data):
+    """
+    Grant is_staff, approver_profile, "can_review_allocation_requests" permission associated with schools
+    """
     for approver_username, school_descriptions in json_data.items():
         try:
             # Check if the user exists
             user = User.objects.get(username=approver_username)
+            # Make as a staff to let an approver view admin navigation bar
+            user.is_staff = True
+            user.save()
         except User.DoesNotExist:
-            print(f"User {approver_username} not found. Skipping.")
+            # print(f"User {approver_username} not found. Skipping.")
             continue  # Skip to the next user
 
-        # Check if a UserProfile exists for the user
+        # Get UserProfile for the user
         user_profile = UserProfile.objects.filter(user=user).first()
-        if not user_profile:
-            print(f"Skipping {approver_username}: UserProfile does not exist.")
-            continue
 
         # Grant 'can_review_allocation_requests' permission if not already granted
         perm_codename = "can_review_allocation_requests"
