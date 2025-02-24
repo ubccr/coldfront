@@ -34,11 +34,11 @@ def load_approver_schools(json_data):
         if perm and not user.has_perm(f"allocation.{perm_codename}"):
             user.user_permissions.add(perm)
             user.save()
-            print(f"Granted '{perm_codename}' permission to {approver_username}")
+            # print(f"Granted '{perm_codename}' permission to {approver_username}")
 
         # Ensure user is an approver
         if not user_profile.is_approver():
-            print(f"Skipping {approver_username}: User does not have approver permission.")
+            # print(f"Skipping {approver_username}: User does not have approver permission.")
             continue
 
         # Create ApproverProfile if it does not exist
@@ -51,7 +51,7 @@ def load_approver_schools(json_data):
         approver_profile.schools.set(school_objects)
         approver_profile.save()
 
-        print(f"Updated {approver_username} with schools: {school_descriptions}")
+        # print(f"Updated {approver_username} with schools: {school_descriptions}")
 
 
 
