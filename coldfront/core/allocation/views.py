@@ -1476,7 +1476,13 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
             allocation change detail view where they may not have access because can_review_allocation_requests is 
             not checked before. We could remove this back or add more restrictions in other functions if needed.
             """
-            return True
+            # school restriction
+            user = self.request.user
+            user_schools = list(user.userprofile.schools.all())  # Ensure QuerySet evaluation
+            project_school = allocation_change_obj.allocation.project.school
+            if user_schools:
+                if project_school.pk in [school.pk for school in user_schools]:
+                    return True
 
         if allocation_change_obj.allocation.has_perm(self.request.user, AllocationPermission.MANAGER):
             return True
@@ -1906,14 +1912,18 @@ class AllocationChangeDeleteAttributeView(LoginRequiredMixin, UserPassesTestMixi
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
-
         user = self.request.user
+        allocation_attribute_change_obj = get_object_or_404(AllocationAttributeChangeRequest, pk=self.kwargs.get('pk'))
 
         if user.is_superuser:
             return True
 
         if user.has_perm('allocation.can_review_allocation_requests'):
-            return True
+            user_schools = list(user.userprofile.schools.all())  # Ensure QuerySet evaluation
+            project_school = allocation_attribute_change_obj.allocation_change_request.allocation.project.school
+            if user_schools:
+                if project_school.pk in [school.pk for school in user_schools]:
+                    return True
 
         messages.error(self.request, 'You do not have permission to update an allocation change request.')
         return False
@@ -1923,34 +1933,6 @@ class AllocationChangeDeleteAttributeView(LoginRequiredMixin, UserPassesTestMixi
         allocation_attribute_change_obj = get_object_or_404(AllocationAttributeChangeRequest, pk=pk)
         allocation_change_pk = allocation_attribute_change_obj.allocation_change_request.pk
 
-        user = request.user
-
-        # Superusers can delete any allocation change request
-        if not user.is_superuser:
-            try:
-                user_schools = list(user.userprofile.schools.all())  # Ensure QuerySet evaluation
-                project_school = allocation_attribute_change_obj.allocation_change_request.allocation.project.school
-
-                if not project_school:
-                    messages.error(request, "This request is not associated with any school.")
-                    return HttpResponseRedirect(
-                        reverse('allocation-change-detail', kwargs={'pk': allocation_change_pk}))
-
-                if user_schools:
-                    if project_school.pk not in [school.pk for school in user_schools]:
-                        messages.error(request, "You do not have permission to delete this allocation change request.")
-                        return HttpResponseRedirect(
-                            reverse('allocation-change-detail', kwargs={'pk': allocation_change_pk}))
-                else:
-                    messages.error(request, "You are not associated with any school and cannot delete this request.")
-                    return HttpResponseRedirect(
-                        reverse('allocation-change-detail', kwargs={'pk': allocation_change_pk}))
-
-            except UserProfile.DoesNotExist:
-                messages.error(request, "No associated profile found. You cannot delete this request.")
-                return HttpResponseRedirect(reverse('allocation-change-detail', kwargs={'pk': allocation_change_pk}))
-
-        # Proceed with deletion if the user is authorized
         allocation_attribute_change_obj.delete()
 
         messages.success(
