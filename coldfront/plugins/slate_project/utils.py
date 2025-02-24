@@ -38,6 +38,7 @@ from coldfront.core.allocation.utils import create_admin_action_for_allocation_c
 
 logger = logging.getLogger(__name__)
 
+PROJECT_PERMISSIONS_PER_TYPE = import_from_settings('PROJECT_PERMISSIONS_PER_TYPE', False)
 ENABLE_LDAP_ELIGIBILITY_SERVER = import_from_settings('ENABLE_LDAP_ELIGIBILITY_SERVER', False)
 ENABLE_LDAP_SLATE_PROJECT_SYNCING = import_from_settings('ENABLE_LDAP_SLATE_PROJECT_SYNCING', False)
 SLATE_PROJECT_ELIGIBILITY_ACCOUNT = import_from_settings('SLATE_PROJECT_ELIGIBILITY_ACCOUNT', '')
@@ -1461,6 +1462,17 @@ def import_slate_projects(json_file_name, out_file_name, importing_user, limit=N
                 continue
         else:
             if user_obj.userprofile.title in ['Faculty', 'Staff', 'Academic (ACNP)', ]:
+                project_perms = PROJECT_PERMISSIONS_PER_TYPE.get('Default') | PROJECT_PERMISSIONS_PER_TYPE.get('Research')
+                project_max = project_perms.get('allowed_per_pi')
+                project_objs = Project.objects.filter(status__name='Active', pi=user_obj, type__name='Research')
+                if project_objs.count() + pi_import_project_counts.get(slate_project.get('owner_netid')) > project_max:
+                    logger.warning(f'Slate Project\'s, GID={slate_project.get("gid_number")}, owner '
+                                f'{user_obj.username} will be above their max allowed projects after '
+                                f'the full import. Skipping import...')
+                    print(f'Slate Project {slate_project.get("namespace_entry")} has NOT been imported: '
+                        f'Owner will be above their max allowed projects after the full import ')
+                    continue
+
                 project_obj = Project.objects.create(
                     title=slate_project.get('project_title'),
                     description=slate_project.get('abstract'),
@@ -1470,18 +1482,6 @@ def import_slate_projects(json_file_name, out_file_name, importing_user, limit=N
                     status=ProjectStatusChoice.objects.get(name='Active'),
                     end_date=project_end_date
                 )
-
-                project_objs = Project.objects.filter(status__name='Active', pi=user_obj, type__name='Research')
-                user_profile_obj = UserProfile.objects.get(user=user_obj)
-                max_projects = project_obj.get_env.get('allowed_per_pi')
-                if project_objs.count() + pi_import_project_counts.get(slate_project.get('owner_netid')) > max_projects:
-                    logger.warning(f'Slate Project\'s, GID={slate_project.get("gid_number")}, owner '
-                                f'{user_obj.username} will be above their max allowed projects after '
-                                f'the full import. Skipping import...')
-                    print(f'Slate Project {slate_project.get("namespace_entry")} has NOT been imported: '
-                        f'Owner will be above their max allowed projects after the full import ')
-                    continue
-
                 project_obj.slurm_account_name = generate_slurm_account_name(project_obj)
                 project_obj.save()
                 pi_import_project_counts[slate_project.get('owner_netid')] -= 1
