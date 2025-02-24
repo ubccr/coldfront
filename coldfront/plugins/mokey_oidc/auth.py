@@ -11,9 +11,6 @@ PI_GROUP = import_from_settings('MOKEY_OIDC_PI_GROUP', 'pi')
 ALLOWED_GROUPS = import_from_settings('MOKEY_OIDC_ALLOWED_GROUPS', [])
 DENY_GROUPS = import_from_settings('MOKEY_OIDC_DENY_GROUPS', [])
 
-"""
-See if school is available from claims. Otherwise, we'll find another way to assign school to user
-"""
 class OIDCMokeyAuthenticationBackend(OIDCAuthenticationBackend):
 
     def _sync_groups(self, user, groups):
