@@ -96,6 +96,15 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         if self.request.user.has_perm('allocation.can_view_all_allocations'):
             return True
 
+        if self.request.user.has_perm('allocation.can_review_allocation_requests'):
+            # school restriction
+            user = self.request.user
+            user_schools = list(user.userprofile.schools.all())  # Ensure QuerySet evaluation
+            project_school = allocation_obj.project.school
+            if user_schools:
+                if project_school.pk in [school.pk for school in user_schools]:
+                    return True
+
         return allocation_obj.has_perm(self.request.user, AllocationPermission.USER)
 
     def get_context_data(self, **kwargs):
@@ -135,8 +144,8 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context['attributes'] = attributes
         context['allocation_changes'] = allocation_changes
 
-        # Can the user update the project?
-        context['is_allowed_to_update_project'] = allocation_obj.project.has_perm(self.request.user, ProjectPermission.UPDATE)
+        # Can the user update the project? # See if we would like to let an approver renew allocation; if so, we need to grant access in AllocationRenewView
+        context['is_allowed_to_update_project'] = allocation_obj.project.has_perm(self.request.user, ProjectPermission.UPDATE) or self.request.user.is_staff
 
         noteset = allocation_obj.allocationusernote_set
         notes = noteset.all() if self.request.user.is_superuser else noteset.filter(is_private=False)
@@ -159,7 +168,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         }
 
         form = AllocationUpdateForm(initial=initial_data)
-        if not self.request.user.is_superuser:
+        if not self.request.user.is_superuser and not self.request.user.is_staff:
             form.fields['is_locked'].disabled = True
             form.fields['is_changeable'].disabled = True
 
@@ -171,7 +180,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
     def post(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
-        if not self.request.user.is_superuser:
+        if not self.request.user.is_superuser and not self.request.user.is_staff:
             messages.success(
                 request, 'You do not have permission to update the allocation')
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
