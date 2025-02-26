@@ -4,13 +4,9 @@ from django import forms
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db.models import (
-    Q, F, Value, Count, Case, When, 
-    Subquery, OuterRef, CharField, IntegerField, FloatField
+    Q, F, Value, Count, Subquery, OuterRef, IntegerField, FloatField
 )
-from django.db.models.functions import (
-    Substr, StrIndex, Concat, Coalesce,
-    Cast, Length
-)
+from django.db.models.functions import Substr, StrIndex, Coalesce, Cast, Length
 from django.db.models.functions import Lower
 from django.forms import formset_factory
 from django.http import HttpResponseRedirect
@@ -27,12 +23,11 @@ from coldfront.core.resource.forms import (
     ResourceAttributeDeleteForm,
     ResourceAllocationUpdateForm,
 )
-from coldfront.core.allocation.models import AllocationStatusChoice, AllocationAttributeType, AllocationAttribute, Allocation
+from coldfront.core.allocation.models import AllocationStatusChoice, AllocationAttributeType, AllocationAttribute
 from coldfront.core.allocation.signals import allocation_raw_share_edit
 
 from coldfront.plugins.slurm.utils import SlurmError
 
-from coldfront.core.project.models import ProjectUser
 
 logger = logging.getLogger(__name__)
 
@@ -72,10 +67,18 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
             'resource_attribute_type__name'))
 
         child_resources = self.get_child_resources(resource_obj)
-        inactive_status = AllocationStatusChoice.objects.get(name='Inactive')
         allocations = resource_obj.allocation_set.exclude(
-            status=inactive_status
+            status__name__in=['Inactive', 'Merged', 'New', 'Denied', 'Expired']
         ).prefetch_related('project', 'allocationattribute_set')
+
+        allocations = allocations.annotate(
+                    project_title=F('project__title'),
+                    user_count=Cast(Count(
+                        'allocationuser__id',
+                        filter=Q(allocationuser__status__name='Active'),
+                        distinct=True
+                    ), IntegerField())
+        )
         if 'Cluster' in resource_obj.resource_type.name:
             total_hours = sum([a.usage for a in allocations if a.usage])
             context['total_hours'] = total_hours
@@ -87,12 +90,6 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
             allocations = (
                 allocations.annotate(
-                    project_title=F('project__title'),
-                    user_count=Cast(Count(
-                        'allocationuser__id',
-                        filter=Q(allocationuser__status__name='Active'),
-                        distinct=True
-                    ), IntegerField()),
                     # For slurm_specs parsing
                     specs_value=Subquery(
                         AllocationAttribute.objects
@@ -164,6 +161,14 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                     'effectvusage'
                 )
             )
+        elif resource_obj.resource_type.name == 'Storage':
+            allocation_total = {'size': 0, 'usage':0}
+            for allocation in allocations:
+                if allocation.size:
+                    allocation_total['size'] += allocation.size
+                if allocation.usage:
+                    allocation_total['usage'] += allocation.usage
+            context['allocation_total'] = allocation_total
 
         context['allocations'] = allocations
         context['resource'] = resource_obj
@@ -297,17 +302,18 @@ class ResourceListView(ColdfrontListView):
 
         order_by = self.return_order()
         resource_search_form = ResourceSearchForm(self.request.GET)
+        resources = Resource.objects.filter(is_available=True)
 
         if order_by == 'name':
             direction = self.request.GET.get('direction')
             if direction == 'asc':
-                resources = Resource.objects.all().order_by(Lower('name'))
+                resources = resources.order_by(Lower('name'))
             elif direction == 'des':
-                resources = (Resource.objects.all().order_by(Lower('name')).reverse())
+                resources = resources.order_by(Lower('name')).reverse()
             else:
-                resources = Resource.objects.all().order_by(order_by)
+                resources = resources.order_by(order_by)
         else:
-            resources = Resource.objects.all().order_by(order_by)
+            resources = resources.order_by(order_by)
         if resource_search_form.is_valid():
             data = resource_search_form.cleaned_data
 
