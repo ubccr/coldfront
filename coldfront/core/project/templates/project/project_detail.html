@@ -128,7 +128,7 @@ Project Detail
                   <td>{{ allocation.get_parent_resource.name }}</td>
                   <td>{{ allocation.path }}</td>
                   <td>{{ allocation.allocationuser_set.count }}</td>
-                  <td>{{ allocation.size|floatformat:1 }} {{ allocation.get_parent_resource.unit }}</td>
+                  <td>{{ allocation.size|floatformat:1 }} {{ allocation.get_parent_resource.quantity_label }}</td>
                   <td>{{ allocation.usage|floatformat:1 }}</td>
                   <td>
                     {% if allocation.requires_payment %}
@@ -198,7 +198,7 @@ Project Detail
                   <td>{{ allocation.get_parent_resource.name }}</td>
                   <td>{{ allocation.allocationuser_set.count }}</td>
                   <td>
-                    {{ allocation.size|floatformat:1 }} {{ allocation.get_parent_resource.unit }}
+                    {{ allocation.size|floatformat:1 }} {{ allocation.get_parent_resource.quantity_label }}
                   </td>
                   <td>
                     <a href="{% url 'allocation-detail' allocation.pk %}">
