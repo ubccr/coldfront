@@ -238,7 +238,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             allocation_obj.end_date = None
             allocation_obj.save()
 
-            if allocation_obj.status.name == ['Denied', 'Revoked']:
+            if allocation_obj.status.name in ['Denied', 'Revoked']:
                 allocation_disable.send(
                     sender=self.__class__, allocation_pk=allocation_obj.pk)
                 allocation_users = allocation_obj.allocationuser_set.exclude(
