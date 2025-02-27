@@ -3,6 +3,8 @@ from coldfront.config.env import ENV
 
 INSTALLED_APPS += [
     'coldfront_custom_resources',
+    'coldfront_custom_resources.compute',
+    'coldfront_custom_resources.storage.geode_project'
 ]
 
 GEODE_PROJECT_EMAIL = ENV.str('GEODE_PROJECT_EMAIL')
@@ -18,3 +20,4 @@ if ENABLE_GEODE_PROJECT_LDAP_INTEGRATION:
     LDAP_GEODE_PROJECT_USER_ACCOUNT_TEMPLATE = ENV.str('LDAP_GEODE_PROJECT_USER_ACCOUNT_TEMPLATE')
     LDAP_GEODE_PROJECT_GROUP_TEMPLATE = ENV.str('LDAP_GEODE_PROJECT_GROUP_TEMPLATE')
     LDAP_GEODE_ALL_USERS_GROUP = ENV.str('LDAP_GEODE_ALL_USERS_GROUP')
+    LDAP_GEODE_PROJECT_BASE_SEARCH_DN = ENV.str('LDAP_GEODE_PROJECT_BASE_SEARCH_DN')
