@@ -530,7 +530,14 @@ def sync_slate_project_allocated_quantity(allocation_obj, ldap_conn=None):
         return
     
     try:
-        allocated_quantity = description.split(',')[-2].split(' ')[2]
+        quota_split = description.split(',')[-2].split(' ')
+        identifier = quota_split[1]
+        if not identifier == 'quota':
+            logger.warning(
+                f'Slate Project with GID={ldap_group_gid} has an improperly formatted description. Skipping allocated quantity sync...')
+            return
+
+        allocated_quantity = quota_split[2]
         allocated_quantity = int(allocated_quantity)
     except (IndexError, ValueError):
         logger.warning(
