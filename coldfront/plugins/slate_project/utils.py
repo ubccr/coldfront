@@ -506,57 +506,65 @@ def sync_slate_project_users(allocation_obj, ldap_conn=None, ldap_search_conn=No
                     )
 
 
+def sync_slate_project_allocated_quantity(allocation_obj, ldap_conn=None):
+    if ldap_conn == None:
+        ldap_conn = LDAPModify()
+
+    allocation_attribute_type = 'GID'
+    ldap_group_gid_obj = allocation_obj.allocationattribute_set.filter(
+        allocation_attribute_type__name=allocation_attribute_type
+    )
+    if not ldap_group_gid_obj.exists():
+        logger.error(
+            f'Failed to sync the allocated quantity in a Slate Project allocation. The allocation '
+            f'(pk={allocation_obj.pk}) is missing the allocation attribute '
+            f'"{allocation_attribute_type}"'
+        )
+        return
+    ldap_group_gid = int(ldap_group_gid_obj[0].value)
+
+    description = ldap_conn.get_attribute('description', ldap_group_gid)
+
+    if not description:
+        logger.warning(f'Slate Project with GID={ldap_group_gid} does not have a description. Skipping allocated quantity sync...')
+        return
+    
+    allocated_quantity = description.split(',')[-2].split(' ')[2]
+    allocation_attribute_type = 'Allocated Quantity'
+    allocated_quantity_obj = allocation_obj.allocationattribute_set.filter(
+        allocation_attribute_type__name=allocation_attribute_type
+    )
+    if allocated_quantity_obj is None:
+        logger.info(
+            f'Slate Project allocation with GID={ldap_group_gid} allocated quantity not found.'
+            f'Creating one with value {allocated_quantity}'
+        )
+        allocated_quantity_obj = AllocationAttribute.objects.create(
+            allocation=allocation_obj,
+            value=allocated_quantity,
+            allocation_attribute_type=allocation_attribute_type
+        )
+        return
+
+    allocated_quantity_obj[0] = allocated_quantity_obj
+    if not allocated_quantity_obj.value == allocated_quantity:
+        current_allocated_quantity = allocated_quantity_obj.value
+        allocated_quantity_obj.value = allocated_quantity
+        allocated_quantity_obj.save()
+
+        logger.info(
+            f'Slate Project allocation with GID={ldap_group_gid} allocated quantity was updated'
+            f' from {current_allocated_quantity} to {allocated_quantity}'
+        )
+
+
 def sync_slate_project_allocated_quantities():
     logger.info('Syncing Slate Project allocated quantities...')
-    ldap_groups = {}
-    with open(os.path.join(SLATE_PROJECT_INCOMING_DIR, 'allocated_quantity.csv'), 'r') as allocated_quantities_csv:
-        csv_reader = csv.reader(allocated_quantities_csv)
-        for line in csv_reader:
-            ldap_groups['condo_' + line[0]] = line[1]
-
-    allocated_quantity_objs = AllocationAttribute.objects.filter(
-        allocation_attribute_type__name='Allocated Quantity', allocation__resources__name='Slate Project'
-    ).prefetch_related('allocation')
-    ldap_group_objs = AllocationAttribute.objects.filter(
-        allocation_attribute_type__name='LDAP Group', allocation__resources__name='Slate Project'
-    ).prefetch_related('allocation')
-    ldap_group_dict = {}
-    for ldap_group_obj in ldap_group_objs:
-        ldap_group_dict[ldap_group_obj.value] = ldap_group_obj.allocation.id
-
-    allocated_quantity_dict = {}
-    for allocated_quantity_obj in allocated_quantity_objs:
-        allocated_quantity_dict[allocated_quantity_obj.allocation.id] = allocated_quantity_obj
-
-    allocation_attribute_type = AllocationAttributeType.objects.get(name='Allocated Quantity')
-    for ldap_group, allocated_quantity in ldap_groups.items():
-        ldap_group_allocation_id = ldap_group_dict.get(ldap_group)
-        if ldap_group_allocation_id is None:
-            # Disabled until imports are done
-            # logger.warning(f'LDAP group {ldap_group} not found')
-            continue
-
-        allocated_quantity_obj = allocated_quantity_dict.get(ldap_group_allocation_id)
-        if allocated_quantity_obj is None:
-            logger.info(
-                f'LDAP group {ldap_group} allocated quantity not found. Creating one with value {allocated_quantity}'
-            )
-            allocated_quantity_obj = AllocationAttribute.objects.create(
-                allocation=Allocation.objects.get(id=ldap_group_allocation_id),
-                value=allocated_quantity,
-                allocation_attribute_type=allocation_attribute_type
-            )
-            continue
-
-        current_allocated_quantity = allocated_quantity_obj.value
-        if allocated_quantity != current_allocated_quantity:
-            allocated_quantity_obj.value = allocated_quantity
-            allocated_quantity_obj.save()
-
-            logger.info(
-                f'LDAP group {ldap_group} allocated quantity was updated from {current_allocated_quantity} to {allocated_quantity}'
-            )
-
+    allocation_objs = Allocation.objects.filter(
+        resources__name='Slate Project', status__name='Active').prefetch_related('allocationattribute_set')
+    ldap_conn = LDAPModify()
+    for allocation_obj in allocation_objs:
+        sync_slate_project_allocated_quantity(allocation_obj, ldap_conn)
     logger.info('Done syncing Slate Project allocated quantities')
 
 

@@ -26,7 +26,8 @@ from coldfront.plugins.slate_project.utils import (add_user_to_slate_project_gro
                                                    send_expiry_email,
                                                    sync_slate_project_users,
                                                    sync_slate_project_ldap_group,
-                                                   sync_slate_project_user_statuses)
+                                                   sync_slate_project_user_statuses,
+                                                   sync_slate_project_allocated_quantity)
 from coldfront.plugins.allocation_removal_requests.views import (AllocationRemoveView,
                                                                  AllocationApproveRemovalRequestView)
 from coldfront.plugins.allocation_removal_requests.signals import allocation_remove
@@ -141,6 +142,7 @@ def sync_slate_project(sender, **kwargs):
 
     sync_slate_project_ldap_group(allocation_obj)
     sync_slate_project_users(allocation_obj)
+    sync_slate_project_allocated_quantity(allocation_obj)
 
     slate_project_user_objs = AllocationUser.objects.filter(
         allocation = allocation_obj,
