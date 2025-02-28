@@ -560,7 +560,7 @@ def sync_slate_project_allocated_quantity(allocation_obj, ldap_conn=None):
         )
         return
 
-    allocated_quantity_obj = int(allocated_quantity_obj[0])
+    allocated_quantity_obj = int(allocated_quantity_obj[0].value)
     if not allocated_quantity_obj.value == allocated_quantity:
         current_allocated_quantity = allocated_quantity_obj.value
         allocated_quantity_obj.value = allocated_quantity
