@@ -28,6 +28,7 @@ urlpatterns = [
     path('grant/', include('coldfront.core.grant.urls')),
     path('publication/', include('coldfront.core.publication.urls')),
     path('research-output/', include('coldfront.core.research_output.urls')),
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 if 'coldfront_custom_resources' in settings.INSTALLED_APPS: 
     urlpatterns.append(path('custom_resources/', include('coldfront_custom_resources.urls')))
