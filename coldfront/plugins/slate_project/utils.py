@@ -529,7 +529,13 @@ def sync_slate_project_allocated_quantity(allocation_obj, ldap_conn=None):
         logger.warning(f'Slate Project with GID={ldap_group_gid} does not have a description. Skipping allocated quantity sync...')
         return
     
-    allocated_quantity = description.split(',')[-2].split(' ')[2]
+    try:
+        allocated_quantity = description.split(',')[-2].split(' ')[2]
+    except IndexError:
+        logger.warning(
+            f'Slate Project with GID={ldap_group_gid} has an improperly formatted description. Skipping allocated quantity sync...')
+        return
+    
     allocation_attribute_type = 'Allocated Quantity'
     allocated_quantity_obj = allocation_obj.allocationattribute_set.filter(
         allocation_attribute_type__name=allocation_attribute_type
