@@ -715,10 +715,12 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
             description=project_obj.description
         )
 
+        save_form = not project_obj.title == form_data.get('title') or not project_obj.description == form_data.get('description')
         project_obj.title = form_data.get('title')
         project_obj.description = form_data.get('description')
         # project_obj.field_of_science = form_data.get('field_of_science')
-        project_obj.save()
+        if save_form:
+            project_obj.save()
 
         logger.info(
             f'User {self.request.user.username} updated a project (project pk={project_obj.pk})'
