@@ -1049,25 +1049,29 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                             role_choice = ProjectUserRoleChoice.objects.get(name='User')
                             managers_rejected.append(user_form_data.get('username'))
 
+                    enable_notifications = True
+                    if role_choice.name == 'Group':
+                        # Notifications by default will be disabled for group accounts.
+                        enable_notifications = False
+                    elif role_choice.name == 'User' and auto_disable_notifications:
+                        enable_notifications = False
+
                     # Is the user already in the project?
                     if project_obj.projectuser_set.filter(user=user_obj).exists():
                         project_user_obj = project_obj.projectuser_set.get(
                             user=user_obj)
                         project_user_obj.role = role_choice
                         project_user_obj.status = project_user_active_status_choice
+                        project_user_obj.enable_notifications = enable_notifications
                         project_user_obj.save()
                     else:
                         project_user_obj = ProjectUser.objects.create(
-                            user=user_obj, project=project_obj, role=role_choice, status=project_user_active_status_choice)
+                            user=user_obj,
+                            project=project_obj,
+                            role=role_choice,
+                            status=project_user_active_status_choice,
+                            enable_notifications=enable_notifications)
 
-                    # Notifications by default will be disabled for group accounts.
-                    if role_choice.name == 'Group':
-                        project_user_obj.enable_notifications = False
-                    elif role_choice.name == 'User' and auto_disable_notifications:
-                        project_user_obj.enable_notifications = False
-                    else:
-                        project_user_obj.enable_notifications = True
-                    project_user_obj.save()
                     project_user_objs.append(project_user_obj)
 
                     username = user_form_data.get('username')
