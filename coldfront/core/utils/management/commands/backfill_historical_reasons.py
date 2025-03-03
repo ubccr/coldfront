@@ -8,7 +8,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
             '--module',
-            help='Primary module to backfill historcal reason into, i.e. allocation',
+            help='Primary module to backfill historical reasons into, i.e. allocation',
             required=True
         )
 
