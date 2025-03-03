@@ -8,8 +8,10 @@
       User Profile</a>
   </div>
 </li>
-<form action="{% url 'logout' %}" method="post">
-  {% csrf_token %}
-  <button type="submit"><i class="fas fa-sign-out-alt" aria-hidden="true"></i>
-    Log Out</button>
-</form>
+<ul class="navbar-nav ml-auto">
+  <form class="form-inline" action="{% url 'logout' %}" method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn-nyu-primary-violet"><i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+      Log Out</button>
+  </form>
+</ul>
