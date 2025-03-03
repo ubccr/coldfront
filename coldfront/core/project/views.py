@@ -1107,23 +1107,26 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                                 resources_requiring_user_request[resource_name].add(username)
                                 allocation_user_status_choice = AllocationUserStatusChoice.objects.get(
                                     name='Pending - Add')
+                                
+                            allocation_user_role_obj = AllocationUserRoleChoice.objects.filter(
+                                resources=allocation.get_parent_resource, name=cleaned_data['role'])
+                            if allocation_user_role_obj.exists():
+                                allocation_user_role_obj = allocation_user_role_obj[0]
+                            else:
+                                allocation_user_role_obj = None
 
                             if allocation.allocationuser_set.filter(user=user_obj).exists():
                                 allocation_user_obj = allocation.allocationuser_set.get(
                                     user=user_obj)
                                 allocation_user_obj.status = allocation_user_status_choice
+                                allocation_user_obj.role = allocation_user_role_obj
                                 allocation_user_obj.save()
                             else:
                                 allocation_user_obj = AllocationUser.objects.create(
                                     allocation=allocation,
                                     user=user_obj,
+                                    role=allocation_user_role_obj,
                                     status=allocation_user_status_choice)
-
-                            allocation_user_role_obj = AllocationUserRoleChoice.objects.filter(
-                                resources=allocation.get_parent_resource, name=cleaned_data['role'])
-                            if allocation_user_role_obj.exists():
-                                allocation_user_obj.role = allocation_user_role_obj[0]
-                                allocation_user_obj.save()
 
                             allocation_activate_user.send(sender=self.__class__,
                                                         allocation_user_pk=allocation_user_obj.pk)
