@@ -1456,10 +1456,14 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
             if project_user_update_form.is_valid():
                 form_data = project_user_update_form.cleaned_data
-                enable_notifications = form_data.get('enable_notifications')
-                old_role = form_data.get('role')
-                if form_data.get('role').name == 'Manager':
-                    enable_notifications = True
+                form_role = form_data.get('role')
+                form_enable_notifications = form_data.get('enable_notifications')
+
+                if (form_role == project_user_obj.role and 
+                    project_user_obj.enable_notifications == form_enable_notifications):
+                    return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_obj.pk, 'project_user_pk': project_user_obj.pk})) 
+
+                if form_role.name == 'Manager':
                     if project_user_obj.role.name != 'Manager':
                         if project_obj.get_current_num_managers() >= project_obj.max_managers:
                             messages.error(
@@ -1480,12 +1484,10 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                             )
 
                 old_role = project_user_obj.role
-                project_user_obj.enable_notifications = enable_notifications
-                project_user_obj.role = ProjectUserRoleChoice.objects.get(
-                    name=form_data.get('role'))
+                project_user_obj.role = form_role
                 if project_user_obj.role.name == 'Manager':
                     project_user_obj.enable_notifications = True
-                elif old_role.name == 'Manager' and form_data.get('role').name == 'User':
+                elif old_role.name == 'Manager' and project_user_obj.role.name == 'User':
                     auto_disable_obj = project_obj.projectattribute_set.filter(
                         proj_attr_type__name='Auto Disable User Notifications')
                     if auto_disable_obj.exists() and auto_disable_obj[0].value == 'Yes':
@@ -1493,11 +1495,10 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                     else:
                         project_user_obj.enable_notifications = True
                 else:
-                    project_user_obj.enable_notifications = form_data.get(
-                        'enable_notifications')
+                    project_user_obj.enable_notifications = form_enable_notifications
                     logger.info(
                         f'Admin {request.user.username} set {project_user_obj.user.username}\'s '
-                        f'notifications to {form_data.get("enable_notifications")} (project pk={project_obj.pk})'
+                        f'notifications to {form_enable_notifications} (project pk={project_obj.pk})'
                     )
                 project_user_obj.save()
 
