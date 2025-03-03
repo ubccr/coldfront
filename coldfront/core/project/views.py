@@ -1036,12 +1036,13 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
                 if user_form_data['selected']:
                     # Will create local copy of user if not already present in local database
-                    user_obj, _ = User.objects.get_or_create(
+                    user_obj, created = User.objects.get_or_create(
                         username=user_form_data.get('username'))
-                    user_obj.first_name = user_form_data.get('first_name')
-                    user_obj.last_name = user_form_data.get('last_name')
-                    user_obj.email = user_form_data.get('email')
-                    user_obj.save()
+                    if created:
+                        user_obj.first_name = user_form_data.get('first_name')
+                        user_obj.last_name = user_form_data.get('last_name')
+                        user_obj.email = user_form_data.get('email')
+                        user_obj.save()
 
                     role_choice = user_form_data.get('role')
 
