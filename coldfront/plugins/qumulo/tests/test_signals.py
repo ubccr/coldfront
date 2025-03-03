@@ -44,6 +44,7 @@ class TestSignals(TestCase):
             "rw_users": ["test"],
             "ro_users": ["test1"],
             "cost_center": "Uncle Pennybags",
+            "billing_exempt": "No",
             "department_number": "Time Travel Services",
             "service_rate": "general",
             "billing_cycle": "monthly",

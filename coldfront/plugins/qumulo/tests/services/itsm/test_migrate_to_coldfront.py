@@ -1,5 +1,5 @@
+import os
 import json
-from icecream import ic
 from django.test import TestCase
 
 from unittest import mock
@@ -15,6 +15,8 @@ from coldfront.plugins.qumulo.services.itsm.migrate_to_coldfront import (
 
 from coldfront.plugins.qumulo.tests.fixtures import create_allocation_assets
 
+STORAGE2_PATH = os.environ.get("STORAGE2_PATH")
+
 
 class TestMigrateToColdfront(TestCase):
 
@@ -25,14 +27,14 @@ class TestMigrateToColdfront(TestCase):
             ("storage_name", "mocker"),
             ("storage_quota", "200"),
             ("storage_protocols", '["smb"]'),
-            ("storage_filesystem_path", "/storage2-dev/fs1/mocker"),
-            ("storage_export_path", "/storage2-dev/fs1/mocker"),
+            ("storage_filesystem_path", f"{STORAGE2_PATH}/mocker"),
+            ("storage_export_path", f"{STORAGE2_PATH}/mocker"),
             ("cost_center", "CC0004259"),
             ("department_number", "CH00409"),
             ("service_rate", "subscription"),
             ("secure", "No"),
             ("audit", "No"),
-            ("exempt", "No"),
+            ("billing_exempt", "No"),
             ("subsidized", "Yes"),
             ("billing_contact", "jin810"),
             ("technical_contact", "jin810"),
@@ -52,14 +54,14 @@ class TestMigrateToColdfront(TestCase):
             ("storage_name", "mocker_missing_contacts"),
             ("storage_quota", "200"),
             ("storage_protocols", '["smb"]'),
-            ("storage_filesystem_path", "/storage2-dev/fs1/mocker_missing_contacts"),
-            ("storage_export_path", "/storage2-dev/fs1/mocker_missing_contacts"),
+            ("storage_filesystem_path", f"{STORAGE2_PATH}/mocker_missing_contacts"),
+            ("storage_export_path", f"{STORAGE2_PATH}/mocker_missing_contacts"),
             ("cost_center", "CC0004259"),
             ("department_number", "CH00409"),
             ("service_rate", "subscription"),
             ("secure", "No"),
             ("audit", "No"),
-            ("exempt", "No"),
+            ("billing_exempt", "No"),
             ("subsidized", "Yes"),
             ("storage_ticket", "ITSD-2222"),
             ("billing_startdate", "2020-04-15T00: 00: 00.000Z"),
@@ -77,14 +79,14 @@ class TestMigrateToColdfront(TestCase):
             ("storage_name", "mocker"),
             ("storage_quota", "200"),
             ("storage_protocols", '["smb"]'),
-            ("storage_filesystem_path", "/storage2-dev/fs1/mocker"),
-            ("storage_export_path", "/storage2-dev/fs1/mocker"),
+            ("storage_filesystem_path", f"{STORAGE2_PATH}/mocker"),
+            ("storage_export_path", f"{STORAGE2_PATH}/mocker"),
             ("cost_center", "CC0004259"),
             ("department_number", "CH00409"),
             ("service_rate", "subscription"),
             ("secure", "No"),
             ("audit", "No"),
-            ("exempt", "No"),
+            ("billing_exempt", "No"),
             ("subsidized", "Yes"),
             ("billing_contact", "jin810"),
             ("technical_contact", "jin810"),

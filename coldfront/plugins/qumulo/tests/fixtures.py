@@ -43,12 +43,14 @@ def create_allocation_assets() -> None:
         ("sponsor_department_number", "Text"),
         ("fileset_name", "Text"),
         ("fileset_alias", "Text"),
-        ("exempt", "Yes/No"),
+        ("billing_exempt", "Yes/No"),
         ("itsm_comment", "JSON"),
         ("billing_cycle", "Text"),
         ("subsidized", "Yes/No"),
         ("allow_nonfaculty", "Yes/No"),
         ("sla_name", "Text"),
+        ("prepaid_time", "Int"),
+        ("prepaid_billing_date", "Date"),
     ]
     for (
         allocation_attribute_name,
@@ -57,9 +59,7 @@ def create_allocation_assets() -> None:
 
         AllocationAttributeTypeFactory(
             name=allocation_attribute_name,
-            attribute_type=AAttributeTypeFactory(
-                name=allocation_attribute_type
-            ),
+            attribute_type=AAttributeTypeFactory(name=allocation_attribute_type),
         )
 
     project_attribute_names = [

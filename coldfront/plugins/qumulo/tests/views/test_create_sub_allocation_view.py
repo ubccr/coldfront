@@ -48,7 +48,9 @@ class AllocationViewTests(TestCase):
             "rw_users": ["test"],
             "ro_users": ["test1"],
             "cost_center": "CC-1234",
+            "billing_exempt": "No",
             "department_number": "Time Travel Services",
+            "billing_cycle": "monthly",
             "service_rate": "consumption",
         }
 
@@ -64,7 +66,9 @@ class AllocationViewTests(TestCase):
             "rw_users": ["test2"],
             "ro_users": ["test3"],
             "cost_center": "CC-3232",
+            "billing_exempt": "No",
             "department_number": "Whale-watching",
+            "billing_cycle": "monthly",
             "service_rate": "consumption",
         }
 

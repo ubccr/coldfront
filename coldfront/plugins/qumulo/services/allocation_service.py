@@ -196,6 +196,7 @@ class AllocationService:
             "storage_filesystem_path",
             "storage_export_path",
             "cost_center",
+            "billing_exempt",
             "department_number",
             "technical_contact",
             "billing_contact",
@@ -254,7 +255,6 @@ class AllocationService:
         allocation_defaults = {
             "secure": "No",
             "audit": "No",
-            "exempt": "No",
             "subsidized": "No",
         }
 

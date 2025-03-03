@@ -73,7 +73,9 @@ class UpdateAllocationView(AllocationView):
             "storage_export_path",
             "storage_ticket",
             "cost_center",
+            "billing_exempt",
             "department_number",
+            "billing_cycle",
             "technical_contact",
             "billing_contact",
             "service_rate",
@@ -157,7 +159,9 @@ class UpdateAllocationView(AllocationView):
         # NOTE - "storage_protocols" will have special handling
         attributes_to_check = [
             "cost_center",
+            "billing_exempt",
             "department_number",
+            "billing_cycle",
             "technical_contact",
             "billing_contact",
             "service_rate",

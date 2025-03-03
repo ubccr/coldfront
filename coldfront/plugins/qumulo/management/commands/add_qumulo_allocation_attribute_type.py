@@ -177,12 +177,19 @@ class Command(BaseCommand):
             is_changeable=False,
         )
 
-        AllocationAttributeType.objects.get_or_create(
-            attribute_type=AttributeType.objects.get(name="Yes/No"),
-            name="exempt",
-            is_required=True,
-            is_private=False,
-            is_changeable=False,
+        AllocationAttributeType.objects.filter(name="exempt").update(
+            name="billing_exempt",
+        )
+
+        AllocationAttributeType.objects.update_or_create(
+            name="billing_exempt",
+            defaults={
+                "attribute_type": AttributeType.objects.get(name="Yes/No"),
+                "is_required": True,
+                "is_private": False,
+                "is_changeable": True,
+                "is_unique": False,
+            },
         )
 
         AllocationAttributeType.objects.get_or_create(

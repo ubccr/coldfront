@@ -103,7 +103,9 @@ class TestValidateFilesystemPathUnique(TestCase):
             "ro_users": [],
             "storage_ticket": "ITSD-54321",
             "cost_center": "Uncle Pennybags",
+            "billing_exempt": "No",
             "department_number": "Time Travel Services",
+            "billing_cycle": "monthly",
             "service_rate": "general",
         }
         create_allocation(
@@ -130,7 +132,9 @@ class TestValidateFilesystemPathUnique(TestCase):
             "ro_users": [],
             "storage_ticket": "ITSD-54321",
             "cost_center": "Uncle Pennybags",
+            "billing_exempt": "No",
             "department_number": "Time Travel Services",
+            "billing_cycle": "monthly",
             "service_rate": "general",
         }
 

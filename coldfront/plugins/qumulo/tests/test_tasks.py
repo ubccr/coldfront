@@ -188,6 +188,7 @@ class TestUpdateStorageAllocationPendingStatus(TestCase):
             "rw_users": ["test"],
             "ro_users": ["test1"],
             "cost_center": "Uncle Pennybags",
+            "billing_exempt": "No",
             "department_number": "Time Travel Services",
             "billing_cycle": "monthly",
             "service_rate": "general",
@@ -245,6 +246,7 @@ class TestStorageAllocationStatuses(TestCase):
             "rw_users": ["test"],
             "ro_users": ["test1"],
             "cost_center": "Uncle Pennybags",
+            "billing_exempt": "No",
             "department_number": "Time Travel Services",
             "billing_cycle": "monthly",
             "service_rate": "general",
@@ -302,7 +304,9 @@ class TestAddMembersToADGroup(TestCase):
             "rw_users": ["foo"],
             "ro_users": ["test1"],
             "cost_center": "Uncle Pennybags",
+            "billing_exempt": "No",
             "department_number": "Time Travel Services",
+            "billing_cycle": "monthly",
             "service_rate": "general",
         }
 
@@ -806,7 +810,9 @@ class TestResetAcl(TestCase):
             "rw_users": ["test"],
             "ro_users": ["test1"],
             "cost_center": "Uncle Pennybags",
+            "billing_exempt": "No",
             "department_number": "Time Travel Services",
+            "billing_cycle": "monthly",
             "service_rate": "general",
         }
         build_data = build_models()
@@ -832,7 +838,9 @@ class TestResetAcl(TestCase):
             "rw_users": ["test"],
             "ro_users": ["test1"],
             "cost_center": "Uncle Pennybags",
+            "billing_exempt": "No",
             "department_number": "Time Travel Services",
+            "billing_cycle": "monthly",
             "service_rate": "general",
         }
 
@@ -919,6 +927,7 @@ class TestIngestQuotasWithDailyUsages(TestCase):
                 "ro_users": [f"user_{index}_ro"],
                 "storage_ticket": f"ITSD-{index}",
                 "cost_center": "Uncle Pennybags",
+                "billing_exempt": "No",
                 "department_number": "Time Travel Services",
                 "billing_cycle": "monthly",
                 "service_rate": "general",
@@ -1097,6 +1106,7 @@ class TestIngestQuotasWithDailyUsages(TestCase):
             "ro_users": [f"user_{index}_ro"],
             "storage_ticket": f"ITSD-{index}",
             "cost_center": "Uncle Pennybags",
+            "billing_exempt": "No",
             "department_number": "Time Travel Services",
             "billing_cycle": "monthly",
             "service_rate": "general",

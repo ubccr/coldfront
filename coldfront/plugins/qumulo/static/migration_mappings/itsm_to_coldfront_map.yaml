@@ -306,11 +306,9 @@ itsm_to_coldfront_map:
       nulls: true # found nulls and found duplicates
   exempt:
     coldfront:
-      - entity: allocation_attribute
+      - entity: allocation_form
         attributes:
-          - name: allocation_attribute_type__name
-            value: exempt
-          - name: value
+          - name: billing_exempt
             value:
               type: Yes/No
               transforms: truthy_or_falsy_to_boolean
