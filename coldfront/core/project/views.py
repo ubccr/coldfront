@@ -1816,8 +1816,9 @@ class ProjectReviewCompleteView(LoginRequiredMixin, UserPassesTestMixin, View):
         project_review_status_completed_obj = ProjectReviewStatusChoice.objects.get(
             name='Completed')
         project_review_obj.status = project_review_status_completed_obj
-        project_review_obj.project.project_needs_review = False
-        project_review_obj.save()
+        if project_review_obj.project.project_needs_review:
+            project_review_obj.project.project_needs_review = False
+            project_review_obj.save()
 
         messages.success(request, 'Project review for {} has been completed'.format(
             project_review_obj.project.title)
