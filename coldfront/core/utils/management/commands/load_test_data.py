@@ -163,6 +163,7 @@ class Command(BaseCommand):
                 email=email.strip()
             )
 
+        # Approvers
         json_data = {
             "astewart": ["Tandon School of Engineering", "Center for Data Science"],
             "arivera": ["Center for Data Science"]
