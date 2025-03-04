@@ -78,7 +78,7 @@ Allocation Detail
           <tr>
             <th scope="row" class="text-nowrap">Status:</th>
             <td>
-              {% if request.user.is_superuser %}
+              {% if request.user.is_superuser or request.user.is_staff%}
                 {{ form.status }}
               {% else %}
                 {{ allocation.status }}
@@ -88,7 +88,7 @@ Allocation Detail
           <tr>
             <th scope="row" class="text-nowrap">Start Date:</th>
             <td>
-              {% if request.user.is_superuser %}
+              {% if request.user.is_superuser or request.user.is_staff%}
                 {{ form.start_date }}
               {% else %}
                 {{ allocation.start_date }}
@@ -98,7 +98,7 @@ Allocation Detail
           <tr>
             <th scope="row" class="text-nowrap">End Date:</th>
             <td>
-              {% if request.user.is_superuser %}
+              {% if request.user.is_superuser or request.user.is_staff%}
                 {{ form.end_date }}
               {% else %}
                 {{ allocation.end_date }}
@@ -119,7 +119,7 @@ Allocation Detail
           <tr>
             <th scope="row" class="text-nowrap">Description:</th>
             <td>
-              {% if request.user.is_superuser %}
+              {% if request.user.is_superuser or request.user.is_staff%}
                 {{ form.description }}
               {% else %}
                 {{ allocation.description|default_if_none:"" }}
@@ -160,7 +160,7 @@ Allocation Detail
           {% endif %}
         </table>
       </div>
-      {% if request.user.is_superuser %}
+      {% if request.user.is_superuser or request.user.is_staff %}
       <div class="float-right">
         {% if allocation.status.name == 'New' or allocation.status.name == 'Renewal Requested' %}
           <button type="submit" name="action" value="approve" class="btn btn-success mr-1 confirm-activate">Approve</button>
@@ -173,12 +173,12 @@ Allocation Detail
   </div>
 </div>
 
-{% if attributes or attributes_with_usage or request.user.is_superuser %}
+{% if attributes or attributes_with_usage or request.user.is_superuser or request.user.is_staff%}
   <div class="card mb-3">
     <div class="card-header">
       <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Allocation Attributes</h3>
       <div class="float-right">
-        {% if request.user.is_superuser %}
+        {% if request.user.is_superuser or request.user.is_staff%}
           <a class="btn btn-success" href="{% url 'allocation-attribute-add' allocation.pk %}" role="button">
             <i class="fas fa-plus" aria-hidden="true"></i> Add Allocation Attribute
           </a>

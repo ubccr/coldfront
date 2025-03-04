@@ -2,6 +2,7 @@ import datetime
 import logging
 from datetime import date
 
+from coldfront.core.user.models import UserProfile
 from dateutil.relativedelta import relativedelta
 from django import forms
 from django.contrib import messages
@@ -95,6 +96,15 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         if self.request.user.has_perm('allocation.can_view_all_allocations'):
             return True
 
+        if self.request.user.has_perm('allocation.can_review_allocation_requests'):
+            # school restriction
+            user = self.request.user
+            user_schools = list(user.userprofile.schools.all())  # Ensure QuerySet evaluation
+            project_school = allocation_obj.project.school
+            if user_schools:
+                if project_school.pk in [school.pk for school in user_schools]:
+                    return True
+
         return allocation_obj.has_perm(self.request.user, AllocationPermission.USER)
 
     def get_context_data(self, **kwargs):
@@ -134,8 +144,8 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context['attributes'] = attributes
         context['allocation_changes'] = allocation_changes
 
-        # Can the user update the project?
-        context['is_allowed_to_update_project'] = allocation_obj.project.has_perm(self.request.user, ProjectPermission.UPDATE)
+        # Can the user update the project? # See if we would like to let an approver renew allocation; if so, we need to grant access in AllocationRenewView
+        context['is_allowed_to_update_project'] = allocation_obj.project.has_perm(self.request.user, ProjectPermission.UPDATE) or self.request.user.is_staff
 
         noteset = allocation_obj.allocationusernote_set
         notes = noteset.all() if self.request.user.is_superuser else noteset.filter(is_private=False)
@@ -158,7 +168,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         }
 
         form = AllocationUpdateForm(initial=initial_data)
-        if not self.request.user.is_superuser:
+        if not self.request.user.is_superuser and not self.request.user.is_staff:
             form.fields['is_locked'].disabled = True
             form.fields['is_changeable'].disabled = True
 
@@ -170,7 +180,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
     def post(self, request, *args, **kwargs):
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
-        if not self.request.user.is_superuser:
+        if not self.request.user.is_superuser and not self.request.user.is_staff:
             messages.success(
                 request, 'You do not have permission to update the allocation')
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
@@ -982,6 +992,20 @@ class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templat
         context = super().get_context_data(**kwargs)
         allocation_list = Allocation.objects.filter(
             status__name__in=['New', 'Renewal Requested', 'Paid', 'Approved',])
+        user = self.request.user
+        # Restrict non-superusers to allocations from their school
+        if not user.is_superuser:
+            try:
+                user_school = user.userprofile.schools.all()  # Fetch the schools associated with the user
+                if user_school.exists():  # Ensure user has schools
+                    allocation_list = allocation_list.filter(project__school__in=user_school)
+                else:
+                    messages.warning(self.request, "You are not associated with any school.")
+                    allocation_list = Allocation.objects.none()
+            except UserProfile.DoesNotExist:
+                messages.warning(self.request, "No associated profile found.")
+                allocation_list = Allocation.objects.none()
+
         context['allocation_status_active'] = AllocationStatusChoice.objects.get(name='Active')
         context['allocation_list'] = allocation_list
         context['PROJECT_ENABLE_PROJECT_REVIEW'] = PROJECT_ENABLE_PROJECT_REVIEW
@@ -1445,6 +1469,21 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
         if self.request.user.has_perm('allocation.can_view_all_allocations'):
             return True
 
+        if self.request.user.has_perm('allocation.can_review_allocation_requests'):
+            """
+            Added since in AllocationChangeDeleteAttributeView, an approver with can_review_allocation_requests 
+            can delete allocation change requests. After a successful deletion, the user is redirected to this 
+            allocation change detail view where they may not have access because can_review_allocation_requests is 
+            not checked before. We could remove this back or add more restrictions in other functions if needed.
+            """
+            # school restriction
+            user = self.request.user
+            user_schools = list(user.userprofile.schools.all())  # Ensure QuerySet evaluation
+            project_school = allocation_change_obj.allocation.project.school
+            if user_schools:
+                if project_school.pk in [school.pk for school in user_schools]:
+                    return True
+
         if allocation_change_obj.allocation.has_perm(self.request.user, AllocationPermission.MANAGER):
             return True
 
@@ -1689,6 +1728,19 @@ class AllocationChangeListView(LoginRequiredMixin, UserPassesTestMixin, Template
         context = super().get_context_data(**kwargs)
         allocation_change_list = AllocationChangeRequest.objects.filter(
             status__name__in=['Pending', ])
+        user = self.request.user
+        # Restrict non-superusers to allocations from their school
+        if not user.is_superuser:
+            try:
+                user_school = user.userprofile.schools.all()  # Fetch the schools associated with the user
+                if user_school.exists():  # Ensure user has schools
+                    allocation_change_list = allocation_change_list.filter(allocation__project__school__in=user_school)
+                else:
+                    messages.warning(self.request, "You are not associated with any school.")
+                    allocation_change_list = Allocation.objects.none()
+            except UserProfile.DoesNotExist:
+                messages.warning(self.request, "No associated profile found.")
+                allocation_change_list = Allocation.objects.none()
         context['allocation_change_list'] = allocation_change_list
         context['PROJECT_ENABLE_PROJECT_REVIEW'] = PROJECT_ENABLE_PROJECT_REVIEW
         return context
@@ -1860,17 +1912,24 @@ class AllocationChangeDeleteAttributeView(LoginRequiredMixin, UserPassesTestMixi
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
+        user = self.request.user
+        allocation_attribute_change_obj = get_object_or_404(AllocationAttributeChangeRequest, pk=self.kwargs.get('pk'))
 
-        if self.request.user.is_superuser:
+        if user.is_superuser:
             return True
 
-        if self.request.user.has_perm('allocation.can_review_allocation_requests'):
-            return True
+        if user.has_perm('allocation.can_review_allocation_requests'):
+            user_schools = list(user.userprofile.schools.all())  # Ensure QuerySet evaluation
+            project_school = allocation_attribute_change_obj.allocation_change_request.allocation.project.school
+            if user_schools:
+                if project_school.pk in [school.pk for school in user_schools]:
+                    return True
 
         messages.error(self.request, 'You do not have permission to update an allocation change request.')
         return False
 
     def get(self, request, pk):
+        """ Restrict deletion of allocation change requests based on the user's school """
         allocation_attribute_change_obj = get_object_or_404(AllocationAttributeChangeRequest, pk=pk)
         allocation_change_pk = allocation_attribute_change_obj.allocation_change_request.pk
 
