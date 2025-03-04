@@ -1,0 +1,144 @@
+
+/*------------------------------------
+- COLOR nyu-nyu-primary-violet-violet
+------------------------------------*/
+.alert-nyu-primary-violet {
+    color: #0e0016;
+    background-color: #be65f8;
+    border-color: #b652f7;
+}
+
+.alert-nyu-primary-violet hr {
+    border-top-color: #ab39f6;
+}
+
+.alert-nyu-primary-violet .alert-link {
+    color: #000000;
+}
+
+.badge-nyu-primary-violet {
+    color: #fff;
+    background-color: #57068c;
+}
+
+.badge-nyu-primary-violet[href]:hover, .badge-nyu-primary-violet[href]:focus {
+    color: #fff;
+    background-color: #38035b;
+}
+
+.bg-nyu-primary-violet {
+    background-color: #57068c !important;
+}
+
+a.bg-nyu-primary-violet:hover, a.bg-nyu-primary-violet:focus,
+button.bg-nyu-primary-violet:hover,
+button.bg-nyu-primary-violet:focus {
+    background-color: #38035b !important;
+}
+
+.border-nyu-primary-violet {
+    border-color: #57068c !important;
+}
+
+.btn-nyu-primary-violet {
+    color: #fff;
+    background-color: #57068c;
+    border-color: #57068c;
+}
+
+.btn-nyu-primary-violet:hover {
+    color: #fff;
+    background-color: #410469;
+    border-color: #38035b;
+}
+
+.btn-nyu-primary-violet:focus, .btn-nyu-primary-violet.focus {
+    box-shadow: 0 0 0 0.2rem rgba(87, 6, 140, 0.5);
+}
+
+.btn-nyu-primary-violet.disabled, .btn-nyu-primary-violet:disabled {
+    color: #fff;
+    background-color: #57068c;
+    border-color: #57068c;
+}
+
+.btn-nyu-primary-violet:not(:disabled):not(.disabled):active, .btn-nyu-primary-violet:not(:disabled):not(.disabled).active, .show > .btn-nyu-primary-violet.dropdown-toggle {
+    color: #fff;
+    background-color: #38035b;
+    border-color: #2f034c;
+}
+
+.btn-nyu-primary-violet:not(:disabled):not(.disabled):active:focus, .btn-nyu-primary-violet:not(:disabled):not(.disabled).active:focus, .show > .btn-nyu-primary-violet.dropdown-toggle:focus {
+    box-shadow: 0 0 0 0.2rem rgba(87, 6, 140, 0.5);
+}
+
+.btn-outline-nyu-primary-violet {
+    color: #57068c;
+    background-color: transparent;
+    border-color: #57068c;
+}
+
+.btn-outline-nyu-primary-violet:hover {
+    color: #fff;
+    background-color: #57068c;
+    border-color: #57068c;
+}
+
+.btn-outline-nyu-primary-violet:focus, .btn-outline-nyu-primary-violet.focus {
+    box-shadow: 0 0 0 0.2rem rgba(87, 6, 140, 0.5);
+}
+
+.btn-outline-nyu-primary-violet.disabled, .btn-outline-nyu-primary-violet:disabled {
+    color: #57068c;
+    background-color: transparent;
+}
+
+.btn-outline-nyu-primary-violet:not(:disabled):not(.disabled):active, .btn-outline-nyu-primary-violet:not(:disabled):not(.disabled).active, .show > .btn-outline-nyu-primary-violet.dropdown-toggle {
+    color: #fff;
+    background-color: #57068c;
+    border-color: #57068c;
+}
+
+.btn-outline-nyu-primary-violet:not(:disabled):not(.disabled):active:focus, .btn-outline-nyu-primary-violet:not(:disabled):not(.disabled).active:focus, .show > .btn-outline-nyu-primary-violet.dropdown-toggle:focus {
+    box-shadow: 0 0 0 0.2rem rgba(87, 6, 140, 0.5);
+}
+
+.list-group-item-nyu-primary-violet {
+    color: #0e0016;
+    background-color: #b652f7;
+}
+
+.list-group-item-nyu-primary-violet.list-group-item-action:hover, .list-group-item-nyu-primary-violet.list-group-item-action:focus {
+    color: #0e0016;
+    background-color: #ab39f6;
+}
+
+.list-group-item-nyu-primary-violet.list-group-item-action.active {
+    color: #fff;
+    background-color: #0e0016;
+    border-color: #0e0016;
+}
+
+.table-nyu-primary-violet,
+.table-nyu-primary-violet > th,
+.table-nyu-primary-violet > td {
+    background-color: #b652f7;
+}
+
+.table-hover .table-nyu-primary-violet:hover {
+    background-color: #ab39f6;
+}
+
+.table-hover .table-nyu-primary-violet:hover > td,
+.table-hover .table-nyu-primary-violet:hover > th {
+    background-color: #ab39f6;
+}
+
+.text-nyu-primary-violet {
+    color: #57068c !important;
+}
+
+a.text-nyu-primary-violet:hover, a.text-nyu-primary-violet:focus {
+    color: #38035b !important;
+}
+
