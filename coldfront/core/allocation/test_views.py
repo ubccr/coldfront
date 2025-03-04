@@ -26,7 +26,13 @@ from coldfront.core.test_helpers.factories import (
 )
 from coldfront.core.allocation.models import (
     AllocationChangeRequest,
-    AllocationChangeStatusChoice, AllocationStatusChoice, AllocationAttributeChangeRequest, Allocation, AllocationAttribute, AllocationAttributeType, AttributeType,
+    AllocationChangeStatusChoice,
+    AllocationStatusChoice,
+    AllocationAttributeChangeRequest,
+    Allocation,
+    AllocationAttribute,
+    AllocationAttributeType,
+    AttributeType,
 )
 
 logging.disable(logging.CRITICAL)
