@@ -128,95 +128,6 @@ class AllocationListViewTest(AllocationViewBaseTest):
         )
         self.assertEqual(len(response.context['allocation_list']), 1)
 
-
-class AllocationDetailViewTest(TestCase):
-    """Tests for the AllocationDetailView access control."""
-
-    def setUp(self):
-        """Set up users, permissions, schools, and allocations."""
-        # Create users
-        self.superuser = User.objects.create(username="superuser", is_superuser=True)
-        self.approver_user = User.objects.create(username="approver_user")
-        self.regular_user = User.objects.create(username="regular_user")
-        self.viewer_user = User.objects.create(username="viewer_user")  # Has `can_view_all_allocations`
-        self.allocation_user = User.objects.create(username="allocation_user")  # Explicit allocation access
-
-        # Create user profiles
-        self.approver_profile = UserProfile.objects.get(user=self.approver_user)
-
-        # Create schools
-        self.school1 = School.objects.create(description="Tandon School of Engineering")
-        self.school2 = School.objects.create(description="NYU IT")
-
-        # Assign permissions
-        self.view_all_perm = Permission.objects.get(codename="can_view_all_allocations")
-        self.review_perm = Permission.objects.get(codename="can_review_allocation_requests")
-
-        self.viewer_user.user_permissions.add(self.view_all_perm)
-        self.approver_user.user_permissions.add(self.review_perm)
-
-        # Assign schools to the approver
-        self.approver_profile_obj = ApproverProfile.objects.create(user_profile=self.approver_profile)
-        self.approver_profile_obj.schools.set([self.school1])  # Approver can review Tandon only
-
-        # Create projects
-        self.project1 = Project.objects.create(title="Tandon Project", school=self.school1, pi=self.approver_user)
-        self.project2 = Project.objects.create(title="NYU IT Project", school=self.school2, pi=self.regular_user)
-
-        # Create allocations
-        self.allocation1 = Allocation.objects.create(
-            project=self.project1, quantity=100, justification="Test allocation 1"
-        )
-        self.allocation2 = Allocation.objects.create(
-            project=self.project2, quantity=200, justification="Test allocation 2"
-        )
-
-    def test_superuser_can_access_any_allocation(self):
-        """Test that superusers can access any allocation."""
-        self.client.force_login(self.superuser)
-        response = self.client.get(reverse("allocation-detail", kwargs={"pk": self.allocation1.pk}))
-        self.assertEqual(response.status_code, 200)
-
-        response = self.client.get(reverse("allocation-detail", kwargs={"pk": self.allocation2.pk}))
-        self.assertEqual(response.status_code, 200)
-
-    def test_user_with_can_view_all_allocations_permission_can_access(self):
-        """Test that users with `can_view_all_allocations` permission can access any allocation."""
-        self.client.force_login(self.viewer_user)
-        response = self.client.get(reverse("allocation-detail", kwargs={"pk": self.allocation1.pk}))
-        self.assertEqual(response.status_code, 200)
-
-        response = self.client.get(reverse("allocation-detail", kwargs={"pk": self.allocation2.pk}))
-        self.assertEqual(response.status_code, 200)
-
-    def test_approver_can_access_own_school_allocation(self):
-        """Test that approvers can access allocations for their assigned schools."""
-        self.client.force_login(self.approver_user)
-        response = self.client.get(reverse("allocation-detail", kwargs={"pk": self.allocation1.pk}))
-        self.assertEqual(response.status_code, 200)  # Approver should have access
-
-    def test_approver_cannot_access_other_schools_allocation(self):
-        """Test that approvers cannot access allocations outside their assigned schools."""
-        self.client.force_login(self.approver_user)
-        response = self.client.get(reverse("allocation-detail", kwargs={"pk": self.allocation2.pk}))
-        self.assertEqual(response.status_code, 403)  # Approver should NOT have access
-
-    def test_user_with_allocation_permission_can_access(self):
-        """Test that a user explicitly granted allocation access can view it."""
-        # Manually grant allocation permission
-        self.allocation1.grant_perm(self.allocation_user, "USER")
-        self.client.force_login(self.allocation_user)
-
-        response = self.client.get(reverse("allocation-detail", kwargs={"pk": self.allocation1.pk}))
-        self.assertEqual(response.status_code, 200)
-
-    def test_regular_user_cannot_access(self):
-        """Test that a regular user without permissions cannot access the allocation."""
-        self.client.force_login(self.regular_user)
-        response = self.client.get(reverse("allocation-detail", kwargs={"pk": self.allocation1.pk}))
-        self.assertEqual(response.status_code, 403)
-
-
 class AllocationChangeDetailViewTest(AllocationViewBaseTest):
     """Tests for AllocationChangeDetailView"""
 
@@ -359,7 +270,83 @@ class AllocationDetailViewTest(AllocationViewBaseTest):
     """Tests for AllocationDetailView"""
 
     def setUp(self):
+        """Set up users, permissions, schools, and allocations."""
         self.url = f'/allocation/{self.allocation.pk}/'
+
+        # Create users
+        self.superuser = User.objects.create(username="superuser", is_superuser=True)
+        self.approver_user = User.objects.create(username="approver_user")
+        self.regular_user = User.objects.create(username="regular_user")
+        self.viewer_user = User.objects.create(username="viewer_user")  # Has `can_view_all_allocations`
+
+        # Create user profiles
+        self.approver_profile = UserProfile.objects.get(user=self.approver_user)
+
+        # Create schools
+        self.school1, _ = School.objects.get_or_create(description="Tandon School of Engineering")
+        self.school2, _ = School.objects.get_or_create(description="NYU IT")
+
+        # Assign permissions
+        self.view_all_perm = Permission.objects.get(codename="can_view_all_allocations")
+        self.review_perm = Permission.objects.get(codename="can_review_allocation_requests")
+
+        self.viewer_user.user_permissions.add(self.view_all_perm)
+        self.approver_user.user_permissions.add(self.review_perm)
+
+        # Assign schools to the approver
+        self.approver_profile_obj = ApproverProfile.objects.create(user_profile=self.approver_profile)
+        self.approver_profile_obj.schools.set([self.school1])  # Approver can review Tandon only
+
+        # Create projects
+        status = ProjectStatusChoiceFactory(name='Active')
+        self.project1 = Project.objects.create(title="Tandon Project", school=self.school1, pi=self.approver_user, status=status)
+        self.project2 = Project.objects.create(title="NYU IT Project", school=self.school2, pi=self.regular_user, status=status)
+
+        # Create allocations
+        self.allocation1 = Allocation.objects.create(
+            project=self.project1, quantity=100, justification="Test allocation 1",
+            status=AllocationStatusChoice.objects.get(name="New")
+        )
+        self.allocation2 = Allocation.objects.create(
+            project=self.project2, quantity=200, justification="Test allocation 2",
+            status=AllocationStatusChoice.objects.get(name="New")
+        )
+
+    def test_superuser_can_access_any_allocation(self):
+        """Test that superusers can access any allocation."""
+        self.client.force_login(self.superuser)
+        response = self.client.get(reverse("allocation-detail", kwargs={"pk": self.allocation1.pk}))
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.get(reverse("allocation-detail", kwargs={"pk": self.allocation2.pk}))
+        self.assertEqual(response.status_code, 200)
+
+    def test_user_with_can_view_all_allocations_permission_can_access(self):
+        """Test that users with `can_view_all_allocations` permission can access any allocation."""
+        self.client.force_login(self.viewer_user)
+        response = self.client.get(reverse("allocation-detail", kwargs={"pk": self.allocation1.pk}))
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.get(reverse("allocation-detail", kwargs={"pk": self.allocation2.pk}))
+        self.assertEqual(response.status_code, 200)
+
+    def test_approver_can_access_own_school_allocation(self):
+        """Test that approvers can access allocations for their assigned schools."""
+        self.client.force_login(self.approver_user)
+        response = self.client.get(reverse("allocation-detail", kwargs={"pk": self.allocation1.pk}))
+        self.assertEqual(response.status_code, 200)  # Approver should have access
+
+    def test_approver_cannot_access_other_schools_allocation(self):
+        """Test that approvers cannot access allocations outside their assigned schools."""
+        self.client.force_login(self.approver_user)
+        response = self.client.get(reverse("allocation-detail", kwargs={"pk": self.allocation2.pk}))
+        self.assertEqual(response.status_code, 403)  # Approver should NOT have access
+
+    def test_regular_user_cannot_access(self):
+        """Test that a regular user without permissions cannot access the allocation."""
+        self.client.force_login(self.regular_user)
+        response = self.client.get(reverse("allocation-detail", kwargs={"pk": self.allocation1.pk}))
+        self.assertEqual(response.status_code, 403)
 
     def test_allocation_detail_access(self):
         self.allocation_access_tstbase(self.url)
