@@ -14,7 +14,6 @@ class ActiveDirectoryAPI:
         serverName = os.environ.get("AD_SERVER_NAME")
         adUser = os.environ.get("AD_USERNAME")
         adUserPwd = os.environ.get("AD_USER_PASS")
-
         server = Server(host=serverName, use_ssl=True, get_info=ALL)
         self.conn = Connection(
             server,
@@ -22,7 +21,6 @@ class ActiveDirectoryAPI:
             password=adUserPwd,
             authentication=NTLM,
         )
-
         if not self.conn.bind():
             raise self.conn.result
 
