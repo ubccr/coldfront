@@ -1,5 +1,7 @@
 import logging
 
+from coldfront.core.allocation.views import GENERAL_RESOURCE_NAME
+from coldfront.core.resource.models import Resource, ResourceType
 from coldfront.core.project.models import Project
 from coldfront.core.school.models import School
 from coldfront.core.user.models import UserProfile, ApproverProfile
@@ -24,7 +26,13 @@ from coldfront.core.test_helpers.factories import (
 )
 from coldfront.core.allocation.models import (
     AllocationChangeRequest,
-    AllocationChangeStatusChoice, Allocation, AllocationStatusChoice, AllocationAttributeChangeRequest,
+    AllocationChangeStatusChoice,
+    AllocationStatusChoice,
+    AllocationAttributeChangeRequest,
+    Allocation,
+    AllocationAttribute,
+    AllocationAttributeType,
+    AttributeType,
 )
 
 logging.disable(logging.CRITICAL)
@@ -414,6 +422,59 @@ class AllocationCreateViewTest(AllocationViewBaseTest):
             'quantity': '1',
             'resource': f'{self.allocation.resources.first().pk}',
         }
+
+        # Create resources
+        self.resource_standard = Resource.objects.create(name="Tandon",
+                                                         resource_type=ResourceType.objects.create(name="Generic"))
+        self.resource_hpc = Resource.objects.create(name=GENERAL_RESOURCE_NAME,
+                                                    resource_type=ResourceType.objects.create(name="Cluster"))
+
+        # Create AllocationAttributeType for slurm_account_name
+        self.slurm_account_attr_type, _ = AllocationAttributeType.objects.get_or_create(
+            name='slurm_account_name', attribute_type=AttributeType.objects.create(name='Text'),
+            has_usage=False, is_private=False)
+
+    def test_allocationcreateview_post_standard_resource(self):
+        """Test POST to the AllocationCreateView with a standard resource and check slurm_account_name"""
+        self.post_data['resource'] = str(self.resource_standard.pk)
+        initial_count = self.project.allocation_set.count()
+
+        response = self.client.post(self.url, data=self.post_data, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Allocation requested.")
+        self.assertEqual(self.project.allocation_set.count(), initial_count + 1)
+
+        # Verify AllocationAttribute for slurm_account_name
+        allocation = self.project.allocation_set.latest('id')
+        expected_slurm_name = f"pr_{self.project.pk}_{self.resource_standard.name}"
+
+        slurm_attr = AllocationAttribute.objects.get(
+            allocation_attribute_type=self.slurm_account_attr_type,
+            allocation=allocation
+        )
+        self.assertEqual(slurm_attr.value, expected_slurm_name)
+
+    def test_allocationcreateview_post_hpc_resource(self):
+        """Test POST to the AllocationCreateView with University HPC resource and check slurm_account_name"""
+        self.post_data['resource'] = str(self.resource_hpc.pk)
+        initial_count = self.project.allocation_set.count()
+
+        response = self.client.post(self.url, data=self.post_data, follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Allocation requested.")
+        self.assertEqual(self.project.allocation_set.count(), initial_count + 1)
+
+        # Verify AllocationAttribute for slurm_account_name
+        allocation = self.project.allocation_set.latest('id')
+        expected_slurm_name = f"pr_{self.project.pk}_general"
+
+        slurm_attr = AllocationAttribute.objects.get(
+            allocation_attribute_type=self.slurm_account_attr_type,
+            allocation=allocation
+        )
+        self.assertEqual(slurm_attr.value, expected_slurm_name)
 
     def test_allocationcreateview_access(self):
         """Test access to the AllocationCreateView"""
