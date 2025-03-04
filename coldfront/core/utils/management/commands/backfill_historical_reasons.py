@@ -8,14 +8,20 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
             '--module',
-            help='Primary module to backfill historical reasons into, i.e. allocation',
+            help='Primary module to backfill change reasons into, i.e. allocation',
             required=True
         )
 
         parser.add_argument(
             '--model',
-            help='Model to backfill historical reasons into, i.e. AllocationAttribute',
+            help='Model to backfill change reasons into, i.e. AllocationAttribute',
             required=True
+        )
+
+        parser.add_argument(
+            '--replace',
+            help='Replace current existing change reasons',
+            action='store_true'
         )
 
     def handle(self, *args, **options):
@@ -28,7 +34,7 @@ class Command(BaseCommand):
             history = get_history_manager_for_model(model_obj)
             records = history.all()
             for record in records:
-                if record.history_change_reason:
+                if record.history_change_reason and not options.get('replace'):
                     continue
 
                 prev_record = record.prev_record
