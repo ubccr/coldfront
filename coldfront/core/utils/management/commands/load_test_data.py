@@ -93,53 +93,57 @@ dois = [
 # resource_type, parent_resource, name, description, school, is_available, is_public, is_allocatable
 resources = [
 
-    # Generic
-    ('Generic', None, 'Arts & Science', 'Arts & Science Generic', School.objects.get(description='Arts & Science'),
-     True, False, True),
-    ('Generic', None, 'NYU IT', 'NYU IT Generic', School.objects.get(description='NYU IT'), True, False, True),
-    ('Generic', None, 'Tandon-GPU-Adv', 'Tandon School of Engineering Generic',
-    School.objects.get(description='Tandon School of Engineering'), True, False, True),
-
-    # Clusters
+    # Generic University Cluster
     ('Cluster', None, 'University HPC',
      'University Academic Cluster', None, True, True, True),
-    ('Cluster', None, 'Chemistry', 'Chemistry Cluster', None, True, False, False),
-    ('Cluster', None, 'Physics', 'Physics Cluster', None, True, False, False),
-    ('Cluster', None, 'Industry', 'Industry Cluster', None, True, False, False),
-    ('Cluster', None, 'University Metered HPC', 'SU metered Cluster', None,
-        True, True, True),
+
+    # Generic
+    ('Generic', None, 'Tandon', 'Tandon-wide-resources', School.objects.get(description='Tandon School of Engineering'),
+     True, False, True), #cgray
+    ('Generic', None, 'Tandon-GPU-Adv', 'Advanced GPU resource', School.objects.get(description='Tandon School of Engineering'),
+     True, False, True),
+    ('Generic', None, 'CDS', 'CDS-wide-resources', School.objects.get(description='Center for Data Science'), True, False, True),
+    ('Generic', None, 'CDS-GPU-Prio', 'Priority GPU resource',
+     School.objects.get(description='Center for Data Science'), True, False, True), # sfoster
+
+    # Clusters
+    # ('Cluster', None, 'Chemistry', 'Chemistry Cluster', None, True, False, False),
+    # ('Cluster', None, 'Physics', 'Physics Cluster', None, True, False, False),
+    # ('Cluster', None, 'Industry', 'Industry Cluster', None, True, False, False),
+    # ('Cluster', None, 'University Metered HPC', 'SU metered Cluster', None,
+    #     True, True, True),
 
     # Cluster Partitions scavengers
-    ('Cluster Partition', 'Chemistry', 'Chemistry-scavenger',
-     'Scavenger partition on Chemistry cluster', None, True, False, False),
-    ('Cluster Partition', 'Physics', 'Physics-scavenger',
-     'Scavenger partition on Physics cluster', None, True, False, False),
-    ('Cluster Partition', 'Industry', 'Industry-scavenger',
-     'Scavenger partition on Industry cluster', None, True, False, False),
-
-    # Cluster Partitions Users
-    ('Cluster Partition', 'Chemistry', 'Chemistry-cgray',
-     "Carl Gray's nodes", None, True, False, True),
-    ('Cluster Partition', 'Physics', 'Physics-sfoster',
-     "Stephanie Foster's nodes", None, True, False, True),
-
-    # Servers
-    ('Server', None, 'server-cgray',
-     "Server for Carl Gray's research lab", None, True, False, True),
-    ('Server', None, 'server-sfoster',
-     "Server for Stephanie Foster's research lab", None, True, False, True),
-
-    # Storage
-    ('Storage', None, 'Budgetstorage',
-     'Low-tier storage option - NOT BACKED UP', None, True, True, True),
-    ('Storage', None, 'ProjectStorage',
-     'Enterprise-level storage - BACKED UP DAILY', None, True, True, True),
-
-    # Cloud
-    ('Cloud', None, 'University Cloud',
-     'University Research Cloud', None, True, True, True),
-    ('Storage', 'University Cloud', 'University Cloud Storage',
-     'Storage available to cloud instances', None, True, True, True),
+    # ('Cluster Partition', 'Chemistry', 'Chemistry-scavenger',
+    #  'Scavenger partition on Chemistry cluster', None, True, False, False),
+    # ('Cluster Partition', 'Physics', 'Physics-scavenger',
+    #  'Scavenger partition on Physics cluster', None, True, False, False),
+    # ('Cluster Partition', 'Industry', 'Industry-scavenger',
+    #  'Scavenger partition on Industry cluster', None, True, False, False),
+    #
+    # # Cluster Partitions Users
+    # ('Cluster Partition', 'Chemistry', 'Chemistry-cgray',
+    #  "Carl Gray's nodes", None, True, False, True),
+    # ('Cluster Partition', 'Physics', 'Physics-sfoster',
+    #  "Stephanie Foster's nodes", None, True, False, True),
+    #
+    # # Servers
+    # ('Server', None, 'server-cgray',
+    #  "Server for Carl Gray's research lab", None, True, False, True),
+    # ('Server', None, 'server-sfoster',
+    #  "Server for Stephanie Foster's research lab", None, True, False, True),
+    #
+    # # Storage
+    # ('Storage', None, 'Budgetstorage',
+    #  'Low-tier storage option - NOT BACKED UP', None, True, True, True),
+    # ('Storage', None, 'ProjectStorage',
+    #  'Enterprise-level storage - BACKED UP DAILY', None, True, True, True),
+    #
+    # # Cloud
+    # ('Cloud', None, 'University Cloud',
+    #  'University Research Cloud', None, True, True, True),
+    # ('Storage', 'University Cloud', 'University Cloud Storage',
+    #  'Storage available to cloud instances', None, True, True, True),
 
 ]
 
@@ -160,8 +164,8 @@ class Command(BaseCommand):
             )
 
         json_data = {
-            "astewart": ["Tandon School of Engineering", "NYU IT"],
-            "arivera": ["NYU IT"]
+            "astewart": ["Tandon School of Engineering", "Center for Data Science"],
+            "arivera": ["Center for Data Science"]
         }
         load_approver_schools(json_data)
 
@@ -195,9 +199,9 @@ class Command(BaseCommand):
                 is_allocatable=is_allocatable
             )
 
-        resource_obj = Resource.objects.get(name='server-cgray')
+        resource_obj = Resource.objects.get(name='Tandon')
         resource_obj.allowed_users.add(User.objects.get(username='cgray'))
-        resource_obj = Resource.objects.get(name='server-sfoster')
+        resource_obj = Resource.objects.get(name='CDS')
         resource_obj.allowed_users.add(User.objects.get(username='sfoster'))
 
         pi1 = User.objects.get(username='cgray')
@@ -241,11 +245,11 @@ class Command(BaseCommand):
             value=1756522,
         )
 
-        univ_hpc = Resource.objects.get(name='University HPC')
-        for scavanger in ('Chemistry-scavenger', 'Physics-scavenger', 'Industry-scavenger', ):
-            resource_obj = Resource.objects.get(name=scavanger)
-            univ_hpc.linked_resources.add(resource_obj)
-            univ_hpc.save()
+        # univ_hpc = Resource.objects.get(name='University HPC')
+        # for scavanger in ('Chemistry-scavenger', 'Physics-scavenger', 'Industry-scavenger', ):
+        #     resource_obj = Resource.objects.get(name=scavanger)
+        #     univ_hpc.linked_resources.add(resource_obj)
+        #     univ_hpc.save()
 
         publication_source = PublicationSource.objects.get(name='doi')
         # for title, author, year, unique_id, source in (
@@ -319,7 +323,7 @@ class Command(BaseCommand):
         )
 
         allocation_obj.resources.add(
-            Resource.objects.get(name='Chemistry-cgray'))
+            Resource.objects.get(name='Tandon'))
         allocation_obj.save()
 
         allocation_attribute_type_obj = AllocationAttributeType.objects.get(
@@ -327,7 +331,7 @@ class Command(BaseCommand):
         AllocationAttribute.objects.get_or_create(
             allocation_attribute_type=allocation_attribute_type_obj,
             allocation=allocation_obj,
-            value='cgray')
+            value=f"pr_{allocation_obj.project.pk}_Tandon")
 
         allocation_attribute_type_obj = AllocationAttributeType.objects.get(
             name='slurm_user_specs')
@@ -374,7 +378,7 @@ class Command(BaseCommand):
         AllocationAttribute.objects.get_or_create(
             allocation_attribute_type=allocation_attribute_type_obj,
             allocation=allocation_obj,
-            value='cgray')
+            value=f"pr_{allocation_obj.project.pk}_general")
 
         allocation_attribute_type_obj = AllocationAttributeType.objects.get(
             name='SupportersQOS')
@@ -407,8 +411,15 @@ class Command(BaseCommand):
         )
 
         allocation_obj.resources.add(
-            Resource.objects.get(name='Budgetstorage'))
+            Resource.objects.get(name='Tandon'))
         allocation_obj.save()
+
+        allocation_attribute_type_obj = AllocationAttributeType.objects.get(
+            name='slurm_account_name')
+        AllocationAttribute.objects.get_or_create(
+            allocation_attribute_type=allocation_attribute_type_obj,
+            allocation=allocation_obj,
+            value=f"pr_{allocation_obj.project.pk}_Tandon")
 
         allocation_user_obj = AllocationUser.objects.create(
             allocation=allocation_obj,
@@ -426,14 +437,14 @@ class Command(BaseCommand):
             justification='I need compute time on metered cluster.'
         )
         allocation_obj.resources.add(
-            Resource.objects.get(name='University Metered HPC'))
+            Resource.objects.get(name='Tandon'))
         allocation_obj.save()
         allocation_attribute_type_obj = AllocationAttributeType.objects.get(
             name='slurm_account_name')
         AllocationAttribute.objects.get_or_create(
             allocation_attribute_type=allocation_attribute_type_obj,
             allocation=allocation_obj,
-            value='cgray-metered')
+            value=f"pr_{allocation_obj.project.pk}_Tandon")
         allocation_attribute_type_obj = AllocationAttributeType.objects.get(
             name='Core Usage (Hours)')
         AllocationAttribute.objects.get_or_create(
@@ -452,9 +463,9 @@ class Command(BaseCommand):
         pi2.save()
         project_obj, _ = Project.objects.get_or_create(
             pi=pi2,
-            title='Measuring critical behavior of quantum Hall transitions',
-            description='This purpose of this project is to measure the critical behavior of quantum Hall transitions.',
-            school=School.objects.get(description='Arts & Science'),
+            title='CDS Project title 1',
+            description='This project is for research in Center for Data Science.',
+            school=School.objects.get(description='Center for Data Science'),
             status=ProjectStatusChoice.objects.get(name='Active')
         )
 
@@ -523,7 +534,7 @@ class Command(BaseCommand):
             status=GrantStatusChoice.objects.get(name='Active')
         )
 
-        # Add university cloud
+        # Add University HPC
         allocation_obj, _ = Allocation.objects.get_or_create(
             project=project_obj,
             status=AllocationStatusChoice.objects.get(name='Active'),
@@ -534,15 +545,15 @@ class Command(BaseCommand):
         )
 
         allocation_obj.resources.add(
-            Resource.objects.get(name='University Cloud'))
+            Resource.objects.get(name='University HPC'))
         allocation_obj.save()
 
         allocation_attribute_type_obj = AllocationAttributeType.objects.get(
-            name='Cloud Account Name')
+            name='slurm_account_name')
         AllocationAttribute.objects.get_or_create(
             allocation_attribute_type=allocation_attribute_type_obj,
             allocation=allocation_obj,
-            value='sfoster-openstack')
+            value=f"pr_{allocation_obj.project.pk}_general")
 
         allocation_attribute_type_obj = AllocationAttributeType.objects.get(
             name='Core Usage (Hours)')
@@ -560,106 +571,106 @@ class Command(BaseCommand):
             status=AllocationUserStatusChoice.objects.get(name='Active')
         )
 
-        # Add university cloud storage
-        allocation_obj, _ = Allocation.objects.get_or_create(
-            project=project_obj,
-            status=AllocationStatusChoice.objects.get(name='Active'),
-            start_date=start_date,
-            end_date=end_date,
-            is_changeable=True,
-            justification='Need extra storage for webserver.'
-        )
-
-        allocation_attribute_type_obj = AllocationAttributeType.objects.get(
-            name='Cloud Account Name')
-        AllocationAttribute.objects.get_or_create(
-            allocation_attribute_type=allocation_attribute_type_obj,
-            allocation=allocation_obj,
-            value='sfoster-openstack')
-
-        allocation_attribute_type_obj = AllocationAttributeType.objects.get(
-            name='Cloud Storage Quota (TB)')
-        allocation_attribute_obj, _ = AllocationAttribute.objects.get_or_create(
-            allocation_attribute_type=allocation_attribute_type_obj,
-            allocation=allocation_obj,
-            value=20)
-
-        allocation_attribute_obj.allocationattributeusage.value = 10
-        allocation_attribute_obj.allocationattributeusage.save()
-
-        allocation_attribute_type_obj = AllocationAttributeType.objects.get(
-            name='Cloud Account Name')
-        AllocationAttribute.objects.get_or_create(
-            allocation_attribute_type=allocation_attribute_type_obj,
-            allocation=allocation_obj,
-            value='sfoster-openstack')
-
-        allocation_obj.resources.add(
-            Resource.objects.get(name='University Cloud Storage'))
-        allocation_obj.save()
-
-        allocation_user_obj = AllocationUser.objects.create(
-            allocation=allocation_obj,
-            user=pi2,
-            status=AllocationUserStatusChoice.objects.get(name='Active')
-        )
+        # # Add university cloud storage
+        # allocation_obj, _ = Allocation.objects.get_or_create(
+        #     project=project_obj,
+        #     status=AllocationStatusChoice.objects.get(name='Active'),
+        #     start_date=start_date,
+        #     end_date=end_date,
+        #     is_changeable=True,
+        #     justification='Need extra storage for webserver.'
+        # )
+        #
+        # allocation_attribute_type_obj = AllocationAttributeType.objects.get(
+        #     name='Cloud Account Name')
+        # AllocationAttribute.objects.get_or_create(
+        #     allocation_attribute_type=allocation_attribute_type_obj,
+        #     allocation=allocation_obj,
+        #     value='sfoster-openstack')
+        #
+        # allocation_attribute_type_obj = AllocationAttributeType.objects.get(
+        #     name='Cloud Storage Quota (TB)')
+        # allocation_attribute_obj, _ = AllocationAttribute.objects.get_or_create(
+        #     allocation_attribute_type=allocation_attribute_type_obj,
+        #     allocation=allocation_obj,
+        #     value=20)
+        #
+        # allocation_attribute_obj.allocationattributeusage.value = 10
+        # allocation_attribute_obj.allocationattributeusage.save()
+        #
+        # allocation_attribute_type_obj = AllocationAttributeType.objects.get(
+        #     name='Cloud Account Name')
+        # AllocationAttribute.objects.get_or_create(
+        #     allocation_attribute_type=allocation_attribute_type_obj,
+        #     allocation=allocation_obj,
+        #     value='sfoster-openstack')
+        #
+        # allocation_obj.resources.add(
+        #     Resource.objects.get(name='University Cloud Storage'))
+        # allocation_obj.save()
+        #
+        # allocation_user_obj = AllocationUser.objects.create(
+        #     allocation=allocation_obj,
+        #     user=pi2,
+        #     status=AllocationUserStatusChoice.objects.get(name='Active')
+        # )
 
         # Set attributes for resources
-        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='quantity_default_value'), resource=Resource.objects.get(name='University Cloud Storage'), value=1)
-        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='quantity_default_value'), resource=Resource.objects.get(name='University Cloud'), value=1)
-        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='quantity_default_value'), resource=Resource.objects.get(name='ProjectStorage'), value=1)
-        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='quantity_default_value'), resource=Resource.objects.get(name='Budgetstorage'), value=10)
+        # ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
+        #     name='quantity_default_value'), resource=Resource.objects.get(name='University Cloud Storage'), value=1)
+        # ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
+        #     name='quantity_default_value'), resource=Resource.objects.get(name='University Cloud'), value=1)
+        # ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
+        #     name='quantity_default_value'), resource=Resource.objects.get(name='ProjectStorage'), value=1)
+        # ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
+        #     name='quantity_default_value'), resource=Resource.objects.get(name='Budgetstorage'), value=10)
 
-        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='quantity_label'), resource=Resource.objects.get(name='University Cloud Storage'), value='Enter storage in 1TB increments')
-        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='quantity_label'), resource=Resource.objects.get(name='University Cloud'), value='Enter number of compute allocations to purchase')
-        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='quantity_label'), resource=Resource.objects.get(name='ProjectStorage'), value='Enter storage in 1TB increments')
-        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='quantity_label'), resource=Resource.objects.get(name='Budgetstorage'), value='Enter storage in 10TB increments (minimum purchase is 10TB)')
+        # ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
+        #     name='quantity_label'), resource=Resource.objects.get(name='University Cloud Storage'), value='Enter storage in 1TB increments')
+        # ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
+        #     name='quantity_label'), resource=Resource.objects.get(name='University Cloud'), value='Enter number of compute allocations to purchase')
+        # ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
+        #     name='quantity_label'), resource=Resource.objects.get(name='ProjectStorage'), value='Enter storage in 1TB increments')
+        # ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
+        #     name='quantity_label'), resource=Resource.objects.get(name='Budgetstorage'), value='Enter storage in 10TB increments (minimum purchase is 10TB)')
 
-        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='slurm_cluster'), resource=Resource.objects.get(name='Chemistry'), value='chemistry')
-        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='slurm_cluster'), resource=Resource.objects.get(name='Physics'), value='physics')
-        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='slurm_cluster'), resource=Resource.objects.get(name='Industry'), value='industry')
-        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='slurm_cluster'), resource=Resource.objects.get(name='University HPC'), value='university-hpc')
-        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='slurm_cluster'), resource=Resource.objects.get(name='University Metered HPC'), 
-            value='metered-hpc')
-
-        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='slurm_specs'), resource=Resource.objects.get(name='Chemistry-scavenger'), value='QOS+=scavenger:Fairshare=100')
-        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='slurm_specs'), resource=Resource.objects.get(name='Physics-scavenger'), value='QOS+=scavenger:Fairshare=100')
-        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='slurm_specs'), resource=Resource.objects.get(name='Industry-scavenger'), value='QOS+=scavenger:Fairshare=100')
-        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='slurm_specs'), resource=Resource.objects.get(name='Chemistry-cgray'), value='QOS+=cgray:Fairshare=100')
-        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='slurm_specs'), resource=Resource.objects.get(name='Physics-sfoster'), value='QOS+=sfoster:Fairshare=100')
-        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='slurm_specs'), resource=Resource.objects.get(name='University Metered HPC'), 
-            value='GrpTRESMins=cpu={cpumin}')
+        # ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
+        #     name='slurm_cluster'), resource=Resource.objects.get(name='Chemistry'), value='chemistry')
+        # ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
+        #     name='slurm_cluster'), resource=Resource.objects.get(name='Physics'), value='physics')
+        # ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
+        #     name='slurm_cluster'), resource=Resource.objects.get(name='Industry'), value='industry')
+        # ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
+        #     name='slurm_cluster'), resource=Resource.objects.get(name='University HPC'), value='university-hpc')
+        # ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
+        #     name='slurm_cluster'), resource=Resource.objects.get(name='University Metered HPC'),
+        #     value='metered-hpc')
+        #
+        # ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
+        #     name='slurm_specs'), resource=Resource.objects.get(name='Chemistry-scavenger'), value='QOS+=scavenger:Fairshare=100')
+        # ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
+        #     name='slurm_specs'), resource=Resource.objects.get(name='Physics-scavenger'), value='QOS+=scavenger:Fairshare=100')
+        # ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
+        #     name='slurm_specs'), resource=Resource.objects.get(name='Industry-scavenger'), value='QOS+=scavenger:Fairshare=100')
+        # ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
+        #     name='slurm_specs'), resource=Resource.objects.get(name='Chemistry-cgray'), value='QOS+=cgray:Fairshare=100')
+        # ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
+        #     name='slurm_specs'), resource=Resource.objects.get(name='Physics-sfoster'), value='QOS+=sfoster:Fairshare=100')
+        # ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
+        #     name='slurm_specs'), resource=Resource.objects.get(name='University Metered HPC'),
+        #     value='GrpTRESMins=cpu={cpumin}')
 
         #slurm_specs_attrib_list for University Metered HPC
-        attriblist_list = [ '#Set cpumin from Core Usage attribute',
-            'cpumin := :Core Usage (Hours)',
-            '#Default to 1 SU',
-            'cpumin |= 1',
-            '#Convert to cpumin',
-            'cpumin *= 60'
-        ]
-        ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
-            name='slurm_specs_attriblist'), resource=Resource.objects.get(name='University Metered HPC'), 
-            value="\n".join(attriblist_list))
+        # attriblist_list = [ '#Set cpumin from Core Usage attribute',
+        #     'cpumin := :Core Usage (Hours)',
+        #     '#Default to 1 SU',
+        #     'cpumin |= 1',
+        #     '#Convert to cpumin',
+        #     'cpumin *= 60'
+        # ]
+        # ResourceAttribute.objects.get_or_create(resource_attribute_type=ResourceAttributeType.objects.get(
+        #     name='slurm_specs_attriblist'), resource=Resource.objects.get(name='University Metered HPC'),
+        #     value="\n".join(attriblist_list))
 
         # call_command('loaddata', 'test_data.json')
 
