@@ -61,6 +61,7 @@ from coldfront.core.allocation.signals import (allocation_new,
                                                allocation_activate_user,
                                                allocation_disable,
                                                allocation_remove_user,
+                                               allocation_change,
                                                allocation_change_approved,
                                                allocation_change_user_role,
                                                visit_allocation_detail)
@@ -2395,6 +2396,9 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                         'project_title': project_obj.title,
                         'project_id': project_obj.pk,
                     }
+                    allocation_change.send(
+                        sender=self.__class__,
+                        allocation_change_pk=allocation_change_request_obj.pk,)
                     send_allocation_admin_email(allocation_obj,
                                                 f'New Allocation Change Request: {pi_name} - {resource_name}',
                                                 'email/new_allocation_change_request.txt',
