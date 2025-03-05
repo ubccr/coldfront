@@ -31,7 +31,8 @@ from coldfront.core.project.models import (ProjectUserStatusChoice,
 from coldfront.core.resource.models import Resource
 from coldfront.core.user.models import UserProfile
 from coldfront.plugins.ldap_user_info.utils import LDAPSearch
-from coldfront.core.project.utils import (get_new_end_date_from_list,
+from coldfront.core.project.utils import (check_if_pi_eligible,
+                                          get_new_end_date_from_list,
                                           generate_slurm_account_name,
                                           create_admin_action_for_project_creation)
 from coldfront.core.allocation.utils import create_admin_action_for_allocation_creation
@@ -1483,7 +1484,7 @@ def import_slate_projects(json_file_name, out_file_name, importing_user, limit=N
                       f'Mismatch between Slate Project owner and RT Project PI')
                 continue
         else:
-            if user_obj.userprofile.title in ['Faculty', 'Staff', 'Academic (ACNP)', ]:
+            if check_if_pi_eligible(user_obj):
                 project_perms = PROJECT_PERMISSIONS_PER_TYPE.get('Default') | PROJECT_PERMISSIONS_PER_TYPE.get('Research')
                 project_max = project_perms.get('allowed_per_pi')
                 project_objs = Project.objects.filter(status__name='Active', pi=user_obj, type__name='Research')
