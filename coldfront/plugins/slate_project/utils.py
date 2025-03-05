@@ -1147,7 +1147,8 @@ def get_slate_project_info(username):
                 'name': directory.value.split('/')[-1],
                 'access': allocation_user_obj.role.name,
                 'owner': allocation_user_obj.allocation.project.pi.username,
-                'allocated_quantity': allocated_quantity
+                'allocated_quantity': allocated_quantity,
+                'allocation_url': reverse("allocation-detail", kwargs={"pk": allocation_user_obj.allocation.pk})
             }
         )
 
