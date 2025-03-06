@@ -134,7 +134,8 @@ def sync_smb_status(allocation_obj, allocation_attribute_type_obj=None, ldap_con
     gid = int(gid_obj[0].value)
 
     if allocation_attribute_type_obj is None:
-        allocation_attribute_type_obj = AllocationAttributeType.objects.get(name='SMB Enabled')
+        allocation_attribute_type_obj = AllocationAttributeType.objects.get(
+            name='SMB Enabled', linked_resources__name__exact="Slate Project")
 
     if ldap_conn is None:
         ldap_conn = LDAPModify()
@@ -786,7 +787,8 @@ def add_slate_project_groups(allocation_obj):
 
     :param allocation_obj: The allocation the groups are being created from
     """
-    gid_attribute_type = AllocationAttributeType.objects.filter(name='GID')
+    gid_attribute_type = AllocationAttributeType.objects.filter(
+        name='GID', linked_resources__name__exact="Slate Project")
     if not gid_attribute_type.exists():
         logger.error(
             f'Allocation attribute type GID does not exists. No new ldap groups were created.'
