@@ -50,6 +50,7 @@ SLATE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD = import_from_settings('SLATE_PROJECT
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 CENTER_BASE_URL = import_from_settings('CENTER_BASE_URL')
 if EMAIL_ENABLED:
+    SLATE_PROJECT_EMAIL = import_from_settings('SLATE_PROJECT_EMAIL')
     SLATE_PROJECT_TICKET_QUEUE = import_from_settings('SLATE_PROJECT_TICKET_QUEUE', '')
     EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
     EMAIL_CENTER_NAME = import_from_settings('CENTER_NAME')
@@ -689,7 +690,7 @@ def send_expiry_email(allocation_obj):
             'slate_project/email/slate_project_expired.txt',
             template_context,
             EMAIL_SENDER,
-            [SLATE_PROJECT_EMAIL]
+            [SLATE_PROJECT_TICKET_QUEUE]
         )
 
 
