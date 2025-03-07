@@ -22,7 +22,7 @@ from coldfront.core.allocation.models import (
     AllocationChangeStatusChoice,
 )
 
-
+@patch("coldfront.plugins.qumulo.views.allocation_view.FileSystemService")
 @patch("coldfront.plugins.qumulo.views.update_allocation_view.async_task")
 @patch("coldfront.plugins.qumulo.views.update_allocation_view.ActiveDirectoryAPI")
 class UpdateAllocationViewTests(TestCase):
@@ -62,7 +62,10 @@ class UpdateAllocationViewTests(TestCase):
         )
 
     def test_get_access_users_returns_one_user(
-        self, mock_ActiveDirectoryAPI: MagicMock, mock_async_task: MagicMock
+        self,
+        mock_ActiveDirectoryAPI: MagicMock,
+        mock_async_task: MagicMock,
+        mock_file_system_service: MagicMock,
     ):
         form_data = {
             "storage_filesystem_path": "foo",
@@ -87,7 +90,10 @@ class UpdateAllocationViewTests(TestCase):
         self.assertCountEqual(access_users, form_data["rw_users"])
 
     def test_get_access_users_returns_multiple_users(
-        self, mock_ActiveDirectoryAPI: MagicMock, mock_async_task: MagicMock
+        self,
+        mock_ActiveDirectoryAPI: MagicMock,
+        mock_async_task: MagicMock,
+        mock_file_system_service: MagicMock,
     ):
         form_data = {
             "storage_filesystem_path": "foo",
@@ -112,7 +118,10 @@ class UpdateAllocationViewTests(TestCase):
         self.assertCountEqual(access_users, form_data["rw_users"])
 
     def test_get_access_users_returns_no_users(
-        self, mock_ActiveDirectoryAPI: MagicMock, mock_async_task: MagicMock
+        self,
+        mock_ActiveDirectoryAPI: MagicMock,
+        mock_async_task: MagicMock,
+        mock_file_system_service: MagicMock,
     ):
         form_data = {
             "storage_filesystem_path": "foo",
@@ -137,7 +146,10 @@ class UpdateAllocationViewTests(TestCase):
         self.assertCountEqual(access_users, form_data["ro_users"])
 
     def test_set_access_users_ignores_unchanged(
-        self, mock_ActiveDirectoryAPI: MagicMock, mock_async_task: MagicMock
+        self,
+        mock_ActiveDirectoryAPI: MagicMock,
+        mock_async_task: MagicMock,
+        mock_file_system_service: MagicMock,
     ):
 
         form_data = {
@@ -168,7 +180,10 @@ class UpdateAllocationViewTests(TestCase):
             mock_add_user_to_access_allocation.assert_not_called()
 
     def test_set_access_users_removes_user(
-        self, mock_ActiveDirectoryAPI: MagicMock, mock_async_task: MagicMock
+        self,
+        mock_ActiveDirectoryAPI: MagicMock,
+        mock_async_task: MagicMock,
+        mock_file_system_service: MagicMock,
     ):
         form_data = {
             "storage_filesystem_path": "foo",
@@ -206,7 +221,10 @@ class UpdateAllocationViewTests(TestCase):
         self.assertNotIn("test", access_usernames)
 
     def test_set_access_users_removes_user(
-        self, mock_ActiveDirectoryAPI: MagicMock, mock_async_task: MagicMock
+        self,
+        mock_ActiveDirectoryAPI: MagicMock,
+        mock_async_task: MagicMock,
+        mock_file_system_service: MagicMock,
     ):
         mock_active_directory_api = mock_ActiveDirectoryAPI.return_value
 
@@ -242,7 +260,10 @@ class UpdateAllocationViewTests(TestCase):
         )
 
     def test_attribute_change_request_creation(
-        self, mock_ActiveDirectoryAPI: MagicMock, mock_async_task: MagicMock
+        self,
+        mock_ActiveDirectoryAPI: MagicMock,
+        mock_async_task: MagicMock,
+        mock_file_system_service: MagicMock,
     ):
         # allocation and allocation attributes already created
 
@@ -319,7 +340,10 @@ class UpdateAllocationViewTests(TestCase):
             self.assertEqual(change_request.new_value, new_val)
 
     def test_attribute_change_request_creation_with_optional_attributes(
-        self, mock_ActiveDirectoryAPI: MagicMock, mock_async_task: MagicMock
+        self,
+        mock_ActiveDirectoryAPI: MagicMock,
+        mock_async_task: MagicMock,
+        mock_file_system_service: MagicMock,
     ):
         form_data_missing_contacts = {
             "storage_filesystem_path": "foo_missing",
@@ -409,13 +433,19 @@ class UpdateAllocationViewTests(TestCase):
         self.assertTrue(view.form_valid(form))
 
     def test_update_allocation_form_and_view_valid(
-        self, mock_ActiveDirectoryAPI: MagicMock, mock_async_task: MagicMock
+        self,
+        mock_ActiveDirectoryAPI: MagicMock,
+        mock_async_task: MagicMock,
+        mock_file_system_service: MagicMock,
     ):
         response = UpdateAllocationView.as_view()(self.request, allocation_id=1)
         self.assertEqual(response.status_code, 200)
 
     def test_context_data_no_linkage(
-        self, mock_ActiveDirectoryAPI: MagicMock, mock_async_task: MagicMock
+        self,
+        mock_ActiveDirectoryAPI: MagicMock,
+        mock_async_task: MagicMock,
+        mock_file_system_service: MagicMock,
     ):
         view = UpdateAllocationView(
             form=UpdateAllocationForm(data=self.form_data, user_id=self.user.id)
@@ -426,7 +456,10 @@ class UpdateAllocationViewTests(TestCase):
         )
 
     def test_context_data_with_linked_sub(
-        self, mock_ActiveDirectoryAPI: MagicMock, mock_async_task: MagicMock
+        self,
+        mock_ActiveDirectoryAPI: MagicMock,
+        mock_async_task: MagicMock,
+        mock_file_system_service: MagicMock,
     ):
         sub_form_data = {
             "storage_filesystem_path": "foo",
@@ -457,7 +490,10 @@ class UpdateAllocationViewTests(TestCase):
         )
 
     def test_valid_form_with_reset_acls_calls_reset_acls(
-        self, mock_ActiveDirectoryAPI: MagicMock, mock_async_task: MagicMock
+        self,
+        mock_ActiveDirectoryAPI: MagicMock,
+        mock_async_task: MagicMock,
+        mock_file_system_service: MagicMock,
     ):
         request = RequestFactory().post("/irrelevant", {"reset_acls": "set"})
         request.user = self.user
@@ -479,7 +515,10 @@ class UpdateAllocationViewTests(TestCase):
         view._updated_fields_handler.assert_not_called()
 
     def test_reset_acls_runs_task_with_valid_args(
-        self, mock_ActiveDirectoryAPI: MagicMock, mock_async_task: MagicMock
+        self,
+        mock_ActiveDirectoryAPI: MagicMock,
+        mock_async_task: MagicMock,
+        mock_file_system_service: MagicMock,
     ):
         for onOff, trueFalse in {"on": True, "off": False}.items():
             messages.add_message = MagicMock()

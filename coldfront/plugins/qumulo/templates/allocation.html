@@ -1,7 +1,11 @@
-{% extends "common/base.html" %} 
+{% extends "common/base.html" %}
+{% load static %}
 {% load crispy_forms_tags %}
 {% load common_tags %}
-{% load static %}
+
+{% block htmlhead %}
+<link rel="stylesheet" type="text/css" href="{% static 'common/css/file_system_stats.css' %}">
+{% endblock htmlhead %}
 
 {% block title %}
 Create Allocation
@@ -9,6 +13,9 @@ Create Allocation
 
 {% block content %}
 <div>
+
+  {% include "partials/_file_system_stats.html" %}
+
   {% if is_pending == True %}
   <div class="alert alert-warning" role="alert">
     This allocation is marked as pending, please do not update until the status changes.
@@ -34,11 +41,12 @@ Create Allocation
           </button>
         </div>
         <div class="modal-body">
-          <p>Warning: Most allocations require an SMB share.  Submit to confirm.</p>
+          <p>Warning: Most allocations require an SMB share. Submit to confirm.</p>
         </div>
         <div class="modal-footer">
           <button id="smb_warning_button_submit" type="button" class="btn btn-primary">Submit</button>
-          <button id="smb_warning_button_cancel" type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+          <button id="smb_warning_button_cancel" type="button" class="btn btn-secondary"
+            data-dismiss="modal">Cancel</button>
         </div>
       </div>
     </div>

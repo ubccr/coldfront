@@ -307,3 +307,9 @@ class QumuloAPI:
             raise Exception("Unable to get_all_quotas_with_status from QUMULO API")
 
         return next(iter(all_quotas_with_usage))
+
+    def get_file_system_stats(self):
+        try:
+            return self.rc.fs.read_fs_stats()
+        except:
+            return {}

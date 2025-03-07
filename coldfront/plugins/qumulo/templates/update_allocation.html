@@ -1,39 +1,41 @@
-{% extends "common/base.html" %} 
+{% extends "common/base.html" %}
 {% load crispy_forms_tags %}
 {% load common_tags %}
 {% load static %}
+
+{% block htmlhead %}
+<link rel="stylesheet" type="text/css" href="{% static 'common/css/file_system_stats.css' %}">
+{% endblock htmlhead %}
 
 {% block title %}
 Update Allocation
 {% endblock %}
 
 {% block content %}
+
+{% include "partials/_file_system_stats.html" %}
+
 <div>
   <form method="post" id="allocation_form">
     {% csrf_token %}
     {{ form | crispy }}
     <div class="form-group mb-5">
-        <label for="allocation_acl_reset">Reset Allocation ACLs</label>
-        <div class="d-flex justify-content-end">
-            {% if allocation_has_children %}
-            <label for="reset_acl_children" class="mr-2 mb-0 pt-2">
-                Include sub-allocations
-            </label>
-            <input class="mr-2 lr-2" type="checkbox" name="reset_sub_acls" />
-            {% endif %}
-            <button
-                name="reset_acls"
-                type="submit"
-                class="btn btn-primary btn-danger mr-0 lr-2"
-                id="allocation_acl_reset"
-                value="true"
-            >
-                Reset ACLs
-            </button>
-        </div>
-        <small class="form-text text-muted">
-            Click to reset the ACLs for the allocation.
-        </small>
+      <label for="allocation_acl_reset">Reset Allocation ACLs</label>
+      <div class="d-flex justify-content-end">
+        {% if allocation_has_children %}
+        <label for="reset_acl_children" class="mr-2 mb-0 pt-2">
+          Include sub-allocations
+        </label>
+        <input class="mr-2 lr-2" type="checkbox" name="reset_sub_acls" />
+        {% endif %}
+        <button name="reset_acls" type="submit" class="btn btn-primary btn-danger mr-0 lr-2" id="allocation_acl_reset"
+          value="true">
+          Reset ACLs
+        </button>
+      </div>
+      <small class="form-text text-muted">
+        Click to reset the ACLs for the allocation.
+      </small>
     </div>
     <div class="d-flex justify-content-end">
       <button type="submit" class="btn btn-primary mr-2" id="allocation_form_submit">Submit</button>
