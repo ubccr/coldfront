@@ -512,12 +512,14 @@ class AllocationChangeStatusChoiceAdmin(admin.ModelAdmin):
 @admin.register(AllocationChangeRequest)
 class AllocationChangeRequestAdmin(ReviewGroupFilteredResourceQueryset):
     list_display = ('pk', 'allocation', 'status', 'end_date_extension', 'justification', 'notes', )
+    raw_id_fields = ('allocation', )
     list_filter = (ResourceFilter, )
 
 
 @admin.register(AllocationAttributeChangeRequest)
 class AllocationChangeStatusChoiceAdmin(admin.ModelAdmin):
     list_display = ('pk', 'allocation_change_request', 'allocation_attribute', 'old_value', 'new_value', )
+    raw_id_fields = ('allocation_change_request', 'allocation_attribute', )
 
 
 @admin.register(AllocationInvoice)
