@@ -1,0 +1,21 @@
+---
+name: 'Trigger Coldfront Rebuild'
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+jobs:
+  trigger-coldfront-rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger repository_dispatch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -X POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            https://api.github.com/repos/washu-it-ris/coldfront/dispatches \
+            -d '{"event_type":"build_and_push_container_images"}'
+
