@@ -14,7 +14,7 @@ from django.urls import reverse
 from django.contrib.auth.models import User
 
 from coldfront.core.utils.common import import_from_settings
-from coldfront.core.utils.mail import send_email_template, build_link
+from coldfront.core.utils.mail import email_template_context, send_email_template, build_link
 from coldfront.core.allocation.models import (AllocationUserStatusChoice,
                                               AllocationUserRoleChoice,
                                               AllocationAttributeType,
@@ -50,7 +50,7 @@ SLATE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD = import_from_settings('SLATE_PROJECT
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 CENTER_BASE_URL = import_from_settings('CENTER_BASE_URL')
 if EMAIL_ENABLED:
-    SLATE_PROJECT_EMAIL = import_from_settings('SLATE_PROJECT_EMAIL', '')
+    SLATE_PROJECT_TICKET_QUEUE = import_from_settings('SLATE_PROJECT_TICKET_QUEUE', '')
     EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
     EMAIL_CENTER_NAME = import_from_settings('CENTER_NAME')
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
@@ -58,9 +58,49 @@ if EMAIL_ENABLED:
     EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
 
 
+def send_new_allocation_removal_request_email(allocation_removal_request_obj):
+    if EMAIL_ENABLED:
+        template_context = email_template_context()
+        template_context['requestor'] = allocation_removal_request_obj.requestor
+        template_context['project'] = allocation_removal_request_obj.allocation.project
+        template_context['pi'] = allocation_removal_request_obj.allocation.project.pi
+        template_context['resource'] = allocation_removal_request_obj.allocation.get_parent_resource
+        template_context['url'] = build_link(reverse('allocation_removal_requests:allocation-removal-request-list'))
+        send_email_template(
+            'Allocation Removal Request',
+            'slate_project/email/new_allocation_removal_request.txt',
+            template_context,
+            EMAIL_SENDER,
+            [SLATE_PROJECT_TICKET_QUEUE, ],
+        )
+
+
+def send_new_allocation_change_request_email(allocation_change_obj):
+    if EMAIL_ENABLED:
+        project_obj = allocation_change_obj.allocation.project
+        pi_name = project_obj.pi.username
+        resource_name = allocation_change_obj.allocation.get_parent_resource
+        template_context = email_template_context()
+        template_context['pi'] = pi_name
+        template_context['resource'] = resource_name
+        template_context['url'] = build_link(reverse('allocation-change-list'))
+        template_context['project_title'] = project_obj.title
+        template_context['project_detail_url'] = build_link(reverse('project-detail', kwargs={'pk': project_obj.pk}))
+        template_context['project_id'] = project_obj.pk
+        template_context['allocation_attribute_changes'] = allocation_change_obj.allocationattributechangerequest_set.all()
+        send_email_template(
+            f'New Allocation Change Request: {pi_name} - {resource_name}',
+            'slate_project/email/new_allocation_change_request.txt',
+            template_context,
+            EMAIL_SENDER,
+            [SLATE_PROJECT_TICKET_QUEUE, ],
+        )
+
+
 def update_user_status(allocation_user_obj, status):
     allocation_user_obj.status = AllocationUserStatusChoice.objects.get(name=status)
     allocation_user_obj.save()
+
 
 def check_directory_name_format(slate_project_name):
     return not re.search('^[0-9a-zA-Z_-]+$', slate_project_name) is None

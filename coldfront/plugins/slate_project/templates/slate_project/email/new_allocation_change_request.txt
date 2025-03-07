@@ -1,0 +1,6 @@
+An allocation change request in project "{{project_title}}" with id {{project_id}} has been made for {{pi}} - {{resource}}. Please review the change request:
+{{url}}
+
+### Details ###
+{% for attribute_change in allocation_attribute_changes %}
+{{attribute_change.allocation_attribute.allocation_attribute_type.name}} = {{attribute_change.old_value}} -> {{ attribute_change.new_value }}{% endfor %}

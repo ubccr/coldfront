@@ -5,15 +5,17 @@ from django.dispatch import receiver
 from coldfront.core.allocation.signals import (allocation_activate_user,
                                                allocation_remove_user,
                                                allocation_change_user_role,
+                                               allocation_change,
                                                allocation_expire,
                                                allocation_activate,
                                                visit_allocation_detail)
 from coldfront.core.allocation.views import (AllocationAddUsersView,
+                                             AllocationChangeView,
                                              AllocationRemoveUsersView,
                                              AllocationUserDetailView,
                                              AllocationDetailView)
 from coldfront.core.allocation.tasks import update_statuses
-from coldfront.core.allocation.models import AllocationUser, Allocation
+from coldfront.core.allocation.models import AllocationChangeRequest, AllocationUser, Allocation
 from coldfront.core.project.views import (ProjectAddUsersView,
                                           ProjectRemoveUsersView,
                                           ProjectArchiveProjectView,
@@ -27,12 +29,24 @@ from coldfront.plugins.slate_project.utils import (add_user_to_slate_project_gro
                                                    sync_slate_project_users,
                                                    sync_slate_project_ldap_group,
                                                    sync_slate_project_user_statuses,
-                                                   sync_slate_project_allocated_quantity)
-from coldfront.plugins.allocation_removal_requests.views import (AllocationRemoveView,
-                                                                 AllocationApproveRemovalRequestView)
-from coldfront.plugins.allocation_removal_requests.signals import allocation_remove
+                                                   sync_slate_project_allocated_quantity,
+                                                   send_new_allocation_change_request_email,
+                                                   send_new_allocation_removal_request_email)
+from coldfront.plugins.allocation_removal_requests.views import AllocationRemovalRequestView
+from coldfront.plugins.allocation_removal_requests.models import AllocationRemovalRequest
+from coldfront.plugins.allocation_removal_requests.signals import allocation_removal_request
 from coldfront.plugins.customizable_forms.views import GenericView
 from coldfront.core.allocation.signals import allocation_new
+
+
+@receiver(allocation_change, sender=AllocationChangeView)
+def send_allocation_change_request_email(sender, **kwargs):
+    allocation_change_pk = kwargs.get('allocation_change_pk')
+    allocation_change_obj = AllocationChangeRequest.objects.get(pk=allocation_change_pk)
+    if not allocation_change_obj.allocation.get_parent_resource.name == 'Slate Project':
+        return
+
+    send_new_allocation_change_request_email(allocation_change_obj)
 
 @receiver(allocation_activate, sender=AllocationDetailView)
 def add_group(sender, **kwargs):
@@ -121,15 +135,14 @@ def expire(sender, **kwargs):
 
     send_expiry_email(allocation_obj)
 
-@receiver(allocation_remove, sender=AllocationRemoveView)
-@receiver(allocation_remove, sender=AllocationApproveRemovalRequestView)
+@receiver(allocation_removal_request, sender=AllocationRemovalRequestView)
 def remove(sender, **kwargs):
-    allocation_pk = kwargs.get('allocation_pk')
-    allocation_obj = Allocation.objects.get(pk=allocation_pk)
-    if not allocation_obj.get_parent_resource.name == 'Slate Project':
+    allocation_removal_request_pk = kwargs.get('allocation_removal_request_pk')
+    allocation_removal_request_obj = AllocationRemovalRequest.objects.get(pk=allocation_removal_request_pk)
+    if not allocation_removal_request_obj.allocation.get_parent_resource.name == 'Slate Project':
         return
-    if not allocation_obj.status.name == 'Removed':
-        return
+
+    send_new_allocation_removal_request_email(allocation_removal_request_obj)
 
 @receiver(visit_allocation_detail, sender=AllocationDetailView)
 def sync_slate_project(sender, **kwargs):
