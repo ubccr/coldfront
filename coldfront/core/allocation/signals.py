@@ -14,3 +14,6 @@ allocation_remove_user = django.dispatch.Signal()
 
 allocation_change_approved = django.dispatch.Signal()
     #providing_args=["allocation_pk", "allocation_change_pk"]
+
+allocation_change_created = django.dispatch.Signal()
+    #providing_args=["allocation_pk", "allocation_change_pk"]
