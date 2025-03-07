@@ -14,7 +14,7 @@ from coldfront.core.utils.mail import send_allocation_customer_email, send_alloc
 from coldfront.core.allocation.utils import create_admin_action
 from coldfront.core.allocation.models import Allocation, AllocationStatusChoice, AllocationPermission
 from coldfront.core.allocation.signals import allocation_remove_user
-from coldfront.plugins.allocation_removal_requests.signals import allocation_remove
+from coldfront.plugins.allocation_removal_requests.signals import allocation_remove, allocation_removal_request
 from coldfront.plugins.allocation_removal_requests.models import AllocationRemovalRequest, AllocationRemovalStatusChoice
 
 logger = logging.getLogger(__name__)
@@ -63,7 +63,7 @@ class AllocationRemovalRequestView(LoginRequiredMixin, UserPassesTestMixin, Temp
         pk=self.kwargs.get('pk')
         allocation_obj = Allocation.objects.get(pk=pk)
 
-        AllocationRemovalRequest.objects.create(
+        allocation_removal_request_obj = AllocationRemovalRequest.objects.create(
             project_pi=allocation_obj.project.pi,
             requestor=request.user,
             allocation=allocation_obj,
@@ -90,6 +90,7 @@ class AllocationRemovalRequestView(LoginRequiredMixin, UserPassesTestMixin, Temp
                 'project': allocation_obj.project
             }
         )
+        allocation_removal_request.send(sender=self.__class__, allocation_removal_request_pk=allocation_removal_request_obj.pk)
 
         messages.success(request, 'Allocation removal request sent')
         return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': pk}))
