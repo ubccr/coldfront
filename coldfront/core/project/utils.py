@@ -1,4 +1,5 @@
 
+
 def add_project_status_choices(apps, schema_editor):
     ProjectStatusChoice = apps.get_model('project', 'ProjectStatusChoice')
 
@@ -18,3 +19,6 @@ def add_project_user_status_choices(apps, schema_editor):
 
     for choice in ['Active', 'Pending Remove', 'Denied', 'Removed', ]:
         ProjectUserStatusChoice.objects.get_or_create(name=choice)
+
+
+

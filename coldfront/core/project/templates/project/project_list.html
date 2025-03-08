@@ -71,12 +71,17 @@ Project List
             <a href="?order_by=status&direction=asc&{{filter_parameters}}"><i class="fas fa-sort-up" aria-hidden="true"></i><span class="sr-only">Sort Status asc</span></a>
             <a href="?order_by=status&direction=des&{{filter_parameters}}"><i class="fas fa-sort-down" aria-hidden="true"></i><span class="sr-only">Sort Status desc</span></a>
           </th>
+
         </tr>
       </thead>
       <tbody>
         {% for project in project_list %}
           <tr>
-            <td><a href="/project/{{project.id}}/">{{ project.id }}</a></td>
+            {% if project.projectcode %}            
+                <td><a href="/project/{{project.id}}/">{{ project.projectcode }}</a></td> 
+            {% else %}
+                <td><a href="/project/{{project.id}}/">{{ project.id }}</a></td>
+            {% endif %}
             <td>{{ project.pi.username }}</td>
             <td style="text-align: justify; text-justify: inter-word;">{{ project.title }}</td>
             <td>{{ project.field_of_science.description }}</td>

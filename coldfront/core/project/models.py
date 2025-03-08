@@ -15,6 +15,7 @@ from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.core.utils.common import import_from_settings
 
 PROJECT_ENABLE_PROJECT_REVIEW = import_from_settings('PROJECT_ENABLE_PROJECT_REVIEW', False)
+INSTITUTION_CODE = import_from_settings('INSTITUTION_CODE', False)
 
 class ProjectPermission(Enum):
     """ A project permission stores the user, manager, pi, and update fields of a project. """
@@ -88,6 +89,7 @@ We do not have information about your research. Please provide a detailed descri
         ],
     )
 
+
     field_of_science = models.ForeignKey(FieldOfScience, on_delete=models.CASCADE, default=FieldOfScience.DEFAULT_PK)
     status = models.ForeignKey(ProjectStatusChoice, on_delete=models.CASCADE)
     force_review = models.BooleanField(default=False)
@@ -103,6 +105,8 @@ We do not have information about your research. Please provide a detailed descri
 
         if 'We do not have information about your research. Please provide a detailed description of your work and update your field of science. Thank you!' in self.description:
             raise ValidationError('You must update the project description.')
+
+
 
     @property
     def last_project_review(self):
@@ -219,11 +223,14 @@ We do not have information about your research. Please provide a detailed descri
         perms = self.user_permissions(user)
         return perm in perms
 
+
     def __str__(self):
         return self.title
 
     def natural_key(self):
         return (self.title,) + self.pi.natural_key()
+
+
 
 class ProjectAdminComment(TimeStampedModel):
     """ A project admin comment is a comment that an admin can make on a project. 
@@ -462,4 +469,23 @@ class ProjectAttributeUsage(TimeStampedModel):
     history = HistoricalRecords()
 
     def __str__(self):
-        return '{}: {}'.format(self.project_attribute.proj_attr_type.name, self.value)
+        return '{}: {}'.format(self.project_attribute.proj_attr_type.name, self.value) 
+
+
+
+class ProjectCode(TimeStampedModel):
+    """ Project Code represents a user defined project identifier, built upon project primary key
+    
+    Attributes:
+        project (Project):  link to project primary key
+        project_code (float): user defined environment variable combined with project's primary key
+
+    """    
+
+    project = models.OneToOneField(Project, on_delete=models.CASCADE)
+    project_code = models.CharField(max_length=10, blank=True, null=True)
+    
+    def __str__(self):
+        return '%s' % (self.project_code)
+
+
