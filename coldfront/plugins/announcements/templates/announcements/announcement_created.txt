@@ -2,6 +2,4 @@ Greatings {{ center_name }} user,
 
 {{ announcement }}
 
-If you have any questions please contact {{ help_email }}.
-
 {{ signature }}
