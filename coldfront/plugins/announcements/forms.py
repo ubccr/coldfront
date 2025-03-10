@@ -17,6 +17,7 @@ class AnnouncementCreateForm(forms.Form):
     details_url = forms.URLField(
         max_length=100, required=False, help_text='For links to external sources with more information'
     )
+    pinned = forms.BooleanField(required=False)
 
 
 class AnnouncementFilterForm(forms.Form):

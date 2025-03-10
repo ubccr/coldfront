@@ -9,9 +9,9 @@ from coldfront.plugins.announcements.models import (Announcement,
 
 @admin.register(Announcement)
 class AnnouncementAdmin(SimpleHistoryAdmin):
-    list_display = ('title', 'category_list', 'status', 'created', 'modified', )
+    list_display = ('title', 'category_list', 'status', 'pinned', 'created', 'modified', )
     search_fields = ('title', 'categories', )
-    list_filter = ('categories', 'status', )
+    list_filter = ('categories', 'status', 'pinned', )
     filter_horizontal = ('categories', 'viewed_by', 'mailing_lists')
 
     def category_list(self, obj):

@@ -47,7 +47,7 @@ class AnnouncementListView(LoginRequiredMixin, ListView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
-        announcements = Announcement.objects.filter(status__name='Active').order_by('-created')
+        announcements = Announcement.objects.filter(status__name='Active').order_by('-created', 'pinned')
 
         announcement_filter_form = AnnouncementFilterForm(self.request.GET)
         if announcement_filter_form.is_valid():
@@ -87,7 +87,8 @@ class AnnouncementCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             body = data.get('body'),
             status = AnnouncementStatusChoice.objects.get(name='Active'),
             details_url = data.get('details_url'),
-            author = self.request.user
+            author = self.request.user,
+            pinned = data.get('pinned')
         )
 
         announcement_obj.categories.set(data.get('categories'))
@@ -120,7 +121,7 @@ class AnnouncementCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
 class AnnouncementUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Announcement
-    fields = ['title', 'body', 'categories', 'mailing_lists', 'details_url', 'status']
+    fields = ['title', 'body', 'categories', 'mailing_lists', 'details_url', 'status', 'pinned']
     template_name_suffix='_update_form'
 
     def test_func(self):

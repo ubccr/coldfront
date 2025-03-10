@@ -25,9 +25,13 @@ Create Announcement
   {% include 'announcements/selection.html' with label='Categories' name='categories' selection=categories %}
   {% include 'announcements/selection.html' with label='Mailing Lists' name='mailing_lists' selection=mailing_lists %}
 
+  {{ form.pinned|as_crispy_field }}
+
   <hr>
-  <input class="btn btn-primary" type="submit" value="Create" />
-  <a class="btn btn-secondary" href="{% url 'announcement-list' %}" role="button">Cancel</a>
+  <div class="float-right">
+    <input class="btn btn-primary" type="submit" value="Create" />
+    <a class="btn btn-secondary" href="{% url 'announcement-list' %}" role="button">Cancel</a>
+  </div>
 </form>
 
 <script>
