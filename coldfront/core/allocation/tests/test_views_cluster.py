@@ -1,6 +1,7 @@
 """View tests for cluster allocations"""
 import logging
 
+import urllib.parse
 from django.db.models import Count
 from django.test import TestCase
 from django.urls import reverse
@@ -154,6 +155,26 @@ class ClusterAllocationAddUsersViewTest(ClusterAllocationViewBaseTest):
         self.allocation_access_tstbase(self.url)
         utils.test_user_can_access(self, self.pi_user, self.url)
         utils.test_user_cannot_access(self, self.proj_allocationuser, self.url)
+
+    def test_allocation_non_project_user_space_separated_search(self):
+        username_list = ['iberlin', 'gvanrossum']
+        space_separated_search = " ".join(username_list)
+        self.client.force_login(self.admin_user, backend="django.contrib.auth.backends.ModelBackend")
+        url = f'/allocation/{self.cluster_allocation.pk}/add-users?search={space_separated_search}'
+        space_separated_search_response = str(self.client.get(url).content)
+        self.assertTrue('Found 2 matchs.' in space_separated_search_response)
+        self.assertTrue('<td>iberlin</td>' in space_separated_search_response)
+        self.assertTrue('<td>gvanrossum</td>' in space_separated_search_response)
+
+    def test_allocation_non_project_user_new_line_separated_search(self):
+        username_list = ['iberlin', 'gvanrossum']
+        new_line_separated_search = urllib.parse.quote_plus("\n".join(username_list))
+        self.client.force_login(self.admin_user, backend="django.contrib.auth.backends.ModelBackend")
+        url = f'/allocation/{self.cluster_allocation.pk}/add-users?search={new_line_separated_search}'
+        new_line_separated_search_response = str(self.client.get(url).content)
+        self.assertTrue('<td>iberlin</td>' in new_line_separated_search_response)
+        self.assertTrue('<td>gvanrossum</td>' in new_line_separated_search_response)
+        self.assertTrue('Found 2 matchs.' in new_line_separated_search_response)
 
 
 class ClusterAllocationEditUsersViewTest(ClusterAllocationViewBaseTest):

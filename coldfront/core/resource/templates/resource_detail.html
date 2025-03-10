@@ -179,11 +179,13 @@ Resource Detail
       {# {% if user_sync_dt %}#}
       {# <span class="float-right">Last Sync: {{user_sync_dt}}</span>#}
       {# {% endif %}#}
-      <div class="float-right">
-        <a class="btn btn-danger" href="{% url 'resource-allocations-edit' resource.pk %}" role="button">
-          <i class="fas fa-edit" aria-hidden="true"></i> Edit Resource Allocations
-        </a>
-      </div>
+      {% if 'Cluster' in resource.resource_type.name %}
+        <div class="float-right">
+          <a class="btn btn-danger" href="{% url 'resource-allocations-edit' resource.pk %}" role="button">
+            <i class="fas fa-edit" aria-hidden="true"></i> Edit Resource Allocations
+          </a>
+        </div>
+      {% endif %}
     </div>
     <div class="card-body">
       <div class="table-responsive">
