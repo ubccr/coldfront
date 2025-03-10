@@ -20,7 +20,7 @@
             <i class="fas fa-thumbtack"></i>
           </span>
         {% endif %}
-          <span class="position-absolute" style="right: 20px; top: 16px;">
+          <span id="id_is_read_{{ announcement.pk }}" class="position-absolute" style="right: 20px; top: 16px;">
             {% if not request.user in announcement.viewed_by.all %}
               <a title="Mark as read" type="button" href="#"><i class="far fa-check-circle"></i></a>
             {% else %}
