@@ -44,7 +44,6 @@ def generate_guauge_data_from_usage(name, value, usage):
 
 
 def get_user_resources(user_obj):
-    # TODO: Check if we would like to keep using get_user_resources; we might need to add approvers to allowed_users based on schools
     if user_obj.is_superuser:
         resources = Resource.objects.filter(is_allocatable=True)
     else:
