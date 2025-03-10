@@ -115,9 +115,16 @@ Announcements
           getAnnouncements(e.target.value);
         });
 
-        $("[id^=id_is_read_]").click(function (e) {
+        $("[id^=id_is_read_]").has('a').click(function (e) {
           e.preventDefault();
           var id = e.currentTarget.id.split('_').pop()
+
+          if ($('#id_read_count_' + id).length > 0) {
+            $('#id_read_count_' + id).html(
+              parseInt($('#id_read_count_' + id).text()) + 1
+            );
+          }
+
           $('#id_is_read_' + id).html(
             '<i title="Marked as read" style="color: green; " class="fa fa-check"></i>'
           );
@@ -132,6 +139,7 @@ Announcements
               $('#navbar-announcements-unread').html(data);
             }
           });
+          $('#id_is_read_' + id).off('click');
         });
       }
     });

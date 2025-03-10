@@ -3,7 +3,7 @@
     <div class="card">
       <div class="card-header container">
         {% if perms.announcements.view_announcement %}
-          <span
+          <span id="id_read_count_{{ announcement.pk }}"
             id="id_views"
             title="Views"
             class="badge badge-secondary position-absolute"
