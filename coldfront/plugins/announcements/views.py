@@ -47,7 +47,7 @@ class AnnouncementListView(LoginRequiredMixin, ListView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
-        announcements = Announcement.objects.filter(status__name='Active').order_by('-created', 'pinned')
+        announcements = Announcement.objects.filter(status__name='Active').order_by('-pinned', '-created')
 
         announcement_filter_form = AnnouncementFilterForm(self.request.GET)
         if announcement_filter_form.is_valid():
