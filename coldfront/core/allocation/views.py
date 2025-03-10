@@ -946,6 +946,16 @@ class AllocationRequestListView(LoginRequiredMixin, UserPassesTestMixin, Templat
         context = super().get_context_data(**kwargs)
         allocation_list = Allocation.objects.filter(
             status__name__in=['New', 'Renewal Requested', 'Paid', 'Approved',])
+
+        allocation_renewal_dates = {}
+        for allocation in allocation_list.filter(status__name='Renewal Requested'):
+            allocation_history = allocation.history.all().order_by('-history_date')
+            for history in allocation_history:
+                if history.status.name != 'Renewal Requested':
+                    break
+                allocation_renewal_dates[allocation.pk] = history.history_date
+
+        context['allocation_renewal_dates'] = allocation_renewal_dates
         context['allocation_status_active'] = AllocationStatusChoice.objects.get(name='Active')
         context['allocation_list'] = allocation_list
         context['PROJECT_ENABLE_PROJECT_REVIEW'] = PROJECT_ENABLE_PROJECT_REVIEW
