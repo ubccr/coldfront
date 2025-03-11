@@ -200,12 +200,6 @@ class Command(BaseCommand):
                 is_allocatable=is_allocatable
             )
 
-        # No need to assign allowed_users anymore since resources will be available based on a project's school
-        # resource_obj = Resource.objects.get(name='Tandon')
-        # resource_obj.allowed_users.add(User.objects.get(username='cgray'))
-        # resource_obj = Resource.objects.get(name='CDS')
-        # resource_obj.allowed_users.add(User.objects.get(username='sfoster'))
-
         pi1 = User.objects.get(username='cgray')
         pi1.userprofile.is_pi = True
         pi1.save()
