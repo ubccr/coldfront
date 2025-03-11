@@ -40,13 +40,13 @@
       </div>
       <div class="card-footer container">
         <div class="row h-100 justify-content-center align-items-center" style="max-height: 33.6px;">
-          <div class="col">
+          <div class="col-9">
             Created: {{ announcement.created }}
             {% if not announcement.created == announcement.modified %}
               | Updated: {{ announcement.modified }}
             {% endif %}
           </div>
-          <div class="col">
+          <div class="col-3">
             {% if announcement.details_url %}
               <a target="_blank" href="{{ announcement.details_url }}" class="btn btn-secondary float-right" type="button">
                 <i class="fas fa-external-link-alt" aria-hidden="true"></i> More Details
