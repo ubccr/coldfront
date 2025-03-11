@@ -96,6 +96,7 @@ We do not have information about your research. Please provide a detailed descri
     requires_review = models.BooleanField(default=True)
     history = HistoricalRecords()
     objects = ProjectManager()
+    project_code = models.CharField(max_length=10, blank=True)
 
     def clean(self):
         """ Validates the project and raises errors if the project is invalid. """
@@ -473,19 +474,5 @@ class ProjectAttributeUsage(TimeStampedModel):
 
 
 
-class ProjectCode(TimeStampedModel):
-    """ Project Code represents a user defined project identifier, built upon project primary key
-    
-    Attributes:
-        project (Project):  link to project primary key
-        project_code (float): user defined environment variable combined with project's primary key
-
-    """    
-
-    project = models.OneToOneField(Project, on_delete=models.CASCADE)
-    project_code = models.CharField(max_length=10, blank=True, null=True)
-    
-    def __str__(self):
-        return '%s' % (self.project_code)
 
 

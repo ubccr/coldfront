@@ -12,6 +12,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import user_passes_test, login_required
 from django.contrib.auth.models import User
 
+from coldfront.core.project.utils import generate_project_code
 from coldfront.core.utils.common import import_from_settings
 from django.contrib.messages.views import SuccessMessageMixin
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
@@ -54,7 +55,6 @@ from coldfront.core.project.models import (Project,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice,
                                            ProjectUserMessage,
-                                           ProjectCode
                                            )
 from coldfront.core.publication.models import Publication
 from coldfront.core.research_output.models import ResearchOutput
@@ -183,10 +183,10 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['project_users'] = project_users
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
         
-        try:
-            context['project_code'] = ProjectCode.objects.get(project = project_obj.pk).project_code
-        except ProjectCode.DoesNotExist:
-            pass
+        # try:
+        #     context['project_code'] = ProjectCode.objects.get(project = project_obj.pk).project_code
+        # except ProjectCode.DoesNotExist:
+        #     pass
 
 
         try:
@@ -221,10 +221,10 @@ class ProjectListView(LoginRequiredMixin, ListView):
         if project_search_form.is_valid():
             data = project_search_form.cleaned_data
             if data.get('show_all_projects') and (self.request.user.is_superuser or self.request.user.has_perm('project.can_view_all_projects')):
-                projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status', 'projectcode').filter(
+                projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status').filter(
                     status__name__in=['New', 'Active', ]).order_by(order_by)
             else:
-                projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status', 'projectcode').filter(
+                projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status').filter(
                     Q(status__name__in=['New', 'Active', ]) &
                     Q(projectuser__user=self.request.user) &
                     Q(projectuser__status__name='Active')
@@ -249,7 +249,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
                     field_of_science__description__icontains=data.get('field_of_science'))
 
         else:
-            projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status', 'projectcode').filter(
+            projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status').filter(
                 Q(status__name__in=['New', 'Active', ]) &
                 Q(projectuser__user=self.request.user) &
                 Q(projectuser__status__name='Active')
@@ -491,13 +491,11 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
 
         if PROJECT_CODE:
             '''
-            Create the ProjectCode object, if PROJECT_CODE is defined. 
+            Set the ProjectCode object, if PROJECT_CODE is defined. 
             If PROJECT_CODE_PADDING is defined, the set amount of padding will be added to PROJECT_CODE.
             '''
-            project_code_obj = ProjectCode.objects.create(
-                project=project_obj,
-                project_code= f"{PROJECT_CODE}{str(project_obj.pk).zfill(PROJECT_CODE_PADDING or 0)}"
-        ) 
+            project_obj.project_code = generate_project_code(PROJECT_CODE, project_obj.pk, PROJECT_CODE_PADDING or 0)
+            project_obj.save(update_fields=["project_code"])
 
         return super().form_valid(form)
 
