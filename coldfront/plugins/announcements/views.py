@@ -100,7 +100,6 @@ class AnnouncementCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 context = {
                     'center_name': EMAIL_CENTER_NAME,
                     'announcement': data.get('body'),
-                    'help_email': EMAIL_TICKET_SYSTEM_ADDRESS,
                     'signature': EMAIL_SIGNATURE
                 }
                 send_email_template(
