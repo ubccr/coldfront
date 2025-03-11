@@ -149,6 +149,10 @@ For more info on [ColdFront plugins](../../plugin/existing_plugins/) (Django app
 
 #### LDAP Auth
 
+N.B. this uses django_auth_ldap - therefore ldaps cert paths will be taken from global OS
+ldap config. E.g. /etc/{ldap,openldap}/ldap.conf and within TLS_CACERT
+
+
 !!! warning "Required"
     LDAP authentication backend requires `ldap3` and `django_auth_ldap`.
     ```
