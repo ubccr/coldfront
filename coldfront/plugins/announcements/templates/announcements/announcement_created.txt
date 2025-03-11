@@ -1,4 +1,4 @@
-Greatings {{ center_name }} user,
+Greetings {{ center_name }} user,
 
 {{ announcement }}
 
