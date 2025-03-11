@@ -163,6 +163,7 @@ class Command(BaseCommand):
                 email=email.strip()
             )
 
+        # Approvers
         json_data = {
             "astewart": ["Tandon School of Engineering", "Center for Data Science"],
             "arivera": ["Center for Data Science"]
@@ -198,6 +199,7 @@ class Command(BaseCommand):
                 is_public=is_public,
                 is_allocatable=is_allocatable
             )
+
         # No need to assign allowed_users anymore since resources will be available based on a project's school
         # resource_obj = Resource.objects.get(name='Tandon')
         # resource_obj.allowed_users.add(User.objects.get(username='cgray'))

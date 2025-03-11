@@ -1,14 +1,11 @@
 {% include 'common/navbar_brand.html' %}
 {% load common_tags %}
-
-<nav class="navbar navbar-expand-md navbar-dark bg-primary">
+<nav class="navbar navbar-expand-md navbar-dark bg-nyu-primary-violet">
   <div class="container">
     <a class="navbar-brand d-block d-sm-none text-primary" href="#">ColdFront</a>
-
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-main">
       <span class="navbar-toggler-icon"></span>
     </button>
-
     <div class="navbar-collapse collapse" id="navbar-main">
       <ul class="navbar-nav">
         <li id="navbar-home" class="nav-item active">
@@ -24,10 +21,10 @@
             <a id="navbar-allocation" class="dropdown-item" href="{% url 'allocation-list' %}">Allocations</a>
             <a id="navbar-resource" class="dropdown-item" href="{% url 'resource-list' %}">Resources</a>
             {% if settings.ALLOCATION_ACCOUNT_ENABLED  %}
-              <a class="dropdown-item" href="{% url 'allocation-account-list' %}">Allocation Accounts</a>
+            <a class="dropdown-item" href="{% url 'allocation-account-list' %}">Allocation Accounts</a>
             {% endif %}
             {% if request.user.userprofile.is_pi  %}
-              <a id="navbar-user-allocation" class="dropdown-item" href="{% url 'user-list-allocations' %}">User Allocations</a>
+            <a id="navbar-user-allocation" class="dropdown-item" href="{% url 'user-list-allocations' %}">User Allocations</a>
             {% endif %}
           </div>
         </li>
