@@ -124,7 +124,7 @@ class AnnouncementCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
 class AnnouncementUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Announcement
-    fields = ['title', 'body', 'categories', 'mailing_lists', 'details_url', 'pinned']
+    fields = ['title', 'body', 'categories', 'mailing_lists', 'details_url', 'status', 'pinned']
     template_name_suffix='_update_form'
 
     def test_func(self):
