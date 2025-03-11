@@ -9,6 +9,11 @@ Create Project
 
 
 {% block content %}
+  RT Projects are designed for labs, groups, and classes, not for individual studies. If you are in a lab or group you should create a project
+  for that group and add all of the users in it to the project. If your lab or group already has an existing project then you should
+  contact the PI in it to add you to it instead. Limiting projects to groups helps prevent fragmentation of user access and
+  makes it easier for PI's to manage their projects.
+  <hr>
  <form method="post">
   {% csrf_token %}
   {{ form|as_crispy_errors }}
