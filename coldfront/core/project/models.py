@@ -88,7 +88,6 @@ We do not have information about your research. Please provide a detailed descri
         ],
     )
 
-
     field_of_science = models.ForeignKey(FieldOfScience, on_delete=models.CASCADE, default=FieldOfScience.DEFAULT_PK)
     status = models.ForeignKey(ProjectStatusChoice, on_delete=models.CASCADE)
     force_review = models.BooleanField(default=False)
@@ -105,8 +104,6 @@ We do not have information about your research. Please provide a detailed descri
 
         if 'We do not have information about your research. Please provide a detailed description of your work and update your field of science. Thank you!' in self.description:
             raise ValidationError('You must update the project description.')
-
-
 
     @property
     def last_project_review(self):
@@ -223,14 +220,11 @@ We do not have information about your research. Please provide a detailed descri
         perms = self.user_permissions(user)
         return perm in perms
 
-
     def __str__(self):
         return self.title
 
     def natural_key(self):
         return (self.title,) + self.pi.natural_key()
-
-
 
 class ProjectAdminComment(TimeStampedModel):
     """ A project admin comment is a comment that an admin can make on a project. 
@@ -469,9 +463,4 @@ class ProjectAttributeUsage(TimeStampedModel):
     history = HistoricalRecords()
 
     def __str__(self):
-        return '{}: {}'.format(self.project_attribute.proj_attr_type.name, self.value) 
-
-
-
-
-
+        return '{}: {}'.format(self.project_attribute.proj_attr_type.name, self.value)

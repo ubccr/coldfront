@@ -2,8 +2,7 @@ import logging
 from unittest.mock import patch
 
 from django.core.exceptions import ValidationError
-from django.test import TestCase, override_settings, TransactionTestCase
-from django.core.management import call_command
+from django.test import TestCase, TransactionTestCase
 
 from coldfront.core.project.utils import generate_project_code
 from coldfront.core.test_helpers.factories import (
