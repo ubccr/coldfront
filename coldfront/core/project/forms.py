@@ -1,6 +1,7 @@
 import datetime
 
 from django import forms
+from django.db.models import Q
 from django.db.models.functions import Lower
 from django.shortcuts import get_object_or_404
 from ast import Constant
@@ -143,7 +144,7 @@ class ProjectAttributeAddForm(forms.ModelForm):
         user =(kwargs.get('initial')).get('user')
         self.fields['proj_attr_type'].queryset = self.fields['proj_attr_type'].queryset.order_by(Lower('name'))
         if not user.is_superuser:
-            self.fields['proj_attr_type'].queryset = self.fields['proj_attr_type'].queryset.filter(is_private=False)
+                    self.fields['proj_attr_type'].queryset = self.fields['proj_attr_type'].queryset.filter(is_private=False, is_changeable=True)
 
 class ProjectAttributeDeleteForm(forms.Form):
     pk = forms.IntegerField(required=False, disabled=True)

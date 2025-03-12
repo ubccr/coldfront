@@ -404,9 +404,11 @@ class AllocationAttributeType(TimeStampedModel):
         is_changeable (bool): indicates whether or not the attribute type is changeable
     """
 
+
     attribute_type = models.ForeignKey(AttributeType, on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
     has_usage = models.BooleanField(default=False)
+    get_usage_command = models.TextField(blank=True, null=True)  # Campo aggiornato
     is_required = models.BooleanField(default=False)
     is_unique = models.BooleanField(default=False)
     is_private = models.BooleanField(default=True)
@@ -415,6 +417,11 @@ class AllocationAttributeType(TimeStampedModel):
 
     def __str__(self):
         return '%s' % (self.name)
+
+    def clean(self):
+        super().clean()
+        if self.has_usage and not self.get_usage_command:
+            raise ValidationError('Command string is required when has_usage is True.')
 
     class Meta:
         ordering = ['name', ]
