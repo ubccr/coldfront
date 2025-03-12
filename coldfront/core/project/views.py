@@ -182,6 +182,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['attributes_with_usage'] = attributes_with_usage
         context['project_users'] = project_users
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
+        context['project_code'] = project_obj.project_code
         
         # try:
         #     context['project_code'] = ProjectCode.objects.get(project = project_obj.pk).project_code
@@ -201,7 +202,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
 
     model = Project
     template_name = 'project/project_list.html'
-    prefetch_related = ['pi', 'status', 'field_of_science', ]
+    prefetch_related = ['pi', 'status', 'field_of_science', 'project_code']
     context_object_name = 'project_list'
     paginate_by = 25
 
