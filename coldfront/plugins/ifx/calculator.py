@@ -13,7 +13,7 @@ from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.conf import settings
 from ifxbilling.calculator import BasicBillingCalculator, NewBillingCalculator, Rebalance
-from ifxbilling.models import Account, Product, ProductUsage, Rate, BillingRecord
+from ifxbilling.models import Account, Product, ProductUsage, Rate, BillingRecord, ProductUsageProcessing
 from ifxuser.models import Organization
 from coldfront.core.allocation.models import Allocation, AllocationStatusChoice
 from coldfront.plugins.ifx import adjust
@@ -136,6 +136,7 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
                                     if offer_letter_br:
                                         successes.append(offer_letter_br)
                                     if remaining_tb > Decimal('0'):
+                                        allocation_brs = []
                                         user_allocation_percentages = self.get_user_allocation_percentages(year, month, allocation)
                                         for user_id, allocation_percentage_data in user_allocation_percentages.items():
                                             try:
@@ -154,7 +155,10 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
                                                 remaining_tb,
                                             )
                                             if brs:
-                                                successes.extend(brs)
+                                                allocation_brs.extend(brs)
+                                        if not allocation_brs:
+                                            raise Exception(f'No billing records created for {organization} allocation {allocation}')
+                                        successes.extend(allocation_brs)
                                 except Exception as e:
                                     errors.append(str(e))
                                     if self.verbosity == self.CHATTY:
@@ -600,6 +604,7 @@ class NewColdfrontBillingCalculator(NewBillingCalculator):
             else:
                 msg = f'Billing record already exists for usage {product_usage}'
                 raise Exception(msg)
+        ProductUsageProcessing.objects.filter(product_usage=product_usage).delete()
 
         # Set the decimal_quantity to TB percentage of allocation
         product_usage = self.set_product_usage_decimal_quantity(product_usage, allocation_percentage, allocation_tb)
@@ -874,7 +879,6 @@ class ColdfrontRebalance(Rebalance):
         response_data = None
         try:
             response_data = response.json()
-            logger.error(f'Recalculate billing records response_data: {response_data}')
         except json.JSONDecodeError:
             raise Exception(f'Unable to decode response from {url}: {response.text}')
 
@@ -883,11 +887,9 @@ class ColdfrontRebalance(Rebalance):
                 error_message = ','.join(str(k) for k in response_data.values())
             else:
                 error_message = response.text
-            logger.error(f'Recalculate billing records error response: {response_data}')
             raise Exception(f'Error recalculating billing records for {user.full_name} for {self.month}/{self.year}: {error_message}')
 
         if response_data != 'OK' and response_data.get('errors', None):
             error_message = ','.join(set(response_data['errors']))
             raise Exception(f'Error recalculating billing records for {user.full_name} for {self.month}/{self.year}: {error_message}')
 
-        logger.error(f'Recalculate billing records response: {response_data}')
