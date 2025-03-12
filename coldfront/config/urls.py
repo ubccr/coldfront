@@ -54,9 +54,6 @@ if 'coldfront.plugins.advanced_search' in settings.INSTALLED_APPS:
 if 'coldfront.plugins.ldap_user_info' in settings.INSTALLED_APPS:
     urlpatterns.append(path('ldap_user_info/', include('coldfront.plugins.ldap_user_info.urls')))
 
-if 'coldfront.plugins.slate_project' in settings.INSTALLED_APPS:
-    urlpatterns.append(path('slate_project/', include('coldfront.plugins.slate_project.urls')))
-
 if 'coldfront.plugins.iquota' in settings.INSTALLED_APPS:
     urlpatterns.append(path('iquota/', include('coldfront.plugins.iquota.urls')))
 

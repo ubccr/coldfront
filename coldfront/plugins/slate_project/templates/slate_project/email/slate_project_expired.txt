@@ -1,6 +1,0 @@
-The Slate Project allocation with pk {{pk}} in project "{{project_title}}" has expired.
-Allocation detail URL:
-{{url}} 
-
-Project PI email:
-{{pi_email}}

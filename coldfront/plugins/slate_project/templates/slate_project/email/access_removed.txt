@@ -1,7 +1,0 @@
-Dear {{center_name}} user,
-
-You are receiving this email because you are the PI for RT Project {{project_title}}. {{name}} is listed as a member of this project's slate-project allocation.
-{{name}}'s University account status no longer allows them to access the slate-project allocation associated with {{project_title}}.
-It is your responsibility to remove {{name}} from your slate-project allocation. Removing {{name}}'s access does NOT remove their data.
-
-{{signature}}

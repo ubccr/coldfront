@@ -1,6 +1,0 @@
-The ineligible users within Slate Project allocations found on {{ current_date }}.
-{% for user, roles in ineligible_users.items %}
-{{user}}
----------------{% for role, projects in roles.items %}
-{{role}} - {{projects|join:", "}}{% endfor %}
-{% endfor %}

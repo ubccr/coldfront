@@ -14,7 +14,7 @@ Remove Users from Allocation
 
 {% if formset %}
   {% if allocation.get_parent_resource.name == 'Slate Project' %}
-    {% include "slate_project/allocation_warning_message.html" %}
+    {% include "storage/slate_project/allocation_warning_message.html" %}
   {% endif %}
   <div class="card border-light">
     <div class="card-body">

@@ -13,7 +13,6 @@ recursive-include coldfront/core/grant/templates *
 recursive-include coldfront/core/user/templates *
 recursive-include coldfront/core/resource/templates *
 recursive-include coldfront/plugins/maintenance_mode/templates *
-recursive-include coldfront/plugins/slate_project/templates *
 recursive-include coldfront/plugins/advanced_search/templates *
 recursive-include coldfront/plugins/customizable_forms/templates *
 recursive-include coldfront/plugins/ldap_user_info/templates *
