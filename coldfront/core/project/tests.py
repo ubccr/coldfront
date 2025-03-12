@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase, override_settings, TransactionTestCase
 from django.core.management import call_command
 
+from coldfront.core.project.utils import generate_project_code
 from coldfront.core.test_helpers.factories import (
     UserFactory,
     ProjectFactory,
@@ -17,7 +18,7 @@ from coldfront.core.test_helpers.factories import (
 from coldfront.core.project.models import (
     Project,
     ProjectAttribute,
-    ProjectAttributeType, ProjectCode, ProjectStatusChoice,
+    ProjectAttributeType, ProjectStatusChoice,
 )
 
 logging.disable(logging.CRITICAL)
@@ -219,26 +220,21 @@ class TestProjectCode(TransactionTestCase):
         self.status = ProjectStatusChoiceFactory(name='Active')
 
 
-    def create_project_with_code(self, title, PROJECT_CODE, PROJECT_CODE_PADDING=0):
+    def create_project_with_code(self, title, project_code, project_code_padding=0):
         """Helper method to create a project and a project code with a specific prefix and padding"""
         # Project Creation
         project = Project.objects.create(
             title=title,
             pi=self.user,
             status=self.status,
-            field_of_science=self.field_of_science
+            field_of_science=self.field_of_science,
         )
 
-        # Generate the project code
-        project_code = f"{PROJECT_CODE}{str(project.pk).zfill(PROJECT_CODE_PADDING)}"
+        project.project_code = generate_project_code(project_code, project.pk, project_code_padding)
 
-        # Create and return the project code
-        project_code_obj = ProjectCode.objects.create(
-            project=project,
-            project_code=project_code
-        )
+        project.save()
 
-        return project_code_obj.project_code
+        return project.project_code
 
 
     @patch('coldfront.config.core.PROJECT_CODE', 'BFO')
