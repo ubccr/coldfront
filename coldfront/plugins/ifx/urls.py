@@ -4,7 +4,7 @@ from ifxbilling.views import unauthorized as unauthorized_api
 from ifxbilling import views as ifxbilling_views
 from ifxuser.views import get_org_names
 from coldfront.plugins.ifx.viewsets import ColdfrontBillingRecordViewSet, ColdfrontReportRunViewSet, ColdfrontProductUsageViewSet
-from coldfront.plugins.ifx.views import rebalance, update_user_accounts_view, get_billing_record_list, unauthorized, report_runs, run_report, calculate_billing_month, billing_month, get_product_usages, billing_records, send_billing_record_review_notification, lab_billing_summary
+from coldfront.plugins.ifx.views import user_account_list, rebalance, update_user_accounts_view, get_billing_record_list, unauthorized, report_runs, run_report, calculate_billing_month, billing_month, get_product_usages, billing_records, send_billing_record_review_notification, lab_billing_summary
 
 router = routers.DefaultRouter()
 router.register(r'billing-records', ColdfrontBillingRecordViewSet, 'billing-record')
@@ -20,6 +20,7 @@ urlpatterns = [
     path('api/billing/get-summary-by-product-rate/', ifxbilling_views.get_summary_by_product_rate),
     path('api/billing/get-summary-by-account/', ifxbilling_views.get_summary_by_account),
     path('api/billing/get-pending-year-month/<str:invoice_prefix>/', ifxbilling_views.get_pending_year_month),
+    path('api/billing/get-user-account-list/', user_account_list, name='user-account-list'),
     path('api/billing/rebalance/', rebalance),
     path('api/billing/calculate-billing-month/<str:invoice_prefix>/<int:year>/<int:month>/', calculate_billing_month, name='calculate-billing-month'),
     path('api/run-report/', run_report),

@@ -438,3 +438,71 @@ def rebalance(request):
         result = f'Rebalance of accounts for {user.full_name} for billing month {month}/{year} failed: {e}'
         rebalancer.send_result_notification(result)
         return Response(data={ 'error': f'Rebalance failed {e}' }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(('GET',))
+def user_account_list(request):
+    '''
+    Get a list of all usernames and the authorizations to which they are mapped
+    '''
+    results = []
+    sql = '''
+        select
+            u.ifxid,
+            u.full_name,
+            u.username,
+            ua.is_valid,
+            '100' as percent,
+            a.code,
+            a.valid_from,
+            a.expiration_date,
+            o.name as organization,
+            '' as product
+        from
+            ifxuser u
+            inner join user_account ua on u.id = ua.user_id
+            inner join account a on a.id = ua.account_id
+            inner join nanites_organization o on o.id = a.organization_id
+        where
+            ua.is_valid = 1
+        union
+        select
+            u.ifxid,
+            u.full_name,
+            u.username,
+            upa.is_valid,
+            upa.percent,
+            a.code,
+            a.valid_from,
+            a.expiration_date,
+            o.name as organization,
+            p.product_name as product
+        from
+            ifxuser u
+            inner join user_product_account upa on u.id = upa.user_id
+            inner join account a on a.id = upa.account_id
+            inner join nanites_organization o on o.id = a.organization_id
+            inner join product p on p.id = upa.product_id
+        where
+            upa.is_valid = 1
+    '''
+    try:
+        cursor = connection.cursor()
+        cursor.execute(sql)
+
+        desc = cursor.description
+
+        for row in cursor.fetchall():
+            # Make a dictionary labeled by column name
+            results.append(dict(zip([col[0] for col in desc], row)))
+
+    # pylint: disable=broad-except
+    except Exception as e:
+        logger.exception(e)
+        return Response(
+            f'Error getting user account list {e}',
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+    return Response(
+        data=results
+    )
