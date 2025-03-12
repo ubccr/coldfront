@@ -11,7 +11,6 @@ from django import forms
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.decorators import user_passes_test, login_required
 from django.contrib.auth.models import User
-
 from coldfront.core.project.utils import generate_project_code
 from coldfront.core.utils.common import import_from_settings
 from django.contrib.messages.views import SuccessMessageMixin
@@ -54,7 +53,7 @@ from coldfront.core.project.models import (Project,
                                            ProjectUser,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice,
-                                           ProjectUserMessage,
+                                           ProjectUserMessage
                                            )
 from coldfront.core.publication.models import Publication
 from coldfront.core.research_output.models import ResearchOutput
@@ -76,7 +75,6 @@ if EMAIL_ENABLED:
 
 PROJECT_CODE = import_from_settings('PROJECT_CODE', False)
 PROJECT_CODE_PADDING = import_from_settings('PROJECT_CODE_PADDING', False)
-
 
 logger = logging.getLogger(__name__)
 
@@ -126,7 +124,6 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
             attributes = [attribute for attribute in project_obj.projectattribute_set.all(
             ).order_by('proj_attr_type__name')]
-
         else:
             attributes_with_usage = [attribute for attribute in project_obj.projectattribute_set.filter(
                 proj_attr_type__is_private=False) if hasattr(attribute, 'projectattributeusage')]
@@ -183,12 +180,6 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
         context['project_users'] = project_users
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
         context['project_code'] = project_obj.project_code
-        
-        # try:
-        #     context['project_code'] = ProjectCode.objects.get(project = project_obj.pk).project_code
-        # except ProjectCode.DoesNotExist:
-        #     pass
-
 
         try:
             context['ondemand_url'] = settings.ONDEMAND_URL
@@ -202,9 +193,10 @@ class ProjectListView(LoginRequiredMixin, ListView):
 
     model = Project
     template_name = 'project/project_list.html'
-    prefetch_related = ['pi', 'status', 'field_of_science', 'project_code']
+    prefetch_related = ['pi', 'status', 'field_of_science',]
     context_object_name = 'project_list'
     paginate_by = 25
+
 
     def get_queryset(self):
 
@@ -231,7 +223,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
                     Q(projectuser__status__name='Active')
                 ).order_by(order_by)
 
-            # Last Nam
+            # Last Name
             if data.get('last_name'):
                 projects = projects.filter(
                     pi__last_name__icontains=data.get('last_name'))
@@ -291,8 +283,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
 
         if filter_parameters:
             context['expand_accordion'] = 'show'
-      
-         
+
         context['filter_parameters'] = filter_parameters
         context['filter_parameters_with_order_by'] = filter_parameters_with_order_by
 
@@ -307,7 +298,6 @@ class ProjectListView(LoginRequiredMixin, ListView):
             project_list = paginator.page(1)
         except EmptyPage:
             project_list = paginator.page(paginator.num_pages)
-
 
         return context
 
@@ -337,7 +327,6 @@ class ProjectArchivedListView(LoginRequiredMixin, ListView):
                 projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
                     status__name__in=['Archived', ]).order_by(order_by)
             else:
-
                 projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
                     Q(status__name__in=['Archived', ]) &
                     Q(projectuser__user=self.request.user) &
@@ -633,6 +622,7 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
         else:
             div_allocation_class = 'd-none'
         context['div_allocation_class'] = div_allocation_class
+        ###
 
         allocation_form = ProjectAddUsersToAllocationForm(
             request.user, project_obj.pk, prefix='allocationform')
