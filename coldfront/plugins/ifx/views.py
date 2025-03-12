@@ -439,10 +439,8 @@ def rebalance(request):
         rebalancer.send_result_notification(result)
         return Response(data={ 'error': f'Rebalance failed {e}' }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
-@login_required
 @api_view(('GET',))
-def user_account_list():
+def user_account_list(request):
     '''
     Get a list of all usernames and the authorizations to which they are mapped
     '''
@@ -452,12 +450,13 @@ def user_account_list():
             u.ifxid,
             u.full_name,
             u.username,
-            ua.percent,
+            ua.is_valid,
+            '100' as percent,
             a.code,
             a.valid_from,
             a.expiration_date,
             o.name as organization,
-            'user' as product
+            '' as product
         from
             ifxuser u
             inner join user_account ua on u.id = ua.user_id
@@ -475,7 +474,7 @@ def user_account_list():
             a.code,
             a.valid_from,
             a.expiration_date,
-            o.name as organization
+            o.name as organization,
             p.product_name as product
         from
             ifxuser u
