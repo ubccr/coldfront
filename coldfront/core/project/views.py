@@ -53,8 +53,7 @@ from coldfront.core.project.models import (Project,
                                            ProjectUser,
                                            ProjectUserRoleChoice,
                                            ProjectUserStatusChoice,
-                                           ProjectUserMessage
-                                           )
+                                           ProjectUserMessage)
 from coldfront.core.publication.models import Publication
 from coldfront.core.research_output.models import ResearchOutput
 from coldfront.core.user.forms import UserSearchForm
@@ -124,6 +123,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
             attributes = [attribute for attribute in project_obj.projectattribute_set.all(
             ).order_by('proj_attr_type__name')]
+
         else:
             attributes_with_usage = [attribute for attribute in project_obj.projectattribute_set.filter(
                 proj_attr_type__is_private=False) if hasattr(attribute, 'projectattributeusage')]
@@ -167,6 +167,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             else:
                 allocations = Allocation.objects.prefetch_related(
                     'resources').filter(project=self.object)
+
         context['publications'] = Publication.objects.filter(
             project=self.object, status='Active').order_by('-year')
         context['research_outputs'] = ResearchOutput.objects.filter(
@@ -193,10 +194,9 @@ class ProjectListView(LoginRequiredMixin, ListView):
 
     model = Project
     template_name = 'project/project_list.html'
-    prefetch_related = ['pi', 'status', 'field_of_science',]
+    prefetch_related = ['pi', 'status', 'field_of_science', ]
     context_object_name = 'project_list'
     paginate_by = 25
-
 
     def get_queryset(self):
 
@@ -214,10 +214,10 @@ class ProjectListView(LoginRequiredMixin, ListView):
         if project_search_form.is_valid():
             data = project_search_form.cleaned_data
             if data.get('show_all_projects') and (self.request.user.is_superuser or self.request.user.has_perm('project.can_view_all_projects')):
-                projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status').filter(
+                projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
                     status__name__in=['New', 'Active', ]).order_by(order_by)
             else:
-                projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status').filter(
+                projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
                     Q(status__name__in=['New', 'Active', ]) &
                     Q(projectuser__user=self.request.user) &
                     Q(projectuser__status__name='Active')
@@ -242,7 +242,7 @@ class ProjectListView(LoginRequiredMixin, ListView):
                     field_of_science__description__icontains=data.get('field_of_science'))
 
         else:
-            projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status').filter(
+            projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
                 Q(status__name__in=['New', 'Active', ]) &
                 Q(projectuser__user=self.request.user) &
                 Q(projectuser__status__name='Active')
@@ -327,6 +327,7 @@ class ProjectArchivedListView(LoginRequiredMixin, ListView):
                 projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
                     status__name__in=['Archived', ]).order_by(order_by)
             else:
+
                 projects = Project.objects.prefetch_related('pi', 'field_of_science', 'status',).filter(
                     Q(status__name__in=['Archived', ]) &
                     Q(projectuser__user=self.request.user) &
