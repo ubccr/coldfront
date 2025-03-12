@@ -14,7 +14,7 @@ from django.urls import reverse
 from django.contrib.auth.models import User
 
 from coldfront.core.utils.common import import_from_settings
-from coldfront.core.utils.mail import send_email_template, build_link
+from coldfront.core.utils.mail import email_template_context, send_email_template, build_link
 from coldfront.core.allocation.models import (AllocationUserStatusChoice,
                                               AllocationUserRoleChoice,
                                               AllocationAttributeType,
@@ -31,13 +31,15 @@ from coldfront.core.project.models import (ProjectUserStatusChoice,
 from coldfront.core.resource.models import Resource
 from coldfront.core.user.models import UserProfile
 from coldfront.plugins.ldap_user_info.utils import LDAPSearch
-from coldfront.core.project.utils import (get_new_end_date_from_list,
+from coldfront.core.project.utils import (check_if_pi_eligible,
+                                          get_new_end_date_from_list,
                                           generate_slurm_account_name,
                                           create_admin_action_for_project_creation)
 from coldfront.core.allocation.utils import create_admin_action_for_allocation_creation
 
 logger = logging.getLogger(__name__)
 
+PROJECT_PERMISSIONS_PER_TYPE = import_from_settings('PROJECT_PERMISSIONS_PER_TYPE', False)
 ENABLE_LDAP_ELIGIBILITY_SERVER = import_from_settings('ENABLE_LDAP_ELIGIBILITY_SERVER', False)
 ENABLE_LDAP_SLATE_PROJECT_SYNCING = import_from_settings('ENABLE_LDAP_SLATE_PROJECT_SYNCING', False)
 SLATE_PROJECT_ELIGIBILITY_ACCOUNT = import_from_settings('SLATE_PROJECT_ELIGIBILITY_ACCOUNT', '')
@@ -48,12 +50,57 @@ SLATE_PROJECT_ALLOCATED_QUANTITY_THRESHOLD = import_from_settings('SLATE_PROJECT
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 CENTER_BASE_URL = import_from_settings('CENTER_BASE_URL')
 if EMAIL_ENABLED:
-    SLATE_PROJECT_EMAIL = import_from_settings('SLATE_PROJECT_EMAIL', '')
+    SLATE_PROJECT_EMAIL = import_from_settings('SLATE_PROJECT_EMAIL')
+    SLATE_PROJECT_TICKET_QUEUE = import_from_settings('SLATE_PROJECT_TICKET_QUEUE', '')
     EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
     EMAIL_CENTER_NAME = import_from_settings('CENTER_NAME')
     EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
     EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
     EMAIL_TICKET_SYSTEM_ADDRESS = import_from_settings('EMAIL_TICKET_SYSTEM_ADDRESS')
+
+
+def send_new_allocation_removal_request_email(allocation_removal_request_obj):
+    if EMAIL_ENABLED:
+        template_context = email_template_context()
+        template_context['requestor'] = allocation_removal_request_obj.requestor
+        template_context['project'] = allocation_removal_request_obj.allocation.project
+        template_context['pi'] = allocation_removal_request_obj.allocation.project.pi
+        template_context['resource'] = allocation_removal_request_obj.allocation.get_parent_resource
+        template_context['url'] = build_link(reverse('allocation_removal_requests:allocation-removal-request-list'))
+        send_email_template(
+            'Allocation Removal Request',
+            'slate_project/email/new_allocation_removal_request.txt',
+            template_context,
+            EMAIL_SENDER,
+            [SLATE_PROJECT_TICKET_QUEUE, ],
+        )
+
+
+def send_new_allocation_change_request_email(allocation_change_obj):
+    if EMAIL_ENABLED:
+        project_obj = allocation_change_obj.allocation.project
+        pi_name = project_obj.pi.username
+        resource_name = allocation_change_obj.allocation.get_parent_resource
+        template_context = email_template_context()
+        template_context['pi'] = pi_name
+        template_context['resource'] = resource_name
+        template_context['url'] = build_link(reverse('allocation-change-list'))
+        template_context['project_title'] = project_obj.title
+        template_context['project_detail_url'] = build_link(reverse('project-detail', kwargs={'pk': project_obj.pk}))
+        template_context['project_id'] = project_obj.pk
+        template_context['allocation_attribute_changes'] = allocation_change_obj.allocationattributechangerequest_set.all()
+        send_email_template(
+            f'New Allocation Change Request: {pi_name} - {resource_name}',
+            'slate_project/email/new_allocation_change_request.txt',
+            template_context,
+            EMAIL_SENDER,
+            [SLATE_PROJECT_TICKET_QUEUE, ],
+        )
+
+
+def update_user_status(allocation_user_obj, status):
+    allocation_user_obj.status = AllocationUserStatusChoice.objects.get(name=status)
+    allocation_user_obj.save()
 
 
 def check_directory_name_format(slate_project_name):
@@ -128,7 +175,8 @@ def sync_smb_status(allocation_obj, allocation_attribute_type_obj=None, ldap_con
     gid = int(gid_obj[0].value)
 
     if allocation_attribute_type_obj is None:
-        allocation_attribute_type_obj = AllocationAttributeType.objects.get(name='SMB Enabled')
+        allocation_attribute_type_obj = AllocationAttributeType.objects.get(
+            name='SMB Enabled', linked_resources__name__exact="Slate Project")
 
     if ldap_conn is None:
         ldap_conn = LDAPModify()
@@ -168,7 +216,7 @@ def sync_slate_project_user_statuses(slate_project_user_objs):
     """
     status_objs = {
         'Active': AllocationUserStatusChoice.objects.get(name='Active'),
-        'Eligible': AllocationUserStatusChoice.objects.get(name='Eligible'),
+        'Invited': AllocationUserStatusChoice.objects.get(name='Invited'),
         'Disabled': AllocationUserStatusChoice.objects.get(name='Disabled'),
         'Retired': AllocationUserStatusChoice.objects.get(name='Retired'),
         'Error': AllocationUserStatusChoice.objects.get(name='Error')
@@ -319,10 +367,10 @@ def sync_slate_project_users(allocation_obj, ldap_conn=None, ldap_search_conn=No
         return
 
     read_write_user_objs = allocation_obj.allocationuser_set.filter(
-        role__name='read/write', status__name__in=['Active', 'Eligible', 'Disabled', 'Retired']
+        role__name='read/write', status__name__in=['Active', 'Invited', 'Disabled', 'Retired']
     )
     read_only_user_objs = allocation_obj.allocationuser_set.filter(
-        role__name='read only', status__name__in=['Active', 'Eligible', 'Disabled', 'Retired']
+        role__name='read only', status__name__in=['Active', 'Invited', 'Disabled', 'Retired']
     )
 
     ldap_read_write_usernames = ldap_conn.get_users(ldap_group_gid)
@@ -501,57 +549,79 @@ def sync_slate_project_users(allocation_obj, ldap_conn=None, ldap_search_conn=No
                     )
 
 
+def sync_slate_project_allocated_quantity(allocation_obj, ldap_conn=None):
+    if ldap_conn == None:
+        ldap_conn = LDAPModify()
+
+    allocation_attribute_type = 'GID'
+    ldap_group_gid_obj = allocation_obj.allocationattribute_set.filter(
+        allocation_attribute_type__name=allocation_attribute_type
+    )
+    if not ldap_group_gid_obj.exists():
+        logger.error(
+            f'Failed to sync the allocated quantity in a Slate Project allocation. The allocation '
+            f'(pk={allocation_obj.pk}) is missing the allocation attribute '
+            f'"{allocation_attribute_type}"'
+        )
+        return
+    ldap_group_gid = int(ldap_group_gid_obj[0].value)
+
+    description = ldap_conn.get_attribute('description', ldap_group_gid)
+
+    if not description:
+        logger.warning(f'Slate Project with GID={ldap_group_gid} does not have a description. Skipping allocated quantity sync...')
+        return
+    
+    try:
+        quota_split = description.split(',')[-2].split(' ')
+        identifier = quota_split[1]
+        if not identifier == 'quota':
+            logger.warning(
+                f'Slate Project with GID={ldap_group_gid} has an improperly formatted description. Skipping allocated quantity sync...')
+            return
+
+        allocated_quantity = quota_split[2]
+        allocated_quantity = int(allocated_quantity)
+    except (IndexError, ValueError):
+        logger.warning(
+            f'Slate Project with GID={ldap_group_gid} has an improperly formatted description. Skipping allocated quantity sync...')
+        return
+    
+    allocation_attribute_type = 'Allocated Quantity'
+    allocated_quantity_obj = allocation_obj.allocationattribute_set.filter(
+        allocation_attribute_type__name=allocation_attribute_type
+    )
+    if allocated_quantity_obj is None:
+        logger.info(
+            f'Slate Project allocation with GID={ldap_group_gid} allocated quantity not found.'
+            f'Creating one with value {allocated_quantity}'
+        )
+        allocated_quantity_obj = AllocationAttribute.objects.create(
+            allocation=allocation_obj,
+            value=allocated_quantity,
+            allocation_attribute_type=allocation_attribute_type
+        )
+        return
+
+    allocated_quantity_obj = allocated_quantity_obj[0]
+    if not int(allocated_quantity_obj.value) == allocated_quantity:
+        current_allocated_quantity = allocated_quantity_obj.value
+        allocated_quantity_obj.value = allocated_quantity
+        allocated_quantity_obj.save()
+
+        logger.info(
+            f'Slate Project allocation with GID={ldap_group_gid} allocated quantity was updated'
+            f' from {current_allocated_quantity} to {allocated_quantity}'
+        )
+
+
 def sync_slate_project_allocated_quantities():
     logger.info('Syncing Slate Project allocated quantities...')
-    ldap_groups = {}
-    with open(os.path.join(SLATE_PROJECT_INCOMING_DIR, 'allocated_quantity.csv'), 'r') as allocated_quantities_csv:
-        csv_reader = csv.reader(allocated_quantities_csv)
-        for line in csv_reader:
-            ldap_groups['condo_' + line[0]] = line[1]
-
-    allocated_quantity_objs = AllocationAttribute.objects.filter(
-        allocation_attribute_type__name='Allocated Quantity', allocation__resources__name='Slate Project'
-    ).prefetch_related('allocation')
-    ldap_group_objs = AllocationAttribute.objects.filter(
-        allocation_attribute_type__name='LDAP Group', allocation__resources__name='Slate Project'
-    ).prefetch_related('allocation')
-    ldap_group_dict = {}
-    for ldap_group_obj in ldap_group_objs:
-        ldap_group_dict[ldap_group_obj.value] = ldap_group_obj.allocation.id
-
-    allocated_quantity_dict = {}
-    for allocated_quantity_obj in allocated_quantity_objs:
-        allocated_quantity_dict[allocated_quantity_obj.allocation.id] = allocated_quantity_obj
-
-    allocation_attribute_type = AllocationAttributeType.objects.get(name='Allocated Quantity')
-    for ldap_group, allocated_quantity in ldap_groups.items():
-        ldap_group_allocation_id = ldap_group_dict.get(ldap_group)
-        if ldap_group_allocation_id is None:
-            # Disabled until imports are done
-            # logger.warning(f'LDAP group {ldap_group} not found')
-            continue
-
-        allocated_quantity_obj = allocated_quantity_dict.get(ldap_group_allocation_id)
-        if allocated_quantity_obj is None:
-            logger.info(
-                f'LDAP group {ldap_group} allocated quantity not found. Creating one with value {allocated_quantity}'
-            )
-            allocated_quantity_obj = AllocationAttribute.objects.create(
-                allocation=Allocation.objects.get(id=ldap_group_allocation_id),
-                value=allocated_quantity,
-                allocation_attribute_type=allocation_attribute_type
-            )
-            continue
-
-        current_allocated_quantity = allocated_quantity_obj.value
-        if allocated_quantity != current_allocated_quantity:
-            allocated_quantity_obj.value = allocated_quantity
-            allocated_quantity_obj.save()
-
-            logger.info(
-                f'LDAP group {ldap_group} allocated quantity was updated from {current_allocated_quantity} to {allocated_quantity}'
-            )
-
+    allocation_objs = Allocation.objects.filter(
+        resources__name='Slate Project', status__name='Active').prefetch_related('allocationattribute_set')
+    ldap_conn = LDAPModify()
+    for allocation_obj in allocation_objs:
+        sync_slate_project_allocated_quantity(allocation_obj, ldap_conn)
     logger.info('Done syncing Slate Project allocated quantities')
 
 
@@ -620,7 +690,7 @@ def send_expiry_email(allocation_obj):
             'slate_project/email/slate_project_expired.txt',
             template_context,
             EMAIL_SENDER,
-            [SLATE_PROJECT_EMAIL]
+            [SLATE_PROJECT_TICKET_QUEUE]
         )
 
 
@@ -664,7 +734,7 @@ def get_new_user_status(username, ldap_search_conn=None, return_obj=True):
     if SLATE_PROJECT_ELIGIBILITY_ACCOUNT in accounts and SLATE_PROJECT_ACCOUNT in accounts:
         status = 'Active'
     elif SLATE_PROJECT_ELIGIBILITY_ACCOUNT in accounts and not SLATE_PROJECT_ACCOUNT in accounts:
-        status = 'Eligible'
+        status = 'Invited'
     elif not SLATE_PROJECT_ELIGIBILITY_ACCOUNT in accounts and SLATE_PROJECT_ACCOUNT in accounts:
         status = 'Disabled'
     elif not SLATE_PROJECT_ELIGIBILITY_ACCOUNT in accounts and not SLATE_PROJECT_ACCOUNT in accounts:
@@ -758,7 +828,8 @@ def add_slate_project_groups(allocation_obj):
 
     :param allocation_obj: The allocation the groups are being created from
     """
-    gid_attribute_type = AllocationAttributeType.objects.filter(name='GID')
+    gid_attribute_type = AllocationAttributeType.objects.filter(
+        name='GID', linked_resources__name__exact="Slate Project")
     if not gid_attribute_type.exists():
         logger.error(
             f'Allocation attribute type GID does not exists. No new ldap groups were created.'
@@ -942,7 +1013,7 @@ def add_user_to_slate_project_group(allocation_user_obj):
         # The user's new eligibility account is not propagated fast enough to be picked up in 
         # get_new_user_status so we set the status to Eligible ourselves.
         if added_to_eligibility_group:
-            allocation_user_obj.status = AllocationUserStatusChoice.objects.get(name='Eligible')
+            allocation_user_obj.status = AllocationUserStatusChoice.objects.get(name='Invited')
             allocation_user_obj.save()
         else:
             allocation_user_obj.status = get_new_user_status(username)
@@ -1095,7 +1166,7 @@ def get_slate_project_info(username):
     """
     allocation_user_objs = AllocationUser.objects.filter(
         user__username=username,
-        status__name__in=['Active', 'Eligible', 'Disabled', 'Retired'],
+        status__name__in=['Active', 'Invited', 'Disabled', 'Retired'],
         allocation__status__name__in=['Active', 'Renewal Requested'],
         allocation__resources__name='Slate Project'
     )
@@ -1119,7 +1190,8 @@ def get_slate_project_info(username):
                 'name': directory.value.split('/')[-1],
                 'access': allocation_user_obj.role.name,
                 'owner': allocation_user_obj.allocation.project.pi.username,
-                'allocated_quantity': allocated_quantity
+                'allocated_quantity': allocated_quantity,
+                'allocation_url': reverse("allocation-detail", kwargs={"pk": allocation_user_obj.allocation.pk})
             }
         )
 
@@ -1403,7 +1475,7 @@ def import_slate_projects(json_file_name, out_file_name, importing_user, limit=N
 
     status_objs = {
         'Active': AllocationUserStatusChoice.objects.get(name='Active'),
-        'Eligible': AllocationUserStatusChoice.objects.get(name='Eligible'),
+        'Invited': AllocationUserStatusChoice.objects.get(name='Invited'),
         'Disabled': AllocationUserStatusChoice.objects.get(name='Disabled'),
         'Retired': AllocationUserStatusChoice.objects.get(name='Retired'),
         'Error': AllocationUserStatusChoice.objects.get(name='Error')
@@ -1456,7 +1528,18 @@ def import_slate_projects(json_file_name, out_file_name, importing_user, limit=N
                       f'Mismatch between Slate Project owner and RT Project PI')
                 continue
         else:
-            if user_obj.userprofile.title in ['Faculty', 'Staff', 'Academic (ACNP)', ]:
+            if check_if_pi_eligible(user_obj):
+                project_perms = PROJECT_PERMISSIONS_PER_TYPE.get('Default') | PROJECT_PERMISSIONS_PER_TYPE.get('Research')
+                project_max = project_perms.get('allowed_per_pi')
+                project_objs = Project.objects.filter(status__name='Active', pi=user_obj, type__name='Research')
+                if project_objs.count() + pi_import_project_counts.get(slate_project.get('owner_netid')) > project_max:
+                    logger.warning(f'Slate Project\'s, GID={slate_project.get("gid_number")}, owner '
+                                f'{user_obj.username} will be above their max allowed projects after '
+                                f'the full import. Skipping import...')
+                    print(f'Slate Project {slate_project.get("namespace_entry")} has NOT been imported: '
+                        f'Owner will be above their max allowed projects after the full import ')
+                    continue
+
                 project_obj = Project.objects.create(
                     title=slate_project.get('project_title'),
                     description=slate_project.get('abstract'),
@@ -1466,18 +1549,6 @@ def import_slate_projects(json_file_name, out_file_name, importing_user, limit=N
                     status=ProjectStatusChoice.objects.get(name='Active'),
                     end_date=project_end_date
                 )
-
-                project_objs = Project.objects.filter(status__name='Active', pi=user_obj, type__name='Research')
-                user_profile_obj = UserProfile.objects.get(user=user_obj)
-                max_projects = project_obj.get_env.get('allowed_per_pi')
-                if project_objs.count() + pi_import_project_counts.get(slate_project.get('owner_netid')) > max_projects:
-                    logger.warning(f'Slate Project\'s, GID={slate_project.get("gid_number")}, owner '
-                                f'{user_obj.username} will be above their max allowed projects after '
-                                f'the full import. Skipping import...')
-                    print(f'Slate Project {slate_project.get("namespace_entry")} has NOT been imported: '
-                        f'Owner will be above their max allowed projects after the full import ')
-                    continue
-
                 project_obj.slurm_account_name = generate_slurm_account_name(project_obj)
                 project_obj.save()
                 pi_import_project_counts[slate_project.get('owner_netid')] -= 1

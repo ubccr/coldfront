@@ -18,10 +18,6 @@ coldfront.db
 .vscode
 db.json
 .env
-coldfront/core/allocation/migrations/
-coldfront/core/resource/migrations/
-coldfront/core/project/migrations/
-coldfront/core/user/migrations/
 cert.pem
 kep.pem
 coldfront.log

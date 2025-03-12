@@ -9,10 +9,10 @@
     <h2><a href="{% url 'project-list' %}">My Projects &raquo;</a></h2>
     <hr>
     <p>
-      {% if not user.userprofile.title == 'group' %}<a href="{% url 'project-create' %}">Request a project</a>.{% endif %}
       You can add additional users to your project and request a resource allocation as part of the project request.
-      Students should list an IU faculty or staff member as the PI. You can also search for your PI's username and request
-      access to a project they already have.
+      Students should list an IU faculty or staff member as the PI. You can also search for your PI's username and
+      request access to a project they already have.
+      {% if not user.userprofile.title == 'group' %}<a href="{% url 'project-list' %}">Request a project &raquo;</a>{% endif %}
     </p>
     
 

@@ -206,7 +206,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
                 Q(project__projectuser__user=self.request.user) &
                 Q(project__projectuser__status__name__in=['Active', ]) &
                 Q(allocationuser__user=self.request.user) &
-                Q(allocationuser__status__name__in=['Active', 'Eligible', 'Disabled', 'Retired'])
+                Q(allocationuser__status__name__in=['Active', 'Invited', 'Pending', 'Disabled', 'Retired'])
             ).distinct().order_by('-end_date')
 
         allocation_submitted = self.request.GET.get('allocation_submitted')
@@ -715,10 +715,12 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
             description=project_obj.description
         )
 
+        save_form = not project_obj.title == form_data.get('title') or not project_obj.description == form_data.get('description')
         project_obj.title = form_data.get('title')
         project_obj.description = form_data.get('description')
         # project_obj.field_of_science = form_data.get('field_of_science')
-        project_obj.save()
+        if save_form:
+            project_obj.save()
 
         logger.info(
             f'User {self.request.user.username} updated a project (project pk={project_obj.pk})'
@@ -862,7 +864,7 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
             context['users_already_in_project'] = users_already_in_project
 
         status_list = ['Active', 'New', 'Renewal Requested', 'Billing Information Submitted']
-        allocations = project_obj.allocation_set.filter(status__name__in=status_list, is_locked=False)
+        allocations = project_obj.allocation_set.filter(status__name__in=status_list, is_locked=False).exclude(resources__name='Geode-Projects')
         initial_data = self.get_initial_data(request, allocations)
         allocation_formset = formset_factory(
             ProjectAddUsersToAllocationForm,
@@ -1034,12 +1036,13 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
                 if user_form_data['selected']:
                     # Will create local copy of user if not already present in local database
-                    user_obj, _ = User.objects.get_or_create(
+                    user_obj, created = User.objects.get_or_create(
                         username=user_form_data.get('username'))
-                    user_obj.first_name = user_form_data.get('first_name')
-                    user_obj.last_name = user_form_data.get('last_name')
-                    user_obj.email = user_form_data.get('email')
-                    user_obj.save()
+                    if created:
+                        user_obj.first_name = user_form_data.get('first_name')
+                        user_obj.last_name = user_form_data.get('last_name')
+                        user_obj.email = user_form_data.get('email')
+                        user_obj.save()
 
                     role_choice = user_form_data.get('role')
 
@@ -1049,25 +1052,29 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                             role_choice = ProjectUserRoleChoice.objects.get(name='User')
                             managers_rejected.append(user_form_data.get('username'))
 
+                    enable_notifications = True
+                    if role_choice.name == 'Group':
+                        # Notifications by default will be disabled for group accounts.
+                        enable_notifications = False
+                    elif role_choice.name == 'User' and auto_disable_notifications:
+                        enable_notifications = False
+
                     # Is the user already in the project?
                     if project_obj.projectuser_set.filter(user=user_obj).exists():
                         project_user_obj = project_obj.projectuser_set.get(
                             user=user_obj)
                         project_user_obj.role = role_choice
                         project_user_obj.status = project_user_active_status_choice
+                        project_user_obj.enable_notifications = enable_notifications
                         project_user_obj.save()
                     else:
                         project_user_obj = ProjectUser.objects.create(
-                            user=user_obj, project=project_obj, role=role_choice, status=project_user_active_status_choice)
+                            user=user_obj,
+                            project=project_obj,
+                            role=role_choice,
+                            status=project_user_active_status_choice,
+                            enable_notifications=enable_notifications)
 
-                    # Notifications by default will be disabled for group accounts.
-                    if role_choice.name == 'Group':
-                        project_user_obj.enable_notifications = False
-                    elif role_choice.name == 'User' and auto_disable_notifications:
-                        project_user_obj.enable_notifications = False
-                    else:
-                        project_user_obj.enable_notifications = True
-                    project_user_obj.save()
                     project_user_objs.append(project_user_obj)
 
                     username = user_form_data.get('username')
@@ -1100,23 +1107,26 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                                 resources_requiring_user_request[resource_name].add(username)
                                 allocation_user_status_choice = AllocationUserStatusChoice.objects.get(
                                     name='Pending - Add')
+                                
+                            allocation_user_role_obj = AllocationUserRoleChoice.objects.filter(
+                                resources=allocation.get_parent_resource, name=cleaned_data['role'])
+                            if allocation_user_role_obj.exists():
+                                allocation_user_role_obj = allocation_user_role_obj[0]
+                            else:
+                                allocation_user_role_obj = None
 
                             if allocation.allocationuser_set.filter(user=user_obj).exists():
                                 allocation_user_obj = allocation.allocationuser_set.get(
                                     user=user_obj)
                                 allocation_user_obj.status = allocation_user_status_choice
+                                allocation_user_obj.role = allocation_user_role_obj
                                 allocation_user_obj.save()
                             else:
                                 allocation_user_obj = AllocationUser.objects.create(
                                     allocation=allocation,
                                     user=user_obj,
+                                    role=allocation_user_role_obj,
                                     status=allocation_user_status_choice)
-
-                            allocation_user_role_obj = AllocationUserRoleChoice.objects.filter(
-                                resources=allocation.get_parent_resource, name=cleaned_data['role'])
-                            if allocation_user_role_obj.exists():
-                                allocation_user_obj.role = allocation_user_role_obj[0]
-                                allocation_user_obj.save()
 
                             allocation_activate_user.send(sender=self.__class__,
                                                         allocation_user_pk=allocation_user_obj.pk)
@@ -1178,6 +1188,8 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
 
                 if allocations_added_to:
                     for allocation, added_project_user_objs in allocations_added_to.items():
+                        if allocation.status.name == 'New':
+                            continue
                         users = [project_user_obj.user for project_user_obj in added_project_user_objs if project_user_obj.enable_notifications]
                         emails = [user.email for user in users]
                         if emails and project_obj.pi.email not in emails:
@@ -1444,10 +1456,14 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
 
             if project_user_update_form.is_valid():
                 form_data = project_user_update_form.cleaned_data
-                enable_notifications = form_data.get('enable_notifications')
-                old_role = form_data.get('role')
-                if form_data.get('role').name == 'Manager':
-                    enable_notifications = True
+                form_role = form_data.get('role')
+                form_enable_notifications = form_data.get('enable_notifications')
+
+                if (form_role == project_user_obj.role and 
+                    project_user_obj.enable_notifications == form_enable_notifications):
+                    return HttpResponseRedirect(reverse('project-user-detail', kwargs={'pk': project_obj.pk, 'project_user_pk': project_user_obj.pk})) 
+
+                if form_role.name == 'Manager':
                     if project_user_obj.role.name != 'Manager':
                         if project_obj.get_current_num_managers() >= project_obj.max_managers:
                             messages.error(
@@ -1468,12 +1484,10 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                             )
 
                 old_role = project_user_obj.role
-                project_user_obj.enable_notifications = enable_notifications
-                project_user_obj.role = ProjectUserRoleChoice.objects.get(
-                    name=form_data.get('role'))
+                project_user_obj.role = form_role
                 if project_user_obj.role.name == 'Manager':
                     project_user_obj.enable_notifications = True
-                elif old_role.name == 'Manager' and form_data.get('role').name == 'User':
+                elif old_role.name == 'Manager' and project_user_obj.role.name == 'User':
                     auto_disable_obj = project_obj.projectattribute_set.filter(
                         proj_attr_type__name='Auto Disable User Notifications')
                     if auto_disable_obj.exists() and auto_disable_obj[0].value == 'Yes':
@@ -1481,11 +1495,10 @@ class ProjectUserDetail(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                     else:
                         project_user_obj.enable_notifications = True
                 else:
-                    project_user_obj.enable_notifications = form_data.get(
-                        'enable_notifications')
+                    project_user_obj.enable_notifications = form_enable_notifications
                     logger.info(
                         f'Admin {request.user.username} set {project_user_obj.user.username}\'s '
-                        f'notifications to {form_data.get("enable_notifications")} (project pk={project_obj.pk})'
+                        f'notifications to {form_enable_notifications} (project pk={project_obj.pk})'
                     )
                 project_user_obj.save()
 
@@ -1606,7 +1619,7 @@ class ProjectReviewView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
                             '{} {}'.format(
                                 ele.user.first_name, ele.user.last_name
                             ) for ele in allocation.allocationuser_set.filter(
-                                status__name__in=['Active', 'Inactive', 'Eligible', 'Disabled', 'Retired']
+                                status__name__in=['Active', 'Inactive', 'Invited', 'Pending', 'Disabled', 'Retired']
                             ).order_by('user__last_name')
                         ]
                     ),
@@ -1803,8 +1816,9 @@ class ProjectReviewCompleteView(LoginRequiredMixin, UserPassesTestMixin, View):
         project_review_status_completed_obj = ProjectReviewStatusChoice.objects.get(
             name='Completed')
         project_review_obj.status = project_review_status_completed_obj
-        project_review_obj.project.project_needs_review = False
-        project_review_obj.save()
+        if project_review_obj.project.project_needs_review:
+            project_review_obj.project.project_needs_review = False
+            project_review_obj.save()
 
         messages.success(request, 'Project review for {} has been completed'.format(
             project_review_obj.project.title)

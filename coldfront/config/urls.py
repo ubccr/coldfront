@@ -30,6 +30,9 @@ urlpatterns = [
     path('research-output/', include('coldfront.core.research_output.urls')),
 ] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
+if 'coldfront_custom_resources' in settings.INSTALLED_APPS: 
+    urlpatterns.append(path('custom_resources/', include('coldfront_custom_resources.urls')))
+
 if 'coldfront.plugins.announcements' in settings.INSTALLED_APPS:
     urlpatterns.append(path('announcements/', include('coldfront.plugins.announcements.urls')))
 

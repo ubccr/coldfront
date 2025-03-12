@@ -9,6 +9,10 @@ Create Project
 
 
 {% block content %}
+  RT Projects is designed for labs, groups, and classes. If your group already has an existing project then you should
+  contact your PI about adding you to your groups project instead. Limiting projects to groups helps prevent user
+  access fragmentation and simplifies your PI's project management.
+  <hr>
  <form method="post">
   {% csrf_token %}
   {{ form|as_crispy_errors }}

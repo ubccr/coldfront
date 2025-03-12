@@ -25,6 +25,7 @@ from coldfront.core.allocation.utils import (set_default_allocation_user_role,
                                              send_allocation_user_request_email,
                                              send_added_user_email,
                                              get_user_resources)
+from coldfront.core.allocation.signals import allocation_new
 from coldfront.core.resource.models import ResourceAttribute
 from coldfront.core.utils.common import get_domain_url, import_from_settings
 from coldfront.core.utils.slack import send_message
@@ -627,6 +628,8 @@ class GenericView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                 f'User {self.request.user.username} added {", ".join(added_users)} to a new allocation '
                 f'(allocation pk={allocation_obj.pk})'
             )
+
+        allocation_new.send(sender=GenericView, allocation_pk=allocation_obj.pk)
 
         self.allocation_obj = allocation_obj
         return super().form_valid(form)

@@ -75,7 +75,7 @@ class Announcement(TimeStampedModel):
     categories = models.ManyToManyField(AnnouncementCategoryChoice, blank=True)
     status = models.ForeignKey(AnnouncementStatusChoice, on_delete=models.CASCADE)
     viewed_by = models.ManyToManyField(User, related_name='viewed_by', blank=True)
-    book_marked = models.ManyToManyField(User, related_name='book_marked', blank=True)
+    pinned = models.BooleanField(default=False)
     mailing_lists = models.ManyToManyField(AnnouncementMailingListChoice, blank=True)
     details_url = models.URLField(blank=True)
     author = models.ForeignKey(User, on_delete=models.CASCADE)

@@ -61,6 +61,7 @@ from coldfront.core.allocation.signals import (allocation_new,
                                                allocation_activate_user,
                                                allocation_disable,
                                                allocation_remove_user,
+                                               allocation_change,
                                                allocation_change_approved,
                                                allocation_change_user_role,
                                                visit_allocation_detail)
@@ -199,7 +200,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             context['user_has_permissions'] = True
 
         context['user_exists_in_allocation'] = allocation_obj.allocationuser_set.filter(
-            user=self.request.user, status__name__in=['Active', 'Pending - Remove', 'Eligible', 'Disabled', 'Retired']).exists()
+            user=self.request.user, status__name__in=['Active', 'Pending - Remove', 'Invited', 'Pending', 'Disabled', 'Retired']).exists()
 
         context['project'] = allocation_obj.project
         context['notes'] = notes
@@ -347,7 +348,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
             allocation_obj.end_date = datetime.datetime.now() if allocation_obj.status.name != 'New' else None
             allocation_obj.save()
 
-            if allocation_obj.status.name == ['Denied', 'Revoked', 'Removed']:
+            if allocation_obj.status.name in ['Denied', 'Revoked', 'Removed']:
                 allocation_disable.send(
                     sender=self.__class__, allocation_pk=allocation_obj.pk)
                 allocation_users = allocation_obj.allocationuser_set.exclude(
@@ -426,7 +427,7 @@ class AllocationListView(LoginRequiredMixin, ListView):
 
                     (Q(project__projectuser__role__name='Manager') |
                     Q(allocationuser__user=self.request.user) &
-                    Q(allocationuser__status__name__in= ['Active', 'Pending - Remove', 'Eligible', 'Disabled', 'Retired']))
+                    Q(allocationuser__status__name__in= ['Active', 'Pending - Remove', 'Invited', 'Pending', 'Disabled', 'Retired']))
                 ).distinct().order_by(order_by)
 
             # Project Title
@@ -439,7 +440,7 @@ class AllocationListView(LoginRequiredMixin, ListView):
                 allocations = allocations.filter(
                     Q(project__pi__username__icontains=data.get('username')) |
                     Q(allocationuser__user__username__icontains=data.get('username')) &
-                    Q(allocationuser__status__name__in= ['Active', 'Pending - Remove', 'Eligible', 'Disabled', 'Retired'])
+                    Q(allocationuser__status__name__in= ['Active', 'Pending - Remove', 'Invited', 'Pending', 'Disabled', 'Retired'])
                 )
 
             # Resource Type
@@ -480,7 +481,7 @@ class AllocationListView(LoginRequiredMixin, ListView):
         else:
             allocations = Allocation.objects.prefetch_related('project', 'project__pi', 'status',).filter(
                 Q(allocationuser__user=self.request.user) &
-                Q(allocationuser__status__name__in= ['Active', 'Pending - Remove', 'Eligible', 'Disabled', 'Retired'])
+                Q(allocationuser__status__name__in= ['Active', 'Pending - Remove', 'Invited', 'Pending', 'Disabled', 'Retired'])
             ).order_by(order_by)
 
         return allocations.distinct()
@@ -701,6 +702,8 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             message = 'You cannot modify this allocation because it is locked! Contact support for details.'
         elif allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', 'Payment Pending', 'Payment Requested', 'Paid']:
             message = f'You cannot add users to an allocation with status {allocation_obj.status.name}.'
+        elif allocation_obj.get_parent_resource.name == 'Geode-Projects':
+            message = f'You cannot add users to a Geode-Project allocation.'
         if message:
             messages.error(request, message)
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
@@ -904,13 +907,14 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                         f'(allocation pk={allocation_obj.pk})'
                     )
                 else:
-                    allocation_added_users_emails = list(allocation_obj.project.projectuser_set.filter(
-                        user__in=selected_user_objs, enable_notifications=True
-                    ).values_list('user__email', flat=True))
-                    if allocation_obj.project.pi.email not in allocation_added_users_emails:
-                        allocation_added_users_emails.append(allocation_obj.project.pi.email)
+                    if not allocation_obj.status.name == 'New':
+                        allocation_added_users_emails = list(allocation_obj.project.projectuser_set.filter(
+                            user__in=selected_user_objs, enable_notifications=True
+                        ).values_list('user__email', flat=True))
+                        if allocation_obj.project.pi.email not in allocation_added_users_emails:
+                            allocation_added_users_emails.append(allocation_obj.project.pi.email)
 
-                    send_added_user_email(request, allocation_obj, selected_user_objs, allocation_added_users_emails)
+                        send_added_user_email(request, allocation_obj, selected_user_objs, allocation_added_users_emails)
 
                     is_plural = len(selected_users.keys()) > 1
                     messages.success(
@@ -956,6 +960,8 @@ class AllocationRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, Templat
             message = 'You cannot modify this allocation because it is locked! Contact support for details.'
         elif allocation_obj.status.name not in ['Active', 'New', 'Renewal Requested', ]:
             message = f'You cannot remove users from a allocation with status {allocation_obj.status.name}.'
+        elif allocation_obj.get_parent_resource.name == 'Geode-Projects':
+            message = f'You cannot remove users from a Geode-Project allocation.'
         if message:
             messages.error(request, message)
             return HttpResponseRedirect(reverse('allocation-detail', kwargs={'pk': allocation_obj.pk}))
@@ -1977,6 +1983,8 @@ class AllocationChangeDetailView(LoginRequiredMixin, UserPassesTestMixin, FormVi
             self.request.user.groups.all(),
             'delete_allocationattributechangerequest'
         )
+        if allocation_obj.get_parent_resource.name == 'Slate Project':
+            context['identifier'] = allocation_obj.allocationattribute_set.get(allocation_attribute_type__name='Slate Project Directory').value
 
         return context
 
@@ -2310,6 +2318,8 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             context['formset'] = formset
         context['allocation'] = allocation_obj
         context['attributes'] = allocation_attributes_to_change
+        if allocation_obj.get_parent_resource.name == 'Slate Project':
+            context['identifier'] = allocation_obj.allocationattribute_set.get(allocation_attribute_type__name='Slate Project Directory').value
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
@@ -2390,6 +2400,9 @@ class AllocationChangeView(LoginRequiredMixin, UserPassesTestMixin, FormView):
                         'project_title': project_obj.title,
                         'project_id': project_obj.pk,
                     }
+                    allocation_change.send(
+                        sender=self.__class__,
+                        allocation_change_pk=allocation_change_request_obj.pk,)
                     send_allocation_admin_email(allocation_obj,
                                                 f'New Allocation Change Request: {pi_name} - {resource_name}',
                                                 'email/new_allocation_change_request.txt',

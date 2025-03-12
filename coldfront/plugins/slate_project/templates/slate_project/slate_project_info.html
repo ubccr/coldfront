@@ -17,7 +17,7 @@
         <tbody>
           {% for slate_project in slate_projects %}
             <tr>
-              <td>{{ slate_project.name }}</td>
+              <td><a href="{{ slate_project.allocation_url }}" target="_blank">{{ slate_project.name }} <i class="fas fa-external-link-alt" aria-hidden="true"></i></a></td>
               <td>{{ slate_project.owner }}</td>
               <td>{{ slate_project.access }}</td>
               <td>{{ slate_project.allocated_quantity }}</td>

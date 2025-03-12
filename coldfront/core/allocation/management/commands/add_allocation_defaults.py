@@ -29,7 +29,7 @@ class Command(BaseCommand):
             AllocationChangeStatusChoice.objects.get_or_create(name=choice)
 
         for choice in ('Active', 'Error', 'Removed', 'Pending - Add', 'Pending - Remove',
-                       'Eligible', 'Disabled', 'Retired'):
+                       'Invited', 'Pending', 'Disabled', 'Retired'):
             AllocationUserStatusChoice.objects.get_or_create(name=choice)
 
         for choice in ('Approved', 'Pending', 'Denied', ):
@@ -63,37 +63,10 @@ class Command(BaseCommand):
             ('slurm_user_specs', 'Attribute Expanded Text', False, True),
             ('slurm_user_specs_attriblist', 'Text', False, True),
             ('Storage Quota (GB)', 'Int', False, False),
-            ('Storage Quota (TB)', 'Int', False, False),
             ('Storage_Group_Name', 'Text', False, False),
             ('SupportersQOS', 'Yes/No', False, False),
             ('SupportersQOSExpireDate', 'Date', False, False),
             ('Account Number', 'Text', False, False),
-            ('Sub-Account Number', 'Text', False, False),
-            ('Applications', 'Text', False, True),
-            ('Has DL Workflow', 'Yes/No', False, True),
-            ('Has GPU Workflow', 'Yes/No', False, True),
-            ('Billing: Account Number', 'Text', False, True),
-            ('Billing: Fiscal Office', 'Text', False, True),
-            ('Billing: Sub-Account Number', 'Text', False, True),
-            ('Contact: IT Pro Contact', 'Text', False, True),
-            ('Contact: Phone Number', 'Text', False, True),
-            ('Contact: Primary Contact', 'Text', False, True),
-            ('Contact: Requestor', 'Text', False, True),
-            ('Contact: Secondary Contact', 'Text', False, True),
-            ('Department: Department Full Name', 'Text', False, True),
-            ('Department: Department Primary Campus', 'Text', False, True),
-            ('Department: Department Short Name', 'Text', False, True),
-            ('Department: Group Name', 'Text', False, True),
-            ('Policies: Accepted Best Practices', 'True/False', False, True),
-            ('Policies: Accepted Terms of Service', 'True/False', False, True),
-            ('Policies:Accepted Data Management Responsibilities', 'True/False', False, True),
-            ('Storage: Admin Group', 'Text', False, True),
-            ('Storage: Data Domains', 'Text', False, True),
-            ('Storage: Data Management Plan', 'Text', False, True),
-            ('Storage: Official End Date', 'Date', False, True),
-            ('Storage: Storage Quota (GB)', 'Int', False, False),
-            ('Storage: Use Indefinitely', 'True/False', False, True),
-            ('Storage: Users Group', 'Text', False, True),
             ('Use Type', 'Text', False, True),
             ('Will Exceed Limits', 'Yes/No', False, True),
             ('Allocated Quantity', 'Int', False, False),

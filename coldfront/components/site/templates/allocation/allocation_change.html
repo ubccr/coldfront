@@ -10,7 +10,10 @@ Request Allocation Change
 
 {% block content %}
 
-<h2>Request change to {{ allocation.get_parent_resource }} for project: {{ allocation.project.title }}</h2>
+<h2>
+  Request change to {{ allocation.get_parent_resource }} for 
+  {% if identifier %}{{ identifier }} attached to{% endif %} project: {{ allocation.project.title }}
+</h2>
 <hr>
 
 <p class="text-justify">

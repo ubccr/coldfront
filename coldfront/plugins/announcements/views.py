@@ -1,3 +1,4 @@
+import logging
 from django.contrib import messages
 from django.http import HttpResponseRedirect, HttpResponseNotFound
 from django.shortcuts import get_object_or_404, render
@@ -9,6 +10,8 @@ from coldfront.core.utils.mail import send_email_template
 from coldfront.core.utils.common import import_from_settings
 from coldfront.plugins.announcements.models import Announcement, AnnouncementCategoryChoice, AnnouncementMailingListChoice, AnnouncementStatusChoice
 from coldfront.plugins.announcements.forms import AnnouncementCreateForm, AnnouncementFilterForm
+
+logger = logging.getLogger(__name__)
 
 EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
 if EMAIL_ENABLED:
@@ -47,7 +50,7 @@ class AnnouncementListView(LoginRequiredMixin, ListView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
-        announcements = Announcement.objects.filter(status__name='Active').order_by('-created')
+        announcements = Announcement.objects.filter(status__name='Active').order_by('-pinned', '-created')
 
         announcement_filter_form = AnnouncementFilterForm(self.request.GET)
         if announcement_filter_form.is_valid():
@@ -87,19 +90,20 @@ class AnnouncementCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             body = data.get('body'),
             status = AnnouncementStatusChoice.objects.get(name='Active'),
             details_url = data.get('details_url'),
-            author = self.request.user
+            author = self.request.user,
+            pinned = data.get('pinned')
         )
 
         announcement_obj.categories.set(data.get('categories'))
         announcement_obj.mailing_lists.set(mailing_list)
 
+        logger.info(f'Admin {self.request.user.username} created a new announcement, pk={announcement_obj.pk}')
 
         if mailing_list:
             for mailing_list in mailing_list:
                 context = {
                     'center_name': EMAIL_CENTER_NAME,
                     'announcement': data.get('body'),
-                    'help_email': EMAIL_TICKET_SYSTEM_ADDRESS,
                     'signature': EMAIL_SIGNATURE
                 }
                 send_email_template(
@@ -120,7 +124,7 @@ class AnnouncementCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
 class AnnouncementUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Announcement
-    fields = ['title', 'body', 'categories', 'mailing_lists', 'details_url', 'status']
+    fields = ['title', 'body', 'categories', 'mailing_lists', 'details_url', 'status', 'pinned']
     template_name_suffix='_update_form'
 
     def test_func(self):
@@ -152,6 +156,7 @@ class AnnouncementUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView
         return context
 
     def get_success_url(self):
+        logger.info(f'Admin {self.request.user.username} updated an announcement, pk={self.object.pk}')
         messages.success(self.request, 'Your announcement has been updated.')
         return reverse('announcement-list')
 
@@ -167,4 +172,5 @@ class AnnouncementReadView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         announcement_obj = Announcement.objects.get(pk=request.POST.get('pk'))
         announcement_obj.viewed_by.add(request.user)
+        logger.info(f'User {self.request.user.username} marked announcement {announcement_obj.pk} as read')
         return render(request, 'announcements/navbar_announcements_unread.html', {'user': self.request.user})
