@@ -1,0 +1,43 @@
+name: coldfront
+
+# Runtime user namespace mapping
+x-podman:
+  in_pod: false
+
+services:
+  prod-app:
+    container_name: app
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    image: localhost/coldfront:latest
+    user: "1000:1000"
+    userns_mode: "keep-id:uid=1000,gid=1000"
+    restart: always
+    command: gunicorn --workers 3 --bind 0.0.0.0:8000 coldfront.config.wsgi
+    #command: coldfront runserver 0.0.0.0:8000
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+#      - /srv/coldfront/static:/static
+#      - /srv/coldfront/media:/mediafiles
+      - ${PWD}/static:/static
+      - ${PWD}/mediafiles:/mediafiles
+      - ${PWD}/coldfront.db:/app/coldfront.db
+      - ${PWD}/prod_settings.py:/etc/coldfront/local_settings.py:ro
+    environment:
+      DEBUG: False
+      #SECRET_KEY: "CHANGEME"
+      DJANGO_ALLOWED_HOSTS: localhost 127.0.0.1 [::1] 204.90.40.0/21 130.39.0.0/16 167.96.32.0/19
+      DB_URL: sqlite:////app/coldfront.db
+      STATIC_ROOT: /static
+      STATICFILES_DIR: /static
+      CENTER_NAME: University HPC
+    secrets:
+      - source: django_secret_key
+        mode: '0400'
+        uid: '1000'
+
+secrets:
+  django_secret_key: # generate using `just generate-django-secret`
+    external: true
