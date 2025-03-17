@@ -50,7 +50,7 @@ Allocation Detail
       <div class="col">
         <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>
       </div>
-      {% if allocation.is_changeable and not allocation.is_locked and is_allowed_to_update_project and allocation.status.name in 'Active, Renewal Requested, Payment Pending, Payment Requested, Paid' and 'Cluster' not in allocation.get_parent_resource.resource_type.name %}
+      {% if allocation.is_changeable and not allocation.is_locked and user_can_manage_allocation and allocation.status.name in 'Active, Renewal Requested, Payment Pending, Payment Requested, Paid' and 'Cluster' not in allocation.get_parent_resource.resource_type.name %}
         <div class="col">
           <a class="btn btn-primary" href="{% url 'allocation-change' allocation.pk %}" role="button" style="float: right;">
             Request Change
@@ -210,7 +210,7 @@ Allocation Detail
                   <i class="far fa-clock" aria-hidden="true"></i>
                   Expires in {{allocation.expires_in}} day{{allocation.expires_in|pluralize}} - Not renewable
                 </span>
-              {% elif is_allowed_to_update_project and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %}
+              {% elif user_can_manage_allocation and ALLOCATION_ENABLE_ALLOCATION_RENEWAL and allocation.status.name == 'Active' and allocation.expires_in <= 60 and allocation.expires_in >= 0 %}
                 <a href="{% url 'allocation-renew' allocation.pk %}">
                   <span class="badge badge-warning">
                     <i class="fas fa-redo-alt" aria-hidden="true"></i>
@@ -409,7 +409,7 @@ Allocation Detail
     <h3 class="d-inline">
       <i class="fas fa-info-circle" aria-hidden="true"></i> Allocation Change Requests
     </h3> <span class="badge badge-secondary">{{allocation_changes.count}}</span>
-    {% if allocation.is_changeable and not allocation.is_locked and is_allowed_to_update_project and allocation.status.name in 'Active, Renewal Requested, Payment Pending, Payment Requested, Paid' %}
+    {% if allocation.is_changeable and not allocation.is_locked and user_can_manage_allocation and allocation.status.name in 'Active, Renewal Requested, Payment Pending, Payment Requested, Paid' %}
       <a class="btn btn-primary" href="{% url 'allocation-change' allocation.pk %}" role="button" style="float: right;">
         Request Change
       </a>
@@ -473,7 +473,7 @@ Allocation Detail
       <span class="last_sync_users">Last Sync: {{user_sync_dt}}</span>
     {% endif %}
     <div class="float-right">
-      {% if allocation.project.status.name != 'Archived' and is_allowed_to_update_project and allocation.status.name in 'Active,New,Renewal Requested' and user_can_manage_allocation and allocation.is_cluster_allocation %}
+      {% if allocation.project.status.name != 'Archived' and allocation.status.name in 'Active,New,Renewal Requested' and user_can_manage_allocation and allocation.is_cluster_allocation %}
         <a class="btn btn-success" href="{% url 'allocation-add-users' allocation.pk %}" role="button">
           <i class="fas fa-user-plus" aria-hidden="true"></i> Add Users
         </a>

@@ -121,7 +121,7 @@ Edit User Attributes for {{allocation.project.title}} {{allocation.get_parent_re
 
             </table>
           </form>
-          {% if is_allowed_to_update_project and request.user.is_superuser %}
+          {% if user_can_manage_allocation and request.user.is_superuser %}
             <div class="text-left">
               <a class="btn btn-secondary" href="{% url 'allocation-detail' allocation.pk %}" role="button">
                 <i class="fas fa-long-arrow-left" aria-hidden="true"></i>

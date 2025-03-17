@@ -540,6 +540,12 @@ class Allocation(TimeStampedModel):
         if ProjectPermission.DATA_MANAGER in project_perms:
             return [AllocationPermission.USER, AllocationPermission.MANAGER]
 
+        managed_resources = [
+            resource for resource in self.resources.all() if user in resource.allowed_users.all()]
+
+        if managed_resources:
+            return [AllocationPermission.USER, AllocationPermission.MANAGER]
+
         if self.project.projectuser_set.filter(user=user, status__name='Active').exists():
             return [AllocationPermission.USER]
         if self.allocationuser_set.filter(user=user, status__name__in=['Active', 'New']).exists():
@@ -561,13 +567,8 @@ class Allocation(TimeStampedModel):
         return perm in perms
 
     def user_can_manage_allocation(self, user):
-        is_manager = False
-        if self.project.pi == user:
-            is_manager = True
-        for resource in self.resources.all():
-            if resource.user_can_manage_resource(user):
-                is_manager = True
-        return is_manager
+        return self.has_perm(user, AllocationPermission.MANAGER)
+
 
     def __str__(self):
         tmp = self.get_parent_resource
