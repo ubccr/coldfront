@@ -279,6 +279,7 @@ def allocation_summary(request):
 
     allocation_count_by_resource_type = dict(
         Counter([ele.resource_type.name for ele in allocation_resources]))
+    allocation_count_by_resource_type['Storage'] = allocation_count_by_resource_type['Storage'] + allocation_count_by_resource_type['Storage Tier']
 
     allocations_chart_data = generate_allocations_chart_data()
     resources_chart_data = generate_resources_chart_data(

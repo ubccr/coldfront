@@ -260,7 +260,7 @@ def pair_allocations_data(project, quota_dicts):
         if dicts:
             log_message = f'Path-based match: {allocation}, {allocation.path}, {dicts[0]}'
             paired_allocs = matched_dict_processing(allocation, dicts, paired_allocs, log_message)
-    unpaired_allocs = [a for a in allocs if a not in paired_allocs]
+    unpaired_allocs = [(a.pk, a, a.path) for a in allocs if a not in paired_allocs]
     unpaired_dicts = [d for d in quota_dicts if d not in paired_allocs.values()]
     if unpaired_dicts or unpaired_allocs:
         print(
@@ -360,5 +360,5 @@ def pull_push_quota_data(volumes=None):
 def generate_headers(token):
     """Generate 'headers' attribute by using the 'token' attribute.
     """
-    headers = {'accept': 'application/json', 'Authorization': f'Bearer {token}'}
+    headers = {'accept': 'application/json', 'Content-Type': 'application/json', 'Authorization': f'Bearer {token}'}
     return headers
