@@ -189,7 +189,7 @@ class ProjectDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
         context['mailto'] = 'mailto:' + ','.join([u.user.email for u in project_users])
 
-        allocations = self.object.allocation_set.prefetch_related('resources').order_by('-pk')
+        allocations = self.object.allocation_set.exclude(status__name='Merged').prefetch_related('resources').order_by('-pk')
         allocation_history_records = self.return_status_change_records(allocations)
 
         if not self.request.user.is_superuser and not self.request.user.has_perm(
