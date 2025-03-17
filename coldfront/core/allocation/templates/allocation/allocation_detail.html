@@ -716,6 +716,14 @@ Allocation Detail
                     order: [[ 3, "desc" ]],
                     buttons: [
                         {
+                            name: 'primary',
+                            extend: 'collection',
+                            background: false,
+                            autoClose: true,
+                            text: 'Export',
+                            buttons: ['csv', 'excel', 'pdf']
+                        },
+                        {
                         name: 'toggleusers',
                         text: function() {
                             return $('#allocation_datatable').attr('filter') == "on" ? "Show All Users" : 'Show Non Project Users'
