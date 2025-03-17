@@ -1412,7 +1412,7 @@ class AllocationUserAttributesEditView(LoginRequiredMixin, UserPassesTestMixin, 
             return HttpResponseForbidden(
                 'This is an allocation from an archived project! You cannot make any changes.'
             )
-        elif context['allocation'].status.name in ['Pending Deactivation', 'Inactive', 'Denied']:
+        elif context['allocation'].status.name in ['Pending Deactivation', 'Inactive', 'Denied', 'Merged']:
             return HttpResponseForbidden(f"This allocation is {context['allocation'].status.name.lower()}! You cannot make any changes.")
         EditRawShareFormSet = formset_factory(AllocationUserAttributeUpdateForm, extra=0)
         allocation_users = context['allocation_users']
