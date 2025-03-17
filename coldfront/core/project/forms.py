@@ -55,7 +55,7 @@ class ProjectAddUsersToAllocationForm(forms.Form):
         project_obj = get_object_or_404(Project, pk=project_pk)
 
         allocation_query_set = project_obj.allocation_set.filter(
-            resources__is_allocatable=True, is_locked=False, status__name__in=PENDING_ACTIVE_ALLOCATION_STATUSES)
+            resources__is_allocatable=True, is_locked=False, status__name__in=PENDING_ACTIVE_ALLOCATION_STATUSES).distinct()
         allocation_choices = [(allocation.id, "%s (%s) %s" % (allocation.get_parent_resource.name, allocation.get_parent_resource.resource_type.name,
                                                               allocation.description if allocation.description else '')) for allocation in allocation_query_set]
         allocation_choices_sorted = []
