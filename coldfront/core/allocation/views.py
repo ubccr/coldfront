@@ -267,11 +267,7 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context['attributes'] = attributes
         context['allocation_changes'] = allocation_changes
 
-        # Can the user update the project?
-        project_update_perm = allocation_obj.project.has_perm(
-            self.request.user, ProjectPermission.DATA_MANAGER
-        )
-        context['is_allowed_to_update_project'] = project_update_perm
+        context['user_can_manage_allocation'] = allocation_obj.user_can_manage_allocation(self.request.user)
         context['allocation_non_project_users'] = allocation_obj.get_non_project_users
         non_project_users_list = [allocation_user.user for allocation_user in context['allocation_non_project_users']]
         context['allocation_users'] = allocation_users.exclude(user__in=non_project_users_list)
@@ -279,7 +275,6 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
 
         context['notes'] = self.return_visible_notes(allocation_obj)
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL
-        context['user_can_manage_allocation'] = allocation_obj.user_can_manage_allocation(self.request.user)
         return context
 
     def return_visible_notes(self, allocation_obj):
@@ -1397,11 +1392,7 @@ class AllocationUserAttributesEditView(LoginRequiredMixin, UserPassesTestMixin, 
         inactive_status = AllocationUserStatusChoice.objects.get(name='Removed')
         allocation_users = allocation_obj.allocationuser_set.exclude(status=inactive_status).order_by('user__username')
 
-        # Can the user update the project?
-        project_update_perm = allocation_obj.project.has_perm(
-            self.request.user, ProjectPermission.DATA_MANAGER
-        )
-        context['is_allowed_to_update_project'] = project_update_perm
+        context['user_can_manage_allocation'] = allocation_obj.user_can_manage_allocation(self.request.user)
         context['allocation_users'] = allocation_users
         context['allocation'] = allocation_obj
         return context
@@ -1834,7 +1825,7 @@ class AllocationInvoiceDetailView(LoginRequiredMixin, UserPassesTestMixin, Templ
         project_update_perm = allocation_obj.project.has_perm(
             self.request.user, ProjectPermission.DATA_MANAGER
         )
-        context['is_allowed_to_update_project'] = project_update_perm
+        context['user_can_manage_allocation'] = allocation_obj.user_can_manage_allocation(self.request.user)
         context['allocation_users'] = allocation_users
         context['note_update_link'] = 'allocation-note-update'
 
