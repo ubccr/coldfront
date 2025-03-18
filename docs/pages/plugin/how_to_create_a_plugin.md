@@ -128,7 +128,7 @@ plugin_configs['PLUGIN_WEEKLYREPORTAPP'] = 'plugins/weeklyreportapp.py'
   ```
 
 !!! Tip
-    Note: To override any other default ColdFront templates, follow [these instructions](../../config/#custom-branding) from our docs.
+    Note: To override any other default ColdFront templates, follow [these instructions](../config.md#custom-branding) from our docs.
 
 Your app should now be linked to ColdFront.
 
@@ -193,6 +193,6 @@ plugin_configs['PLUGIN_WEEKLYREPORTAPP'] = 'plugins/weeklyreportapp.py'
   ```
 
 !!! Tip
-    Note: To override any other default ColdFront templates, follow [these instructions](../../config/#custom-branding) from our docs.
+    Note: To override any other default ColdFront templates, follow [these instructions](../config.md#custom-branding) from our docs.
 
 Your app should now be linked to ColdFront.
