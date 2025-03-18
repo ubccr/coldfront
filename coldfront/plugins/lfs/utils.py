@@ -5,7 +5,7 @@ from coldfront.core.resource.models import (
     Resource,
     ResourceAttributeType,
 )
-from coldfront.plugins.lfs.utils import GrpcClient
+from coldfront.plugins.lfs.grpc_client import GrpcClient
 
 
 # update allocation quotas from quota data
