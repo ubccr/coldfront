@@ -19,6 +19,7 @@ if ENV.bool('PLUGIN_MOKEY', default=False):
     AUTHENTICATION_BACKENDS += [
         'coldfront.plugins.mokey_oidc.auth.OIDCMokeyAuthenticationBackend',
     ]
+    MOKEY_OIDC_PI_GROUP= ENV.str('MOKEY_OIDC_PI_GROUP')
 else:
     AUTHENTICATION_BACKENDS += [
         'mozilla_django_oidc.auth.OIDCAuthenticationBackend',
@@ -28,7 +29,6 @@ MIDDLEWARE += [
     'mozilla_django_oidc.middleware.SessionRefresh',
 ]
 
-MOKEY_OIDC_PI_GROUP= ENV.str('MOKEY_OIDC_PI_GROUP')
 OIDC_OP_JWKS_ENDPOINT = ENV.str('OIDC_OP_JWKS_ENDPOINT')
 OIDC_RP_SIGN_ALGO = ENV.str('OIDC_RP_SIGN_ALGO')
 OIDC_RP_CLIENT_ID = ENV.str('OIDC_RP_CLIENT_ID')
