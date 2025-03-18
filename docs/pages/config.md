@@ -145,7 +145,7 @@ disabled:
 | EMAIL_ADMINS_ON_ALLOCATION_EXPIRE | Setting this to True will send a daily email notification to administrators with a list of allocations that have expired that day. |
 
 ### Plugin settings
-For more info on [ColdFront plugins](../../plugin/existing_plugins/) (Django apps)
+For more info on [ColdFront plugins](plugin/existing_plugins.md) (Django apps)
 
 #### LDAP Auth
 
@@ -154,6 +154,10 @@ For more info on [ColdFront plugins](../../plugin/existing_plugins/) (Django app
     ```
     $ pip install ldap3 django_auth_ldap
     ```
+
+    This uses `django_auth_ldap` therefore ldaps cert paths will be taken from
+    global OS ldap config, `/etc/{ldap,openldap}/ldap.conf` and within `TLS_CACERT`
+
 
 | Name                        | Description                             |
 | :---------------------------|:----------------------------------------|
