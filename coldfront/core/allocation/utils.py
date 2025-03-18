@@ -44,7 +44,6 @@ def generate_guauge_data_from_usage(name, value, usage):
 
 
 def get_user_resources(user_obj):
-
     if user_obj.is_superuser:
         resources = Resource.objects.filter(is_allocatable=True)
     else:

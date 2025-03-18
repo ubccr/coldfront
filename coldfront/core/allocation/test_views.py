@@ -13,6 +13,7 @@ from coldfront.core.test_helpers import utils
 from coldfront.core.test_helpers.factories import (
     UserFactory,
     ProjectFactory,
+    SchoolFactory,
     ResourceFactory,
     AllocationFactory,
     ProjectUserFactory,
@@ -47,7 +48,8 @@ class AllocationViewBaseTest(TestCase):
         """Test Data setup for all allocation view tests."""
         AllocationStatusChoiceFactory(name='New')
         AllocationStatusChoiceFactory(name='Pending')
-        cls.project = ProjectFactory(status=ProjectStatusChoiceFactory(name='Active'))
+        cls.school_tandon = SchoolFactory(description='Tandon School of Engineering')
+        cls.project = ProjectFactory(status=ProjectStatusChoiceFactory(name='Active'), school=cls.school_tandon)
         cls.allocation = AllocationFactory(project=cls.project)
         cls.allocation.resources.add(ResourceFactory(name='holylfs07/tier1'))
         # create allocation user that belongs to project
@@ -424,8 +426,9 @@ class AllocationCreateViewTest(AllocationViewBaseTest):
         }
 
         # Create resources
-        self.resource_standard = Resource.objects.create(name="Tandon",
-                                                         resource_type=ResourceType.objects.create(name="Generic"))
+        self.resource_tandon = Resource.objects.create(name="Tandon",
+                                                       resource_type=ResourceType.objects.create(name="Generic"),
+                                                       school=self.school_tandon)
         self.resource_hpc = Resource.objects.create(name=GENERAL_RESOURCE_NAME,
                                                     resource_type=ResourceType.objects.create(name="Cluster"))
 
@@ -434,9 +437,9 @@ class AllocationCreateViewTest(AllocationViewBaseTest):
             name='slurm_account_name', attribute_type=AttributeType.objects.create(name='Text'),
             has_usage=False, is_private=False)
 
-    def test_allocationcreateview_post_standard_resource(self):
+    def test_allocationcreateview_post_school_resource(self):
         """Test POST to the AllocationCreateView with a standard resource and check slurm_account_name"""
-        self.post_data['resource'] = str(self.resource_standard.pk)
+        self.post_data['resource'] = str(self.resource_tandon.pk)
         initial_count = self.project.allocation_set.count()
 
         response = self.client.post(self.url, data=self.post_data, follow=True)
@@ -447,7 +450,7 @@ class AllocationCreateViewTest(AllocationViewBaseTest):
 
         # Verify AllocationAttribute for slurm_account_name
         allocation = self.project.allocation_set.latest('id')
-        expected_slurm_name = f"pr_{self.project.pk}_{self.resource_standard.name}"
+        expected_slurm_name = f"pr_{self.project.pk}_{self.resource_tandon.name}"
 
         slurm_attr = AllocationAttribute.objects.get(
             allocation_attribute_type=self.slurm_account_attr_type,
@@ -484,6 +487,7 @@ class AllocationCreateViewTest(AllocationViewBaseTest):
 
     def test_allocationcreateview_post(self):
         """Test POST to the AllocationCreateView"""
+        self.post_data['resource'] = str(self.resource_hpc.pk)
         self.assertEqual(len(self.project.allocation_set.all()), 1)
         response = self.client.post(self.url, data=self.post_data, follow=True)
         self.assertEqual(response.status_code, 200)
@@ -492,6 +496,7 @@ class AllocationCreateViewTest(AllocationViewBaseTest):
 
     def test_allocationcreateview_post_zeroquantity(self):
         """Test POST to the AllocationCreateView"""
+        self.post_data['resource'] = str(self.resource_hpc.pk)
         self.post_data['quantity'] = '0'
         self.assertEqual(len(self.project.allocation_set.all()), 1)
         response = self.client.post(self.url, data=self.post_data, follow=True)

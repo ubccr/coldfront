@@ -1,4 +1,5 @@
 from django import forms
+from django.db.models import Q
 from django.db.models.functions import Lower
 from django.shortcuts import get_object_or_404
 
@@ -6,7 +7,6 @@ from coldfront.core.allocation.models import (AllocationAccount,
                                               AllocationAttributeType,
                                               AllocationAttribute,
                                               AllocationStatusChoice)
-from coldfront.core.allocation.utils import get_user_resources
 from coldfront.core.project.models import Project
 from coldfront.core.resource.models import Resource, ResourceType
 from coldfront.core.utils.common import import_from_settings
@@ -15,7 +15,7 @@ ALLOCATION_ACCOUNT_ENABLED = import_from_settings(
     'ALLOCATION_ACCOUNT_ENABLED', False)
 ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS = import_from_settings(
     'ALLOCATION_CHANGE_REQUEST_EXTENSION_DAYS', [])
-
+UNIVERSITY_HPC = "University HPC"
 
 class AllocationForm(forms.Form):
     resource = forms.ModelChoiceField(queryset=None, empty_label=None)
@@ -28,7 +28,17 @@ class AllocationForm(forms.Form):
     def __init__(self, request_user, project_pk,  *args, **kwargs):
         super().__init__(*args, **kwargs)
         project_obj = get_object_or_404(Project, pk=project_pk)
-        self.fields['resource'].queryset = get_user_resources(request_user).order_by(Lower("name"))
+
+        # 1. Get all allocatable resources
+        resources = Resource.objects.filter(is_allocatable=True)
+        # 2. Always include "University HPC" and restrict others by school
+        university_hpc = Resource.objects.filter(name=UNIVERSITY_HPC)
+        school_resources = resources.filter(school=project_obj.school)
+        # 3. Use Q filter to combine (Django-compatible)
+        resources = Resource.objects.filter(Q(id__in=university_hpc.values_list('id', flat=True)) | Q(
+            id__in=school_resources.values_list('id', flat=True)))
+        self.fields['resource'].queryset = resources.order_by(Lower("name"))
+
         self.fields['quantity'].initial = 1
         user_query_set = project_obj.projectuser_set.select_related('user').filter(
             status__name__in=['Active', ]).order_by("user__username")
