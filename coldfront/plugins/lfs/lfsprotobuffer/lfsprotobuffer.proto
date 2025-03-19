@@ -11,6 +11,22 @@ import "google/protobuf/timestamp.proto";
 
 message voidNoParam {}
 
+// FilesystemStats service definition.
+service FilesystemStats {
+  rpc UpdateFilesystemStats (UpdateFilesystemStatsRequest) returns (UpdateFilesystemStatsResponse) {}
+}
+
+message UpdateFilesystemStatsRequest {
+  // Optional parameters like specific filesystems to update
+  repeated string filesystems = 1;
+}
+
+message UpdateFilesystemStatsResponse {
+  bool success              = 1;
+  string message            = 2;
+  int32 filesystems_updated = 3;
+}
+
 // The Groups service definition.
 service Groups {
   rpc GetGroupById (GroupRequestById) returns (GroupResp) {}

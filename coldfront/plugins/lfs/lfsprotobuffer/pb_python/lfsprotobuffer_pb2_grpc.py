@@ -4,6 +4,69 @@ import grpc
 
 import coldfront.plugins.lfs.lfsprotobuffer.pb_python.lfsprotobuffer_pb2 as lfsprotobuffer__pb2
 
+class FilesystemStatsStub(object):
+    """FilesystemStats service definition.
+    """
+
+    def __init__(self, channel):
+        """Constructor.
+
+        Args:
+            channel: A grpc.Channel.
+        """
+        self.UpdateFilesystemStats = channel.unary_unary(
+                '/myprotobuffer.FilesystemStats/UpdateFilesystemStats',
+                request_serializer=lfsprotobuffer__pb2.UpdateFilesystemStatsRequest.SerializeToString,
+                response_deserializer=lfsprotobuffer__pb2.UpdateFilesystemStatsResponse.FromString,
+                )
+
+
+class FilesystemStatsServicer(object):
+    """FilesystemStats service definition.
+    """
+
+    def UpdateFilesystemStats(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+
+def add_FilesystemStatsServicer_to_server(servicer, server):
+    rpc_method_handlers = {
+            'UpdateFilesystemStats': grpc.unary_unary_rpc_method_handler(
+                    servicer.UpdateFilesystemStats,
+                    request_deserializer=lfsprotobuffer__pb2.UpdateFilesystemStatsRequest.FromString,
+                    response_serializer=lfsprotobuffer__pb2.UpdateFilesystemStatsResponse.SerializeToString,
+            ),
+    }
+    generic_handler = grpc.method_handlers_generic_handler(
+            'myprotobuffer.FilesystemStats', rpc_method_handlers)
+    server.add_generic_rpc_handlers((generic_handler,))
+
+
+ # This class is part of an EXPERIMENTAL API.
+class FilesystemStats(object):
+    """FilesystemStats service definition.
+    """
+
+    @staticmethod
+    def UpdateFilesystemStats(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/myprotobuffer.FilesystemStats/UpdateFilesystemStats',
+            lfsprotobuffer__pb2.UpdateFilesystemStatsRequest.SerializeToString,
+            lfsprotobuffer__pb2.UpdateFilesystemStatsResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
 
 class GroupsStub(object):
     """The Groups service definition.
