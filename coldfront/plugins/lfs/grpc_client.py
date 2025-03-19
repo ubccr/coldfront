@@ -13,6 +13,12 @@ class GrpcClient:
         self.filesystems_stub = lfsprotobuffer_pb2_grpc.FilesystemsStub(self.channel)
         self.quotas_stub = lfsprotobuffer_pb2_grpc.QuotasStub(self.channel)
 
+    def update_filesystem_stats(self):
+        stub = lfsprotobuffer_pb2_grpc.FilesystemStatsStub(g.channel)
+        request = lfsprotobuffer_pb2.UpdateFilesystemStatsRequest()
+        response = stub.UpdateFilesystemStats(request)
+        return response
+
     def get_group_by_id(self, group_id):
         request = lfsprotobuffer_pb2.GroupRequestById(id=group_id)
         return self.groups_stub.GetGroupById(request)
