@@ -14,7 +14,7 @@ class GrpcClient:
         self.quotas_stub = lfsprotobuffer_pb2_grpc.QuotasStub(self.channel)
 
     def update_filesystem_stats(self):
-        stub = lfsprotobuffer_pb2_grpc.FilesystemStatsStub(g.channel)
+        stub = lfsprotobuffer_pb2_grpc.FilesystemStatsStub(self.channel)
         request = lfsprotobuffer_pb2.UpdateFilesystemStatsRequest()
         response = stub.UpdateFilesystemStats(request)
         return response
