@@ -79,7 +79,7 @@ Resource Detail
 </div>
 
 <!-- Start Storage Report -->
-{% if resource.resource_type.name == "Storage" %}
+{% if resource.resource_type.name == "Storage" and request.user.is_superuser %}
   <div class="card mb-3">
     <div class="card-header">
       <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Storage Report</h3>
