@@ -81,4 +81,5 @@ find = {}
 [dependency-groups]
 dev = [
     "types-python-dateutil>=2.9.0.20241206",
+    "django-upgrade"
 ]
