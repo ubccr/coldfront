@@ -155,11 +155,12 @@ Add Users to Allocation
     }
     if (q.indexOf('\n') >= 0) {
       $("#id_id_search_by_0_1").prop("checked", true);
+      q = q.replace(/(?:\r\n|\r|\n)/g, ' ')
     }
 
     var pk = "{{ pk }}"
     $.ajax({
-        url : "{% url 'allocation-add-users' allocation.pk %}?search="+q, // the endpoint
+        url : encodeURI("{% url 'allocation-add-users' allocation.pk %}?search="+q), // the endpoint
         type : "GET", // http method
         // handle a successful response
         success : function(data) {

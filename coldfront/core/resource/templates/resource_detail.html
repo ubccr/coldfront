@@ -79,7 +79,7 @@ Resource Detail
 </div>
 
 <!-- Start Storage Report -->
-{% if resource.resource_type.name == "Storage" %}
+{% if resource.resource_type.name == "Storage" and user_is_manager %}
   <div class="card mb-3">
     <div class="card-header">
       <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Storage Report</h3>
@@ -91,7 +91,7 @@ Resource Detail
 {% endif %}
 
 <!-- Start Resource Attributes -->
-{% if attributes or request.user.is_superuser %}
+{% if user_is_manager %}
   <div class="card mb-3">
     <div class="card-header">
       <h3 class="d-inline"><i class="fas fa-info-circle" aria-hidden="true"></i> Resource Attributes</h3>
@@ -170,7 +170,7 @@ Resource Detail
 </div>
 
 <!-- Start Resource Allocations -->
-{% if user_is_manager and 'Cluster' in resource.resource_type.name %}
+{% if user_is_manager %}
   <div class="card mb-3">
     <div class="card-header">
       <h3 class="d-inline"><i class="fas fa-users" aria-hidden="true"></i> Resource Allocations</h3>
@@ -179,11 +179,13 @@ Resource Detail
       {# {% if user_sync_dt %}#}
       {# <span class="float-right">Last Sync: {{user_sync_dt}}</span>#}
       {# {% endif %}#}
-      <div class="float-right">
-        <a class="btn btn-danger" href="{% url 'resource-allocations-edit' resource.pk %}" role="button">
-          <i class="fas fa-edit" aria-hidden="true"></i> Edit Resource Allocations
-        </a>
-      </div>
+      {% if 'Cluster' in resource.resource_type.name %}
+        <div class="float-right">
+          <a class="btn btn-danger" href="{% url 'resource-allocations-edit' resource.pk %}" role="button">
+            <i class="fas fa-edit" aria-hidden="true"></i> Edit Resource Allocations
+          </a>
+        </div>
+      {% endif %}
     </div>
     <div class="card-body">
       <div class="table-responsive">
@@ -194,22 +196,28 @@ Resource Detail
               <tr>
                 <th scope="col">Project</th>
                 <th scope="col">Users</th>
-                <th scope="col">CPU Hours</th>
-                <th scope="col">Percent Usage</th>
-                <th scope="col">RawShare</th>
-                <th scope="col">EffectvUsage <a class="info-button" title="EffectvUsage" data-toggle="popover" data-trigger="click"
-                    data-content="The fraction of the cluster the account has been granted. For more information, go <a href='https://docs.rc.fas.harvard.edu/kb/fairshare/#articleTOC_4' title='fairshare calculation'>here</a>."><i class="fas fa-info-circle"
-                    aria-hidden="true"></i></a>
-                </th>
-                <th scope="col">NormShares <a class="info-button" title="NormShares" data-toggle="popover" data-trigger="click"
-                      data-content="Calculated fairshare per user. For more information on this number, go <a href='https://docs.rc.fas.harvard.edu/kb/fairshare/#articleTOC_4' title='fairshare calculation'>here</a>."
-		      ><i class="fas fa-info-circle" aria-hidden="true"></i></a>
-                </th>
-                <th scope="col">FairShare <a class="info-button" title="FairShare" data-toggle="popover" data-trigger="click"
-                     data-content="User fairshare, calculated by the equation 2^(-EffectvUsage/NormShares). For more information on fairshare calculation, go <a href='https://docs.rc.fas.harvard.edu/kb/fairshare/#articleTOC_4' title='fairshare calculation'>here</a>."
-		     ><i class="fas fa-info-circle" aria-hidden="true"></i>
-                  </a>
-                </th>
+                {% if 'Cluster' in resource.resource_type.name %}
+                  <th scope="col">CPU Hours</th>
+                  <th scope="col">Percent Usage</th>
+                  <th scope="col">RawShare</th>
+                  <th scope="col">EffectvUsage <a class="info-button" title="EffectvUsage" data-toggle="popover" data-trigger="click"
+                      data-content="The fraction of the cluster the account has been granted. For more information, go <a href='https://docs.rc.fas.harvard.edu/kb/fairshare/#articleTOC_4' title='fairshare calculation'>here</a>."><i class="fas fa-info-circle"
+                      aria-hidden="true"></i></a>
+                  </th>
+                  <th scope="col">NormShares <a class="info-button" title="NormShares" data-toggle="popover" data-trigger="click"
+                        data-content="Calculated fairshare per user. For more information on this number, go <a href='https://docs.rc.fas.harvard.edu/kb/fairshare/#articleTOC_4' title='fairshare calculation'>here</a>."
+		      ><i cl  ass="fas fa-info-circle" aria-hidden="true"></i></a>
+                  </th>
+                  <th scope="col">FairShare <a class="info-button" title="FairShare" data-toggle="popover" data-trigger="click"
+                       data-content="User fairshare, calculated by the equation 2^(-EffectvUsage/NormShares). For more information on fairshare calculation, go <a href='https://docs.rc.fas.harvard.edu/kb/fairshare/#articleTOC_4' title='fairshare calculation'>here</a>."
+		     ><i cla  ss="fas fa-info-circle" aria-hidden="true"></i>
+                    </a>
+                  </th>
+                {% elif resource.resource_type.name == 'Storage' %}
+                  <th scope="col">Path</th>
+                  <th scope="col">Quota ({{ resource.quantity_label }})</th>
+                  <th scope="col">Used ({{ resource.quantity_label }})</th>
+                {% endif %}
               </tr>
             </thead>
 
@@ -222,28 +230,44 @@ Resource Detail
                     </a>
                   </td>
                   <td>{{ allocation.user_count }}</td>
-                  <td data-sort="{{allocation.usage}}" name="usage">
-                    {% if allocation.usage is None %}
-                      0
-                    {% else %}
-                      {{ allocation.usage|floatformat:1 }}
-                    {% endif %}
-                  </td>
-                  <td data-sort="{{allocation.usage}}" name="usage_pct">
-                    {% if allocation.usage is None or allocation.usage == 0 %}
-                      0%
-                    {% else %}
-                      {{allocation.usage|div:total_hours|mul:100|floatformat:2 }}%
-                    {% endif %}
-                  </td>
-                  <td>{{ allocation.rawshares}}</td>
-                  <td>{{ allocation.effectvusage }}</td>
-                  <td>{{ allocation.normshares }}</td>
-                  <td>{{ allocation.fairshare }}</td>
-
+                  {% if 'Cluster' in resource.resource_type.name %}
+                    <td data-sort="{{allocation.usage}}" name="usage">
+                      {% if allocation.usage is None %}
+                        0
+                      {% else %}
+                        {{ allocation.usage|floatformat:1 }}
+                      {% endif %}
+                    </td>
+                    <td data-sort="{{allocation.usage}}" name="usage_pct">
+                      {% if allocation.usage is None or allocation.usage == 0 %}
+                        0%
+                      {% else %}
+                        {{allocation.usage|div:total_hours|mul:100|floatformat:2 }}%
+                      {% endif %}
+                    </td>
+                    <td>{{ allocation.rawshares}}</td>
+                    <td>{{ allocation.effectvusage }}</td>
+                    <td>{{ allocation.normshares }}</td>
+                    <td>{{ allocation.fairshare }}</td>
+                  {% elif resource.resource_type.name == 'Storage' %}
+                    <td>{{ allocation.path }}</td>
+                    <td>{{ allocation.size|floatformat:2 }}</td>
+                    <td>{{ allocation.usage|floatformat:2 }}</td>
+                  {% endif %}
                 </tr>
               {% endfor %}
             </tbody>
+            {% if resource.resource_type.name == 'Storage' %}
+              <tfoot>
+                <tr style="background-color:#C2C2C2;font-weight:bold">
+                    <td>Total Tracked Storage</td>
+                    <td></td>
+                    <td></td>
+                    <td>{{ allocation_total.size|floatformat:1}}</td>
+                    <td>{{ allocation_total.usage|floatformat:1}}</td>
+                </tr>
+              </tfoot>
+            {% endif %}
           </table>
         </div>
 

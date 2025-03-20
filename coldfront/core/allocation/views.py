@@ -7,6 +7,7 @@ from datetime import date
 
 from io import BytesIO
 from lib2to3.fixes.fix_input import context
+import requests
 
 from xhtml2pdf import pisa
 
@@ -869,15 +870,26 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
         return users_to_add
 
     def non_project_users_search(self, allocation_obj, search_term):
-        like_filter = (Q(username__icontains=search_term) or Q(first_name__icontains=search_term) or Q(
-            last_name__icontains=search_term) or Q(title_icontains=search_term))
-        non_project_users = (
-            self.get_non_project_users_to_add(allocation_obj, return_all=True)
-            .filter(like_filter)
-            .exclude(project=allocation_obj.project)
-            .values('username', 'first_name', 'last_name', 'email')
-        )
-        return non_project_users
+        user_list = []
+        search_term = requests.utils.unquote(search_term)
+        user_search = search_term.split(" ") if " " in search_term else search_term.splitlines()
+        for username in user_search:
+            like_filter = (
+                Q(username__icontains=username)
+                or Q(first_name__icontains=username)
+                or Q(last_name__icontains=username)
+                or Q(title_icontains=username)
+            )
+
+            non_project_users = (
+                self.get_non_project_users_to_add(allocation_obj, return_all=True)
+                .filter(like_filter)
+                .exclude(project=allocation_obj.project)
+                .values('username', 'first_name', 'last_name', 'email')
+            )
+            user_list += non_project_users
+
+        return user_list
 
     def search_non_project_users(self, allocation_obj, search_term, request):
         found_non_project_users = self.non_project_users_search(allocation_obj, search_term)

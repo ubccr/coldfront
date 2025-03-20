@@ -269,7 +269,11 @@ def allocation_by_fos(request):
 def allocation_summary(request):
 
     allocation_resources = [
-        allocation.get_parent_resource.parent_resource if allocation.get_parent_resource.parent_resource else allocation.get_parent_resource for allocation in Allocation.objects.filter(status__name='Active')]
+        allocation.get_parent_resource.parent_resource
+        if allocation.get_parent_resource.parent_resource
+        else allocation.get_parent_resource
+        for allocation in Allocation.objects.filter(status__name='Active').distinct()
+    ]
 
     allocations_count_by_resource = dict(Counter(allocation_resources))
 

@@ -1,0 +1,115 @@
+syntax = "proto3";
+
+option go_package = ".";
+option java_multiple_files = true;
+option java_outer_classname = "AppProto";
+
+package myprotobuffer;
+
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/timestamp.proto";
+
+message voidNoParam {}
+
+// FilesystemStats service definition.
+service FilesystemStats {
+  rpc UpdateFilesystemStats (UpdateFilesystemStatsRequest) returns (UpdateFilesystemStatsResponse) {}
+}
+
+message UpdateFilesystemStatsRequest {
+  // Optional parameters like specific filesystems to update
+  repeated string filesystems = 1;
+}
+
+message UpdateFilesystemStatsResponse {
+  bool success              = 1;
+  string message            = 2;
+  int32 filesystems_updated = 3;
+}
+
+// The Groups service definition.
+service Groups {
+  rpc GetGroupById (GroupRequestById) returns (GroupResp) {}
+  rpc GetGroupByName (GroupRequestByName) returns (GroupResp) {}
+  rpc ListGroups (voidNoParam) returns (stream GroupResp) {}
+}
+
+message GroupRequestById {
+  int32 id = 1;
+}
+
+message GroupRequestByName {
+  string name = 1;
+}
+
+message GroupResp {
+  int32  id   = 1;
+  string name = 2;
+}
+
+service Filesystems {
+  rpc GetFilesystemById (FilesystemRequestById) returns (FilesystemResp) {}
+  rpc GetFilesystemByName (FilesystemRequestByName) returns (FilesystemResp) {}
+  rpc ListFilesystems (voidNoParam) returns (stream FilesystemResp) {}
+}
+
+message FilesystemRequestById {
+  int32 id = 1;
+}
+
+message FilesystemRequestByName {
+  string name = 1;
+}
+
+message FilesystemResp {
+  int32                      id             = 1;
+  string                     name           = 2;
+  int64                      size           = 3;
+  int64                      allocated      = 4;
+  int64                      allocated_real = 5;
+  int64                      used           = 6;
+  google.protobuf.Timestamp  created        = 7;
+  google.protobuf.Timestamp  updated        = 8;
+  
+}
+
+service Quotas {
+  rpc GetQuotas (QuotaRequest) returns (stream QuotaResp) {}
+  rpc GetQuotaById (QuotaRequestById) returns (QuotaResp) {}
+  rpc GetQuotasByDate (QuotaRequestByDate) returns (stream QuotaResp) {}
+  rpc ListQuotas (voidNoParam) returns (stream QuotaResp) {}
+}
+
+message QuotaRequestById {
+  int32 id = 1;
+}
+
+message QuotaRequestByDate {
+  google.protobuf.Timestamp date   = 1;
+  bool                      before = 2;
+}
+
+message QuotaRequest {
+  google.protobuf.Int32Value group_uid       = 1;
+  google.protobuf.Int32Value filesystem_uid  = 2;
+  string                     group_name      = 3;
+  string                     filesystem_name = 4;
+}
+
+message QuotaResp {
+  int32                      id              = 1;
+  string                     group_name      = 2;
+  string                     filesystem_name = 3;
+  int64                      block_used      = 4;
+  int64                      block_quota     = 5;
+  int64                      block_limit     = 6;
+  google.protobuf.Int64Value block_grace     = 7;
+  bool                       block_isdefault = 8;
+  int64                      files_used      = 9;
+  int64                      files_quota     = 10;
+  int64                      files_limit     = 11;
+  google.protobuf.Int64Value files_grace     = 12;
+  bool                       files_isdefault = 13;
+  google.protobuf.Timestamp  created         = 14;
+  google.protobuf.Timestamp  updated         = 15;
+}

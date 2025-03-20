@@ -26,6 +26,7 @@ FormEncode==2.0.1
 future==1.0.0
 humanize==4.9.0
 idna==3.7
+protobuf==6.30.0
 pyparsing==3.1.2
 python-dateutil==2.9.0.post0
 python-memcached==1.62
@@ -50,6 +51,7 @@ django-mathfilters==1.0.0
 django-tables2==2.3.4
 djangorestframework==3.15.2
 djangorestframework-datatables==0.7.0
+grpcio==1.71.0
 ipython==7.16.3
 isilon-sdk==0.3.0.1
 ldap3
