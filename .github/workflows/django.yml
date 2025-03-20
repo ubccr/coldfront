@@ -58,7 +58,7 @@ jobs:
         docker run -d --rm --name coldfront -v `pwd`:/usr/src/app \
         -e PLUGIN_SFTOCF=True -e SFUSER=${{ secrets.SFUSER }} -e SFPASS=${{ secrets.SFPASS }} \
         -e PLUGIN_IFX=True -e PLUGIN_FASRC=True -e NEO4JP=${{ secrets.NEO4JP }} \
-        -e PLUGIN_API=True -e PLUGIN_LDAP=True \
+        -e PLUGIN_API=True -e PLUGIN_LDAP=True -e PLUGIN_LFS=True \
         -e AUTH_LDAP_SERVER_URI=${{ secrets.AUTH_LDAP_SERVER_URI }} \
         -e AUTH_LDAP_BIND_DN=${{ secrets.AUTH_LDAP_BIND_DN }} \
         -e AUTH_LDAP_BIND_PASSWORD=${{ secrets.AUTH_LDAP_BIND_PASSWORD }} \
