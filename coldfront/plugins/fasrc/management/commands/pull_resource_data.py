@@ -3,9 +3,11 @@ from django.core.management.base import BaseCommand
 
 from coldfront.core.resource.models import Resource, ResourceAttributeType
 from coldfront.plugins.isilon.utils import IsilonConnection
+from coldfront.plugins.lfs.utils import update_lfs_usages
 from coldfront.plugins.sftocf.utils import (
     StarFishServer, StarFishRedash, STARFISH_SERVER
 )
+
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +69,8 @@ class Command(BaseCommand):
 
         # collect user and lab counts, allocation sizes for each volume
         resources = Resource.objects.filter(resource_type__name='Storage')
+        # update all tier 0 resources
+        update_lfs_usages()
         for resource in resources:
             resource_name = resource.name.split('/')[0]
             if 'isilon' in resource.name:
@@ -82,6 +86,8 @@ class Command(BaseCommand):
                     'used_tb': isilon_used_tb,
                 }
                 update_resource_attr_types_from_dict(resource, attr_pairs)
+            elif 'Tier 0' in resource.parent_resource.name:
+                pass
             else:
                 try:
                     volume = [v for v in volumes if v['name'] == resource_name][0]
