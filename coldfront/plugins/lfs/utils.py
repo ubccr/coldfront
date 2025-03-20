@@ -23,7 +23,7 @@ def update_lfs_usages():
         resource = Resource.objects.filter(name__contains=filesystem_name).first()
         if resource:
             capacity_tb, _ = resource.resourceattribute_set.get_or_create(resource_attribute_type=capacity_tb_type)
-            capacity_tb.value = filesystem.capacity / 1024 / 1024 / 1024 / 1024
+            capacity_tb.value = filesystem.size / 1024 / 1024 / 1024 / 1024
             capacity_tb.save()
             allocated_tb, _ = resource.resourceattribute_set.get_or_create(resource_attribute_type=allocated_tb_type)
             allocated_tb.value = filesystem.allocated / 1024 / 1024 / 1024 / 1024
