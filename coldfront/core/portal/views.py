@@ -15,7 +15,7 @@ from coldfront.core.portal.utils import (
 )
 from coldfront.core.project.models import Project
 from coldfront.core.publication.models import Publication
-from coldfront.core.resource.models import Resource
+from coldfront.core.resource.models import Resource, ResourceAttribute
 from coldfront.config.env import ENV
 from coldfront.core.department.models import Department, DepartmentMember
 from coldfront.core.utils.common import import_from_settings
@@ -82,10 +82,12 @@ def home(request):
         department_list = Department.objects.filter(
             id__in=user_depts.values_list('organization_id')
         )
-
-        resource_list = Resource.objects.filter(
-            allowed_users=request.user)
-
+        project_title_list = [project.title for project in project_list]
+        owned_resources = [attribute.resource.pk for attribute in ResourceAttribute.objects.filter(
+            resource_attribute_type__name='Owner',
+            value__in=project_title_list
+        )]
+        resource_list = Resource.objects.filter(Q(allowed_users=request.user) | Q(pk__in=owned_resources)).distinct()
         context['resource_list'] = resource_list
         context['department_list'] = department_list
         context['project_list'] = project_list
