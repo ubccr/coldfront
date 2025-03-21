@@ -27,6 +27,7 @@ class Command(BaseCommand):
         plugins_tasks = {
             'fasrc': ['import_quotas', 'id_import_allocations', 'pull_resource_data'],
             'sftocf': ['pull_sf_push_cf', 'update_zones'],
+            'lfs': ['pull_lfs_filesystem_stats'],
             'ldap': ['update_group_membership_ldap', 'id_add_projects'],
             'slurm': ['slurm_sync'],
             'xdmod': ['xdmod_usage'],
