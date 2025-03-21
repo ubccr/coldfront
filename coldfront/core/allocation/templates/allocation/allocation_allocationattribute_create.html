@@ -13,71 +13,11 @@ Add Allocation Attribute
 <h2>Adding allocation attribute to {{allocation.get_parent_resource}} for PI {{ allocation.project.pi.first_name }}
   {{ allocation.project.pi.last_name }} ({{ allocation.project.pi.username }})</h2>
 
-<form method="post" id="attribute-form">
+<form method="post">
   {% csrf_token %}
-
-  <!-- Hidden input for allocation -->
-  <input type="hidden" name="allocation" id="id_allocation" value="{{ allocation.pk }}">
-
-  <!-- Render allocation_attribute_type dropdown -->
-  <label for="id_allocation_attribute_type">Select Attribute Type:</label>
-  {{ form.allocation_attribute_type }}
-
-  <!-- Render value field, which will be dynamically updated -->
-  <label for="id_value">Value:</label>
-  <div id="value-field">
-    {{ form.value }}
-  </div>
-
-  <input class="btn btn-success" type="submit" value="Add" id="submit-btn" />
+  {{form |crispy}}
+  <input class="btn btn-success" type="submit" value="Add" />
   <a class="btn btn-secondary" href="{% url 'allocation-detail' allocation.pk %}" role="button">Back to
     Allocation</a><br>
 </form>
-
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const attributeTypeField = document.getElementById("id_allocation_attribute_type");
-    const valueFieldContainer = document.getElementById("value-field");
-
-    function updateValueField() {
-      let selectedType = attributeTypeField.value;
-      let allocationPk = "{{ allocation.pk }}";  // Get allocation PK from context
-
-      if (!selectedType) {
-          console.warn("No attribute type selected. Skipping AJAX request.");
-          return;  // Don't send request if no attribute type is selected
-      }
-
-      fetch("{% url 'get-value-field' %}?allocation_attribute_type=" + selectedType + "&allocation_pk=" + allocationPk)
-        .then(response => response.json())
-        .then(data => {
-            if (data.value_field) {
-                valueFieldContainer.innerHTML = data.value_field;
-                console.log("Updated value field:", data.value_field);
-
-                // Ensure new field gets the correct name for form submission
-                let newField = valueFieldContainer.querySelector("select, input");
-                if (newField) {
-                    newField.name = "value";  // Ensures Django processes it correctly
-                }
-            } else {
-                console.error("No value field received from server.");
-            }
-        })
-        .catch(error => console.error("Error updating value field:", error));
-    }
-
-    updateValueField();
-
-    attributeTypeField.addEventListener("change", updateValueField);
-
-    // Log form submission data
-    document.getElementById("submit-btn").addEventListener("click", function () {
-        console.log("Submitting form...");
-        console.log("Attribute Type:", attributeTypeField.value);
-        console.log("Value:", document.getElementById("id_value")?.value);
-    });
-  });
-</script>
-
 {% endblock %}

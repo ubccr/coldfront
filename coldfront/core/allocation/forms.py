@@ -267,13 +267,5 @@ class AllocationAttributeCreateForm(forms.ModelForm):
         model = AllocationAttribute
         fields = '__all__'
     def __init__(self, *args, **kwargs):
-        self.allocation = kwargs.pop('allocation', None)  # Get allocation from view
-        super().__init__(*args, **kwargs)
-
-        if self.allocation:
-            self.fields["allocation"].initial = self.allocation
-
-        # Order attribute types alphabetically
-        self.fields['allocation_attribute_type'].queryset = (
-            self.fields['allocation_attribute_type'].queryset.order_by(Lower('name'))
-        )
+        super(AllocationAttributeCreateForm, self).__init__(*args, **kwargs) 
+        self.fields['allocation_attribute_type'].queryset = self.fields['allocation_attribute_type'].queryset.order_by(Lower('name'))

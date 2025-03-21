@@ -806,7 +806,6 @@ class AllocationAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Cre
         return False
 
     def get_context_data(self, **kwargs):
-        """ Add the allocation object to the template context """
         context = super().get_context_data(**kwargs)
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
@@ -814,7 +813,6 @@ class AllocationAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Cre
         return context
 
     def get_initial(self):
-        """ Pre-fill the allocation field in the form """
         initial = super().get_initial()
         pk = self.kwargs.get('pk')
         allocation_obj = get_object_or_404(Allocation, pk=pk)
@@ -827,45 +825,9 @@ class AllocationAttributeCreateView(LoginRequiredMixin, UserPassesTestMixin, Cre
         form.fields['allocation'].widget = forms.HiddenInput()
         return form
 
-    def get_form_kwargs(self):
-        """ Pass allocation to the form to support dynamic field updates """
-        kwargs = super().get_form_kwargs()
-        kwargs['allocation'] = get_object_or_404(Allocation, pk=self.kwargs.get('pk'))
-        return kwargs
-
     def get_success_url(self):
-        """ Redirect to the allocation detail page after successful form submission """
         return reverse('allocation-detail', kwargs={'pk': self.kwargs.get('pk')})
 
-
-def get_value_field(request):
-    """ Returns the updated 'value' field based on the selected attribute type via AJAX """
-
-    attribute_type_id = request.GET.get("allocation_attribute_type")
-    allocation_pk = request.GET.get("allocation_pk")
-
-    allocation = get_object_or_404(Allocation, pk=allocation_pk)
-
-    # Create a fresh form instance
-    form = AllocationAttributeCreateForm(allocation=allocation)
-
-    # Convert ID to actual attribute type
-    attribute_type_obj = AllocationAttributeType.objects.filter(id=attribute_type_id).first()
-
-    # If "slurm_account_name" is selected, update the field dynamically
-    if attribute_type_obj and attribute_type_obj.name == "slurm_account_name":
-        project = allocation.project
-        if project and project.slurm_account_names:
-            form.fields["value"] = forms.ChoiceField(
-                choices=[(name, name) for name in project.slurm_account_names],
-                widget=forms.Select(attrs={"class": "form-control"}),
-                required=True
-            )
-
-    # Ensure "value" exists before accessing it
-    value_field = form["value"].as_widget() if "value" in form.fields else ""
-
-    return JsonResponse({"value_field": value_field})
 
 class AllocationAttributeDeleteView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'allocation/allocation_allocationattribute_delete.html'
