@@ -120,3 +120,9 @@ request an account through a university faculty member.
 
 PROJECT_CODE = ENV.str("PROJECT_CODE", default=None)
 PROJECT_CODE_PADDING = ENV.int("PROJECT_CODE_PADDING", default=None)
+
+# ------------------------------------------------------------------------------
+# Enable project institution code feature.
+# ------------------------------------------------------------------------------
+
+PROJECT_INSTITUTION_EMAIL_MAP = ENV.dict("PROJECT_INSTITUTION_EMAIL_MAP", default={})

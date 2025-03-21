@@ -13,7 +13,10 @@ from coldfront.core.project.models import (
     ProjectAttribute,
     ProjectAttributeType,
 )
-from coldfront.core.project.utils import generate_project_code
+from coldfront.core.project.utils import (
+    add_automated_institution_choice,
+    generate_project_code,
+)
 from coldfront.core.test_helpers.factories import (
     FieldOfScienceFactory,
     PAttributeTypeFactory,
@@ -276,3 +279,73 @@ class TestProjectCode(TransactionTestCase):
         # Test the generated project codes
         self.assertEqual(project_with_code_padding1, "BFO001")
         self.assertEqual(project_with_code_padding2, "BFO002")
+
+
+class TestInstitution(TransactionTestCase):
+    """Tear down database after each run to prevent conflicts across cases"""
+
+    reset_sequences = True
+
+    def setUp(self):
+        self.user = UserFactory(username="capeo")
+        self.field_of_science = FieldOfScienceFactory(description="Physics")
+        self.status = ProjectStatusChoiceFactory(name="Active")
+
+    def create_project_with_institution(self, title, institution_dict=None):
+        """Helper method to create a project and assign a institution value based on the argument passed"""
+        # Project Creation
+        project = Project.objects.create(
+            title=title,
+            pi=self.user,
+            status=self.status,
+            field_of_science=self.field_of_science,
+        )
+
+        if institution_dict:
+            add_automated_institution_choice(project, institution_dict)
+
+        project.save()
+
+        return project.institution
+
+    @patch(
+        "coldfront.config.core.PROJECT_INSTITUTION_EMAIL_MAP",
+        {"inst.ac.com": "AC", "inst.edu.com": "EDU", "bfo.ac.uk": "BFO"},
+    )
+    def test_institution_is_none(self):
+        from coldfront.config.core import PROJECT_INSTITUTION_EMAIL_MAP
+
+        """Test to check if institution is none after both env vars are enabled. """
+
+        # Create project with both institution
+        project_institution = self.create_project_with_institution("Project 1", PROJECT_INSTITUTION_EMAIL_MAP)
+
+        # Create the first project
+        self.assertEqual(project_institution, "None")
+
+    @patch(
+        "coldfront.config.core.PROJECT_INSTITUTION_EMAIL_MAP",
+        {"inst.ac.com": "AC", "inst.edu.com": "EDU", "bfo.ac.uk": "BFO"},
+    )
+    def test_institution_multiple_users(self):
+        from coldfront.config.core import PROJECT_INSTITUTION_EMAIL_MAP
+
+        """Test to check multiple projects with different user email addresses, """
+
+        # Create project for user 1
+        self.user.email = "user@inst.ac.com"
+        self.user.save()
+        project_institution_one = self.create_project_with_institution("Project 1", PROJECT_INSTITUTION_EMAIL_MAP)
+        self.assertEqual(project_institution_one, "AC")
+
+        # Create project for user 2
+        self.user.email = "user@bfo.ac.uk"
+        self.user.save()
+        project_institution_two = self.create_project_with_institution("Project 2", PROJECT_INSTITUTION_EMAIL_MAP)
+        self.assertEqual(project_institution_two, "BFO")
+
+        # Create project for user 3
+        self.user.email = "user@inst.edu.com"
+        self.user.save()
+        project_institution_three = self.create_project_with_institution("Project 3", PROJECT_INSTITUTION_EMAIL_MAP)
+        self.assertEqual(project_institution_three, "EDU")
