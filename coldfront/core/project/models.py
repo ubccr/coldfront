@@ -57,7 +57,6 @@ class Project(TimeStampedModel):
         status (ProjectStatusChoice): represents the ProjectStatusChoice of this project
         force_review (bool): indicates whether or not to force a review for the project
         requires_review (bool): indicates whether or not the project requires review
-        slurm_account_names (JSON): a list of default slurm account names e.g. pr_{self.pk}_general, pr_{self.pk}_{resource_name}
     """
     class Meta:
         ordering = ['title']
@@ -93,36 +92,27 @@ We do not have information about your research. Please provide a detailed descri
     status = models.ForeignKey(ProjectStatusChoice, on_delete=models.CASCADE)
     force_review = models.BooleanField(default=False)
     requires_review = models.BooleanField(default=True)
-    slurm_account_names = JSONField(default=list, blank=True)
+    project_names = JSONField(default=list)
     history = HistoricalRecords()
     objects = ProjectManager()
-
-    def clean_fields(self, exclude=None):
-        errors = {}
-
-        if self.slurm_account_names is None:
-            errors['slurm_account_names'] = 'This field cannot be None.'
-
-        if errors:
-            raise ValidationError(errors)
-
-        super().clean_fields(exclude=exclude)
 
     def update_project_names(self):
         """Automatically updates the project_names field based on the project's PK and associated resources."""
         if not self.pk:  # Ensure the project is saved before generating names
             return
 
-        # Base slurm account name
-        slurm_name_general = f"pr_{self.pk}_general"
+        # Base project name
+        project_name_general = f"pr_{self.pk}_general"
+
         # Get associated resources for the school's projects
         resource_names = Resource.objects.filter(school=self.school).values_list('name', flat=True)
+
         # Generate names for each resource
-        slurm_names_resource = [f"pr_{self.pk}_{resource_name}" for resource_name in resource_names]
+        project_names = [f"pr_{self.pk}_{resource_name}" for resource_name in resource_names]
 
         # Update project_names field
-        self.slurm_account_names = [slurm_name_general] + slurm_names_resource
-        self.save(update_fields=['slurm_account_names'])  # Save only this field
+        self.project_names = [project_name_general] + project_names
+        self.save(update_fields=['project_names'])  # Save only this field
 
     def clean(self):
         """ Validates the project and raises errors if the project is invalid. """
@@ -135,16 +125,8 @@ We do not have information about your research. Please provide a detailed descri
 
     def save(self, *args, **kwargs):
         """Overrides save to update project_names before saving."""
-
-        # If we are only updating `slurm_account_names`, don't call update_project_names() again
-        if kwargs.get('update_fields') == ['slurm_account_names']:
-            super().save(*args, **kwargs)
-            return
-
-        super().save(*args, **kwargs)  # First save to get a valid `pk`
-
-        # Update project names only if needed
-        self.update_project_names()
+        super().save(*args, **kwargs)  # Save first to get a valid `pk`
+        self.update_project_names()  # Update the project names list
 
     @property
     def last_project_review(self):
