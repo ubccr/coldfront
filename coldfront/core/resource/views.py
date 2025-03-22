@@ -10,10 +10,23 @@ from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.views.generic import TemplateView, ListView
 from django.views.generic.edit import CreateView
+from coldfront.core.utils.common import import_from_settings
+from coldfront.core.utils.mail import send_email_template
+import datetime
 
 from coldfront.core.resource.forms import ResourceAttributeCreateForm, ResourceSearchForm, ResourceAttributeDeleteForm
 from coldfront.core.resource.models import Resource, ResourceAttribute
+from coldfront.core.allocation.models import Allocation
 
+EMAIL_ENABLED = import_from_settings('EMAIL_ENABLED', False)
+EMAIL_RESOURCE_EXPIRING_NOTIFICATION_DAYS = import_from_settings(
+    'EMAIL_RESOURCE_EXPIRING_NOTIFICATION_DAYS', [7, ])
+if EMAIL_ENABLED:
+    CENTER_NAME = import_from_settings('CENTER_NAME')
+    CENTER_BASE_URL = import_from_settings('CENTER_BASE_URL')
+    EMAIL_RESOURCE_NOTIFICATIONS_ENABLED = import_from_settings('EMAIL_RESOURCE_NOTIFICATIONS_ENABLED', False)
+    EMAIL_SIGNATURE = import_from_settings('EMAIL_SIGNATURE')
+    EMAIL_SENDER = import_from_settings('EMAIL_SENDER')
 
 class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     model = Resource
@@ -56,6 +69,56 @@ class ResourceDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         context['resource'] = resource_obj
         context['attributes'] = attributes
         context['child_resources'] = child_resources
+
+        attributes_warranty = resource_obj.get_attribute('WarrantyExpirationDate')
+        attributes_service = resource_obj.get_attribute('ServiceEnd')
+
+        attribute_warranty_day = -1 
+        attribute_service_day = -1
+        child_expiry = {}
+
+        for days_remaining in sorted(set(EMAIL_RESOURCE_EXPIRING_NOTIFICATION_DAYS), reverse=True):
+
+            expring_in_days = datetime.datetime.today().date()
+
+            if attributes_warranty:
+                warranty_day = (datetime.datetime.strptime(attributes_warranty, '%m/%d/%Y').date() - expring_in_days).days
+                if warranty_day >= 0 and warranty_day <= days_remaining:
+                    attribute_warranty_day = days_remaining
+
+            if attributes_service:
+                service_day = (datetime.datetime.strptime(attributes_service, '%m/%d/%Y').date() - expring_in_days).days
+                if service_day >= 0 and service_day <= days_remaining:
+                    attribute_service_day = days_remaining
+
+            for resource in child_resources:
+                if resource['object'] not in child_expiry:
+                    child_expiry[resource['object']] = [-1,-1]
+
+                if resource['WarrantyExpirationDate']:
+                    warranty_day = (datetime.datetime.strptime(resource['WarrantyExpirationDate'], '%m/%d/%Y').date() - expring_in_days).days
+
+                    if warranty_day >= 0 and warranty_day <= days_remaining:
+                        child_expiry[resource['object']][0] = days_remaining
+
+                if resource['ServiceEnd']:
+                    service_day = (datetime.datetime.strptime(resource['ServiceEnd'], '%m/%d/%Y').date() - expring_in_days).days
+
+                    if service_day >= 0 and service_day <= days_remaining:
+                        child_expiry[resource['object']][1] = days_remaining
+
+        if (attribute_warranty_day != -1):
+            messages.warning(self.request, f'{resource_obj.name}: Warranty is expiring within {attribute_warranty_day} day(s)')
+
+        if (attribute_service_day != -1):
+            messages.warning(self.request, f'{resource_obj.name}: Service is expiring within {attribute_service_day} day(s)')  
+
+        for resource_key, resource_value in child_expiry.items():
+            if (resource_value[0] != -1):
+                messages.warning(self.request, f'{resource_key}: Warranty is expiring within {resource_value[0]} day(s)')
+
+            if (resource_value[1] != -1):
+                messages.warning(self.request, f'{resource_key}: Service is expiring within {resource_value[1]} day(s)')
 
         return context
 
