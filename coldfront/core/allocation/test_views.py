@@ -1,5 +1,7 @@
 import logging
 
+from django.core.management import call_command
+
 from coldfront.core.allocation.views import GENERAL_RESOURCE_NAME
 from coldfront.core.resource.models import Resource, ResourceType
 from coldfront.core.project.models import Project
@@ -217,6 +219,7 @@ class AllocationChangeDetailViewTest(AllocationViewBaseTest):
     def test_allocationchangedetailview_post_deny(self):
         """Test that posting to AllocationChangeDetailView with action=deny
         changes the status of the AllocationChangeRequest to denied."""
+        call_command('add_allocation_defaults')
         param = {'action': 'deny'}
         response = self.client.post(
             reverse('allocation-change-detail', kwargs={'pk': 2}), param, follow=True
@@ -251,7 +254,7 @@ class AllocationChangeViewTest(AllocationViewBaseTest):
 
     def test_allocationchangeview_post_extension(self):
         """Test post request to extend end date"""
-
+        call_command('add_allocation_defaults')
         self.post_data['end_date_extension'] = 90
         self.assertEqual(len(AllocationChangeRequest.objects.all()), 0)
         response = self.client.post(
