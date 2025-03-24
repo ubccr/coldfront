@@ -190,3 +190,8 @@ class ProjectAttributeUpdateForm(forms.Form):
             proj_attr = ProjectAttribute.objects.get(pk=cleaned_data.get('pk'))
             proj_attr.value = cleaned_data.get('new_value')
             proj_attr.clean()
+
+class ProjectCreationForm(forms.ModelForm):
+    class Meta:
+        model = Project
+        fields = ['title', 'description', 'field_of_science']
