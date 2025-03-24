@@ -270,24 +270,30 @@ class AllocationUserAdmin(SimpleHistoryAdmin):
         else:
             return super().get_inline_instances(request)
 
+    @admin.action(
+        description="Set Selected User's Status To Active"
+    )
     def set_active(self, request, queryset):
         queryset.update(
             status=AllocationUserStatusChoice.objects.get(name='Active'))
 
+    @admin.action(
+        description="Set Selected User's Status To Denied"
+    )
     def set_denied(self, request, queryset):
         queryset.update(
             status=AllocationUserStatusChoice.objects.get(name='Denied'))
 
+    @admin.action(
+        description="Set Selected User's Status To Removed"
+    )
     def set_removed(self, request, queryset):
 
         queryset.update(
             status=AllocationUserStatusChoice.objects.get(name='Removed'))
 
-    set_active.short_description = "Set Selected User's Status To Active"
 
-    set_denied.short_description = "Set Selected User's Status To Denied"
 
-    set_removed.short_description = "Set Selected User's Status To Removed"
 
     actions = [
         set_active,

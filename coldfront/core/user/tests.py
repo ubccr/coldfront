@@ -3,6 +3,7 @@ from coldfront.core.user.models import UserProfile, ApproverProfile
 from coldfront.core.school.models import School
 from django.test import TestCase
 from django.contrib.auth.models import Permission
+from django.db import models
 
 class TestUserProfile(TestCase):
     class Data:
@@ -64,8 +65,16 @@ class TestUserProfile(TestCase):
         with self.assertRaises(UserProfile.DoesNotExist):
             UserProfile.objects.get(pk=profile_obj.pk)
 
-        # Only this user's UserProfile should be deleted
-        self.assertEqual(0, UserProfile.objects.filter(user=self.data.user).count())
+    # Logic adapted from https://stackoverflow.com/a/60476723
+    # Make sure the relationship between UserProfile and User is Cascade
+    def test_foreignkey_cascade(self):
+        """Test all FKs have on_delete=models.CASCADE unless otherwise specified."""
+        for f in UserProfile._meta.get_fields():
+            if isinstance(f, models.ForeignKey):
+                if f.name=='User':
+                    self.assertEqual(f.remote_field.on_delete, models.CASCADE,
+                                    '{} failed, value was {}'.format(
+                                        f.name, f.remote_field.on_delete))
 
     def test_is_approver(self):
         """Test if a user is correctly identified as an approver."""

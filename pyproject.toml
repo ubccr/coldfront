@@ -28,7 +28,7 @@ dependencies = [
     "bibtexparser>=1.4.3",
     "certifi>=2025.1.31",
     "crispy-bootstrap4>=2024.10",
-    "django==4.2.11",
+    "django>=5.1.7",
     "django-crispy-forms>=2.3",
     "django-environ>=0.12.0",
     "django-model-utils>=5.0.0",
@@ -47,6 +47,7 @@ dependencies = [
     "redis>=5.2.1",
     "requests>=2.32.3",
     "wheel>=0.45.1",
+    "python-dateutil>=2.9.0"
 ]
 
 [project.optional-dependencies]
@@ -80,4 +81,5 @@ find = {}
 [dependency-groups]
 dev = [
     "types-python-dateutil>=2.9.0.20241206",
+    "django-upgrade"
 ]
