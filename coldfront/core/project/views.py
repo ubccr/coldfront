@@ -441,6 +441,10 @@ class ProjectArchiveProjectView(LoginRequiredMixin, UserPassesTestMixin, Templat
         end_date = datetime.datetime.now()
         project.status = project_status_archive
         project.save()
+
+        # project signals
+        project_archive.send(sender=self.__class__,project_pk=project.pk)
+
         for allocation in project.allocation_set.filter(status__name='Active'):
             allocation.status = allocation_status_expired
             allocation.end_date = end_date
@@ -474,6 +478,9 @@ class ProjectCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
             role=ProjectUserRoleChoice.objects.get(name='Manager'),
             status=ProjectUserStatusChoice.objects.get(name='Active')
         )
+
+        # project signals
+        project_new.send(sender=self.__class__, project_pk=project_obj.pk)
 
         return super().form_valid(form)
 
@@ -509,6 +516,8 @@ class ProjectUpdateView(SuccessMessageMixin, LoginRequiredMixin, UserPassesTestM
             return super().dispatch(request, *args, **kwargs)
 
     def get_success_url(self):
+        # project signals
+        project_update.send(sender=self.__class__, project_pk=self.object.pk)
         return reverse('project-detail', kwargs={'pk': self.object.pk})
 
 
@@ -703,6 +712,9 @@ class ProjectAddUsersView(LoginRequiredMixin, UserPassesTestMixin, View):
                         project_user_obj = ProjectUser.objects.create(
                             user=user_obj, project=project_obj, role=role_choice, status=project_user_active_status_choice)
 
+                    # project signals
+                    project_activate_user.send(sender=self.__class__,project_user_pk=project_user_obj.pk)
+
                     for allocation in Allocation.objects.filter(pk__in=allocation_form_data):
                         if allocation.allocationuser_set.filter(user=user_obj).exists():
                             allocation_user_obj = allocation.allocationuser_set.get(
@@ -820,6 +832,9 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
                         user=user_obj)
                     project_user_obj.status = project_user_removed_status_choice
                     project_user_obj.save()
+
+                    # project signals
+                    project_remove_user.send(sender=self.__class__,project_user_pk=project_user_obj.pk)
 
                     # get allocation to remove users from
                     allocations_to_remove_user_from = project_obj.allocation_set.filter(
