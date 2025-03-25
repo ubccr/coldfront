@@ -230,7 +230,7 @@ class UpdateAllocationForm(AllocationForm):
         self.fields["storage_filesystem_path"].validators = []
         self.fields["storage_name"].validators = []
 
-        self.fields["prepaid_expiration"] = forms.DateField(
+        self.fields["prepaid_expiration"] = forms.DateTimeField(
             help_text="Allocation is paid until this date",
             label="Prepaid Expiration Date",
             required=False,
