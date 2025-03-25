@@ -337,6 +337,10 @@ Allocation Detail
   {% include "storage/slate_project/estimated_cost_div.html" %}
 {% endif %}
 
+{% if allocation.get_parent_resource.name == 'REALLMs' %}
+  {% include "service/reallms/reallms_api_key_div.html" %}
+{% endif %}
+
 <!-- Start Allocation Invoices -->
 {% if allocation.get_parent_resource.requires_payment %}
   <div class="card mb-3">

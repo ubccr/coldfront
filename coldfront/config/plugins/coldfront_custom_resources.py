@@ -4,6 +4,8 @@ from coldfront.config.env import ENV
 INSTALLED_APPS += [
     'coldfront_custom_resources',
     'coldfront_custom_resources.compute',
+    'coldfront_custom_resources.service.posit_connect',
+    'coldfront_custom_resources.service.reallms',
     'coldfront_custom_resources.storage.geode_project',
     'coldfront_custom_resources.storage.slate_project'
 ]
@@ -50,3 +52,7 @@ if ENABLE_LDAP_ELIGIBILITY_SERVER:
     LDAP_ELIGIBILITY_BIND_PASSWORD = ENV.str('LDAP_ELIGIBILITY_BIND_PASSWORD')
     LDAP_ELIGIBILITY_CONNECT_TIMEOUT = ENV.str('LDAP_ELIGIBILITY_CONNECT_TIMEOUT', 2.5)
     LDAP_ADS_NETID_FORMAT = ENV.str('LDAP_ADS_NETID_FORMAT')
+
+REALLMS_URL = ENV.str('REALLMS_URL', '')
+REALLMS_ADMIN_EMAIL = ENV.str('REALLMS_ADMIN_EMAIL', '')
+REALLMS_ADMIN_PASSWORD = ENV.str('REALLMS_ADMIN_PASSWORD', '')
