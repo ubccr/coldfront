@@ -6,6 +6,13 @@ from coldfront.config.env import ENV
 #------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------
+# Default User Add and Remove Status
+#------------------------------------------------------------------------------
+
+DEFAULT_STATUS = ENV.str('DEFAULT_STATUS', default='Active')
+DEFAULT_REMOVE = ENV.str('DEFAULT_REMOVE', default='Removed')
+
+#------------------------------------------------------------------------------
 # General Center Information
 #------------------------------------------------------------------------------
 CENTER_NAME = ENV.str('CENTER_NAME', default='HPC Center')
