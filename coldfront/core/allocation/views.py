@@ -105,6 +105,18 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         allocation_obj = get_object_or_404(Allocation, pk=pk)
         allocation_users = allocation_obj.allocationuser_set.exclude(
             status__name__in=['Removed']).order_by('user__username')
+        
+        def get_eula(alloc):
+            if alloc.get_resources_as_list:
+                for res in alloc.get_resources_as_list:
+                    if res.get_attribute(name='eula'):
+                        return res.get_attribute(name='eula')
+            else:
+                return None
+            
+        context['eulas'] = get_eula(allocation_obj)
+        context['res'] = allocation_obj.get_parent_resource.pk
+        context['res_obj'] = allocation_obj.get_parent_resource
 
         # set visible usage attributes
         alloc_attr_set = allocation_obj.get_attribute_set(self.request.user)
@@ -559,6 +571,8 @@ class AllocationCreateView(LoginRequiredMixin, UserPassesTestMixin, FormView):
 
 class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'allocation/allocation_add_users.html'
+    model = Allocation
+    context_object_name = 'allocation'
 
     def test_func(self):
         """ UserPassesTestMixin Tests"""
@@ -619,6 +633,21 @@ class AllocationAddUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
             context['formset'] = formset
 
         context['allocation'] = allocation_obj
+
+        user_resources = get_user_resources(self.request.user)
+        resources_with_eula = {}
+        for res in user_resources:
+            if res in allocation_obj.get_resources_as_list:
+                if res.get_attribute_list(name='eula'):
+                    for attr_value in res.get_attribute_list(name='eula'):
+                        resources_with_eula[res] = attr_value
+
+        context['resources_with_eula'] = resources_with_eula
+        string_accumulator = ""
+        for res, value in resources_with_eula.items():
+            string_accumulator += f"{res}: {value}\n"
+        context['compiled_eula'] = str(string_accumulator)
+
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
