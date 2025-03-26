@@ -5,6 +5,7 @@ from functools import reduce
 from cProfile import Profile
 
 from django.core.management.base import BaseCommand, CommandError
+from simple_history.utils import bulk_update_with_history, bulk_create_with_history
 
 from coldfront.core.resource.models import ResourceType, ResourceAttribute, ResourceAttributeType, AttributeType, Resource
 from coldfront.core.project.models import Project
@@ -27,9 +28,9 @@ class Command(BaseCommand):
                         values = re.sub(r'\s+', ' ', line).strip().split(' ')
                         yield dict(zip(keys, values))
         except FileNotFoundError:
-            print(f"File at {file_path} does not exist. Cant simulate output.")
+            logger.error(f"File at {file_path} does not exist. Cant simulate output.")
         except IOError as e:
-            print(f"An error occurred: {e}")
+            logger.error(f"An error occurred: {e}")
 
     def add_arguments(self, parser):
         parser.add_argument("-e", "--environment", help="Environment, use dev to simulate output")
@@ -51,9 +52,9 @@ class Command(BaseCommand):
             return reduce(lambda x, y: x + y,[int(gpu_info.split(':')[2].replace('(S','')) for gpu_info in gpu_list])
 
         def calculate_cpu_count(row):
-            if row.get('S:C:T', None) is None:
+            if row.get('s:c:t', None) is None:
                 return 0
-            cpu_count = row.get('S:C:T').split(':')[1]
+            cpu_count = row.get('s:c:t').split(':')[1]
             return int(cpu_count)
 
         def calculate_owner_value(project_list, row):
@@ -69,47 +70,110 @@ class Command(BaseCommand):
 
         env = options['environment']  or 'production'
         if 'dev' in env:
-            output = self.get_output_from_file(os.path.join(os.getcwd(), 'coldfront/plugins/slurm/management/commands/sinfo.txt'))
+            output = self.get_output_from_file(os.path.join(os.getcwd(), 'coldfront/plugins/slurm/management/commands/sinfo_output.txt'))
         else:
             output = slurm_get_nodes_info()
-        print(f'Running on {env} mode')
+        logger.debug(f'Running on {env} mode')
         project_list = Project.objects.all()
-        compute_node, compute_node_created = ResourceType.objects.get_or_create(name='Compute Node', description='Compute Node')
-        partition_resource_type, partition_created = ResourceType.objects.get_or_create(name='Cluster Partition', description='Cluster Partition')
+        compute_node = ResourceType.objects.get(name='Compute Node')
+        attribute_type_name_list = ['GPU Count', 'Core Count', 'Features', 'Owner', 'ServiceEnd']
+        partition_resource_type = ResourceType.objects.get(name='Cluster Partition')
         gpu_count_attribute_type = ResourceAttributeType.objects.get(name='GPU Count')
         core_count_attribute_type = ResourceAttributeType.objects.get(name='Core Count')
         features_attribute_type = ResourceAttributeType.objects.get(name='Features')
         owner_attribute_type = ResourceAttributeType.objects.get(name='Owner')
         service_end_attribute_type = ResourceAttributeType.objects.get(name='ServiceEnd')
+        existing_resource_attributes = list(ResourceAttribute.objects.filter(
+                resource_attribute_type__name__in=attribute_type_name_list,
+                resource__resource_type__name='Compute Node'
+            ).values_list('pk', 'resource__name', 'resource_attribute_type__name')
+        )
+        existing_resource_attributes_check = [f'{resource_att[1]} {resource_att[2]}'  for resource_att in existing_resource_attributes]
+        existing_resource_attributes_pk_map = {f'{resource_att[1]} {resource_att[2]}': resource_att[0] for resource_att in existing_resource_attributes}
         processed_resources = set()
-        bulk_process_resource_attribute = []
+        bulk_update_resource_attribute = []
+        bulk_create_resource_attribute = []
         bulk_update_resource = []
+        processed_resource_attribute = []
         for row in output:
             new_resource, compute_node_created_created = Resource.objects.get_or_create(name=row['nodelist'], defaults={'is_allocatable':False, 'resource_type':compute_node})
             Resource.objects.get_or_create(name=row['partition'], defaults={'resource_type':partition_resource_type})
-            bulk_process_resource_attribute.append(ResourceAttribute(resource_attribute_type=gpu_count_attribute_type, resource=new_resource, value=calculate_gpu_count(row['gres'])))
-            bulk_process_resource_attribute.append(ResourceAttribute(resource_attribute_type=core_count_attribute_type, resource=new_resource, value=calculate_cpu_count(row)))
-            bulk_process_resource_attribute.append(ResourceAttribute(resource_attribute_type=features_attribute_type, resource=new_resource, value=row.get('avail_features', '(null)')))
-            bulk_process_resource_attribute.append(ResourceAttribute(resource_attribute_type=owner_attribute_type, resource=new_resource, value=calculate_owner_value(project_list, row)))
+
+            gpu_count =  ResourceAttribute(resource_attribute_type=gpu_count_attribute_type, resource=new_resource, value=calculate_gpu_count(row['gres']))
+            gpu_count_key = f"{row['nodelist']} {gpu_count_attribute_type.name}"
+            if gpu_count_key in existing_resource_attributes_check:
+                gpu_count.pk = existing_resource_attributes_pk_map[gpu_count_key]
+                bulk_update_resource_attribute.append(gpu_count)
+            else:
+                if gpu_count_key not in processed_resource_attribute:
+                    bulk_create_resource_attribute.append(gpu_count)
+                    processed_resource_attribute.append(gpu_count_key)
+
+            core_count = ResourceAttribute(resource_attribute_type=core_count_attribute_type, resource=new_resource, value=calculate_cpu_count(row))
+            core_count_key = f"{row['nodelist']} {core_count_attribute_type.name}"
+            if core_count_key in existing_resource_attributes_check:
+                core_count.pk = existing_resource_attributes_pk_map[core_count_key]
+                bulk_update_resource_attribute.append(core_count)
+            else:
+                if core_count_key not in processed_resource_attribute:
+                    bulk_create_resource_attribute.append(core_count)
+                    processed_resource_attribute.append(core_count_key)
+
+            features = ResourceAttribute(resource_attribute_type=features_attribute_type, resource=new_resource, value=row.get('avail_features', '(null)'))
+            features_key = f"{row['nodelist']} {features_attribute_type.name}"
+            if features_key in existing_resource_attributes_check:
+                features.pk = existing_resource_attributes_pk_map[features_key]
+                bulk_update_resource_attribute.append(features)
+            else:
+                if features_key not in processed_resource_attribute:
+                    bulk_create_resource_attribute.append(features)
+                    processed_resource_attribute.append(features_key)
+
+            owner = ResourceAttribute(resource_attribute_type=owner_attribute_type, resource=new_resource, value=calculate_owner_value(project_list, row))
+            owner_key = f"{row['nodelist']} {owner_attribute_type.name}"
+            if owner_key in existing_resource_attributes_check:
+                owner.pk = existing_resource_attributes_pk_map[owner_key]
+                bulk_update_resource_attribute.append(owner)
+            else:
+                if owner_key not in processed_resource_attribute:
+                    bulk_create_resource_attribute.append(owner)
+                    processed_resource_attribute.append(owner_key)
+
             if new_resource.is_available is False:
-                bulk_update_resource.append(Resource(name=row['nodelist'], is_available=True, resource_type=compute_node))
-                bulk_process_resource_attribute.append(ResourceAttribute(resource=new_resource, value=None, resource_attribute_type=service_end_attribute_type))
+                new_resource.is_available = True
+                bulk_update_resource.append(new_resource)
+                service_end_pk = existing_resource_attributes_pk_map[f"{row['nodelist']} {service_end_attribute_type.name}"]
+                bulk_update_resource_attribute.append(ResourceAttribute(resource=new_resource, value=None, resource_attribute_type=service_end_attribute_type, pk=service_end_pk))
             processed_resources.add(new_resource.name)
         try:
-            ResourceAttribute.objects.bulk_create(bulk_process_resource_attribute, update_conflicts=True, unique_fields=[], update_fields=['value'])
-            Resource.objects.bulk_create(bulk_update_resource, update_conflicts=True, unique_fields=[],  update_fields=['is_available'])
+            logger.debug(f'Updating {len(bulk_update_resource_attribute)} ResourceAttribute records')
+            bulk_update_with_history(bulk_update_resource_attribute, ResourceAttribute, ['value'], batch_size=500, default_change_reason='slurm_manage_resource command')
+            logger.debug(f'Updating {len(bulk_update_resource)} Resource records')
+            bulk_update_with_history(bulk_update_resource, Resource, ['is_available'], batch_size=500, default_change_reason='slurm_manage_resource command')
+            logger.debug(f'Creating {len(bulk_create_resource_attribute)} ResourceAttribute records')
+            bulk_create_with_history(bulk_create_resource_attribute, ResourceAttribute, batch_size=500, default_change_reason='slurm_manage_resource command')
         except Exception as e:
-            logger.error(f'Error processing resources info: {str(e)}')
+            logger.debug(f'Error processing resources info: {str(e)}')
             raise
-        bulk_process_resource_attribute = []
+        bulk_update_resource_attribute = []
+        bulk_create_resource_attribute = []
         bulk_update_resource = []
         for resource_to_delete in Resource.objects.exclude(name__in=list(processed_resources)).filter(is_available=True, resource_type=compute_node):
             resource_to_delete.is_available = False
             bulk_update_resource.append(resource_to_delete)
-            bulk_process_resource_attribute.append(ResourceAttribute(resource=resource_to_delete, value=str(datetime.now()), resource_attribute_type=service_end_attribute_type))
+            service_end = ResourceAttribute(resource=resource_to_delete, value=str(datetime.now()), resource_attribute_type=service_end_attribute_type)
+            if f"{resource_to_delete.name} {service_end_attribute_type.name}" in existing_resource_attributes_check:
+                service_end.pk = existing_resource_attributes_pk_map[f"{resource_to_delete.name} {service_end_attribute_type.name}"]
+                bulk_update_resource_attribute.append(service_end)
+            else:
+                bulk_create_resource_attribute.append(service_end)
         try:
-            ResourceAttribute.objects.bulk_create(bulk_process_resource_attribute, update_conflicts=True, unique_fields=[], update_fields=['value'])
-            Resource.objects.bulk_create(bulk_update_resource, update_conflicts=True, unique_fields=[], update_fields=['is_available'])
+            logger.debug(f'Decommissioning {len(bulk_update_resource)} Resource records')
+            bulk_update_with_history(bulk_update_resource, Resource, ['is_available'], batch_size=500, default_change_reason='slurm_manage_resource command')
+            logger.debug(f'Creating {len(bulk_create_resource_attribute)} ServiceEnd ResourceAttribute records')
+            bulk_create_with_history(bulk_create_resource_attribute, ResourceAttribute, batch_size=500, default_change_reason='slurm_manage_resource command')
+            logger.debug(f'Updating {len(bulk_update_resource_attribute)} ServiceEnd ResourceAttribute records')
+            bulk_update_with_history(bulk_update_resource_attribute, ResourceAttribute, ['value'], batch_size=500, default_change_reason='slurm_manage_resource command')
         except Exception as e:
             logger.error(f'Error cleaning up resources: {str(e)}')
             raise
