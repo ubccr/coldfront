@@ -24,6 +24,7 @@ PUBLICATION_ENABLE = ENV.bool('PUBLICATION_ENABLE', default=True)
 # Enable Project Review
 #------------------------------------------------------------------------------
 PROJECT_ENABLE_PROJECT_REVIEW = ENV.bool('PROJECT_ENABLE_PROJECT_REVIEW', default=True)
+PROJECT_TITLE_UNIQUE = ENV.bool('PROJECT_TITLE_UNIQUE', default=False)
 
 #------------------------------------------------------------------------------
 # Allocation related
