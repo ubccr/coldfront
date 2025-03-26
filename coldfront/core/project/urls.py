@@ -1,4 +1,6 @@
 from django.urls import path
+from django.conf import settings
+from django.conf.urls.static import static
 
 import coldfront.core.project.views as project_views
 
@@ -26,3 +28,4 @@ urlpatterns = [
     path('<int:pk>/project-attribute-update/<int:project_attribute_pk>', project_views.ProjectAttributeUpdateView.as_view(), name='project-attribute-update'),
 
 ]
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
