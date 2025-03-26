@@ -5,13 +5,15 @@ from dateutil.relativedelta import relativedelta
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 
+from coldfront.config.defaults import GRANT_DEFAULTS as defaults
+from coldfront.core.grant.models import Grant, GrantFundingAgency, GrantStatusChoice
 from coldfront.core.test_helpers.factories import (
     GrantFundingAgencyFactory,
     GrantStatusChoiceFactory,
     ProjectFactory,
 )
+from coldfront.core.test_helpers.utils import CommandTestBase
 
-from coldfront.core.grant.models import Grant
 
 class TestGrant(TestCase):
     class Data:
@@ -40,9 +42,9 @@ class TestGrant(TestCase):
             'total_amount_awarded':1000000.0,
             'status': grantStatusChoice
             }
-            
+
             self.unsaved_object = Grant(**self.initial_fields)
-    
+
     def setUp(self):
         self.data = self.Data()
 
@@ -235,17 +237,17 @@ class TestGrant(TestCase):
         self.assertEqual(expected_maximum_value, retrieved_obj.percent_credit)
 
     def test_project_foreignkey_on_delete(self):
-            grant_obj = self.data.unsaved_object
-            grant_obj.save()
+        grant_obj = self.data.unsaved_object
+        grant_obj.save()
 
-            self.assertEqual(1, len(Grant.objects.all()))
+        self.assertEqual(1, len(Grant.objects.all()))
 
-            grant_obj.project.delete()
+        grant_obj.project.delete()
 
-            # expecting CASCADE
-            with self.assertRaises(Grant.DoesNotExist):
-                Grant.objects.get(pk=grant_obj.pk)
-            self.assertEqual(0, len(Grant.objects.all()))
+        # expecting CASCADE
+        with self.assertRaises(Grant.DoesNotExist):
+            Grant.objects.get(pk=grant_obj.pk)
+        self.assertEqual(0, len(Grant.objects.all()))
 
     def test_funding_agency_foreignkey_on_delete(self):
         grant_obj = self.data.unsaved_object
@@ -273,3 +275,18 @@ class TestGrant(TestCase):
             Grant.objects.get(pk=grant_obj.pk)
         self.assertEqual(0, len(Grant.objects.all()))
 
+
+class GrantCommandTests(CommandTestBase):
+    """tests for Grant commands"""
+
+    def test_add_grant_defaults_basic(self):
+        """Test that add_grant_defaults adds grant defaults"""
+        self.assertEqual(GrantStatusChoice.objects.count(), 0)
+        self.assertEqual(GrantFundingAgency.objects.count(), 0)
+        self.call_command('add_default_grant_options')
+        self.assertEqual(
+            GrantStatusChoice.objects.count(), len(defaults['statuschoices'])
+        )
+        self.assertEqual(
+            GrantFundingAgency.objects.count(), len(defaults['fundingagencies'])
+        )
