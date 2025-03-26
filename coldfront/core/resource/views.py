@@ -377,11 +377,12 @@ class ResourceListView(ColdfrontListView):
                     Q(resourceattribute__value=data.get('vendor'))
                 )
         project_title_list = [project.title for project in project_list]
-        owned_resources = [attribute.resource.pk for attribute in ResourceAttribute.objects.filter(
+        not_owned_compute_nodes = [attribute.resource.pk for attribute in ResourceAttribute.objects.filter(
             resource_attribute_type__name='Owner',
-            value__in=project_title_list
-        )]
-        return resources.filter(Q(allowed_users=self.request.user) | Q(pk__in=owned_resources)).distinct()
+            resource__resource_type__name='Compute Node'
+        ).exclude(value__in=project_title_list)]
+        return resources.exclude(pk__in=not_owned_compute_nodes).distinct()
+
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(
