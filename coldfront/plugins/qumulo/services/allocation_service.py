@@ -21,6 +21,7 @@ from coldfront.core.allocation.models import (
 
 from coldfront.plugins.qumulo.tasks import addMembersToADGroup
 from coldfront.plugins.qumulo.utils.active_directory_api import ActiveDirectoryAPI
+from coldfront.plugins.qumulo.utils.acl_allocations import AclAllocations
 
 from datetime import datetime
 
@@ -264,4 +265,34 @@ class AllocationService:
                 allocation_attribute_type=attribute_type,
                 allocation=allocation,
                 value=value,
+            )
+
+    @staticmethod
+    def set_access_users(
+        access_key: str, access_users: list[str], storage_allocation: Allocation
+    ):
+
+        active_directory_api = ActiveDirectoryAPI()
+
+        access_allocation = AclAllocations.get_access_allocation(
+            storage_allocation, access_key
+        )
+
+        allocation_users = AllocationUser.objects.filter(allocation=access_allocation)
+        allocation_usernames = [
+            allocation_user.user.username for allocation_user in allocation_users
+        ]
+
+        users_to_add = list(set(access_users) - set(allocation_usernames))
+        create_group_time = datetime.now()
+        async_task(
+            addMembersToADGroup, users_to_add, access_allocation, create_group_time
+        )
+
+        users_to_remove = set(allocation_usernames) - set(access_users)
+        for allocation_username in users_to_remove:
+            allocation_users.get(user__username=allocation_username).delete()
+            active_directory_api.remove_member_from_group(
+                allocation_username,
+                access_allocation.get_attribute("storage_acl_name"),
             )

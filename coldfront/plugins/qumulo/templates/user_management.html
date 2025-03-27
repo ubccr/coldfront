@@ -1,0 +1,24 @@
+{% extends "common/base.html" %} 
+{% load crispy_forms_tags %}
+{% load common_tags %}
+{% load static %}
+
+{% block title %}
+User Access Management
+{% endblock %}
+
+{% block content %}
+{% comment %} {% csrf_token %} {% endcomment %}
+
+<div jquery-include="/static/UserAccessManagement/index.html"></div>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script> 
+  $(function(){
+    const includes = $('[jquery-include]')
+    $.each(includes, function () {
+      const path = $(this).attr('jquery-include')
+      $(this).load(path)
+    })
+  });
+  </script>
+{% endblock content %}

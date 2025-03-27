@@ -5,7 +5,9 @@ from coldfront.core.allocation.models import (
     Allocation,
     AllocationAttribute,
 )
-from coldfront.plugins.qumulo.forms import CreateSubAllocationForm
+from coldfront.plugins.qumulo.forms.CreateSubAllocationForm import (
+    CreateSubAllocationForm,
+)
 from coldfront.plugins.qumulo.views.update_allocation_view import UpdateAllocationView
 
 

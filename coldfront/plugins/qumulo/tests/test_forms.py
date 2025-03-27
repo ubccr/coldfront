@@ -9,7 +9,8 @@ from coldfront.core.project.models import Project, ProjectStatusChoice
 from coldfront.core.user.models import User
 from coldfront.core.field_of_science.models import FieldOfScience
 
-from coldfront.plugins.qumulo.forms import AllocationForm, ProjectCreateForm
+from coldfront.plugins.qumulo.forms.ProjectCreateForm import ProjectCreateForm
+from coldfront.plugins.qumulo.forms.AllocationForm import AllocationForm
 from coldfront.plugins.qumulo.tests.helper_classes.filesystem_path import (
     PathExistsMock,
     ValidFormPathMock,

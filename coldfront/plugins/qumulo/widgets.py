@@ -1,7 +1,4 @@
-from django.forms import Widget
-import logging
-
-logger = logging.getLogger(__name__)
+from django.forms.widgets import Widget, ChoiceWidget
 
 
 class MultiSelectLookupInput(Widget):
@@ -25,3 +22,26 @@ class MultiSelectLookupInput(Widget):
         )
 
         return raw_string.split(",")
+
+
+class FilterableCheckBoxTableInput(ChoiceWidget):
+    template_name = "filterable_checkbox_table_input.html"
+    columns = []
+    allow_multiple_selected = True
+
+    def init(self, initial_filter=None):
+        self.initial_filter = initial_filter
+
+    def get_context(self, name, value, attrs):
+        context = super().get_context(name, value, attrs)
+
+        context["widget"]["options"] = list(
+            map(lambda element: element[1][0], context["widget"]["optgroups"])
+        )
+        context["widget"]["columns"] = self.columns
+        context["widget"]["initial_filter"] = self.initial_filter
+
+        return context
+
+    class Media:
+        js = ("filterable_checkbox_table_input.js",)

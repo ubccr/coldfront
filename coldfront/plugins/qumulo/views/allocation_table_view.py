@@ -5,7 +5,9 @@ from django.core.paginator import EmptyPage, Paginator
 from django.db.models.query import QuerySet
 from django.views.generic import ListView
 
-from coldfront.plugins.qumulo.forms import AllocationTableSearchForm
+from coldfront.plugins.qumulo.forms.AllocationTableSearchForm import (
+    AllocationTableSearchForm,
+)
 
 from coldfront.core.allocation.models import (
     Allocation,

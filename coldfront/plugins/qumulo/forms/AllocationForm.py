@@ -5,11 +5,9 @@ from django import forms
 
 from coldfront.core.project.models import Project
 from coldfront.core.user.models import User
-from coldfront.core.field_of_science.models import FieldOfScience
 from coldfront.plugins.qumulo.fields import ADUserField, StorageFileSystemPathField
 from coldfront.plugins.qumulo.validators import (
     validate_leading_forward_slash,
-    validate_single_ad_user_skip_admin,
     validate_single_ad_user,
     validate_ticket,
     validate_storage_name,
@@ -22,13 +20,6 @@ from coldfront.plugins.qumulo.constants import (
 )
 
 from coldfront.core.constants import BILLING_CYCLE_OPTIONS
-
-
-from coldfront.core.allocation.models import (
-    AllocationStatusChoice,
-)
-
-from django.db.models.functions import Lower
 
 
 class AllocationForm(forms.Form):
@@ -218,98 +209,3 @@ class AllocationForm(forms.Form):
             projects = Project.objects.filter(pi=self.user_id)
 
         return map(lambda project: (project.id, project.title), projects)
-
-
-class UpdateAllocationForm(AllocationForm):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.fields["storage_name"].disabled = True
-        self.fields["storage_filesystem_path"].disabled = True
-
-        self.fields["storage_filesystem_path"].validators = []
-        self.fields["storage_name"].validators = []
-
-        self.fields["prepaid_expiration"] = forms.DateTimeField(
-            help_text="Allocation is paid until this date",
-            label="Prepaid Expiration Date",
-            required=False,
-        )
-        self.fields["prepaid_expiration"].disabled = True
-
-
-class CreateSubAllocationForm(AllocationForm):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # hide the project field and show the parent allocation instead
-        self.fields["project_pk"].widget = forms.HiddenInput()
-        self.fields["parent_allocation"] = forms.CharField(
-            help_text="The parent of this sub-allocation",
-            label="Parent Allocation",
-            required=True,
-        )
-
-        # display the parent allocation name
-        self.fields["parent_allocation"].initial = kwargs["initial"].pop(
-            "parent_allocation_name"
-        )
-        self.fields["parent_allocation"].disabled = True
-
-        # re-order fields so parent allocation field appears at the top
-        self.fields = {
-            "parent_allocation": self.fields.pop("parent_allocation"),
-            **self.fields,
-        }
-
-
-class ProjectCreateForm(forms.Form):
-    def __init__(self, *args, **kwargs):
-        self.user_id = kwargs.pop("user_id")
-        super().__init__(*args, **kwargs)
-        self.fields["pi"].initial = self.user_id
-        self.fields["field_of_science"].choices = self.get_fos_choices()
-        self.fields["field_of_science"].initial = FieldOfScience.DEFAULT_PK
-
-    title = forms.CharField(
-        label="Title",
-        max_length=255,
-    )
-    pi = forms.CharField(
-        label="Principal Investigator",
-        max_length=128,
-        validators=[validate_single_ad_user_skip_admin],
-    )
-    description = forms.CharField(
-        required=False,
-        widget=forms.Textarea,
-    )
-    field_of_science = forms.ChoiceField(label="Field of Science")
-
-    def get_fos_choices(self):
-        return map(lambda fos: (fos.id, fos.description), FieldOfScience.objects.all())
-
-
-class AllocationTableSearchForm(forms.Form):
-    pi_last_name = forms.CharField(label="PI Surname", max_length=100, required=False)
-
-    pi_first_name = forms.CharField(
-        label="PI Given Name", max_length=100, required=False
-    )
-
-    status = forms.ModelMultipleChoiceField(
-        widget=forms.CheckboxSelectMultiple,
-        queryset=AllocationStatusChoice.objects.all().order_by(Lower("name")),
-        required=False,
-    )
-
-    department_number = forms.CharField(
-        label="Department Number", max_length=100, required=False
-    )
-
-    itsd_ticket = forms.CharField(label="ITSD Ticket", max_length=100, required=False)
-
-    no_grouping = forms.BooleanField(
-        label="No Grouping",
-        initial=False,
-        required=False,
-    )

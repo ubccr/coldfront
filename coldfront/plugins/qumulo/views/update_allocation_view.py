@@ -21,7 +21,7 @@ from coldfront.core.allocation.models import (
 
 from coldfront.core.user.models import User
 
-from coldfront.plugins.qumulo.forms import UpdateAllocationForm
+from coldfront.plugins.qumulo.forms.UpdateAllocationForm import UpdateAllocationForm
 from coldfront.plugins.qumulo.hooks import acl_reset_complete_hook
 from coldfront.plugins.qumulo.tasks import addMembersToADGroup, reset_allocation_acls
 from coldfront.plugins.qumulo.views.allocation_view import AllocationView

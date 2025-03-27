@@ -11,18 +11,13 @@ from coldfront.core.allocation.models import (
 
 from coldfront.plugins.qumulo.tests.utils.mock_data import build_models
 from coldfront.plugins.qumulo.services.allocation_service import AllocationService
-from coldfront.plugins.qumulo.views.create_sub_allocation_view import (
-    CreateSubAllocationView,
-)
+
 
 from coldfront.core.allocation.models import (
     AllocationLinkage,
     AllocationAttributeType,
     AllocationAttribute,
 )
-
-# TODO why isn't the CreateSubAllocationForm used?
-from coldfront.plugins.qumulo.forms import CreateSubAllocationForm
 
 
 @patch("coldfront.plugins.qumulo.services.allocation_service.ActiveDirectoryAPI")

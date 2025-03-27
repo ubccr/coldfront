@@ -1,0 +1,24 @@
+{
+  "name": "coldfront-wustl-fork",
+  "version": "1.0.0",
+  "description": "![ColdFront](docs/pages/images/logo-lg.png)",
+  "homepage": "https://github.com/WashU-IT-RIS/coldfront-wustl-fork#readme",
+  "bugs": {
+    "url": "https://github.com/WashU-IT-RIS/coldfront-wustl-fork/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WashU-IT-RIS/coldfront-wustl-fork.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "postinstall": "cd coldfront/plugins/qumulo/frontend/react && npm install",
+    "develop": "NODE_ENV=development vite build -w --minify false coldfront/plugins/qumulo/frontend/react/src/views/UserAccessManagement/ --sourcemap inline"
+  }
+}

@@ -1,0 +1,7 @@
+input[type=number].page-link::-webkit-inner-spin-button, 
+input[type=number].page-link::-webkit-outer-spin-button { 
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    margin: 0; 
+}

@@ -1,6 +1,6 @@
 from coldfront.core.field_of_science.models import FieldOfScience
 
-from coldfront.plugins.qumulo.forms import ProjectCreateForm
+from coldfront.plugins.qumulo.forms.ProjectCreateForm import ProjectCreateForm
 from coldfront.plugins.qumulo.tests.utils.mock_data import build_models
 from coldfront.plugins.qumulo.views.project_views import PluginProjectCreateView
 

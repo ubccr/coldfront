@@ -4,7 +4,7 @@ from unittest.mock import patch, MagicMock
 
 from coldfront.core.allocation.models import AllocationUser
 
-from coldfront.plugins.qumulo.forms import UpdateAllocationForm
+from coldfront.plugins.qumulo.forms.UpdateAllocationForm import UpdateAllocationForm
 from coldfront.plugins.qumulo.hooks import acl_reset_complete_hook
 from coldfront.plugins.qumulo.tasks import reset_allocation_acls
 from coldfront.plugins.qumulo.views.update_allocation_view import UpdateAllocationView
