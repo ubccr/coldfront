@@ -10,7 +10,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
 
-        for attribute_type in ('Active/Inactive', 'Date', 'Int', 
+        for attribute_type in ('Active/Inactive', 'Date', 'Int',
             'Public/Private', 'Text', 'Yes/No', 'Attribute Expanded Text'):
             AttributeType.objects.get_or_create(name=attribute_type)
 
@@ -36,6 +36,7 @@ class Command(BaseCommand):
             ('RackUnits', 'Int'),
             ('InstallDate', 'Date'),
             ('WarrantyExpirationDate', 'Date'),
+            ('allocation_limit', 'Int'),
         ):
             ResourceAttributeType.objects.get_or_create(
                 name=resource_attribute_type, attribute_type=AttributeType.objects.get(name=attribute_type))
