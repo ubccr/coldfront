@@ -7,6 +7,7 @@ import logging
 import json
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.db import connection
@@ -106,9 +107,9 @@ def billing_records(request):
     token = request.user.auth_token.key
     return render(request, 'plugins/ifx/billing_records.html', { 'delete_url': delete_url, 'auth_token': token })
 
-
-@permission_classes((AdminPermissions, ))
-@authentication_classes([TokenAuthentication, SessionAuthentication, BasicAuthentication])
+@csrf_exempt
+@authentication_classes([TokenAuthentication])
+@permission_classes([AdminPermissions,])
 def finalize_billing_month(request):
     '''
     Finalize billing month
