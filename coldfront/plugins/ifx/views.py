@@ -22,6 +22,7 @@ from ifxreport.views import run_report as ifxreport_run_report
 from ifxbilling import models as ifxbilling_models
 from ifxbilling.calculator import getClassFromName
 from ifxbilling.views import get_billing_record_list as ifxbilling_get_billing_record_list
+from ifxbilling import views as ifxbilling_views
 from ifxbilling.fiine import update_user_accounts
 from ifxbilling.calculator import get_rebalancer_class
 from ifxmail.client import send
@@ -104,6 +105,16 @@ def billing_records(request):
     delete_url = reverse('billing-record-detail', kwargs={'pk': 0})
     token = request.user.auth_token.key
     return render(request, 'plugins/ifx/billing_records.html', { 'delete_url': delete_url, 'auth_token': token })
+
+
+@permission_classes((AdminPermissions, ))
+@authentication_classes([TokenAuthentication, SessionAuthentication, BasicAuthentication])
+def finalize_billing_month(request):
+    '''
+    Finalize billing month
+    '''
+    return ifxbilling_views.finalize_billing_month(request)
+
 
 @api_view(['GET',])
 @authentication_classes([TokenAuthentication, SessionAuthentication, BasicAuthentication])
