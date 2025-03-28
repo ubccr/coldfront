@@ -62,7 +62,7 @@ Allocation Detail
         </div>
       </div>
     {% else %}
-      <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>   
+      <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>
     {% endif %}
   </div>
   <div class="card-body">
@@ -141,7 +141,7 @@ Allocation Detail
                     {% if allocation.can_be_renewed %}
                       <a href="{% url 'allocation-renew' allocation.pk %}">
                         <span class="badge badge-warning"><i class="fas fa-redo-alt" aria-hidden="true"></i>
-                          Click to renew 
+                          Click to renew
                         </span>
                       </a>
                     {% endif %}
@@ -333,7 +333,7 @@ Allocation Detail
   </div>
 {% endif %}
 
-{% if display_estimated_cost and allocation.get_parent_resource.name == 'Slate Project' %}
+{% if display_estimated_cost and allocation.get_parent_resource.name == 'Slate-Project' %}
   {% include "storage/slate_project/estimated_cost_div.html" %}
 {% endif %}
 
@@ -388,7 +388,7 @@ Allocation Detail
     <span class="badge badge-secondary">{{allocation_users.count}}</span>
     <div class="float-right">
       {% if allocation.project.status.name != 'Archived' and is_allowed_to_update_project and allocation.status.name in 'Active,New,Renewal Requested, Paid, Payment Pending, Payment Requested, Billing Information Submitted' %}
-        {% if not allocation.get_parent_resource.name == 'Geode-Projects' %}
+        {% if not allocation.get_parent_resource.name == 'Geode-Project' %}
           <a class="btn btn-success" href="{% url 'allocation-add-users' allocation.pk %}" role="button">
             <i class="fas fa-user-plus" aria-hidden="true"></i> Add Users
           </a>
@@ -497,7 +497,7 @@ Allocation Detail
                         <i class="far fa-edit" aria-hidden="true"></i>
                       </a>
                     </td>
-                  {% endif %}  
+                  {% endif %}
                 </tr>
               {% endif %}
             {% endfor %}

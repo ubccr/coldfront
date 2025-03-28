@@ -864,7 +864,7 @@ class ProjectAddUsersSearchResultsView(LoginRequiredMixin, UserPassesTestMixin, 
             context['users_already_in_project'] = users_already_in_project
 
         status_list = ['Active', 'New', 'Renewal Requested', 'Billing Information Submitted']
-        allocations = project_obj.allocation_set.filter(status__name__in=status_list, is_locked=False).exclude(resources__name='Geode-Projects')
+        allocations = project_obj.allocation_set.filter(status__name__in=status_list, is_locked=False).exclude(resources__name='Geode-Project')
         initial_data = self.get_initial_data(request, allocations)
         allocation_formset = formset_factory(
             ProjectAddUsersToAllocationForm,
@@ -1288,7 +1288,7 @@ class ProjectRemoveUsersView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
 
         project_obj = get_object_or_404(Project, pk=pk)
         context['project'] = project_obj
-        context['display_warning'] = project_obj.allocation_set.filter(resources__name='Slate Project')
+        context['display_warning'] = project_obj.allocation_set.filter(resources__name='Slate-Project')
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):

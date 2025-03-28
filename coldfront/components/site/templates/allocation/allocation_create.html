@@ -316,7 +316,7 @@ Request New Allocation
     $("#selectAll").click(function () {
       $("input[name^='users']").prop('checked', $(this).prop('checked'));
     });
-    
+
     $("input[name^='users']").click(function (ele) {
       var id = $(this).attr('id');
       if (id != "selectAll") {
@@ -427,7 +427,7 @@ Request New Allocation
 
     var description = $('#id_resource_description');
     description.html(resource_descriptions[resource_id])
-    if (resource_name === 'SDA Group Account' || resource_name === 'Geode-Projects')
+    if (resource_name === 'SDA Group Account' || resource_name === 'Geode-Project')
     {
       $('#div_id_sda_information').show()
     } else {
@@ -511,7 +511,7 @@ Request New Allocation
             $('#div_id_cost').hide();
           } else {
             if ($('#' + id).val() === '') {
-              $('#' + id).val(field[resource_id]) 
+              $('#' + id).val(field[resource_id])
             }
             $('#div_' + id).show();
           }
