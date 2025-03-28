@@ -3,14 +3,14 @@ import os
 import re
 from functools import reduce
 from cProfile import Profile
+from django.utils import timezone
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from simple_history.utils import bulk_update_with_history, bulk_create_with_history
 
 from coldfront.core.resource.models import ResourceType, ResourceAttribute, ResourceAttributeType, AttributeType, Resource
 from coldfront.core.project.models import Project
 from coldfront.plugins.slurm.utils import slurm_get_nodes_info
-from django.utils.datetime_safe import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -68,13 +68,19 @@ class Command(BaseCommand):
                 return'FASRC'
             return owner_name
 
+        def get_cluster():
+            return Resource.objects.get(resource_type__name='Cluster')
+
+
         env = options['environment']  or 'production'
         if 'dev' in env:
-            output = self.get_output_from_file(os.path.join(os.getcwd(), 'coldfront/plugins/slurm/management/commands/sinfo_output.txt'))
+            output = self.get_output_from_file(os.path.join(os.getcwd(), 'coldfront/plugins/slurm/management/commands/sinfo.txt'))
         else:
             output = slurm_get_nodes_info()
         logger.debug(f'Running on {env} mode')
+        modify_history_date = timezone.now()
         project_list = Project.objects.all()
+        current_cluster = get_cluster()
         compute_node = ResourceType.objects.get(name='Compute Node')
         attribute_type_name_list = ['GPU Count', 'Core Count', 'Features', 'Owner', 'ServiceEnd']
         partition_resource_type = ResourceType.objects.get(name='Cluster Partition')
@@ -96,7 +102,14 @@ class Command(BaseCommand):
         bulk_update_resource = []
         processed_resource_attribute = []
         for row in output:
-            new_resource, compute_node_created_created = Resource.objects.get_or_create(name=row['nodelist'], defaults={'is_allocatable':False, 'resource_type':compute_node})
+            new_resource, compute_node_created_created = Resource.objects.get_or_create(
+                name=row['nodelist'],
+                defaults={
+                    'is_allocatable':False,
+                    'resource_type':compute_node,
+                    'parent_resource':current_cluster
+                }
+            )
             Resource.objects.get_or_create(name=row['partition'], defaults={'resource_type':partition_resource_type})
 
             gpu_count =  ResourceAttribute(resource_attribute_type=gpu_count_attribute_type, resource=new_resource, value=calculate_gpu_count(row['gres']))
@@ -143,13 +156,27 @@ class Command(BaseCommand):
                 new_resource.is_available = True
                 bulk_update_resource.append(new_resource)
                 service_end_pk = existing_resource_attributes_pk_map[f"{row['nodelist']} {service_end_attribute_type.name}"]
-                bulk_update_resource_attribute.append(ResourceAttribute(resource=new_resource, value=None, resource_attribute_type=service_end_attribute_type, pk=service_end_pk))
+                bulk_update_resource_attribute.append(
+                    ResourceAttribute(
+                        resource=new_resource, value=None,
+                        resource_attribute_type=service_end_attribute_type,
+                        pk=service_end_pk,
+                        modified=modify_history_date
+                    )
+                )
             processed_resources.add(new_resource.name)
         try:
             logger.debug(f'Updating {len(bulk_update_resource_attribute)} ResourceAttribute records')
-            bulk_update_with_history(bulk_update_resource_attribute, ResourceAttribute, ['value'], batch_size=500, default_change_reason='slurm_manage_resource command')
+            bulk_update_with_history(
+                bulk_update_resource_attribute, ResourceAttribute, ['value'],
+                batch_size=500, default_change_reason='slurm_manage_resource command',
+                default_date=modify_history_date
+            )
             logger.debug(f'Updating {len(bulk_update_resource)} Resource records')
-            bulk_update_with_history(bulk_update_resource, Resource, ['is_available'], batch_size=500, default_change_reason='slurm_manage_resource command')
+            bulk_update_with_history(
+                bulk_update_resource, Resource, ['is_available'], batch_size=500,
+                default_change_reason='slurm_manage_resource command', default_date=modify_history_date
+            )
             logger.debug(f'Creating {len(bulk_create_resource_attribute)} ResourceAttribute records')
             bulk_create_with_history(bulk_create_resource_attribute, ResourceAttribute, batch_size=500, default_change_reason='slurm_manage_resource command')
         except Exception as e:
@@ -161,19 +188,25 @@ class Command(BaseCommand):
         for resource_to_delete in Resource.objects.exclude(name__in=list(processed_resources)).filter(is_available=True, resource_type=compute_node):
             resource_to_delete.is_available = False
             bulk_update_resource.append(resource_to_delete)
-            service_end = ResourceAttribute(resource=resource_to_delete, value=str(datetime.now()), resource_attribute_type=service_end_attribute_type)
+            service_end = ResourceAttribute(resource=resource_to_delete, value=modify_history_date, resource_attribute_type=service_end_attribute_type)
             if f"{resource_to_delete.name} {service_end_attribute_type.name}" in existing_resource_attributes_check:
                 service_end.pk = existing_resource_attributes_pk_map[f"{resource_to_delete.name} {service_end_attribute_type.name}"]
                 bulk_update_resource_attribute.append(service_end)
             else:
                 bulk_create_resource_attribute.append(service_end)
         try:
-            logger.debug(f'Decommissioning {len(bulk_update_resource)} Resource records')
-            bulk_update_with_history(bulk_update_resource, Resource, ['is_available'], batch_size=500, default_change_reason='slurm_manage_resource command')
+            logger.debug(f'Decommissioning {bulk_update_resource} Resource records')
+            bulk_update_with_history(
+                bulk_update_resource, Resource, ['is_available'], batch_size=500,
+                default_change_reason='slurm_manage_resource command',  default_date=modify_history_date
+            )
             logger.debug(f'Creating {len(bulk_create_resource_attribute)} ServiceEnd ResourceAttribute records')
             bulk_create_with_history(bulk_create_resource_attribute, ResourceAttribute, batch_size=500, default_change_reason='slurm_manage_resource command')
             logger.debug(f'Updating {len(bulk_update_resource_attribute)} ServiceEnd ResourceAttribute records')
-            bulk_update_with_history(bulk_update_resource_attribute, ResourceAttribute, ['value'], batch_size=500, default_change_reason='slurm_manage_resource command')
+            bulk_update_with_history(
+                bulk_update_resource_attribute, ResourceAttribute, ['value'], batch_size=500,
+                default_change_reason='slurm_manage_resource command', default_date=modify_history_date
+            )
         except Exception as e:
             logger.error(f'Error cleaning up resources: {str(e)}')
             raise
