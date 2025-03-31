@@ -1763,7 +1763,8 @@ class ProjectReviewListView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['project_review_list'] = ProjectReview.objects.filter(status__name='Pending')
+        context['project_review_list'] = ProjectReview.objects.filter(
+            status__name__in=['Pending', 'COntacted By Admin', ])
         projects = Project.objects.filter(
             status__name__in=['Waiting For Admin Approval', 'Contacted By Admin', ]
         )
@@ -1861,12 +1862,16 @@ class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
         """Return an instance of the form to be used in this view."""
         if form_class is None:
             form_class = self.get_form_class()
-        return form_class(self.kwargs.get('pk'), **self.get_form_kwargs())
+        return form_class(self.kwargs.get('pk'), self.request.user, **self.get_form_kwargs())
 
     def form_valid(self, form):
         pk = self.kwargs.get('pk')
         project_review_obj = get_object_or_404(ProjectReview, pk=pk)
         form_data = form.cleaned_data
+
+        project_review_status_obj = ProjectReviewStatusChoice.objects.get(name='Contacted By Admin')
+        project_review_obj.status = project_review_status_obj
+        project_review_obj.save()
 
         receiver_list = [project_review_obj.project.pi.email]
         cc = form_data.get('cc').strip()
@@ -1876,9 +1881,9 @@ class ProjectReivewEmailView(LoginRequiredMixin, UserPassesTestMixin, FormView):
             cc = []
 
         send_email(
-            'Request for more information',
+            f'Follow-up on Renewal for Project {project_review_obj.project.title}',
             form_data.get('email_body'),
-            EMAIL_DIRECTOR_EMAIL_ADDRESS,
+            EMAIL_TICKET_SYSTEM_ADDRESS,
             receiver_list,
             cc
         )
@@ -2639,7 +2644,7 @@ class ProjectReviewInfoView(LoginRequiredMixin, UserPassesTestMixin, TemplateVie
                 return False
 
         project_review_obj = get_object_or_404(ProjectReview, pk=self.kwargs.get('pk'))
-        if project_review_obj.status.name != 'Pending':
+        if project_review_obj.status.name not in ['Pending', 'Contacted By Admin']:
             messages.error(
                 self.request, f'You cannot view a project review\'s info with status "{project_review_obj.status.name}"'
             )
