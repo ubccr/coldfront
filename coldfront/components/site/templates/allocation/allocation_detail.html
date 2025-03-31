@@ -42,7 +42,7 @@ Allocation Detail
         </div>
         <div class="col">
           {% if allocation_moving_enabled %}
-            {% if request.user == allocation.project.pi or user_has_permissions %}
+            {% if user_has_permissions %}
               <a href="{% url 'move-allocation' allocation.pk %}" class="btn btn-primary" role="button" style="float: right;">Move Allocation</a>
             {% endif %}
           {% endif %}

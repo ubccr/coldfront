@@ -46,8 +46,8 @@ class AllocationMoveView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         if group_exists:
             return True
 
-        if self.request.user == allocation_obj.project.pi:
-            return True
+        # if self.request.user == allocation_obj.project.pi:
+        #     return True
 
         messages.error(self.request, "You do not have permission to move this allocation.")
         return False
