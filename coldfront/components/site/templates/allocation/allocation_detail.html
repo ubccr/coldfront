@@ -41,8 +41,13 @@ Allocation Detail
           <h3><i class="fas fa-list" aria-hidden="true"></i> Allocation Information</h3>
         </div>
         <div class="col">
+          {% if allocation_moving_enabled %}
+            {% if request.user == allocation.project.pi or user_has_permissions %}
+              <a href="{% url 'move-allocation' allocation.pk %}" class="btn btn-primary" role="button" style="float: right;">Move Allocation</a>
+            {% endif %}
+          {% endif %}
           {% if allocation.is_changeable and allocation.status.name == 'Active' %}
-            <a class="btn btn-primary" href="{% url 'allocation-change' allocation.pk %}" role="button" style="float: right;">
+            <a class="btn btn-primary mr-1" href="{% url 'allocation-change' allocation.pk %}" role="button" style="float: right;">
               Request Change
             </a>
           {% endif %}

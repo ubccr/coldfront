@@ -202,6 +202,12 @@ class AllocationDetailView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         context['user_exists_in_allocation'] = allocation_obj.allocationuser_set.filter(
             user=self.request.user, status__name__in=['Active', 'Pending - Remove', 'Invited', 'Pending', 'Disabled', 'Retired']).exists()
 
+        context['allocation_moving_enabled'] = False
+        if 'coldfront.plugins.movable_allocations' in settings.INSTALLED_APPS:
+            is_moveable = allocation_obj.allocationattribute_set.filter(
+                allocation_attribute_type__name='Is Moveable').first()
+            context['allocation_moving_enabled'] = is_moveable and is_moveable.value == 'Yes'
+
         context['project'] = allocation_obj.project
         context['notes'] = notes
         context['ALLOCATION_ENABLE_ALLOCATION_RENEWAL'] = ALLOCATION_ENABLE_ALLOCATION_RENEWAL

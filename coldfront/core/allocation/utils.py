@@ -166,6 +166,10 @@ def create_admin_action(user, fields_to_check, allocation, base_model=None):
                 status_class = base_model._meta.get_field('status').remote_field.model
                 base_model_value = status_class.objects.get(pk=base_model_value).name
                 value = value.name
+            if key == 'project':
+                project_class = base_model._meta.get_field('project').remote_field.model
+                base_model_value = project_class.objects.get(pk=base_model_value).pk
+                value = value.pk
         if value != base_model_value:
             AllocationAdminAction.objects.create(
                 user=user,
